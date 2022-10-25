@@ -394,6 +394,22 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("ReplayViewCounts");
                 });
 
+            modelBuilder.Entity("pax.dsstats.dbng.SkipReplay", b =>
+                {
+                    b.Property<int>("SkipReplayId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.HasKey("SkipReplayId");
+
+                    b.ToTable("SkipReplays");
+                });
+
             modelBuilder.Entity("pax.dsstats.dbng.Spawn", b =>
                 {
                     b.Property<int>("SpawnId")

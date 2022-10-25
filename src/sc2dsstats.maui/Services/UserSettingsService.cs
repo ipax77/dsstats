@@ -36,8 +36,8 @@ internal class UserSettingsService
                     UserSettings.AllowUploads = true;
                 }
             }
-            UserSettings.BattleNetIds = GetBattleNetIds();
         }
+        UserSettings.BattleNetIds = GetBattleNetIds();
     }
 
     private void SaveConfig()

@@ -12,5 +12,8 @@ namespace pax.dsstats.dbng.Repositories
         Task<List<string>> GetTournaments();
         Task DeleteReplayByFileName(string fileName);
         Task<ReplayDto?> GetLatestReplay(CancellationToken token = default);
+        Task<List<string>> GetSkipReplays();
+        Task AddSkipReplay(string replayPath);
+        Task RemoveSkipReplay(string replayPath);
     }
 }

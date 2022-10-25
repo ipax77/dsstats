@@ -18,6 +18,7 @@ public class ReplayContext : DbContext
     public virtual DbSet<Event> Events { get; set; } = null!;
     public virtual DbSet<ReplayViewCount> ReplayViewCounts { get; set; } = null!;
     public virtual DbSet<ReplayDownloadCount> ReplayDownloadCounts { get; set; } = null!;
+    public virtual DbSet<SkipReplay> SkipReplays { get; set; } = null!;
 
     public ReplayContext(DbContextOptions<ReplayContext> options)
     : base(options)

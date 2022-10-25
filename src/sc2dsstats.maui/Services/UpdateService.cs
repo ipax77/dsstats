@@ -6,8 +6,8 @@ namespace sc2dsstats.maui.Services;
 internal static class UpdateService
 {
     private static readonly string packageUri = "https://github.com/ipax77/dsstats/releases/latest/download/";
-    public static Version NewVersion { get; private set; } = new Version(0, 0, 11, 0);
-    public static Version CurrentVersion { get; private set; } = new Version(0, 0, 11, 0);
+    public static Version NewVersion { get; private set; } = new Version(0, 0, 12, 0);
+    public static Version CurrentVersion { get; private set; } = new Version(0, 0, 12, 0);
 
     public static EventHandler<UpdateProgressEvent>? UpdateProgress;
 
@@ -41,7 +41,7 @@ internal static class UpdateService
             }
             else
             {
-                if (Application.Current != null && Application.Current.MainPage != null)
+                if (!init && Application.Current != null && Application.Current.MainPage != null)
                 {
                     await Application.Current.MainPage.DisplayAlert("Update Reuslt", "Current Version is up to date.", "Ok");
                 }

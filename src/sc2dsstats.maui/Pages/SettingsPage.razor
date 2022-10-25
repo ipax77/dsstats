@@ -1,7 +1,9 @@
 ﻿@page "/settings"
+@using pax.dsstats.dbng.Repositories;
 @using sc2dsstats.maui.Services
 @inject UserSettingsService UserSettingsService
 @inject IToastService toastService
+@inject IReplayRepository ReplayRepository
 
 <h1 class="display-5 fw-bold">Settings</h1>
 
@@ -22,6 +24,12 @@ else
 <EditForm EditContext="editContext" OnValidSubmit="OnValidSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary />
+
+    <div class="btn-group mt-3 mb-5">
+        <button type="submit" class="btn btn-primary btn-lg">Save</button>
+        <button type="button" class="btn btn-danger btn-lg" @onclick="Reset">Reset</button>
+    </div>
+
     <div class="container-fluid py-5 bg-primary">
         <div class="row">
             <div class="col-2">
@@ -121,6 +129,34 @@ else
         <small>@FileSystem.Current.AppDataDirectory</small>
     </div>
 
+    @if (SkipReplays.Any())
+    {
+        <div class="container-fluid py-5 bg-primary mt-3" style="max-height: 400px;">
+            <h3>Replays skipped from decoding</h3>
+            <div>
+                <table class="table table-sm table-dark">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var path in SkipReplays)
+                        {
+                            <tr>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-warning" @onclick="e => RemoveSkipReplay(path)">Remove</button>
+                                </td>
+                                <td>@path</td>
+                            </tr>
+                        }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    }
+
     <div class="btn-group mt-3 mb-5">
         <button type="submit" class="btn btn-primary btn-lg">Save</button>
         <button type="button" class="btn btn-danger btn-lg" @onclick="Reset">Reset</button>
@@ -132,6 +168,7 @@ else
     private EditContext editContext = null!;
     private List<ListEnt> PlayerNames = new();
     private List<ListEnt> ReplayPaths = new();
+    private List<string> SkipReplays = new();
 
     protected override void OnInitialized()
     {
@@ -140,7 +177,23 @@ else
 
         PlayerNames = UserSettingsService.UserSettings.PlayerNames.Select(s => new ListEnt() { Name = s }).ToList();
         ReplayPaths = UserSettingsService.UserSettings.ReplayPaths.Select(s => new ListEnt() { Name = s }).ToList();
+
+        _ = LoadSkipReplays();
         base.OnInitialized();
+    }
+
+    private async Task LoadSkipReplays()
+    {
+        SkipReplays = await ReplayRepository.GetSkipReplays();
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task RemoveSkipReplay(string replayPath)
+    {
+        await ReplayRepository.RemoveSkipReplay(replayPath);
+        SkipReplays.Remove(replayPath);
+        toastService.ShowSuccess("Replay sucessfully removed from SkipList");
+        await InvokeAsync(() => StateHasChanged());
     }
 
     private void EditContext_OnFieldChanged(object? sender, FieldChangedEventArgs e)

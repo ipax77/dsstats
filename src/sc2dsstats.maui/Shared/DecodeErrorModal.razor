@@ -1,5 +1,8 @@
-﻿@using sc2dsstats.maui.Services;
+﻿@using pax.dsstats.dbng.Repositories;
+@using sc2dsstats.maui.Services;
 @inject DecodeService DecodeService
+@inject IReplayRepository ReplayRepository
+@inject IToastService ToastService
 @inject IJSRuntime jsRuntime
 @implements IDisposable
 
@@ -12,14 +15,22 @@
             </div>
             <div class="modal-body">
                 <table class="table table-dark table-sm">
-                    <thead></thead>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
                     <tbody>
                         @foreach (var ent in DecodeService.errorReplays)
                         {
                             <tr>
                                 <td><span class="fw-bold">@ent.Key</span></td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-warning" @onclick="e => AddSkipReplay(ent.Key)">Skip next</button>
+                                </td>
                             </tr>
-                            <tr>
+                            <tr colspan="2">
                                 <td>@ent.Value</td>
                             </tr>
                         }
@@ -43,6 +54,12 @@
     private void DecodeService_ErrorRaised(object? sender, EventArgs e)
     {
         InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task AddSkipReplay(string replayPath)
+    {
+        await ReplayRepository.AddSkipReplay(replayPath);
+        ToastService.ShowSuccess("Replay sucessfully added to skip list");
     }
 
     public void Show()

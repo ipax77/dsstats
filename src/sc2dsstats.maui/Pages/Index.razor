@@ -20,6 +20,17 @@
     }
     <button type="button" class="btn btn-outline-success" @onclick="ScanForNewReplays">Scan</button>
     <button type="button" class="btn btn-outline-info" @onclick="Upload">Upload</button>
+    @if (DecodeService.WatchService != null)
+    {
+        @if (DecodeService.WatchService.IsWatching)
+        {
+            <button type="button" class="btn btn-outline-light" @onclick="e => DecodeService.WatchService.StopWatching()">Stop Watching</button>
+        }
+        else
+        {
+            <button type="button" class="btn btn-outline-light" @onclick="e => DecodeService.WatchService.WatchForNewReplays()">Start Watching</button>
+        }
+    }
 </div>
 
 <div>

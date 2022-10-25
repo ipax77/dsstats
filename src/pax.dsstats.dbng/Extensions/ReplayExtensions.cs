@@ -6,6 +6,16 @@ namespace pax.dsstats.dbng.Extensions;
 
 public static class ReplayExtensions
 {
+    public static void SetDefaultFilter(this Replay replay)
+    {
+        if (replay.Playercount == 6
+            && replay.Duration >= 300
+            && replay.Maxleaver < 90)
+        {
+            replay.DefaultFilter = true;
+        }
+    }
+
     public static string GenHash(this Replay replay)
     {
         if (!replay.Players.Any())

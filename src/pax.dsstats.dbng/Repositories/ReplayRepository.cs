@@ -258,16 +258,35 @@ public class ReplayRepository : IReplayRepository
 
     public async Task<ICollection<string>> GetReplayPaths()
     {
-        return await context.Replays
+        var skipReplayPaths = await context.SkipReplays
             .AsNoTracking()
-            .OrderByDescending(o => o.GameTime)
-            .Select(s => s.FileName)
+            .Select(s => s.Path)
             .ToListAsync();
+
+        if (skipReplayPaths.Any())
+        {
+            return (await context.Replays
+                .AsNoTracking()
+                .OrderByDescending(o => o.GameTime)
+                .Select(s => s.FileName)
+                .ToListAsync())
+                .Union(skipReplayPaths)
+                .ToList();
+        }
+        else
+        {
+            return await context.Replays
+                .AsNoTracking()
+                .OrderByDescending(o => o.GameTime)
+                .Select(s => s.FileName)
+                .ToListAsync();
+        }
     }
 
     public async Task<(HashSet<Unit>, HashSet<Upgrade>)> SaveReplay(ReplayDto replayDto, HashSet<Unit> units, HashSet<Upgrade> upgrades, ReplayEventDto? replayEventDto)
     {
         var dbReplay = mapper.Map<Replay>(replayDto);
+        dbReplay.SetDefaultFilter();
 
         if (replayDto.ReplayEvent != null)
         {
@@ -412,6 +431,38 @@ public class ReplayRepository : IReplayRepository
             });
         }
         return (playerUpgrades, upgrades);
+    }
+
+    public async Task<List<string>> GetSkipReplays()
+    {
+        return await context.SkipReplays
+            .AsNoTracking()
+            .OrderBy(o => o.Path)
+            .Select(s => s.Path)
+            .ToListAsync();
+    }
+
+    public async Task AddSkipReplay(string replayPath)
+    {
+        var skipReplay = await context.SkipReplays.FirstOrDefaultAsync(f => f.Path == replayPath);
+        if (skipReplay == null)
+        {
+            context.SkipReplays.Add(new()
+            {
+                Path = replayPath
+            });
+            await context.SaveChangesAsync();
+        }
+    }
+
+    public async Task RemoveSkipReplay(string replayPath)
+    {
+        var skipReplay = await context.SkipReplays.FirstOrDefaultAsync(f => f.Path == replayPath);
+        if (skipReplay != null)
+        {
+            context.SkipReplays.Remove(skipReplay);
+            await context.SaveChangesAsync();
+        }
     }
 
     public async Task DeleteReplayByFileName(string fileName)

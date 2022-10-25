@@ -1,7 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Blazored.Toast.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
+using pax.dsstats.dbng.Services;
 using pax.dsstats.parser;
 using pax.dsstats.shared;
 using s2protocol.NET;
@@ -28,8 +30,21 @@ public class DecodeService : IDisposable
             GameEvents = false,
             AttributeEvents = false
         };
-        var _assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
-        decoder = new ReplayDecoder(_assemblyPath);
+
+        if (UserSettingsService.UserSettings.AutoScanForNewReplays)
+        {
+            WatchService = new WatchService();
+            WatchService.WatchForNewReplays();
+            WatchService.NewFileDetected += WatchService_NewFileDetected;
+        }
+    }
+
+    private void WatchService_NewFileDetected(object? sender, ReplayDetectedEventArgs e)
+    {
+        using var scope = serviceScopeFactory.CreateScope();
+        var toastService = scope.ServiceProvider.GetRequiredService<IToastService>();
+        toastService.ShowWarning("New replay detected");
+        _ = DecodeParallel();
     }
 
     public int NewReplays { get; private set; }
@@ -38,7 +53,9 @@ public class DecodeService : IDisposable
     private readonly ILogger<DecodeService> logger;
     private readonly IServiceScopeFactory serviceScopeFactory;
     private readonly ReplayDecoderOptions decoderOptions;
-    private readonly ReplayDecoder decoder;
+    private ReplayDecoder? decoder;
+    public WatchService? WatchService { get; private set; }
+
     public ConcurrentDictionary<string, string> errorReplays { get; private set; } = new();
 
     private SemaphoreSlim semaphoreSlim = new(1, 1);
@@ -77,39 +94,6 @@ public class DecodeService : IDisposable
         handler?.Invoke(this, e);
     }
 
-    public async Task<ReplayDto?> Decode(string replayPath)
-    {
-        // var replayPath = @"C:\Users\pax77\Documents\StarCraft II\Accounts\107095918\2-S2-1-226401\Replays\Multiplayer\Direct Strike (4716).SC2Replay";
-
-        var _assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-
-        Stopwatch sw = new Stopwatch();
-        sw.Start();
-        var sc2Replay = await Parse.GetSc2Replay(replayPath, _assemblyPath);
-
-        var dsReplay = Parse.GetDsReplay(sc2Replay);
-
-        sw.Stop();
-        if (dsReplay == null)
-        {
-            logger.DecodeError($"dsReplay {replayPath} was NULL");
-            return null;
-        }
-
-        var replayDto = Parse.GetReplayDto(dsReplay);
-
-        if (replayDto == null)
-        {
-            return null;
-        }
-
-        await SaveReplay(replayDto);
-
-
-        logger.DecodeInformation($"Got dsReplay: {dsReplay.GameMode} {dsReplay.Duration} in {sw.ElapsedMilliseconds} ms");
-        return replayDto;
-    }
-
     public async Task DecodeParallel()
     {
         lock (lockobject)
@@ -127,6 +111,21 @@ public class DecodeService : IDisposable
         errorCounter = 0;
 
         var replays = await ScanForNewReplays(true);
+
+        if (!replays.Any())
+        {
+            OnDecodeStateChanged(new()
+            {
+                Start = startTime,
+                Total = total,
+                Decoded = decodeCounter,
+                Error = errorCounter,
+                Saved = dbCounter,
+                Done = true
+            });
+            return;
+        }
+
         total = replays.Count;
         startTime = DateTime.UtcNow;
 
@@ -135,6 +134,12 @@ public class DecodeService : IDisposable
         _ = Notify();
 
         Stopwatch sw = Stopwatch.StartNew();
+
+        if (decoder == null)
+        {
+            var _assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
+            decoder = new ReplayDecoder(_assemblyPath);
+        }
 
         try
         {
@@ -192,6 +197,16 @@ public class DecodeService : IDisposable
             IsRunning = false;
             decodeCts.Dispose();
             decodeCts = null;
+
+            using var scope = serviceScopeFactory.CreateScope();
+            var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+            statsService.ResetCache();
+
+            if (UserSettingsService.UserSettings.AllowUploads)
+            {
+                var uploadService = scope.ServiceProvider.GetRequiredService<UploadService>();
+                _ = uploadService.UploadReplays();
+            }
         }
     }
 
@@ -282,6 +297,34 @@ public class DecodeService : IDisposable
         }
     }
 
+    private void SetIsUploader(ReplayDto replayDto)
+    {
+        var playerToonIds = UserSettingsService.UserSettings.BattleNetIds?.SelectMany(s => s.Value);
+
+        if (playerToonIds != null && playerToonIds.Any())
+        {
+            for (int i = 0; i < replayDto.Players.Count; i++)
+            {
+                var player = replayDto.Players.ElementAt(i);
+                if (playerToonIds.Contains(player.Player.ToonId))
+                {
+                    player.IsUploader = true;
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < replayDto.Players.Count; i++)
+            {
+                var player = replayDto.Players.ElementAt(i);
+                if (UserSettingsService.UserSettings.PlayerNames.Contains(player.Name))
+                {
+                    player.IsUploader = true;
+                }
+            }
+        }
+    }
+
     private async Task SaveReplay(ReplayDto replayDto)
     {
         await semaphoreSlim.WaitAsync();
@@ -299,14 +342,8 @@ public class DecodeService : IDisposable
             {
                 Upgrades = (await context.Upgrades.AsNoTracking().ToListAsync()).ToHashSet();
             }
-
-            replayDto.Players.ToList().ForEach(f =>
-            {
-                if (UserSettingsService.UserSettings.PlayerNames.Contains(f.Name))
-                {
-                    f.IsUploader = true;
-                }
-            });
+            
+            SetIsUploader(replayDto);
 
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
             (Units, Upgrades) = await replayRepository.SaveReplay(replayDto, Units, Upgrades, null);
@@ -335,8 +372,6 @@ public class DecodeService : IDisposable
             }
             semaphoreSlim.Release();
         }
-
-
     }
 
     public void Dispose()
@@ -346,7 +381,12 @@ public class DecodeService : IDisposable
         notifyCts?.Dispose();
         decodeCts?.Dispose();
 
-        decoder.Dispose();
+        if (WatchService != null)
+        {
+            WatchService.NewFileDetected -= WatchService_NewFileDetected;
+            WatchService.Dispose();
+        }
+        decoder?.Dispose();
         GC.SuppressFinalize(this);
     }
 }

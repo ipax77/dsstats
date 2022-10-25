@@ -134,7 +134,7 @@ public class UploadService
         UploaderDto uploaderDto = new()
         {
             AppGuid = UserSettingsService.UserSettings.AppGuid,
-            AppVersion = UserSettingsService.AppVersion,
+            AppVersion = UpdateService.CurrentVersion.ToString(),
             Players = await GetPlayerUploadDtos(context),
             BatteBattleNetInfos = UserSettingsService.UserSettings.BattleNetIds?.Select(s => new BattleNetInfoDto()
             {
