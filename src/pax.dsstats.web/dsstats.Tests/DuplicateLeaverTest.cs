@@ -132,7 +132,7 @@ public class DuplicateLeaverTests : IDisposable
         {
             AppGuid = Guid.NewGuid(),
             AppVersion = "0.0.1",
-            BatteBattleNetInfos = new List<BattleNetInfoDto>()
+            BattleNetInfos = new List<BattleNetInfoDto>()
             {
                 new BattleNetInfoDto()
                 {
@@ -144,7 +144,7 @@ public class DuplicateLeaverTests : IDisposable
                 new PlayerUploadDto()
                 {
                     Name = "Test" + num,
-                    Toonid = 123456 + num
+                    ToonId = 123456 + num
                 },
             }
         };

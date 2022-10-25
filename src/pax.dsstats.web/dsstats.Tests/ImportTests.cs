@@ -86,7 +86,7 @@ public class ImportTests : IDisposable
         {
             AppGuid = appGuid,
             AppVersion = "0.0.1",
-            BatteBattleNetInfos = new List<BattleNetInfoDto>()
+            BattleNetInfos = new List<BattleNetInfoDto>()
             {
                 new BattleNetInfoDto()
                 {
@@ -98,12 +98,12 @@ public class ImportTests : IDisposable
                 new PlayerUploadDto()
                 {
                     Name = "PAX",
-                    Toonid = 12345
+                    ToonId = 12345
                 },
                 new PlayerUploadDto()
                 {
                     Name = "xPax",
-                    Toonid = 12346
+                    ToonId = 12346
                 }
             }
         };

@@ -48,7 +48,7 @@
 
     protected override void OnInitialized()
     {
-        DecodeService.ScanStateChanged += DecodeService_ScanStateChanged;
+        DecodeService.DecodeStateChanged += DecodeService_DecodeStateChanged;
         base.OnInitialized();
     }
 
@@ -61,9 +61,12 @@
         base.OnAfterRender(firstRender);
     }
 
-    public void DecodeService_ScanStateChanged(object? sender, ScanEventArgs e)
+    public void DecodeService_DecodeStateChanged(object? sender, DecodeEventArgs e)
     {
-        InvokeAsync(() => StateHasChanged());        
+        if (e.Done == true)
+        {
+            _ = LoadLatestReplay();
+        }
     }
 
     public async Task ScanForNewReplays()
@@ -101,6 +104,6 @@
 
     public void Dispose()
     {
-        DecodeService.ScanStateChanged -= DecodeService_ScanStateChanged;
+        DecodeService.DecodeStateChanged -= DecodeService_DecodeStateChanged;
     }
 }

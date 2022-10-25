@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
 using sc2dsstats.shared;
@@ -13,6 +14,7 @@ public partial class UploadService
     private Channel<Replay> ReplayChannel = Channel.CreateUnbounded<Replay>();
     private object lockobject = new();
     private bool insertJobRunning;
+    private readonly SemaphoreSlim saveReplaySs = new(1, 1);
 
     public async Task Produce(string gzipbase64string, Guid appGuid)
     {
@@ -31,20 +33,7 @@ public partial class UploadService
                 return;
             }
 
-            using var scope = serviceProvider.CreateScope();
-            using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-            var uploader = await context
-                .Uploaders.Include(i => i.Players)
-                .FirstOrDefaultAsync(f => f.AppGuid == appGuid);
-
-            if (uploader == null)
-            {
-                return;
-            }
-
-            uploader.LatestReplay = replayDtos.Last().GameTime;
-            await context.SaveChangesAsync();
+            await SetUploaderLatestReplay(appGuid, replayDtos.Last().GameTime);
 
             replays = replayDtos.Select(s => mapper.Map<Replay>(s)).ToList();
             await MapUpgrades(replays);
@@ -67,7 +56,37 @@ public partial class UploadService
         }
     }
 
-    public async Task InsertReplays()
+    private async Task SetUploaderLatestReplay(Guid appGuid, DateTime latestReplayDateTime)
+    {
+        await saveReplaySs.WaitAsync();
+        try
+        {
+            using var scope = serviceProvider.CreateScope();
+            using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+            var uploader = await context
+                .Uploaders.Include(i => i.Players)
+                .FirstOrDefaultAsync(f => f.AppGuid == appGuid);
+
+            if (uploader == null)
+            {
+                return;
+            }
+
+            uploader.LatestReplay = latestReplayDateTime;
+            await context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed setting latestReplay: {ex.Message}");
+        }
+        finally
+        {
+            saveReplaySs.Release();
+        }
+    }
+
+    private async Task InsertReplays()
     {
         lock (lockobject)
         {
@@ -105,21 +124,33 @@ public partial class UploadService
 
     private async Task SaveReplay(Replay replay)
     {
-        using var scope = serviceProvider.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-        var dupReplayExists = context.Replays.Any(f => f.ReplayHash == replay.ReplayHash);
-
-        if (!dupReplayExists)
+        await saveReplaySs.WaitAsync();
+        try
         {
-            context.Replays.Add(replay);
-            await context.SaveChangesAsync();
+            using var scope = serviceProvider.CreateScope();
+            using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+            var dupReplayExists = context.Replays.Any(f => f.ReplayHash == replay.ReplayHash);
+
+            if (!dupReplayExists)
+            {
+                context.Replays.Add(replay);
+                await context.SaveChangesAsync();
+            }
+
+            else if (await HandleDuplicate(context, replay))
+            {
+                context.Replays.Add(replay);
+                await context.SaveChangesAsync();
+            }
         }
-
-        else if (await HandleDuplicate(context, replay))
+        catch (Exception ex)
         {
-            context.Replays.Add(replay);
-            await context.SaveChangesAsync();
+            logger.LogError($"failed saving replay: {ex.Message}");
+        }
+        finally
+        {
+            saveReplaySs.Release();
         }
     }
 

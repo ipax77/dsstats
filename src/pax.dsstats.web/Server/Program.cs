@@ -1,3 +1,4 @@
+using AutoMapper;
 using MathNet.Numerics;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
@@ -64,8 +65,11 @@ builder.Services.AddTransient<BuildService>();
 var app = builder.Build();
 
 using var scope = app.Services.CreateScope();
-using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
+var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+mapper.ConfigurationProvider.AssertConfigurationIsValid();
+
+using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 context.Database.Migrate();
 
 //var mmrServie = scope.ServiceProvider.GetRequiredService<MmrService>();

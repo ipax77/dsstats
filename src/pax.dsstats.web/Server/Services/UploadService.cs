@@ -115,7 +115,7 @@ public partial class UploadService
         for (int i = 0; i < dbUploader.Players.Count; i++)
         {
             var dbPlayer = dbUploader.Players.ElementAt(i);
-            var uploaderPlayer = uploader.Players.FirstOrDefault(f => f.Toonid == dbPlayer.ToonId);
+            var uploaderPlayer = uploader.Players.FirstOrDefault(f => f.ToonId == dbPlayer.ToonId);
             if (uploaderPlayer == null)
             {
                 dbUploader.Players.Remove(dbPlayer);
@@ -129,10 +129,10 @@ public partial class UploadService
 
         for (int i = 0; i < uploader.Players.Count; i++)
         {
-            var dbuploaderPlayer = dbUploader.Players.FirstOrDefault(f => f.ToonId == uploader.Players.ElementAt(i).Toonid);
+            var dbuploaderPlayer = dbUploader.Players.FirstOrDefault(f => f.ToonId == uploader.Players.ElementAt(i).ToonId);
             if (dbuploaderPlayer == null)
             {
-                var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == uploader.Players.ElementAt(i).Toonid);
+                var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == uploader.Players.ElementAt(i).ToonId);
                 if (dbPlayer == null)
                 {
                     dbUploader.Players.Add(mapper.Map<Player>(uploader.Players.ElementAt(i)));
@@ -149,7 +149,7 @@ public partial class UploadService
             for (int i = 0; i < dbUploader.BattleNetInfos.Count; i++)
             {
                 var dbInfo = dbUploader.BattleNetInfos.ElementAt(i);
-                var info = uploader.BatteBattleNetInfos?.FirstOrDefault(f => f.BattleNetId == dbInfo.BattleNetId);
+                var info = uploader.BattleNetInfos?.FirstOrDefault(f => f.BattleNetId == dbInfo.BattleNetId);
                 if (info == null)
                 {
                     dbUploader.BattleNetInfos.Remove(dbInfo);
@@ -157,11 +157,11 @@ public partial class UploadService
             }
         }
 
-        if (uploader.BatteBattleNetInfos != null)
+        if (uploader.BattleNetInfos != null)
         {
-            for (int i = 0; i < uploader.BatteBattleNetInfos.Count; i++)
+            for (int i = 0; i < uploader.BattleNetInfos.Count; i++)
             {
-                var info = uploader.BatteBattleNetInfos.ElementAt(i);
+                var info = uploader.BattleNetInfos.ElementAt(i);
                 var dbInfo = dbUploader.BattleNetInfos?.FirstOrDefault(f => f.BattleNetId == info.BattleNetId);
                 if (dbInfo == null)
                 {

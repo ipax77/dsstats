@@ -16,6 +16,7 @@ public class UploadTests : IDisposable
     private readonly UploadService uploadService;
     private readonly DbConnection _connection;
     private readonly DbContextOptions<ReplayContext> _contextOptions;
+    private readonly IMapper mapper;
 
     public UploadTests(IMapper mapper)
     {
@@ -50,6 +51,7 @@ public class UploadTests : IDisposable
                 ServiceLifetime.Transient);
         var serviceProvider = serviceCollection.BuildServiceProvider();
         uploadService = new UploadService(serviceProvider, mapper, NullLogger<UploadService>.Instance);
+        this.mapper = mapper;
     }
 
     ReplayContext CreateContext() => new ReplayContext(_contextOptions);
@@ -63,7 +65,7 @@ public class UploadTests : IDisposable
         {
             AppGuid = Guid.NewGuid(),
             AppVersion = "0.0.1",
-            BatteBattleNetInfos = new List<BattleNetInfoDto>()
+            BattleNetInfos = new List<BattleNetInfoDto>()
             {
                 new BattleNetInfoDto()
                 {
@@ -75,12 +77,12 @@ public class UploadTests : IDisposable
                 new PlayerUploadDto()
                 {
                     Name = "PAX",
-                    Toonid = 12345
+                    ToonId = 12345
                 },
                 new PlayerUploadDto()
                 {
                     Name = "xPax",
-                    Toonid = 12346
+                    ToonId = 12346
                 }
             }
         };
@@ -101,7 +103,7 @@ public class UploadTests : IDisposable
         {
             AppGuid = appGuid,
             AppVersion = "0.0.1",
-            BatteBattleNetInfos = new List<BattleNetInfoDto>()
+            BattleNetInfos = new List<BattleNetInfoDto>()
             {
                 new BattleNetInfoDto()
                 {
@@ -113,12 +115,12 @@ public class UploadTests : IDisposable
                 new PlayerUploadDto()
                 {
                     Name = "PAX",
-                    Toonid = 1234
+                    ToonId = 1234
                 },
                 new PlayerUploadDto()
                 {
                     Name = "xPax",
-                    Toonid = 1235
+                    ToonId = 1235
                 }
             }
         };
@@ -137,7 +139,7 @@ public class UploadTests : IDisposable
         {
             AppGuid = appGuid,
             AppVersion = "0.0.1",
-            BatteBattleNetInfos = new List<BattleNetInfoDto>()
+            BattleNetInfos = new List<BattleNetInfoDto>()
             {
                 new BattleNetInfoDto()
                 {
@@ -149,7 +151,7 @@ public class UploadTests : IDisposable
                 new PlayerUploadDto()
                 {
                     Name = "PAX",
-                    Toonid = 1234
+                    ToonId = 1234
                 }
             }
         };
@@ -175,7 +177,7 @@ public class UploadTests : IDisposable
         {
             AppGuid = appGuid,
             AppVersion = "0.0.1",
-            BatteBattleNetInfos = new List<BattleNetInfoDto>()
+            BattleNetInfos = new List<BattleNetInfoDto>()
             {
                 new BattleNetInfoDto()
                 {
@@ -187,12 +189,12 @@ public class UploadTests : IDisposable
                 new PlayerUploadDto()
                 {
                     Name = "PAX",
-                    Toonid = 12345
+                    ToonId = 12345
                 },
                 new PlayerUploadDto()
                 {
                     Name = "xPax",
-                    Toonid = 12346
+                    ToonId = 12346
                 }
             }
         };
@@ -207,7 +209,7 @@ public class UploadTests : IDisposable
         {
             AppGuid = appGuid,
             AppVersion = "0.0.1",
-            BatteBattleNetInfos = new List<BattleNetInfoDto>()
+            BattleNetInfos = new List<BattleNetInfoDto>()
             {
                 new BattleNetInfoDto()
                 {
@@ -219,17 +221,17 @@ public class UploadTests : IDisposable
                 new PlayerUploadDto()
                 {
                     Name = "PAX",
-                    Toonid = 12345
+                    ToonId = 12345
                 },
                 new PlayerUploadDto()
                 {
                     Name = "xPax",
-                    Toonid = 12346
+                    ToonId = 12346
                 },
                 new PlayerUploadDto()
                 {
                     Name = "xPaxX",
-                    Toonid = 12347
+                    ToonId = 12347
                 }
             }
         };
@@ -253,7 +255,7 @@ public class UploadTests : IDisposable
         {
             AppGuid = Guid.NewGuid(),
             AppVersion = "0.0.1",
-            BatteBattleNetInfos = new List<BattleNetInfoDto>()
+            BattleNetInfos = new List<BattleNetInfoDto>()
             {
                 new BattleNetInfoDto()
                 {
@@ -265,12 +267,12 @@ public class UploadTests : IDisposable
                 new PlayerUploadDto()
                 {
                     Name = "PAX",
-                    Toonid = 72345
+                    ToonId = 72345
                 },
                 new PlayerUploadDto()
                 {
                     Name = "xPax",
-                    Toonid = 72346
+                    ToonId = 72346
                 }
             }
         };
@@ -290,5 +292,133 @@ public class UploadTests : IDisposable
                         .FirstOrDefaultAsync(f => f.AppGuid == uploaderDto2.AppGuid);
 
         Assert.NotNull(uploader);
+    }
+
+    [Fact]
+    public async Task ChangeUploaderPlayers()
+    {
+        Guid appGuid = Guid.NewGuid();
+
+        var uploaderDto = new UploaderDto()
+        {
+            AppGuid = appGuid,
+            AppVersion = "0.0.1",
+            BattleNetInfos = new List<BattleNetInfoDto>()
+            {
+                new BattleNetInfoDto()
+                {
+                    BattleNetId = 77123
+                }
+            }
+        };
+
+        var latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto);
+
+        var context = CreateContext();
+        bool dbHasUploader = await context.Uploaders.AnyAsync(a => a.AppGuid == uploaderDto.AppGuid);
+        Assert.True(dbHasUploader);
+
+        var changeUploaderDto = new UploaderDto()
+        {
+            AppGuid = appGuid,
+            AppVersion = "0.0.1",
+            BattleNetInfos = new List<BattleNetInfoDto>()
+            {
+                new BattleNetInfoDto()
+                {
+                    BattleNetId = 12345
+                }
+            },
+            Players = new List<PlayerUploadDto>()
+            {
+                new PlayerUploadDto()
+                {
+                    Name = "PAX",
+                    ToonId = 12345
+                },
+                new PlayerUploadDto()
+                {
+                    Name = "xPax",
+                    ToonId = 12346
+                }
+            }
+        };
+        latestReplay = await uploadService.CreateOrUpdateUploader(changeUploaderDto);
+        bool uploaderHasPlayers = await context.Players
+            .Include(i => i.Uploader)
+            .Where(x => x.Uploader != null && x.Uploader.AppGuid == appGuid)
+            .AnyAsync();
+
+        Assert.True(uploaderHasPlayers);
+    }
+
+    [Fact]
+    public async Task ChangeUploaderWithExistingPlayers()
+    {
+        Guid appGuid = Guid.NewGuid();
+
+        var uploaderDto = new UploaderDto()
+        {
+            AppGuid = appGuid,
+            AppVersion = "0.0.1",
+            BattleNetInfos = new List<BattleNetInfoDto>()
+            {
+                new BattleNetInfoDto()
+                {
+                    BattleNetId = 77123
+                }
+            }
+        };
+
+        var latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto);
+
+        var context = CreateContext();
+        bool dbHasUploader = await context.Uploaders.AnyAsync(a => a.AppGuid == uploaderDto.AppGuid);
+        Assert.True(dbHasUploader);
+
+        context.Players.Add(new Player()
+        {
+            Name = "PAX",
+            ToonId = 771234
+        });
+        context.Players.Add(new Player()
+        {
+            Name = "xPax",
+            ToonId = 771235
+        });
+        await context.SaveChangesAsync();
+
+        var changeUploaderDto = new UploaderDto()
+        {
+            AppGuid = appGuid,
+            AppVersion = "0.0.1",
+            BattleNetInfos = new List<BattleNetInfoDto>()
+            {
+                new BattleNetInfoDto()
+                {
+                    BattleNetId = 12345
+                }
+            },
+            Players = new List<PlayerUploadDto>()
+            {
+                new PlayerUploadDto()
+                {
+                    Name = "PAX",
+                    ToonId = 771234
+                },
+                new PlayerUploadDto()
+                {
+                    Name = "xPax",
+                    ToonId = 771235
+                }
+            }
+        };
+        latestReplay = await uploadService.CreateOrUpdateUploader(changeUploaderDto);
+        int uploaderPlayersCount = await context.Players
+            .Include(i => i.Uploader)
+            .Where(x => x.Uploader != null && x.Uploader.AppGuid == appGuid)
+            .CountAsync();
+
+        Assert.Equal(changeUploaderDto.Players.Count, uploaderPlayersCount);
     }
 }

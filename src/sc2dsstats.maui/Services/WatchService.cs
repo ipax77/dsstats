@@ -1,12 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace sc2dsstats.maui.Services;
+﻿namespace sc2dsstats.maui.Services;
 
 public class WatchService : IDisposable
 {
@@ -40,6 +32,7 @@ public class WatchService : IDisposable
 
     public void StopWatching()
     {
+        if (!IsWatching) return;
         IsWatching = false;
         manualResetEvent.Set();
     }
@@ -53,10 +46,11 @@ public class WatchService : IDisposable
         watcher.IncludeSubdirectories = true;
         watcher.EnableRaisingEvents = true;
         manualResetEvent.WaitOne();
+        watcher.Changed -= Watcher_Changed;
         watcher.Dispose();
     }
 
-    private async void Watcher_Changed(object sender, FileSystemEventArgs e)
+    private async void Watcher_Changed(object? sender, FileSystemEventArgs e)
     {
         lock (lockobject)
         {
@@ -73,7 +67,7 @@ public class WatchService : IDisposable
     private async Task<bool> FileIsReady(string path)
     {
         int maxAttempts = 15;
-        TimeSpan waitTime = TimeSpan.FromSeconds(250);
+        TimeSpan waitTime = TimeSpan.FromMilliseconds(250);
 
         await Task.Delay(waitTime);
         while (!IsFileReady(path))
@@ -92,11 +86,12 @@ public class WatchService : IDisposable
     {
         try
         {
-            using (FileStream inputStream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.None))
-                return inputStream.Length > 0;
+            using var inputStream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.None);
+            return inputStream.Length > 0;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.WriteLine(ex.Message);
             return false;
         }
     }

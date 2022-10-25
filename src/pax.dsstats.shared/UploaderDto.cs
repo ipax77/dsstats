@@ -5,7 +5,7 @@ public record UploaderDto
     public Guid AppGuid { get; init; }
     public string AppVersion { get; init; } = null!;
     public ICollection<PlayerUploadDto> Players { get; init; } = null!;
-    public ICollection<BattleNetInfoDto>? BatteBattleNetInfos { get; init; } = null!;
+    public ICollection<BattleNetInfoDto>? BattleNetInfos { get; init; } = null!;
 }
 
 public record BattleNetInfoDto
@@ -16,5 +16,5 @@ public record BattleNetInfoDto
 public record PlayerUploadDto
 {
     public string Name { get; init; } = null!;
-    public int Toonid { get; init; }
+    public int ToonId { get; init; }
 }

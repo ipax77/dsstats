@@ -46,8 +46,8 @@ public class UploadService
     private HttpClient GetHttpClient()
     {
         var httpClient = new HttpClient();
-        //httpClient.BaseAddress = new Uri("https://localhost:7174");
-        httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
+        httpClient.BaseAddress = new Uri("https://localhost:7174");
+        //httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("DSupload77");
         return httpClient;
@@ -136,7 +136,7 @@ public class UploadService
             AppGuid = UserSettingsService.UserSettings.AppGuid,
             AppVersion = UpdateService.CurrentVersion.ToString(),
             Players = await GetPlayerUploadDtos(context),
-            BatteBattleNetInfos = UserSettingsService.UserSettings.BattleNetIds?.Select(s => new BattleNetInfoDto()
+            BattleNetInfos = UserSettingsService.UserSettings.BattleNetIds?.Select(s => new BattleNetInfoDto()
             {
                 BattleNetId = s.Key
             }).ToList()
@@ -175,7 +175,7 @@ public class UploadService
             .Select(s => new PlayerUploadDto
             {
                 Name = s.Name,
-                Toonid = s.Player.ToonId
+                ToonId = s.Player.ToonId
             }).Distinct()
             .ToListAsync();
     }
