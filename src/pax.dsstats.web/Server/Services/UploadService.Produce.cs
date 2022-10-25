@@ -15,6 +15,7 @@ public partial class UploadService
     private object lockobject = new();
     private bool insertJobRunning;
     private readonly SemaphoreSlim saveReplaySs = new(1, 1);
+    public bool WeHaveNewReplays { get; set; }
 
     public async Task Produce(string gzipbase64string, Guid appGuid)
     {
@@ -32,6 +33,8 @@ public partial class UploadService
             {
                 return;
             }
+
+            WeHaveNewReplays = true;
 
             await SetUploaderLatestReplay(appGuid, replayDtos.Last().GameTime);
 

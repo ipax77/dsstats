@@ -60,7 +60,8 @@ builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
 builder.Services.AddTransient<IStatsRepository, StatsRepository>();
 builder.Services.AddTransient<BuildService>();
-// builder.Services.AddTransient<IDataService, DataService>();
+
+builder.Services.AddHostedService<CacheBackgroundService>();
 
 var app = builder.Build();
 
