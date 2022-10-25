@@ -1,0 +1,285 @@
+﻿@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.Extensions.Logging
+@using pax.dsstats.shared
+@using sc2dsstats.razorlib.Services
+@inject IDataService dataService
+@inject ILogger<ReplaysComponent> logger
+@implements IDisposable
+
+<style>
+    .tableFixHead {
+        overflow-y: auto;
+        height: 750px;
+    }
+
+        .tableFixHead thead th {
+            position: sticky;
+            top: 0;
+        }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+
+    th {
+        background: purple;
+    }
+
+    .tablebackground {
+        position: absolute;
+        z-index: -1;
+        opacity: 0.15;
+    }
+</style>
+
+<div class="@(replayDto == null ? "" : "visually-hidden")">
+    <CascadingValue Value="replaysRequest">
+        <ReplaysRequestComponent OnFieldChanged="Reload"></ReplaysRequestComponent>
+    </CascadingValue>
+    <div class="d-flex" style="max-width: 850px;">
+        <p class="ms-auto">#@ReplaysCount</p>
+    </div>
+    <div class="table-responsive tableFixHead">
+        <table id="replaylist" class="table table-dark table-hover w-auto">
+            <colgroup>
+                <col class="col">
+                <col class="col">
+                <col class="col">
+                <col class="col">
+                <col class="col">
+                <col class="col">
+            </colgroup>
+            <thead class="user-select-none">
+                <CascadingValue Value="replaysRequest.Orders">
+                    <tr>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GameTime"))">
+                            <SortArrow Property="GameTime">
+                                GameTime
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Duration"))">
+                            <SortArrow Property="Duration">
+                                Duration
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "CommandersTeam1"))">
+                            <SortArrow Property="CommandersTeam1">
+                                Team1
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "CommandersTeam2"))">
+                            <SortArrow Property="CommandersTeam2">
+                                Team2
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "WinnerTeam"))">
+                            <SortArrow Property="WinnerTeam">
+                                Winner
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GameMode"))">
+                            <SortArrow Property="GameMode">
+                                GameMode
+                            </SortArrow>
+                        </th>
+                    </tr>
+                </CascadingValue>
+            </thead>
+            <tbody>
+                @if (ReplaysCount > 0)
+                {
+                    <Virtualize @ref="virtualizeComponent" Context="replay" ItemsProvider="LoadReplays" ItemSize="47">
+                        <ItemContent>
+                            <tr height="47px" class="pointer @(lastVisitHash == replay.ReplayHash ? "table-primary" : "")" @onclick="e => ShowReplay(replay.ReplayHash)">
+                                <td>@replay.GameTime</td>
+                                <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+                                <td>
+                                    @if (!ShowImages)
+                                    {
+                                        @String.Join("|", replay.Cmdrs1)
+                                    }
+                                    else
+                                    {
+                                        @foreach (var cmdr in replay.Cmdrs1)
+                                        {
+                                            <img class="p-1" src="@HelperService.GetImageSrc(cmdr)"
+                                     alt="@cmdr"
+                                     title="@cmdr"
+                                     width="30"
+                                     height="30" />
+                                        }
+
+                                    }
+                                </td>
+                                <td>
+                                    @if (!ShowImages)
+                                    {
+                                        @String.Join("|", replay.Cmdrs2)
+                                    }
+                                    else
+                                    {
+                                        @foreach (var cmdr in replay.Cmdrs2)
+                                        {
+                                            <img class="p-1" src="@HelperService.GetImageSrc(cmdr)"
+                                     alt="@cmdr"
+                                     title="@cmdr"
+                                     width="30"
+                                     height="30" />
+                                        }
+
+                                    }
+                                </td>
+                                <td>@replay.WinnerTeam</td>
+                                <td><span style="display:block; width: 200px;">@replay.GameMode</span></td>
+                            </tr>
+                        </ItemContent>
+                        <Placeholder>
+                            <tr height="47px"><td>Loading ...</td></tr>
+                        </Placeholder>
+                    </Virtualize>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (replayDto != null)
+{
+    <ReplayComponent @ref="replayComponent" replayDto="replayDto" OnCloseRequested="OnReplayClose"></ReplayComponent>
+}
+
+@code {
+
+    private int ReplaysCount = 0;
+
+    [Parameter]
+    [EditorRequired]
+    public ReplaysRequest replaysRequest { get; set; } = default!;
+
+    [Parameter]
+    public bool ShowImages { get; set; } = true;
+
+    [Parameter]
+    public EventCallback<ReplaysRequest> OnRequestChanged { get; set; }
+
+    private ReplayDto? replayDto = null;
+
+    private Virtualize<ReplayListDto>? virtualizeComponent;
+    SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
+    CancellationTokenSource cts = new();
+    ReplayComponent? replayComponent;
+
+    private string? lastVisitHash;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SetCount(replaysRequest);
+
+        if (replaysRequest.ReplayHash != null)
+        {
+            await ShowReplay(replaysRequest.ReplayHash);
+        }
+    }
+
+    private async Task Reload()
+    {
+        await semaphoreSlim.WaitAsync();
+        try
+        {
+            await OnRequestChanged.InvokeAsync(replaysRequest);
+            await SetCount(replaysRequest);
+            if (virtualizeComponent != null)
+            {
+                await InvokeAsync(async () =>
+               {
+                   await virtualizeComponent.RefreshDataAsync();
+                   StateHasChanged();
+               });
+            }
+        }
+        finally
+        {
+            semaphoreSlim.Release();
+        }
+    }
+
+    private async Task SetCount(ReplaysRequest request)
+    {
+        ReplaysCount = await dataService.GetReplaysCount(request, cts.Token);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async ValueTask<ItemsProviderResult<ReplayListDto>> LoadReplays(ItemsProviderRequest prRequest)
+    {
+        replaysRequest.Skip = prRequest.StartIndex;
+        replaysRequest.Take = Math.Min(prRequest.Count, ReplaysCount - prRequest.StartIndex);
+
+        var replays = await dataService.GetReplays(replaysRequest, prRequest.CancellationToken);
+
+        return new ItemsProviderResult<ReplayListDto>(replays ?? new List<ReplayListDto>(), ReplaysCount);
+    }
+
+    private async Task SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = replaysRequest.Orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                replaysRequest.Orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            replaysRequest.Orders.Clear();
+            replaysRequest.Orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+        await Reload();
+    }
+
+    public async Task ShowReplay(string replayHash)
+    {
+        replaysRequest.ReplayHash = replayHash;
+        await OnRequestChanged.InvokeAsync(replaysRequest);
+
+        replayDto = await dataService.GetReplay(replayHash);
+        lastVisitHash = replayDto?.ReplayHash;
+        if (replayDto != null)
+        {
+            replayComponent?.Init(replayDto);
+        }
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async void OnReplayClose()
+    {
+        replaysRequest.ReplayHash = null;
+        await OnRequestChanged.InvokeAsync(replaysRequest);
+
+        replayDto = null;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Dispose()
+    {
+        cts.Dispose();
+        semaphoreSlim.Dispose();
+    }
+}

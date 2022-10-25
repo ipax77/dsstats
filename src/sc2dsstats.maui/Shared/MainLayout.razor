@@ -1,0 +1,19 @@
+﻿@using Blazored.Toast.Configuration
+@inherits LayoutComponentBase
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <TopRow></TopRow>
+
+        <article class="content px-4">
+            @Body
+        </article>
+
+    </main>
+    <BlazoredToasts Position="ToastPosition.BottomRight"
+                    Timeout="5" />
+</div>

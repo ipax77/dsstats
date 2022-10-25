@@ -1,0 +1,116 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using pax.dsstats.shared
+@inject IDataService dataService
+
+<div>
+    <EditForm EditContext="editContext">
+        <div class="row">
+            @*            <div class="col-auto">
+            <label class="form-label">
+            Tournament:
+            <InputSelect class="form-select" @bind-Value="replaysRequest.Tournament">
+            <option value="">All</option>
+            @foreach (var tournament in tournaments)
+            {
+            <option value="@tournament">@tournament</option>
+            }
+            </InputSelect>
+            </label>
+            </div>*@
+            <div class="col-auto">
+                <label class="form-label">
+                    Search:
+                    <InputText class="form-control" placeholder="Kerrigan Zagara" @bind-Value="replaysRequest.SearchString"></InputText>
+                </label>
+            </div>
+            <div class="col-auto">
+                <label class="form-label">
+                    Players:
+                    <InputText class="form-control" placeholder="PAX Feralan" @bind-Value="replaysRequest.SearchPlayers"></InputText>
+                </label>
+            </div>
+            <div class="col-auto">
+                <label class="form-label">
+                    Start:
+                    <InputDate class="form-control" @bind-Value="replaysRequest.StartTime"></InputDate>
+                </label>
+            </div>
+            <div class="col-auto">
+                <label class="form-label">
+                    End:
+                    <InputDate class="form-control" @bind-Value="replaysRequest.EndTime"></InputDate>
+                </label>
+            </div>
+            <div class="col-auto">
+                <select class="form-select" multiple aria-label="multiple" @onchange="GameModeChange">
+                    <option selected>All GameModes</option>
+                    @foreach (GameMode gameMode in Enum.GetValues(typeof(GameMode)))
+                    {
+                        @if (gameMode != GameMode.None)
+                        {
+                            <option value="@gameMode">@gameMode</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-auto mt-3">
+                <button type="button" class="btn btn-outline-primary" @onclick="Reset">Reset</button>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [CascadingParameter]
+    [EditorRequired]
+    public ReplaysRequest replaysRequest { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnFieldChanged { get; set; }
+
+    private List<string> tournaments = new();
+    private EditContext editContext = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        editContext = new EditContext(replaysRequest);
+        editContext.OnFieldChanged += FieldChanged;
+
+        tournaments = await dataService.GetTournaments();
+
+        await base.OnInitializedAsync();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        OnFieldChanged.InvokeAsync();
+    }
+
+    private void GameModeChange(ChangeEventArgs e)
+    {
+        if (e.Value is string[] values)
+        {
+            List<GameMode> gameModes = new();
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (Enum.TryParse(values[i], out GameMode gameMode))
+                {
+                    gameModes.Add(gameMode);
+                }
+            }
+            replaysRequest.GameModes = gameModes;
+            OnFieldChanged.InvokeAsync();
+        }
+    }
+
+    private void Reset()
+    {
+        var defaultRequest = new ReplaysRequest();
+        replaysRequest.Tournament = defaultRequest.Tournament;
+        replaysRequest.SearchString = defaultRequest.SearchString;
+        replaysRequest.StartTime = defaultRequest.StartTime;
+        replaysRequest.EndTime = defaultRequest.EndTime;
+        StateHasChanged();
+        OnFieldChanged.InvokeAsync();
+    }
+}

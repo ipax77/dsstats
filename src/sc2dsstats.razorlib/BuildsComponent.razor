@@ -1,0 +1,372 @@
+﻿@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Options
+@inject IDataService dataService
+
+<style>
+    .m-fadeOut {
+      visibility: hidden;
+      opacity: 0;
+      transition: visibility 0s linear 300ms, opacity 300ms;
+    }
+    .m-fadeIn {
+      visibility: visible;
+      opacity: 1;
+      transition: visibility 0s linear 0s, opacity 300ms;
+    }
+    .slider {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 15px;
+        border-radius: 5px;
+        background: #3641bd;
+        outline: none;
+        opacity: 0.7;
+        -webkit-transition: .2s;
+        transition: opacity .2s;
+    }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+
+    .btn-group-xs > .btn, .btn-xs {
+        padding: .25rem .4rem;
+        font-size: .875rem;
+        line-height: .5;
+        border-radius: .2rem;
+    }
+
+    .ismobile {
+    display: none;
+}
+
+    .isdesktop {
+        display: block;
+    }
+
+    @@media only screen and (max-width: 1000px) {
+        .ismobile {
+            display: block;
+        }
+        .isdesktop {
+            display: none;
+        }
+    }
+</style>
+
+@if (build == null && isLoading)
+{
+    <p>Loading ...</p>
+}
+
+
+<div class="row">
+    <div class="ismobile">
+        <SelectComponent Label="Commander" OnSelected="SelectCommander" Options="Data.GetCommanders(Data.CmdrGet.NoNone).Select(s => s.ToString()).ToList()" IsSelected="@BuildRequest.Interest.ToString()"></SelectComponent>
+        <SelectComponent Label="Opponent" OnSelected="SelectOpponent" Options="Data.GetCommanders(Data.CmdrGet.All).Select(s => s.ToString()).ToList()" IsSelected="@BuildRequest.Versus.ToString()"></SelectComponent>
+    </div>
+    <SelectComponent Label="Timespan" OnSelected="SelectTimespan" Options="timespans" IsSelected="@BuildRequest.Timespan"></SelectComponent>
+    @*<SelectComponent Label="Player" OnSelected="SelectPlayer" Options="Players" IsSelected="@BuildRequest.PlayerNames.FirstOrDefault()"></SelectComponent>*@
+    <div class="form-group" style="max-width: 250px;">
+        <select class="form-select" multiple aria-label="multiple" @onchange="PlayersSelected">
+            <option selected>All Players</option>
+            @foreach (var player in Players)
+            {
+                <option value="@player">@player</option>
+            }
+        </select>
+    </div>
+</div>
+
+
+@if (build != null)
+{
+    <div class="row justify-content-start mt-2">
+        <div class="col-auto isdesktop">
+            <CmdrSelect Label="Commander" IsSelected="@BuildRequest.Interest" OnCmdrSelected="SelectCommander"></CmdrSelect>
+        </div>
+        <div class="col-auto isdesktop">
+            <CmdrSelect Label="Vs" IsSelected="@BuildRequest.Versus" OnCmdrSelected="SelectOpponent"></CmdrSelect>
+        </div>
+        <div class="col-auto">
+            <h3><span class="text-warning">@(
+                        !BuildRequest.PlayerNames.Any() ? "Player" : BuildRequest.PlayerNames.First()
+                )'s</span> average unit count for <span class="text-danger">@build.Interest @(
+                BuildRequest.Versus == Commander.None ? "" : $" vs {build.Versus}"
+                )</span></h3>
+            <div class="row mb-2">
+                @if (isLoading)
+                {
+                    <h4 class="col-auto"><span class="spinner-border spinner-border-sm"></span><span class="badge bg-danger">Replays: @build.Count</span></h4>
+                } else
+                {
+                    <h4 class="col-auto"><span style="width: 14px; display: inline-block;"></span><span class="badge bg-danger">Replays: @build.Count</span></h4>
+                }
+                @if (build.Count > 0)
+                {
+                    <h4 class="col-auto"><span class="badge bg-danger">WR: @(
+                    ((double)build.Wins * 100 / (double)build.Count).ToString("N2")
+                    )%</span></h4>
+                    <h4 class="col-auto"><span class="badge bg-danger">Dur: @TimeSpan.FromSeconds(build.Duration / build.Count).ToString(@"mm\:ss")min</span></h4>
+                    <h4 class="col-auto"><span class="badge bg-danger">Gas: @(
+                    ((double)build.Gas / (double)build.Count).ToString("N2")
+                    )</span></h4>
+                }
+            </div>
+            <div class="row mb-2">
+                <div class="col-auto">
+                    <input type="range" min="0" max="3" value="@bpvalue" class="slider" id="myBRange" @onchange="BPSlider">
+                </div>
+                <div class="col-auto">
+                    <span class="badge bg-info ml-1">Breakpoint @Breakpoint</span>
+                </div>
+            </div>
+            @{
+                var bp = build.Breakpoints.FirstOrDefault(f => f.Breakpoint == Breakpoint);
+                int i = 0;
+            }
+@*            @if (bp != null && bp.Count > 0)
+            {
+                <div class="row mb-2">
+                    <h4 class="col-auto"><span class="badge bg-info">Replays: @bp.Count</span></h4>
+                    <h4 class="col-auto"><span class="badge bg-info">WR: @(
+                    ((double)bp.Wins * 100 / (double)bp.Count).ToString("N2")
+                    )%</span></h4>
+                    <h4 class="col-auto"><span class="badge bg-info">Dur: @TimeSpan.FromSeconds(bp.Duration / bp.Count).ToString(@"mm\:ss")min</span></h4>
+                    <h4 class="col-auto"><span class="badge bg-info">Gas: @(
+                    ((double)bp.Gas / (double)bp.Count).ToString("N2")
+                    )</span></h4>
+                </div>
+            }*@
+            <table class="table table-dark table-striped">
+                <thead>
+                    <tr>
+                        <th>Unit</th>
+                        <th>Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    @if (bp != null)
+                    {
+                        @foreach (var unit in bp.Units.OrderByDescending(o => o.Count))
+                        {
+                            i++;
+                            string background = i switch
+                            {
+                                1 => "table-primary text-warning",
+                                2 => "table-primary text-warning",
+                                3 => "table-primary text-warning",
+                                _ => ""
+                            };
+                            <tr class="@background">
+                                <td>@unit.Name</td>
+                                <td>@(
+                            ((double)unit.Count / (double)bp.Count).ToString("N2")
+                            )</td>
+                            </tr>
+                        }
+                    } else
+                    {
+                        <tr>
+                            <td clospan="100%">No data available.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="col-auto" style="max-height: 650px; overflow: auto;">
+            <table class="table table-sm table-dark">
+                <thead>
+                    <tr>
+                        <th>Replays</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <Virtualize Items="build.Replays.OrderByDescending(o => o.Gametime).ToList()" Context="replay" ItemSize="33" >
+                        <ItemContent>
+                            <tr class="pointer" style="text-decoration: underline;"  @onclick="e => ShowReplay(replay.Hash)">
+                                <td class="@(replay.Hash == replayHash ? "table-primary" : "")">@replay.Gametime.ToString("yyyy-MM-dd")</td>
+                            </tr>
+                        </ItemContent>
+                    </Virtualize>
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+@if (replay != null)
+{
+    <div class="mt-2" style="min-height: 650px;">
+        <ReplayComponent @ref="replayComponent" replayDto="replay"></ReplayComponent>
+    </div>
+}
+
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public BuildRequest BuildRequest { get; set; } = default!;
+
+    [Parameter]
+    [EditorRequired]
+    public List<string> Players { get; set; } = new();
+
+    BuildResponse? build = null;
+    bool isLoading = false;
+    string Breakpoint = "All";
+    int bpvalue = 3;
+    string replayHash = String.Empty;
+    ReplayComponent? replayComponent;
+    bool FirstRender = false;
+    bool ReplayLoading = false;
+    ReplayDto? replay = null;
+
+    List<string> timespans = new List<string>()
+    {
+        "Patch 2.60",
+        "Last Two Years",
+        "ALL"
+    };
+
+
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (build != null && build.Replays.Any())
+            {
+                _ = ShowReplay(build.Replays.OrderByDescending(o => o.Gametime).First().Hash);
+            }
+            FirstRender = true;
+        }
+
+        base.OnAfterRender(firstRender);
+    }
+
+    private async Task LoadData()
+    {
+        if (isLoading)
+            return;
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        build = await dataService.GetBuild(BuildRequest);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+        if (FirstRender && build != null && build.Replays.Any())
+        {
+            await ShowReplay(build.Replays.OrderByDescending(o => o.Gametime).First().Hash);
+        }
+    }
+
+    void SelectCommander(string cmdr)
+    {
+        if (Enum.TryParse(cmdr, out Commander c))
+        {
+            SelectCommander(c);
+        }
+    }
+
+    void SelectOpponent(string cmdr)
+    {
+        if (Enum.TryParse(cmdr, out Commander c))
+        {
+            SelectOpponent(c);
+        }
+    }
+
+    void SelectCommander(Commander cmdr)
+    {
+        BuildRequest.Interest = cmdr;
+        _ = LoadData();
+    }
+
+    void SelectOpponent(Commander cmdr)
+    {
+        BuildRequest.Versus = cmdr;
+        _ = LoadData();
+    }
+
+    void SelectTimespan(string timespan)
+    {
+        (BuildRequest.StartTime, BuildRequest.EndTime) = Data.TimeperiodSelected(timespan);
+        _ = LoadData();
+    }
+
+    void SelectPlayer(string name)
+    {
+        BuildRequest.PlayerNames = new() { name };
+        _ = LoadData();
+    }
+
+    void PlayersSelected(ChangeEventArgs e)
+    {
+        if (e.Value is string[] players)
+        {
+            if (!players.Any() || (players.Contains("All Players")))
+            {
+                BuildRequest.PlayerNames = Players;
+            }
+            else
+            {
+                BuildRequest.PlayerNames = players.ToList();
+            }
+            _ = LoadData();
+        }
+    }
+
+    async Task ShowReplay(string hash)
+    {
+        if (ReplayLoading)
+            return;
+        ReplayLoading = true;
+        replayHash = hash;
+        replay = await dataService.GetReplay(hash);
+        if (replay != null)
+        {
+            replayComponent?.Init(replay);
+        }
+        ReplayLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    void BPSlider(ChangeEventArgs e)
+    {
+        if (e.Value is string bp)
+        {
+            if (int.TryParse(bp, out int ibp))
+            {
+                Breakpoint = ibp switch
+                {
+                    0 => "Min5",
+                    1 => "Min10",
+                    2 => "Min15",
+                    _ => "All"
+                };
+                StateHasChanged();
+            }
+        }
+    }
+
+}

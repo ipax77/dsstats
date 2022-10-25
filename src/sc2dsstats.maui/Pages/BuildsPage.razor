@@ -1,0 +1,17 @@
+﻿@page "/builds"
+@using pax.dsstats.shared;
+@using sc2dsstats.maui.Services;
+
+<PageTitle>Builds</PageTitle>
+
+<sc2dsstats.razorlib.BuildsComponent BuildRequest="buildRequest" Players="players"></sc2dsstats.razorlib.BuildsComponent>
+
+@code {
+    BuildRequest buildRequest = new()
+    {
+        PlayerNames = UserSettingsService.UserSettings.PlayerNames,
+        Interest = Commander.Abathur
+    };
+
+    List<string> players = UserSettingsService.UserSettings.PlayerNames;
+}

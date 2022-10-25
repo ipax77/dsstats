@@ -1,0 +1,57 @@
+﻿@using sc2dsstats.maui.Services;
+@inject DecodeService DecodeService
+@inject IJSRuntime jsRuntime
+@implements IDisposable
+
+<div id="decodeErrorModal" class="modal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Replays failed decoding</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-dark table-sm">
+                    <thead></thead>
+                    <tbody>
+                        @foreach (var ent in DecodeService.errorReplays)
+                        {
+                            <tr>
+                                <td><span class="fw-bold">@ent.Key</span></td>
+                            </tr>
+                            <tr>
+                                <td>@ent.Value</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        DecodeService.ErrorRaised += DecodeService_ErrorRaised;
+        base.OnInitialized();
+    }
+
+    private void DecodeService_ErrorRaised(object? sender, EventArgs e)
+    {
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Show()
+    {
+        jsRuntime.InvokeVoidAsync("ReplayModalOpen", "decodeErrorModal");
+    }
+
+    public void Dispose()
+    {
+        DecodeService.ErrorRaised -= DecodeService_ErrorRaised;
+    }
+}

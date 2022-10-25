@@ -1,0 +1,64 @@
+﻿@using sc2dsstats.razorlib.Services
+@using pax.dsstats.shared
+
+<div class="row">
+    @foreach (var player in replayDto.Players.OrderBy(o => o.GamePos))
+    {
+        var upgrades = GetUpgrades(player);
+        @if (upgrades.Any())
+        {
+            <div class="col-auto" style="width: 525px;">
+                <div class="table-responsive">
+
+                    <table class="table table-sm table-hover table-striped table-dark">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Upgrade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var upgrade in upgrades)
+                            {
+                                <tr>
+                                    <td>@upgrade.Value</td>
+                                    <td>@upgrade.Key</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+        [CascadingParameter]
+        public int spawn { get; set; }
+
+        [Parameter]
+        [EditorRequired]
+        public ReplayDto replayDto { get; set; } = null!;
+
+        [Parameter]
+        [EditorRequired]
+        public HashSet<int> SpawnGameloops { get; set; } = null!;
+
+        List<KeyValuePair<string, string>> GetUpgrades(ReplayPlayerDto player)
+        {
+            var gameloop = SpawnGameloops.ElementAt(spawn);
+            var plSpawn = player.Spawns.OrderBy(o => o.Gameloop).LastOrDefault(f => f.Gameloop >= gameloop && f.Gameloop <= gameloop + 144);
+            if (plSpawn == null)
+            {
+                return new();
+            }
+
+            return player.Upgrades
+            .Where(x => x.Gameloop <= gameloop)
+            .OrderBy(o => o.Gameloop)
+            .Select(s => new KeyValuePair<string, string>(s.Upgrade.Name, HelperService.TimeFromGameloop(s.Gameloop)))
+            .ToList();
+    }
+
+}

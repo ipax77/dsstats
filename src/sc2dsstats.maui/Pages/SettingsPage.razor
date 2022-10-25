@@ -1,0 +1,219 @@
+﻿@page "/settings"
+@using sc2dsstats.maui.Services
+@inject UserSettingsService UserSettingsService
+@inject IToastService toastService
+
+<h1 class="display-5 fw-bold">Settings</h1>
+
+@*@if (UserSettingsService.UserSettings.DbGuid != new Guid())
+{
+    <p>
+        Dataset name: <strong>@UserSettingsService.UserSettings.DbGuid.ToString().Substring(0, 8)</strong>@UserSettingsService.UserSettings.DbGuid.ToString().Substring(8)
+    </p>
+}
+else
+{
+    <p>
+        Your Dataset name will be shown after the first successful upload
+    </p>
+
+}*@
+
+<EditForm EditContext="editContext" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="container-fluid py-5 bg-primary">
+        <div class="row">
+            <div class="col-2">
+                <div class="form-check">
+                    <label class="form-check-label">
+                        <InputCheckbox class="form-check-input bg-warning" @bind-Value="UserSettingsService.UserSettings.AllowCleanUploads"></InputCheckbox>
+                        Allow Ratings
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-8 fs-4">
+                To get global ratings you allow uploading the full replay information - including playernames. For details check the dsstats website.
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-2">
+                <div class="form-check">
+                    <label class="form-check-label">
+                        <InputCheckbox class="form-check-input bg-warning" @bind-Value="UserSettingsService.UserSettings.AllowUploads" disabled="@(UserSettingsService.UserSettings.AllowCleanUploads)"></InputCheckbox>
+                        Allow Uploads
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-8 fs-4">
+                To improve this application it would be very nice if the statistics were uploaded from time to time.
+                All player names (including yours) will be anonymized before sending. By checking you agree that your anonymized DS-replay data will be used at <a class="text-warning" href="https://sc2dsstats.pax77.org">https://sc2dsstats.pax77.org</a> to generate global charts.
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-2">
+                <div class="form-check">
+                    <label class="form-check-label">
+                        <InputCheckbox class="form-check-input bg-warning" @bind-Value="UserSettingsService.UserSettings.AutoScanForNewReplays" disabled="@(UserSettingsService.UserSettings.AllowCleanUploads)"></InputCheckbox>
+                        OnTheFlyScan
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-8 fs-4">
+                Automatically detects new Direct Strike replays.
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-2">
+                <label class="col-form-label">
+                    <InputNumber @bind-Value="UserSettingsService.UserSettings.CpuCoresUsedForDecoding" style="max-width: 150px;"></InputNumber>
+                    CPU Cores
+                </label>
+            </div>
+            <div class="col-md-8 fs-4">
+                CPU Cores used for decoding new replays (available CPU-Cores: @Environment.ProcessorCount)
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid py-5 bg-primary mt-3">
+        <h4 class="fw-bold">Playernames - your ingame Starcraft 2 Player name(s) e.g. shown in the loading screen of Direct Strike</h4>
+        @foreach (var ent in PlayerNames)
+        {
+            <div class="col-6 m-2 p-2">
+                <label class="col-form-label d-flex w-100">
+                    Name:
+                    <InputText class="w-75 ms-2" @bind-Value="ent.Name"></InputText>
+                    <span class="oi oi-x pointer text-danger ms-1 align-self-center" @onclick="e => RemovePlayerName(ent)"></span>
+                </label>
+            </div>
+        }
+        <button type="button" class="btn btn-secondary btm-sm" @onclick="AddPlayerName">Add Player Name</button>
+    </div>
+    <div class="container-fluid py-5 bg-primary mt-3">
+        <h4 class="fw-bold">Replay directories - location of the Direct Strike replays</h4>
+        <small>Somethink like: C:\Users\username\Documents\StarCraft II\Accounts\107095123\2-S2-1-226321\Replays\Multiplayer</small>
+        @foreach (var ent in ReplayPaths)
+        {
+
+            <div class="col-10 m-2 p-2">
+                <label class="col-form-label d-flex w-100">
+                    Path:
+                    <InputText class="w-75 ms-2" @bind-Value="ent.Name"></InputText>
+                    <span class="oi oi-x pointer text-danger" @onclick="e => RemoveReplayPath(ent)"></span>
+                </label>
+            </div>
+        }
+        <button type="button" class="btn btn-secondary btm-sm" @onclick="AddReplayPath">Add Path</button>
+    </div>
+    <div class="container-fluid py-5 bg-primary mt-3">
+        <h4 class="fw-bold">Replay name <span class="text-danger">- Restart Required!</span></h4>
+        <small>The beginning of the filename of the Direct Strike replays - The default value is "Direct Strike" but might be different depending on your language</small>
+        <div class="col-10 m-2 p-2">
+            <label class="col-form-label d-flex w-100">
+                <InputText class="w-75 ms-2" @bind-Value="UserSettingsService.UserSettings.ReplayStartName"></InputText>
+            </label>
+        </div>
+    </div>
+
+    <div class="container-fluid py-5 bg-primary mt-3">
+        <h3 class="fw-bold">AppDataDir</h3>
+        <small>@FileSystem.Current.AppDataDirectory</small>
+    </div>
+
+    <div class="btn-group mt-3 mb-5">
+        <button type="submit" class="btn btn-primary btn-lg">Save</button>
+        <button type="button" class="btn btn-danger btn-lg" @onclick="Reset">Reset</button>
+    </div>
+</EditForm>
+
+
+@code {
+    private EditContext editContext = null!;
+    private List<ListEnt> PlayerNames = new();
+    private List<ListEnt> ReplayPaths = new();
+
+    protected override void OnInitialized()
+    {
+        editContext = new(UserSettingsService.UserSettings);
+        editContext.OnFieldChanged += EditContext_OnFieldChanged;
+
+        PlayerNames = UserSettingsService.UserSettings.PlayerNames.Select(s => new ListEnt() { Name = s }).ToList();
+        ReplayPaths = UserSettingsService.UserSettings.ReplayPaths.Select(s => new ListEnt() { Name = s }).ToList();
+        base.OnInitialized();
+    }
+
+    private void EditContext_OnFieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        if (e.FieldIdentifier.FieldName == "AllowCleanUploads" && UserSettingsService.UserSettings.AllowCleanUploads)
+        {
+            UserSettingsService.UserSettings.AllowUploads = true;
+            UserSettingsService.UserSettings.AutoScanForNewReplays = true;
+        }
+    }
+
+    private void OnValidSubmit()
+    {
+        UserSettingsService.UserSettings.PlayerNames.Clear();
+        UserSettingsService.UserSettings.ReplayPaths.Clear();
+
+        UserSettingsService.UserSettings.PlayerNames.AddRange(PlayerNames
+            .Where(x => !String.IsNullOrEmpty(x.Name))
+            .Select(s => s.Name.Trim()));
+
+        UserSettingsService.UserSettings.ReplayPaths.AddRange(ReplayPaths
+            .Where(x => !String.IsNullOrEmpty(x.Name) && Directory.Exists(x.Name))
+            .Select(s => s.Name));
+
+        if (UserSettingsService.UserSettings.CpuCoresUsedForDecoding < 1)
+        {
+            UserSettingsService.UserSettings.CpuCoresUsedForDecoding = 1;
+        }
+        else if (UserSettingsService.UserSettings.CpuCoresUsedForDecoding > Math.Max(Environment.ProcessorCount, 2))
+        {
+            UserSettingsService.UserSettings.CpuCoresUsedForDecoding = Math.Max(Environment.ProcessorCount, 2);
+        }
+
+        _ = UserSettingsService.Save();
+        toastService.ShowSuccess("Settings saved.");
+        PlayerNames = UserSettingsService.UserSettings.PlayerNames.Select(s => new ListEnt() { Name = s }).ToList();
+        ReplayPaths = UserSettingsService.UserSettings.ReplayPaths.Select(s => new ListEnt() { Name = s }).ToList();
+    }
+
+    private void Reset()
+    {
+        UserSettingsService.SetInitialNamesAndFolders();
+
+        editContext = new(UserSettingsService.UserSettings);
+
+        PlayerNames = UserSettingsService.UserSettings.PlayerNames.Select(s => new ListEnt() { Name = s }).ToList();
+        ReplayPaths = UserSettingsService.UserSettings.ReplayPaths.Select(s => new ListEnt() { Name = s }).ToList();
+
+        StateHasChanged();
+    }
+
+    private void AddPlayerName()
+    {
+        PlayerNames.Add(new ListEnt());
+    }
+
+    private void RemovePlayerName(ListEnt listEnt)
+    {
+        PlayerNames.Remove(listEnt);
+    }
+
+    private void AddReplayPath()
+    {
+        ReplayPaths.Add(new ListEnt());
+    }
+
+    private void RemoveReplayPath(ListEnt listEnt)
+    {
+        ReplayPaths.Remove(listEnt);
+    }
+
+    internal class ListEnt
+    {
+        public string Name { get; set; } = "";
+    }
+}

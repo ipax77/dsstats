@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Blazored.Toast" Version="3.2.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.10" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\pax.dsstats.shared\pax.dsstats.shared.csproj" />
+    <ProjectReference Include="..\..\sc2dsstats.razorlib\sc2dsstats.razorlib.csproj" />
+    <ProjectReference Include="..\Shared\pax.dsstats.web.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

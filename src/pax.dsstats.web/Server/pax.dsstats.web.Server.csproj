@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="6.0.10" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\MysqlMigrations\MysqlMigrations.csproj" />
+    <ProjectReference Include="..\..\pax.dsstats.dbng\pax.dsstats.dbng.csproj" />
+    <ProjectReference Include="..\..\pax.dsstats.shared\pax.dsstats.shared.csproj" />
+    <ProjectReference Include="..\..\sc2dsstats.db\sc2dsstats.db.csproj" />
+    <ProjectReference Include="..\Client\pax.dsstats.web.Client.csproj" />
+    <ProjectReference Include="..\Shared\pax.dsstats.web.Shared.csproj" />
+  </ItemGroup>
+
+
+</Project>

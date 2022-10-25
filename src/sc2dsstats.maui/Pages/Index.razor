@@ -1,0 +1,95 @@
+﻿@page "/"
+@using pax.dsstats.dbng.Repositories
+@using pax.dsstats.shared
+@using sc2dsstats.maui.Services
+@using sc2dsstats.razorlib
+@inject IReplayRepository ReplayRepository
+@inject DecodeService DecodeService
+@inject UploadService UploadService
+@implements IDisposable
+
+<div class="btn-group border border-3 rounded-2 border-light p-2">
+    @if (DecodeService.IsRunning)
+    {
+        <button type="button" class="btn btn-outline-warning" @onclick="StopDecoding">StopDecoding</button>
+    }
+    else
+    {
+        <button type="button" class="btn btn-outline-danger" @onclick="Decode">Decode</button>
+
+    }
+    <button type="button" class="btn btn-outline-success" @onclick="ScanForNewReplays">Scan</button>
+    <button type="button" class="btn btn-outline-info" @onclick="Upload">Upload</button>
+</div>
+
+<div>
+    @if (latestReplay != null)
+    {
+        <ReplayComponent replayDto="latestReplay"></ReplayComponent>
+    }
+</div>
+
+<UploadConfirmModal @ref="uploadConfirmModal"></UploadConfirmModal>
+
+@code {
+    ReplayDto? latestReplay = null;
+    UploadConfirmModal? uploadConfirmModal;
+
+    protected override void OnInitialized()
+    {
+        DecodeService.ScanStateChanged += DecodeService_ScanStateChanged;
+        base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ = LoadLatestReplay();
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    public void DecodeService_ScanStateChanged(object? sender, ScanEventArgs e)
+    {
+        InvokeAsync(() => StateHasChanged());        
+    }
+
+    public async Task ScanForNewReplays()
+    {
+        await DecodeService.ScanForNewReplays();
+    }
+
+    private async Task LoadLatestReplay()
+    {
+        latestReplay = await ReplayRepository.GetLatestReplay();
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void Decode()
+    {
+        _ = DecodeService.DecodeParallel().ConfigureAwait(false);
+    }
+
+    private void StopDecoding()
+    {
+        DecodeService.StopDecoding();
+    }
+
+    private void Upload()
+    {
+        if (UserSettingsService.UserSettings.AllowUploads)
+        {
+            _ = UploadService.UploadReplays();
+        }
+        else
+        {
+            uploadConfirmModal?.Show();
+        }
+    }
+
+    public void Dispose()
+    {
+        DecodeService.ScanStateChanged -= DecodeService_ScanStateChanged;
+    }
+}

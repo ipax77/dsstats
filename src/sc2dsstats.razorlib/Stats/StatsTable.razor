@@ -1,0 +1,160 @@
+﻿@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Extensions;
+@using sc2dsstats.razorlib.Services;
+
+<style>
+    .tableFixHead {
+        overflow-y: auto;
+        height: 750px;
+    }
+
+        .tableFixHead thead th {
+            position: sticky;
+            top: 0;
+        }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+
+    th {
+        background: purple;
+    }
+
+    .tablebackground {
+        position: absolute;
+        z-index: -1;
+        opacity: 0.15;
+    }
+</style>
+
+<div class="table-responsive tableFixHead">
+    <table class="table table-dark table-hover w-auto">
+        <colgroup>
+            <col class="col">
+            <col class="col">
+            <col class="col">
+            <col class="col">
+        </colgroup>
+        <thead class="user-select-none">
+            <CascadingValue Value="Orders">
+            <tr>
+                <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(StatsResponseItem.Label))">
+                    <SortArrow Property="@nameof(StatsResponseItem.Label)">
+                        Label
+                    </SortArrow>
+                </th>
+                <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(StatsResponseItem.Matchups))">
+                    <SortArrow Property="@nameof(StatsResponseItem.Matchups)">
+                        Matchups
+                    </SortArrow>
+                </th>
+                <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(StatsResponseItem.Wins))">
+                    <SortArrow Property="@nameof(StatsResponseItem.Wins)">
+                        Wins
+                    </SortArrow>
+                </th>
+                <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(StatsResponseItem.Winrate))">
+                    <SortArrow Property="@nameof(StatsResponseItem.Winrate)">
+                        Winrate
+                    </SortArrow>
+                </th>
+            </tr>
+            </CascadingValue>
+        </thead>
+        <tbody>
+            @foreach (var item in GetSortedList())
+            {
+                <tr class="pointer" @onclick="e => OnCommanderClicked.InvokeAsync(item.Cmdr)">
+                    <td>
+                        <img src="@HelperService.GetImageSrc(item.Cmdr)"
+                         alt="@item.Label"
+                         title="@item.Label"
+                         width="30"
+                         height="30" />
+                        @item.Label
+                    </td>
+                    <td class="text-end">@item.Matchups</td>
+                    <td class="text-end">@item.Wins</td>
+                    <td>@item.Winrate.ToString("N2") %</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+
+@code {
+    [CascadingParameter]
+    [EditorRequired]
+    public StatsResponse StatsResponse { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<Commander> OnCommanderClicked { get; set; }
+
+    private List<TableOrder> Orders = new List<TableOrder>()
+    {
+        new TableOrder() { Property = "Winrate", Ascending = false }
+    };
+
+    private void SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = Orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                Orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            Orders.Clear();
+            Orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+        StateHasChanged();
+    }
+
+    private List<StatsResponseItem> GetSortedList()
+    {
+        List<StatsResponseItem> items = new();
+
+        if (StatsResponse.Items.Any())
+        {
+            var itemsQ = StatsResponse.Items.AsQueryable();
+
+            foreach (var order in Orders)
+            {
+                if (order.Ascending)
+                {
+                    itemsQ = itemsQ.AppendOrderBy(order.Property);
+                }
+                else
+                {
+                    itemsQ = itemsQ.AppendOrderByDescending(order.Property);
+                }
+            }
+
+            items = itemsQ.ToList();
+        }
+
+        return items;
+    }
+}

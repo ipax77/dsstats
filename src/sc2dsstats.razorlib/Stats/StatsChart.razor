@@ -1,0 +1,248 @@
+﻿@using MathNet.Numerics;
+@using pax.BlazorChartJs;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
+
+<div class="w-75" style="min-width: 600px;">
+    <ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered"></ChartComponent>
+</div>
+
+@code {
+    [CascadingParameter]
+    [EditorRequired]
+    public StatsResponse StatsResponse { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<Commander> OnLabelClicked { get; set; }
+
+    private ChartJsConfig chartConfig = null!;
+    private ChartComponent? chartComponent;
+    private bool isInit;
+
+    protected override void OnInitialized()
+    {
+        chartConfig = new()
+            {
+                Type = ChartType.bar,
+                Data = new()
+                {
+
+                },
+                Options = new ChartJsOptions()
+                {
+                    Responsive = true,
+                    MaintainAspectRatio = true,
+                    Plugins = new Plugins()
+                    {
+                        Labels = new LabelsConfig()
+                        {
+                            Render = "image"
+                        },
+                        Datalabels = new DataLabelsConfig()
+                        {
+                            Display = true
+                        }
+                    },
+                    Scales = new ChartJsOptionsScales()
+                    {
+                        Y = new LinearAxis()
+                        {
+                            BeginAtZero = false,
+                            SuggestedMax = 100
+                        }
+                    }
+                }
+            };
+        base.OnInitialized();
+    }
+
+    public void SetBeginAtZero(bool beginAtZero)
+    {
+        if (chartConfig.Options?.Scales?.Y is LinearAxis linearAxis)
+        {
+            linearAxis.BeginAtZero = beginAtZero;
+            chartComponent?.UpdateChartOptions();
+        }
+    }
+
+    public void SetChart()
+    {
+        if (StatsResponse.Request.StatsMode == StatsMode.Winrate)
+        {
+            var items = GetFilterdAndSortedChartData(StatsResponse);
+
+            chartConfig.Type = ChartType.bar;
+            chartConfig.Data.Labels = items.Select(s => s.Label).ToList();
+            chartConfig.Data.Datasets = new List<ChartJsDataset>() { new BarDataset()
+                {
+                    Label = StatsResponse.Request.Interest == Commander.None ?
+                        StatsResponse.Request.StatsMode.ToString()
+                        : $"{StatsResponse.Request.StatsMode} - {StatsResponse.Request.Interest}",
+                    Data = items.Select(s => (object)Math.Round(s.Winrate, 2)).ToList(),
+                    BackgroundColor = StatsResponse.Request.Interest == Commander.None ?
+                        new IndexableOption<string>(items.Select(s => Data.GetBackgroundColor(s.Cmdr)).ToList())
+                        : new IndexableOption<string>(Data.GetBackgroundColor(StatsResponse.Request.Interest)),
+                    BorderColor = StatsResponse.Request.Interest == Commander.None ?
+                        new IndexableOption<string>(items.Select(s => Data.CmdrColor[s.Cmdr]).ToList())
+                        : new IndexableOption<string>(Data.CmdrColor[StatsResponse.Request.Interest]),
+                    BorderWidth = new IndexableOption<double>(2)
+                }
+            };
+
+            chartConfig.Options = new ChartJsOptions()
+                {
+                    MaintainAspectRatio = true,
+                    Responsive = true,
+                    OnClickEvent = true,
+                    Plugins = new Plugins()
+                    {
+                        Title = new()
+                        {
+                            Display = true,
+                            Text = $"{StatsResponse.Request.StatsMode} {(StatsResponse.Request.Interest == Commander.None ? "" : StatsResponse.Request.Interest)}",
+                            Color = "white",
+                            Font = new()
+                            {
+                                Size = 16,
+                            }
+                        },
+                        Labels = new()
+                        {
+                            Render = "image",
+                            Images = items.Select(s => new LabelsConfigImage()
+                            {
+                                Src = HelperService.GetImageSrc(s.Cmdr),
+                                Width = 45,
+                                Height = 45
+                            }).ToList()
+                        },
+                        Datalabels = new()
+                        {
+                            Display = "auto",
+                            Color = "#0a050c",
+                            BackgroundColor = "#cdc7ce",
+                            BorderColor = "#491756",
+                            BorderRadius = 4,
+                            BorderWidth = 1,
+                            Anchor = "end",
+                            Align = "start",
+                            Clip = true
+                        }
+                    },
+                    Scales = new()
+                    {
+                        Y = new LinearAxis()
+                        {
+                            BeginAtZero = StatsResponse.Request.BeginAtZero,
+                            SuggestedMax = StatsResponse.Request.BeginAtZero ? items.Select(s => s.Winrate).Max() + 10 : null
+                        }
+                    }
+                };
+            _ = chartComponent?.DrawChart();
+        }
+        else if (StatsResponse.Request.StatsMode == StatsMode.Timeline)
+        {
+            chartConfig.Type = ChartType.line;
+            chartConfig.Data.Labels = StatsResponse.Items.Select(s => s.Label).ToList();
+            chartConfig.Data.Datasets = new List<ChartJsDataset>()
+            {
+                new LineDataset()
+                {
+                    Label = "",
+                    Data = StatsResponse.Items.Select(s => (object)Math.Round(s.Winrate, 2)).ToList(),
+                    PointBackgroundColor = StatsResponse.Request.Interest == Commander.None ? new IndexableOption<string>("blue") : new IndexableOption<string>(Data.CmdrColor[StatsResponse.Request.Interest]),
+                    PointRadius = new IndexableOption<double>(3),
+                    ShowLine = false
+                },
+                new LineDataset()
+                {
+                    Label = StatsResponse.Request.Interest == Commander.None ? StatsResponse.Request.StatsMode.ToString() : $"{StatsResponse.Request.StatsMode} - {StatsResponse.Request.Interest}",
+                    Data = GetNiceLineData(StatsResponse.Items.Select(s => s.Winrate).ToList(), Math.Max(StatsResponse.Items.Count - 3, 3)).Select(s => (object)Math.Round(s, 2)).ToList(),
+                    BorderColor = StatsResponse.Request.Interest == Commander.None ? "blue" : Data.CmdrColor[StatsResponse.Request.Interest],
+                    BorderWidth = 2,
+                    Tension = 0.4,
+                    PointRadius = new IndexableOption<double>(0),
+                }
+            };
+            chartConfig.Options = new ChartJsOptions()
+                {
+                    MaintainAspectRatio = true,
+                    Responsive = true,
+                    Plugins = new Plugins()
+                    {
+                        Labels = new LabelsConfig()
+                        {
+                            Render = "image",
+                            Images = new List<LabelsConfigImage>()
+                        },
+                        Datalabels = new()
+                        {
+                            Display = false
+                        }
+                    }
+                };
+        }
+        _ = chartComponent?.DrawChart();
+    }
+
+    private void ChartEventTriggered(ChartJsEvent chartEvent)
+    {
+        if (!isInit && chartEvent is ChartJsInitEvent initEvent)
+        {
+            isInit = true;
+            SetChart();
+        }
+
+        if (chartEvent is ChartJsLabelClickEvent clickEvent)
+        {
+            if (Enum.TryParse(typeof(Commander), clickEvent.Label, out object? cmdrObj))
+            {
+                if (cmdrObj is Commander cmdr)
+                {
+                    OnLabelClicked.InvokeAsync(cmdr);
+                }
+            }
+        }
+    }
+
+    private static List<double> GetNiceLineData(List<double> data, int order)
+    {
+        List<double> xdata = new List<double>();
+        for (int i = 0; i < data.Count(); i++)
+        {
+            xdata.Add(i);
+        }
+
+        if (xdata.Count < 4)
+            return new List<double>();
+
+        if (xdata.Count() < order)
+            order = Math.Max(xdata.Count() - 2, 3);
+
+        var poly = Fit.PolynomialFunc(xdata.ToArray(), data.ToArray(), order);
+
+        List<double> nicedata = new List<double>();
+        for (int i = 0; i < data.Count(); i++)
+        {
+            nicedata.Add(Math.Round(poly(i), 2));
+        }
+
+        return nicedata;
+    }
+
+    public List<StatsResponseItem> GetFilterdAndSortedChartData(StatsResponse response)
+    {
+        var items = response.Items.AsQueryable();
+
+        if (!response.Request.GameModes.Contains(GameMode.Standard)
+            && !response.Request.GameModes.Contains(GameMode.BrawlStandard))
+        {
+            items = items.Where(x => !x.Label.Contains("Protoss"));
+            items = items.Where(x => !x.Label.Contains("Terran"));
+            items = items.Where(x => !x.Label.Contains("Zerg"));
+        }
+
+        return items.OrderBy(o => o.Winrate).ToList();
+    }
+
+}

@@ -1,0 +1,133 @@
+﻿@using Microsoft.AspNetCore.Components.Forms;
+@using pax.dsstats.shared;
+@implements IDisposable
+
+<EditForm EditContext="editContext">
+    <div class="row">
+        <div class="col-auto">
+            <label class="form-label">
+                StatsMode
+                <InputSelect class="form-select" @bind-Value="StatsRequest.StatsMode">
+                    @foreach (StatsMode statsMode in Enum.GetValues(typeof(StatsMode)))
+                    {
+                        <option value="@statsMode">@statsMode</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Time Period
+                <InputSelect class="form-select" @bind-Value="StatsRequest.TimePeriod">
+                    @foreach (string time in Data.TimePeriods)
+                    {
+                        <option value="@time">@time</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Commander
+                <InputSelect class="form-select" @bind-Value="StatsRequest.Interest">
+                    @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                    {
+                        <option value="@cmdr">@cmdr</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <div class="form-check form-switch">
+                <label class="form-check-label">
+                    Uploaders
+                    <InputCheckbox class="form-check-input" @bind-Value="StatsRequest.Uploaders">
+                    </InputCheckbox>
+                </label>
+            </div>
+            <div class="form-check form-switch">
+                <label class="form-check-label">
+                    DefaultFilter
+                    <InputCheckbox class="form-check-input" @bind-Value="StatsRequest.DefaultFilter">
+                    </InputCheckbox>
+                </label>
+            </div>
+            <div class="form-check form-switch">
+                <label class="form-check-label">
+                    Chart BeginAtZero
+                    <InputCheckbox class="form-check-input" @bind-Value="StatsRequest.BeginAtZero">
+                    </InputCheckbox>
+                </label>
+            </div>
+        </div>
+        <div class="col-auto">
+            <select class="form-select" multiple aria-label="multiple" @onchange="GameModeChange">
+                <option selected>All GameModes</option>
+                @foreach (GameMode gameMode in Enum.GetValues(typeof(GameMode)))
+                {
+                    @if (gameMode != GameMode.None)
+                    {
+                        <option value="@gameMode">@gameMode</option>
+                    }
+                }
+            </select>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    [CascadingParameter]
+    [EditorRequired]
+    public StatsRequest StatsRequest { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnChartOptionsChanged { get; set; }
+
+    EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(StatsRequest);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        if (e.FieldIdentifier.FieldName == "TimePeriod")
+        {
+            (StatsRequest.StartTime, StatsRequest.EndTime) = Data.TimeperiodSelected(StatsRequest.TimePeriod);
+        }
+        else if (e.FieldIdentifier.FieldName == "BeginAtZero")
+        {
+            OnChartOptionsChanged.InvokeAsync();
+            return;
+        }
+        OnRequestChanged.InvokeAsync();
+    }
+
+    private void GameModeChange(ChangeEventArgs e)
+    {
+        if (e.Value is string[] values)
+        {
+            List<GameMode> gameModes = new();
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (Enum.TryParse(values[i], out GameMode gameMode))
+                {
+                    gameModes.Add(gameMode);
+                }
+            }
+            StatsRequest.GameModes = gameModes;
+            OnRequestChanged.InvokeAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}

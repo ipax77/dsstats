@@ -1,0 +1,69 @@
+﻿@using sc2dsstats.razorlib.Services
+@using pax.dsstats.shared
+
+<div class="row">
+    @foreach (var player in replayDto.Players.OrderBy(o => o.GamePos))
+    {
+        var units = GetUnits(player);
+        @if (units.Any())
+        {
+            <div class="col-auto" style="width: 525px;">
+                <div>
+                    <span class="badge bg-secondary" style="font-size: 16px;">
+                        #@player.GamePos @player.Player.Name
+                    </span>
+                    <img src="@HelperService.GetImageSrc(player.Race)"
+                         alt="@player.Race"
+                         title="@player.Race"
+                         width="30"
+                         height="30" />
+                    </div>
+                <div class="table-responsive">
+
+                    <table class="table table-sm table-hover table-striped table-dark">
+                        <thead>
+                            <tr>
+                                <th>Unit</th>
+                                <th>Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var unit in units)
+                            {
+                                <tr>
+                                    <td>@unit.Key</td>
+                                    <td>@unit.Value</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [CascadingParameter]
+    public int spawn { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public ReplayDto replayDto { get; set; } = null!;
+
+    [Parameter]
+    [EditorRequired]
+    public HashSet<int> SpawnGameloops { get; set; } = null!;
+
+    IOrderedEnumerable<KeyValuePair<string, byte>> GetUnits(ReplayPlayerDto player)
+    {
+        var plSpawn = player.Spawns.OrderBy(o => o.Gameloop).LastOrDefault(f => f.Gameloop >= SpawnGameloops.ElementAt(spawn) && f.Gameloop <= SpawnGameloops.ElementAt(spawn) + 144);
+
+        if (plSpawn == null)
+        {
+            return new Dictionary<string, byte>().OrderBy(o => o.Key);
+        }
+
+        return plSpawn.Units.ToDictionary(x => x.Unit.Name, x => x.Count).OrderByDescending(o => o.Value);
+    }
+}

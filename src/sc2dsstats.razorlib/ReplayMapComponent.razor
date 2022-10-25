@@ -1,0 +1,153 @@
+﻿@using System.Globalization
+@using pax.dsstats.shared
+
+<style>
+    .unitmap {
+        width: 500px;
+        height: 773px;
+        background-color: #a6a4ca;
+        border: inset 2px darkblue;
+    }
+
+    .xmirror {
+        -webkit-transform: scaleX(-1);
+        transform: scaleX(-1);
+    }
+</style>
+
+<div class="row">
+    @foreach (var player in replayDto.Players)
+    {
+        var units = GetUnits(player);
+        @if (units.Any())
+        {
+            <div class="position-relative unitmap xmirror me-5" id="BuildArea">
+                @if (player.Team == 2)
+                {
+                    <div class="position-absolute d-inline-block" style="top: 1%; left: 90%;">
+                        <span class="oi oi-arrow-thick-right" aria-hidden="true"></span>
+                    </div>
+                    <div class="position-absolute d-inline-block" style="top: 95%; left: 90%">
+                        <span class="oi oi-arrow-thick-right" aria-hidden="true"></span>
+                    </div>
+                }
+                else
+                {
+                    <div class="position-absolute d-inline-block" style="top: 1%; left: 5%;">
+                        <span class="oi oi-arrow-thick-left" aria-hidden="true"></span>
+                    </div>
+                    <div class="position-absolute d-inline-block" style="top: 95%; left: 5%;">
+                        <span class="oi oi-arrow-thick-left" aria-hidden="true"></span>
+                    </div>
+                }
+                <div class="no-gutters buildarea_layer">
+                    @foreach (var unit in units)
+                    {
+                        var relpos = GetRelPos(new(unit.X, unit.Y), player.Team);
+                        <div class="position-absolute d-inline-block unitimage xmirror" style="margin-left: @(relpos.Key.ToString(CultureInfo.InvariantCulture))px; margin-top: @(relpos.Value.ToString(CultureInfo.InvariantCulture))px;">
+                            <div style="max-height: 20px; max-width: 20px;" @onclick="@(() => Interest = Interest == unit.Name ? "" : unit.Name)">
+                                <span class="badge bg-secondary @(unit.Name == Interest ? "text-danger" : "text-warning")" style="transform: rotate(-45deg);">
+                                    @unit.Name
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [CascadingParameter]
+    public int spawn { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public ReplayDto replayDto { get; set; } = null!;
+
+    [Parameter]
+    [EditorRequired]
+    public HashSet<int> SpawnGameloops { get; set; } = null!;
+
+    public static readonly Position center = new Position() { X = 128, Y = 120 };
+    private static string Interest = "";
+
+    List<MapUnit> GetUnits(ReplayPlayerDto player)
+    {
+        var plSpawn = player.Spawns.OrderBy(o => o.Gameloop).LastOrDefault(f => f.Gameloop >= SpawnGameloops.ElementAt(spawn) && f.Gameloop <= SpawnGameloops.ElementAt(spawn) + 144);
+
+        if (plSpawn == null)
+        {
+            return new();
+        }
+
+        List<MapUnit> units = new();
+
+        foreach (var unit in plSpawn.Units)
+        {
+            if (!String.IsNullOrEmpty(unit.Poss))
+            {
+                var poss = unit.Poss.Split(",");
+                for (int i = 0; i < poss.Length; i += 2)
+                {
+                    units.Add(new(unit.Unit.Name, int.Parse(poss[i]), int.Parse(poss[i + 1])));
+                }
+            }
+        }
+
+        return units;
+    }
+
+    public KeyValuePair<float, float> GetRelPos(Position unitPos, int team)
+    {
+
+        var pos = RotatePoint(unitPos, center, -45);
+        float newx = 0;
+        float newy = 0;
+        if (team == 2)
+            newx = (pos.Key - 62.23907f) / 2f;
+        else
+            newx = (pos.Key - 176.79037f) / 2f;
+
+        newy = pos.Value - 107.97919f;
+
+        float distance_left = newy;
+        float distance_top = newx;
+
+        float distance_left_percent = distance_left * 31f;
+        float distance_top_percent = distance_top * 62f;
+
+        return new KeyValuePair<float, float>(MathF.Round(distance_top_percent, 2), MathF.Round(distance_left_percent, 2));
+    }
+
+    public static KeyValuePair<float, float> RotatePoint(Position pointToRotate, Position centerPoint, double angleInDegrees)
+    {
+        double angleInRadians = angleInDegrees * (Math.PI / 180);
+        double cosTheta = Math.Cos(angleInRadians);
+        double sinTheta = Math.Sin(angleInRadians);
+        return new KeyValuePair<float, float>
+            (
+                (float)
+                (cosTheta * (pointToRotate.X - centerPoint.X) -
+                sinTheta * (pointToRotate.Y - centerPoint.Y) + centerPoint.X),
+                (float)
+                (sinTheta * (pointToRotate.X - centerPoint.X) +
+                cosTheta * (pointToRotate.Y - centerPoint.Y) + centerPoint.Y)
+            );
+    }
+
+    private record MapUnit
+    {
+        public MapUnit(string name, int x, int y)
+        {
+            Name = name;
+            X = x;
+            Y = y;
+        }
+
+        public string Name { get; init; }
+        public int X { get; init; }
+        public int Y { get; init; }
+    }
+}

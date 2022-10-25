@@ -1,0 +1,84 @@
+﻿@using sc2dsstats.razorlib.Services
+@using pax.dsstats.shared
+
+<div>
+
+    <div class="row">
+        @for (int i = 1; i <= 2; i++)
+        {
+            var players = replayDto.Players.Where(x => x.Team == i).OrderBy(o => o.GamePos).ToList();
+            bool isWinner = replayDto.WinnerTeam == i;
+            <div class="col-auto">
+                @if (isWinner)
+                {
+                    <button class="btn btn-sm btn-success"><b>@(replayDto.ReplayEvent != null ? replayDto.ReplayEvent.WinnerTeam : $"Team {i}") - Winner</b></button>
+                }
+                else
+                {
+                    <button class="btn btn-sm btn-danger"><b>@(@replayDto.ReplayEvent != null ? replayDto.ReplayEvent.RunnerTeam : $"Team {i}")</b></button>
+                }
+                <div class="table-responsive" style="width: 500px;">
+                    <table class="table table-sm table-hover table-dark">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Time</th>
+                                <th>Gas</th>
+                                <th>Upgrades</th>
+                                <th>Income</th>
+                                <th>Army</th>
+                                <th>Kills</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var player in players)
+                            {
+                                var gameloop = SpawnGameloops.ElementAt(spawn);
+                                var plSpawn = player.Spawns.OrderBy(o => o.Gameloop).LastOrDefault(f => f.Gameloop >= gameloop && f.Gameloop <= gameloop + 144);
+                                @if (plSpawn == null)
+                                {
+                                    <tr>
+                                        <td>@player.GamePos</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td>@player.GamePos</td>
+                                        <td>@HelperService.TimeFromGameloop(plSpawn.Gameloop)</td>
+                                        <td>@plSpawn.GasCount</td>
+                                        <td>@HelperService.GetBigNumberString(plSpawn.UpgradeSpent)</td>
+                                        <td>@HelperService.GetBigNumberString(plSpawn.Income)</td>
+                                        <td>@HelperService.GetBigNumberString(plSpawn.ArmyValue)</td>
+                                        <td>@HelperService.GetBigNumberString(plSpawn.KilledValue)</td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public int spawn { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public ReplayDto replayDto { get; set; } = null!;
+
+    [Parameter]
+    [EditorRequired]
+    public HashSet<int> SpawnGameloops { get; set; } = null!;
+
+
+}

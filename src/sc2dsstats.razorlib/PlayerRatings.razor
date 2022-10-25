@@ -1,0 +1,250 @@
+﻿@using Microsoft.AspNetCore.Components.Web.Virtualization;
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Globalization;
+@using pax.dsstats.shared
+@inject IDataService dataService
+@implements IDisposable
+
+<style>
+    .tableFixHead {
+        overflow-y: auto;
+        height: 750px;
+        width: 550px;
+    }
+
+        .tableFixHead thead th {
+            position: sticky;
+            top: 0;
+        }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+
+    th {
+        background: purple;
+    }
+
+    .tablebackground {
+        position: absolute;
+        z-index: -1;
+        opacity: 0.15;
+    }
+</style>
+
+<h4>Player Ratings</h4>
+
+<div class="d-flex">
+    <EditForm EditContext="editContext">
+        <div class="row">
+            <div class="col-auto">
+                <label class="form-label">
+                    Search:
+                    <InputText class="form-control" @bind-Value="ratingsRequest.Search"></InputText>
+                </label>
+            </div>
+        </div>
+    </EditForm>
+    <div class="align-self-center ms-2">
+        <span class="oi oi-x text-danger pointer" @onclick="ResetSearch"></span>
+    </div>
+</div>
+<div class="row">
+    <div class="col-auto tableFixHead">
+        <table class="table table-dark table-hover">
+            <colgroup>
+                <col class="col">
+                <col class="col">
+                <col class="col">
+                <col class="col">
+            </colgroup>
+            <thead>
+                <CascadingValue Value="ratingsRequest.Orders">
+                    <tr>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "ToonId"))">
+                            <SortArrow Property="ToonId">
+                                ToonId
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Name"))">
+                            <SortArrow Property="Name">
+                                Name
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Mmr"))">
+                            <SortArrow Property="Mmr">
+                                Cmdr Rating
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "MmrStd"))">
+                            <SortArrow Property="MmrStd">
+                                Std Rating
+                            </SortArrow>
+                        </th>
+                    </tr>
+                </CascadingValue>
+            </thead>
+            <tbody>
+                @if (ratingsCount > 0)
+                {
+                    <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings">
+                        <tr class="pointer" @onclick="e => LoadPlayerChart(rating)">
+                            <td>@rating.ToonId</td>
+                            <td><span class="text-truncate" style="display: block; width: 150px;">@rating.Name</span></td>
+                            <td>@Math.Round(rating.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
+                            <td>@Math.Round(rating.MmrStd, 2).ToString(CultureInfo.InvariantCulture)</td>
+                        </tr>
+                    </Virtualize>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="col-auto">
+        <div class="btn-block">
+            <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => DeviationRequest = DeviationRequestEnum.Std)">Std Diviation</button>
+            <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => DeviationRequest = DeviationRequestEnum.Cmdr)">Cmdr Diviation</button>
+            @if (DeviationRequest != DeviationRequestEnum.None)
+            {
+                <button type="button" class="btn btn-sm btn-outline-warning" @onclick="@(() => DeviationRequest = DeviationRequestEnum.None)">Close</button>
+            }
+        </div>
+        @if (DeviationRequest == DeviationRequestEnum.Std)
+        {
+            <div>
+                <PlayerRatingsDeviation @ref="playerRatingsDeviation" Std="true"></PlayerRatingsDeviation>
+            </div>
+        } else if (DeviationRequest == DeviationRequestEnum.Cmdr)
+        {
+            <div>
+                <PlayerRatingsDeviation @ref="playerRatingsDeviation" Std="false"></PlayerRatingsDeviation>
+            </div>
+        }
+        <div>
+            <PlayerRatingChart @ref="playerRatingChart"></PlayerRatingChart>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int ratingsCount = 0;
+    private PlayerRatingChart? playerRatingChart;
+    private PlayerRatingsDeviation? playerRatingsDeviation;
+    private Virtualize<PlayerRatingDto>? virtualize;
+    private DeviationRequestEnum DeviationRequest = DeviationRequestEnum.None;
+    private RatingsRequest ratingsRequest = new() 
+    {
+        Skip = 0,
+        Take = 20,
+        Orders = new()
+        {
+            new()
+            {
+                Property = "Mmr",
+                Ascending = false
+            }
+        }
+    };
+    private EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(ratingsRequest);
+        editContext.OnFieldChanged += FieldChanged;
+        _ = SetCount();
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        _ = Reload();
+    }
+
+    public async Task Reload()
+    {
+        await SetCount();
+        await InvokeAsync(() => StateHasChanged());
+        if (virtualize != null)
+        {
+            await virtualize.RefreshDataAsync();
+        }
+        await InvokeAsync(() => StateHasChanged());
+        if (playerRatingsDeviation != null)
+        {
+            await playerRatingsDeviation.LoadData();
+        }
+    }    
+
+    private async Task SetCount()
+    {
+        ratingsCount = await dataService.GetRatingsCount(ratingsRequest);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = ratingsRequest.Orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                ratingsRequest.Orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            ratingsRequest.Orders.Clear();
+            ratingsRequest.Orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+        await Reload();
+    }
+
+    private async ValueTask<ItemsProviderResult<PlayerRatingDto>> LoadRatings(ItemsProviderRequest request)
+    {
+        var numRatings = Math.Min(request.Count, ratingsCount - request.StartIndex);
+        ratingsRequest.Skip = request.StartIndex;
+        ratingsRequest.Take = numRatings;
+        var ratings = await dataService.GetRatings(ratingsRequest, request.CancellationToken);
+
+        return new ItemsProviderResult<PlayerRatingDto>(ratings, ratingsCount);
+    }
+
+    private void LoadPlayerChart(PlayerRatingDto playerRatingDto)
+    {
+        playerRatingChart?.LoadData(playerRatingDto.ToonId, playerRatingDto.Name);
+    }
+
+    public enum DeviationRequestEnum
+    {
+        None = 0,
+        Std = 1,
+        Cmdr = 2
+    }
+
+    private void ResetSearch()
+    {
+        ratingsRequest.Search = null;
+        _ = Reload();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}

@@ -1,0 +1,38 @@
+﻿<div class="form-group" style="max-width: 250px;">
+    <label for="@(Label + "select")" class="form-label">
+        @Label
+    </label>
+    <select class="form-select" id="@(Label + "select")" @onchange="Selected">
+        @foreach (var ent in Options)
+        {
+            if (ent == IsSelected)
+            {
+                <option selected="selected" value="@ent">@ent</option>
+            }
+            else
+            {
+                <option value="@ent">@ent</option>
+            }
+        }
+    </select>
+</div>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public string Label { get; set; } = default!;
+    [Parameter]
+    [EditorRequired]
+    public List<string> Options { get; set; } = default!;
+    [Parameter]
+    public string? IsSelected { get; set; }
+    [Parameter]
+    public EventCallback<string> OnSelected { get; set; }
+
+
+    void Selected(ChangeEventArgs e)
+    {
+        IsSelected = e.Value?.ToString();
+        OnSelected.InvokeAsync(IsSelected);
+    }
+}

@@ -1,0 +1,23 @@
+﻿
+@if (isLoading)
+{
+    <div class="spinner-border text-danger" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+
+@code {
+    private bool isLoading;
+
+    public void SetLoading()
+    {
+        isLoading = true;
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    public void UnsetLoading()
+    {
+        isLoading = false;       
+        InvokeAsync(() => StateHasChanged());
+    }
+}

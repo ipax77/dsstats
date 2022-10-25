@@ -1,0 +1,72 @@
+﻿@using pax.dsstats.shared
+@using sc2dsstats.razorlib.Services;
+
+<style>
+    .custom-control-input {
+        background-color: #E6E6E6;
+    }
+</style>
+
+<div class="d-flex flex-row bg-dark">
+    <div class="flex-column radiobar">
+        <fieldset class="form-group">
+            <legend>@Label</legend>
+            <div class="form-check" style="margin-left: 20px;">
+
+                <label class="col-form-label btn btn-block text-left p-0 @($"{(IsSelected == Commander.None ? "" : "text-white-50")}")">
+                    @if (IsSelected == Commander.None)
+                    {
+                        <input type="radio" id="@("ALLcmdr")" checked="checked" class="custom-control-input form-check-input" name="@Label" value="None" @onchange="CmdrSelected" />
+                    }
+                    else
+                    {
+                        <input type="radio" id="@("ALLcmdr")" class="custom-control-input form-check-input" name="@Label" value="None" @onchange="CmdrSelected" />
+                    }
+                    <img src="@HelperService.GetImageSrc(Commander.None)" width="30" height="30" />
+                    All
+                </label>
+            </div>
+            @foreach (Commander cmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
+            {
+                <div class="form-check" style="margin-left: 20px;">
+
+                    <label class="col-form-label btn btn-block text-left p-0 @($"{(IsSelected == cmdr ? "" : "text-white-50")}")">
+                        @if (IsSelected == cmdr)
+                        {
+                            <input type="radio" id="@(cmdr + "cmdr")" checked="checked" class="custom-control-input form-check-input" name="@Label" value="@cmdr" @onchange="CmdrSelected" />
+                        }
+                        else
+                        {
+                            <input type="radio" id="@(cmdr + "cmdr")" class="custom-control-input form-check-input" name="@Label" value="@cmdr" @onchange="CmdrSelected" />
+                        }
+                        <img src="@HelperService.GetImageSrc(cmdr)" width="30" height="30" />
+                        @cmdr
+                    </label>
+                </div>
+            }
+        </fieldset>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Label { get; set; } = "Commander";
+
+    [Parameter]
+    public Commander IsSelected { get; set; }
+
+    [Parameter]
+    public EventCallback<Commander> OnCmdrSelected { get; set; }
+
+    void CmdrSelected(ChangeEventArgs e)
+    {
+        if (e.Value is string cmdrString)
+        {
+            if (Enum.TryParse(cmdrString, out Commander cmdr))
+            {
+                IsSelected = cmdr;
+                OnCmdrSelected.InvokeAsync(cmdr);
+            }
+        }
+    }
+}

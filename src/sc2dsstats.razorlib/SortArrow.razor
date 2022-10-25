@@ -1,0 +1,56 @@
+﻿@using pax.dsstats.shared
+
+<style>
+    .sortnumber {
+        position: absolute;
+        text-indent: 2.7px;
+        margin: 0px -5px;
+        margin-right: 2px;
+        width: 15px;
+        height: 15px;
+        border: none;
+        border-radius: 100%;
+        line-height: 15px;
+        color: #FFF;
+        background-color: #99C;
+    }
+</style>
+
+<div class="d-flex justify-content-start">
+    @ChildContent
+    @if (tableOrder != null)
+    {
+        @if (tableOrder.Ascending)
+        {
+                    <span style="width: 1.2rem;" class="oi oi-arrow-top text-muted m-1"></span>
+        }
+        else
+        {
+                    <span style="width: 1.2rem;" class="oi oi-arrow-bottom text-muted m-1"></span>
+        }
+        @if (sortNumber >= 1)
+        {
+                    <div class="position-relative"><span class="sortnumber">@(sortNumber + 1)</span></div>
+        }
+    }
+    else
+    {
+            <span class="m-1" style="width: 1.2rem;"></span>
+    }
+</div>
+
+
+@code {
+    [CascadingParameter]
+    public List<TableOrder> Orders { get; set; } = null!;
+
+    [Parameter]
+    [EditorRequired]
+    public string Property { get; set; } = null!;
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private TableOrder? tableOrder => Orders.FirstOrDefault(f => f.Property == Property);
+    private int sortNumber => tableOrder == null ? 0 : Orders.IndexOf(tableOrder);
+}
