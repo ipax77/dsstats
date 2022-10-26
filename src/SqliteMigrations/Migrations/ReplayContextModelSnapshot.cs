@@ -36,6 +36,31 @@ namespace SqliteMigrations.Migrations
                     b.ToTable("BattleNetInfos");
                 });
 
+            modelBuilder.Entity("pax.dsstats.dbng.CommanderMmr", b =>
+                {
+                    b.Property<int>("CommanderMmrId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("AntiSynergy")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("Commander")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SynCommander")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("Synergy")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("CommanderMmrId");
+
+                    b.HasIndex("Commander", "SynCommander");
+
+                    b.ToTable("CommanderMmrs");
+                });
+
             modelBuilder.Entity("pax.dsstats.dbng.Event", b =>
                 {
                     b.Property<int>("EventId")

@@ -19,6 +19,7 @@ public class ReplayContext : DbContext
     public virtual DbSet<ReplayViewCount> ReplayViewCounts { get; set; } = null!;
     public virtual DbSet<ReplayDownloadCount> ReplayDownloadCounts { get; set; } = null!;
     public virtual DbSet<SkipReplay> SkipReplays { get; set; } = null!;
+    public virtual DbSet<CommanderMmr> CommanderMmrs { get; set; } = null!;
 
     public ReplayContext(DbContextOptions<ReplayContext> options)
     : base(options)
@@ -72,6 +73,11 @@ public class ReplayContext : DbContext
         modelBuilder.Entity<Upgrade>(entity =>
         {
             entity.HasIndex(e => e.Name).IsUnique();
+        });
+
+        modelBuilder.Entity<CommanderMmr>(entity =>
+        {
+            entity.HasIndex(e => new { e.Commander, e.SynCommander });
         });
     }
 }
