@@ -23,7 +23,7 @@ public static partial class Parse
             Cannon = (int)(replay.Cannon / 22.4),
             Playercount = (byte)replay.Players.Count,
             Middle = GetMiddleString(replay.Middles),
-            Players = players,
+            ReplayPlayers = players,
             Minkillsum = players.Select(s => s.Kills).Min(),
             Maxkillsum = players.Select(s => s.Kills).Max(),
             Minarmy = players.Select(s => s.Army).Min(),

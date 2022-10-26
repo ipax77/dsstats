@@ -431,7 +431,7 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("KilledValue")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ReplayPlayerId")
+                    b.Property<int>("ReplayPlayerId")
                         .HasColumnType("int");
 
                     b.Property<int>("UpgradeSpent")
@@ -617,7 +617,7 @@ namespace MysqlMigrations.Migrations
                         .IsRequired();
 
                     b.HasOne("pax.dsstats.dbng.Replay", "Replay")
-                        .WithMany("Players")
+                        .WithMany("ReplayPlayers")
                         .HasForeignKey("ReplayId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -633,9 +633,13 @@ namespace MysqlMigrations.Migrations
 
             modelBuilder.Entity("pax.dsstats.dbng.Spawn", b =>
                 {
-                    b.HasOne("pax.dsstats.dbng.ReplayPlayer", null)
+                    b.HasOne("pax.dsstats.dbng.ReplayPlayer", "ReplayPlayer")
                         .WithMany("Spawns")
-                        .HasForeignKey("ReplayPlayerId");
+                        .HasForeignKey("ReplayPlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ReplayPlayer");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.SpawnUnit", b =>
@@ -669,7 +673,7 @@ namespace MysqlMigrations.Migrations
 
             modelBuilder.Entity("pax.dsstats.dbng.Replay", b =>
                 {
-                    b.Navigation("Players");
+                    b.Navigation("ReplayPlayers");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.ReplayEvent", b =>

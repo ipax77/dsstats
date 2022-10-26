@@ -48,7 +48,7 @@ public partial class UploadService
 
     private static void MapPlayers(Dictionary<int, int> playersDic, ICollection<Replay> replays)
     {
-        foreach (var replayPlayer in replays.SelectMany(s => s.Players))
+        foreach (var replayPlayer in replays.SelectMany(s => s.ReplayPlayers))
         {
 #pragma warning disable CS8602
 #pragma warning disable CS8625
@@ -63,7 +63,7 @@ public partial class UploadService
     private async Task CreateMissingPlayers(ReplayContext context, Dictionary<int, int> playersDic, ICollection<Replay> replays)
     {
         int i = 0;
-        foreach (var player in replays.SelectMany(s => s.Players).Select(s => mapper.Map<PlayerDto>(s.Player)).Distinct())
+        foreach (var player in replays.SelectMany(s => s.ReplayPlayers).Select(s => mapper.Map<PlayerDto>(s.Player)).Distinct())
         {
             if (!playersDic.ContainsKey(player.ToonId))
             {
@@ -85,7 +85,7 @@ public partial class UploadService
 
     private async Task CreateMissingPlayers_Deprecated(ReplayContext context, Dictionary<int, int> playersDic, ICollection<Replay> replays)
     {
-        foreach (var player in replays.SelectMany(s => s.Players).Select(s => mapper.Map<PlayerDto>(s.Player)).Distinct())
+        foreach (var player in replays.SelectMany(s => s.ReplayPlayers).Select(s => mapper.Map<PlayerDto>(s.Player)).Distinct())
         {
             if (!playersDic.ContainsKey(player.ToonId))
             {

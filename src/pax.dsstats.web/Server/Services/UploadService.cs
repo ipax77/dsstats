@@ -87,11 +87,11 @@ public partial class UploadService
         }
 
         return await context.Replays
-            .Include(i => i.Players)
+            .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Player)
                 .ThenInclude(i => i.Uploader)
             .OrderByDescending(o => o.GameTime)
-            .Where(x => x.Players.Any(a => a.Player.Uploader != null && a.Player.Uploader.UploaderId == uploader.UploaderId))
+            .Where(x => x.ReplayPlayers.Any(a => a.Player.Uploader != null && a.Player.Uploader.UploaderId == uploader.UploaderId))
             .Select(s => s.GameTime)
             .FirstOrDefaultAsync();
     }

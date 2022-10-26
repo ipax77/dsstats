@@ -20,7 +20,7 @@ public class BuildService
         {
             (true, true) =>
                             from r in replays
-                            from rp in r.Players
+                            from rp in r.ReplayPlayers
                             from s in rp.Spawns
                             from u in s.Units
                             where rp.Race == request.Interest && request.PlayerNames.Contains(rp.Name)
@@ -35,7 +35,7 @@ public class BuildService
                             },
             (true, false) =>
                             from r in replays
-                            from rp in r.Players
+                            from rp in r.ReplayPlayers
                             from s in rp.Spawns
                             from u in s.Units
                             where rp.Race == request.Interest && rp.IsUploader
@@ -50,7 +50,7 @@ public class BuildService
                             },
             (false, true) =>
                             from r in replays
-                            from rp in r.Players
+                            from rp in r.ReplayPlayers
                             from s in rp.Spawns
                             from u in s.Units
                             where rp.Race == request.Interest && request.PlayerNames.Contains(rp.Name) && rp.OppRace == request.Versus
@@ -65,7 +65,7 @@ public class BuildService
                             },
             (false, false) =>
                             from r in replays
-                            from rp in r.Players
+                            from rp in r.ReplayPlayers
                             from s in rp.Spawns
                             from u in s.Units
                             where rp.Race == request.Interest && rp.IsUploader && rp.OppRace == request.Versus
@@ -92,11 +92,11 @@ public class BuildService
     private IQueryable<Replay> GetReuqestReplays(BuildRequest request)
     {
         var replays = context.Replays
-            .Include(i => i.Players)
+            .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Spawns)
                 .ThenInclude(i => i.Units)
             .Where(x => x.Playercount == 6 && x.Duration > 300 && x.Maxleaver < 90)
-            .Where(x => x.Players.Any(a => a.Race == request.Interest))
+            .Where(x => x.ReplayPlayers.Any(a => a.Race == request.Interest))
             .AsNoTracking();
 
         replays = replays.Where(x => x.GameTime >= request.StartTime);
@@ -120,7 +120,7 @@ public class BuildService
     public async Task<BuildResponse> GetBuild(BuildRequest request)
     {
         var replays = context.Replays
-            .Include(i => i.Players)
+            .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Spawns)
                 .ThenInclude(i => i.Units)
             .Where(x => x.Playercount == 6 && x.Duration > 300 && x.Maxleaver < 90)
@@ -189,7 +189,7 @@ public class BuildService
         return (request.Versus == Commander.None, !request.PlayerNames.Any()) switch
         {
             (true, true) => from r in replays
-                            from p in r.Players
+                            from p in r.ReplayPlayers
                             from s in p.Spawns
                             from u in s.Units
                             where p.Race == request.Interest && p.IsUploader
@@ -206,7 +206,7 @@ public class BuildService
                                 Duration = r.Duration
                             },
             (true, false) => from r in replays
-                             from p in r.Players
+                             from p in r.ReplayPlayers
                              from s in p.Spawns
                              from u in s.Units
                              where p.Race == request.Interest && request.PlayerNames.Contains(p.Name)
@@ -223,7 +223,7 @@ public class BuildService
                                  Duration = r.Duration
                              },
             (false, true) => from r in replays
-                             from p in r.Players
+                             from p in r.ReplayPlayers
                              from s in p.Spawns
                              from u in s.Units
                              where p.Race == request.Interest && p.OppRace == request.Versus && p.IsUploader
@@ -240,7 +240,7 @@ public class BuildService
                                  Duration = r.Duration
                              },
             (false, false) => from r in replays
-                              from p in r.Players
+                              from p in r.ReplayPlayers
                               from s in p.Spawns
                               from u in s.Units
                               where p.Race == request.Interest && p.OppRace == request.Versus && request.PlayerNames.Contains(p.Name)

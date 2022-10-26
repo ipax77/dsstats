@@ -42,6 +42,9 @@
 	  <None Update="testdata\replayDto1.json">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
+	  <None Update="testdata\replayDto2.json">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	  <None Update="testdata\uploadtest.base64">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>

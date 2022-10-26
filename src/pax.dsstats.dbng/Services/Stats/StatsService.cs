@@ -74,7 +74,7 @@ public partial class StatsService : IStatsService
     private async Task<List<CmdrStats>> GetUploaderStats()
     {
         var stats = from r in context.Replays
-                    from p in r.Players
+                    from p in r.ReplayPlayers
                     where p.IsUploader
                     group new { r, p } by new { year = r.GameTime.Year, month = r.GameTime.Month, race = p.Race, opprace = p.OppRace } into g
                     select new CmdrStats()
@@ -97,7 +97,7 @@ public partial class StatsService : IStatsService
     private async Task<List<CmdrStats>> GetStats()
     {
         var stats = from r in context.Replays
-                    from p in r.Players
+                    from p in r.ReplayPlayers
                     where r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic
                     // where r.DefaultFilter && p.IsUploader
                     group new { r, p } by new { year = r.GameTime.Year, month = r.GameTime.Month, race = p.Race, opprace = p.OppRace } into g

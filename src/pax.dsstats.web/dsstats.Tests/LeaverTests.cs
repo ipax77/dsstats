@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,13 +15,13 @@ using System.Text.Json;
 namespace dsstats.Tests;
 
 // [Collection("Sequential")]
-public class DuplicateLeaverTests : IDisposable
+public class LeaverTests : IDisposable
 {
     private readonly UploadService uploadService;
     private readonly DbConnection _connection;
     private readonly DbContextOptions<ReplayContext> _contextOptions;
 
-    public DuplicateLeaverTests(IMapper mapper)
+    public LeaverTests(IMapper mapper)
     {
         _connection = new SqliteConnection("Filename=:memory:");
         _connection.Open();
@@ -61,7 +61,7 @@ public class DuplicateLeaverTests : IDisposable
 
 
     [Fact]
-    public async Task SetUploaderWithLeaverTest()
+    public async Task LeaverUploadTest()
     {
         var uploaderDto1 = GetUploaderDto(1);
         var uploaderDto2 = GetUploaderDto(2);
@@ -80,11 +80,10 @@ public class DuplicateLeaverTests : IDisposable
         var context = CreateContext();
         var countBefore = await context.Replays.CountAsync();
 
-        // string testFile = "/data/ds/uploadtest3.json";
-        string testFile = Startup.GetTestFilePath("replayDto1.json");
+        string testFile = Startup.GetTestFilePath("replayDto2.json");
 
         Assert.True(File.Exists(testFile));
-        ReplayDto? replayDto = JsonSerializer.Deserialize<List<ReplayDto>>(File.ReadAllText(testFile))?.FirstOrDefault();
+        ReplayDto? replayDto = JsonSerializer.Deserialize<ReplayDto>(File.ReadAllText(testFile));
         Assert.NotNull(replayDto);
         if (replayDto == null)
         {
@@ -94,10 +93,10 @@ public class DuplicateLeaverTests : IDisposable
         replayDto.ReplayPlayers.ToList().ForEach(f => f.IsUploader = false);
 
         replayDto.ReplayPlayers.ElementAt(0).IsUploader = true;
-        var leaverDto = replayDto with { Duration = replayDto.Duration - 61 };
-        await uploadService.ImportReplays(ZipReplay(leaverDto), uploaderDto1.AppGuid);
 
-        await Task.Delay(1000);
+        var leaverReplay = GetLeaverReplay(replayDto);
+        await uploadService.ImportReplays(ZipReplay(leaverReplay), uploaderDto1.AppGuid);
+        await Task.Delay(3000);
 
         replayDto.ReplayPlayers.ElementAt(0).IsUploader = false;
         replayDto.ReplayPlayers.ElementAt(1).IsUploader = true;
@@ -128,6 +127,49 @@ public class DuplicateLeaverTests : IDisposable
         Assert.Equal(6, dbReplay?.ReplayPlayers.Count(c => c.IsUploader));
     }
 
+    private static ReplayDto GetLeaverReplay(ReplayDto replayDto, int mod = 2)
+    {
+        DateTime newGameTime = replayDto.GameTime.AddSeconds(-replayDto.Duration / mod);
+        int newDuration = replayDto.Duration / mod;
+
+        List<ReplayPlayerDto> replayPlayers = new();
+        for (int i = 0; i < replayDto.ReplayPlayers.Count; i++)
+        {
+            var player = replayDto.ReplayPlayers.ElementAt(i);
+            replayPlayers.Add(player with
+            {
+                Income = player.Income / mod,
+                Army = player.Army / mod,
+                Kills = player.Kills / mod,
+                UpgradesSpent = player.UpgradesSpent / mod,
+                Upgrades = player.Upgrades.Take(player.Upgrades.Count / mod).ToList(),
+                Spawns = player.Spawns.Take(player.Spawns.Count / mod).ToList(),
+                Duration = newDuration,
+                PlayerResult = PlayerResult.None
+            });
+        }
+
+        var newMiddle = String.Join('|', replayDto.Middle.Split('|').Chunk(2).First());
+
+        var leaverReplay = replayDto with
+        {
+            GameTime = newGameTime,
+            Duration = newDuration,
+            ReplayPlayers = replayPlayers,
+            WinnerTeam = 0,
+            Minkillsum = replayPlayers.Select(s => s.Kills).Min(),
+            Maxkillsum = replayPlayers.Select(s => s.Kills).Max(),
+            Minarmy = replayPlayers.Select(s => s.Army).Min(),
+            Minincome = replayPlayers.Select(s => s.Income).Min(),
+            Maxleaver = newDuration - replayPlayers.Select(s => s.Duration).Min(),
+            Middle = newMiddle
+        };
+
+        leaverReplay.ReplayHash = Data.GenHash(leaverReplay);
+
+        return leaverReplay;
+    }
+
     private static UploaderDto GetUploaderDto(int num)
     {
         return new UploaderDto()
@@ -138,7 +180,7 @@ public class DuplicateLeaverTests : IDisposable
             {
                 new BattleNetInfoDto()
                 {
-                    BattleNetId = 123456 + num
+                    BattleNetId = 223456 + num
                 }
             },
             Players = new List<PlayerUploadDto>()
@@ -146,7 +188,7 @@ public class DuplicateLeaverTests : IDisposable
                 new PlayerUploadDto()
                 {
                     Name = "Test" + num,
-                    ToonId = 123456 + num
+                    ToonId = 223456 + num
                 },
             }
         };

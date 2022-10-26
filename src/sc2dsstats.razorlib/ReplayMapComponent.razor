@@ -16,7 +16,7 @@
 </style>
 
 <div class="row">
-    @foreach (var player in replayDto.Players)
+    @foreach (var player in replayDto.ReplayPlayers)
     {
         var units = GetUnits(player);
         @if (units.Any())

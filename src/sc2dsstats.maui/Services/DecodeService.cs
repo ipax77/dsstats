@@ -303,9 +303,9 @@ public class DecodeService : IDisposable
 
         if (playerToonIds != null && playerToonIds.Any())
         {
-            for (int i = 0; i < replayDto.Players.Count; i++)
+            for (int i = 0; i < replayDto.ReplayPlayers.Count; i++)
             {
-                var player = replayDto.Players.ElementAt(i);
+                var player = replayDto.ReplayPlayers.ElementAt(i);
                 if (playerToonIds.Contains(player.Player.ToonId))
                 {
                     player.IsUploader = true;
@@ -314,9 +314,9 @@ public class DecodeService : IDisposable
         }
         else
         {
-            for (int i = 0; i < replayDto.Players.Count; i++)
+            for (int i = 0; i < replayDto.ReplayPlayers.Count; i++)
             {
-                var player = replayDto.Players.ElementAt(i);
+                var player = replayDto.ReplayPlayers.ElementAt(i);
                 if (UserSettingsService.UserSettings.PlayerNames.Contains(player.Name))
                 {
                     player.IsUploader = true;

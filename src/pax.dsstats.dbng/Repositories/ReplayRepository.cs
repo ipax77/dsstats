@@ -23,11 +23,11 @@ public class ReplayRepository : IReplayRepository
     public async Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default)
     {
         var replay = await context.Replays
-            .Include(i => i.Players)
+            .Include(i => i.ReplayPlayers)
                 .ThenInclude(t => t.Spawns)
                     .ThenInclude(t => t.Units)
                         .ThenInclude(t => t.Unit)
-            .Include(i => i.Players)
+            .Include(i => i.ReplayPlayers)
                 .ThenInclude(t => t.Player)
             .AsNoTracking()
             .AsSplitQuery()
@@ -51,11 +51,11 @@ public class ReplayRepository : IReplayRepository
     public async Task<ReplayDto?> GetLatestReplay(CancellationToken token = default)
     {
         return await context.Replays
-            .Include(i => i.Players)
+            .Include(i => i.ReplayPlayers)
                 .ThenInclude(t => t.Spawns)
                     .ThenInclude(t => t.Units)
                         .ThenInclude(t => t.Unit)
-            .Include(i => i.Players)
+            .Include(i => i.ReplayPlayers)
                 .ThenInclude(t => t.Player)
             .AsNoTracking()
             .AsSplitQuery()
@@ -161,14 +161,14 @@ public class ReplayRepository : IReplayRepository
             (true, true) => context.Replays
                                 .Include(i => i.ReplayEvent)
                                     .ThenInclude(i => i.Event)
-                                .Include(i => i.Players)
+                                .Include(i => i.ReplayPlayers)
                                 .AsNoTracking(),
             (true, false) => context.Replays
                                 .Include(i => i.ReplayEvent)
                                     .ThenInclude(i => i.Event)
                                 .AsNoTracking(),
             (false, true) => context.Replays
-                                .Include(i => i.Players)
+                                .Include(i => i.ReplayPlayers)
                                 .AsNoTracking(),
             _ => context.Replays
                 .AsNoTracking()
@@ -197,7 +197,7 @@ public class ReplayRepository : IReplayRepository
         {
             foreach (string player in request.SearchPlayers.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             {
-                replays = replays.Where(x => x.Players.Any(a => a.Name.ToUpper().Contains(player.ToUpper())));
+                replays = replays.Where(x => x.ReplayPlayers.Any(a => a.Name.ToUpper().Contains(player.ToUpper())));
             }
         }
 
@@ -330,7 +330,7 @@ public class ReplayRepository : IReplayRepository
             dbReplay.ReplayEvent = replayEvent;
         }
 
-        foreach (var player in dbReplay.Players)
+        foreach (var player in dbReplay.ReplayPlayers)
         {
             var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == player.Player.ToonId);
             if (dbPlayer == null)
@@ -468,10 +468,10 @@ public class ReplayRepository : IReplayRepository
     public async Task DeleteReplayByFileName(string fileName)
     {
         var replay = await context.Replays
-            .Include(i => i.Players)
+            .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Spawns)
                     .ThenInclude(i => i.Units)
-            .Include(i => i.Players)
+            .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Upgrades)
 
             .FirstOrDefaultAsync(f => f.FileName == fileName);

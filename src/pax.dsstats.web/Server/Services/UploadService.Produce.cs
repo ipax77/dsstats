@@ -160,7 +160,7 @@ public partial class UploadService
     public async Task<bool> HandleDuplicate(ReplayContext context, Replay replay)
     {
         var dupReplay = await context.Replays
-            .Include(i => i.Players)
+            .Include(i => i.ReplayPlayers)
             .FirstOrDefaultAsync(f => f.ReplayHash == replay.ReplayHash);
 
         if (dupReplay == null)
@@ -177,17 +177,17 @@ public partial class UploadService
         if (replay.Duration > dupReplay.Duration + 60)
         {
             var delReplay = await context.Replays
-                .Include(i => i.Players)
+                .Include(i => i.ReplayPlayers)
                     .ThenInclude(i => i.Spawns)
                         .ThenInclude(i => i.Units)
-                .Include(i => i.Players)
+                .Include(i => i.ReplayPlayers)
                     .ThenInclude(i => i.Upgrades)
 
                 .FirstAsync(f => f.ReplayHash == replay.ReplayHash);
 
-            foreach (var uploader in delReplay.Players.Where(x => x.IsUploader))
+            foreach (var uploader in delReplay.ReplayPlayers.Where(x => x.IsUploader))
             {
-                var uploaderDto = replay.Players.FirstOrDefault(f => f.Name == uploader.Name);
+                var uploaderDto = replay.ReplayPlayers.FirstOrDefault(f => f.Name == uploader.Name);
                 if (uploaderDto == null)
                 {
                     logger.LogWarning($"false positive duplicate (dtoPlayer)? {dupReplay.ReplayHash}");
@@ -202,9 +202,9 @@ public partial class UploadService
         }
         else
         {
-            foreach (var uploader in replay.Players.Where(x => x.IsUploader))
+            foreach (var uploader in replay.ReplayPlayers.Where(x => x.IsUploader))
             {
-                var dbUploader = dupReplay.Players.FirstOrDefault(f => f.Name == uploader.Name);
+                var dbUploader = dupReplay.ReplayPlayers.FirstOrDefault(f => f.Name == uploader.Name);
                 if (dbUploader == null)
                 {
                     logger.LogWarning($"false positive duplicate (dbPlayer)? {dupReplay.ReplayHash}");

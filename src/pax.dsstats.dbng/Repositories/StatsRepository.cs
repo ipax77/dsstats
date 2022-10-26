@@ -44,7 +44,7 @@ public partial class StatsRepository : IStatsRepository
         var replays = GetReplays(request);
 
         var results = from r in replays
-                      from p in r.Players
+                      from p in r.ReplayPlayers
                       group new { r, p } by new { race = p.Race } into g
                       select new StatsResponseItem
                       {
@@ -133,7 +133,7 @@ public partial class StatsRepository : IStatsRepository
             replays = context.Replays
                 .Include(i => i.ReplayEvent)
                     .ThenInclude(j => j.Event)
-                .Include(i => i.Players)
+                .Include(i => i.ReplayPlayers)
                 .Where(x => x.GameTime > request.StartTime);
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
         }
@@ -141,7 +141,7 @@ public partial class StatsRepository : IStatsRepository
         {
             replays = context.Replays
                 .Include(i => i.ReplayEvent)
-                .Include(i => i.Players)
+                .Include(i => i.ReplayPlayers)
                 .Where(x => x.GameTime > request.StartTime);
         }
 

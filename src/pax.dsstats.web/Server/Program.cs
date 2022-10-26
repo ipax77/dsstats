@@ -1,13 +1,16 @@
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using MathNet.Numerics;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
+using pax.dsstats.dbng.Extensions;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Services;
 using sc2dsstats.db;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -72,6 +75,30 @@ mapper.ConfigurationProvider.AssertConfigurationIsValid();
 
 using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 context.Database.Migrate();
+
+// DEBUG
+
+//var spawns = context.Spawns
+//    .Include(i => i.ReplayPlayer)
+//        .ThenInclude(i => i.Replay)
+//    .Include(i => i.Units)
+//    .AsNoTracking()
+//    //.Take(1000)
+//    .ToList();
+
+//Dictionary<string, Spawn> spawnHashes = new();
+
+//foreach (var spawn in spawns)
+//{
+//    var hash = spawn.GenHash();
+
+//    if (spawnHashes.ContainsKey(hash))
+//    {
+//        Console.WriteLine($"got double hash for spawn");
+//    }
+//    spawnHashes[hash] = spawn;
+//}
+
 
 //var mmrServie = scope.ServiceProvider.GetRequiredService<MmrService>();
 //mmrServie.CalcMmmr().GetAwaiter().GetResult();

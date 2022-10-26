@@ -30,7 +30,7 @@ public record ReplayDto
     public string CommandersTeam1 { get; init; } = null!;
     public string CommandersTeam2 { get; init; } = null!;
     public ReplayEventDto? ReplayEvent { get; set; }
-    public ICollection<ReplayPlayerDto> Players { get; init; } = new HashSet<ReplayPlayerDto>();
+    public ICollection<ReplayPlayerDto> ReplayPlayers { get; init; } = new HashSet<ReplayPlayerDto>();
 }
 
 public record ReplayPlayerDto

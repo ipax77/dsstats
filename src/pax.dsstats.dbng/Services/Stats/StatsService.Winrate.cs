@@ -69,7 +69,7 @@ public partial class StatsService
         var responses = (request.Uploaders, request.Interest == Commander.None) switch
         {
             (false, true) => from r in replays
-                             from p in r.Players
+                             from p in r.ReplayPlayers
                              group new { r, p } by new { race = p.Race } into g
                              select new StatsResponseItem()
                              {
@@ -79,7 +79,7 @@ public partial class StatsService
                                  duration = g.Sum(s => s.r.Duration)
                              },
             (false, false) => from r in replays
-                              from p in r.Players
+                              from p in r.ReplayPlayers
                               where p.Race == request.Interest
                               group new { r, p } by new { race = p.OppRace } into g
                               select new StatsResponseItem()
@@ -90,7 +90,7 @@ public partial class StatsService
                                   duration = g.Sum(s => s.r.Duration)
                               },
             (true, true) => from r in replays
-                            from p in r.Players
+                            from p in r.ReplayPlayers
                             where p.IsUploader
                             group new { r, p } by new { race = p.Race } into g
                             select new StatsResponseItem()
@@ -101,7 +101,7 @@ public partial class StatsService
                                 duration = g.Sum(s => s.r.Duration)
                             },
             (true, false) => from r in replays
-                             from p in r.Players
+                             from p in r.ReplayPlayers
                              where p.IsUploader && p.Race == request.Interest
                              group new { r, p } by new { race = p.OppRace } into g
                              select new StatsResponseItem()

@@ -2,7 +2,7 @@
 @using pax.dsstats.shared
 
 <div class="row">
-    @foreach (var player in replayDto.Players.OrderBy(o => o.GamePos))
+    @foreach (var player in replayDto.ReplayPlayers.OrderBy(o => o.GamePos))
     {
         var upgrades = GetUpgrades(player);
         @if (upgrades.Any())

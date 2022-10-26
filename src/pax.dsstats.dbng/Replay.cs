@@ -90,7 +90,7 @@ public class Replay
 {
     public Replay()
     {
-        Players = new HashSet<ReplayPlayer>();
+        ReplayPlayers = new HashSet<ReplayPlayer>();
     }
 
     public int ReplayId { get; set; }
@@ -120,7 +120,7 @@ public class Replay
     public string CommandersTeam2 { get; set; } = null!;
     public int? ReplayEventId { get; set; }
     public ReplayEvent? ReplayEvent { get; set; }
-    public virtual ICollection<ReplayPlayer> Players { get; set; }
+    public virtual ICollection<ReplayPlayer> ReplayPlayers { get; set; }
 }
 
 public class ReplayPlayer
@@ -176,6 +176,8 @@ public class Spawn
     public int ArmyValue { get; set; }
     public int KilledValue { get; set; }
     public int UpgradeSpent { get; set; }
+    public int ReplayPlayerId { get; set; }
+    public ReplayPlayer ReplayPlayer { get; set; } = null!;
     public virtual ICollection<SpawnUnit> Units { get; set; }
 }
 

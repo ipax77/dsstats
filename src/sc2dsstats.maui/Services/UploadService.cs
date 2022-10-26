@@ -46,8 +46,8 @@ public class UploadService
     private HttpClient GetHttpClient()
     {
         var httpClient = new HttpClient();
-        // httpClient.BaseAddress = new Uri("https://localhost:7174");
-        httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
+        httpClient.BaseAddress = new Uri("https://localhost:7174");
+        // httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("DSupload77");
         return httpClient;
@@ -83,11 +83,11 @@ public class UploadService
             var latestReplayDate = await GetLastReplayDate(context, scope);
 
             var replays = await context.Replays
-                .Include(i => i.Players)
+                .Include(i => i.ReplayPlayers)
                     .ThenInclude(t => t.Spawns)
                         .ThenInclude(t => t.Units)
                             .ThenInclude(t => t.Unit)
-                .Include(i => i.Players)
+                .Include(i => i.ReplayPlayers)
                     .ThenInclude(t => t.Player)
                     .AsNoTracking()
                     .AsSplitQuery()

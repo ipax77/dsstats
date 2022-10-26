@@ -8,7 +8,7 @@ public record ReplayDsRDto
     public int Maxleaver { get; init; }
     public int WinnerTeam { get; set; }
     public int Duration { get; init; }
-    public List<ReplayPlayerDsRDto> Players { get; init; } = new();
+    public List<ReplayPlayerDsRDto> ReplayPlayers { get; init; } = new();
 }
 
 public record ReplayPlayerDsRDto

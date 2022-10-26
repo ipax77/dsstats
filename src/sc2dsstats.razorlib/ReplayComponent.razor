@@ -24,7 +24,7 @@
                 <div class="row">
                     @for (int i = 1; i <= 2; i++)
                     {
-                        var players = replayDto.Players.Where(x => x.Team == i).OrderBy(o => o.GamePos).ToList();
+                        var players = replayDto.ReplayPlayers.Where(x => x.Team == i).OrderBy(o => o.GamePos).ToList();
                         bool isWinner = replayDto.WinnerTeam == i;
 
                         <div class="col-auto">
@@ -196,11 +196,11 @@
         (int startTeam, int[] gameloops, int totalGameloops) = HelperService.GetMiddleInfo(replay.Middle, replay.Duration);
         (mid1, mid2) = HelperService.GetChartMiddle(startTeam, gameloops, totalGameloops);
 
-        mvp = replay.Players.OrderBy(o => o.Kills).Last().GamePos;
+        mvp = replay.ReplayPlayers.OrderBy(o => o.Kills).Last().GamePos;
         duration = replay.Duration >= 3600 ?
               $"{TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")} h"
             : $"{TimeSpan.FromSeconds(replay.Duration).ToString(@"mm\:ss")} min";
-        SpawnGameloops = replay.Players.SelectMany(m => m.Spawns).Select(s => s.Gameloop).OrderBy(o => o).ToHashSet();
+        SpawnGameloops = replay.ReplayPlayers.SelectMany(m => m.Spawns).Select(s => s.Gameloop).OrderBy(o => o).ToHashSet();
         List<int> removeLoops = new();
         for (int i = 1; i < SpawnGameloops.Count; i++)
         {

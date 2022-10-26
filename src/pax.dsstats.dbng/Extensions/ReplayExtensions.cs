@@ -10,7 +10,8 @@ public static class ReplayExtensions
     {
         if (replay.Playercount == 6
             && replay.Duration >= 300
-            && replay.Maxleaver < 90)
+            && replay.Maxleaver < 90
+            && replay.WinnerTeam > 0)
         {
             replay.DefaultFilter = true;
         }
@@ -18,13 +19,13 @@ public static class ReplayExtensions
 
     public static string GenHash(this Replay replay)
     {
-        if (!replay.Players.Any())
+        if (!replay.ReplayPlayers.Any())
         {
             throw new ArgumentOutOfRangeException(nameof(replay));
         }
 
         StringBuilder sb = new();
-        foreach (var pl in replay.Players.OrderBy(o => o.GamePos))
+        foreach (var pl in replay.ReplayPlayers.OrderBy(o => o.GamePos))
         {
             if (pl.Player == null)
             {
@@ -35,13 +36,22 @@ public static class ReplayExtensions
         sb.Append(replay.GameMode + replay.Playercount);
         sb.Append(replay.Minarmy + replay.Minkillsum + replay.Minincome + replay.Maxkillsum);
 
-        // if (replay.WinnerTeam == 0)
-        // {
-        //     sb.Append(replay.Maxkillsum);
-        // } else
-        // {
-        //     sb.Append(replay.Minkillsum);
-        // }
+        using var md5Hash = MD5.Create();
+        return GetMd5Hash(md5Hash, sb.ToString());
+    }
+
+    public static string GenHash(this Spawn spawn)
+    {
+        StringBuilder sb = new();
+
+        sb.Append(spawn.Gameloop);
+        sb.Append(spawn.Income);
+        sb.Append(spawn.GasCount);
+        sb.Append(spawn.ArmyValue);
+        sb.Append(spawn.KilledValue);
+        sb.Append(spawn.UpgradeSpent);
+
+        sb.Append(string.Concat(spawn.Units.Select(s => $"{s.UnitId}{s.Poss}")));
 
         using var md5Hash = MD5.Create();
         return GetMd5Hash(md5Hash, sb.ToString());

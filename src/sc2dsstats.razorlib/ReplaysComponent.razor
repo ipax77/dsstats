@@ -97,7 +97,7 @@
                     <Virtualize @ref="virtualizeComponent" Context="replay" ItemsProvider="LoadReplays" ItemSize="47">
                         <ItemContent>
                             <tr height="47px" class="pointer @(lastVisitHash == replay.ReplayHash ? "table-primary" : "")" @onclick="e => ShowReplay(replay.ReplayHash)">
-                                <td>@replay.GameTime</td>
+                                <td>@replay.GameTime.ToString(@"yyyy-MM-dd")</td>
                                 <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
                                 <td>
                                     @if (!ShowImages)

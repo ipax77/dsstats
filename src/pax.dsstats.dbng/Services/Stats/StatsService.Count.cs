@@ -81,7 +81,7 @@ public partial class StatsService
     private IQueryable<Replay> GetCountReplays(StatsRequest request)
     {
         var replays = context.Replays
-                .Include(i => i.Players)
+                .Include(i => i.ReplayPlayers)
                 .Where(x => x.GameTime > request.StartTime)
                 .AsNoTracking();
 
@@ -99,17 +99,17 @@ public partial class StatsService
         {
             if (request.Versus != Commander.None)
             {
-                replays = replays.Where(x => x.Players.Any(a => a.Race == request.Interest && a.OppRace == request.Versus));
+                replays = replays.Where(x => x.ReplayPlayers.Any(a => a.Race == request.Interest && a.OppRace == request.Versus));
             }
             else
             {
-                replays = replays.Where(x => x.Players.Any(a => a.Race == request.Interest));
+                replays = replays.Where(x => x.ReplayPlayers.Any(a => a.Race == request.Interest));
             }
         }
 
         if (request.PlayerNames.Any())
         {
-            replays = replays.Where(x => x.Players.Any(a => request.PlayerNames.Contains(a.Name)));
+            replays = replays.Where(x => x.ReplayPlayers.Any(a => request.PlayerNames.Contains(a.Name)));
         }
 
         if (request.PlayerCount > 0)

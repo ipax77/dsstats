@@ -141,7 +141,7 @@ public static class Data
     public static string GenHash(ReplayDto replay)
     {
         StringBuilder sb = new();
-        foreach (var pl in replay.Players.OrderBy(o => o.GamePos))
+        foreach (var pl in replay.ReplayPlayers.OrderBy(o => o.GamePos))
         {
             sb.Append(pl.GamePos + pl.Race + pl.Player.ToonId);
         }

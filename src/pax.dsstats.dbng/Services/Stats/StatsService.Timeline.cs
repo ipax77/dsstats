@@ -105,7 +105,7 @@ public partial class StatsService
         var replays = GetCountReplays(request);
 
         var results = from r in replays
-                      from p in r.Players
+                      from p in r.ReplayPlayers
                       where p.Race == request.Interest
                       select new DbStatsResult()
                       {

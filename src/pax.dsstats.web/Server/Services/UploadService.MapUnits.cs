@@ -47,7 +47,7 @@ public partial class UploadService
 
     private static void MapSpawnUnits(Dictionary<UnitDicKey, int> untrackedDbUnits, ICollection<Replay> replays)
     {
-        foreach (var spawn in replays.SelectMany(s => s.Players).SelectMany(s => s.Spawns))
+        foreach (var spawn in replays.SelectMany(s => s.ReplayPlayers).SelectMany(s => s.Spawns))
         {
             spawn.Units = spawn.Units.Select(s => new SpawnUnit()
             {
@@ -61,7 +61,7 @@ public partial class UploadService
 
     private async Task CreateMissingUnits(ReplayContext context, Dictionary<UnitDicKey, int> untrackedDbUnits, ICollection<Replay> replays)
     {
-        foreach (var unit in replays.SelectMany(s => s.Players).SelectMany(s => s.Spawns).SelectMany(s => s.Units).Select(s => mapper.Map<UnitDto>(s.Unit)).Distinct())
+        foreach (var unit in replays.SelectMany(s => s.ReplayPlayers).SelectMany(s => s.Spawns).SelectMany(s => s.Units).Select(s => mapper.Map<UnitDto>(s.Unit)).Distinct())
         {
             var dicKey = new UnitDicKey(unit.Name, unit.Commander);
             if (!untrackedDbUnits.ContainsKey(dicKey))

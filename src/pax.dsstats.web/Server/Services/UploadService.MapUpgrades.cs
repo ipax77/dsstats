@@ -47,7 +47,7 @@ public partial class UploadService
 
     private async Task CreateMissingUpgrades(ReplayContext context, Dictionary<string, int> untrackedUpgradesDic, ICollection<Replay> replays)
     {
-        foreach (var upgrade in replays.SelectMany(s => s.Players).SelectMany(s => s.Upgrades).Select(s => mapper.Map<UpgradeDto>(s.Upgrade)).Distinct())
+        foreach (var upgrade in replays.SelectMany(s => s.ReplayPlayers).SelectMany(s => s.Upgrades).Select(s => mapper.Map<UpgradeDto>(s.Upgrade)).Distinct())
         {
             if (!untrackedUpgradesDic.ContainsKey(upgrade.Name))
             {
@@ -59,7 +59,7 @@ public partial class UploadService
 
     private void MapPlayerUpgrades(Dictionary<string, int> untrackedUpgradesDic, ICollection<Replay> replays)
     {
-        foreach (var player in replays.SelectMany(s => s.Players))
+        foreach (var player in replays.SelectMany(s => s.ReplayPlayers))
         {
             player.Upgrades = player.Upgrades.Select(s => new PlayerUpgrade()
             {

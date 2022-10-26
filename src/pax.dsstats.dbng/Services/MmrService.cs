@@ -55,7 +55,7 @@ public class MmrService
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         var replays = context.Replays
-            .Include(i => i.Players)
+            .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Player)
             .Where(x => x.Duration >= 300 && x.Maxleaver < 89 && x.WinnerTeam > 0)
             .Where(x => x.Playercount == 6 && x.GameMode == GameMode.Standard)
@@ -66,8 +66,8 @@ public class MmrService
 
         await replays.ForEachAsync(f =>
         {
-            var winnerTeam = f.Players.Where(x => x.Team == f.WinnerTeam).Select(m => m.Player);
-            var runnerTeam = f.Players.Where(x => x.Team != f.WinnerTeam).Select(m => m.Player);
+            var winnerTeam = f.ReplayPlayers.Where(x => x.Team == f.WinnerTeam).Select(m => m.Player);
+            var runnerTeam = f.ReplayPlayers.Where(x => x.Team != f.WinnerTeam).Select(m => m.Player);
 
             var winnerTeamMmr = GetTeamMmrStd(winnerTeam, f.GameTime);
             var runnerTeamMmr = GetTeamMmrStd(runnerTeam, f.GameTime);
@@ -87,7 +87,7 @@ public class MmrService
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         var replays = context.Replays
-            .Include(i => i.Players)
+            .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Player)
             .Where(x => x.Duration >= 300 && x.Maxleaver < 89 && x.WinnerTeam > 0)
             .Where(x => x.Playercount == 6 && (x.GameMode == GameMode.Commanders || x.GameMode == GameMode.CommandersHeroic))
@@ -98,8 +98,8 @@ public class MmrService
 
         await replays.ForEachAsync(f =>
         {
-            var winnerTeam = f.Players.Where(x => x.Team == f.WinnerTeam).Select(m => m.Player);
-            var runnerTeam = f.Players.Where(x => x.Team != f.WinnerTeam).Select(m => m.Player);
+            var winnerTeam = f.ReplayPlayers.Where(x => x.Team == f.WinnerTeam).Select(m => m.Player);
+            var runnerTeam = f.ReplayPlayers.Where(x => x.Team != f.WinnerTeam).Select(m => m.Player);
 
             var winnerTeamMmr = GetTeamMmr(winnerTeam, f.GameTime);
             var runnerTeamMmr = GetTeamMmr(runnerTeam, f.GameTime);

@@ -36,7 +36,7 @@ public class FireMmrService
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         var replays = context.Replays
-            .Include(r => r.Players)
+            .Include(r => r.ReplayPlayers)
                 .ThenInclude(rp => rp.Player)
             .Where(r => r.Duration >= 90)
             .Where(r => r.Playercount == 6 && r.GameMode == GameMode.Commanders)
@@ -48,22 +48,22 @@ public class FireMmrService
         await replays.ForEachAsync(replay =>
         {
 
-            var winnerTeam = replay.Players.Where(x => x.Team == replay.WinnerTeam);
-            var loserTeam = replay.Players.Where(x => x.Team != replay.WinnerTeam);
+            var winnerTeam = replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam);
+            var loserTeam = replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam);
             var leaverTeam = new List<ReplayPlayerDsRDto>().AsEnumerable();
 
             int correctedDuration = replay.Duration;
             if (replay.WinnerTeam == 0)
             {
-                correctedDuration = replay.Players.Where(x => !x.IsUploader).Max(x => x.Duration);
+                correctedDuration = replay.ReplayPlayers.Where(x => !x.IsUploader).Max(x => x.Duration);
 
-                var uploaders = replay.Players.Where(x => x.IsUploader);
+                var uploaders = replay.ReplayPlayers.Where(x => x.IsUploader);
 
-                winnerTeam = replay.Players.Where(x => !x.IsUploader && x.Duration >= uploaders.First().Duration - 100);
+                winnerTeam = replay.ReplayPlayers.Where(x => !x.IsUploader && x.Duration >= uploaders.First().Duration - 100);
                 //loserTeam = 
             }
 
-            leaverTeam = replay.Players.Where(x => x.Duration <= correctedDuration - 89);
+            leaverTeam = replay.ReplayPlayers.Where(x => x.Duration <= correctedDuration - 89);
 
 
             var winnerTeamMmr = GetTeamMmr(winnerTeam, replay.GameTime, replay.Duration);
