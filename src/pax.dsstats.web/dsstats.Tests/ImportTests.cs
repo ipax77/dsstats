@@ -114,7 +114,7 @@ public class ImportTests : IDisposable
         bool dbHasUploader = await context.Uploaders.AnyAsync(a => a.AppGuid == appGuid);
         Assert.True(dbHasUploader);
 
-        string testFile = "/data/ds/uploadtest.base64";
+        string testFile = Startup.GetTestFilePath("uploadtest.base64");
 
         Assert.True(File.Exists(testFile));
         var base64String = File.ReadAllText(testFile);

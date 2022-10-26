@@ -43,8 +43,9 @@ public class DuplicateLeaverTests : IDisposable
                 sqlOptions.MigrationsAssembly("SqliteMigrations");
                 sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
             })
-            .EnableDetailedErrors()
-            .EnableDetailedErrors();
+            //.EnableDetailedErrors()
+            //.EnableDetailedErrors()
+            ;
         });
 
         serviceCollection.AddTransient<IReplayRepository, ReplayRepository>();
@@ -79,7 +80,8 @@ public class DuplicateLeaverTests : IDisposable
         var context = CreateContext();
         var countBefore = await context.Replays.CountAsync();
 
-        string testFile = "/data/ds/uploadtest3.json";
+        // string testFile = "/data/ds/uploadtest3.json";
+        string testFile = Startup.GetTestFilePath("replayDto1.json");
 
         Assert.True(File.Exists(testFile));
         ReplayDto? replayDto = JsonSerializer.Deserialize<List<ReplayDto>>(File.ReadAllText(testFile))?.FirstOrDefault();

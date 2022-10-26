@@ -43,8 +43,9 @@ public class DuplicateUploaderTests : IDisposable
                 sqlOptions.MigrationsAssembly("SqliteMigrations");
                 sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
             })
-            .EnableDetailedErrors()
-            .EnableDetailedErrors();
+            //.EnableDetailedErrors()
+            //.EnableDetailedErrors()
+            ;
         });
 
         serviceCollection.AddTransient<IReplayRepository, ReplayRepository>();

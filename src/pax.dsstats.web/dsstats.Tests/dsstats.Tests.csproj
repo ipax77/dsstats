@@ -13,7 +13,6 @@
 		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="6.0.10" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.10" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
-		<PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
 		<PackageReference Include="xunit" Version="2.4.2" />
 		<PackageReference Include="Xunit.DependencyInjection" Version="8.6.0" />
 		<PackageReference Include="xunit.extensibility.core" Version="2.4.2" />
@@ -33,5 +32,21 @@
 		<ProjectReference Include="..\..\pax.dsstats.dbng\pax.dsstats.dbng.csproj" />
 		<ProjectReference Include="..\..\pax.dsstats.shared\pax.dsstats.shared.csproj" />
 		<ProjectReference Include="..\Server\pax.dsstats.web.Server.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="testdata\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="testdata\replayDto1.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update="testdata\uploadtest.base64">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="testdata\uploadtest2.base64">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
 </Project>

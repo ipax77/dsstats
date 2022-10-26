@@ -43,8 +43,9 @@ public class DuplicateTest : IDisposable
                 sqlOptions.MigrationsAssembly("SqliteMigrations");
                 sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
             })
-            .EnableDetailedErrors()
-            .EnableDetailedErrors();
+            //.EnableDetailedErrors()
+            //.EnableDetailedErrors()
+            ;
         });
 
         serviceCollection.AddTransient<IReplayRepository, ReplayRepository>();
@@ -79,7 +80,7 @@ public class DuplicateTest : IDisposable
         var context = CreateContext();
         var countBefore = await context.Replays.CountAsync();
 
-        string testFile = "/data/ds/uploadtest2.base64";
+        string testFile = Startup.GetTestFilePath("uploadtest2.base64");
 
         Assert.True(File.Exists(testFile));
         var base64String = File.ReadAllText(testFile);
@@ -118,7 +119,7 @@ public class DuplicateTest : IDisposable
         var context = CreateContext();
         var countBefore = await context.Replays.CountAsync();
 
-        string testFile = "/data/ds/uploadtest3.json";
+        string testFile = Startup.GetTestFilePath("replayDto1.json");
 
         Assert.True(File.Exists(testFile));
         ReplayDto? replayDto = JsonSerializer.Deserialize<List<ReplayDto>>(File.ReadAllText(testFile))?.FirstOrDefault();
