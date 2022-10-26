@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.RegularExpressions;
+using Windows.Media.Devices.Core;
 
 namespace sc2dsstats.maui.Services;
 
@@ -37,7 +38,7 @@ internal class UserSettingsService
                 }
             }
         }
-        UserSettings.BattleNetIds = GetBattleNetIds();
+        UserSettings.BattleNetInfos = GetBattleNetIds();
     }
 
     private void SaveConfig()
@@ -101,7 +102,7 @@ internal class UserSettingsService
 
     }
 
-    private static Dictionary<int, List<int>>? GetBattleNetIds()
+    private static List<BattleNetInfo> GetBattleNetIds()
     {
         var docDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         var sc2Dir = Path.Combine(docDir, "Starcraft II");
@@ -109,36 +110,49 @@ internal class UserSettingsService
 
         if (!Directory.Exists(sc2AccDir))
         {
-            return null;
+            return new();
         }
 
         var sc2AccDirs = Directory.GetDirectories(sc2AccDir);
 
-        Dictionary<int, List<int>> battleNetIds = new();
+        List<BattleNetInfo> battleNetInfos = new();
+        
         foreach (var accDir in sc2AccDirs)
         {
             if (int.TryParse(accDir.Split(Path.DirectorySeparatorChar).Last(), out int battleNetId))
             {
-                battleNetIds[battleNetId] = new();
+                BattleNetInfo battleNetInfo = new() { BattleNetId = battleNetId };
 
                 foreach (var toonDir in Directory.GetDirectories(accDir))
                 {
                     if (Directory.Exists(Path.Combine(toonDir, "Replays", "Multiplayer")))
                     {
                         var toonFolder = toonDir.Split(Path.DirectorySeparatorChar).Last();
+                        int toonId = 0;
+                        int regionId = 0;
                         var match = Regex.Match(toonFolder, @"\d+$");
                         if (match.Success)
                         {
-                            if (int.TryParse(match.Value, out int toonId))
+                            if (int.TryParse(match.Value, out int ttoonId))
                             {
-                                battleNetIds[battleNetId].Add(toonId);
+                                toonId = ttoonId;
                             }
                         }
+                        var regionMatch = Regex.Match(toonFolder, @"^\d+");
+                        if (regionMatch.Success)
+                        {
+                            if (int.TryParse(regionMatch.Value, out int tregionId))
+                            {
+                                regionId = tregionId;
+                            }
+                        }
+                        battleNetInfo.ToonIds.Add(new() { RegionId = regionId, ToonId = toonId });
                     }
                 }
+                battleNetInfos.Add(battleNetInfo);
             }
         }
-        return battleNetIds;
+        return battleNetInfos;
     }
 
     private static string? GetShortcutTarget(string file)
@@ -207,7 +221,7 @@ public record UserSettings
 {
     public Guid AppGuid { get; set; } = Guid.NewGuid();
     public Guid DbGuid { get; set; } = Guid.Empty;
-    public Dictionary<int, List<int>>? BattleNetIds { get; set; }
+    public List<BattleNetInfo> BattleNetInfos { get; set; } = new();
     public int CpuCoresUsedForDecoding { get; set; } = 2;
     public bool AllowUploads { get; set; }
     public bool AllowCleanUploads { get; set; }
@@ -215,4 +229,16 @@ public record UserSettings
     public string ReplayStartName { get; set; } = "Direct Strike";
     public List<string> PlayerNames { get; set; } = new();
     public List<string> ReplayPaths { get; set; } = new();
+}
+
+public record BattleNetInfo
+{
+    public int BattleNetId { get; set; }
+    public List<ToonIdInfo> ToonIds { get; set; } = new();
+}
+
+public record ToonIdInfo
+{
+    public int RegionId { get; set; }
+    public int ToonId { get; set; }
 }

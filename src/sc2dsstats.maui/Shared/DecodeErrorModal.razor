@@ -14,6 +14,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <div>
+                    <button type="button" class="btn btn-sm btn-warning" @onclick="SkipAll">Skip All</button>
+                </div>
                 <table class="table table-dark table-sm">
                     <thead>
                         <tr>
@@ -60,6 +63,14 @@
     {
         await ReplayRepository.AddSkipReplay(replayPath);
         ToastService.ShowSuccess("Replay sucessfully added to skip list");
+    }
+
+    private async void SkipAll()
+    {
+        foreach (var ent in DecodeService.errorReplays)
+        {
+            await ReplayRepository.AddSkipReplay(ent.Key);
+        }
     }
 
     public void Show()

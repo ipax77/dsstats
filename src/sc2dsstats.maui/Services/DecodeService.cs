@@ -280,7 +280,8 @@ public class DecodeService : IDisposable
             foreach (var dir in UserSettingsService.UserSettings.ReplayPaths)
             {
                 DirectoryInfo info = new DirectoryInfo(dir);
-                files.AddRange(info.GetFiles($"{UserSettingsService.UserSettings.ReplayStartName}*.SC2Replay").OrderBy(p => p.CreationTime)
+                files.AddRange(info.GetFiles($"{UserSettingsService.UserSettings.ReplayStartName}*.SC2Replay", SearchOption.AllDirectories)
+                    .OrderBy(p => p.CreationTime)
                     .Select(s => new KeyValuePair<string, DateTime>(s.FullName, s.CreationTime)));
             }
             return files.OrderBy(o => o.Value).Select(s => s.Key).ToList();
@@ -299,16 +300,16 @@ public class DecodeService : IDisposable
 
     private void SetIsUploader(ReplayDto replayDto)
     {
-        var playerToonIds = UserSettingsService.UserSettings.BattleNetIds?.SelectMany(s => s.Value);
+        var playerToonIds = UserSettingsService.UserSettings.BattleNetInfos?.SelectMany(s => s.ToonIds);
 
         if (playerToonIds != null && playerToonIds.Any())
         {
             for (int i = 0; i < replayDto.ReplayPlayers.Count; i++)
             {
-                var player = replayDto.ReplayPlayers.ElementAt(i);
-                if (playerToonIds.Contains(player.Player.ToonId))
+                var replayPlayer = replayDto.ReplayPlayers.ElementAt(i);
+                if (playerToonIds.Any(a => a.ToonId == replayPlayer.Player.ToonId))
                 {
-                    player.IsUploader = true;
+                    replayPlayer.IsUploader = true;
                 }
             }
         }

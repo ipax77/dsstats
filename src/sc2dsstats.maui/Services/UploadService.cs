@@ -135,10 +135,14 @@ public class UploadService
         {
             AppGuid = UserSettingsService.UserSettings.AppGuid,
             AppVersion = UpdateService.CurrentVersion.ToString(),
-            Players = await GetPlayerUploadDtos(context),
-            BattleNetInfos = UserSettingsService.UserSettings.BattleNetIds?.Select(s => new BattleNetInfoDto()
+            BattleNetInfos = UserSettingsService.UserSettings.BattleNetInfos?.Select(s => new BattleNetInfoDto()
             {
-                BattleNetId = s.Key
+                BattleNetId = s.BattleNetId,
+                PlayerUploadDtos = s.ToonIds.Select(t => new PlayerUploadDto()
+                {
+                    RegionId = t.RegionId,
+                    ToonId = t.ToonId
+                }).ToList()
             }).ToList()
         };
 
