@@ -38,8 +38,8 @@ public class FireMmrService
         var replays = context.Replays
             .Include(r => r.ReplayPlayers)
                 .ThenInclude(rp => rp.Player)
-            .Where(r => r.Duration >= 90)
-            .Where(r => r.Playercount == 6 && r.GameMode == GameMode.Commanders)
+            .Where(r => r.Duration >= 300)
+            .Where(r => r.Playercount == 6 && r.GameMode == GameMode.Commanders /*Fake*/&& (r.WinnerTeam != 0/*Fake*/))
             .OrderBy(r => r.GameTime)
             .AsNoTracking()
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider);
@@ -47,41 +47,48 @@ public class FireMmrService
         int count = 0;
         await replays.ForEachAsync(replay =>
         {
-
             var winnerTeam = replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam);
             var loserTeam = replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam);
             var leaverTeam = new List<ReplayPlayerDsRDto>().AsEnumerable();
 
             int correctedDuration = replay.Duration;
+            bool missingUploader = false;
+
             if (replay.WinnerTeam == 0)
             {
                 correctedDuration = replay.ReplayPlayers.Where(x => !x.IsUploader).Max(x => x.Duration);
-
+                
                 var uploaders = replay.ReplayPlayers.Where(x => x.IsUploader);
 
-                winnerTeam = replay.ReplayPlayers.Where(x => !x.IsUploader && x.Duration >= uploaders.First().Duration - 100);
-                //loserTeam = 
+                if (!uploaders.Any()) {
+                    missingUploader = true;
+                } else {
+                    winnerTeam = replay.ReplayPlayers.Where(x => !x.IsUploader && x.Duration >= uploaders.First().Duration - 100);
+                    //loserTeam = 
+                }
             }
 
-            leaverTeam = replay.ReplayPlayers.Where(x => x.Duration <= correctedDuration - 89);
+            if (!missingUploader) {
+                leaverTeam = replay.ReplayPlayers.Where(x => x.Duration <= correctedDuration - 89);
 
 
-            var winnerTeamMmr = GetTeamMmr(winnerTeam, replay.GameTime, replay.Duration);
-            var loserTeamMmr = GetTeamMmr(loserTeam, replay.GameTime, replay.Duration);
+                var winnerTeamMmr = GetTeamMmr(winnerTeam, replay.GameTime, replay.Duration);
+                var loserTeamMmr = GetTeamMmr(loserTeam, replay.GameTime, replay.Duration);
 
 
-            var teamElo = ExpectationToWin(winnerTeamMmr, loserTeamMmr);
+                var teamElo = ExpectationToWin(winnerTeamMmr, loserTeamMmr);
 
-            (double[] winnersMmrDelta, double[] winnersConsistencyDelta) = CalculatePlayersDeltas(winnerTeam.Select(s => s.Player), true, teamElo, winnerTeamMmr);
-            (double[] losersMmrDelta, double[] losersConsistencyDelta) = CalculatePlayersDeltas(loserTeam.Select(s => s.Player), false, teamElo, loserTeamMmr);
+                (double[] winnersMmrDelta, double[] winnersConsistencyDelta) = CalculatePlayersDeltas(winnerTeam.Select(s => s.Player), true, teamElo, winnerTeamMmr);
+                (double[] losersMmrDelta, double[] losersConsistencyDelta) = CalculatePlayersDeltas(loserTeam.Select(s => s.Player), false, teamElo, loserTeamMmr);
 
-            FixMMR_Equality(winnersMmrDelta, losersMmrDelta);
+                FixMMR_Equality(winnersMmrDelta, losersMmrDelta);
 
 
-            AddPlayersRankings(winnerTeam.Select(s => s.Player), winnersMmrDelta, winnersConsistencyDelta, replay.GameTime);
-            AddPlayersRankings(loserTeam.Select(s => s.Player), losersMmrDelta, losersConsistencyDelta, replay.GameTime);
+                AddPlayersRankings(winnerTeam.Select(s => s.Player), winnersMmrDelta, winnersConsistencyDelta, replay.GameTime);
+                AddPlayersRankings(loserTeam.Select(s => s.Player), losersMmrDelta, losersConsistencyDelta, replay.GameTime);
 
-            count++;
+                count++;
+            }
         });
 
         await SetRatings();
