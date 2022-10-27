@@ -7,6 +7,7 @@ using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.shared;
 using pax.dsstats.web.Server.Services;
+using System;
 using System.Data.Common;
 
 namespace dsstats.Tests;
@@ -90,20 +91,20 @@ public class ImportTests : IDisposable
             {
                 new BattleNetInfoDto()
                 {
-                    BattleNetId = 12345
-                }
-            },
-            Players = new List<PlayerUploadDto>()
-            {
-                new PlayerUploadDto()
-                {
-                    Name = "PAX",
-                    ToonId = 12345
-                },
-                new PlayerUploadDto()
-                {
-                    Name = "xPax",
-                    ToonId = 12346
+                    BattleNetId = 12345,
+                    PlayerUploadDtos = new List<PlayerUploadDto>()
+                    {
+                        new PlayerUploadDto()
+                        {
+                            Name = "PAX",
+                            ToonId = 12345
+                        },
+                        new PlayerUploadDto()
+                        {
+                            Name = "xPax",
+                            ToonId = 12346
+                        }
+                    }
                 }
             }
         };
@@ -130,6 +131,67 @@ public class ImportTests : IDisposable
 
         Assert.True(context.Replays.Any());
 
+    }
+
+    [Fact]
+    public async Task UploadReplaysTest()
+    {
+        var appGuid = Guid.NewGuid();
+
+        var uploaderDto = new UploaderDto()
+        {
+            AppGuid = appGuid,
+            AppVersion = "0.0.1",
+            BattleNetInfos = new List<BattleNetInfoDto>()
+            {
+                new BattleNetInfoDto()
+                {
+                    BattleNetId = 12345,
+                    PlayerUploadDtos = new List<PlayerUploadDto>()
+                    {
+                        new PlayerUploadDto()
+                        {
+                            Name = "PAX",
+                            ToonId = 12345
+                        },
+                        new PlayerUploadDto()
+                        {
+                            Name = "xPax",
+                            ToonId = 12346
+                        }
+                    }
+                }
+            }
+        };
+
+        var latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto);
+
+        var context = CreateContext();
+        bool dbHasUploader = await context.Uploaders.AnyAsync(a => a.AppGuid == appGuid);
+        Assert.True(dbHasUploader);
+
+        string testFile = Startup.GetTestFilePath("uploadtest.base64");
+
+        Assert.True(File.Exists(testFile));
+        var base64String = File.ReadAllText(testFile);
+
+        await uploadService.ImportReplays(base64String, appGuid);
+
+        var uploader = await context.Uploaders.FirstOrDefaultAsync(f => f.AppGuid == appGuid);
+
+        Assert.NotNull(uploader);
+        Assert.True(uploader?.LatestUpload > DateTime.MinValue);
+
+        await Task.Delay(5000);
+
+        Assert.True(context.Replays.Any());
+
+        var dbUploader = await context.Uploaders
+            .Include(i => i.Players)
+            .Include(i => i.Replays)
+            .FirstOrDefaultAsync(f => f.AppGuid == appGuid);
+
+        Assert.True(dbUploader?.Replays.Count > 0);
     }
 }
 
