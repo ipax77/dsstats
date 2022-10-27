@@ -97,6 +97,13 @@ public class DuplicateTest : IDisposable
         var countAfter = await context.Replays.CountAsync();
 
         Assert.Equal(countBefore, countAfter - 1);
+
+        var replay = await context.Replays
+            .Include(i => i.Uploaders)
+            .OrderBy(o => o.ReplayId)
+            .LastOrDefaultAsync();
+
+        Assert.Equal(6, replay?.Uploaders.Count);
     }
 
     [Fact]
@@ -172,16 +179,17 @@ public class DuplicateTest : IDisposable
             {
                 new BattleNetInfoDto()
                 {
-                    BattleNetId = 123456 + num
+                    BattleNetId = 123456 + num,
+                    PlayerUploadDtos = new List<PlayerUploadDto>()
+                    {
+                        new PlayerUploadDto()
+                        {
+                            Name = "Test" + num,
+                            ToonId = 123456 + num,
+                            RegionId = 1
+                        },
+                    }
                 }
-            },
-            Players = new List<PlayerUploadDto>()
-            {
-                new PlayerUploadDto()
-                {
-                    Name = "Test" + num,
-                    ToonId = 123456 + num
-                },
             }
         };
     }

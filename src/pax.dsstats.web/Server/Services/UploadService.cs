@@ -53,30 +53,29 @@ public partial class UploadService
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        var dbUplaoder = await context.Uploaders
+        var dbUploader = await context.Uploaders
             .Include(i => i.Players)
             .Include(i => i.BattleNetInfos)
             .FirstOrDefaultAsync(f => f.AppGuid == uploader.AppGuid);
 
-        if (dbUplaoder == null)
+        if (dbUploader == null)
         {
-            dbUplaoder = mapper.Map<Uploader>(uploader);
-            dbUplaoder.Identifier = dbUplaoder.Players.FirstOrDefault()?.Name ?? "Anonymous";
-            await CreateUploaderPlayers(context, dbUplaoder);
-
-            context.Uploaders.Add(dbUplaoder);
-            await context.SaveChangesAsync();
+            dbUploader = mapper.Map<Uploader>(uploader);
+            dbUploader.Identifier = uploader.BattleNetInfos.SelectMany(s => s.PlayerUploadDtos).FirstOrDefault()?.Name ?? "Anonymous";
+            context.Uploaders.Add(dbUploader);
+            await CreateUploaderPlayers(context, dbUploader, uploader.BattleNetInfos.SelectMany(s => s.PlayerUploadDtos).ToList());
         }
         else
         {
-            await UpdateUploaderPlayers(context, dbUplaoder, uploader);
-            if (dbUplaoder.AppGuid != uploader.AppGuid)
+            await UpdateUploaderPlayers(context, dbUploader, uploader);
+            dbUploader.Identifier = dbUploader.Players.FirstOrDefault()?.Name ?? "Anonymous";
+            if (dbUploader.AppGuid != uploader.AppGuid)
             {
-                dbUplaoder.AppGuid = uploader.AppGuid;
+                dbUploader.AppGuid = uploader.AppGuid;
             }
             await context.SaveChangesAsync();
         }
-        return await GetUploadersLatestReplay(context, dbUplaoder);
+        return await GetUploadersLatestReplay(context, dbUploader);
     }
 
     private async Task<DateTime> GetUploadersLatestReplay(ReplayContext context, Uploader uploader)
@@ -86,28 +85,42 @@ public partial class UploadService
             return uploader.LatestReplay;
         }
 
-        return await context.Replays
-            .Include(i => i.ReplayPlayers)
-                .ThenInclude(i => i.Player)
-                .ThenInclude(i => i.Uploader)
+        return await context.Uploaders
+            .Include(i => i.Replays)
+            .Where(x => x.UploaderId == uploader.UploaderId)
+            .SelectMany(s => s.Replays)
             .OrderByDescending(o => o.GameTime)
-            .Where(x => x.ReplayPlayers.Any(a => a.Player.Uploader != null && a.Player.Uploader.UploaderId == uploader.UploaderId))
             .Select(s => s.GameTime)
             .FirstOrDefaultAsync();
+
+        //return await context.Replays
+        //    .Include(i => i.ReplayPlayers)
+        //        .ThenInclude(i => i.Player)
+        //        .ThenInclude(i => i.Uploader)
+        //    .OrderByDescending(o => o.GameTime)
+        //    .Where(x => x.ReplayPlayers.Any(a => a.Player.Uploader != null && a.Player.Uploader.UploaderId == uploader.UploaderId))
+        //    .Select(s => s.GameTime)
+        //    .FirstOrDefaultAsync();
     }
 
-    private static async Task CreateUploaderPlayers(ReplayContext context, Uploader dbUplaoder)
+    private async Task CreateUploaderPlayers(ReplayContext context, Uploader dbUploader, List<PlayerUploadDto> playerUploadDtos)
     {
-        foreach (var player in dbUplaoder.Players.ToArray())
+        foreach (var player in playerUploadDtos)
         {
             var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == player.ToonId);
-            if (dbPlayer != null)
+            if (dbPlayer == null)
             {
-                dbPlayer.Uploader = dbUplaoder;
-                dbUplaoder.Players.Remove(player);
-                dbUplaoder.Players.Add(dbPlayer);
+                dbPlayer = mapper.Map<Player>(player);
+                dbPlayer.Uploader = dbUploader;
+                context.Players.Add(dbPlayer);
+            }
+            else
+            {
+                dbPlayer.Uploader = dbUploader;
+                dbUploader.Players.Add(dbPlayer);
             }
         }
+        await context.SaveChangesAsync();
     }
 
     private async Task UpdateUploaderPlayers(ReplayContext context, Uploader dbUploader, UploaderDto uploader)
@@ -115,7 +128,9 @@ public partial class UploadService
         for (int i = 0; i < dbUploader.Players.Count; i++)
         {
             var dbPlayer = dbUploader.Players.ElementAt(i);
-            var uploaderPlayer = uploader.Players.FirstOrDefault(f => f.ToonId == dbPlayer.ToonId);
+            var uploaderPlayer = uploader.BattleNetInfos?
+                .SelectMany(s => s.PlayerUploadDtos)
+                .FirstOrDefault(f => f.ToonId == dbPlayer.ToonId);
             if (uploaderPlayer == null)
             {
                 dbUploader.Players.Remove(dbPlayer);
@@ -127,19 +142,27 @@ public partial class UploadService
             }
         }
 
-        for (int i = 0; i < uploader.Players.Count; i++)
+        var uploaderPlayers = uploader.BattleNetInfos?.SelectMany(s => s.PlayerUploadDtos).ToList();
+
+        if (uploaderPlayers != null && uploaderPlayers.Any())
         {
-            var dbuploaderPlayer = dbUploader.Players.FirstOrDefault(f => f.ToonId == uploader.Players.ElementAt(i).ToonId);
-            if (dbuploaderPlayer == null)
+
+            for (int i = 0; i < uploaderPlayers.Count; i++)
             {
-                var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == uploader.Players.ElementAt(i).ToonId);
-                if (dbPlayer == null)
+                var dbuploaderPlayer = dbUploader.Players.FirstOrDefault(f => f.ToonId == uploaderPlayers.ElementAt(i).ToonId);
+                if (dbuploaderPlayer == null)
                 {
-                    dbUploader.Players.Add(mapper.Map<Player>(uploader.Players.ElementAt(i)));
-                }
-                else
-                {
-                    dbPlayer.Uploader = dbUploader;
+                    var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == uploaderPlayers.ElementAt(i).ToonId);
+                    if (dbPlayer == null)
+                    {
+                        var dbAddPlayer = mapper.Map<Player>(uploaderPlayers.ElementAt(i));
+                        dbAddPlayer.Uploader = dbUploader;
+                        dbUploader.Players.Add(dbAddPlayer);
+                    }
+                    else
+                    {
+                        dbPlayer.Uploader = dbUploader;
+                    }
                 }
             }
         }

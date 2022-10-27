@@ -180,16 +180,16 @@ public class LeaverTests : IDisposable
             {
                 new BattleNetInfoDto()
                 {
-                    BattleNetId = 223456 + num
+                    BattleNetId = 223456 + num,
+                    PlayerUploadDtos = new List<PlayerUploadDto>()
+                    {
+                        new PlayerUploadDto()
+                        {
+                            Name = "Test" + num,
+                            ToonId = 223456 + num
+                        },
+                    }
                 }
-            },
-            Players = new List<PlayerUploadDto>()
-            {
-                new PlayerUploadDto()
-                {
-                    Name = "Test" + num,
-                    ToonId = 223456 + num
-                },
             }
         };
     }

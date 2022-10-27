@@ -138,16 +138,16 @@ public class DuplicateLeaverTests : IDisposable
             {
                 new BattleNetInfoDto()
                 {
-                    BattleNetId = 123456 + num
+                    BattleNetId = 123456 + num,
+                    PlayerUploadDtos = new List<PlayerUploadDto>()
+                    {
+                        new PlayerUploadDto()
+                        {
+                            Name = "Test" + num,
+                            ToonId = 123456 + num
+                        },
+                    }
                 }
-            },
-            Players = new List<PlayerUploadDto>()
-            {
-                new PlayerUploadDto()
-                {
-                    Name = "Test" + num,
-                    ToonId = 123456 + num
-                },
             }
         };
     }

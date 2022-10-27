@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace pax.dsstats.dbng;
 
@@ -10,6 +11,7 @@ public class Uploader
     {
         Players = new HashSet<Player>();
         BattleNetInfos = new HashSet<BattleNetInfo>();
+        Replays = new HashSet<Replay>();
     }
     public int UploaderId { get; set; }
     public Guid AppGuid { get; set; }
@@ -21,6 +23,7 @@ public class Uploader
     public DateTime LatestReplay { get; set; }
     public virtual ICollection<Player> Players { get; set; }
     public ICollection<BattleNetInfo>? BattleNetInfos { get; set; }
+    public ICollection<Replay> Replays { get; set; }
 }
 
 public class BattleNetInfo
@@ -39,6 +42,7 @@ public class Player
     [MaxLength(50)]
     public string Name { get; set; } = null!;
     public int ToonId { get; set; }
+    public int RegionId { get; set; }
     public double Mmr { get; set; }
     public double MmrStd { get; set; }
     [MaxLength(2000)]
@@ -91,6 +95,7 @@ public class Replay
     public Replay()
     {
         ReplayPlayers = new HashSet<ReplayPlayer>();
+        Uploaders = new HashSet<Uploader>();
     }
 
     public int ReplayId { get; set; }
@@ -121,6 +126,9 @@ public class Replay
     public int? ReplayEventId { get; set; }
     public ReplayEvent? ReplayEvent { get; set; }
     public virtual ICollection<ReplayPlayer> ReplayPlayers { get; set; }
+    public virtual ICollection<Uploader> Uploaders { get; set; }
+    [NotMapped]
+    public int UploaderId { get; set; }
 }
 
 public class ReplayPlayer

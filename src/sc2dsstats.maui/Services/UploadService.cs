@@ -33,21 +33,11 @@ public class UploadService
         handler?.Invoke(this, e);
     }
 
-
-    //private HttpClient GetHttpClient(IServiceScope scope)
-    //{
-    //    var httpClient = scope.ServiceProvider.GetRequiredService<HttpClient>();
-    //    httpClient.BaseAddress = new Uri("https://localhost:7174");
-    //    httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
-    //    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("DSupload77");
-    //    return httpClient;
-    //}
-
     private HttpClient GetHttpClient()
     {
         var httpClient = new HttpClient();
-        // httpClient.BaseAddress = new Uri("https://localhost:7174");
-        httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
+        httpClient.BaseAddress = new Uri("https://localhost:7174");
+        // httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("DSupload77");
         return httpClient;
@@ -80,7 +70,7 @@ public class UploadService
             using var scope = serviceProvider.CreateScope();
             using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-            var latestReplayDate = await GetLastReplayDate(context, scope);
+            var latestReplayDate = await GetLastReplayDate(context);
 
             var replays = await context.Replays
                 .Include(i => i.ReplayPlayers)
@@ -129,7 +119,9 @@ public class UploadService
         return Zip(json);
     }
 
-    private async Task<DateTime> GetLastReplayDate(ReplayContext context, IServiceScope scope)
+
+
+    private async Task<DateTime> GetLastReplayDate(ReplayContext context)
     {
         UploaderDto uploaderDto = new()
         {
@@ -138,12 +130,8 @@ public class UploadService
             BattleNetInfos = UserSettingsService.UserSettings.BattleNetInfos?.Select(s => new BattleNetInfoDto()
             {
                 BattleNetId = s.BattleNetId,
-                PlayerUploadDtos = s.ToonIds.Select(t => new PlayerUploadDto()
-                {
-                    RegionId = t.RegionId,
-                    ToonId = t.ToonId
-                }).ToList()
-            }).ToList()
+                PlayerUploadDtos = GetPlayerUploadDtos(context, s.ToonIds),
+            }).ToList() ?? new()
         };
 
         var httpClient = GetHttpClient();
@@ -170,18 +158,20 @@ public class UploadService
         return new DateTime(2022, 1, 1);
     }
 
-    private async Task<List<PlayerUploadDto>> GetPlayerUploadDtos(ReplayContext context)
+    private List<PlayerUploadDto> GetPlayerUploadDtos(ReplayContext context, List<ToonIdInfo> toonIdInfos)
     {
-        return await context.ReplayPlayers
-            .Include(i => i.Player)
-            .Where(x => x.IsUploader)
-            .AsNoTracking()
-            .Select(s => new PlayerUploadDto
+        List<PlayerUploadDto> playerUploadDtos = new();
+
+        foreach (var info in toonIdInfos)
+        {
+            playerUploadDtos.Add(new()
             {
-                Name = s.Name,
-                ToonId = s.Player.ToonId
-            }).Distinct()
-            .ToListAsync();
+                Name = context.Players.FirstOrDefault(f => f.ToonId == info.ToonId)?.Name ?? "Anonymouse",
+                RegionId = info.RegionId,
+                ToonId = info.ToonId,
+            });
+        }
+        return playerUploadDtos;
     }
 
     private static string Zip(string str)

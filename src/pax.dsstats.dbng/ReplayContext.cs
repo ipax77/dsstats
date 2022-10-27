@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng;
 
@@ -64,6 +65,11 @@ public class ReplayContext : DbContext
         {
             entity.HasIndex(e => e.AppGuid).IsUnique();
         });
+
+        modelBuilder.Entity<Uploader>()
+            .HasMany(p => p.Replays)
+            .WithMany(p => p.Uploaders)
+            .UsingEntity(j => j.ToTable("UploaderReplays"));
 
         modelBuilder.Entity<Unit>(entity =>
         {

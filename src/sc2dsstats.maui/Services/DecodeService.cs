@@ -123,6 +123,7 @@ public class DecodeService : IDisposable
                 Saved = dbCounter,
                 Done = true
             });
+            IsRunning = false;
             return;
         }
 
@@ -354,7 +355,7 @@ public class DecodeService : IDisposable
         catch (Exception ex)
         {
             logger.DecodeError($"failed saving replay: {ex.Message}");
-            errorReplays[$"Db:{replayDto.FileName}"] = ex.Message + ex.InnerException?.Message;
+            errorReplays[$"{replayDto.FileName}"] = ex.Message + ex.InnerException?.Message;
             Interlocked.Increment(ref errorCounter);
             OnErrorRaised(new());
         }

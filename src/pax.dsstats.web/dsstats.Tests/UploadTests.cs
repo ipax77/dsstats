@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
 using pax.dsstats.web.Server.Services;
+using System;
 using System.Data.Common;
 
 namespace dsstats.Tests;
@@ -69,20 +70,20 @@ public class UploadTests : IDisposable
             {
                 new BattleNetInfoDto()
                 {
-                    BattleNetId = 12345
-                }
-            },
-            Players = new List<PlayerUploadDto>()
-            {
-                new PlayerUploadDto()
-                {
-                    Name = "PAX",
-                    ToonId = 12345
-                },
-                new PlayerUploadDto()
-                {
-                    Name = "xPax",
-                    ToonId = 12346
+                    BattleNetId = 12345,
+                    PlayerUploadDtos = new List<PlayerUploadDto>()
+                    {
+                        new PlayerUploadDto()
+                        {
+                            Name = "PAX",
+                            ToonId = 12345
+                        },
+                        new PlayerUploadDto()
+                        {
+                            Name = "xPax",
+                            ToonId = 12346
+                        }
+                    }
                 }
             }
         };
@@ -107,20 +108,20 @@ public class UploadTests : IDisposable
             {
                 new BattleNetInfoDto()
                 {
-                    BattleNetId = 1234
-                }
-            },
-            Players = new List<PlayerUploadDto>()
-            {
-                new PlayerUploadDto()
-                {
-                    Name = "PAX",
-                    ToonId = 1234
-                },
-                new PlayerUploadDto()
-                {
-                    Name = "xPax",
-                    ToonId = 1235
+                    BattleNetId = 1234,
+                    PlayerUploadDtos = new List<PlayerUploadDto>()
+                    {
+                        new PlayerUploadDto()
+                        {
+                            Name = "PAX",
+                            ToonId = 1234
+                        },
+                        new PlayerUploadDto()
+                        {
+                            Name = "xPax",
+                            ToonId = 1235
+                        }
+                    }
                 }
             }
         };
@@ -143,15 +144,15 @@ public class UploadTests : IDisposable
             {
                 new BattleNetInfoDto()
                 {
-                    BattleNetId = 1234
-                }
-            },
-            Players = new List<PlayerUploadDto>()
-            {
-                new PlayerUploadDto()
-                {
-                    Name = "PAX",
-                    ToonId = 1234
+                    BattleNetId = 1234,
+                    PlayerUploadDtos = new List<PlayerUploadDto>()
+                    {
+                        new PlayerUploadDto()
+                        {
+                            Name = "PAX",
+                            ToonId = 1234
+                        }
+                    }
                 }
             }
         };
@@ -181,20 +182,20 @@ public class UploadTests : IDisposable
             {
                 new BattleNetInfoDto()
                 {
-                    BattleNetId = 12345
-                }
-            },
-            Players = new List<PlayerUploadDto>()
-            {
-                new PlayerUploadDto()
-                {
-                    Name = "PAX",
-                    ToonId = 12345
-                },
-                new PlayerUploadDto()
-                {
-                    Name = "xPax",
-                    ToonId = 12346
+                    BattleNetId = 12345,
+                    PlayerUploadDtos = new List<PlayerUploadDto>()
+                    {
+                        new PlayerUploadDto()
+                        {
+                            Name = "PAX",
+                            ToonId = 12345
+                        },
+                        new PlayerUploadDto()
+                        {
+                            Name = "xPax",
+                            ToonId = 12346
+                        }
+                    }
                 }
             }
         };
@@ -213,25 +214,25 @@ public class UploadTests : IDisposable
             {
                 new BattleNetInfoDto()
                 {
-                    BattleNetId = 12345
-                }
-            },
-            Players = new List<PlayerUploadDto>()
-            {
-                new PlayerUploadDto()
-                {
-                    Name = "PAX",
-                    ToonId = 12345
-                },
-                new PlayerUploadDto()
-                {
-                    Name = "xPax",
-                    ToonId = 12346
-                },
-                new PlayerUploadDto()
-                {
-                    Name = "xPaxX",
-                    ToonId = 12347
+                    BattleNetId = 12345,
+                    PlayerUploadDtos = new List<PlayerUploadDto>()
+                    {
+                        new PlayerUploadDto()
+                        {
+                            Name = "PAX",
+                            ToonId = 12345
+                        },
+                        new PlayerUploadDto()
+                        {
+                            Name = "xPax",
+                            ToonId = 12346
+                        },
+                        new PlayerUploadDto()
+                        {
+                            Name = "xPaxX",
+                            ToonId = 12347
+                        }
+                    }
                 }
             }
         };
@@ -259,20 +260,20 @@ public class UploadTests : IDisposable
             {
                 new BattleNetInfoDto()
                 {
-                    BattleNetId = 72345
-                }
-            },
-            Players = new List<PlayerUploadDto>()
-            {
-                new PlayerUploadDto()
-                {
-                    Name = "PAX",
-                    ToonId = 72345
-                },
-                new PlayerUploadDto()
-                {
-                    Name = "xPax",
-                    ToonId = 72346
+                    BattleNetId = 72345,
+                    PlayerUploadDtos = new List<PlayerUploadDto>()
+                    {
+                        new PlayerUploadDto()
+                        {
+                            Name = "PAX",
+                            ToonId = 72345
+                        },
+                        new PlayerUploadDto()
+                        {
+                            Name = "xPax",
+                            ToonId = 72346
+                        }
+                    }
                 }
             }
         };
@@ -326,20 +327,20 @@ public class UploadTests : IDisposable
             {
                 new BattleNetInfoDto()
                 {
-                    BattleNetId = 12345
-                }
-            },
-            Players = new List<PlayerUploadDto>()
-            {
-                new PlayerUploadDto()
-                {
-                    Name = "PAX",
-                    ToonId = 12345
-                },
-                new PlayerUploadDto()
-                {
-                    Name = "xPax",
-                    ToonId = 12346
+                    BattleNetId = 12345,
+                    PlayerUploadDtos = new List<PlayerUploadDto>()
+                    {
+                        new PlayerUploadDto()
+                        {
+                            Name = "PAX",
+                            ToonId = 12345
+                        },
+                        new PlayerUploadDto()
+                        {
+                            Name = "xPax",
+                            ToonId = 12346
+                        }
+                    }
                 }
             }
         };
@@ -396,20 +397,20 @@ public class UploadTests : IDisposable
             {
                 new BattleNetInfoDto()
                 {
-                    BattleNetId = 12345
-                }
-            },
-            Players = new List<PlayerUploadDto>()
-            {
-                new PlayerUploadDto()
-                {
-                    Name = "PAX",
-                    ToonId = 771234
-                },
-                new PlayerUploadDto()
-                {
-                    Name = "xPax",
-                    ToonId = 771235
+                    BattleNetId = 12345,
+                    PlayerUploadDtos = new List<PlayerUploadDto>()
+                    {
+                        new PlayerUploadDto()
+                        {
+                            Name = "PAX",
+                            ToonId = 771234
+                        },
+                        new PlayerUploadDto()
+                        {
+                            Name = "xPax",
+                            ToonId = 771235
+                        }
+                    }
                 }
             }
         };
@@ -419,6 +420,6 @@ public class UploadTests : IDisposable
             .Where(x => x.Uploader != null && x.Uploader.AppGuid == appGuid)
             .CountAsync();
 
-        Assert.Equal(changeUploaderDto.Players.Count, uploaderPlayersCount);
+        Assert.Equal(changeUploaderDto.BattleNetInfos.SelectMany(s => s.PlayerUploadDtos).Count(), uploaderPlayersCount);
     }
 }

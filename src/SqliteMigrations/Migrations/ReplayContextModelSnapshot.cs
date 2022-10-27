@@ -112,6 +112,9 @@ namespace SqliteMigrations.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("RegionId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("ToonId")
                         .HasColumnType("INTEGER");
 
@@ -576,6 +579,21 @@ namespace SqliteMigrations.Migrations
                     b.ToTable("Uploaders");
                 });
 
+            modelBuilder.Entity("ReplayUploader", b =>
+                {
+                    b.Property<int>("ReplaysReplayId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UploadersUploaderId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ReplaysReplayId", "UploadersUploaderId");
+
+                    b.HasIndex("UploadersUploaderId");
+
+                    b.ToTable("UploaderReplays", (string)null);
+                });
+
             modelBuilder.Entity("pax.dsstats.dbng.BattleNetInfo", b =>
                 {
                     b.HasOne("pax.dsstats.dbng.Uploader", null)
@@ -682,6 +700,21 @@ namespace SqliteMigrations.Migrations
                     b.Navigation("Spawn");
 
                     b.Navigation("Unit");
+                });
+
+            modelBuilder.Entity("ReplayUploader", b =>
+                {
+                    b.HasOne("pax.dsstats.dbng.Replay", null)
+                        .WithMany()
+                        .HasForeignKey("ReplaysReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("pax.dsstats.dbng.Uploader", null)
+                        .WithMany()
+                        .HasForeignKey("UploadersUploaderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Event", b =>
