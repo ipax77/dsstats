@@ -81,25 +81,4 @@ public partial class UploadService
             await InitPlayerDic(context);
         }
     }
-
-
-    private async Task CreateMissingPlayers_Deprecated(ReplayContext context, Dictionary<int, int> playersDic, ICollection<Replay> replays)
-    {
-        foreach (var player in replays.SelectMany(s => s.ReplayPlayers).Select(s => mapper.Map<PlayerDto>(s.Player)).Distinct())
-        {
-            if (!playersDic.ContainsKey(player.ToonId))
-            {
-                var dbPlayer = await CreatePlayer(context, player);
-                playersDic[dbPlayer.ToonId] = dbPlayer.PlayerId;
-            }
-        }
-    }
-
-    private async Task<Player> CreatePlayer(ReplayContext context, PlayerDto player)
-    {
-        var dbPlayer = mapper.Map<Player>(player);
-        context.Players.Add(dbPlayer);
-        await context.SaveChangesAsync();
-        return dbPlayer;
-    }
 }

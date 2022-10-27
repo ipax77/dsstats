@@ -178,6 +178,23 @@ public class DecodeService : IDisposable
                     logger.DecodeInformation($"replays decoded: {decodeCounter}/{total}, replays in db: {dbCounter}/{total}");
                 }
             }
+
+            // report missing replays
+            if (dbCounter != replays.Count - errorCounter)
+            {
+                using var scope = serviceScopeFactory.CreateScope();
+                var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
+                
+                var dbPaths = await replayRepository.GetReplayPaths();
+                var failedReplays = replays.Except(dbPaths).ToList();
+                for (int i = 0; i < failedReplays.Count; i++)
+                {
+                    errorReplays[failedReplays[i]] = "unknown";
+                    Interlocked.Increment(ref errorCounter);
+                }
+                OnErrorRaised(new());
+            }
+
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
