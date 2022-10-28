@@ -26,8 +26,8 @@ public class FireMmrService
     private static readonly double consistencyImpact = 0.50;
     private static readonly double consistencyDeltaMult = 0.15;
 
-    private static bool useCommanderMmr = false;
-    private static bool useConsistency = false;
+    private static bool useCommanderMmr = true;
+    private static bool useConsistency = true;
 
     private readonly Dictionary<int, List<DsRCheckpoint>> playerRatings = new();
     private CommanderMmr[] commanderRatings = null!;
@@ -87,8 +87,15 @@ public class FireMmrService
                 var losersCommandersComboMMR = GetCommandersComboMMR(loserTeamCommanders, winnerTeamCommanders);
                 var commandersElo = ELO(winnersCommandersComboMMR, losersCommandersComboMMR);
 
+                if (teamElo == 1) {
+                }
+
                 (double[] winnersMmrDelta, double[] winnersConsistencyDelta, double[] winnersCommandersMmrDelta) = CalculateRatingsDeltas(winnerTeam.Select(s => s.Player), true, teamElo, winnerTeamMmr, commandersElo);
                 (double[] losersMmrDelta, double[] losersConsistencyDelta, double[] losersCommandersMmrDelta) = CalculateRatingsDeltas(loserTeam.Select(s => s.Player), false, teamElo, loserTeamMmr, commandersElo);
+
+
+                
+                
                 FixMMR_Equality(winnersMmrDelta, losersMmrDelta);
                 //FixMMR_Equality(winnersCommandersMmrDelta, losersCommandersMmrDelta);
 
@@ -198,12 +205,16 @@ public class FireMmrService
         double abs_sumTeam1_mmrDelta = Math.Abs(team1_mmrDelta.Sum());
         double abs_sumTeam2_mmrDelta = Math.Abs(team2_mmrDelta.Sum());
 
-        for (int i = 0; i < 3; i++)
-        {
+        for (int i = 0; i < 3; i++) {
             team1_mmrDelta[i] = team1_mmrDelta[i] *
                 ((abs_sumTeam1_mmrDelta + abs_sumTeam2_mmrDelta) / (abs_sumTeam1_mmrDelta * 2));
             team2_mmrDelta[i] = team2_mmrDelta[i] *
                 ((abs_sumTeam2_mmrDelta + abs_sumTeam1_mmrDelta) / (abs_sumTeam2_mmrDelta * 2));
+
+            if (abs_sumTeam1_mmrDelta == 0 || abs_sumTeam2_mmrDelta == 0) {
+                team1_mmrDelta[i] = 0;
+                team2_mmrDelta[i] = 0;
+            }
         }
     }
 
@@ -237,11 +248,6 @@ public class FireMmrService
                 * factor_playerToTeamMates
                 * (useConsistency ? factor_consistency : 1);
 
-            if (!winner) {
-                commandersElo = 1 - commandersElo;
-                teamElo = 1 - teamElo;
-            }
-
             if (playerImpact < 0 || playerImpact > 1 || double.IsNaN(playerImpact) || double.IsInfinity(playerImpact)) {
             }
 
@@ -256,6 +262,10 @@ public class FireMmrService
                 playersMmrDelta[i] *= -1;
                 playersConsistencyDelta[i] *= -1;
                 commandersMmrDelta[i] *= -1;
+            }
+
+
+            if (double.IsNaN(playersMmrDelta[i]) || double.IsInfinity(playersMmrDelta[i])) {
             }
         }
         return (playersMmrDelta, playersConsistencyDelta, commandersMmrDelta);
@@ -274,6 +284,9 @@ public class FireMmrService
             double consistencyAfter = consistencyBefore + playersConsistencyDelta[i];
 
             consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
+
+            if (double.IsNaN(mmrAfter) || double.IsInfinity(mmrAfter)) {
+            }
 
             plRatings.Add(new DsRCheckpoint() { Mmr = mmrAfter, Consistency = consistencyAfter, Time = gameTime });
         }
