@@ -22,7 +22,7 @@ public class FireMmrService
         this.logger = logger;
     }
 
-    private static readonly double eloK = 64; // default 32
+    private static readonly double eloK = 128; // default 32
     private static readonly double eloK_mult = 12.5;
     private static readonly double clip = eloK * eloK_mult;
     public static readonly double startMmr = 1000.0;
@@ -47,7 +47,8 @@ public class FireMmrService
             .Include(r => r.ReplayPlayers)
                 .ThenInclude(rp => rp.Player)
             .Where(r => r.Duration >= 300)
-            .Where(r => r.Playercount == 6 && r.GameMode == GameMode.Commanders && !r.ReplayPlayers.Any(p => !Data.GetCommanders(Data.CmdrGet.NoStd).Contains(p.Race)) /*Fake*/&& (r.WinnerTeam != 0/*Fake*/))
+            .Where(r => r.Playercount == 6 && r.GameMode == GameMode.Commanders && !r.ReplayPlayers.Any(p => !Data.GetCommanders(Data.CmdrGet.NoStd).Contains(p.Race))
+                /*Fake*/&& (r.WinnerTeam != 0/*Fake*/))
             .OrderBy(r => r.GameTime)
             .AsNoTracking()
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider);
@@ -57,27 +58,27 @@ public class FireMmrService
         {
             var winnerTeam = replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam);
             var loserTeam = replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam);
-            var leaverTeam = new List<ReplayPlayerDsRDto>().AsEnumerable();
+            //var leaverTeam = new List<ReplayPlayerDsRDto>().AsEnumerable();
 
             int correctedDuration = replay.Duration;
             bool missingUploader = false;
 
-            if (replay.WinnerTeam == 0)
-            {
-                correctedDuration = replay.ReplayPlayers.Where(x => !x.IsUploader).Max(x => x.Duration);
+            //if (replay.WinnerTeam == 0)
+            //{
+            //    correctedDuration = replay.ReplayPlayers.Where(x => !x.IsUploader).Max(x => x.Duration);
                 
-                var uploaders = replay.ReplayPlayers.Where(x => x.IsUploader);
+            //    var uploaders = replay.ReplayPlayers.Where(x => x.IsUploader);
 
-                if (!uploaders.Any()) {
-                    missingUploader = true;
-                } else {
-                    winnerTeam = replay.ReplayPlayers.Where(x => !x.IsUploader && x.Duration >= uploaders.First().Duration - 100);
-                    //loserTeam = 
-                }
-            }
+            //    if (!uploaders.Any()) {
+            //        missingUploader = true;
+            //    } else {
+            //        winnerTeam = replay.ReplayPlayers.Where(x => !x.IsUploader && x.Duration >= uploaders.First().Duration - 100);
+            //        //loserTeam = 
+            //    }
+            //}
 
             if (!missingUploader) {
-                leaverTeam = replay.ReplayPlayers.Where(x => x.Duration <= correctedDuration - 89);
+                //leaverTeam = replay.ReplayPlayers.Where(x => x.Duration <= correctedDuration - 89);
 
                 var winnerTeamCommanders = winnerTeam.Select(_ => _.Race).ToArray();
                 var loserTeamCommanders = loserTeam.Select(_ => _.Race).ToArray();
@@ -91,15 +92,10 @@ public class FireMmrService
                 var losersCommandersComboMMR = GetCommandersComboMMR(loserTeamCommanders, winnerTeamCommanders);
                 var commandersElo = ELO(winnersCommandersComboMMR, losersCommandersComboMMR);
 
-                if (teamElo == 1) {
-                }
 
                 (double[] winnersMmrDelta, double[] winnersConsistencyDelta, double[] winnersCommandersMmrDelta) = CalculateRatingsDeltas(winnerTeam.Select(s => s.Player), true, teamElo, winnerTeamMmr, commandersElo);
                 (double[] losersMmrDelta, double[] losersConsistencyDelta, double[] losersCommandersMmrDelta) = CalculateRatingsDeltas(loserTeam.Select(s => s.Player), false, teamElo, loserTeamMmr, commandersElo);
 
-
-                
-                
                 FixMMR_Equality(winnersMmrDelta, losersMmrDelta);
                 //FixMMR_Equality(winnersCommandersMmrDelta, losersCommandersMmrDelta);
 
