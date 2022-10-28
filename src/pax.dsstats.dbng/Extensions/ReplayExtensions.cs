@@ -69,6 +69,17 @@ public static class ReplayExtensions
         return sb.ToString();
     }
 
+    public static string GenMemKey(this BuildRequest buildRequest)
+    {
+        var sb = new StringBuilder();
+        sb.Append("Builds");
+        sb.Append(buildRequest.StartTime.ToString(@"yyyyMMdd"));
+        sb.Append(buildRequest.Interest);
+        sb.Append(buildRequest.Versus);
+        sb.Append(String.Concat(buildRequest.PlayerNames));
+        return sb.ToString();
+    }
+
     public static string GetMd5Hash(MD5 md5Hash, string input)
     {
         byte[] data = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(input));

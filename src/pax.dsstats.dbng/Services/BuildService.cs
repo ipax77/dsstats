@@ -1,129 +1,77 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
+using System.Diagnostics;
 
 namespace pax.dsstats.dbng.Services;
 
 public class BuildService
 {
     private readonly ReplayContext context;
+    private readonly IMemoryCache memoryCache;
+    private readonly ILogger<BuildService> logger;
 
-    public BuildService(ReplayContext context)
+    public BuildService(ReplayContext context, IMemoryCache memoryCache, ILogger<BuildService> logger)
     {
         this.context = context;
+        this.memoryCache = memoryCache;
+        this.logger = logger;
     }
 
-    public async Task GetBuildResponse(BuildRequest request)
+    public async Task<BuildResponse> GetBuild(BuildRequest buildRequest, Dictionary<int, string>? units = null)
     {
-        var replays = GetReuqestReplays(request);
+        var memKey = buildRequest.GenMemKey();
 
-        var groups = (request.Versus == Commander.None, request.PlayerNames.Any()) switch
+        if (!memoryCache.TryGetValue(memKey, out BuildResponse buildResponse))
         {
-            (true, true) =>
-                            from r in replays
-                            from rp in r.ReplayPlayers
-                            from s in rp.Spawns
-                            from u in s.Units
-                            where rp.Race == request.Interest && request.PlayerNames.Contains(rp.Name)
-                            group new { s, u } by new { s.Gameloop, u.UnitId } into g
-                            select new
-                            {
-                                Gameloop = g.Key.Gameloop,
-                                UnitId = g.Key.UnitId,
-                                Sum = g.Sum(c => c.u.Count),
-                                Gas = g.Sum(c => c.s.GasCount),
-                                Upgrades = g.Sum(c => c.s.UpgradeSpent),
-                            },
-            (true, false) =>
-                            from r in replays
-                            from rp in r.ReplayPlayers
-                            from s in rp.Spawns
-                            from u in s.Units
-                            where rp.Race == request.Interest && rp.IsUploader
-                            group new { s, u } by new { s.Gameloop, u.UnitId } into g
-                            select new
-                            {
-                                Gameloop = g.Key.Gameloop,
-                                UnitId = g.Key.UnitId,
-                                Sum = g.Sum(c => c.u.Count),
-                                Gas = g.Sum(c => c.s.GasCount),
-                                Upgrades = g.Sum(c => c.s.UpgradeSpent),
-                            },
-            (false, true) =>
-                            from r in replays
-                            from rp in r.ReplayPlayers
-                            from s in rp.Spawns
-                            from u in s.Units
-                            where rp.Race == request.Interest && request.PlayerNames.Contains(rp.Name) && rp.OppRace == request.Versus
-                            group new { s, u } by new { s.Gameloop, u.UnitId } into g
-                            select new
-                            {
-                                Gameloop = g.Key.Gameloop,
-                                UnitId = g.Key.UnitId,
-                                Sum = g.Sum(c => c.u.Count),
-                                Gas = g.Sum(c => c.s.GasCount),
-                                Upgrades = g.Sum(c => c.s.UpgradeSpent),
-                            },
-            (false, false) =>
-                            from r in replays
-                            from rp in r.ReplayPlayers
-                            from s in rp.Spawns
-                            from u in s.Units
-                            where rp.Race == request.Interest && rp.IsUploader && rp.OppRace == request.Versus
-                            group new { s, u } by new { s.Gameloop, u.UnitId } into g
-                            select new
-                            {
-                                Gameloop = g.Key.Gameloop,
-                                UnitId = g.Key.UnitId,
-                                Sum = g.Sum(c => c.u.Count),
-                                Gas = g.Sum(c => c.s.GasCount),
-                                Upgrades = g.Sum(c => c.s.UpgradeSpent),
-                            }
+            buildResponse = await GetBuildFromDb(buildRequest, units);
 
+            memoryCache.Set(memKey, buildResponse, new MemoryCacheEntryOptions()
+            .SetPriority(CacheItemPriority.High)
+            .SetAbsoluteExpiration(TimeSpan.FromDays(7)));
+
+        }
+        return buildResponse;
+    }
+
+    public async Task SeedBuildsCache()
+    {
+        BuildRequest request = new()
+        {
+            PlayerNames = new() { "PAX" },
         };
 
-        var result = await groups
-            .AsSplitQuery()
-            .ToListAsync();
+        Dictionary<int, string> units = (await context.Units
+            .AsNoTracking()
+            .Select(s => new { s.UnitId, s.Name })
+            .ToListAsync())
+            .ToDictionary(x => x.UnitId, y => y.Name);
 
-        Console.WriteLine(result.FirstOrDefault());
+        Stopwatch sw = new();
+        sw.Start();
 
+        foreach (Commander cmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
+        {
+            foreach (Commander cmdrVs in Data.GetCommanders(Data.CmdrGet.All))
+            {
+                request.Interest = cmdr;
+                request.Versus = cmdrVs;
+                await GetBuild(request, units);
+            }
+        }
+        sw.Stop();
+        logger.LogWarning($"buildCache built in {sw.ElapsedMilliseconds} ms");
     }
 
-    private IQueryable<Replay> GetReuqestReplays(BuildRequest request)
+    private async Task<BuildResponse> GetBuildFromDb(BuildRequest request, Dictionary<int, string>? units = null)
     {
         var replays = context.Replays
             .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Spawns)
                 .ThenInclude(i => i.Units)
-            .Where(x => x.Playercount == 6 && x.Duration > 300 && x.Maxleaver < 90)
-            .Where(x => x.ReplayPlayers.Any(a => a.Race == request.Interest))
-            .AsNoTracking();
-
-        replays = replays.Where(x => x.GameTime >= request.StartTime);
-        if (request.EndTime != DateTime.Today)
-        {
-            replays = replays.Where(x => x.GameTime <= request.EndTime);
-        }
-
-        if ((int)request.Interest > 3)
-        {
-            replays = replays.Where(x => x.GameMode == GameMode.Commanders || x.GameMode == GameMode.CommandersHeroic);
-        }
-        else
-        {
-            replays = replays.Where(x => x.GameMode == GameMode.Standard);
-        }
-        return replays;
-    }
-
-
-    public async Task<BuildResponse> GetBuild(BuildRequest request)
-    {
-        var replays = context.Replays
-            .Include(i => i.ReplayPlayers)
-                .ThenInclude(i => i.Spawns)
-                .ThenInclude(i => i.Units)
-            .Where(x => x.Playercount == 6 && x.Duration > 300 && x.Maxleaver < 90)
+            .Where(x => x.DefaultFilter)
             .AsNoTracking();
 
         replays = replays.Where(x => x.GameTime >= request.StartTime);
@@ -178,13 +126,13 @@ public class BuildService
                 Duration = bpReplays.Sum(s => s.Duration),
                 Gas = bpReplays.Sum(s => s.GasCount),
                 Upgrades = bpReplays.Sum(s => s.UpgradeSpending),
-                Units = await GetUnits(bpReplays.Select(s => s.Units).ToList())
+                Units = await GetUnits(bpReplays.Select(s => s.Units).ToList(), units)
             });
         }
         return response;
     }
 
-    public static IQueryable<BuildHelper> GetBuildResultQuery(IQueryable<Replay> replays, BuildRequest request)
+    private static IQueryable<BuildHelper> GetBuildResultQuery(IQueryable<Replay> replays, BuildRequest request)
     {
         return (request.Versus == Commander.None, !request.PlayerNames.Any()) switch
         {
@@ -259,7 +207,7 @@ public class BuildService
         };
     }
 
-    private async Task<List<BuildResponseBreakpointUnit>> GetUnits(List<List<KeyValuePair<int, int>>> spawnsUnits)
+    private async Task<List<BuildResponseBreakpointUnit>> GetUnits(List<List<KeyValuePair<int, int>>> spawnsUnits, Dictionary<int, string>? units = null)
     {
         Dictionary<int, int> unitSums = new();
 
@@ -277,22 +225,34 @@ public class BuildService
                 }
             }
         }
-        List<BuildResponseBreakpointUnit> units = new();
+        List<BuildResponseBreakpointUnit> bpUnits = new();
 
         foreach (var ent in unitSums)
         {
-            units.Add(new()
+            bpUnits.Add(new()
             {
-                Name = await GetUnitName(ent.Key),
+                Name = await GetUnitName(ent.Key, units),
                 Count = ent.Value
             });
         }
 
-        return units;
+        return bpUnits;
     }
 
-    private async Task<string> GetUnitName(int unitId)
+    private async Task<string> GetUnitName(int unitId, Dictionary<int, string>? units = null)
     {
+        if (units != null)
+        {
+            if (units.ContainsKey(unitId))
+            {
+                return units[unitId];
+            }
+            else
+            {
+                return "";
+            }
+        }
+
         var name = await context.Units
             .Where(x => x.UnitId == unitId)
             .AsNoTracking()

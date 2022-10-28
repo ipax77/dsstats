@@ -62,14 +62,15 @@
         </div>
         <div class="col-auto">
             <select class="form-select" multiple aria-label="multiple" @onchange="GameModeChange">
-                <option selected>All GameModes</option>
-                @foreach (GameMode gameMode in Enum.GetValues(typeof(GameMode)))
-                {
-                    @if (gameMode != GameMode.None)
-                    {
-                        <option value="@gameMode">@gameMode</option>
-                    }
-                }
+                <option>All GameModes</option>
+                <option selected value="@GameMode.Commanders">@GameMode.Commanders</option>
+                <option selected value="@GameMode.CommandersHeroic">@GameMode.CommandersHeroic</option>
+                <option value="@GameMode.Standard">@GameMode.Standard</option>
+                <option value="@GameMode.BrawlCommanders">@GameMode.BrawlCommanders</option>
+                <option value="@GameMode.Switch">@GameMode.Switch</option>
+                <option value="@GameMode.Gear">@GameMode.Gear</option>
+                <option value="@GameMode.Sabotage">@GameMode.Sabotage</option>
+                <option value="@GameMode.Tutorial">@GameMode.Tutorial</option>
             </select>
         </div>
     </div>

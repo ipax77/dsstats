@@ -78,6 +78,13 @@ mapper.ConfigurationProvider.AssertConfigurationIsValid();
 using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 context.Database.Migrate();
 
+// SEED
+if (!app.Environment.IsDevelopment())
+{
+    var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
+    buildService.SeedBuildsCache().GetAwaiter().GetResult();
+}
+
 // DEBUG
 
 //var spawns = context.Spawns

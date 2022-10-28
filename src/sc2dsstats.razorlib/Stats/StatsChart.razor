@@ -241,13 +241,13 @@
     {
         var items = response.Items.AsQueryable();
 
-        if (!response.Request.GameModes.Contains(GameMode.Standard)
-            && !response.Request.GameModes.Contains(GameMode.BrawlStandard))
-        {
-            items = items.Where(x => !x.Label.Contains("Protoss"));
-            items = items.Where(x => !x.Label.Contains("Terran"));
-            items = items.Where(x => !x.Label.Contains("Zerg"));
-        }
+        //if (!response.Request.GameModes.Contains(GameMode.Standard)
+        //    && !response.Request.GameModes.Contains(GameMode.BrawlStandard))
+        //{
+        //    items = items.Where(x => !x.Label.Contains("Protoss"));
+        //    items = items.Where(x => !x.Label.Contains("Terran"));
+        //    items = items.Where(x => !x.Label.Contains("Zerg"));
+        //}
 
         return items.OrderBy(o => o.Winrate).ToList();
     }

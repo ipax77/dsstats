@@ -5,10 +5,19 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class StatsService
 {
+    private readonly List<GameMode> defaultGameModes = new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic };
 
     private async Task<StatsResponse> GetWinrate(StatsRequest request)
     {
         if (!request.DefaultFilter)
+        {
+            return await GetCustomWinrate(request);
+        }
+
+        var firstNotSecond = request.GameModes.Except(defaultGameModes).ToList();
+        var secondNotFirst = defaultGameModes.Except(request.GameModes).ToList();
+
+        if (firstNotSecond.Any() || secondNotFirst.Any())
         {
             return await GetCustomWinrate(request);
         }

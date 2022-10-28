@@ -43,7 +43,11 @@ public partial class StatsService : IStatsService
                 var val = methodInfo?.GetValue(item);
                 if (val != null)
                 {
-                    items.Add(val.ToString() ?? "");
+                    var memkey = val.ToString();
+                    if (memkey != null && !memkey.StartsWith("Builds"))
+                    {
+                        items.Add(memkey);
+                    }
                 }
             }
         }
@@ -68,6 +72,7 @@ public partial class StatsService : IStatsService
                 .SetAbsoluteExpiration(TimeSpan.FromDays(1))
             );
         }
+
         return stats;
     }
 
@@ -75,7 +80,7 @@ public partial class StatsService : IStatsService
     {
         var stats = from r in context.Replays
                     from p in r.ReplayPlayers
-                    where p.IsUploader
+                    where (r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic) && r.DefaultFilter && p.IsUploader
                     group new { r, p } by new { year = r.GameTime.Year, month = r.GameTime.Month, race = p.Race, opprace = p.OppRace } into g
                     select new CmdrStats()
                     {
@@ -91,15 +96,14 @@ public partial class StatsService : IStatsService
                         Kills = g.Sum(s => s.p.Kills),
                         Duration = g.Sum(s => s.r.Duration),
                     };
-        return await stats.ToListAsync();
+        return FilterStats(await stats.ToListAsync());
     }
 
     private async Task<List<CmdrStats>> GetStats()
     {
         var stats = from r in context.Replays
                     from p in r.ReplayPlayers
-                    where r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic
-                    // where r.DefaultFilter && p.IsUploader
+                    where (r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic) && r.DefaultFilter
                     group new { r, p } by new { year = r.GameTime.Year, month = r.GameTime.Month, race = p.Race, opprace = p.OppRace } into g
                     select new CmdrStats()
                     {
@@ -115,11 +119,14 @@ public partial class StatsService : IStatsService
                         Kills = g.Sum(s => s.p.Kills),
                         Duration = g.Sum(s => s.r.Duration),
                     };
-        return await stats.ToListAsync();
+        return FilterStats(await stats.ToListAsync());
     }
 
-
-
+    private List<CmdrStats> FilterStats(List<CmdrStats> stats)
+    {
+        var cmdrs = Data.GetCommanders(Data.CmdrGet.NoStd);
+        return stats.Where(x => cmdrs.Contains(x.Race) && cmdrs.Contains(x.OppRace)).ToList();
+    }
 }
 
 public record CmdrStats
