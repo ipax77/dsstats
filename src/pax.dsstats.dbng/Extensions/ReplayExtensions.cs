@@ -1,4 +1,5 @@
 
+using pax.dsstats.shared;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -55,6 +56,28 @@ public static class ReplayExtensions
 
         using var md5Hash = MD5.Create();
         return GetMd5Hash(md5Hash, sb.ToString());
+    }
+
+    public static string GenMemKey(this StatsRequest statsRequest)
+    {
+        var sb = new StringBuilder();
+        sb.Append("Stats");
+        sb.Append(statsRequest.StartTime.ToString(@"yyyyMMdd"));
+        sb.Append((int)statsRequest.Interest);
+        sb.Append(statsRequest.EndTime.ToString(@"yyyyMMdd"));
+        sb.Append(String.Concat(statsRequest.GameModes.Select(s => (int)s)));
+        return sb.ToString();
+    }
+
+    public static string GenMemKey(this BuildRequest buildRequest)
+    {
+        var sb = new StringBuilder();
+        sb.Append("Builds");
+        sb.Append(buildRequest.StartTime.ToString(@"yyyyMMdd"));
+        sb.Append(buildRequest.Interest);
+        sb.Append(buildRequest.Versus);
+        sb.Append(String.Concat(buildRequest.PlayerNames));
+        return sb.ToString();
     }
 
     public static string GetMd5Hash(MD5 md5Hash, string input)

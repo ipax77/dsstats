@@ -5,15 +5,17 @@
 
 <style>
     .m-fadeOut {
-      visibility: hidden;
-      opacity: 0;
-      transition: visibility 0s linear 300ms, opacity 300ms;
+        visibility: hidden;
+        opacity: 0;
+        transition: visibility 0s linear 300ms, opacity 300ms;
     }
+
     .m-fadeIn {
-      visibility: visible;
-      opacity: 1;
-      transition: visibility 0s linear 0s, opacity 300ms;
+        visibility: visible;
+        opacity: 1;
+        transition: visibility 0s linear 0s, opacity 300ms;
     }
+
     .slider {
         -webkit-appearance: none;
         width: 100%;
@@ -52,8 +54,8 @@
     }
 
     .ismobile {
-    display: none;
-}
+        display: none;
+    }
 
     .isdesktop {
         display: block;
@@ -63,6 +65,7 @@
         .ismobile {
             display: block;
         }
+
         .isdesktop {
             display: none;
         }
@@ -104,28 +107,43 @@
             <CmdrSelect Label="Vs" IsSelected="@BuildRequest.Versus" OnCmdrSelected="SelectOpponent"></CmdrSelect>
         </div>
         <div class="col-auto">
-            <h3><span class="text-warning">@(
+            <h3>
+                <span class="text-warning">
+                    @(
                         !BuildRequest.PlayerNames.Any() ? "Player" : BuildRequest.PlayerNames.First()
-                )'s</span> average unit count for <span class="text-danger">@build.Interest @(
+                        )'s
+                </span> average unit count for <span class="text-danger">
+                    @build.Interest @(
                 BuildRequest.Versus == Commander.None ? "" : $" vs {build.Versus}"
-                )</span></h3>
+                )
+                </span>
+            </h3>
             <div class="row mb-2">
                 @if (isLoading)
                 {
                     <h4 class="col-auto"><span class="spinner-border spinner-border-sm"></span><span class="badge bg-danger">Replays: @build.Count</span></h4>
-                } else
+                }
+                else
                 {
                     <h4 class="col-auto"><span style="width: 14px; display: inline-block;"></span><span class="badge bg-danger">Replays: @build.Count</span></h4>
                 }
                 @if (build.Count > 0)
                 {
-                    <h4 class="col-auto"><span class="badge bg-danger">WR: @(
-                    ((double)build.Wins * 100 / (double)build.Count).ToString("N2")
-                    )%</span></h4>
+                    <h4 class="col-auto">
+                        <span class="badge bg-danger">
+                            WR: @(
+                            ((double)build.Wins * 100 / (double)build.Count).ToString("N2")
+                            )%
+                        </span>
+                    </h4>
                     <h4 class="col-auto"><span class="badge bg-danger">Dur: @TimeSpan.FromSeconds(build.Duration / build.Count).ToString(@"mm\:ss")min</span></h4>
-                    <h4 class="col-auto"><span class="badge bg-danger">Gas: @(
-                    ((double)build.Gas / (double)build.Count).ToString("N2")
-                    )</span></h4>
+                    <h4 class="col-auto">
+                        <span class="badge bg-danger">
+                            Gas: @(
+                           ((double)build.Gas / (double)build.Count).ToString("N2")
+                           )
+                        </span>
+                    </h4>
                 }
             </div>
             <div class="row mb-2">
@@ -140,19 +158,19 @@
                 var bp = build.Breakpoints.FirstOrDefault(f => f.Breakpoint == Breakpoint);
                 int i = 0;
             }
-@*            @if (bp != null && bp.Count > 0)
-            {
-                <div class="row mb-2">
-                    <h4 class="col-auto"><span class="badge bg-info">Replays: @bp.Count</span></h4>
-                    <h4 class="col-auto"><span class="badge bg-info">WR: @(
-                    ((double)bp.Wins * 100 / (double)bp.Count).ToString("N2")
-                    )%</span></h4>
-                    <h4 class="col-auto"><span class="badge bg-info">Dur: @TimeSpan.FromSeconds(bp.Duration / bp.Count).ToString(@"mm\:ss")min</span></h4>
-                    <h4 class="col-auto"><span class="badge bg-info">Gas: @(
-                    ((double)bp.Gas / (double)bp.Count).ToString("N2")
-                    )</span></h4>
-                </div>
-            }*@
+            @*            @if (bp != null && bp.Count > 0)
+        {
+        <div class="row mb-2">
+        <h4 class="col-auto"><span class="badge bg-info">Replays: @bp.Count</span></h4>
+        <h4 class="col-auto"><span class="badge bg-info">WR: @(
+        ((double)bp.Wins * 100 / (double)bp.Count).ToString("N2")
+        )%</span></h4>
+        <h4 class="col-auto"><span class="badge bg-info">Dur: @TimeSpan.FromSeconds(bp.Duration / bp.Count).ToString(@"mm\:ss")min</span></h4>
+        <h4 class="col-auto"><span class="badge bg-info">Gas: @(
+        ((double)bp.Gas / (double)bp.Count).ToString("N2")
+        )</span></h4>
+        </div>
+        }*@
             <table class="table table-dark table-striped">
                 <thead>
                     <tr>
@@ -176,12 +194,15 @@
                             };
                             <tr class="@background">
                                 <td>@unit.Name</td>
-                                <td>@(
-                            ((double)unit.Count / (double)bp.Count).ToString("N2")
-                            )</td>
+                                <td>
+                                    @(
+                                        ((double)unit.Count / (double)bp.Count).ToString("N2")
+                                        )
+                                </td>
                             </tr>
                         }
-                    } else
+                    }
+                    else
                     {
                         <tr>
                             <td clospan="100%">No data available.</td>
@@ -198,9 +219,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <Virtualize Items="build.Replays.OrderByDescending(o => o.Gametime).ToList()" Context="replay" ItemSize="33" >
+                    <Virtualize Items="build.Replays.OrderByDescending(o => o.Gametime).ToList()" Context="replay" ItemSize="33">
                         <ItemContent>
-                            <tr class="pointer" style="text-decoration: underline;"  @onclick="e => ShowReplay(replay.Hash)">
+                            <tr class="pointer" style="text-decoration: underline;" @onclick="e => ShowReplay(replay.Hash)">
                                 <td class="@(replay.Hash == replayHash ? "table-primary" : "")">@replay.Gametime.ToString("yyyy-MM-dd")</td>
                             </tr>
                         </ItemContent>
@@ -226,6 +247,9 @@
     [Parameter]
     [EditorRequired]
     public List<string> Players { get; set; } = new();
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
 
     BuildResponse? build = null;
     bool isLoading = false;
@@ -278,6 +302,8 @@
         {
             await ShowReplay(build.Replays.OrderByDescending(o => o.Gametime).First().Hash);
         }
+
+        await OnRequestChanged.InvokeAsync();
     }
 
     void SelectCommander(string cmdr)
@@ -311,6 +337,7 @@
     void SelectTimespan(string timespan)
     {
         (BuildRequest.StartTime, BuildRequest.EndTime) = Data.TimeperiodSelected(timespan);
+        BuildRequest.Timespan = timespan;
         _ = LoadData();
     }
 

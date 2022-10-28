@@ -1,0 +1,89 @@
+﻿@page "/builds"
+@using pax.dsstats.shared
+@inject NavigationManager NavigationManager
+
+<PageTitle>Builds</PageTitle>
+
+<sc2dsstats.razorlib.BuildsComponent BuildRequest="buildRequest" Players="players" OnRequestChanged="RequestChanged"></sc2dsstats.razorlib.BuildsComponent>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Timespan { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Interest { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Versus { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? PlayerNames { get; set; }
+
+
+    private BuildRequest buildRequest = new()
+    {
+        PlayerNames = new() { "PAX" },
+        Interest = Commander.Abathur,
+    };
+
+    private List<string> players = new() {
+        "PAX",
+        "Feralan"
+    };
+
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }
+
+    private void SetRequest()
+    {
+        if (!String.IsNullOrEmpty(Timespan))
+        {
+            (buildRequest.StartTime, buildRequest.EndTime) = Data.TimeperiodSelected(Timespan);
+            buildRequest.Timespan = Timespan;
+        }
+
+        if (Enum.TryParse(typeof(Commander), Interest, out object? interestObj))
+        {
+            if (interestObj is Commander interest)
+            {
+                buildRequest.Interest = interest;
+            }
+        }
+
+        if (Enum.TryParse(typeof(Commander), Versus, out object? versusObj))
+        {
+            if (versusObj is Commander versus)
+            {
+                buildRequest.Versus = versus;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(PlayerNames))
+        {
+            buildRequest.PlayerNames = PlayerNames.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+        }
+    }
+
+    private void RequestChanged()
+    {
+        Dictionary<string, object?> queryDic = new();
+
+        queryDic.Add("Timespan", buildRequest.Timespan);
+        queryDic.Add("Interest", buildRequest.Interest.ToString());
+        queryDic.Add("Versus", buildRequest.Versus.ToString());
+        queryDic.Add("PlayerNames", string.Join(',', buildRequest.PlayerNames));
+
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters(
+                new Dictionary<string, object?>(queryDic)
+            )
+        );
+    }
+}

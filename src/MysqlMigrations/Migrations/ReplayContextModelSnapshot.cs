@@ -98,6 +98,18 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("Events");
                 });
 
+            modelBuilder.Entity("pax.dsstats.dbng.GroupByHelper", b =>
+                {
+                    b.Property<int>("Count")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Group")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("Name");
+
+                    b.ToView("GroupByHelper");
+                });
+
             modelBuilder.Entity("pax.dsstats.dbng.Player", b =>
                 {
                     b.Property<int>("PlayerId")
@@ -260,6 +272,10 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("GameTime", "GameMode");
 
                     b.HasIndex("GameTime", "GameMode", "DefaultFilter");
+
+                    b.HasIndex("GameTime", "GameMode", "Maxleaver");
+
+                    b.HasIndex("GameTime", "GameMode", "WinnerTeam");
 
                     b.ToTable("Replays");
                 });

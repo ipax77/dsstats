@@ -16,6 +16,8 @@ public record ReplayPlayerDsRDto
     public int Team { get; init; }
     public PlayerResult PlayerResult { get; init; }
     public PlayerDsRDto Player { get; init; } = null!;
+    public Commander Race { get; init; }
+    public Commander OppRace { get; init; }
     public int Duration { get; init; }
     public bool IsUploader { get; init; }
     public Commander Race { get; set; }

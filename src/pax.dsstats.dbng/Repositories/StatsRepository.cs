@@ -69,7 +69,6 @@ public partial class StatsRepository : IStatsRepository
         {
             Request = request,
             Items = items,
-            CountDefaultFilter = await GetCount(replays),
             AvgDuration = !items.Any() ? 0 : Convert.ToInt32(items.Select(s => s.duration / (double)s.Matchups).Average())
         };
 

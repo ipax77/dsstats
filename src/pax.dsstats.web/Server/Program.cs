@@ -24,6 +24,7 @@ builder.Host.ConfigureAppConfiguration((context, config) =>
 
 var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 39));
 var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
+// var connectionString = builder.Configuration["ServerConfig:DsstatsProdConnectionString"];
 var oldConnectionString = builder.Configuration["ServerConfig:DBConnectionString2"];
 
 builder.Services.AddDbContext<ReplayContext>(options =>
@@ -35,8 +36,8 @@ builder.Services.AddDbContext<ReplayContext>(options =>
         p.MigrationsAssembly("MysqlMigrations");
         p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
     })
-    //.EnableDetailedErrors()
-    //.EnableSensitiveDataLogging()
+    .EnableDetailedErrors()
+    .EnableSensitiveDataLogging()
     ;
 });
 
@@ -76,6 +77,13 @@ mapper.ConfigurationProvider.AssertConfigurationIsValid();
 
 using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 context.Database.Migrate();
+
+// SEED
+if (!app.Environment.IsDevelopment())
+{
+    var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
+    buildService.SeedBuildsCache().GetAwaiter().GetResult();
+}
 
 // DEBUG
 

@@ -1,7 +1,9 @@
 ﻿@using MathNet.Numerics;
+@using Microsoft.Extensions.Logging
 @using pax.BlazorChartJs;
 @using pax.dsstats.shared;
 @using sc2dsstats.razorlib.Services;
+@inject ILogger<StatsChart> logger
 
 <div class="w-75" style="min-width: 600px;">
     <ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered"></ChartComponent>
@@ -67,6 +69,8 @@
 
     public void SetChart()
     {
+        logger.LogWarning($"{DateTime.UtcNow} Setting chart ...");
+
         if (StatsResponse.Request.StatsMode == StatsMode.Winrate)
         {
             var items = GetFilterdAndSortedChartData(StatsResponse);
@@ -182,7 +186,10 @@
                     }
                 };
         }
-        _ = chartComponent?.DrawChart();
+        if (isInit)
+        {
+            _ = chartComponent?.DrawChart();
+        }
     }
 
     private void ChartEventTriggered(ChartJsEvent chartEvent)
@@ -234,13 +241,13 @@
     {
         var items = response.Items.AsQueryable();
 
-        if (!response.Request.GameModes.Contains(GameMode.Standard)
-            && !response.Request.GameModes.Contains(GameMode.BrawlStandard))
-        {
-            items = items.Where(x => !x.Label.Contains("Protoss"));
-            items = items.Where(x => !x.Label.Contains("Terran"));
-            items = items.Where(x => !x.Label.Contains("Zerg"));
-        }
+        //if (!response.Request.GameModes.Contains(GameMode.Standard)
+        //    && !response.Request.GameModes.Contains(GameMode.BrawlStandard))
+        //{
+        //    items = items.Where(x => !x.Label.Contains("Protoss"));
+        //    items = items.Where(x => !x.Label.Contains("Terran"));
+        //    items = items.Where(x => !x.Label.Contains("Zerg"));
+        //}
 
         return items.OrderBy(o => o.Winrate).ToList();
     }

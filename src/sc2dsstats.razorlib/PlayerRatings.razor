@@ -107,19 +107,19 @@
     </div>
     <div class="col-auto">
         <div class="btn-block">
-            <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => DeviationRequest = DeviationRequestEnum.Std)">Std Diviation</button>
-            <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => DeviationRequest = DeviationRequestEnum.Cmdr)">Cmdr Diviation</button>
-            @if (DeviationRequest != DeviationRequestEnum.None)
+            <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => DistributionRequest = DistributionRequestEnum.Std)">Std Distribution</button>
+            <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => DistributionRequest = DistributionRequestEnum.Cmdr)">Cmdr Distribution</button>
+            @if (DistributionRequest != DistributionRequestEnum.None)
             {
-                <button type="button" class="btn btn-sm btn-outline-warning" @onclick="@(() => DeviationRequest = DeviationRequestEnum.None)">Close</button>
+                <button type="button" class="btn btn-sm btn-outline-warning" @onclick="@(() => DistributionRequest = DistributionRequestEnum.None)">Close</button>
             }
         </div>
-        @if (DeviationRequest == DeviationRequestEnum.Std)
+        @if (DistributionRequest == DistributionRequestEnum.Std)
         {
             <div>
                 <PlayerRatingsDeviation @ref="playerRatingsDeviation" Std="true"></PlayerRatingsDeviation>
             </div>
-        } else if (DeviationRequest == DeviationRequestEnum.Cmdr)
+        } else if (DistributionRequest == DistributionRequestEnum.Cmdr)
         {
             <div>
                 <PlayerRatingsDeviation @ref="playerRatingsDeviation" Std="false"></PlayerRatingsDeviation>
@@ -136,7 +136,7 @@
     private PlayerRatingChart? playerRatingChart;
     private PlayerRatingsDeviation? playerRatingsDeviation;
     private Virtualize<PlayerRatingDto>? virtualize;
-    private DeviationRequestEnum DeviationRequest = DeviationRequestEnum.None;
+    private DistributionRequestEnum DistributionRequest = DistributionRequestEnum.None;
     private RatingsRequest ratingsRequest = new() 
     {
         Skip = 0,
@@ -230,7 +230,7 @@
         playerRatingChart?.LoadData(playerRatingDto.ToonId, playerRatingDto.Name);
     }
 
-    public enum DeviationRequestEnum
+    public enum DistributionRequestEnum
     {
         None = 0,
         Std = 1,

@@ -5,10 +5,19 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class StatsService
 {
+    private readonly List<GameMode> defaultGameModes = new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic };
 
     private async Task<StatsResponse> GetWinrate(StatsRequest request)
     {
         if (!request.DefaultFilter)
+        {
+            return await GetCustomWinrate(request);
+        }
+
+        var firstNotSecond = request.GameModes.Except(defaultGameModes).ToList();
+        var secondNotFirst = defaultGameModes.Except(request.GameModes).ToList();
+
+        if (firstNotSecond.Any() || secondNotFirst.Any())
         {
             return await GetCustomWinrate(request);
         }
@@ -50,14 +59,12 @@ public partial class StatsService
                 duration = (long)s.Sum(c => c.Duration)
             }).ToList();
 
-        (var countNotDefault, var countDefault) = await GetCount(request);
 
         return new StatsResponse()
         {
             Request = request,
             Items = data,
-            CountDefaultFilter = countDefault,
-            CountNotDefaultFilter = countNotDefault,
+            CountResponse = await GetCount(request),
             AvgDuration = !data.Any() ? 0 : Convert.ToInt32(data.Select(s => s.duration / (double)s.Matchups).Average())
         };
     }
@@ -124,13 +131,11 @@ public partial class StatsService
             };
         }
 
-        (var countNotDefault, var countDefault) = await GetCount(request);
         return new StatsResponse()
         {
             Request = request,
             Items = items,
-            CountDefaultFilter = countDefault,
-            CountNotDefaultFilter = countNotDefault,
+            CountResponse = await GetCount(request),
             AvgDuration = !items.Any() ? 0 : Convert.ToInt32(items.Select(s => s.duration / (double)s.Matchups).Average())
         };
     }

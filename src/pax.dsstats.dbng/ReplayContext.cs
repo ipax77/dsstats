@@ -21,6 +21,7 @@ public class ReplayContext : DbContext
     public virtual DbSet<ReplayDownloadCount> ReplayDownloadCounts { get; set; } = null!;
     public virtual DbSet<SkipReplay> SkipReplays { get; set; } = null!;
     public virtual DbSet<CommanderMmr> CommanderMmrs { get; set; } = null!;
+    public virtual DbSet<GroupByHelper> GroupByHelpers { get; set; } = null!;
 
     public ReplayContext(DbContextOptions<ReplayContext> options)
     : base(options)
@@ -34,6 +35,9 @@ public class ReplayContext : DbContext
             entity.HasIndex(e => e.FileName);
             entity.HasIndex(e => new { e.GameTime, e.GameMode });
             entity.HasIndex(e => new { e.GameTime, e.GameMode, e.DefaultFilter });
+            entity.HasIndex(e => new { e.GameTime, e.GameMode, e.WinnerTeam });
+            entity.HasIndex(e => new { e.GameTime, e.GameMode, e.Maxleaver });
+
 
             entity.Property(p => p.ReplayHash)
                 .HasMaxLength(64)
@@ -84,6 +88,13 @@ public class ReplayContext : DbContext
         modelBuilder.Entity<CommanderMmr>(entity =>
         {
             entity.HasIndex(e => new { e.Commander_1, e.Commander_2 });
+        });
+
+        modelBuilder.Entity<GroupByHelper>(entity =>
+        {
+            entity.HasNoKey();
+            entity.ToView("GroupByHelper");
+            entity.Property(p => p.Group).HasColumnName("Name");
         });
     }
 }

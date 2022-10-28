@@ -38,6 +38,9 @@ public class MmrService
     {
         Stopwatch sw = new();
         sw.Start();
+
+        await SeedCommanderMmrs();
+
         await ClearRatings();
 
         await CalcMmrCmdr();
@@ -49,10 +52,34 @@ public class MmrService
         OnRecalculated(new());
     }
 
+    private async Task SeedCommanderMmrs()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        if (!context.CommanderMmrs.Any())
+        {
+            foreach (Commander cmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
+            {
+                foreach (Commander synCmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
+                {
+                    context.CommanderMmrs.Add(new()
+                    {
+                        Commander = cmdr,
+                        SynCommander = synCmdr
+                    });
+                }
+            }
+        }
+        await context.SaveChangesAsync();
+    }
+
     private async Task CalcMmrStd()
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+
 
         var replays = context.Replays
             .Include(i => i.ReplayPlayers)
