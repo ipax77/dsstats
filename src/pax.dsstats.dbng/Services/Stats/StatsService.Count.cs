@@ -37,16 +37,10 @@ public partial class StatsService
     private async Task<int> GetQuits(StatsRequest request)
     {
         var defaultFilterGroup = context.GroupByHelpers.FromSqlRaw(
-                        @$"SELECT 
-	                        CASE
-		                        WHEN r.WinnerTeam = 0 THEN 0
-                                WHEN r.WinnerTeam = 1 THEN 1
-		                        WHEN r.WinnerTeam = 2 THEN 1
-                            END AS Name
-	                        , count(*) AS Count
+                        @$"SELECT r.WinnerTeam > 0 as Name, count(*) AS Count
                             FROM Replays AS r
                             {GetRequestQueryString(request)}
-                            GROUP BY r.WinnerTeam");
+                            GROUP BY r.WinnerTeam > 0");
 
         var group = await defaultFilterGroup.ToListAsync();
 
