@@ -86,34 +86,36 @@ if (!app.Environment.IsDevelopment())
 }
 
 // DEBUG
+if (app.Environment.IsDevelopment())
+{
+    //var spawns = context.Spawns
+    //    .Include(i => i.ReplayPlayer)
+    //        .ThenInclude(i => i.Replay)
+    //    .Include(i => i.Units)
+    //    .AsNoTracking()
+    //    //.Take(1000)
+    //    .ToList();
 
-//var spawns = context.Spawns
-//    .Include(i => i.ReplayPlayer)
-//        .ThenInclude(i => i.Replay)
-//    .Include(i => i.Units)
-//    .AsNoTracking()
-//    //.Take(1000)
-//    .ToList();
+    //Dictionary<string, Spawn> spawnHashes = new();
 
-//Dictionary<string, Spawn> spawnHashes = new();
+    //foreach (var spawn in spawns)
+    //{
+    //    var hash = spawn.GenHash();
 
-//foreach (var spawn in spawns)
-//{
-//    var hash = spawn.GenHash();
-
-//    if (spawnHashes.ContainsKey(hash))
-//    {
-//        Console.WriteLine($"got double hash for spawn");
-//    }
-//    spawnHashes[hash] = spawn;
-//}
+    //    if (spawnHashes.ContainsKey(hash))
+    //    {
+    //        Console.WriteLine($"got double hash for spawn");
+    //    }
+    //    spawnHashes[hash] = spawn;
+    //}
 
 
-//var mmrServie = scope.ServiceProvider.GetRequiredService<MmrService>();
-//mmrServie.CalcMmmr().GetAwaiter().GetResult();
+    //var mmrServie = scope.ServiceProvider.GetRequiredService<MmrService>();
+    //mmrServie.CalcMmmr().GetAwaiter().GetResult();
 
-var mmrServie = scope.ServiceProvider.GetRequiredService<FireMmrService>();
-mmrServie.CalcMmmr().GetAwaiter().GetResult();
+    // var mmrServie = scope.ServiceProvider.GetRequiredService<FireMmrService>();
+    // mmrServie.CalcMmmr().GetAwaiter().GetResult();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
