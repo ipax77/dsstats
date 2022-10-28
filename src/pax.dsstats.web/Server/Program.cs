@@ -56,7 +56,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
 builder.Services.AddSingleton<MmrService>();
-// builder.Services.AddSingleton<FireMmrService>();
+builder.Services.AddSingleton<FireMmrService>();
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 
@@ -103,6 +103,9 @@ context.Database.Migrate();
 
 //var mmrServie = scope.ServiceProvider.GetRequiredService<MmrService>();
 //mmrServie.CalcMmmr().GetAwaiter().GetResult();
+
+var mmrServie = scope.ServiceProvider.GetRequiredService<FireMmrService>();
+mmrServie.CalcMmmr().GetAwaiter().GetResult();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

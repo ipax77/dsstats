@@ -2,6 +2,7 @@
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
 using System.Globalization;
 using System.Text;
@@ -12,11 +13,13 @@ public class FireMmrService
 {
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
+    private readonly ILogger<FireMmrService> logger;
 
-    public FireMmrService(IServiceProvider serviceProvider, IMapper mapper)
+    public FireMmrService(IServiceProvider serviceProvider, IMapper mapper, ILogger<FireMmrService> logger)
     {
         this.serviceProvider = serviceProvider;
         this.mapper = mapper;
+        this.logger = logger;
     }
 
     private static readonly double eloK = 64; // default 32
@@ -224,8 +227,16 @@ public class FireMmrService
         maxMmr = startMmr;
     }
 
-    private static void FixMMR_Equality(double[] team1_mmrDelta, double[] team2_mmrDelta)
+    private void FixMMR_Equality(double[] team1_mmrDelta, double[] team2_mmrDelta)
     {
+        // fs
+        if (team1_mmrDelta.Length != 3 || team2_mmrDelta.Length != 3)
+        {
+            logger.LogWarning($"FixMMR_Equality lenght not as expected: {team1_mmrDelta.Length} {team2_mmrDelta.Length}");
+            return;
+        }
+
+
         double abs_sumTeam1_mmrDelta = Math.Abs(team1_mmrDelta.Sum());
         double abs_sumTeam2_mmrDelta = Math.Abs(team2_mmrDelta.Sum());
 
@@ -367,6 +378,13 @@ public class FireMmrService
 
     private double GetCommandersComboMMR(Commander[] teamCommanders, Commander[] enemyCommanders)
     {
+        //fs
+        if (teamCommanders.Length != 3 || enemyCommanders.Length != 3)
+        {
+            logger.LogWarning($"GetCommandersComboMMR: teamLenght not as expected {teamCommanders.Length} {enemyCommanders.Length}");
+            return startMmr;
+        }
+
         double[] commandersComboMMR = new double[3];
 
         for (int i = 0; i < 3; i++) {
@@ -416,6 +434,13 @@ public class FireMmrService
 
     private void SetCommandersComboMMR(double[] commandersMmrDelta, Commander[] teamCommanders, Commander[] enemyCommanders)
     {
+        // fs
+        if (commandersMmrDelta.Length != 3 || teamCommanders.Length != 3 || enemyCommanders.Length != 3)
+        {
+            logger.LogWarning($"SetCommandersComboMMR: lenght not as expected");
+            return;
+        }
+
         for (int i = 0; i < 3; i++) {
             for (int k = 0; k < 3; k++) {
                 CommanderMmr antiSynergyCommander = this.commanderRatings

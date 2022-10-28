@@ -42,21 +42,30 @@ namespace SqliteMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<double>("AntiSynergy")
+                    b.Property<double>("AntiSynergyElo_1")
                         .HasColumnType("REAL");
 
-                    b.Property<int>("Commander")
+                    b.Property<double>("AntiSynergyElo_2")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("AntiSynergyMmr_1")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("AntiSynergyMmr_2")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("Commander_1")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("SynCommander")
+                    b.Property<int>("Commander_2")
                         .HasColumnType("INTEGER");
 
-                    b.Property<double>("Synergy")
+                    b.Property<double>("SynergyMmr")
                         .HasColumnType("REAL");
 
                     b.HasKey("CommanderMmrId");
 
-                    b.HasIndex("Commander", "SynCommander");
+                    b.HasIndex("Commander_1", "Commander_2");
 
                     b.ToTable("CommanderMmrs");
                 });
