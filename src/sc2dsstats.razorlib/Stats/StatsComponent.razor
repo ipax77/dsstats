@@ -1,5 +1,7 @@
-﻿@using pax.dsstats.shared;
+﻿@using Microsoft.Extensions.Logging
+@using pax.dsstats.shared;
 @inject IDataService dataService
+@inject ILogger<StatsComponent> logger
 
 <div>
     <CascadingValue Value="StatsRequest">
@@ -94,6 +96,8 @@
             }
             isLoading = true;
         }
+
+        logger.LogWarning($"{DateTime.UtcNow} loading stats data ...");
 
         if (StatsRequest.StatsMode == StatsMode.Timeline)
         {

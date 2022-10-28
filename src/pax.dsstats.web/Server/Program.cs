@@ -24,6 +24,7 @@ builder.Host.ConfigureAppConfiguration((context, config) =>
 
 var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 39));
 var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
+// var connectionString = builder.Configuration["ServerConfig:DsstatsProdConnectionString"];
 var oldConnectionString = builder.Configuration["ServerConfig:DBConnectionString2"];
 
 builder.Services.AddDbContext<ReplayContext>(options =>

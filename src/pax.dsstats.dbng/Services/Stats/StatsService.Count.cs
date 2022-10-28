@@ -73,7 +73,9 @@ public partial class StatsService
                         DefaultFilter = g.Key,
                         Count = g.Count()
                     };
-        var lcount = await count.ToListAsync();
+
+        var lcount = await count
+            .ToListAsync();
 
         return (lcount.FirstOrDefault(f => !f.DefaultFilter)?.Count ?? 0, lcount.FirstOrDefault(f => f.DefaultFilter)?.Count ?? 0);
     }
