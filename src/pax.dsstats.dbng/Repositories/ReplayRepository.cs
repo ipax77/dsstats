@@ -1,9 +1,12 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng.Extensions;
+using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
+using System.Numerics;
 
 namespace pax.dsstats.dbng.Repositories;
 
@@ -362,6 +365,10 @@ public class ReplayRepository : IReplayRepository
             (player.Upgrades, upgrades) = await GetMapedPlayerUpgrades(player, upgrades);
 
         }
+
+        //await AddDbCommanderMmr((dbReplay.CommandersTeam1.TrimEnd('|') + dbReplay.CommandersTeam2).Trim('|'));
+        await SeedCommanderMmrs();
+
         context.Replays.Add(dbReplay);
 
         try
@@ -375,6 +382,71 @@ public class ReplayRepository : IReplayRepository
         }
 
         return (units, upgrades);
+    }
+
+    //private async Task AddDbCommanderMmr(string commanders)
+    //{
+    //    var commandersEnums = commanders.Split('|').Select(c => Enum.Parse<Commander>(c));
+
+    //    foreach (var commander in commandersEnums) {
+    //        foreach (var synCommander in commandersEnums) {
+    //            var dbCommanderMmr = await context.CommanderMmrs.FirstOrDefaultAsync(f => (f.Commander == commander) && (f.SynCommander == synCommander));
+    //            if (dbCommanderMmr == null) {
+    //                dbCommanderMmr = new() {
+    //                    Commander = commander,
+    //                    SynCommander = synCommander
+    //                };
+    //                context.CommanderMmrs.Add(dbCommanderMmr);
+
+    //                try {
+    //                    await context.SaveChangesAsync();
+    //                } catch (Exception ex) {
+    //                    logger.LogError($"failed saving replay: {ex.Message}");
+    //                    throw;
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
+
+    private async Task SeedCommanderMmrs()
+    {
+        //using var scope = serviceProvider.CreateScope();
+        //using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        if (!context.CommanderMmrs.Any()) {
+            var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
+
+            for (int i = 0; i < allCommanders.Count; i++) {
+                for (int k = i; k < allCommanders.Count; k++) {
+                    context.CommanderMmrs.Add(new() {
+                        SynergyMmr = FireMmrService.startMmr,
+
+                        Commander_1 = allCommanders[i],
+                        Commander_2 = allCommanders[k],
+
+                        AntiSynergyMmr_1 = FireMmrService.startMmr,
+                        AntiSynergyMmr_2 = FireMmrService.startMmr,
+
+                        AntiSynergyElo_1 = 0.5,
+                        AntiSynergyElo_2 = 0.5
+                    });
+                }
+            }
+
+
+            //foreach (Commander cmdr in Data.GetCommanders(Data.CmdrGet.NoStd)) {
+            //    foreach (Commander synCmdr in Data.GetCommanders(Data.CmdrGet.NoStd)) {
+            //        context.CommanderMmrs.Add(new() {
+            //            Commander = cmdr,
+            //            SynCommander = synCmdr,
+            //            Synergy = FireMmrService.startMmr,
+            //            AntiSynergy = FireMmrService.startMmr
+            //        });
+            //    }
+            //}
+        }
+        await context.SaveChangesAsync();
     }
 
     private async Task<(ICollection<SpawnUnit>, HashSet<Unit>)> GetMapedSpawnUnits(Spawn spawn, Commander commander, HashSet<Unit> units)
