@@ -112,6 +112,9 @@ if (!app.Environment.IsDevelopment())
 //var mmrServie = scope.ServiceProvider.GetRequiredService<MmrService>();
 //mmrServie.CalcMmmr().GetAwaiter().GetResult();
 
+var mmrServie = scope.ServiceProvider.GetRequiredService<FireMmrService>();
+mmrServie.CalcMmmr().GetAwaiter().GetResult();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
