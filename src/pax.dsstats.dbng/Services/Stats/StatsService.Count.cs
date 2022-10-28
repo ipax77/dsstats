@@ -1,83 +1,99 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace pax.dsstats.dbng.Services;
 public partial class StatsService
 {
-    private async Task<(int, int)> GetRequestCount(StatsRequest request)
+    public async Task<CountResponse> GetCount(StatsRequest request)
     {
-        var memkey = GetRequestHash(request);
-        if (!memoryCache.TryGetValue(memkey, out (int, int) counts))
+        var memKey = request.GenMemKey();
+        if (!memoryCache.TryGetValue(memKey, out CountResponse countResponse))
         {
-            counts = await GetCount(request);
-            memoryCache.Set(memkey, counts, new MemoryCacheEntryOptions()
-                .SetPriority(CacheItemPriority.High)
-                .SetAbsoluteExpiration(TimeSpan.FromDays(1))
-            );
+            countResponse = await GetCountFromDb(request);
+            memoryCache.Set(memKey, countResponse, new MemoryCacheEntryOptions()
+            .SetPriority(CacheItemPriority.High)
+            .SetAbsoluteExpiration(TimeSpan.FromDays(1)));
         }
-        return counts;
+        return countResponse;
     }
 
-    private async Task<double> GetLeaver(StatsRequest request)
+    private async Task<int> GetLeaver(StatsRequest request)
     {
-        var replays = GetCountReplays(request);
+        var defaultFilterGroup = context.GroupByHelpers.FromSqlRaw(
+                        @$"SELECT r.Maxleaver > 89 as Name, count(*) AS Count
+                            FROM Replays AS r
+                            {GetRequestQueryString(request)}
+                            GROUP BY r.Maxleaver > 89");
 
-        var leaver = from r in replays
-                     group r by r.Maxleaver > 89 into g
-                     select new
-                     {
-                         Leaver = g.Key,
-                         Count = g.Count()
-                     };
-        var lleaver = await leaver.ToListAsync();
-        if (lleaver.Any() && lleaver.First().Count > 0)
-            return Math.Round(lleaver.Last().Count / (double)lleaver.First().Count * 100, 2);
-        else
-            return 0;
+        var group = await defaultFilterGroup.ToListAsync();
+
+        return group.FirstOrDefault(f => f.Group)?.Count ?? 0;
     }
 
-    private async Task<double> GetQuits(StatsRequest request)
+    private async Task<int> GetQuits(StatsRequest request)
     {
-        var replays = GetCountReplays(request);
+        var defaultFilterGroup = context.GroupByHelpers.FromSqlRaw(
+                        @$"SELECT r.WinnerTeam > 0 as Name, count(*) AS Count
+                            FROM Replays AS r
+                            {GetRequestQueryString(request)}
+                            GROUP BY r.WinnerTeam > 0");
 
-        var quits = from r in replays
-                    group r by r.WinnerTeam into g
-                    select new
-                    {
-                        Winner = g.Key,
-                        Count = g.Count()
-                    };
-        var lquits = await quits.ToListAsync();
-        if (lquits.Any())
+        var group = await defaultFilterGroup.ToListAsync();
+
+        return group.FirstOrDefault(f => !f.Group)?.Count ?? 0;
+    }
+
+    private async Task<CountResponse> GetCountFromDb(StatsRequest request, bool details = false)
+    {
+        var defaultFilterGroup = context.GroupByHelpers.FromSqlRaw(
+                        @$"SELECT r.DefaultFilter AS Name, count(*) AS Count
+                            FROM Replays AS r
+                            {GetRequestQueryString(request)}
+                            GROUP BY r.DefaultFilter");
+
+        var group = await defaultFilterGroup.ToListAsync();
+
+        int defaultReplays = group.FirstOrDefault(f => f.Group)?.Count ?? 0;
+        int otherReplays = group.FirstOrDefault(f => !f.Group)?.Count ?? 0;
+
+        var quits = await GetQuits(request);
+        var leaver = await GetLeaver(request);
+
+        return new CountResponse()
         {
-            double sum = (double)lquits.Sum(s => s.Count);
-            if (sum > 0)
-                return Math.Round(lquits.Where(x => x.Winner == -1).Count() * 100 / sum, 2);
-            else
-                return 0;
-        }
-        else
-            return 0;
+            Count = defaultReplays + otherReplays,
+            DefaultFilter = defaultReplays,
+            Leaver = leaver,
+            Quits = quits
+        };
     }
 
-    private async Task<(int, int)> GetCount(StatsRequest request, bool details = false)
+    private string GetRequestQueryString(StatsRequest request)
     {
-        var replays = GetCountReplays(request);
+        StringBuilder sb = new();
 
-        var count = from r in replays
-                    group r by r.DefaultFilter into g
-                    select new
-                    {
-                        DefaultFilter = g.Key,
-                        Count = g.Count()
-                    };
+        sb.Append($"WHERE r.GameTime > '{request.StartTime.ToString(@"yyyy-MM-dd")}'");
 
-        var lcount = await count
-            .ToListAsync();
+        if (request.EndTime != DateTime.Today)
+        {
+            sb.Append($" AND r.GameTime < '{request.EndTime.ToString(@"yyyy-MM-dd")}'");
+        }
 
-        return (lcount.FirstOrDefault(f => !f.DefaultFilter)?.Count ?? 0, lcount.FirstOrDefault(f => f.DefaultFilter)?.Count ?? 0);
+        if (request.GameModes.Any())
+        {
+            sb.Append($" AND r.GameMode IN ({string.Join(", ", request.GameModes.Select(s => (int)s))})");
+        }
+
+        if (request.Interest != Commander.None)
+        {
+            sb.Append($" AND EXISTS (SELECT 1 FROM ReplayPlayers AS rp WHERE r.ReplayId = rp.ReplayID AND rp.Race = {(int)request.Interest})");
+        }
+
+        return sb.ToString();
     }
 
     private IQueryable<Replay> GetCountReplays(StatsRequest request)
@@ -121,22 +137,6 @@ public partial class StatsService
 
         return replays;
     }
-
-    private string GetRequestHash(StatsRequest request)
-    {
-        StringBuilder sb = new();
-        sb.Append("StatsRequest");
-        sb.Append(request.StartTime.ToString());
-        sb.Append(request.EndTime.ToString());
-        sb.Append(request.Interest.ToString());
-        sb.Append(request.Versus.ToString());
-        sb.Append(request.Uploaders.ToString());
-        sb.Append(request.DefaultFilter.ToString());
-        sb.Append(request.PlayerCount.ToString());
-        sb.Append(String.Concat(request.PlayerNames));
-        sb.Append(String.Concat(request.GameModes.ToString()));
-        //sb.Append(request.Tournament);
-        //sb.Append(request.Round);
-        return sb.ToString();
-    }
 }
+
+

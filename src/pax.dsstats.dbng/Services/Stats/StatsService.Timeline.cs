@@ -19,13 +19,10 @@ public partial class StatsService
 
         int tcount = stats.Sum(s => s.Count);
 
-        (var countNotDefault, var countDefault) = await GetCount(request);
-
         StatsResponse response = new()
         {
             Request = request,
-            CountDefaultFilter = countDefault,
-            CountNotDefaultFilter = countNotDefault,
+            CountResponse = await GetCount(request),
             AvgDuration = tcount == 0 ? 0 : (int)stats.Sum(s => s.Duration) / tcount,
             Items = new List<StatsResponseItem>()
         };
@@ -71,13 +68,10 @@ public partial class StatsService
     {
         var lresults = await GetTimelineData(request);
 
-        (var countNotDefault, var countDefault) = await GetCount(request);
-
         StatsResponse response = new StatsResponse()
         {
             Request = request,
-            CountDefaultFilter = countDefault,
-            CountNotDefaultFilter = countNotDefault,
+            CountResponse = await GetCount(request),
             AvgDuration = lresults.Count == 0 ? 0 : (int)(lresults.Sum(s => s.Duration) / (double)lresults.Count),
             Items = new List<StatsResponseItem>()
         };
