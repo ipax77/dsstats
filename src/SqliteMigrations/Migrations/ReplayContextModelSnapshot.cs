@@ -87,6 +87,18 @@ namespace SqliteMigrations.Migrations
                     b.ToTable("Events");
                 });
 
+            modelBuilder.Entity("pax.dsstats.dbng.GroupByHelper", b =>
+                {
+                    b.Property<int>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Group")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("Name");
+
+                    b.ToView("GroupByHelper");
+                });
+
             modelBuilder.Entity("pax.dsstats.dbng.Player", b =>
                 {
                     b.Property<int>("PlayerId")
@@ -249,6 +261,10 @@ namespace SqliteMigrations.Migrations
                     b.HasIndex("GameTime", "GameMode");
 
                     b.HasIndex("GameTime", "GameMode", "DefaultFilter");
+
+                    b.HasIndex("GameTime", "GameMode", "Maxleaver");
+
+                    b.HasIndex("GameTime", "GameMode", "WinnerTeam");
 
                     b.ToTable("Replays");
                 });

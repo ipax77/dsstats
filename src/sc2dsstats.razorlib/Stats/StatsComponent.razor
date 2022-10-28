@@ -9,7 +9,7 @@
     </CascadingValue>
 </div>
 
-<div class="d-flex">
+<div class="d-flex mb-1">
     @if (statsResponse == null)
     {
         <div>
@@ -22,11 +22,18 @@
     else
     {
         <div>
-            <span class="badge bg-info" style="font-size: 1rem;">Replays: @(StatsRequest.DefaultFilter ? statsResponse.CountDefaultFilter : statsResponse.CountDefaultFilter + statsResponse.CountNotDefaultFilter)</span>
+            <span class="badge text-bg-primary" style="font-size: 1rem;">Replays @(StatsRequest.DefaultFilter ? statsResponse.CountResponse.DefaultFilter : statsResponse.CountResponse.Count)</span>
         </div>
         <div>
-            <span class="badge bg-info" style="font-size: 1rem;">Filtered: @(StatsRequest.DefaultFilter ? statsResponse.CountNotDefaultFilter : 0)</span>
+            <span class="badge text-bg-primary text-success ms-1" style="font-size: 1rem;">Filtered @(StatsRequest.DefaultFilter ? statsResponse.CountResponse.Count - statsResponse.CountResponse.DefaultFilter : 0)</span>
         </div>
+        <div>
+            <span class="badge text-bg-primary text-warning ms-1" style="font-size: 1rem;">Leaver @statsResponse.CountResponse.Leaver</span>
+        </div>
+        <div>
+            <span class="badge text-bg-primary text-danger ms-1" style="font-size: 1rem;">Quits @statsResponse.CountResponse.Quits</span>
+        </div>
+
     }
     @if (isLoading)
     {
