@@ -37,6 +37,7 @@ public class FireMmrService
 
     public async Task CalcMmmr()
     {
+        await SeedCommanderMmrs();
         await ClearRatings();
 
         using var scope = serviceProvider.CreateScope();
@@ -475,5 +476,34 @@ public class FireMmrService
                 }
             }
         }
+    }
+
+    private async Task SeedCommanderMmrs()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        if (!context.CommanderMmrs.Any()) {
+            var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
+
+            for (int i = 0; i < allCommanders.Count; i++) {
+                for (int k = i; k < allCommanders.Count; k++) {
+                    context.CommanderMmrs.Add(new() {
+                        SynergyMmr = FireMmrService.startMmr,
+
+                        Commander_1 = allCommanders[i],
+                        Commander_2 = allCommanders[k],
+
+                        AntiSynergyMmr_1 = FireMmrService.startMmr,
+                        AntiSynergyMmr_2 = FireMmrService.startMmr,
+
+                        AntiSynergyElo_1 = 0.5,
+                        AntiSynergyElo_2 = 0.5
+                    });
+                }
+            }
+        }
+
+        await context.SaveChangesAsync();
     }
 }

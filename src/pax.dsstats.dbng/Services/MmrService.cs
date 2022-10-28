@@ -39,8 +39,6 @@ public class MmrService
         Stopwatch sw = new();
         sw.Start();
 
-        await SeedCommanderMmrs();
-
         await ClearRatings();
 
         await CalcMmrCmdr();
@@ -50,28 +48,6 @@ public class MmrService
         logger.LogWarning($"ratings calculated in {sw.ElapsedMilliseconds} ms");
 
         OnRecalculated(new());
-    }
-
-    private async Task SeedCommanderMmrs()
-    {
-        using var scope = serviceProvider.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-        if (!context.CommanderMmrs.Any())
-        {
-            foreach (Commander cmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
-            {
-                foreach (Commander synCmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
-                {
-                    context.CommanderMmrs.Add(new()
-                    {
-                        Commander = cmdr,
-                        SynCommander = synCmdr
-                    });
-                }
-            }
-        }
-        await context.SaveChangesAsync();
     }
 
     private async Task CalcMmrStd()

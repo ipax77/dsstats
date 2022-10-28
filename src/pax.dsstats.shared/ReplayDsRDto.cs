@@ -20,7 +20,6 @@ public record ReplayPlayerDsRDto
     public Commander OppRace { get; init; }
     public int Duration { get; init; }
     public bool IsUploader { get; init; }
-    public Commander Race { get; set; }
 }
 
 public record PlayerDsRDto

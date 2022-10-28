@@ -367,7 +367,7 @@ public class ReplayRepository : IReplayRepository
         }
 
         //await AddDbCommanderMmr((dbReplay.CommandersTeam1.TrimEnd('|') + dbReplay.CommandersTeam2).Trim('|'));
-        await SeedCommanderMmrs();
+        
 
         context.Replays.Add(dbReplay);
 
@@ -408,31 +408,6 @@ public class ReplayRepository : IReplayRepository
     //        }
     //    }
     //}
-
-    private async Task SeedCommanderMmrs()
-    {
-        if (!context.CommanderMmrs.Any()) {
-            var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
-
-            for (int i = 0; i < allCommanders.Count; i++) {
-                for (int k = i; k < allCommanders.Count; k++) {
-                    context.CommanderMmrs.Add(new() {
-                        SynergyMmr = FireMmrService.startMmr,
-
-                        Commander_1 = allCommanders[i],
-                        Commander_2 = allCommanders[k],
-
-                        AntiSynergyMmr_1 = FireMmrService.startMmr,
-                        AntiSynergyMmr_2 = FireMmrService.startMmr,
-
-                        AntiSynergyElo_1 = 0.5,
-                        AntiSynergyElo_2 = 0.5
-                    });
-                }
-            }
-        }
-        await context.SaveChangesAsync();
-    }
 
     private async Task<(ICollection<SpawnUnit>, HashSet<Unit>)> GetMapedSpawnUnits(Spawn spawn, Commander commander, HashSet<Unit> units)
     {
