@@ -124,6 +124,11 @@ public class FireMmrService
             player.Mmr = rating.Value.Last().Mmr;
             player.MmrOverTime = GetOverTimeRating(rating.Value);
         }
+
+        var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
+        double[] allCommandersMmrSum = new double[allCommanders.Count];
+        Dictionary<Commander, double> allCommandersMmrSum_dic = new();
+
         foreach (var rating in commanderRatings) {
             var commanderCombo = await context.CommanderMmrs.FirstAsync(f => f.CommanderMmrId == rating.CommanderMmrId);
 
@@ -134,7 +139,26 @@ public class FireMmrService
 
             commanderCombo.AntiSynergyElo_1 = rating.AntiSynergyElo_1;
             commanderCombo.AntiSynergyElo_2 = rating.AntiSynergyElo_2;
+
+            for (int i = 0; i < allCommanders.Count; i++) {
+                if ((commanderCombo.Commander_1 == allCommanders[i]) && (commanderCombo.Commander_2 == allCommanders[i])) {
+                    allCommandersMmrSum[i] += commanderCombo.AntiSynergyMmr_1 / 2;
+                    allCommandersMmrSum[i] += commanderCombo.AntiSynergyMmr_2 / 2;
+                } else {
+                    if (commanderCombo.Commander_1 == allCommanders[i]) {
+                        allCommandersMmrSum[i] += commanderCombo.AntiSynergyMmr_1;
+                    }
+                    if (commanderCombo.Commander_2 == allCommanders[i]) {
+                        allCommandersMmrSum[i] += commanderCombo.AntiSynergyMmr_2;
+                    }
+                }
+            }
         }
+
+        for (int i = 0; i < allCommanders.Count; i++) {
+            allCommandersMmrSum_dic.Add(allCommanders[i], allCommandersMmrSum[i] / allCommanders.Count);
+        }
+        var ordered = allCommandersMmrSum_dic.OrderByDescending(x => x.Value);
 
         await context.SaveChangesAsync();
     }

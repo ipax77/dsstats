@@ -411,9 +411,6 @@ public class ReplayRepository : IReplayRepository
 
     private async Task SeedCommanderMmrs()
     {
-        //using var scope = serviceProvider.CreateScope();
-        //using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
         if (!context.CommanderMmrs.Any()) {
             var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
 
@@ -433,18 +430,6 @@ public class ReplayRepository : IReplayRepository
                     });
                 }
             }
-
-
-            //foreach (Commander cmdr in Data.GetCommanders(Data.CmdrGet.NoStd)) {
-            //    foreach (Commander synCmdr in Data.GetCommanders(Data.CmdrGet.NoStd)) {
-            //        context.CommanderMmrs.Add(new() {
-            //            Commander = cmdr,
-            //            SynCommander = synCmdr,
-            //            Synergy = FireMmrService.startMmr,
-            //            AntiSynergy = FireMmrService.startMmr
-            //        });
-            //    }
-            //}
         }
         await context.SaveChangesAsync();
     }
