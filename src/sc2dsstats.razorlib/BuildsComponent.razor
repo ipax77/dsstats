@@ -234,7 +234,7 @@
 @if (replay != null)
 {
     <div class="mt-2" style="min-height: 650px;">
-        <ReplayComponent @ref="replayComponent" replayDto="replay"></ReplayComponent>
+        <sc2dsstats.razorlib.Replay.ReplayComponent @ref="replayComponent" replayDto="replay"></sc2dsstats.razorlib.Replay.ReplayComponent>
     </div>
 }
 
@@ -256,7 +256,7 @@
     string Breakpoint = "All";
     int bpvalue = 3;
     string replayHash = String.Empty;
-    ReplayComponent? replayComponent;
+    Replay.ReplayComponent? replayComponent;
     bool FirstRender = false;
     bool ReplayLoading = false;
     ReplayDto? replay = null;

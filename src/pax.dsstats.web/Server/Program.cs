@@ -79,7 +79,7 @@ using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 context.Database.Migrate();
 
 // SEED
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsProduction())
 {
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();

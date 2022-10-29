@@ -61,6 +61,7 @@ public record ReplayPlayerDto
 public record SpawnDto
 {
     public int Gameloop { get; init; }
+    public Breakpoint Breakpoint { get; init; }
     public int Income { get; init; }
     public int GasCount { get; init; }
     public int ArmyValue { get; init; }

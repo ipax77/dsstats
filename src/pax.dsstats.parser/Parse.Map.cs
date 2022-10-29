@@ -71,14 +71,14 @@ public static partial class Parse
                 Army = player.Army,
                 UpgradesSpent = player.UpgradesSpent,
                 Upgrades = player.Upgrades.Select(s => new PlayerUpgradeDto() { Upgrade = new UpgradeDto() { Name = s.Upgrade }, Gameloop = s.Gameloop }).ToList(),
-                Spawns = GetSpawns(player.SpawnStats, player.Race, allSpawns)
+                Spawns = allSpawns ? GetAllSpawns(player.SpawnStats, player.Race) : GetBpSpawns(player.SpawnStats, player.Race),
             });
         }
 
         return dtos;
     }
 
-    private static ICollection<SpawnDto> GetSpawns(List<PlayerSpawnStats> spawns, string race, bool allSpawns)
+    private static ICollection<SpawnDto> GetAllSpawns(List<PlayerSpawnStats> spawns, string race)
     {
         var dtos = new List<SpawnDto>();
 
@@ -89,22 +89,11 @@ public static partial class Parse
         {
             int gameloop = spawn.Units.FirstOrDefault()?.Gameloop ?? 0;
 
-            if (!allSpawns)
-            {
-                // 5min: 6240, 6720, 7200
-                // 10min: 12960, 13440, 13920
-                // 15min: 19680, 20160, 20640
-                if (!((gameloop > 6240 && gameloop < 7209)
-                    || (gameloop > 12960 && gameloop < 13928)
-                    || (gameloop > 19680 && gameloop < 20649)))
-                {
-                    continue;
-                }
-            }
 
             dtos.Add(new()
             {
                 Gameloop = gameloop,
+                Breakpoint = GetBreakpoint(gameloop),
                 Income = spawn.Income,
                 GasCount = spawn.GasCount,
                 ArmyValue = spawn.ArmyValue,
@@ -113,15 +102,47 @@ public static partial class Parse
                 Units = GetUnits(spawn.Units, commander)
             });
         }
+        return dtos;
+    }
 
-        if (!allSpawns)
+    private static ICollection<SpawnDto> GetBpSpawns(List<PlayerSpawnStats> spawns, string race)
+    {
+        var dtos = new List<SpawnDto>();
+
+        //todo: switch commander in game?        
+        var commander = Data.GetCommander(race);
+
+        foreach (var spawn in spawns)
         {
-            var lastSpawn = spawns.LastOrDefault();
-            if (lastSpawn != null && dtos.LastOrDefault()?.Income != lastSpawn.Income)
+            int gameloop = spawn.Units.FirstOrDefault()?.Gameloop ?? 0;
+
+            Breakpoint bp = GetBreakpoint(gameloop);
+
+            if (bp != Breakpoint.None && !dtos.Any(a => a.Breakpoint == bp))
+            {
+                dtos.Add(new()
+                {
+                    Gameloop = gameloop,
+                    Breakpoint = bp,
+                    Income = spawn.Income,
+                    GasCount = spawn.GasCount,
+                    ArmyValue = spawn.ArmyValue,
+                    KilledValue = spawn.KilledValue,
+                    UpgradeSpent = spawn.UpgradesSpent,
+                    Units = GetUnits(spawn.Units, commander)
+                });
+            }
+        }
+
+        var lastSpawn = spawns.LastOrDefault();
+        if (lastSpawn != null)
+        {
+            if (dtos.LastOrDefault()?.Income != lastSpawn.Income)
             {
                 dtos.Add(new()
                 {
                     Gameloop = lastSpawn.Units.FirstOrDefault()?.Gameloop ?? 0,
+                    Breakpoint = Breakpoint.All,
                     Income = lastSpawn.Income,
                     GasCount = lastSpawn.GasCount,
                     ArmyValue = lastSpawn.ArmyValue,
@@ -129,10 +150,29 @@ public static partial class Parse
                     UpgradeSpent = lastSpawn.UpgradesSpent,
                     Units = GetUnits(lastSpawn.Units, commander)
                 });
+            } else if (dtos.Any())
+            {
+                var lastSpawnDto = dtos.Last();
+                dtos.Remove(lastSpawnDto);
+                dtos.Add(lastSpawnDto with { Breakpoint = Breakpoint.All });
             }
         }
-
         return dtos;
+    }
+
+    private static Breakpoint GetBreakpoint(int gameloop)
+    {
+        return gameloop switch
+        {
+            _ when gameloop >= 6240 && gameloop <= 7209  => Breakpoint.Min5,
+            _ when gameloop >= 12960 && gameloop <= 13928 => Breakpoint.Min10,
+            _ when gameloop >= 19680 && gameloop <= 20649 => Breakpoint.Min15,
+            _ => Breakpoint.None
+        };
+
+        //if (gameloop >= 6240 && gameloop < 7209)
+        //(gameloop >= 12960 && gameloop < 13928)
+        //(gameloop >= 19680 && gameloop < 20649)))
     }
 
     private static ICollection<SpawnUnitDto> GetUnits(List<DsUnit> units, Commander commander)

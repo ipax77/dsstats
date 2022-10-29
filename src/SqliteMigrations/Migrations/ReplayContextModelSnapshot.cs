@@ -461,6 +461,9 @@ namespace SqliteMigrations.Migrations
                     b.Property<int>("ArmyValue")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("Breakpoint")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Gameloop")
                         .HasColumnType("INTEGER");
 

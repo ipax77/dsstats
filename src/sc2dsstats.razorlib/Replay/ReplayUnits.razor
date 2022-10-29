@@ -1,0 +1,38 @@
+﻿@using sc2dsstats.razorlib.Services
+@using pax.dsstats.shared
+
+<div class="table-responsive">
+
+    <table class="table table-sm table-hover table-striped table-dark">
+        <thead>
+            <tr>
+                <th>Unit</th>
+                <th>Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var unit in GetUnits())
+            {
+                <tr>
+                    <td>@unit.Key</td>
+                    <td>@unit.Value</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [CascadingParameter]
+    [EditorRequired]
+    public SpawnDto? Spawn { get; set; }
+
+    List<KeyValuePair<string, byte>> GetUnits()
+    {
+        if (Spawn == null)
+        {
+            return new List<KeyValuePair<string, byte>>();
+        }
+        return Spawn.Units.ToDictionary(x => x.Unit.Name, x => x.Count).OrderByDescending(o => o.Value).ToList();
+    }
+}

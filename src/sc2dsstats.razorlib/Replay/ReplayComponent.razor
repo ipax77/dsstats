@@ -12,14 +12,20 @@
                 <div class="row fw-bolder">
                     <div class="col">@replayDto.GameTime.ToShortDateString()</div>
                     <div class="col">Duration @duration</div>
-                    <div class="col">MVP #@mvp</div>
                     <div class="col">@replayDto.GameMode</div>
                     <div class="col-2"><span class="oi oi-x text-danger pointer" @onclick="e => OnCloseRequested.InvokeAsync()"></span></div>
                 </div>
             </div>
             <div class="card-body">
                 <div class="collapse" id="chartDiv">
-                    <ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig"></ChartComponent>
+                    <div class="d-flex" style="min-width: 600px;">
+                        <div class="w-100">
+                            <ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig"></ChartComponent>
+                        </div>
+                        <div>
+                            <span class="oi oi-x text-danger pointer" data-bs-toggle="collapse" data-bs-target="#chartDiv" aria-expanded="false" aria-controls="chartDiv"></span>
+                        </div>
+                    </div>
                 </div>
                 <div class="row">
                     @for (int i = 1; i <= 2; i++)
@@ -48,6 +54,7 @@
                                             <th style="width: 30px;">#</th>
                                             <th style="width: 120px;">Player</th>
                                             <th>APM</th>
+                                            <th>Build</th>
                                             <th style="width: 120px;">Cmdr</th>
                                             @*<th>Build</th>*@
                                             <th>Income</th>
@@ -58,7 +65,7 @@
                                     <tbody>
                                         @foreach (var player in players)
                                         {
-                                            <tr class="@(player.GamePos == mvp ? "table-success" : player.IsUploader ? "table-primary" : "")">
+                                            <tr class="@GetPlayerTableRowCss(player)" @onclick="@(() => showBuilds[player.GamePos] = !showBuilds[player.GamePos])">
                                                 <td>@player.GamePos</td>
                                                 <td>
                                                     <span class="d-inline-block text-truncate" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Player.Name">
@@ -66,6 +73,9 @@
                                                     </span>
                                                 </td>
                                                 <td>@player.APM</td>
+                                                <td>
+                                                    <input id="@($"showbuild{player.GamePos}")" name="@($"showbuild{player.GamePos}")" type="checkbox" class="form-check-input" checked="@showBuilds[player.GamePos]" />
+                                                </td>
                                                 <td>
                                                     <div class="d-flex">
                                                         <img src="@HelperService.GetImageSrc(player.Race)"
@@ -76,11 +86,6 @@
                                                         <span><small>@player.Race</small></span>
                                                     </div>
                                                 </td>
-                                                @*                                                <td>
-                                        <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault">
-                                        </div>
-                                        </td>*@
                                                 <td>@HelperService.GetBigNumberString(player.Income)</td>
                                                 <td>@HelperService.GetBigNumberString(player.Army)</td>
                                                 <td>@HelperService.GetBigNumberString(player.Kills)</td>
@@ -94,68 +99,40 @@
                 </div>
             </div>
             <div class="card-footer">
-                <div class="row fw-bolder text-white-50">
-                    <div class="col">Views @replayDto.Views</div>
-                    <div class="col">Downloads @replayDto.Downloads</div>
-                    <div class="col">Bans: @replayDto.ReplayEvent?.Ban1 @replayDto.ReplayEvent?.Ban2</div>
-                    <div class="col ms-auto btn-group">
-                        <a class="btn btn-dark" href="@NavigationManager.GetUriWithQueryParameters(new Dictionary<string, object?> { ["ReplayHash"] = replayDto.ReplayHash })">Link</a>
-                        <a class="btn btn-light" href="@($"{NavigationManager.BaseUri}api/v1/ReplayDownload/{replayDto.ReplayHash}")" download>Download</a>
-                        <button type="button" class="btn btn-danger" @onclick="e => OnCloseRequested.InvokeAsync()">Close</button>
-                    </div>
-                </div>
+                <CascadingValue Value="replayDto">
+                    <ReplayFooter OnCloseRequested="OnCloseRequested"></ReplayFooter>
+                </CascadingValue>
             </div>
         </div>
     </div>
 </div>
-<div class="row mt-2 mb-3" style="font-size: 24px;">
-    <div class="col-lg-1 col-sm-auto col-md-auto">
-        <span class="badge bg-primary">Spawn @(spawn + 1)</span>
-    </div>
-    <div class="col-auto mt-2">
-        @*<label for="spawnrange" class="form-label badge bg-primary">Spawn @(spawn + 1)</label>*@
-        <input type="range" class="form-range" value="@spawn" min="1" max="@(SpawnGameloops.Count - 1)" step="1" id="spawnrange" @onchange="MoveSpawn">
-    </div>
-    <div class="col-auto mt-2">
-        <div class="d-flex">
-            <button type="button" class="btn btn-outline-light ms-2" @onclick="MoveSpawnLeft"><span class="oi oi-arrow-left"></span></button>
-            <button type="button" class="btn btn-outline-light ms-2" @onclick="MoveSpawnRight"><span class="oi oi-arrow-right"></span></button>
-        </div>
-    </div>
-    <div class="col-auto mt-2">
-        <div class="d-flex">
-            <button type="button" class="btn btn-outline-light ms-2" @onclick="Move3SpawnLeft"><span class="oi oi-arrow-left"> -3</span></button>
-            <button type="button" class="btn btn-outline-light ms-2" @onclick="Move3SpawnRight"><span class="oi oi-arrow-right"> +3</span></button>
-        </div>
-    </div>
-</div>
 
-<CascadingValue Value="spawn">
-    <ReplaySpawnsComponent replayDto="replayDto" SpawnGameloops="SpawnGameloops"></ReplaySpawnsComponent>
-    <div class="btn-group mb-2">
-        <span class="me-2 mt-1">
-            Show spawn details:
-        </span>
-        <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#unitsDiv" aria-expanded="false" aria-controls="unitsDiv">
-            Units
-        </button>
-        <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#upgradesDiv" aria-expanded="false" aria-controls="upgradesDiv">
-            Upgrades
-        </button>
-        <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#mapDiv" aria-expanded="false" aria-controls="mapDiv">
-            Map
-        </button>
+@if (showBuilds.Where(x => x).Any())
+{
+    <div class="d-flex mt-2 mb-3" style="font-size: 24px;">
+        <div class="col-auto" style="min-width: 175px;">
+            <span class="badge bg-primary">
+                Breakpoint @(breakpoint != Breakpoint.All ? breakpoint.ToString() : $"MIN{TimeSpan.FromSeconds(replayDto.Duration).ToString(@"mm")}")
+            </span>
+        </div>
+        <div class="col-auto" style="min-width: 175px;">
+            <input type="range" class="form-range" value="@((int)breakpoint)" min="1" max="@breakpointsCount" step="1" id="spawnrange" @onchange="MoveSpawn">
+        </div>
     </div>
-    <div class="collapse" id="unitsDiv">
-        <ReplayUnitsComponent replayDto="replayDto" SpawnGameloops="SpawnGameloops"></ReplayUnitsComponent>
-    </div>
-    <div class="collapse" id="upgradesDiv">
-        <ReplayUpgradesComponent replayDto="replayDto" SpawnGameloops="SpawnGameloops"></ReplayUpgradesComponent>
-    </div>
-    <div class="collapse" id="mapDiv">
-        <ReplayMapComponent replayDto="replayDto" SpawnGameloops="SpawnGameloops"></ReplayMapComponent>
-    </div>
-</CascadingValue>
+
+    <CascadingValue Value="breakpoint">
+        <div class="row">
+            @for (int i = 0; i < showBuilds.Count; i++)
+            {
+                var player = showBuilds[i] ? replayDto.ReplayPlayers.FirstOrDefault(f => f.GamePos == i) : null;
+                @if (player != null)
+                {
+                    <ReplayBuild replayPlayer="player" ShowPlayerNames="showPlayerNames"></ReplayBuild>
+                }
+            }
+        </div>
+    </CascadingValue>
+}
 
 @code {
     [Parameter]
@@ -167,11 +144,12 @@
 
     double mid1;
     double mid2;
-    int mvp;
     string duration = "";
-
-    HashSet<int> SpawnGameloops = new();
-    int spawn = 0;
+    private Breakpoint breakpoint = Breakpoint.All;
+    private int breakpointsCount = 1;
+    private bool showReplayPath;
+    private List<bool> showBuilds = new List<bool>() { false, false, false, false, false, false, false };
+    private bool showPlayerNames = true;
 
     private ChartJsConfig chartJsConfig = null!;
     private ChartComponent? chartComponent;
@@ -193,24 +171,14 @@
 
     public void Init(ReplayDto replay)
     {
+        showBuilds.ForEach(f => f = false);
         (int startTeam, int[] gameloops, int totalGameloops) = HelperService.GetMiddleInfo(replay.Middle, replay.Duration);
         (mid1, mid2) = HelperService.GetChartMiddle(startTeam, gameloops, totalGameloops);
-
-        mvp = replay.ReplayPlayers.OrderBy(o => o.Kills).Last().GamePos;
         duration = replay.Duration >= 3600 ?
               $"{TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")} h"
             : $"{TimeSpan.FromSeconds(replay.Duration).ToString(@"mm\:ss")} min";
-        SpawnGameloops = replay.ReplayPlayers.SelectMany(m => m.Spawns).Select(s => s.Gameloop).OrderBy(o => o).ToHashSet();
-        List<int> removeLoops = new();
-        for (int i = 1; i < SpawnGameloops.Count; i++)
-        {
-            if (SpawnGameloops.ElementAt(i) - SpawnGameloops.ElementAt(i - 1) < 144)
-            {
-                removeLoops.Add(SpawnGameloops.ElementAt(i));
-            }
-        }
-        SpawnGameloops = SpawnGameloops.Except(removeLoops).ToHashSet();
-
+        breakpoint = Breakpoint.All;
+        breakpointsCount = replay.ReplayPlayers.Select(s => s.Spawns.Count).Max();
         chartJsConfig = GetMiddleChartConfig(replay.Middle, replay.Duration, replay.WinnerTeam, replay.Cannon, replay.Bunker);
         chartComponent?.DrawChart();
     }
@@ -219,45 +187,36 @@
     {
         if (int.TryParse(e?.Value?.ToString(), out int value))
         {
-            spawn = value;
+            if (value == breakpointsCount)
+            {
+                breakpoint = Breakpoint.All;
+            }
+            else
+            {
+                breakpoint = (Breakpoint)value;
+            }
             StateHasChanged();
         }
     }
 
-    private void MoveSpawnLeft()
+    private string GetPlayerTableRowCss(ReplayPlayerDto replayPlayerDto)
     {
-        if (spawn > 0)
+        if (replayPlayerDto.Kills == replayDto.Maxkillsum)
         {
-            spawn -= 1;
-            StateHasChanged();
+            return "table-success";
         }
-    }
 
-    private void MoveSpawnRight()
-    {
-        if (SpawnGameloops.Count > spawn + 1)
+        else if (replayPlayerDto.Duration < replayDto.Duration - 89)
         {
-            spawn += 1;
-            StateHasChanged();
+            return "table-danger";
         }
-    }
 
-    private void Move3SpawnLeft()
-    {
-        if (spawn > 2)
+        else if (replayPlayerDto.IsUploader)
         {
-            spawn -= 3;
-            StateHasChanged();
+            return "table-primary";
         }
-    }
 
-    private void Move3SpawnRight()
-    {
-        if (SpawnGameloops.Count > spawn + 3)
-        {
-            spawn += 3;
-            StateHasChanged();
-        }
+        return "";
     }
 
     private ChartJsConfig GetMiddleChartConfig(string middle, int duration, int winnerTeam, int cannon, int bunker)
