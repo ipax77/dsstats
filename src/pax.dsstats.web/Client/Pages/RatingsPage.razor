@@ -1,9 +1,55 @@
 ﻿@page "/ratings"
+@using pax.dsstats.shared
+@inject NavigationManager NavigationManager
 
 <PageTitle>Ratings</PageTitle>
 
-<sc2dsstats.razorlib.PlayerRatings></sc2dsstats.razorlib.PlayerRatings>
+<sc2dsstats.razorlib.PlayerRatings RatingsRequest="ratingsRequest" OnRatingsChanged="SetUrl"></sc2dsstats.razorlib.PlayerRatings>
 
 @code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? ToonId { get; set; }
 
+    private RatingsRequest ratingsRequest = new()
+    {
+        Skip = 0,
+        Take = 20,
+        Orders = new()
+        {
+            new()
+            {
+                Property = "Mmr",
+                Ascending = false
+            },
+
+        }
+    };
+
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }
+
+    private void SetRequest()
+    {
+        ratingsRequest.ToonId = ToonId;
+    }
+
+    private void SetUrl()
+    {
+        Dictionary<string, object?> queryDic = new();
+
+        if (ratingsRequest.ToonId != null && ratingsRequest.ToonId > 0)
+        {
+            queryDic.Add("ToonId", ratingsRequest.ToonId.Value);
+        }
+
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters(
+                new Dictionary<string, object?>(queryDic)
+            )
+        );
+    }
 }

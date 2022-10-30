@@ -47,7 +47,7 @@
                 <div class="col-auto">
                     <label class="form-label">
                         Search:
-                        <InputText class="form-control" @bind-Value="ratingsRequest.Search"></InputText>
+                        <InputText class="form-control" @bind-Value="RatingsRequest.Search"></InputText>
                     </label>
                 </div>
             </div>
@@ -74,7 +74,7 @@
                     <col class="col">
                 </colgroup>
                 <thead>
-                    <CascadingValue Value="ratingsRequest.Orders">
+                    <CascadingValue Value="RatingsRequest.Orders">
                         <tr>
                             <th scope="col" class="pointer" @onclick="@(e => SortList(e, "ToonId"))">
                                 <SortArrow Property="ToonId">
@@ -195,32 +195,29 @@
 
 
 @code {
+    [Parameter]
+    [EditorRequired]
+    public RatingsRequest RatingsRequest { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRatingsChanged { get; set; }
+
     private int ratingsCount = 0;
     private PlayerRatingsDeviation? playerRatingsDeviation;
     private Virtualize<PlayerRatingDto>? virtualize;
     private DistributionRequestEnum DistributionRequest = DistributionRequestEnum.None;
-    private RatingsRequest ratingsRequest = new()
-        {
-            Skip = 0,
-            Take = 20,
-            Orders = new()
-        {
-            new()
-            {
-                Property = "Mmr",
-                Ascending = false
-            }
-        }
-        };
+
     private EditContext editContext = null!;
 
     private PlayerRatingDto? Interest;
 
     protected override void OnInitialized()
     {
-        editContext = new EditContext(ratingsRequest);
+        editContext = new EditContext(RatingsRequest);
         editContext.OnFieldChanged += FieldChanged;
         _ = SetCount();
+        _ = LoadInitialPlayerInfo();
+
         base.OnInitialized();
     }
 
@@ -246,18 +243,18 @@
 
     private async Task SetCount()
     {
-        ratingsCount = await dataService.GetRatingsCount(ratingsRequest);
+        ratingsCount = await dataService.GetRatingsCount(RatingsRequest);
         await InvokeAsync(() => StateHasChanged());
     }
 
     private async Task SortList(MouseEventArgs e, string property)
     {
-        var exOrder = ratingsRequest.Orders.FirstOrDefault(f => f.Property == property);
+        var exOrder = RatingsRequest.Orders.FirstOrDefault(f => f.Property == property);
         if (e.ShiftKey)
         {
             if (exOrder == null)
             {
-                ratingsRequest.Orders.Add(new TableOrder()
+                RatingsRequest.Orders.Add(new TableOrder()
                     {
                         Property = property
                     });
@@ -269,8 +266,8 @@
         }
         else
         {
-            ratingsRequest.Orders.Clear();
-            ratingsRequest.Orders.Add(new TableOrder()
+            RatingsRequest.Orders.Clear();
+            RatingsRequest.Orders.Add(new TableOrder()
                 {
                     Property = property,
                     Ascending = exOrder == null ? false : !exOrder.Ascending
@@ -282,9 +279,9 @@
     private async ValueTask<ItemsProviderResult<PlayerRatingDto>> LoadRatings(ItemsProviderRequest request)
     {
         var numRatings = Math.Min(request.Count, ratingsCount - request.StartIndex);
-        ratingsRequest.Skip = request.StartIndex;
-        ratingsRequest.Take = numRatings;
-        var ratings = await dataService.GetRatings(ratingsRequest, request.CancellationToken);
+        RatingsRequest.Skip = request.StartIndex;
+        RatingsRequest.Take = numRatings;
+        var ratings = await dataService.GetRatings(RatingsRequest, request.CancellationToken);
 
         return new ItemsProviderResult<PlayerRatingDto>(ratings, ratingsCount);
     }
@@ -292,14 +289,26 @@
     private void DetailsClose()
     {
         Interest = null;
+        RatingsRequest.ToonId = null;
+        OnRatingsChanged.InvokeAsync();
         StateHasChanged();
+    }
+
+    private async Task LoadInitialPlayerInfo()
+    {
+        if (RatingsRequest.ToonId != null && RatingsRequest.ToonId > 0)
+        {
+            Interest = await dataService.GetPlayerRating(RatingsRequest.ToonId.Value);
+            await InvokeAsync(() => StateHasChanged());
+        }
     }
 
     private void LoadPlayerChart(PlayerRatingDto playerRatingDto)
     {
-        // playerRatingChart?.LoadData(playerRatingDto.ToonId, playerRatingDto.Name);
         Interest = playerRatingDto;
+        RatingsRequest.ToonId = playerRatingDto.ToonId;
         StateHasChanged();
+        OnRatingsChanged.InvokeAsync();
     }
 
     public enum DistributionRequestEnum
@@ -311,7 +320,7 @@
 
     private void ResetSearch()
     {
-        ratingsRequest.Search = null;
+        RatingsRequest.Search = null;
         _ = Reload();
     }
 

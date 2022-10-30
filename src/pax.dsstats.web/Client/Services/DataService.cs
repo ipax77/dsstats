@@ -237,6 +237,27 @@ public class DataService : IDataService
         return new List<PlayerMatchupInfo>();
     }
 
+    public async Task<PlayerRatingDto?> GetPlayerRating(int toonId)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"{statsController}PlayerRating/{toonId}");
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<PlayerRatingDto>();
+            }
+            else
+            {
+                logger.LogError($"failed getting playerRating: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting playerRating: {ex.Message}");
+        }
+        return null;
+    }
+
     public async Task<ICollection<string>> GetReplayPaths()
     {
         return await Task.FromResult(new List<string>());

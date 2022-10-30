@@ -108,6 +108,14 @@ namespace pax.dsstats.web.Server.Controllers
         {
             return await statsService.GetPlayerDetailInfo(toonId);
         }
+
+        [HttpGet]
+        [Route("PlayerRating/{toonId}")]
+        public async Task<PlayerRatingDto?> GetPlayerRating(int toonId)
+        {
+            var data = await statsService.GetPlayerRating(toonId);
+            return data;
+        }
     }
 
 }
