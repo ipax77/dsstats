@@ -117,13 +117,16 @@ if (app.Environment.IsDevelopment())
     //var mmrServie = scope.ServiceProvider.GetRequiredService<MmrService>();
     //mmrServie.CalcMmmr().GetAwaiter().GetResult();
 
-    var mmrServie = scope.ServiceProvider.GetRequiredService<FireMmrService>();
-    mmrServie.CalcMmmr().GetAwaiter().GetResult();
+    //var mmrServie = scope.ServiceProvider.GetRequiredService<FireMmrService>();
+    //mmrServie.CalcMmmr().GetAwaiter().GetResult();
 
     //var playerInfo = statsService.GetPlayerInfo(new() { 226401, 10188255, 8648278 }).GetAwaiter().GetResult();
     //Console.WriteLine(playerInfo);
     // statsService.SeedPlayerInfos().GetAwaiter().GetResult();
 }
+
+var mmrServie = scope.ServiceProvider.GetRequiredService<FireMmrService>();
+mmrServie.CalcMmmr().GetAwaiter().GetResult();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
