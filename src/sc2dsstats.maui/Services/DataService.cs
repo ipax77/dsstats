@@ -89,4 +89,8 @@ public class DataService : IDataService
         return await statsService.GetRatingsDeviationStd();
     }
 
+    public async Task<PlayerRatingDto?> GetPlayerRating(int toonId)
+    {
+        return await statsService.GetPlayerRating(toonId);
+    }
 }
