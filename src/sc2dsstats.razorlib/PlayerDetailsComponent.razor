@@ -20,7 +20,7 @@
 
     @if (playerDetailInfo != null)
     {
-        <div class="row">
+        <div class="row mt-2">
             <div class="col-auto" style="width: 600px;">
                 <table class="table table-dark">
                     <thead>
@@ -266,21 +266,6 @@
                         {
                             Display = true,
                             Position = "bottom",
-                            Title = new Title()
-                            {
-                                Display = true,
-                                Text = "Rating",
-                                Color = "red",
-                                Font = new()
-                                {
-                                    Size = 16
-                                },
-                                Padding = new()
-                                {
-                                    Top = 4,
-                                    Bottom = 4
-                                }
-                            },
                             Ticks = new LinearAxisTick()
                             {
                                 Color = "red",
