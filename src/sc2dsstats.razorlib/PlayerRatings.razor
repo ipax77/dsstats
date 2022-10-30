@@ -2,14 +2,14 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using System.Globalization;
 @using pax.dsstats.shared
+@using sc2dsstats.razorlib.Services
 @inject IDataService dataService
 @implements IDisposable
 
 <style>
     .tableFixHead {
         overflow-y: auto;
-        height: 750px;
-        width: 550px;
+        height: 800px;
     }
 
         .tableFixHead thead th {
@@ -38,110 +38,172 @@
     }
 </style>
 
-<h4>Player Ratings</h4>
+<div class="@(Interest == null ? "" : "visually-hidden")">
+    <h4>Player Ratings</h4>
 
-<div class="d-flex">
-    <EditForm EditContext="editContext">
-        <div class="row">
-            <div class="col-auto">
-                <label class="form-label">
-                    Search:
-                    <InputText class="form-control" @bind-Value="ratingsRequest.Search"></InputText>
-                </label>
+    <div class="d-flex">
+        <EditForm EditContext="editContext">
+            <div class="row">
+                <div class="col-auto">
+                    <label class="form-label">
+                        Search:
+                        <InputText class="form-control" @bind-Value="ratingsRequest.Search"></InputText>
+                    </label>
+                </div>
             </div>
+        </EditForm>
+        <div class="align-self-center ms-2">
+            <span class="oi oi-x text-danger pointer" @onclick="ResetSearch"></span>
         </div>
-    </EditForm>
-    <div class="align-self-center ms-2">
-        <span class="oi oi-x text-danger pointer" @onclick="ResetSearch"></span>
     </div>
-</div>
-<div class="row">
-    <div class="col-auto tableFixHead">
-        <table class="table table-dark table-hover">
-            <colgroup>
-                <col class="col">
-                <col class="col">
-                <col class="col">
-                <col class="col">
-            </colgroup>
-            <thead>
-                <CascadingValue Value="ratingsRequest.Orders">
-                    <tr>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "ToonId"))">
-                            <SortArrow Property="ToonId">
-                                ToonId
-                            </SortArrow>
-                        </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Name"))">
-                            <SortArrow Property="Name">
-                                Name
-                            </SortArrow>
-                        </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Mmr"))">
-                            <SortArrow Property="Mmr">
-                                Cmdr Rating
-                            </SortArrow>
-                        </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "MmrStd"))">
-                            <SortArrow Property="MmrStd">
-                                Std Rating
-                            </SortArrow>
-                        </th>
-                    </tr>
-                </CascadingValue>
-            </thead>
-            <tbody>
-                @if (ratingsCount > 0)
-                {
-                    <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings">
-                        <tr class="pointer" @onclick="e => LoadPlayerChart(rating)">
-                            <td>@rating.ToonId</td>
-                            <td><span class="text-truncate" style="display: block; width: 150px;">@rating.Name</span></td>
-                            <td>@Math.Round(rating.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
-                            <td>@Math.Round(rating.MmrStd, 2).ToString(CultureInfo.InvariantCulture)</td>
+    <div class="row">
+        <div class="col-auto tableFixHead">
+            <table class="table table-dark table-hover">
+                <colgroup>
+                    <col class="col">
+                    <col class="col">
+                    <col class="col">
+                    <col class="col">
+                    <col class="col">
+                    <col class="col">
+                    <col class="col">
+                    <col class="col">
+                    <col class="col">
+                    <col class="col">
+                    <col class="col">
+                    <col class="col">
+                </colgroup>
+                <thead>
+                    <CascadingValue Value="ratingsRequest.Orders">
+                        <tr>
+                            <th scope="col" class="pointer" @onclick="@(e => SortList(e, "ToonId"))">
+                                <SortArrow Property="ToonId">
+                                    ToonId
+                                </SortArrow>
+                            </th>
+                            <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Name"))">
+                                <SortArrow Property="Name">
+                                    Name
+                                </SortArrow>
+                            </th>
+                            <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GamesCmdr"))">
+                                <SortArrow Property="GamesCmdr">
+                                    Cmdr Games
+                                </SortArrow>
+                            </th>
+                            <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "Mmr"))">
+                                <SortArrow Property="Mmr">
+                                    Cmdr Rating
+                                </SortArrow>
+                            </th>
+                            <th scope="col" class="pointer" @onclick="@(e => SortList(e, "WinrateCmdr"))">
+                                <SortArrow Property="WinrateCmdr">
+                                    Cmdr Winrate
+                                </SortArrow>
+                            </th>
+                            <th scope="col" class="pointer" @onclick="@(e => SortList(e, "MvprateCmdr"))">
+                                <SortArrow Property="MvprateCmdr">
+                                    Cmdr Mvp
+                                </SortArrow>
+                            </th>
+                            <th scope="col" class="pointer" @onclick="@(e => SortList(e, "TeamgamesCmdr"))">
+                                <SortArrow Property="TeamgamesCmdr">
+                                    Cmdr Teamgames
+                                </SortArrow>
+                            </th>
+
+                            <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GamesStd"))">
+                                <SortArrow Property="GamesStd">
+                                    Std Games
+                                </SortArrow>
+                            </th>
+                            <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "MmrStd"))">
+                                <SortArrow Property="MmrStd">
+                                    Std Rating
+                                </SortArrow>
+                            </th>
+                            <th scope="col" class="pointer" @onclick="@(e => SortList(e, "WinrateStd"))">
+                                <SortArrow Property="WinrateStd">
+                                    Std Winrate
+                                </SortArrow>
+                            </th>
+                            <th scope="col" class="pointer" @onclick="@(e => SortList(e, "MvprateStd"))">
+                                <SortArrow Property="MvprateStd">
+                                    Std Mvp
+                                </SortArrow>
+                            </th>
+                            <th scope="col" class="pointer" @onclick="@(e => SortList(e, "TeamgamesStd"))">
+                                <SortArrow Property="TeamgamesStd">
+                                    Std Teamgames
+                                </SortArrow>
+                            </th>
                         </tr>
-                    </Virtualize>
+                    </CascadingValue>
+                </thead>
+                <tbody>
+                    @if (ratingsCount > 0)
+                    {
+                        <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings">
+                            <tr class="pointer" @onclick="e => LoadPlayerChart(rating)">
+                                <td>@rating.ToonId</td>
+                                <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Name</span></td>
+                                <td>@rating.GamesCmdr</td>
+                                <td class="text-warning">@Math.Round(rating.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
+                                <td>@HelperService.GetPercentageString(rating.WinsCmdr, rating.GamesCmdr)</td>
+                                <td>@HelperService.GetPercentageString(rating.MvpCmdr, rating.GamesCmdr)</td>
+                                <td>@HelperService.GetPercentageString(rating.TeamGamesCmdr, rating.GamesCmdr)</td>
+                                <td>@rating.GamesStd</td>
+                                <td class="text-warning">@Math.Round(rating.MmrStd, 2).ToString(CultureInfo.InvariantCulture)</td>
+                                <td>@HelperService.GetPercentageString(rating.WinsStd, rating.GamesStd)</td>
+                                <td>@HelperService.GetPercentageString(rating.MvpStd, rating.GamesStd)</td>
+                                <td>@HelperService.GetPercentageString(rating.TeamGamesStd, rating.GamesStd)</td>
+                            </tr>
+                        </Virtualize>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="col-auto">
+            <div class="btn-block">
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => DistributionRequest = DistributionRequestEnum.Std)">Std Distribution</button>
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => DistributionRequest = DistributionRequestEnum.Cmdr)">Cmdr Distribution</button>
+                @if (DistributionRequest != DistributionRequestEnum.None)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-warning" @onclick="@(() => DistributionRequest = DistributionRequestEnum.None)">Close</button>
                 }
-            </tbody>
-        </table>
-    </div>
-    <div class="col-auto">
-        <div class="btn-block">
-            <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => DistributionRequest = DistributionRequestEnum.Std)">Std Distribution</button>
-            <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => DistributionRequest = DistributionRequestEnum.Cmdr)">Cmdr Distribution</button>
-            @if (DistributionRequest != DistributionRequestEnum.None)
+            </div>
+            @if (DistributionRequest == DistributionRequestEnum.Std)
             {
-                <button type="button" class="btn btn-sm btn-outline-warning" @onclick="@(() => DistributionRequest = DistributionRequestEnum.None)">Close</button>
+                <div>
+                    <PlayerRatingsDeviation @ref="playerRatingsDeviation" Std="true"></PlayerRatingsDeviation>
+                </div>
+            }
+            else if (DistributionRequest == DistributionRequestEnum.Cmdr)
+            {
+                <div>
+                    <PlayerRatingsDeviation @ref="playerRatingsDeviation" Std="false"></PlayerRatingsDeviation>
+                </div>
             }
         </div>
-        @if (DistributionRequest == DistributionRequestEnum.Std)
-        {
-            <div>
-                <PlayerRatingsDeviation @ref="playerRatingsDeviation" Std="true"></PlayerRatingsDeviation>
-            </div>
-        } else if (DistributionRequest == DistributionRequestEnum.Cmdr)
-        {
-            <div>
-                <PlayerRatingsDeviation @ref="playerRatingsDeviation" Std="false"></PlayerRatingsDeviation>
-            </div>
-        }
-        <div>
-            <PlayerRatingChart @ref="playerRatingChart"></PlayerRatingChart>
-        </div>
     </div>
 </div>
+
+@if (Interest != null)
+{
+    <PlayerDetailsComponent PlayerRatingDto="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
+}
+
 
 @code {
     private int ratingsCount = 0;
-    private PlayerRatingChart? playerRatingChart;
     private PlayerRatingsDeviation? playerRatingsDeviation;
     private Virtualize<PlayerRatingDto>? virtualize;
     private DistributionRequestEnum DistributionRequest = DistributionRequestEnum.None;
-    private RatingsRequest ratingsRequest = new() 
-    {
-        Skip = 0,
-        Take = 20,
-        Orders = new()
+    private RatingsRequest ratingsRequest = new()
+        {
+            Skip = 0,
+            Take = 20,
+            Orders = new()
         {
             new()
             {
@@ -149,8 +211,10 @@
                 Ascending = false
             }
         }
-    };
+        };
     private EditContext editContext = null!;
+
+    private PlayerRatingDto? Interest;
 
     protected override void OnInitialized()
     {
@@ -178,7 +242,7 @@
         {
             await playerRatingsDeviation.LoadData();
         }
-    }    
+    }
 
     private async Task SetCount()
     {
@@ -225,9 +289,17 @@
         return new ItemsProviderResult<PlayerRatingDto>(ratings, ratingsCount);
     }
 
+    private void DetailsClose()
+    {
+        Interest = null;
+        StateHasChanged();
+    }
+
     private void LoadPlayerChart(PlayerRatingDto playerRatingDto)
     {
-        playerRatingChart?.LoadData(playerRatingDto.ToonId, playerRatingDto.Name);
+        // playerRatingChart?.LoadData(playerRatingDto.ToonId, playerRatingDto.Name);
+        Interest = playerRatingDto;
+        StateHasChanged();
     }
 
     public enum DistributionRequestEnum

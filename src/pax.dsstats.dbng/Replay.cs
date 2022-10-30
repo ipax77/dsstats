@@ -24,6 +24,12 @@ public class Uploader
     public virtual ICollection<Player> Players { get; set; }
     public ICollection<BattleNetInfo>? BattleNetInfos { get; set; }
     public ICollection<Replay> Replays { get; set; }
+    public int Games { get; set; }
+    public int Wins { get; set; }
+    public int Mvp { get; set; }
+    public Commander MainCommander { get; set; }
+    public int MainCount { get; set; }
+    public int TeamGames { get; set; }
 }
 
 public class BattleNetInfo
@@ -49,6 +55,16 @@ public class Player
     public string? MmrOverTime { get; set; }
     [MaxLength(2000)]
     public string? MmrStdOverTime { get; set; }
+    public int GamesCmdr { get; set; }
+    public int WinsCmdr { get; set; }
+    public int MvpCmdr { get; set; }
+    public int TeamGamesCmdr { get; set; }
+    public int GamesStd { get; set; }
+    public int WinsStd { get; set; }
+    public int MvpStd { get; set; }
+    public int TeamGamesStd { get; set; }
+    public Commander MainCommander { get; set; }
+    public int MainCount { get; set; }
     public int? UploaderId { get; set; }
     public virtual Uploader? Uploader { get; set; }
     public virtual ICollection<ReplayPlayer> ReplayPlayers { get; set; }
@@ -179,6 +195,7 @@ public class Spawn
 
     public int SpawnId { get; set; }
     public int Gameloop { get; set; }
+    public Breakpoint Breakpoint { get; set; }
     public int Income { get; set; }
     public int GasCount { get; set; }
     public int ArmyValue { get; set; }

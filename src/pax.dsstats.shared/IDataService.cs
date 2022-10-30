@@ -15,4 +15,5 @@ public interface IDataService
     Task<string?> GetPlayerRatings(int toonId);
     Task<List<MmrDevDto>> GetRatingsDeviation();
     Task<List<MmrDevDto>> GetRatingsDeviationStd();
+    Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId);
 }

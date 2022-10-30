@@ -1,0 +1,59 @@
+﻿@using pax.dsstats.shared
+@inject NavigationManager NavigationManager
+
+@if (replayDto.ReplayEvent != null)
+{
+    <div class="row fw-bolder text-white-50">
+        <div class="col">Views @replayDto.Views</div>
+        <div class="col">Downloads @replayDto.Downloads</div>
+        <div class="col">Bans: @replayDto.ReplayEvent?.Ban1 @replayDto.ReplayEvent?.Ban2</div>
+        <div class="col-auto ms-auto btn-group">
+            @if (!string.IsNullOrEmpty(replayDto.FileName))
+            {
+                <button type="button" class="btn btn-dark" @onclick="@(() => showReplayPath = !showReplayPath)">FileName</button>
+            }
+            else
+            {
+                <a class="btn btn-dark" href="@NavigationManager.GetUriWithQueryParameters(new Dictionary<string, object?> { ["ReplayHash"] = replayDto.ReplayHash })">Link</a>
+                <a class="btn btn-light" href="@($"{NavigationManager.BaseUri}api/v1/ReplayDownload/{replayDto.ReplayHash}")" download>Download</a>
+            }
+            <button type="button" class="btn btn-danger" @onclick="e => OnCloseRequested.InvokeAsync()">Close</button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row fw-bolder text-white-50">
+        <div class="col">Views @replayDto.Views</div>
+        <div class="col-auto ms-auto btn-group">
+            @if (!string.IsNullOrEmpty(replayDto.FileName))
+            {
+                <button type="button" class="btn btn-dark" @onclick="@(() => showReplayPath = !showReplayPath)">FileName</button>
+            }
+            else
+            {
+                <a class="btn btn-dark" href="@NavigationManager.GetUriWithQueryParameters(new Dictionary<string, object?> { ["ReplayHash"] = replayDto.ReplayHash })">Link</a>
+            }
+            <button type="button" class="btn btn-danger" @onclick="e => OnCloseRequested.InvokeAsync()">Close</button>
+        </div>
+    </div>
+}
+
+@if (showReplayPath)
+{
+    <div>
+        @replayDto.FileName
+    </div>
+}
+
+
+@code {
+    [CascadingParameter]
+    [EditorRequired]
+    public ReplayDto replayDto { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnCloseRequested { get; set; }
+
+    private bool showReplayPath;
+}

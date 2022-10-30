@@ -215,6 +215,28 @@ public class DataService : IDataService
         return new();
     }
 
+    public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"{statsController}GetPlayerDetails/{toonId}");
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ICollection<PlayerMatchupInfo>>();
+                return result ?? new List<PlayerMatchupInfo>();
+            }
+            else
+            {
+                logger.LogError($"failed getting playerDetails: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting playerDetails: {ex.Message}");
+        }
+        return new List<PlayerMatchupInfo>();
+    }
+
     public async Task<ICollection<string>> GetReplayPaths()
     {
         return await Task.FromResult(new List<string>());

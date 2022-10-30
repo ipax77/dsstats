@@ -1,0 +1,64 @@
+﻿@using pax.BlazorChartJs
+@using pax.dsstats.shared
+@using sc2dsstats.razorlib.Services
+
+<ChartComponent ChartJsConfig="chartConfig"></ChartComponent>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public List<PlayerCmdrInfo> PlayerCmdrInfos { get; set; } = default!;
+
+
+    ChartJsConfig chartConfig = null!;
+
+    protected override void OnInitialized()
+    {
+        chartConfig = GetPieChartConfig();
+        base.OnInitialized();
+    }
+
+    private ChartJsConfig GetPieChartConfig()
+    {
+        int sum = PlayerCmdrInfos.Sum(s => s.Count);
+        return new()
+            {
+                Type = ChartType.pie,
+                Data = new ChartJsData()
+                {
+                    Labels = PlayerCmdrInfos.Select(s => s.Commander.ToString()).ToList(),
+                    Datasets = new List<ChartJsDataset>()
+                    {
+                        new PieDataset()
+                        {
+                            Data = PlayerCmdrInfos.Select(s => (object)Math.Round(s.Count * 100.0 / sum, 2)).ToList(),
+                            BackgroundColor = new IndexableOption<string>(PlayerCmdrInfos.Select(s => Data.GetBackgroundColor(s.Commander)).ToList()),
+                            BorderColor = new IndexableOption<string>(PlayerCmdrInfos.Select(s => Data.CmdrColor[s.Commander]).ToList()),
+                            BorderWidth = new IndexableOption<double>(1)
+                        }
+                    }
+                },
+                Options = new ChartJsOptions()
+                {
+                    Plugins = new Plugins()
+                    {
+                        Title = new Title()
+                        {
+                            Display = true,
+                            Text = "Commanders Played",
+                            Color = "#0d6efd",
+                            Font = new Font()
+                            {
+                                Size = 24,
+                            }
+                        },
+                        Legend = new Legend()
+                        {
+                            Position = "right"
+                        }
+                    }
+                }
+
+            };
+    }
+}

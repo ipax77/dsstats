@@ -13,5 +13,8 @@ namespace pax.dsstats.dbng.Services
         Task<List<MmrDevDto>> GetRatingsDeviationStd();
         Task<StatsResponse> GetStatsResponse(StatsRequest request);
         void ResetCache();
+        Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(List<int> toonIds);
+        Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId);
+        Task SeedPlayerInfos();
     }
 }

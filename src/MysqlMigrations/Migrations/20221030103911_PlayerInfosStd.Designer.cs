@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using pax.dsstats.dbng;
 
@@ -10,9 +11,10 @@ using pax.dsstats.dbng;
 namespace MysqlMigrations.Migrations
 {
     [DbContext(typeof(ReplayContext))]
-    partial class ReplayContextModelSnapshot : ModelSnapshot
+    [Migration("20221030103911_PlayerInfosStd")]
+    partial class PlayerInfosStd
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -44,30 +46,21 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<double>("AntiSynergyElo_1")
+                    b.Property<double>("AntiSynergy")
                         .HasColumnType("double");
 
-                    b.Property<double>("AntiSynergyElo_2")
-                        .HasColumnType("double");
-
-                    b.Property<double>("AntiSynergyMmr_1")
-                        .HasColumnType("double");
-
-                    b.Property<double>("AntiSynergyMmr_2")
-                        .HasColumnType("double");
-
-                    b.Property<int>("Commander_1")
+                    b.Property<int>("Commander")
                         .HasColumnType("int");
 
-                    b.Property<int>("Commander_2")
+                    b.Property<int>("SynCommander")
                         .HasColumnType("int");
 
-                    b.Property<double>("SynergyMmr")
+                    b.Property<double>("Synergy")
                         .HasColumnType("double");
 
                     b.HasKey("CommanderMmrId");
 
-                    b.HasIndex("Commander_1", "Commander_2");
+                    b.HasIndex("Commander", "SynCommander");
 
                     b.ToTable("CommanderMmrs");
                 });

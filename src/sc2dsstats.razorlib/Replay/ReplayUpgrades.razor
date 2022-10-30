@@ -1,0 +1,40 @@
+﻿@using sc2dsstats.razorlib.Services
+@using pax.dsstats.shared
+
+<div class="col-auto" style="width: 525px;">
+    <div class="table-responsive">
+
+        <table class="table table-sm table-hover table-striped table-dark">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Upgrade</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var upgrade in GetUpgrades())
+                {
+                    <tr>
+                        <td>@upgrade.Value</td>
+                        <td>@upgrade.Key</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+@code {
+    [CascadingParameter]
+    [EditorRequired]
+    public ReplayPlayerDto replayPlayer { get; set; } = default!;
+
+    List<KeyValuePair<string, string>> GetUpgrades()
+    {
+        return replayPlayer.Upgrades
+        .OrderBy(o => o.Gameloop)
+        .Select(s => new KeyValuePair<string, string>(s.Upgrade.Name, HelperService.TimeFromGameloop(s.Gameloop)))
+        .ToList();
+    }
+}

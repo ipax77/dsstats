@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using pax.dsstats.dbng;
 
@@ -10,9 +11,10 @@ using pax.dsstats.dbng;
 namespace MysqlMigrations.Migrations
 {
     [DbContext(typeof(ReplayContext))]
-    partial class ReplayContextModelSnapshot : ModelSnapshot
+    [Migration("20221029190715_PlayerInfos")]
+    partial class PlayerInfos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -44,30 +46,21 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<double>("AntiSynergyElo_1")
+                    b.Property<double>("AntiSynergy")
                         .HasColumnType("double");
 
-                    b.Property<double>("AntiSynergyElo_2")
-                        .HasColumnType("double");
-
-                    b.Property<double>("AntiSynergyMmr_1")
-                        .HasColumnType("double");
-
-                    b.Property<double>("AntiSynergyMmr_2")
-                        .HasColumnType("double");
-
-                    b.Property<int>("Commander_1")
+                    b.Property<int>("Commander")
                         .HasColumnType("int");
 
-                    b.Property<int>("Commander_2")
+                    b.Property<int>("SynCommander")
                         .HasColumnType("int");
 
-                    b.Property<double>("SynergyMmr")
+                    b.Property<double>("Synergy")
                         .HasColumnType("double");
 
                     b.HasKey("CommanderMmrId");
 
-                    b.HasIndex("Commander_1", "Commander_2");
+                    b.HasIndex("Commander", "SynCommander");
 
                     b.ToTable("CommanderMmrs");
                 });
@@ -116,10 +109,7 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("GamesCmdr")
-                        .HasColumnType("int");
-
-                    b.Property<int>("GamesStd")
+                    b.Property<int>("Games")
                         .HasColumnType("int");
 
                     b.Property<int>("MainCommander")
@@ -142,10 +132,7 @@ namespace MysqlMigrations.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("varchar(2000)");
 
-                    b.Property<int>("MvpCmdr")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MvpStd")
+                    b.Property<int>("Mvp")
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
@@ -156,10 +143,7 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("RegionId")
                         .HasColumnType("int");
 
-                    b.Property<int>("TeamGamesCmdr")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TeamGamesStd")
+                    b.Property<int>("TeamGames")
                         .HasColumnType("int");
 
                     b.Property<int>("ToonId")
@@ -168,10 +152,7 @@ namespace MysqlMigrations.Migrations
                     b.Property<int?>("UploaderId")
                         .HasColumnType("int");
 
-                    b.Property<int>("WinsCmdr")
-                        .HasColumnType("int");
-
-                    b.Property<int>("WinsStd")
+                    b.Property<int>("Wins")
                         .HasColumnType("int");
 
                     b.HasKey("PlayerId");
@@ -459,8 +440,6 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("ReplayId");
 
                     b.HasIndex("UpgradeId");
-
-                    b.HasIndex("IsUploader", "Team");
 
                     b.HasIndex("Race", "OppRace");
 

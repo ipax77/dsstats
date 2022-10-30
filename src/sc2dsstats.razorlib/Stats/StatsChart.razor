@@ -19,7 +19,8 @@
 
     private ChartJsConfig chartConfig = null!;
     private ChartComponent? chartComponent;
-    private bool isInit;
+    private bool chartSetup;
+    private bool dataSetup;
 
     protected override void OnInitialized()
     {
@@ -186,7 +187,8 @@
                     }
                 };
         }
-        if (isInit)
+        dataSetup = true;
+        if (chartSetup && dataSetup)
         {
             _ = chartComponent?.DrawChart();
         }
@@ -194,10 +196,13 @@
 
     private void ChartEventTriggered(ChartJsEvent chartEvent)
     {
-        if (!isInit && chartEvent is ChartJsInitEvent initEvent)
+        if (chartEvent is ChartJsInitEvent initEvent)
         {
-            isInit = true;
-            SetChart();
+            chartSetup = true;
+            if (chartSetup && dataSetup)
+            {
+                _ = chartComponent?.DrawChart();
+            }
         }
 
         if (chartEvent is ChartJsLabelClickEvent clickEvent)

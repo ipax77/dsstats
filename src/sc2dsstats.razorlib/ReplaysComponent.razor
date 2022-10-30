@@ -151,7 +151,8 @@
 
 @if (replayDto != null)
 {
-    <ReplayComponent @ref="replayComponent" replayDto="replayDto" OnCloseRequested="OnReplayClose"></ReplayComponent>
+    @*<ReplayComponent @ref="replayComponent" replayDto="replayDto" OnCloseRequested="OnReplayClose"></ReplayComponent>*@
+    <sc2dsstats.razorlib.Replay.ReplayComponent @ref="replayComponent" replayDto="replayDto" OnCloseRequested="OnReplayClose"></sc2dsstats.razorlib.Replay.ReplayComponent>
 }
 
 @code {
@@ -173,7 +174,7 @@
     private Virtualize<ReplayListDto>? virtualizeComponent;
     SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
     CancellationTokenSource cts = new();
-    ReplayComponent? replayComponent;
+    Replay.ReplayComponent? replayComponent;
 
     private string? lastVisitHash;
 

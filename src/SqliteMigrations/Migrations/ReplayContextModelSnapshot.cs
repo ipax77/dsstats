@@ -114,6 +114,18 @@ namespace SqliteMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("GamesCmdr")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("GamesStd")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MainCommander")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MainCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<double>("Mmr")
                         .HasColumnType("REAL");
 
@@ -128,6 +140,12 @@ namespace SqliteMigrations.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("MvpCmdr")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MvpStd")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -136,10 +154,22 @@ namespace SqliteMigrations.Migrations
                     b.Property<int>("RegionId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("TeamGamesCmdr")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TeamGamesStd")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("ToonId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("UploaderId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WinsCmdr")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WinsStd")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("PlayerId");
@@ -261,6 +291,8 @@ namespace SqliteMigrations.Migrations
                     b.HasKey("ReplayId");
 
                     b.HasIndex("FileName");
+
+                    b.HasIndex("Maxkillsum");
 
                     b.HasIndex("ReplayEventId");
 
@@ -416,6 +448,8 @@ namespace SqliteMigrations.Migrations
 
                     b.HasKey("ReplayPlayerId");
 
+                    b.HasIndex("Kills");
+
                     b.HasIndex("PlayerId");
 
                     b.HasIndex("Race");
@@ -423,6 +457,8 @@ namespace SqliteMigrations.Migrations
                     b.HasIndex("ReplayId");
 
                     b.HasIndex("UpgradeId");
+
+                    b.HasIndex("IsUploader", "Team");
 
                     b.HasIndex("Race", "OppRace");
 
@@ -468,6 +504,9 @@ namespace SqliteMigrations.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("ArmyValue")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Breakpoint")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Gameloop")
@@ -584,6 +623,9 @@ namespace SqliteMigrations.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Games")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Identifier")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -595,6 +637,21 @@ namespace SqliteMigrations.Migrations
                     b.Property<DateTime>("LatestUpload")
                         .HasPrecision(0)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("MainCommander")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MainCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Mvp")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TeamGames")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Wins")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("UploaderId");
 

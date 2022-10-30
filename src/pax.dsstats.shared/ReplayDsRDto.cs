@@ -35,4 +35,12 @@ public record PlayerRatingDto
     public int ToonId { get; init; }
     public double Mmr { get; init; }
     public double MmrStd { get; init; }
+    public int GamesCmdr { get; set; }
+    public int WinsCmdr { get; set; }
+    public int MvpCmdr { get; set; }
+    public int TeamGamesCmdr { get; set; }
+    public int GamesStd { get; set; }
+    public int WinsStd { get; set; }
+    public int MvpStd { get; set; }
+    public int TeamGamesStd { get; set; }
 }
