@@ -7,4 +7,5 @@ public record RatingsRequest
     public int Take { get; set; }
     public List<TableOrder> Orders { get; set; } = new();
     public string? Search { get; set; }
+    public int? ToonId { get; set; }
 }

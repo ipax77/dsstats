@@ -7,6 +7,16 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class StatsService
 {
+    public async Task<PlayerRatingDto?> GetPlayerRating(int toonId)
+    {
+        var players = GetQueriablePlayers(new());
+
+        return await players
+            .Where(x => x.ToonId == toonId)
+            .ProjectTo<PlayerRatingDto>(mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default)
     {
         var players = GetQueriablePlayers(request);

@@ -72,8 +72,8 @@ public static class MauiProgram
         context.Database.Migrate();
 
         // ??? when to do
-        var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-        statsService.SeedPlayerInfos().GetAwaiter().GetResult();
+        //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+        //statsService.SeedPlayerInfos().GetAwaiter().GetResult();
 
         return builder.Build();
     }

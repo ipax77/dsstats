@@ -15,6 +15,7 @@ namespace pax.dsstats.dbng.Services
         void ResetCache();
         Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(List<int> toonIds);
         Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId);
+        Task<PlayerRatingDto?> GetPlayerRating(int toonId);
         Task SeedPlayerInfos();
     }
 }

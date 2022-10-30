@@ -79,6 +79,11 @@ public class DataService : IDataService
         return await statsService.GetRatingsDeviation();
     }
 
+    public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId)
+    {
+        return await statsService.GetPlayerDetailInfo(toonId);
+    }
+
     public async Task<List<MmrDevDto>> GetRatingsDeviationStd()
     {
         return await statsService.GetRatingsDeviationStd();
