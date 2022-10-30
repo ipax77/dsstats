@@ -1,56 +1,186 @@
 ﻿@using System.Globalization;
 @using pax.dsstats.shared
 @using pax.BlazorChartJs
+@using sc2dsstats.razorlib.Services
 @inject IDataService dataService
-@implements IDisposable
 
-<div style="width: 800px;">
-    <ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="EventTriggered"></ChartComponent>
-</div>
-<div style="width: 800px;">
-    <ChartComponent @ref="chartComponentStd" ChartJsConfig="chartJsConfigStd" OnEventTriggered="EventTriggered"></ChartComponent>
+<div>
+    <h3 class="text-warning fw-bold bg-secondary p-2">@PlayerRatingDto.Name Details</h3>
+    <div class="row">
+        <div class="col-auto" style="width: 600px;">
+            <ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="EventTriggered"></ChartComponent>
+        </div>
+        <div class="col-auto" style="width: 600px;">
+            <ChartComponent @ref="chartComponentStd" ChartJsConfig="chartJsConfigStd" OnEventTriggered="EventTriggered"></ChartComponent>
+        </div>
+        <div class="col-auto">
+            <span class="oi oi-x text-danger pointer" style="font-size: 2rem;" @onclick="e => OnCloseRequested.InvokeAsync()"></span>
+        </div>
+    </div>
+
+    @if (playerDetailInfo != null)
+    {
+        <div class="row">
+            <div class="col-auto" style="width: 600px;">
+                <table class="table table-dark">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Commander</th>
+                            <th>%</th>
+                            <th>∅</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="4" class="fw-bold">Commanders</td>
+                        </tr>
+                        <tr>
+                            <td>Most Played Cmdr</td>
+                            <td>@playerDetailInfo.MostPlayedCmdrCmdr?.Commander</td>
+                            <td>@HelperService.GetPercentageString(playerDetailInfo.MostPlayedCmdrCmdr?.Wins,playerDetailInfo.SumCmdr)</td>
+                            <td>@playerDetailInfo.MostPlayedCmdrCmdr?.Count</td>
+                        </tr>
+                        <tr>
+                            <td>Least Played Cmdr</td>
+                            <td>@playerDetailInfo.LeastPlayedCmdrCmdr?.Commander</td>
+                            <td>@HelperService.GetPercentageString(playerDetailInfo.LeastPlayedCmdrCmdr?.Wins,playerDetailInfo.SumCmdr)</td>
+                            <td>@playerDetailInfo.LeastPlayedCmdrCmdr?.Count</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4" class="fw-bold">Standard</td>
+                        </tr>
+                        <tr>
+                            <td>Most Played Cmdr</td>
+                            <td>@playerDetailInfo.MostPlayedCmdrStd?.Commander</td>
+                            <td>@HelperService.GetPercentageString(playerDetailInfo.MostPlayedCmdrStd?.Wins,playerDetailInfo.SumStd)</td>
+                            <td>@playerDetailInfo.MostPlayedCmdrStd?.Count</td>
+                        </tr>
+                        <tr>
+                            <td>Least Played Cmdr</td>
+                            <td>@playerDetailInfo.LeastPlayedCmdrStd?.Commander</td>
+                            <td>@HelperService.GetPercentageString(playerDetailInfo.LeastPlayedCmdrStd?.Wins,playerDetailInfo.SumStd)</td>
+                            <td>@playerDetailInfo.LeastPlayedCmdrStd?.Count</td>
+                        </tr>
+                        <tr>
+
+                        </tr>
+                        <tr>
+                            <td colspan="4" class="fw-bold">Matchups (∅ > 10)</td>
+                        </tr>
+                        @foreach (var ent in playerDetailInfo.MatchupInfos.Where(x => x.Count > 10).OrderByDescending(o => o.Wins * 100.0 / o.Count))
+                        {
+                            <tr>
+                                <td></td>
+                                <td>@ent.Commander vs @ent.Versus</td>
+                                <td>@HelperService.GetPercentageString(ent.Wins, ent.Count)</td>
+                                <td>@ent.Count</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-auto ms-3" style="width: 600px;">                
+                <div class="w-100">
+                <PlayerCmdrDistribution PlayerCmdrInfos="playerDetailInfo.CmdrInfos.Where(x => x.Count > 0).OrderByDescending(o => o.Count).ToList()"></PlayerCmdrDistribution>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="spinner-border text-danger" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
 </div>
 
 @code {
+    [Parameter]
+    [EditorRequired]
+    public PlayerRatingDto PlayerRatingDto { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnCloseRequested { get; set; }
+
     ChartComponent? chartComponent;
     ChartComponent? chartComponentStd;
     ChartJsConfig chartJsConfig = null!;
     ChartJsConfig chartJsConfigStd = null!;
-    EventWaitHandle ewh = new(false, EventResetMode.ManualReset);
+    PlayerDetailInfo? playerDetailInfo;
+    private string? ratingOtInfo;
+
+    private int chartSetups;
+    private bool chartsSetup;
+    private bool chartDataUp;
 
     protected override void OnInitialized()
     {
         chartJsConfig = GetLineChartConfig();
         chartJsConfigStd = GetLineChartConfig();
+
         base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ = LoadChartData();
+            _ = LoadPlayerDetails();
+        }
+        base.OnAfterRender(firstRender);
     }
 
     private void EventTriggered(ChartJsEvent e)
     {
         if (e is ChartJsInitEvent initEvent)
         {
-            ewh.Set();
+            Interlocked.Increment(ref chartSetups);
+            if (chartSetups >= 2)
+            {
+                chartsSetup = true;
+            }
+            if (chartsSetup && chartDataUp)
+            {
+                SetupCharts();
+            }
         }
     }
 
-    public async Task LoadData(int toonId, string name)
+    public async Task LoadPlayerDetails()
     {
-        var ratingsOt = await dataService.GetPlayerRatings(toonId);
+        var matchupInfos = await dataService.GetPlayerDetailInfo(PlayerRatingDto.ToonId);
+        playerDetailInfo = new PlayerDetailInfo()
+            {
+                MatchupInfos = matchupInfos.ToList()
+            };
+        await InvokeAsync(() => StateHasChanged());
+    }
 
-        if (String.IsNullOrEmpty(ratingsOt))
+    public async Task LoadChartData()
+    {
+        ratingOtInfo = await dataService.GetPlayerRatings(PlayerRatingDto.ToonId);
+        chartDataUp = true;
+        if (chartsSetup && chartDataUp)
+        {
+            SetupCharts();
+        }
+    }
+
+    private void SetupCharts()
+    {
+        if (String.IsNullOrEmpty(ratingOtInfo))
         {
             return;
         }
 
-        List<string> labels = new();
-        List<double> ratings = new();
-
-        var plRatingsOt = ratingsOt.Split('X');
+        var plRatingsOt = ratingOtInfo.Split('X');
 
         for (int j = 0; j < plRatingsOt.Length; j++)
         {
-            labels.Clear();
-            ratings.Clear();
+            List<string> labels = new();
+            List<double> ratings = new();
 
             var ents = plRatingsOt[j].Split('|');
             for (int i = 0; i < ents.Length; i++)
@@ -63,8 +193,6 @@
                 }
             }
 
-            ewh.WaitOne();
-
             if (j == 0)
             {
                 if (chartJsConfig.Data.Datasets.Any())
@@ -75,7 +203,7 @@
                     }
                 }
                 chartJsConfig.SetLabels(labels);
-                chartJsConfig.AddDataset(GetLineDataset(ratings, name));
+                chartJsConfig.AddDataset(GetLineDataset(ratings, PlayerRatingDto.Name));
             }
             else if (j == 1)
             {
@@ -87,7 +215,7 @@
                     }
                 }
                 chartJsConfigStd.SetLabels(labels);
-                chartJsConfigStd.AddDataset(GetLineDataset(ratings, name, true));
+                chartJsConfigStd.AddDataset(GetLineDataset(ratings, PlayerRatingDto.Name, true));
             }
         }
     }
@@ -211,10 +339,5 @@
                     }
                 }
             };
-    }
-
-    public void Dispose()
-    {
-        ewh.Dispose();
     }
 }

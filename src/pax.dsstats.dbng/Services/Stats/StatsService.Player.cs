@@ -1,21 +1,24 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
 using System.Diagnostics;
-using System.Text.Json.Serialization;
 
 namespace pax.dsstats.dbng.Services;
 
 public partial class StatsService
 {
-    public async Task<PlayerDetailInfo> GetPlayerDetailInfo(List<int> toonIds)
+    public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId)
     {
-        var matchups = await GetPlayerMatchups(toonIds);
-        var cmdrInfos = GetPlayerCmdrInfos(matchups);
+        return await GetPlayerDetailInfo(new List<int>() { toonId });
+    }
 
-        return new PlayerDetailInfo()
-        {
-            MatchupInfos = matchups
-        };
+    public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(List<int> toonIds)
+    {
+        return await GetPlayerMatchups(toonIds);
+
+        //return new PlayerDetailInfo()
+        //{
+        //    MatchupInfos = matchups
+        //};
     }
 
     private async Task<List<PlayerMatchupInfo>> GetPlayerMatchups(List<int> toonIds)
@@ -193,43 +196,6 @@ public partial class StatsService
         return teamGames.ToDictionary(k => k.ToonId, v => v.Teamgames);
     }
 
-}
-
-public record PlayerDetailInfo
-{
-    public List<PlayerMatchupInfo> MatchupInfos = new();
-    [JsonIgnore]
-    public List<PlayerCmdrInfo> CmdrInfos => (from m in MatchupInfos
-                                              group m by m.Commander into g
-                                              select new PlayerCmdrInfo
-                                              {
-                                                  Commander = g.Key,
-                                                  Count = g.Sum(s => s.Count),
-                                                  Wins = g.Sum(s => s.Wins)
-                                              }).ToList();
-    [JsonIgnore]
-    public PlayerCmdrInfo? MostPlayedCmdrCmdr => CmdrInfos.Where(x => (int)x.Commander > 3).OrderByDescending(o => o.Count).FirstOrDefault();
-    [JsonIgnore]
-    public PlayerCmdrInfo? LeastPlayedCmdrCmdr => CmdrInfos.Where(x => (int)x.Commander > 3).OrderBy(o => o.Count).FirstOrDefault();
-    [JsonIgnore]
-    public PlayerCmdrInfo? MostPlayedCmdrStd => CmdrInfos.Where(x => (int)x.Commander <= 3).OrderByDescending(o => o.Count).FirstOrDefault();
-    [JsonIgnore]
-    public PlayerCmdrInfo? LeastPlayedCmdrStd => CmdrInfos.Where(x => (int)x.Commander <= 3).OrderBy(o => o.Count).FirstOrDefault();
-}
-
-public record PlayerCmdrInfo
-{
-    public Commander Commander { get; init; }
-    public int Count { get; set; }
-    public int Wins { get; set; }
-}
-
-public record PlayerMatchupInfo
-{
-    public Commander Commander { get; init; }
-    public Commander Versus { get; init; }
-    public int Count { get; init; }
-    public int Wins { get; init; }
 }
 
 public record PlayerInfo

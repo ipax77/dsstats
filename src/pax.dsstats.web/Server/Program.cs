@@ -86,8 +86,8 @@ if (app.Environment.IsProduction())
 }
 
 // ??? when to do
-var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-statsService.SeedPlayerInfos().GetAwaiter().GetResult();
+//var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+//statsService.SeedPlayerInfos().GetAwaiter().GetResult();
 
 // DEBUG
 if (app.Environment.IsDevelopment())

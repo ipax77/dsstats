@@ -14,6 +14,15 @@ public static class HelperService
         return (num / 1000.0).ToString("N2", CultureInfo.InvariantCulture) + "k";
     }
 
+    public static string GetPercentageString(int? wins, int? games)
+    {
+        if (games == null || wins == null || games == 0  || wins == 0)
+        {
+            return "0";
+        }
+        return $"{Math.Round(wins.Value * 100.0 / games.Value, 2).ToString(CultureInfo.InvariantCulture)}%";
+    }
+
     public static string TimeFromGameloop(int gameloop)
     {
         var duration = gameloop / 22.4;

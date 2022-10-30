@@ -73,6 +73,17 @@ public partial class StatsService
                     players = players.OrderByDescending(o => o.MvpCmdr / o.GamesCmdr);
                 }
             }
+            else if (order.Property == "TeamgamesCmdr")
+            {
+                if (order.Ascending)
+                {
+                    players = players.OrderBy(o => o.TeamGamesCmdr / o.GamesCmdr);
+                }
+                else
+                {
+                    players = players.OrderByDescending(o => o.TeamGamesCmdr / o.GamesCmdr);
+                }
+            }
             else if (order.Property == "WinrateStd")
             {
                 if (order.Ascending)
@@ -93,6 +104,17 @@ public partial class StatsService
                 else
                 {
                     players = players.OrderByDescending(o => o.MvpStd / o.GamesStd);
+                }
+            }
+            else if (order.Property == "TeamgamesStd")
+            {
+                if (order.Ascending)
+                {
+                    players = players.OrderBy(o => o.TeamGamesStd / o.GamesStd);
+                }
+                else
+                {
+                    players = players.OrderByDescending(o => o.TeamGamesStd / o.GamesStd);
                 }
             }
             else

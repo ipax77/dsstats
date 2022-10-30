@@ -101,6 +101,13 @@ namespace pax.dsstats.web.Server.Controllers
         {
             return await statsService.GetRatingsDeviationStd();
         }
+
+        [HttpGet]
+        [Route("GetPlayerDetails/{toonId}")]
+        public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId)
+        {
+            return await statsService.GetPlayerDetailInfo(toonId);
+        }
     }
 
 }
