@@ -1,4 +1,4 @@
-﻿using Blazored.Toast.Services;
+using Blazored.Toast.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng;
@@ -123,7 +123,8 @@ public class DecodeService : IDisposable
                 Saved = dbCounter,
                 Done = true
             });
-            IsRunning = false;
+
+            this.IsRunning = false;
             return;
         }
 

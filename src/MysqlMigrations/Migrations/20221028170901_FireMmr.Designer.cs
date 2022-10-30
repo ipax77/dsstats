@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using pax.dsstats.dbng;
 
@@ -10,9 +11,10 @@ using pax.dsstats.dbng;
 namespace MysqlMigrations.Migrations
 {
     [DbContext(typeof(ReplayContext))]
-    partial class ReplayContextModelSnapshot : ModelSnapshot
+    [Migration("20221028170901_FireMmr")]
+    partial class FireMmr
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -98,34 +100,10 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("Events");
                 });
 
-            modelBuilder.Entity("pax.dsstats.dbng.GroupByHelper", b =>
-                {
-                    b.Property<int>("Count")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("Group")
-                        .HasColumnType("tinyint(1)")
-                        .HasColumnName("Name");
-
-                    b.ToView("GroupByHelper");
-                });
-
             modelBuilder.Entity("pax.dsstats.dbng.Player", b =>
                 {
                     b.Property<int>("PlayerId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<int>("GamesCmdr")
-                        .HasColumnType("int");
-
-                    b.Property<int>("GamesStd")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MainCommander")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MainCount")
                         .HasColumnType("int");
 
                     b.Property<double>("Mmr")
@@ -142,12 +120,6 @@ namespace MysqlMigrations.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("varchar(2000)");
 
-                    b.Property<int>("MvpCmdr")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MvpStd")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -156,22 +128,10 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("RegionId")
                         .HasColumnType("int");
 
-                    b.Property<int>("TeamGamesCmdr")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TeamGamesStd")
-                        .HasColumnType("int");
-
                     b.Property<int>("ToonId")
                         .HasColumnType("int");
 
                     b.Property<int?>("UploaderId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("WinsCmdr")
-                        .HasColumnType("int");
-
-                    b.Property<int>("WinsStd")
                         .HasColumnType("int");
 
                     b.HasKey("PlayerId");
@@ -294,8 +254,6 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("FileName");
 
-                    b.HasIndex("Maxkillsum");
-
                     b.HasIndex("ReplayEventId");
 
                     b.HasIndex("ReplayHash")
@@ -304,10 +262,6 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("GameTime", "GameMode");
 
                     b.HasIndex("GameTime", "GameMode", "DefaultFilter");
-
-                    b.HasIndex("GameTime", "GameMode", "Maxleaver");
-
-                    b.HasIndex("GameTime", "GameMode", "WinnerTeam");
 
                     b.ToTable("Replays");
                 });
@@ -450,8 +404,6 @@ namespace MysqlMigrations.Migrations
 
                     b.HasKey("ReplayPlayerId");
 
-                    b.HasIndex("Kills");
-
                     b.HasIndex("PlayerId");
 
                     b.HasIndex("Race");
@@ -459,8 +411,6 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("ReplayId");
 
                     b.HasIndex("UpgradeId");
-
-                    b.HasIndex("IsUploader", "Team");
 
                     b.HasIndex("Race", "OppRace");
 
@@ -506,9 +456,6 @@ namespace MysqlMigrations.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("ArmyValue")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Breakpoint")
                         .HasColumnType("int");
 
                     b.Property<int>("Gameloop")
@@ -625,9 +572,6 @@ namespace MysqlMigrations.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int>("Games")
-                        .HasColumnType("int");
-
                     b.Property<string>("Identifier")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -639,21 +583,6 @@ namespace MysqlMigrations.Migrations
                     b.Property<DateTime>("LatestUpload")
                         .HasPrecision(0)
                         .HasColumnType("datetime(0)");
-
-                    b.Property<int>("MainCommander")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MainCount")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Mvp")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TeamGames")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Wins")
-                        .HasColumnType("int");
 
                     b.HasKey("UploaderId");
 

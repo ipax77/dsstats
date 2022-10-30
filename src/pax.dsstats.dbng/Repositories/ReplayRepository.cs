@@ -1,9 +1,12 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng.Extensions;
+using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
+using System.Numerics;
 
 namespace pax.dsstats.dbng.Repositories;
 
@@ -362,6 +365,10 @@ public class ReplayRepository : IReplayRepository
             (player.Upgrades, upgrades) = await GetMapedPlayerUpgrades(player, upgrades);
 
         }
+
+        //await AddDbCommanderMmr((dbReplay.CommandersTeam1.TrimEnd('|') + dbReplay.CommandersTeam2).Trim('|'));
+        
+
         context.Replays.Add(dbReplay);
 
         try
@@ -376,6 +383,31 @@ public class ReplayRepository : IReplayRepository
 
         return (units, upgrades);
     }
+
+    //private async Task AddDbCommanderMmr(string commanders)
+    //{
+    //    var commandersEnums = commanders.Split('|').Select(c => Enum.Parse<Commander>(c));
+
+    //    foreach (var commander in commandersEnums) {
+    //        foreach (var synCommander in commandersEnums) {
+    //            var dbCommanderMmr = await context.CommanderMmrs.FirstOrDefaultAsync(f => (f.Commander == commander) && (f.SynCommander == synCommander));
+    //            if (dbCommanderMmr == null) {
+    //                dbCommanderMmr = new() {
+    //                    Commander = commander,
+    //                    SynCommander = synCommander
+    //                };
+    //                context.CommanderMmrs.Add(dbCommanderMmr);
+
+    //                try {
+    //                    await context.SaveChangesAsync();
+    //                } catch (Exception ex) {
+    //                    logger.LogError($"failed saving replay: {ex.Message}");
+    //                    throw;
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
 
     private async Task<(ICollection<SpawnUnit>, HashSet<Unit>)> GetMapedSpawnUnits(Spawn spawn, Commander commander, HashSet<Unit> units)
     {

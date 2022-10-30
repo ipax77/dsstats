@@ -31,6 +31,7 @@
     protected override void OnInitialized()
     {
         MmrService.Recalculated += MmrService_Recalculated;
+        FireMmrService.Recalculated += MmrService_Recalculated;
         base.OnInitialized();
     }
 
@@ -77,10 +78,10 @@
 
         await InvokeAsync(() => StateHasChanged());
 
-        if (playerRatings != null)
-        {
-            await playerRatings.Reload();
-        }
+        //if (playerRatings != null)
+        //{
+        //    await playerRatings.Reload();
+        //}
     }
 
     private async void MmrService_Recalculated(object? sender, EventArgs e)
@@ -95,5 +96,6 @@
     public void Dispose()
     {
         MmrService.Recalculated -= MmrService_Recalculated;
+        FireMmrService.Recalculated -= MmrService_Recalculated;
     }
 }
