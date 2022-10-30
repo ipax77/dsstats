@@ -1,11 +1,13 @@
 ﻿@page "/"
 @using pax.dsstats.dbng.Repositories
+@using pax.dsstats.dbng.Services;
 @using pax.dsstats.shared
 @using sc2dsstats.maui.Services
 @using sc2dsstats.razorlib
 @inject IReplayRepository ReplayRepository
 @inject DecodeService DecodeService
 @inject UploadService UploadService
+@inject IStatsService StatsService
 @implements IDisposable
 
 <div class="btn-group border border-3 rounded-2 border-light p-2">
@@ -33,10 +35,18 @@
     }
 </div>
 
-<div>
+<div class="mt-3">
     @if (latestReplay != null)
     {
+        <h3 class="text-warning p-2 bg-secondary">Latest Replay</h3>
         <sc2dsstats.razorlib.Replay.ReplayComponent replayDto="latestReplay"></sc2dsstats.razorlib.Replay.ReplayComponent>
+    }
+</div>
+<div>
+    @if (playerDetailInfo != null)
+    {
+        <h3 class="text-warning fw-bold bg-secondary p-2">Player Details</h3>
+        <PlayerDetailsSubComponent PlayerDetailInfo="playerDetailInfo"></PlayerDetailsSubComponent>
     }
 </div>
 
@@ -45,6 +55,7 @@
 @code {
     ReplayDto? latestReplay = null;
     UploadConfirmModal? uploadConfirmModal;
+    PlayerDetailInfo? playerDetailInfo;
 
     protected override void OnInitialized()
     {
@@ -78,6 +89,19 @@
     {
         latestReplay = await ReplayRepository.GetLatestReplay();
         await InvokeAsync(() => StateHasChanged());
+        if (UserSettingsService.UserSettings.BattleNetInfos != null)
+        {
+            var toonIds = UserSettingsService.UserSettings.BattleNetInfos.SelectMany(s => s.ToonIds).Select(s => s.ToonId).ToList();
+            if (toonIds.Any())
+            {
+                var matchupInfos = (await StatsService.GetPlayerDetailInfo(toonIds)).ToList();
+                playerDetailInfo = new PlayerDetailInfo()
+                {
+                    MatchupInfos = matchupInfos
+                };
+                await InvokeAsync(() => StateHasChanged());
+            }
+        }
     }
 
     private void Decode()
