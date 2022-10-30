@@ -79,14 +79,19 @@ public class FireMmrService
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider);
 
         int count = 0;
-        await replays.ForEachAsync(replay =>
+
+        var replayDsrDtos = await replays.ToListAsync();
+
+        foreach (var replay in replayDsrDtos)
         {
             var winnerTeam = replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam);
             var loserTeam = replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam);
             //var leaverTeam = new List<ReplayPlayerDsRDto>().AsEnumerable();
 
-            if (winnerTeam.Count() != 3 || loserTeam.Count() != 3) {
-                throw new ArgumentException("Team split error");
+            if (winnerTeam.Count() != 3 || loserTeam.Count() != 3)
+            {
+                logger.LogWarning($"skipping wrong teamcounts");
+                continue;
             }
 
             int correctedDuration = replay.Duration;
@@ -95,7 +100,7 @@ public class FireMmrService
             //if (replay.WinnerTeam == 0)
             //{
             //    correctedDuration = replay.ReplayPlayers.Where(x => !x.IsUploader).Max(x => x.Duration);
-                
+
             //    var uploaders = replay.ReplayPlayers.Where(x => x.IsUploader);
 
             //    if (!uploaders.Any()) {
@@ -106,7 +111,8 @@ public class FireMmrService
             //    }
             //}
 
-            if (!missingUploader) {
+            if (!missingUploader)
+            {
                 //leaverTeam = replay.ReplayPlayers.Where(x => x.Duration <= correctedDuration - 89);
 
                 var winnerTeamCommanders = winnerTeam.Select(_ => _.Race).ToArray();
@@ -137,7 +143,7 @@ public class FireMmrService
 
                 count++;
             }
-        });
+        }
 
         await SetRatings(GameMode.Commanders);
     }
@@ -157,10 +163,21 @@ public class FireMmrService
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider);
 
         int count = 0;
-        await replays.ForEachAsync(replay => {
+
+        var replayDsrDtos = await replays.ToListAsync();
+
+        foreach (var replay in replayDsrDtos)
+        {
+
             var winnerTeam = replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam);
             var loserTeam = replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam);
             //var leaverTeam = new List<ReplayPlayerDsRDto>().AsEnumerable();
+
+            if (winnerTeam.Count() != 3 || loserTeam.Count() != 3)
+            {
+                logger.LogWarning($"skipping wrong teamcounts");
+                continue;
+            }
 
             int correctedDuration = replay.Duration;
             bool missingUploader = false;
@@ -179,7 +196,8 @@ public class FireMmrService
             //    }
             //}
 
-            if (!missingUploader) {
+            if (!missingUploader)
+            {
                 //leaverTeam = replay.ReplayPlayers.Where(x => x.Duration <= correctedDuration - 89);
 
 
@@ -188,7 +206,7 @@ public class FireMmrService
                 var teamElo = ELO(winnerTeamMmr, loserTeamMmr);
 
                 (double[] winnersMmrDelta, double[] winnersConsistencyDelta, double[] dummy) = CalculateRatingsDeltas(winnerTeam.Select(s => s.Player), GameMode.Standard, true, teamElo, winnerTeamMmr, 0.5);
-                (double[] losersMmrDelta, double[] losersConsistencyDelta,  dummy) = CalculateRatingsDeltas(loserTeam.Select(s => s.Player), GameMode.Standard, false, teamElo, loserTeamMmr, 0.5);
+                (double[] losersMmrDelta, double[] losersConsistencyDelta, dummy) = CalculateRatingsDeltas(loserTeam.Select(s => s.Player), GameMode.Standard, false, teamElo, loserTeamMmr, 0.5);
 
                 FixMMR_Equality(winnersMmrDelta, losersMmrDelta);
 
@@ -197,7 +215,7 @@ public class FireMmrService
 
                 count++;
             }
-        });
+        }
 
         await SetRatings(GameMode.Standard);
     }
@@ -208,21 +226,28 @@ public class FireMmrService
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         Dictionary<int, List<DsRCheckpoint>> playerRatings = null!;
-        if (gameMode == GameMode.Commanders) {
+        if (gameMode == GameMode.Commanders)
+        {
             playerRatings = playerRatingsCmdr;
-        } else if (gameMode == GameMode.Standard) {
+        }
+        else if (gameMode == GameMode.Standard)
+        {
             playerRatings = playerRatingsStd;
         }
 
-        for (int i = 0; i < playerRatings.Count; i++) {
+        for (int i = 0; i < playerRatings.Count; i++)
+        {
             var playerRating = playerRatings.ElementAt(i);
 
             var player = await context.Players.FirstAsync(f => f.PlayerId == playerRating.Key);
-            
-            if (gameMode == GameMode.Commanders) {
+
+            if (gameMode == GameMode.Commanders)
+            {
                 player.Mmr = playerRating.Value.Last().Mmr;
                 player.MmrOverTime = GetOverTimeRating(playerRating.Value);
-            } else if (gameMode == GameMode.Standard) {
+            }
+            else if (gameMode == GameMode.Standard)
+            {
                 player.MmrStd = playerRating.Value.Last().Mmr;
                 player.MmrStdOverTime = GetOverTimeRating(playerRating.Value);
             }
@@ -232,7 +257,8 @@ public class FireMmrService
         double[] allCommandersMmrSum = new double[allCommanders.Count];
         Dictionary<Commander, double> allCommandersMmrSum_dic = new();
 
-        foreach (var rating in commanderRatings) {
+        foreach (var rating in commanderRatings)
+        {
             var commanderCombo = await context.CommanderMmrs.FirstAsync(f => f.CommanderMmrId == rating.CommanderMmrId);
 
             commanderCombo.SynergyMmr = rating.SynergyMmr;
@@ -243,22 +269,29 @@ public class FireMmrService
             commanderCombo.AntiSynergyElo_1 = rating.AntiSynergyElo_1;
             commanderCombo.AntiSynergyElo_2 = rating.AntiSynergyElo_2;
 
-            for (int i = 0; i < allCommanders.Count; i++) {
-                if ((commanderCombo.Commander_1 == allCommanders[i]) && (commanderCombo.Commander_2 == allCommanders[i])) {
+            for (int i = 0; i < allCommanders.Count; i++)
+            {
+                if ((commanderCombo.Commander_1 == allCommanders[i]) && (commanderCombo.Commander_2 == allCommanders[i]))
+                {
                     allCommandersMmrSum[i] += commanderCombo.AntiSynergyMmr_1 / 2;
                     allCommandersMmrSum[i] += commanderCombo.AntiSynergyMmr_2 / 2;
-                } else {
-                    if (commanderCombo.Commander_1 == allCommanders[i]) {
+                }
+                else
+                {
+                    if (commanderCombo.Commander_1 == allCommanders[i])
+                    {
                         allCommandersMmrSum[i] += commanderCombo.AntiSynergyMmr_1;
                     }
-                    if (commanderCombo.Commander_2 == allCommanders[i]) {
+                    if (commanderCombo.Commander_2 == allCommanders[i])
+                    {
                         allCommandersMmrSum[i] += commanderCombo.AntiSynergyMmr_2;
                     }
                 }
             }
         }
 
-        for (int i = 0; i < allCommanders.Count; i++) {
+        for (int i = 0; i < allCommanders.Count; i++)
+        {
             allCommandersMmrSum_dic.Add(allCommanders[i], allCommandersMmrSum[i] / allCommanders.Count);
         }
         var ordered = allCommandersMmrSum_dic.OrderByDescending(x => x.Value);
@@ -334,13 +367,15 @@ public class FireMmrService
         double abs_sumTeam1_mmrDelta = Math.Abs(team1_mmrDelta.Sum());
         double abs_sumTeam2_mmrDelta = Math.Abs(team2_mmrDelta.Sum());
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 3; i++)
+        {
             team1_mmrDelta[i] = team1_mmrDelta[i] *
                 ((abs_sumTeam1_mmrDelta + abs_sumTeam2_mmrDelta) / (abs_sumTeam1_mmrDelta * 2));
             team2_mmrDelta[i] = team2_mmrDelta[i] *
                 ((abs_sumTeam2_mmrDelta + abs_sumTeam1_mmrDelta) / (abs_sumTeam2_mmrDelta * 2));
 
-            if (abs_sumTeam1_mmrDelta == 0 || abs_sumTeam2_mmrDelta == 0) {
+            if (abs_sumTeam1_mmrDelta == 0 || abs_sumTeam2_mmrDelta == 0)
+            {
                 team1_mmrDelta[i] = 0;
                 team2_mmrDelta[i] = 0;
             }
@@ -362,15 +397,19 @@ public class FireMmrService
         for (int i = 0; i < teamPlayers.Count(); i++)
         {
             List<DsRCheckpoint> plRatings = null!;
-            if (gameMode == GameMode.Commanders) {
+            if (gameMode == GameMode.Commanders)
+            {
                 plRatings = playerRatingsCmdr[teamPlayers.ElementAt(i).PlayerId];
-            } else if (gameMode == GameMode.Standard) {
+            }
+            else if (gameMode == GameMode.Standard)
+            {
                 plRatings = playerRatingsStd[teamPlayers.ElementAt(i).PlayerId];
             }
 
             double playerConsistency = plRatings.Last().Consistency;
             double playerMmr = plRatings.Last().Mmr;
-            if (playerMmr > maxMmr) {
+            if (playerMmr > maxMmr)
+            {
                 maxMmr = playerMmr;
             }
 
@@ -381,7 +420,8 @@ public class FireMmrService
                 * (useFactorToTeamMates ? factor_playerToTeamMates : (1.0 / 3))
                 * (useConsistency ? factor_consistency : 1.0);
 
-            if (playerImpact < 0 || playerImpact > 1 || double.IsNaN(playerImpact) || double.IsInfinity(playerImpact)) {
+            if (playerImpact < 0 || playerImpact > 1 || double.IsNaN(playerImpact) || double.IsInfinity(playerImpact))
+            {
             }
 
             playersMmrDelta[i] = CalculateMmrDelta(teamElo, playerImpact, (useCommanderMmr ? (1 - commandersElo) : 1));
@@ -389,7 +429,7 @@ public class FireMmrService
 
             double commandersMmrImpact = Math.Pow(startMmr, (playerMmr / maxMmr)) / startMmr;
             commandersMmrDelta[i] = CalculateMmrDelta(commandersElo, 1, commandersMmrImpact);
-            
+
             if (!winner)
             {
                 playersMmrDelta[i] *= -1;
@@ -398,7 +438,8 @@ public class FireMmrService
             }
 
 
-            if (double.IsNaN(playersMmrDelta[i]) || double.IsInfinity(playersMmrDelta[i])) {
+            if (double.IsNaN(playersMmrDelta[i]) || double.IsInfinity(playersMmrDelta[i]))
+            {
             }
         }
         return (playersMmrDelta, playersConsistencyDelta, commandersMmrDelta);
@@ -409,9 +450,12 @@ public class FireMmrService
         for (int i = 0; i < teamPlayers.Count(); i++)
         {
             List<DsRCheckpoint> plRatings = null!;
-            if (gameMode == GameMode.Commanders) {
+            if (gameMode == GameMode.Commanders)
+            {
                 plRatings = playerRatingsCmdr[teamPlayers.ElementAt(i).PlayerId];
-            } else if (gameMode == GameMode.Standard) {
+            }
+            else if (gameMode == GameMode.Standard)
+            {
                 plRatings = playerRatingsStd[teamPlayers.ElementAt(i).PlayerId];
             }
 
@@ -423,7 +467,8 @@ public class FireMmrService
 
             consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
 
-            if (double.IsNaN(mmrAfter) || double.IsInfinity(mmrAfter)) {
+            if (double.IsNaN(mmrAfter) || double.IsInfinity(mmrAfter))
+            {
             }
 
             plRatings.Add(new DsRCheckpoint() { Mmr = mmrAfter, Consistency = consistencyAfter, Time = gameTime });
@@ -454,11 +499,15 @@ public class FireMmrService
     {
         double teamMmr = 0;
 
-        foreach (var replayPlayer in replayPlayers) {
+        foreach (var replayPlayer in replayPlayers)
+        {
             Dictionary<int, List<DsRCheckpoint>> playerRatings = null!;
-            if (gameMode == GameMode.Commanders) {
+            if (gameMode == GameMode.Commanders)
+            {
                 playerRatings = playerRatingsCmdr;
-            } else if (gameMode == GameMode.Standard) {
+            }
+            else if (gameMode == GameMode.Standard)
+            {
                 playerRatings = playerRatingsStd;
             }
 
@@ -489,12 +538,14 @@ public class FireMmrService
     {
         double[] commandersComboMMR = new double[3];
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 3; i++)
+        {
 
             double antiSynergySum = 0;
             double synergySum = 0;
 
-            for (int k = 0; k < 3; k++) {
+            for (int k = 0; k < 3; k++)
+            {
                 CommanderMmr antiSynergyCommander = this.commanderRatings
                     .Where(c =>
                         ((c.Commander_1 == teamCommanders[i]) && (c.Commander_2 == enemyCommanders[k])) ||
@@ -502,15 +553,22 @@ public class FireMmrService
                     .FirstOrDefault()!;
 
                 double antiSynergyMmr;
-                if ((antiSynergyCommander.Commander_1 == teamCommanders[i]) && (antiSynergyCommander.Commander_2 == enemyCommanders[k])) {
+                if ((antiSynergyCommander.Commander_1 == teamCommanders[i]) && (antiSynergyCommander.Commander_2 == enemyCommanders[k]))
+                {
                     antiSynergyMmr = antiSynergyCommander.AntiSynergyMmr_1;
-                } else if ((antiSynergyCommander.Commander_2 == teamCommanders[i]) && (antiSynergyCommander.Commander_1 == enemyCommanders[k])) {
+                }
+                else if ((antiSynergyCommander.Commander_2 == teamCommanders[i]) && (antiSynergyCommander.Commander_1 == enemyCommanders[k]))
+                {
                     antiSynergyMmr = antiSynergyCommander.AntiSynergyMmr_2;
-                } else throw new Exception();
+                }
+                else throw new Exception();
 
-                if (i == k) {
+                if (i == k)
+                {
                     antiSynergySum += (OwnMatchup_Percentage * antiSynergyMmr);
-                } else {
+                }
+                else
+                {
                     antiSynergySum += (MatesMatchups_Percentage * antiSynergyMmr);
 
 
@@ -534,30 +592,40 @@ public class FireMmrService
 
     private void SetCommandersComboMMR(double[] commandersMmrDelta, Commander[] teamCommanders, Commander[] enemyCommanders)
     {
-        for (int i = 0; i < 3; i++) {
-            for (int k = 0; k < 3; k++) {
+        for (int i = 0; i < 3; i++)
+        {
+            for (int k = 0; k < 3; k++)
+            {
                 CommanderMmr antiSynergyCommander = this.commanderRatings
                     .Where(c =>
                         ((c.Commander_1 == teamCommanders[i]) && (c.Commander_2 == enemyCommanders[k])) ||
                         ((c.Commander_2 == teamCommanders[i]) && (c.Commander_1 == enemyCommanders[k])))
                     .FirstOrDefault()!;
 
-                if (antiSynergyCommander.Commander_1 == antiSynergyCommander.Commander_2) {
+                if (antiSynergyCommander.Commander_1 == antiSynergyCommander.Commander_2)
+                {
                     antiSynergyCommander.AntiSynergyMmr_1 += commandersMmrDelta[i];
                     antiSynergyCommander.AntiSynergyMmr_2 += commandersMmrDelta[i];
                     antiSynergyCommander.AntiSynergyElo_1 = 0.5;
                     antiSynergyCommander.AntiSynergyElo_2 = 0.5;
-                } else {
-                    if ((antiSynergyCommander.Commander_1 == teamCommanders[i]) && (antiSynergyCommander.Commander_2 == enemyCommanders[k])) {
+                }
+                else
+                {
+                    if ((antiSynergyCommander.Commander_1 == teamCommanders[i]) && (antiSynergyCommander.Commander_2 == enemyCommanders[k]))
+                    {
                         antiSynergyCommander.AntiSynergyMmr_1 += commandersMmrDelta[i];
                         antiSynergyCommander.AntiSynergyElo_1 = ELO(antiSynergyCommander.AntiSynergyMmr_1, antiSynergyCommander.AntiSynergyMmr_2);
-                    } else if ((antiSynergyCommander.Commander_2 == teamCommanders[i]) && (antiSynergyCommander.Commander_1 == enemyCommanders[k])) {
+                    }
+                    else if ((antiSynergyCommander.Commander_2 == teamCommanders[i]) && (antiSynergyCommander.Commander_1 == enemyCommanders[k]))
+                    {
                         antiSynergyCommander.AntiSynergyMmr_2 += commandersMmrDelta[i];
                         antiSynergyCommander.AntiSynergyElo_2 = ELO(antiSynergyCommander.AntiSynergyMmr_2, antiSynergyCommander.AntiSynergyMmr_1);
-                    } else throw new Exception();
+                    }
+                    else throw new Exception();
                 }
 
-                if (i != k) {
+                if (i != k)
+                {
                     CommanderMmr synergyCommander = this.commanderRatings
                         .Where(c =>
                             ((c.Commander_1 == teamCommanders[i]) && (c.Commander_2 == teamCommanders[k])) ||
@@ -575,12 +643,16 @@ public class FireMmrService
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        if (!context.CommanderMmrs.Any()) {
+        if (!context.CommanderMmrs.Any())
+        {
             var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
 
-            for (int i = 0; i < allCommanders.Count; i++) {
-                for (int k = i; k < allCommanders.Count; k++) {
-                    context.CommanderMmrs.Add(new() {
+            for (int i = 0; i < allCommanders.Count; i++)
+            {
+                for (int k = i; k < allCommanders.Count; k++)
+                {
+                    context.CommanderMmrs.Add(new()
+                    {
                         SynergyMmr = FireMmrService.startMmr,
 
                         Commander_1 = allCommanders[i],
