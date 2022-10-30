@@ -71,6 +71,10 @@ public static class MauiProgram
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         context.Database.Migrate();
 
+        // ??? when to do
+        var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+        statsService.SeedPlayerInfos().GetAwaiter().GetResult();
+
         return builder.Build();
     }
 }

@@ -9,7 +9,7 @@ public partial class StatsService
 {
     public async Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default)
     {
-        var players = context.Players.AsNoTracking();
+        var players = GetQueriablePlayers(request);
 
         players = FilterRatingPlayers(players, request.Search);
 
@@ -18,9 +18,7 @@ public partial class StatsService
 
     public async Task<List<PlayerRatingDto>> GetRatings(RatingsRequest request, CancellationToken token = default)
     {
-        var players = context.Players
-            .OrderBy(o => o.PlayerId)
-            .AsNoTracking();
+        var players = GetQueriablePlayers(request);
 
         players = FilterRatingPlayers(players, request.Search);
         players = SetOrder(players, request.Orders);
@@ -30,6 +28,14 @@ public partial class StatsService
             .Take(request.Take)
             .ProjectTo<PlayerRatingDto>(mapper.ConfigurationProvider)
             .ToListAsync(token);
+    }
+
+    private IQueryable<Player> GetQueriablePlayers(RatingsRequest request)
+    {
+        return context.Players
+            .OrderBy(o => o.PlayerId)
+            .Where(x => x.GamesCmdr >= 20 || x.GamesStd >= 20)
+            .AsNoTracking();
     }
 
     private static IQueryable<Player> FilterRatingPlayers(IQueryable<Player> players, string? searchString)
@@ -45,13 +51,60 @@ public partial class StatsService
     {
         foreach (var order in orders)
         {
-            if (order.Ascending)
+            if (order.Property == "WinrateCmdr")
             {
-                players = players.AppendOrderBy(order.Property);
+                if (order.Ascending)
+                {
+                    players = players.OrderBy(o => o.WinsCmdr / o.GamesCmdr);
+                }
+                else
+                {
+                    players = players.OrderByDescending(o => o.WinsCmdr / o.GamesCmdr);
+                }
+            }
+            else if (order.Property == "MvprateCmdr")
+            {
+                if (order.Ascending)
+                {
+                    players = players.OrderBy(o => o.MvpCmdr / o.GamesCmdr);
+                }
+                else
+                {
+                    players = players.OrderByDescending(o => o.MvpCmdr / o.GamesCmdr);
+                }
+            }
+            else if (order.Property == "WinrateStd")
+            {
+                if (order.Ascending)
+                {
+                    players = players.OrderBy(o => o.WinsStd / o.GamesStd);
+                }
+                else
+                {
+                    players = players.OrderByDescending(o => o.WinsStd / o.GamesStd);
+                }
+            }
+            else if (order.Property == "MvprateStd")
+            {
+                if (order.Ascending)
+                {
+                    players = players.OrderBy(o => o.MvpStd / o.GamesStd);
+                }
+                else
+                {
+                    players = players.OrderByDescending(o => o.MvpStd / o.GamesStd);
+                }
             }
             else
             {
-                players = players.AppendOrderByDescending(order.Property);
+                if (order.Ascending)
+                {
+                    players = players.AppendOrderBy(order.Property);
+                }
+                else
+                {
+                    players = players.AppendOrderByDescending(order.Property);
+                }
             }
         }
         return players;

@@ -36,8 +36,8 @@ builder.Services.AddDbContext<ReplayContext>(options =>
         p.MigrationsAssembly("MysqlMigrations");
         p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
     })
-    .EnableDetailedErrors()
-    .EnableSensitiveDataLogging()
+    //.EnableDetailedErrors()
+    //.EnableSensitiveDataLogging()
     ;
 });
 
@@ -85,6 +85,10 @@ if (app.Environment.IsProduction())
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
 }
 
+// ??? when to do
+var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+statsService.SeedPlayerInfos().GetAwaiter().GetResult();
+
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
@@ -115,6 +119,10 @@ if (app.Environment.IsDevelopment())
 
     // var mmrServie = scope.ServiceProvider.GetRequiredService<FireMmrService>();
     // mmrServie.CalcMmmr().GetAwaiter().GetResult();
+
+    //var playerInfo = statsService.GetPlayerInfo(new() { 226401, 10188255, 8648278 }).GetAwaiter().GetResult();
+    //Console.WriteLine(playerInfo);
+    // statsService.SeedPlayerInfos().GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.

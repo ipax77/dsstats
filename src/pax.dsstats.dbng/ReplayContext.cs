@@ -33,11 +33,11 @@ public class ReplayContext : DbContext
         modelBuilder.Entity<Replay>(entity =>
         {
             entity.HasIndex(e => e.FileName);
+            entity.HasIndex(e => e.Maxkillsum);
             entity.HasIndex(e => new { e.GameTime, e.GameMode });
             entity.HasIndex(e => new { e.GameTime, e.GameMode, e.DefaultFilter });
             entity.HasIndex(e => new { e.GameTime, e.GameMode, e.WinnerTeam });
             entity.HasIndex(e => new { e.GameTime, e.GameMode, e.Maxleaver });
-
 
             entity.Property(p => p.ReplayHash)
                 .HasMaxLength(64)
@@ -52,7 +52,8 @@ public class ReplayContext : DbContext
         {
             entity.HasIndex(e => e.Race);
             entity.HasIndex(e => new { e.Race, e.OppRace });
-
+            entity.HasIndex(e => e.Kills);
+            entity.HasIndex(e => new { e.IsUploader, e.Team });
         });
 
         modelBuilder.Entity<Event>(entity =>

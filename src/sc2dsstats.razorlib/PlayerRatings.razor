@@ -8,8 +8,7 @@
 <style>
     .tableFixHead {
         overflow-y: auto;
-        height: 750px;
-        width: 550px;
+        height: 800px;
     }
 
         .tableFixHead thead th {
@@ -63,6 +62,12 @@
                 <col class="col">
                 <col class="col">
                 <col class="col">
+                <col class="col">
+                <col class="col">
+                <col class="col">
+                <col class="col">
+                <col class="col">
+                <col class="col">
             </colgroup>
             <thead>
                 <CascadingValue Value="ratingsRequest.Orders">
@@ -72,22 +77,54 @@
                                 ToonId
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Name"))">
+                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Name"))">
                             <SortArrow Property="Name">
                                 Name
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Mmr"))">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GamesCmdr"))">
+                            <SortArrow Property="GamesCmdr">
+                                Cmdr Games
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "Mmr"))">
                             <SortArrow Property="Mmr">
                                 Cmdr Rating
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "MmrStd"))">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "WinrateCmdr"))">
+                            <SortArrow Property="WinrateCmdr">
+                                Cmdr Winrate
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "MvprateCmdr"))">
+                            <SortArrow Property="MvprateCmdr">
+                                Cmdr Mvp
+                            </SortArrow>
+                        </th>
+
+
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GamesStd"))">
+                            <SortArrow Property="GamesStd">
+                                Std Games
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "MmrStd"))">
                             <SortArrow Property="MmrStd">
                                 Std Rating
                             </SortArrow>
                         </th>
-                    </tr>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "WinrateStd"))">
+                            <SortArrow Property="WinrateStd">
+                                Std Winrate
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "MvprateStd"))">
+                            <SortArrow Property="MvprateStd">
+                                Std Mvp
+                            </SortArrow>
+                        </th>
+                </tr>
                 </CascadingValue>
             </thead>
             <tbody>
@@ -96,9 +133,15 @@
                     <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings">
                         <tr class="pointer" @onclick="e => LoadPlayerChart(rating)">
                             <td>@rating.ToonId</td>
-                            <td><span class="text-truncate" style="display: block; width: 150px;">@rating.Name</span></td>
-                            <td>@Math.Round(rating.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
-                            <td>@Math.Round(rating.MmrStd, 2).ToString(CultureInfo.InvariantCulture)</td>
+                            <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Name</span></td>
+                            <td>@rating.GamesCmdr</td>
+                            <td class="text-warning">@Math.Round(rating.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
+                            <td>@GetPercentageString(rating.WinsCmdr, rating.GamesCmdr)</td>
+                            <td>@GetPercentageString(rating.MvpCmdr, rating.GamesCmdr)</td>
+                            <td>@rating.GamesStd</td>
+                            <td class="text-warning">@Math.Round(rating.MmrStd, 2).ToString(CultureInfo.InvariantCulture)</td>
+                            <td>@GetPercentageString(rating.WinsStd, rating.GamesStd)</td>
+                            <td>@GetPercentageString(rating.MvpStd, rating.GamesStd)</td>
                         </tr>
                     </Virtualize>
                 }
@@ -213,6 +256,15 @@
                 });
         }
         await Reload();
+    }
+
+    private string GetPercentageString(int wins, int games)
+    {
+        if (games == 0 || wins == 0)
+        {
+            return "0";
+        }
+        return $"{Math.Round(wins * 100.0 / games, 2).ToString(CultureInfo.InvariantCulture)}%";
     }
 
     private async ValueTask<ItemsProviderResult<PlayerRatingDto>> LoadRatings(ItemsProviderRequest request)
