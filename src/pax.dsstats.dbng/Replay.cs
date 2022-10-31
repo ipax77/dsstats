@@ -135,7 +135,7 @@ public class Replay
     public bool DefaultFilter { get; set; }
     public int Views { get; set; }
     public int Downloads { get; set; }
-    [MaxLength(2000)]
+    [MaxLength(4000)]
     public string Middle { get; set; } = null!;
     public string CommandersTeam1 { get; set; } = null!;
     public string CommandersTeam2 { get; set; } = null!;

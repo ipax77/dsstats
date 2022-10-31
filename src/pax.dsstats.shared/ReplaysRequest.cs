@@ -10,6 +10,7 @@ public record ReplaysRequest
     public string? Tournament { get; set; }
     public string? SearchString { get; set; }
     public string? SearchPlayers { get; set; }
+    public bool LinkSearch { get; set; }
     public string? ReplayHash { get; set; }
     public List<GameMode> GameModes { get; set; } = new();
 }

@@ -158,25 +158,31 @@ public class ReplayRepository : IReplayRepository
     private IQueryable<Replay> GetRequestReplays(ReplaysRequest request)
     {
 
-#pragma warning disable CS8602
-        var replays = (String.IsNullOrEmpty(request.Tournament), String.IsNullOrEmpty(request.SearchPlayers)) switch
+        //#pragma warning disable CS8602
+        //        var replays = (String.IsNullOrEmpty(request.Tournament), String.IsNullOrEmpty(request.SearchPlayers)) switch
+        //        {
+        //            (false, false) => context.Replays
+        //                                .Include(i => i.ReplayEvent)
+        //                                    .ThenInclude(i => i.Event)
+        //                                .Include(i => i.ReplayPlayers)
+        //                                .AsNoTracking(),
+        //            (false, true) => context.Replays
+        //                                .Include(i => i.ReplayEvent)
+        //                                    .ThenInclude(i => i.Event)
+        //                                .AsNoTracking(),
+        //            (true, true) => context.Replays
+        //                                .AsNoTracking(),
+        //            _ => context.Replays
+        //                .AsNoTracking()
+        //        };
+        //#pragma warning restore CS8602
+
+        var replays = context.Replays.AsNoTracking();
+
+        if (!String.IsNullOrEmpty(request.SearchPlayers))
         {
-            (true, true) => context.Replays
-                                .Include(i => i.ReplayEvent)
-                                    .ThenInclude(i => i.Event)
-                                .Include(i => i.ReplayPlayers)
-                                .AsNoTracking(),
-            (true, false) => context.Replays
-                                .Include(i => i.ReplayEvent)
-                                    .ThenInclude(i => i.Event)
-                                .AsNoTracking(),
-            (false, true) => context.Replays
-                                .Include(i => i.ReplayPlayers)
-                                .AsNoTracking(),
-            _ => context.Replays
-                .AsNoTracking()
-        };
-#pragma warning restore CS8602
+            replays = replays.Include(i => i.ReplayPlayers);
+        }
 
         replays = replays.Where(x => x.GameTime >= request.StartTime);
 
@@ -196,14 +202,6 @@ public class ReplayRepository : IReplayRepository
             replays = replays.Where(x => request.GameModes.Contains(x.GameMode));
         }
 
-        if (!String.IsNullOrEmpty(request.SearchPlayers))
-        {
-            foreach (string player in request.SearchPlayers.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-            {
-                replays = replays.Where(x => x.ReplayPlayers.Any(a => a.Name.ToUpper().Contains(player.ToUpper())));
-            }
-        }
-
         replays = SearchReplays(replays, request);
 
         return replays;
@@ -211,52 +209,86 @@ public class ReplayRepository : IReplayRepository
 
     private IQueryable<Replay> SearchReplays(IQueryable<Replay> replays, ReplaysRequest request)
     {
-        if (String.IsNullOrEmpty(request.SearchString))
+        if (String.IsNullOrEmpty(request.SearchPlayers) && String.IsNullOrEmpty(request.SearchString))
         {
             return replays;
         }
 
-        var searchstrings = request.SearchString.Split(' ').ToHashSet();
-        foreach (var search in searchstrings.Where(x => !String.IsNullOrEmpty(x)))
-        {
-            var cmdrs = GetSearchCommanders(search);
-            if (cmdrs.Any())
-            {
-                //replays = replays
-                //    .Where(x => (x.ReplayEvent != null && x.ReplayEvent.RunnerTeam.ToUpper().Contains(search.ToUpper()))
-                //        || (x.ReplayEvent != null && x.ReplayEvent.WinnerTeam.ToUpper().Contains(search.ToUpper()))
-                //        || (cmdrs.Any(a => x.CommandersTeam1.Contains(a)) || cmdrs.Any(a => x.CommandersTeam2.Contains(a)))
-                //    );
+        var searchStrings = request.SearchString?.Split(' ', StringSplitOptions.RemoveEmptyEntries).Distinct().ToList() ?? new List<string>();
+        var searchPlayers = request.SearchPlayers?.Split(' ', StringSplitOptions.RemoveEmptyEntries).Distinct().ToList() ?? new List<string>();
+        var searchCmdrs = searchStrings.SelectMany(s => GetSearchCommanders(s)).Distinct().ToList();
 
-                replays = replays
-                    .Where(x => (x.ReplayEvent != null && x.ReplayEvent.RunnerTeam.ToUpper().Contains(search.ToUpper()))
-                        || (x.ReplayEvent != null && x.ReplayEvent.WinnerTeam.ToUpper().Contains(search.ToUpper()))
-                        || x.CommandersTeam1.Contains(cmdrs.First())
-                        || x.CommandersTeam2.Contains(cmdrs.First())
-                    );
-            }
-            else
-            {
-                replays = replays
-                    .Where(x => (x.ReplayEvent != null && x.ReplayEvent.RunnerTeam.ToUpper().Contains(search.ToUpper()))
-                        || (x.ReplayEvent != null && x.ReplayEvent.WinnerTeam.ToUpper().Contains(search.ToUpper()))
-                    );
-            }
+
+        if (request.LinkSearch)
+        {
+            return LinkReplays(replays, searchCmdrs, searchPlayers);
+        }
+
+        replays = FilterCommanders(replays, searchCmdrs);
+        replays = FilterNames(replays, searchPlayers);
+
+        return replays;
+    }
+
+    private IQueryable<Replay> FilterCommanders(IQueryable<Replay> replays, List<Commander> searchCmdrs)
+    {
+        foreach (var cmdr in searchCmdrs)
+        {
+            replays = replays
+                .Where(x => x.CommandersTeam1.Contains($"|{(int)cmdr}|")
+                    || x.CommandersTeam2.Contains($"|{(int)cmdr}|")
+                );
         }
         return replays;
     }
 
-    private List<string> GetSearchCommanders(string searchString)
+    private IQueryable<Replay> FilterNames(IQueryable<Replay> replays, List<string> searchPlayers)
     {
-        var commanders = new List<string>();
+        foreach (var player in searchPlayers)
+        {
+            replays = replays.Where(x => x.ReplayPlayers.Any(a => a.Name.ToUpper().Contains(player.ToUpper())));
+        }
+        return replays;
+    }
+
+    private IQueryable<Replay> LinkReplays(IQueryable<Replay> replays, List<Commander> searchCmdrs, List<string> searchPlayers)
+    {
+        int links = Math.Min(searchCmdrs.Count, searchPlayers.Count);
+        if (links > 0)
+        {
+            for (int i = 0; i < links; i++)
+            {
+                var cmdr = searchCmdrs[i];
+                var name = searchPlayers[i].ToUpper();
+                replays = replays.Where(x => x.ReplayPlayers.Any(a => a.Race == cmdr && a.Name.ToUpper().Contains(name)));
+            }
+        }
+
+        if (searchCmdrs.Count > links)
+        {
+            replays = FilterCommanders(replays, searchCmdrs.Skip(links).ToList());
+        }
+
+        if (searchPlayers.Count > links)
+        {
+            replays = FilterNames(replays, searchPlayers.Skip(links).ToList());
+        }
+
+        return replays;
+    }
+
+    private List<Commander> GetSearchCommanders(string searchString)
+    {
+        List<Commander> cmdrs = new();
         foreach (var cmdr in Enum.GetValues(typeof(Commander)).Cast<Commander>())
         {
             if (cmdr.ToString().ToUpper().Contains(searchString.ToUpper()))
             {
-                commanders.Add($"|{(int)cmdr}|");
+                //commanders.Add($"|{(int)cmdr}|");
+                cmdrs.Add(cmdr);
             }
         }
-        return commanders;
+        return cmdrs;
     }
 
     public async Task<ICollection<string>> GetReplayPaths()
@@ -367,7 +399,7 @@ public class ReplayRepository : IReplayRepository
         }
 
         //await AddDbCommanderMmr((dbReplay.CommandersTeam1.TrimEnd('|') + dbReplay.CommandersTeam2).Trim('|'));
-        
+
 
         context.Replays.Add(dbReplay);
 

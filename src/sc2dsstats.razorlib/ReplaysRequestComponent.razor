@@ -20,8 +20,15 @@
             <div class="col-auto">
                 <label class="form-label">
                     Search:
-                    <InputText class="form-control" placeholder="Kerrigan Zagara" @bind-Value="replaysRequest.SearchString"></InputText>
+                    <InputText class="form-control" placeholder="Zagara Kerrigan" @bind-Value="replaysRequest.SearchString"></InputText>
                 </label>
+            </div>
+            <div class="col-auto align-self-center p-0">
+                <span class="oi @(replaysRequest.LinkSearch ? "oi-link-intact" : "oi-link-broken") text-light"
+                    style="font-size: 1rem;"
+                    data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Link cmdr and player"
+                    @onclick="SetLink">
+                </span>
             </div>
             <div class="col-auto">
                 <label class="form-label">
@@ -103,11 +110,19 @@
         }
     }
 
+    private void SetLink()
+    {
+        replaysRequest.LinkSearch = !replaysRequest.LinkSearch;
+        OnFieldChanged.InvokeAsync();
+    }
+
     private void Reset()
     {
         var defaultRequest = new ReplaysRequest();
         replaysRequest.Tournament = defaultRequest.Tournament;
         replaysRequest.SearchString = defaultRequest.SearchString;
+        replaysRequest.SearchPlayers = defaultRequest.SearchPlayers;
+        replaysRequest.LinkSearch = defaultRequest.LinkSearch;
         replaysRequest.StartTime = defaultRequest.StartTime;
         replaysRequest.EndTime = defaultRequest.EndTime;
         StateHasChanged();

@@ -36,8 +36,8 @@ builder.Services.AddDbContext<ReplayContext>(options =>
         p.MigrationsAssembly("MysqlMigrations");
         p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
     })
-    //.EnableDetailedErrors()
-    //.EnableSensitiveDataLogging()
+    .EnableDetailedErrors()
+    .EnableSensitiveDataLogging()
     ;
 });
 
@@ -67,6 +67,7 @@ builder.Services.AddTransient<IStatsRepository, StatsRepository>();
 builder.Services.AddTransient<BuildService>();
 
 builder.Services.AddHostedService<CacheBackgroundService>();
+builder.Services.AddHostedService<RatingsBackgroundService>();
 
 var app = builder.Build();
 
@@ -84,10 +85,6 @@ if (app.Environment.IsProduction())
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
 }
-
-// ??? when to do
-//var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-//statsService.SeedPlayerInfos().GetAwaiter().GetResult();
 
 // DEBUG
 if (app.Environment.IsDevelopment())
@@ -124,9 +121,6 @@ if (app.Environment.IsDevelopment())
     //Console.WriteLine(playerInfo);
     // statsService.SeedPlayerInfos().GetAwaiter().GetResult();
 }
-
-var mmrServie = scope.ServiceProvider.GetRequiredService<FireMmrService>();
-mmrServie.CalcMmmr().GetAwaiter().GetResult();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

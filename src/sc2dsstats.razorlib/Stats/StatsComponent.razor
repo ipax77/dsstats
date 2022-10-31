@@ -121,10 +121,10 @@
 
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
-        statsChart?.SetChart();
 
         if (!init)
         {
+            statsChart?.SetChart();
             await OnRequestChanged.InvokeAsync();
         }
     }
