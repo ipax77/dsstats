@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng;
 
@@ -54,6 +53,12 @@ public class ReplayContext : DbContext
             entity.HasIndex(e => new { e.Race, e.OppRace });
             entity.HasIndex(e => e.Kills);
             entity.HasIndex(e => new { e.IsUploader, e.Team });
+
+            entity.Property(p => p.LastSpawnHash)
+                .HasMaxLength(64)
+                .IsFixedLength();
+            entity.HasIndex(e => e.LastSpawnHash)
+                .IsUnique();
         });
 
         modelBuilder.Entity<Event>(entity =>

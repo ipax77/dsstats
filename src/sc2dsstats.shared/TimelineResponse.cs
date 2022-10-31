@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace sc2dsstats.shared
+﻿namespace sc2dsstats.shared
 {
     public class TimelineResponse : DsResponse
     {

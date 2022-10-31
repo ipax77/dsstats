@@ -41,9 +41,19 @@ public static class ReplayExtensions
         return GetMd5Hash(md5Hash, sb.ToString());
     }
 
-    public static string GenHash(this Spawn spawn)
+    public static string GenHash(this Spawn spawn, Replay replay)
     {
         StringBuilder sb = new();
+
+        foreach (var pl in replay.ReplayPlayers.OrderBy(o => o.GamePos))
+        {
+            //if (pl.Player == null)
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(replay));
+            //}
+            //sb.Append(pl.GamePos + pl.Race + pl.Player.ToonId);
+            sb.Append(pl.GamePos + pl.Race + pl.PlayerId);
+        }
 
         sb.Append(spawn.Gameloop);
         sb.Append(spawn.Income);

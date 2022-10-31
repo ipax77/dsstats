@@ -1,5 +1,4 @@
 ﻿using pax.dsstats.shared;
-using System.Collections.Generic;
 using System.Net.Http.Json;
 
 namespace pax.dsstats.web.Client.Services;

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace sc2dsstats.shared
+﻿namespace sc2dsstats.shared
 {
     public class DbStatsResult
     {

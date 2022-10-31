@@ -62,9 +62,6 @@ public static class MauiProgram
         // init services
         using var scope = builder.Services.BuildServiceProvider().CreateScope();
 
-        //var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
-        //mapper.ConfigurationProvider.AssertConfigurationIsValid();
-
         var userSettingsService = scope.ServiceProvider.GetRequiredService<UserSettingsService>();
         var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
 
@@ -74,6 +71,10 @@ public static class MauiProgram
         // ??? when to do
         //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
         //statsService.SeedPlayerInfos().GetAwaiter().GetResult();
+
+        // DEBUG
+        //var uploadService = scope.ServiceProvider.GetRequiredService<UploadService>();
+        //uploadService.ProduceTestData();
 
         return builder.Build();
     }

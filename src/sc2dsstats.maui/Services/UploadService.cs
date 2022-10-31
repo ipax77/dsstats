@@ -188,6 +188,40 @@ public class UploadService
             return Convert.ToBase64String(mso.ToArray());
         }
     }
+
+    internal void ProduceTestData()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var replays = context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(t => t.Spawns)
+                    .ThenInclude(t => t.Units)
+                        .ThenInclude(t => t.Unit)
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(t => t.Player)
+                .AsNoTracking()
+                .AsSplitQuery()
+            .OrderByDescending(o => o.GameTime)
+            .Take(33)
+            .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
+            .ToList();
+
+        replays.ForEach(f => f.FileName = string.Empty);
+
+        var base64string = GetBase64String(replays);
+        var testDataPath = "/data/ds/testdata";
+        File.WriteAllText(Path.Combine(testDataPath, "uploadtest.base64"), base64string);
+        base64string = GetBase64String(replays.Take(1).ToList());
+        File.WriteAllText(Path.Combine(testDataPath, "uploadtest2.base64"), base64string);
+
+        var testReplay1 = replays.ElementAt(7);
+        var testReplay2 = replays.ElementAt(17);
+
+        File.WriteAllText(Path.Combine(testDataPath, "replayDto1.json"), JsonSerializer.Serialize(new List<ReplayDto>() { testReplay1 }));
+        File.WriteAllText(Path.Combine(testDataPath, "replayDto2.json"), JsonSerializer.Serialize(new List<ReplayDto>() { testReplay2 }));
+    }
 }
 
 public enum UploadStatus

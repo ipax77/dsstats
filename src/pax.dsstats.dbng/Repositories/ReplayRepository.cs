@@ -1,12 +1,9 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng.Extensions;
-using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
-using System.Numerics;
 
 namespace pax.dsstats.dbng.Repositories;
 

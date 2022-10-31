@@ -83,41 +83,42 @@ public class LeaverTests : IDisposable
         string testFile = Startup.GetTestFilePath("replayDto2.json");
 
         Assert.True(File.Exists(testFile));
-        ReplayDto? replayDto = JsonSerializer.Deserialize<ReplayDto>(File.ReadAllText(testFile));
+        ReplayDto? replayDto = JsonSerializer.Deserialize<List<ReplayDto>>(File.ReadAllText(testFile))?.FirstOrDefault();
         Assert.NotNull(replayDto);
         if (replayDto == null)
         {
             return;
         }
 
-        replayDto.ReplayPlayers.ToList().ForEach(f => f.IsUploader = false);
+        (var leaverReplay, var leaverPlayer) = GetLeaverReplay(replayDto, replayDto.ReplayPlayers.ElementAt(0));
 
-        replayDto.ReplayPlayers.ElementAt(0).IsUploader = true;
-
-        var leaverReplay = GetLeaverReplay(replayDto);
+        leaverReplay.ReplayPlayers.ToList().ForEach(f => f.IsUploader = false);
+        leaverPlayer.IsUploader = true;
         await uploadService.ImportReplays(ZipReplay(leaverReplay), uploaderDto1.AppGuid);
         await Task.Delay(3000);
 
-        replayDto.ReplayPlayers.ElementAt(0).IsUploader = false;
-        replayDto.ReplayPlayers.ElementAt(1).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayDto), uploaderDto2.AppGuid);
-        replayDto.ReplayPlayers.ElementAt(1).IsUploader = false;
-        replayDto.ReplayPlayers.ElementAt(2).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayDto), uploaderDto3.AppGuid);
-        replayDto.ReplayPlayers.ElementAt(2).IsUploader = false;
-        replayDto.ReplayPlayers.ElementAt(3).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayDto), uploaderDto4.AppGuid);
-        replayDto.ReplayPlayers.ElementAt(3).IsUploader = false;
-        replayDto.ReplayPlayers.ElementAt(4).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayDto), uploaderDto5.AppGuid);
-        replayDto.ReplayPlayers.ElementAt(4).IsUploader = false;
-        replayDto.ReplayPlayers.ElementAt(5).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayDto), uploaderDto6.AppGuid);
+
+        var replayWithLeaver = GetReplayDtoWithLeaverPlayer(replayDto, leaverPlayer);
+        replayWithLeaver.ReplayPlayers.ElementAt(5).IsUploader = false;
+        replayWithLeaver.ReplayPlayers.ElementAt(0).IsUploader = true;
+        await uploadService.ImportReplays(ZipReplay(replayWithLeaver), uploaderDto2.AppGuid);
+        replayWithLeaver.ReplayPlayers.ElementAt(0).IsUploader = false;
+        replayWithLeaver.ReplayPlayers.ElementAt(1).IsUploader = true;
+        await uploadService.ImportReplays(ZipReplay(replayWithLeaver), uploaderDto3.AppGuid);
+        replayWithLeaver.ReplayPlayers.ElementAt(1).IsUploader = false;
+        replayWithLeaver.ReplayPlayers.ElementAt(2).IsUploader = true;
+        await uploadService.ImportReplays(ZipReplay(replayWithLeaver), uploaderDto4.AppGuid);
+        replayWithLeaver.ReplayPlayers.ElementAt(2).IsUploader = false;
+        replayWithLeaver.ReplayPlayers.ElementAt(3).IsUploader = true;
+        await uploadService.ImportReplays(ZipReplay(replayWithLeaver), uploaderDto5.AppGuid);
+        replayWithLeaver.ReplayPlayers.ElementAt(3).IsUploader = false;
+        replayWithLeaver.ReplayPlayers.ElementAt(4).IsUploader = true;
+        await uploadService.ImportReplays(ZipReplay(replayWithLeaver), uploaderDto6.AppGuid);
 
         await Task.Delay(5000);
 
         var countAfter = await context.Replays.CountAsync();
-        Assert.Equal(countBefore, countAfter - 1);
+        Assert.Equal(countBefore + 1, countAfter);
 
         var dbReplay = await context.Replays
             .Include(i => i.ReplayPlayers)
@@ -127,7 +128,15 @@ public class LeaverTests : IDisposable
         Assert.Equal(6, dbReplay?.ReplayPlayers.Count(c => c.IsUploader));
     }
 
-    private static ReplayDto GetLeaverReplay(ReplayDto replayDto, int mod = 2)
+    private static ReplayDto GetReplayDtoWithLeaverPlayer(ReplayDto replayDto, ReplayPlayerDto leaverPlayer)
+    {
+        var currentPlayer = replayDto.ReplayPlayers.First(f => f.GamePos == leaverPlayer.GamePos);
+        replayDto.ReplayPlayers.Remove(currentPlayer);
+        replayDto.ReplayPlayers.Add(leaverPlayer);
+        return replayDto;
+    }
+
+    private static (ReplayDto, ReplayPlayerDto) GetLeaverReplay(ReplayDto replayDto, ReplayPlayerDto leaver, int mod = 2)
     {
         DateTime newGameTime = replayDto.GameTime.AddSeconds(-replayDto.Duration / mod);
         int newDuration = replayDto.Duration / mod;
@@ -143,7 +152,7 @@ public class LeaverTests : IDisposable
                 Kills = player.Kills / mod,
                 UpgradesSpent = player.UpgradesSpent / mod,
                 Upgrades = player.Upgrades.Take(player.Upgrades.Count / mod).ToList(),
-                Spawns = player.Spawns.Take(player.Spawns.Count / mod).ToList(),
+                Spawns = player.Spawns,
                 Duration = newDuration,
                 PlayerResult = PlayerResult.None
             });
@@ -167,7 +176,7 @@ public class LeaverTests : IDisposable
 
         leaverReplay.ReplayHash = Data.GenHash(leaverReplay);
 
-        return leaverReplay;
+        return (leaverReplay, leaverReplay.ReplayPlayers.First(f => f.GamePos == leaver.GamePos));
     }
 
     private static UploaderDto GetUploaderDto(int num)

@@ -148,16 +148,16 @@ public partial class StatsService
                          Mvp = g.Count(c => c.Kills == c.Replay.Maxkillsum)
                      }
                     : from r in context.Replays
-                    from rp in r.ReplayPlayers
-                    where r.DefaultFilter && new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic }.Contains(r.GameMode)
-                    group rp by rp.Player.ToonId into g
-                    select new PlayerInfo
-                    {
-                        ToonId = g.Key,
-                        Games = g.Count(),
-                        Wins = g.Count(c => c.PlayerResult == PlayerResult.Win),
-                        Mvp = g.Count(c => c.Kills == c.Replay.Maxkillsum)
-                    };
+                      from rp in r.ReplayPlayers
+                      where r.DefaultFilter && new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic }.Contains(r.GameMode)
+                      group rp by rp.Player.ToonId into g
+                      select new PlayerInfo
+                      {
+                          ToonId = g.Key,
+                          Games = g.Count(),
+                          Wins = g.Count(c => c.PlayerResult == PlayerResult.Win),
+                          Mvp = g.Count(c => c.Kills == c.Replay.Maxkillsum)
+                      };
 
         return await infos.ToListAsync();
     }
@@ -166,8 +166,21 @@ public partial class StatsService
     {
         var teamGroup = std ?
                         from r in context.Replays
+                        from rp1 in r.ReplayPlayers
+                        where r.DefaultFilter && r.GameMode == GameMode.Standard
+                        join rp2 in context.ReplayPlayers
+                          on new { Id = r.ReplayId, rp1.Team }
+                          equals new { Id = rp2.ReplayId, rp2.Team }
+                        where rp2.ReplayPlayerId != rp1.ReplayPlayerId
+                        group new { rp1, rp2 } by rp1.Player.ToonId into g
+                        select new
+                        {
+                            ToonId = g.Key,
+                            Teamgames = g.Count(c => c.rp2.IsUploader)
+                        }
+                        : from r in context.Replays
                           from rp1 in r.ReplayPlayers
-                          where r.DefaultFilter && r.GameMode == GameMode.Standard
+                          where r.DefaultFilter && new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic }.Contains(r.GameMode)
                           join rp2 in context.ReplayPlayers
                             on new { Id = r.ReplayId, rp1.Team }
                             equals new { Id = rp2.ReplayId, rp2.Team }
@@ -177,20 +190,7 @@ public partial class StatsService
                           {
                               ToonId = g.Key,
                               Teamgames = g.Count(c => c.rp2.IsUploader)
-                          }
-                        : from r in context.Replays
-                        from rp1 in r.ReplayPlayers
-                        where r.DefaultFilter && new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic }.Contains(r.GameMode)
-                          join rp2 in context.ReplayPlayers
-                            on new { Id = r.ReplayId, rp1.Team }
-                            equals new { Id = rp2.ReplayId, rp2.Team }
-                        where rp2.ReplayPlayerId != rp1.ReplayPlayerId
-                        group new { rp1, rp2 } by rp1.Player.ToonId into g
-                        select new
-                        {
-                            ToonId = g.Key,
-                            Teamgames = g.Count(c => c.rp2.IsUploader)
-                        };
+                          };
 
         var teamGames = await teamGroup.ToListAsync();
         return teamGames.ToDictionary(k => k.ToonId, v => v.Teamgames);

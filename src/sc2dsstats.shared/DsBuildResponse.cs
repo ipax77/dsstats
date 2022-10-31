@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace sc2dsstats.shared
+﻿namespace sc2dsstats.shared
 {
     public class DsBuildResponse
     {

@@ -257,8 +257,8 @@ namespace MysqlMigrations.Migrations
 
                     b.Property<string>("Middle")
                         .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("varchar(2000)");
+                        .HasMaxLength(4000)
+                        .HasColumnType("varchar(4000)");
 
                     b.Property<int>("Minarmy")
                         .HasColumnType("int");
@@ -406,6 +406,11 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("Kills")
                         .HasColumnType("int");
 
+                    b.Property<string>("LastSpawnHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("char(64)")
+                        .IsFixedLength();
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -451,6 +456,9 @@ namespace MysqlMigrations.Migrations
                     b.HasKey("ReplayPlayerId");
 
                     b.HasIndex("Kills");
+
+                    b.HasIndex("LastSpawnHash")
+                        .IsUnique();
 
                     b.HasIndex("PlayerId");
 

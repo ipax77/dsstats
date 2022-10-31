@@ -176,6 +176,7 @@ public class ReplayPlayer
     public string TierUpgrades { get; set; } = null!;
     [MaxLength(300)]
     public string Refineries { get; set; } = null!;
+    public string? LastSpawnHash { get; set; }
     public int Downloads { get; set; }
     public int Views { get; set; }
     public int ReplayId { get; set; }

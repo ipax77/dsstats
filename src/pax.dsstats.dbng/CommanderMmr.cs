@@ -1,6 +1,4 @@
-﻿using pax.dsstats.dbng.Services;
-using pax.dsstats.shared;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng;
 

@@ -1,9 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
-using sc2dsstats.db;
-using sc2dsstats.shared;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Threading.Channels;
@@ -129,6 +126,7 @@ public partial class UploadService
         logger.LogWarning($"importing replays done: {DateTime.UtcNow}");
     }
 
+
     private async Task SaveReplay(Replay replay)
     {
         await saveReplaySs.WaitAsync();
@@ -137,19 +135,14 @@ public partial class UploadService
             using var scope = serviceProvider.CreateScope();
             using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-            var dupReplayExists = context.Replays.Any(f => f.ReplayHash == replay.ReplayHash);
-
-            if (!dupReplayExists)
+            var uploader = await GetReplayUploder(context, replay);
+            if (!await CheckIsDuplicate(context, replay, uploader))
             {
+                if (uploader != null)
+                {
+                    replay.Uploaders.Add(uploader);
+                }
                 context.Replays.Add(replay);
-                await AddUploader(context, replay);
-                await context.SaveChangesAsync();
-            }
-
-            else if (await HandleDuplicate(context, replay))
-            {
-                context.Replays.Add(replay);
-                await AddUploader(context, replay);
                 await context.SaveChangesAsync();
             }
         }
@@ -163,92 +156,14 @@ public partial class UploadService
         }
     }
 
-    private async Task AddUploader(ReplayContext context, Replay replay)
+
+    private static async Task<Uploader?> GetReplayUploder(ReplayContext context, Replay replay)
     {
         if (replay.UploaderId == 0)
         {
-            return;
+            return null;
         }
-        var uploader = await context.Uploaders.FirstOrDefaultAsync(f => f.UploaderId == replay.UploaderId);
-        if (uploader != null)
-        {
-            replay.Uploaders.Add(uploader);
-        }
+        return await context.Uploaders.FirstOrDefaultAsync(f => f.UploaderId == replay.UploaderId);
     }
 
-    public async Task<bool> HandleDuplicate(ReplayContext context, Replay replay)
-    {
-        var dupReplay = await context.Replays
-            .Include(i => i.Uploaders)
-            .Include(i => i.ReplayPlayers)
-            .FirstOrDefaultAsync(f => f.ReplayHash == replay.ReplayHash);
-
-        if (dupReplay == null)
-        {
-            return false;
-        }
-
-        if (dupReplay.GameTime - replay.GameTime > TimeSpan.FromDays(1))
-        {
-            logger.LogWarning($"false positive duplicate? {dupReplay.ReplayHash}");
-            return false;
-        }
-
-        if (replay.Duration > dupReplay.Duration + 60)
-        {
-            var delReplay = await context.Replays
-                .Include(i => i.Uploaders)
-                .Include(i => i.ReplayPlayers)
-                    .ThenInclude(i => i.Spawns)
-                        .ThenInclude(i => i.Units)
-                .Include(i => i.ReplayPlayers)
-                    .ThenInclude(i => i.Upgrades)
-
-                .FirstAsync(f => f.ReplayHash == replay.ReplayHash);
-
-            foreach (var uploaderReplayPlayer in delReplay.ReplayPlayers.Where(x => x.IsUploader))
-            {
-                var uploaderDto = replay.ReplayPlayers.FirstOrDefault(f => f.Name == uploaderReplayPlayer.Name);
-                if (uploaderDto == null)
-                {
-                    logger.LogWarning($"false positive duplicate (dtoPlayer)? {dupReplay.ReplayHash}");
-                    return false;
-                }
-                uploaderDto.IsUploader = true;
-            }
-
-            foreach (var uploader in delReplay.Uploaders)
-            {
-                replay.Uploaders.Add(uploader);
-            }
-
-            context.Replays.Remove(delReplay);
-            await context.SaveChangesAsync();
-            return true;
-        }
-        else
-        {
-            foreach (var uploaderReplayPlayer in replay.ReplayPlayers.Where(x => x.IsUploader))
-            {
-                var dbUploader = dupReplay.ReplayPlayers.FirstOrDefault(f => f.Name == uploaderReplayPlayer.Name);
-                if (dbUploader == null)
-                {
-                    logger.LogWarning($"false positive duplicate (dbPlayer)? {dupReplay.ReplayHash}");
-                    return false;
-                }
-                dbUploader.IsUploader = true;
-            }
-
-            if (replay.UploaderId > 0)
-            {
-                var uploader = await context.Uploaders.FirstOrDefaultAsync(f => f.UploaderId == replay.UploaderId);
-                if (uploader != null)
-                {
-                    dupReplay.Uploaders.Add(uploader);
-                }
-            }
-            await context.SaveChangesAsync();
-        }
-        return false;
-    }
 }

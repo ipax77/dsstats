@@ -16,7 +16,7 @@ public static class HelperService
 
     public static string GetPercentageString(int? wins, int? games)
     {
-        if (games == null || wins == null || games == 0  || wins == 0)
+        if (games == null || wins == null || games == 0 || wins == 0)
         {
             return "0";
         }

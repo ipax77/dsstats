@@ -7,7 +7,6 @@ using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.shared;
 using pax.dsstats.web.Server.Services;
-using System;
 using System.Data.Common;
 
 namespace dsstats.Tests;
