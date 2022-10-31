@@ -1,8 +1,11 @@
 ﻿@page "/ratings"
 @using pax.dsstats.dbng.Services
 @using pax.dsstats.shared;
+@using sc2dsstats.maui.Services;
 @inject MmrService MmrService
 @inject FireMmrService FireMmrService
+@inject IToastService ToastService
+@inject DecodeService DecodeService
 @implements IDisposable
 
 <div class="d-flex mb-2">
@@ -54,6 +57,10 @@
 
     private async void Recalculate()
     {
+        if (CantDoIt())
+        {
+            return;
+        }
         lock (lockobject)
         {
             if (isLoading)
@@ -70,12 +77,16 @@
         });
 
         isLoading = false;
-        
+
         await InvokeAsync(() => StateHasChanged());
     }
 
     private async void RecalculateFire()
     {
+        if (CantDoIt())
+        {
+            return;
+        }
         lock (lockobject)
         {
             if (isLoading)
@@ -99,6 +110,16 @@
         //{
         //    await playerRatings.Reload();
         //}
+    }
+
+    private bool CantDoIt()
+    {
+        if (DecodeService.IsRunning)
+        {
+            ToastService.ShowError("Please wait for the decoding to finish.", "Recalculate Error");
+            return true;
+        }
+        return false;
     }
 
     private async void MmrService_Recalculated(object? sender, EventArgs e)

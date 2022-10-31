@@ -8,11 +8,16 @@ internal class UserSettingsService
 {
     public static readonly string ConfigFile = Path.Combine(FileSystem.Current.AppDataDirectory, "config.json");
     public static UserSettings UserSettings = new UserSettings();
-    public static string AppVersion = "0.0.1";
     private SemaphoreSlim semaphoreSlim = new(1, 1);
-    private readonly bool debug = false;
+    private static readonly bool debug = false;
 
     public UserSettingsService()
+    {
+        ReloadConfig();
+        UserSettings.BattleNetInfos = GetBattleNetIds();
+    }
+
+    public static void ReloadConfig()
     {
         if (!File.Exists(ConfigFile) || debug)
         {
@@ -38,10 +43,9 @@ internal class UserSettingsService
                 }
             }
         }
-        UserSettings.BattleNetInfos = GetBattleNetIds();
     }
 
-    private void SaveConfig()
+    private static void SaveConfig()
     {
         var jsonConfig = JsonSerializer.Serialize(UserSettings);
         File.WriteAllText(ConfigFile, jsonConfig);
@@ -61,7 +65,7 @@ internal class UserSettingsService
         }
     }
 
-    internal void SetInitialNamesAndFolders()
+    internal static void SetInitialNamesAndFolders()
     {
         var sc2Dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Starcraft II");
 
