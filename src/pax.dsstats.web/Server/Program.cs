@@ -31,8 +31,8 @@ builder.Services.AddDbContext<ReplayContext>(options =>
         p.MigrationsAssembly("MysqlMigrations");
         p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
     })
-    .EnableDetailedErrors()
-    .EnableSensitiveDataLogging()
+    //.EnableDetailedErrors()
+    //.EnableSensitiveDataLogging()
     ;
 });
 
@@ -93,9 +93,6 @@ if (app.Environment.IsDevelopment())
     //var playerInfo = statsService.GetPlayerInfo(new() { 226401, 10188255, 8648278 }).GetAwaiter().GetResult();
     //Console.WriteLine(playerInfo);
     // statsService.SeedPlayerInfos().GetAwaiter().GetResult();
-
-    var uploadService = scope.ServiceProvider.GetRequiredService<UploadService>();
-    uploadService.CheckDuplicateSpeed().GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.
