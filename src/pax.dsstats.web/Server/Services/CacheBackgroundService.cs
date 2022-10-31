@@ -30,9 +30,6 @@ public class CacheBackgroundService : IHostedService, IDisposable
             uploadService.WeHaveNewReplays = false;
             var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
             statsService.ResetCache();
-
-            var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-            _ = mmrService.CalcMmmr();
         }
     }
 
