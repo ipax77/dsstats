@@ -20,7 +20,7 @@
                 <div class="collapse" id="chartDiv">
                     <div class="d-flex" style="min-width: 600px;">
                         <div class="w-100">
-                            <ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig"></ChartComponent>
+                            <ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="ChartEventTriggered"></ChartComponent>
                         </div>
                         <div>
                             <span class="oi oi-x text-danger pointer" data-bs-toggle="collapse" data-bs-target="#chartDiv" aria-expanded="false" aria-controls="chartDiv"></span>
@@ -153,6 +153,9 @@
     private ChartJsConfig chartJsConfig = null!;
     private ChartComponent? chartComponent;
 
+    private bool chartInit;
+    private bool dataInit;
+
     protected override void OnInitialized()
     {
         Init(replayDto);
@@ -179,7 +182,23 @@
         breakpoint = Breakpoint.All;
         breakpointsCount = replay.ReplayPlayers.Select(s => s.Spawns.Count).Max();
         chartJsConfig = GetMiddleChartConfig(replay.Middle, replay.Duration, replay.WinnerTeam, replay.Cannon, replay.Bunker);
-        chartComponent?.DrawChart();
+        dataInit = true;
+        if (chartInit && dataInit)
+        {
+            chartComponent?.DrawChart();
+        }
+    }
+
+    private void ChartEventTriggered(ChartJsEvent chartJsEvent)
+    {
+        if (chartJsEvent is ChartJsInitEvent initEvent)
+        {
+            chartInit = true;
+            if (chartInit && dataInit)
+            {
+                chartComponent?.DrawChart();
+            }
+        }
     }
 
     private void MoveSpawn(ChangeEventArgs e)

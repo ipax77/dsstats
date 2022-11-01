@@ -1,6 +1,8 @@
 ﻿@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.JSInterop
 @using pax.dsstats.shared;
 @using sc2dsstats.razorlib.Options
+@inject IJSRuntime IJSRuntime
 @inject IDataService dataService
 
 <style>
@@ -86,8 +88,8 @@
     <SelectComponent Label="Timespan" OnSelected="SelectTimespan" Options="timespans" IsSelected="@BuildRequest.Timespan"></SelectComponent>
     @*<SelectComponent Label="Player" OnSelected="SelectPlayer" Options="Players" IsSelected="@BuildRequest.PlayerNames.FirstOrDefault()"></SelectComponent>*@
     <div class="form-group" style="max-width: 250px;">
-        <select class="form-select" multiple aria-label="multiple" @onchange="PlayersSelected">
-            <option selected>All Players</option>
+        <select id="playerselect" class="form-select" multiple aria-label="multiple" @onchange="PlayersSelected">
+            <option>All Players</option>
             @foreach (var player in Players)
             {
                 <option value="@player">@player</option>
@@ -106,18 +108,18 @@
         <div class="col-auto isdesktop">
             <CmdrSelect Label="Vs" IsSelected="@BuildRequest.Versus" OnCmdrSelected="SelectOpponent"></CmdrSelect>
         </div>
-        <div class="col-auto">
-            <h3>
+        <div class="col-auto" style="max-width: 600px;">
+            <p class="fw-bold text-wrap h3">
                 <span class="text-warning">
                     @(
-                        !BuildRequest.PlayerNames.Any() ? "Player" : BuildRequest.PlayerNames.First()
+                        !BuildRequest.PlayerNames.Any() ? "Player" : String.Join(", ", BuildRequest.PlayerNames)
                         )'s
-                </span> average unit count for <span class="text-danger">
+                </span> average unit count for <span class="text-danger text-nowrap">
                     @build.Interest @(
                 BuildRequest.Versus == Commander.None ? "" : $" vs {build.Versus}"
                 )
                 </span>
-            </h3>
+            </p>
             <div class="row mb-2">
                 @if (isLoading)
                 {
@@ -158,19 +160,6 @@
                 var bp = build.Breakpoints.FirstOrDefault(f => f.Breakpoint == Breakpoint);
                 int i = 0;
             }
-            @*            @if (bp != null && bp.Count > 0)
-        {
-        <div class="row mb-2">
-        <h4 class="col-auto"><span class="badge bg-info">Replays: @bp.Count</span></h4>
-        <h4 class="col-auto"><span class="badge bg-info">WR: @(
-        ((double)bp.Wins * 100 / (double)bp.Count).ToString("N2")
-        )%</span></h4>
-        <h4 class="col-auto"><span class="badge bg-info">Dur: @TimeSpan.FromSeconds(bp.Duration / bp.Count).ToString(@"mm\:ss")min</span></h4>
-        <h4 class="col-auto"><span class="badge bg-info">Gas: @(
-        ((double)bp.Gas / (double)bp.Count).ToString("N2")
-        )</span></h4>
-        </div>
-        }*@
             <table class="table table-dark table-striped">
                 <thead>
                     <tr>
@@ -268,8 +257,6 @@
         "ALL"
     };
 
-
-
     protected override void OnInitialized()
     {
         _ = LoadData();
@@ -284,6 +271,8 @@
                 _ = ShowReplay(build.Replays.OrderByDescending(o => o.Gametime).First().Hash);
             }
             FirstRender = true;
+
+            IJSRuntime.InvokeVoidAsync("setMultiSelect", "playerselect", BuildRequest.PlayerNames.Any() ? BuildRequest.PlayerNames.ToArray() : new string[1] { "All Players" });
         }
 
         base.OnAfterRender(firstRender);
@@ -361,6 +350,7 @@
             }
             _ = LoadData();
         }
+        IJSRuntime.InvokeVoidAsync("setMultiSelect", "playerselect", BuildRequest.PlayerNames.Any() ? BuildRequest.PlayerNames.ToArray() : new string[1] { "All Players" });
     }
 
     async Task ShowReplay(string hash)

@@ -1,5 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms;
+@using Microsoft.JSInterop;
 @using pax.dsstats.shared;
+@inject IJSRuntime IJSRuntime
 @implements IDisposable
 
 <EditForm EditContext="editContext">
@@ -40,7 +42,7 @@
         <div class="col-auto">
             <div class="form-check form-switch">
                 <label class="form-check-label">
-                    Uploaders
+                    @(IsMaui ? "Players" : "Uploaders")
                     <InputCheckbox class="form-check-input" @bind-Value="StatsRequest.Uploaders">
                     </InputCheckbox>
                 </label>
@@ -61,10 +63,10 @@
             </div>
         </div>
         <div class="col-auto">
-            <select class="form-select" multiple aria-label="multiple" @onchange="GameModeChange">
+            <select id="gamemodeselect" class="form-select" multiple aria-label="multiple" @onchange="GameModeChange">
                 <option>All GameModes</option>
-                <option selected value="@GameMode.Commanders">@GameMode.Commanders</option>
-                <option selected value="@GameMode.CommandersHeroic">@GameMode.CommandersHeroic</option>
+                <option value="@GameMode.Commanders">@GameMode.Commanders</option>
+                <option value="@GameMode.CommandersHeroic">@GameMode.CommandersHeroic</option>
                 <option value="@GameMode.Standard">@GameMode.Standard</option>
                 <option value="@GameMode.BrawlCommanders">@GameMode.BrawlCommanders</option>
                 <option value="@GameMode.Switch">@GameMode.Switch</option>
@@ -87,6 +89,9 @@
     [Parameter]
     public EventCallback OnChartOptionsChanged { get; set; }
 
+    [Parameter]
+    public bool IsMaui { get; set; }
+
     EditContext editContext = null!;
 
     protected override void OnInitialized()
@@ -94,6 +99,15 @@
         editContext = new EditContext(StatsRequest);
         editContext.OnFieldChanged += FieldChanged;
         base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            IJSRuntime.InvokeVoidAsync("setMultiSelect", "gamemodeselect", StatsRequest.GameModes.Select(s => s.ToString()).ToArray());
+        }
+        base.OnAfterRender(firstRender);
     }
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)

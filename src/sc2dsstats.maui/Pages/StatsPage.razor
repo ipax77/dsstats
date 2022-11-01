@@ -3,7 +3,7 @@
 
 <PageTitle>Stats</PageTitle>
 
-<sc2dsstats.razorlib.Stats.StatsComponent StatsRequest="statsRequest"></sc2dsstats.razorlib.Stats.StatsComponent>
+<sc2dsstats.razorlib.Stats.StatsComponent StatsRequest="statsRequest" IsMaui="true"></sc2dsstats.razorlib.Stats.StatsComponent>
 
 @code {
     StatsRequest statsRequest = new()
@@ -11,7 +11,7 @@
         StatsMode = StatsMode.Winrate,
         StartTime = new DateTime(2021, 1, 1),
         EndTime = DateTime.Today,
-        Uploaders = false,
+        Uploaders = true,
         DefaultFilter = true
     };
 }

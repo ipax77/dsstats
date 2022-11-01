@@ -21,3 +21,15 @@ function ReplayModalClose() {
         replayModal.hide();
     }
 }
+
+function setMultiSelect(id, selectedValues) {
+    var multiSelect = document.querySelector('#' + id);
+    var options = Array.from(multiSelect.options);
+    options.forEach(function (option) {
+        if (selectedValues.includes(option.value)) {
+            option.selected = true;
+        } else {
+            option.selected = false;
+        }
+    });
+}

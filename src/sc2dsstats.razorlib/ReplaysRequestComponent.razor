@@ -1,6 +1,8 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
 @using pax.dsstats.shared
 @inject IDataService dataService
+@inject IJSRuntime IJSRuntime
 
 <div>
     <EditForm EditContext="editContext">
@@ -49,8 +51,8 @@
                 </label>
             </div>
             <div class="col-auto">
-                <select class="form-select" multiple aria-label="multiple" @onchange="GameModeChange">
-                    <option selected>All GameModes</option>
+                <select id="gamemodeselect" class="form-select" multiple aria-label="multiple" @onchange="GameModeChange">
+                    <option>All GameModes</option>
                     @foreach (GameMode gameMode in Enum.GetValues(typeof(GameMode)))
                     {
                         @if (gameMode != GameMode.None)
@@ -88,6 +90,15 @@
         await base.OnInitializedAsync();
     }
 
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            IJSRuntime.InvokeVoidAsync("setMultiSelect", "gamemodeselect", replaysRequest.GameModes.Any() ? replaysRequest.GameModes.Select(s => s.ToString()).ToArray() : new string[1] { "All GameModes" });
+    }
+        base.OnAfterRender(firstRender);
+    }
+
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
         OnFieldChanged.InvokeAsync();
@@ -123,8 +134,9 @@
         replaysRequest.SearchString = defaultRequest.SearchString;
         replaysRequest.SearchPlayers = defaultRequest.SearchPlayers;
         replaysRequest.LinkSearch = defaultRequest.LinkSearch;
-        replaysRequest.StartTime = defaultRequest.StartTime;
+        replaysRequest.StartTime = new DateTime(2018, 1, 1);
         replaysRequest.EndTime = defaultRequest.EndTime;
+        replaysRequest.GameModes = defaultRequest.GameModes;
         StateHasChanged();
         OnFieldChanged.InvokeAsync();
     }

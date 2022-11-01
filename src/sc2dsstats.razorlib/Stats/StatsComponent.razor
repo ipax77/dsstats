@@ -1,11 +1,11 @@
 ﻿@using Microsoft.Extensions.Logging
 @using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
 @inject IDataService dataService
-@inject ILogger<StatsComponent> logger
 
 <div>
     <CascadingValue Value="StatsRequest">
-        <StatsRequestComponent OnRequestChanged="RequestChanged" OnChartOptionsChanged="ChartOptionsChanged"></StatsRequestComponent>
+        <StatsRequestComponent OnRequestChanged="RequestChanged" OnChartOptionsChanged="ChartOptionsChanged" IsMaui="IsMaui"></StatsRequestComponent>
     </CascadingValue>
 </div>
 
@@ -22,18 +22,23 @@
     else
     {
         <div>
-            <span class="badge text-bg-primary" style="font-size: 1rem;">Replays @(StatsRequest.DefaultFilter ? statsResponse.CountResponse.DefaultFilter : statsResponse.CountResponse.Count)</span>
+            <span class="badge text-bg-primary display-block" style="font-size: 1rem;">Replays<br/>@(StatsRequest.DefaultFilter ? statsResponse.CountResponse.DefaultFilter : statsResponse.CountResponse.Count)</span>
         </div>
         <div>
-            <span class="badge text-bg-primary text-success ms-1" style="font-size: 1rem;">Filtered @(StatsRequest.DefaultFilter ? statsResponse.CountResponse.Count - statsResponse.CountResponse.DefaultFilter : 0)</span>
+            <span class="badge text-bg-primary display-block text-success ms-1" style="font-size: 1rem;">Filtered<br/>@(StatsRequest.DefaultFilter ? statsResponse.CountResponse.Count - statsResponse.CountResponse.DefaultFilter : 0)</span>
         </div>
         <div>
-            <span class="badge text-bg-primary text-warning ms-1" style="font-size: 1rem;">Leaver @statsResponse.CountResponse.Leaver</span>
+            <span class="badge text-bg-primary display-block text-warning ms-1" style="font-size: 1rem;">Leaver<br/>@statsResponse.CountResponse.Leaver</span>
         </div>
         <div>
-            <span class="badge text-bg-primary text-danger ms-1" style="font-size: 1rem;">Quits @statsResponse.CountResponse.Quits</span>
+            <span class="badge text-bg-primary display-block text-danger ms-1" style="font-size: 1rem;">Quits<br/>@statsResponse.CountResponse.Quits</span>
         </div>
-
+        <div>
+            <span class="badge text-bg-primary display-block ms-1" style="font-size: 1rem;">∅ Winrate<br />@HelperService.GetPercentageString(statsResponse.Items.Sum(s => s.Wins), statsResponse.Items.Sum(s => s.Matchups))</span>
+        </div>
+        <div>
+            <span class="badge text-bg-primary text-light display-block ms-1" style="font-size: 1rem;">∅ Duration<br />@TimeSpan.FromSeconds(statsResponse.AvgDuration).ToString(@"mm\:ss")min</span>
+        </div>
     }
     @if (isLoading)
     {
@@ -50,7 +55,7 @@
             <div class="col-auto">
                 <StatsTable OnCommanderClicked="CommanderClicked"></StatsTable>
             </div>
-            <div class="col-8">
+            <div class="col">
                 <StatsChart OnLabelClicked="CommanderClicked" @ref="statsChart"></StatsChart>
             </div>
         </div>
@@ -64,6 +69,9 @@
 
     [Parameter]
     public EventCallback OnRequestChanged { get; set; }
+
+    [Parameter]
+    public bool IsMaui { get; set; }
 
     private bool isLoading = false;
     private StatsResponse? statsResponse;
@@ -103,8 +111,6 @@
             }
             isLoading = true;
         }
-
-        logger.LogWarning($"{DateTime.UtcNow} loading stats data ...");
 
         if (StatsRequest.StatsMode == StatsMode.Timeline)
         {
