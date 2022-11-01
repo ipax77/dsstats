@@ -10,14 +10,12 @@ namespace SqliteMigrations.Migrations
         {
             migrationBuilder.CreateTable(
                 name: "SkipReplays",
-                columns: table => new
-                {
+                columns: table => new {
                     SkipReplayId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Path = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_SkipReplays", x => x.SkipReplayId);
                 });
         }

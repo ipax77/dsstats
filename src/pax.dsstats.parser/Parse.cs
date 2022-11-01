@@ -97,20 +97,17 @@ public static partial class Parse
 
     public static async Task<Sc2Replay> GetSc2Replay(string replayPath, string? assemblyPath = null)
     {
-        if (assemblyPath == null)
-        {
+        if (assemblyPath == null) {
             assemblyPath = _assemblyPath;
         }
 
-        if (assemblyPath == null)
-        {
+        if (assemblyPath == null) {
             throw new ArgumentNullException(nameof(assemblyPath));
         }
 
         ReplayDecoder decoder = new(assemblyPath);
 
-        ReplayDecoderOptions options = new ReplayDecoderOptions()
-        {
+        ReplayDecoderOptions options = new ReplayDecoderOptions() {
             Initdata = true,
             Details = true,
             Metadata = true,
@@ -121,8 +118,7 @@ public static partial class Parse
         };
 
         var replay = await decoder.DecodeAsync(replayPath, options);
-        if (replay == null)
-        {
+        if (replay == null) {
             throw new ArgumentNullException(nameof(replay));
         }
 
@@ -132,18 +128,15 @@ public static partial class Parse
 
     public static DsReplay? GetDsReplay(Sc2Replay sc2Replay)
     {
-        if (sc2Replay.Details == null)
-        {
+        if (sc2Replay.Details == null) {
             throw new ArgumentNullException(nameof(sc2Replay.Details));
         }
 
-        if (sc2Replay.TrackerEvents == null)
-        {
+        if (sc2Replay.TrackerEvents == null) {
             throw new ArgumentNullException(nameof(sc2Replay.TrackerEvents));
         }
 
-        if (sc2Replay.Metadata == null)
-        {
+        if (sc2Replay.Metadata == null) {
             throw new ArgumentNullException(nameof(sc2Replay.Metadata));
         }
 
@@ -158,8 +151,7 @@ public static partial class Parse
         // ParseTrackerEvents(replay, sc2Replay.TrackerEvents);
         ParseTrackerEventsNg(replay, sc2Replay.TrackerEvents);
 
-        if (replay.Duration == 0)
-        {
+        if (replay.Duration == 0) {
             replay.Duration = replay.Players.Select(s => s.Duration).Max();
         }
 
@@ -168,10 +160,8 @@ public static partial class Parse
 
     private static void ParseMetadata(DsReplay replay, Metadata metadata)
     {
-        foreach (MetadataPlayer metaPlayer in metadata.Players)
-        {
-            if (replay.Players.Count < metaPlayer.PlayerID)
-            {
+        foreach (MetadataPlayer metaPlayer in metadata.Players) {
+            if (replay.Players.Count < metaPlayer.PlayerID) {
                 continue;
             }
 
@@ -237,8 +227,7 @@ public static partial class Parse
 
         if (name == race) return name;
 
-        if (race != null && race != "Zerg")
-        {
+        if (race != null && race != "Zerg") {
             if (name.StartsWith(race)) return name.Substring(race.Length);
             if (name.EndsWith(race)) return name[..^race.Length];
         }

@@ -24,8 +24,7 @@ public class BuildService
     {
         var memKey = buildRequest.GenMemKey();
 
-        if (!memoryCache.TryGetValue(memKey, out BuildResponse buildResponse))
-        {
+        if (!memoryCache.TryGetValue(memKey, out BuildResponse buildResponse)) {
             buildResponse = await GetBuildFromDb(buildRequest, units);
 
             memoryCache.Set(memKey, buildResponse, new MemoryCacheEntryOptions()
@@ -38,8 +37,7 @@ public class BuildService
 
     public async Task SeedBuildsCache()
     {
-        BuildRequest request = new()
-        {
+        BuildRequest request = new() {
             PlayerNames = new() { "PAX" },
         };
 
@@ -52,10 +50,8 @@ public class BuildService
         Stopwatch sw = new();
         sw.Start();
 
-        foreach (Commander cmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
-        {
-            foreach (Commander cmdrVs in Data.GetCommanders(Data.CmdrGet.All))
-            {
+        foreach (Commander cmdr in Data.GetCommanders(Data.CmdrGet.NoNone)) {
+            foreach (Commander cmdrVs in Data.GetCommanders(Data.CmdrGet.All)) {
                 request.Interest = cmdr;
                 request.Versus = cmdrVs;
                 await GetBuild(request, units);
@@ -75,17 +71,13 @@ public class BuildService
             .AsNoTracking();
 
         replays = replays.Where(x => x.GameTime >= request.StartTime);
-        if (request.EndTime != DateTime.Today)
-        {
+        if (request.EndTime != DateTime.Today) {
             replays = replays.Where(x => x.GameTime <= request.EndTime);
         }
 
-        if ((int)request.Interest > 3)
-        {
+        if ((int)request.Interest > 3) {
             replays = replays.Where(x => x.GameMode == GameMode.Commanders || x.GameMode == GameMode.CommandersHeroic);
-        }
-        else
-        {
+        } else {
             replays = replays.Where(x => x.GameMode == GameMode.Standard);
         }
 
@@ -96,8 +88,7 @@ public class BuildService
         var uniqueBuilds = builds.GroupBy(g => g.Id).Select(s => s.First()).ToList();
 
 
-        var response = new BuildResponse()
-        {
+        var response = new BuildResponse() {
             Interest = request.Interest,
             Versus = request.Versus,
             Count = uniqueBuilds.Count,
@@ -105,8 +96,7 @@ public class BuildService
             Duration = uniqueBuilds.Sum(s => s.Duration),
             Gas = uniqueBuilds.Sum(s => s.GasCount),
             Upgrades = uniqueBuilds.Sum(s => s.UpgradeSpending),
-            Replays = uniqueBuilds.Select(t => new BuildResponseReplay()
-            {
+            Replays = uniqueBuilds.Select(t => new BuildResponseReplay() {
                 Hash = t.Hash,
                 Gametime = t.Gametime
             }).ToList(),
@@ -114,12 +104,10 @@ public class BuildService
         };
 
 
-        foreach (Breakpoint bp in Enum.GetValues(typeof(Breakpoint)))
-        {
+        foreach (Breakpoint bp in Enum.GetValues(typeof(Breakpoint))) {
             var bpReplays = builds.Where(x => Data.GetBreakpoint(x.Gameloop) == bp).ToList();
 
-            response.Breakpoints.Add(new BuildResponseBreakpoint()
-            {
+            response.Breakpoints.Add(new BuildResponseBreakpoint() {
                 Breakpoint = bp.ToString(),
                 Count = bpReplays.Count,
                 Wins = bpReplays.Where(x => x.Result == PlayerResult.Win).Count(),
@@ -134,15 +122,13 @@ public class BuildService
 
     private static IQueryable<BuildHelper> GetBuildResultQuery(IQueryable<Replay> replays, BuildRequest request)
     {
-        return (request.Versus == Commander.None, !request.PlayerNames.Any()) switch
-        {
+        return (request.Versus == Commander.None, !request.PlayerNames.Any()) switch {
             (true, true) => from r in replays
                             from p in r.ReplayPlayers
                             from s in p.Spawns
                             from u in s.Units
                             where p.Race == request.Interest && p.IsUploader
-                            select new BuildHelper()
-                            {
+                            select new BuildHelper() {
                                 Id = r.ReplayId,
                                 Hash = r.ReplayHash,
                                 Gametime = r.GameTime,
@@ -158,8 +144,7 @@ public class BuildService
                              from s in p.Spawns
                              from u in s.Units
                              where p.Race == request.Interest && request.PlayerNames.Contains(p.Name)
-                             select new BuildHelper()
-                             {
+                             select new BuildHelper() {
                                  Id = r.ReplayId,
                                  Hash = r.ReplayHash,
                                  Gametime = r.GameTime,
@@ -175,8 +160,7 @@ public class BuildService
                              from s in p.Spawns
                              from u in s.Units
                              where p.Race == request.Interest && p.OppRace == request.Versus && p.IsUploader
-                             select new BuildHelper()
-                             {
+                             select new BuildHelper() {
                                  Id = r.ReplayId,
                                  Hash = r.ReplayHash,
                                  Gametime = r.GameTime,
@@ -192,8 +176,7 @@ public class BuildService
                               from s in p.Spawns
                               from u in s.Units
                               where p.Race == request.Interest && p.OppRace == request.Versus && request.PlayerNames.Contains(p.Name)
-                              select new BuildHelper()
-                              {
+                              select new BuildHelper() {
                                   Id = r.ReplayId,
                                   Hash = r.ReplayHash,
                                   Gametime = r.GameTime,
@@ -211,26 +194,19 @@ public class BuildService
     {
         Dictionary<int, int> unitSums = new();
 
-        foreach (var spawn in spawnsUnits)
-        {
-            foreach (var unit in spawn)
-            {
-                if (!unitSums.ContainsKey(unit.Key))
-                {
+        foreach (var spawn in spawnsUnits) {
+            foreach (var unit in spawn) {
+                if (!unitSums.ContainsKey(unit.Key)) {
                     unitSums[unit.Key] = unit.Value;
-                }
-                else
-                {
+                } else {
                     unitSums[unit.Key] += unit.Value;
                 }
             }
         }
         List<BuildResponseBreakpointUnit> bpUnits = new();
 
-        foreach (var ent in unitSums)
-        {
-            bpUnits.Add(new()
-            {
+        foreach (var ent in unitSums) {
+            bpUnits.Add(new() {
                 Name = await GetUnitName(ent.Key, units),
                 Count = ent.Value
             });
@@ -241,14 +217,10 @@ public class BuildService
 
     private async Task<string> GetUnitName(int unitId, Dictionary<int, string>? units = null)
     {
-        if (units != null)
-        {
-            if (units.ContainsKey(unitId))
-            {
+        if (units != null) {
+            if (units.ContainsKey(unitId)) {
                 return units[unitId];
-            }
-            else
-            {
+            } else {
                 return "";
             }
         }

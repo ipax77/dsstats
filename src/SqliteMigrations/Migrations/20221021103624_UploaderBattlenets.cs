@@ -18,15 +18,13 @@ namespace SqliteMigrations.Migrations
 
             migrationBuilder.CreateTable(
                 name: "BattleNetInfos",
-                columns: table => new
-                {
+                columns: table => new {
                     BattleNetInfoId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     BattleNetId = table.Column<int>(type: "INTEGER", nullable: false),
                     UploaderId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_BattleNetInfos", x => x.BattleNetInfoId);
                     table.ForeignKey(
                         name: "FK_BattleNetInfos_Uploaders_UploaderId",

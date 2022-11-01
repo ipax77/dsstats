@@ -17,8 +17,7 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
-            .ConfigureFonts(fonts =>
-            {
+            .ConfigureFonts(fonts => {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
             });
 
@@ -30,8 +29,7 @@ public static class MauiProgram
 #endif
 
         builder.Services.AddDbContext<ReplayContext>(options => options
-            .UseSqlite($"Data Source={Path.Combine(FileSystem.Current.AppDataDirectory, "dsstats2.db")}", sqlOptions =>
-            {
+            .UseSqlite($"Data Source={Path.Combine(FileSystem.Current.AppDataDirectory, "dsstats2.db")}", sqlOptions => {
                 sqlOptions.MigrationsAssembly("SqliteMigrations");
                 sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
             })

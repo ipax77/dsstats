@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 using System.Text.RegularExpressions;
-using Windows.Media.Devices.Core;
 
 namespace sc2dsstats.maui.Services;
 
@@ -19,25 +18,18 @@ internal class UserSettingsService
 
     public static void ReloadConfig()
     {
-        if (!File.Exists(ConfigFile) || debug)
-        {
+        if (!File.Exists(ConfigFile) || debug) {
             SetInitialNamesAndFolders();
             SaveConfig();
-        }
-        else
-        {
+        } else {
             var userSettings = JsonSerializer.Deserialize<UserSettings>(File.ReadAllText(ConfigFile));
-            if (userSettings == null)
-            {
+            if (userSettings == null) {
                 SetInitialNamesAndFolders();
                 SaveConfig();
-            }
-            else
-            {
+            } else {
                 UserSettings = userSettings;
 
-                if (UserSettings.AllowCleanUploads)
-                {
+                if (UserSettings.AllowCleanUploads) {
                     UserSettings.AutoScanForNewReplays = true;
                     UserSettings.AllowUploads = true;
                 }
@@ -55,12 +47,9 @@ internal class UserSettingsService
     {
         await semaphoreSlim.WaitAsync();
 
-        try
-        {
+        try {
             SaveConfig();
-        }
-        finally
-        {
+        } finally {
             semaphoreSlim.Release();
         }
     }
@@ -69,30 +58,25 @@ internal class UserSettingsService
     {
         var sc2Dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Starcraft II");
 
-        if (Directory.Exists(sc2Dir))
-        {
+        if (Directory.Exists(sc2Dir)) {
             HashSet<string> playerNames = new();
             HashSet<string> folderNames = new();
 
-            foreach (var file in Directory.GetFiles(sc2Dir, "*.lnk", SearchOption.TopDirectoryOnly))
-            {
+            foreach (var file in Directory.GetFiles(sc2Dir, "*.lnk", SearchOption.TopDirectoryOnly)) {
                 var target = GetShortcutTarget(file);
 
-                if (target == null)
-                {
+                if (target == null) {
                     continue;
                 }
 
                 Match m = Regex.Match(Path.GetFileName(file), @"(.*)_\d+\@\d+\.lnk$", RegexOptions.IgnoreCase);
-                if (m.Success)
-                {
+                if (m.Success) {
                     playerNames.Add(m.Groups[1].Value);
                 }
 
                 var replayDir = Path.Combine(target, "Replays", "Multiplayer");
 
-                if (Directory.Exists(replayDir))
-                {
+                if (Directory.Exists(replayDir)) {
                     folderNames.Add(replayDir);
                 }
             }
@@ -112,41 +96,32 @@ internal class UserSettingsService
         var sc2Dir = Path.Combine(docDir, "Starcraft II");
         var sc2AccDir = Path.Combine(sc2Dir, "Accounts");
 
-        if (!Directory.Exists(sc2AccDir))
-        {
+        if (!Directory.Exists(sc2AccDir)) {
             return new();
         }
 
         var sc2AccDirs = Directory.GetDirectories(sc2AccDir);
 
         List<BattleNetInfo> battleNetInfos = new();
-        
-        foreach (var accDir in sc2AccDirs)
-        {
-            if (int.TryParse(accDir.Split(Path.DirectorySeparatorChar).Last(), out int battleNetId))
-            {
+
+        foreach (var accDir in sc2AccDirs) {
+            if (int.TryParse(accDir.Split(Path.DirectorySeparatorChar).Last(), out int battleNetId)) {
                 BattleNetInfo battleNetInfo = new() { BattleNetId = battleNetId };
 
-                foreach (var toonDir in Directory.GetDirectories(accDir))
-                {
-                    if (Directory.Exists(Path.Combine(toonDir, "Replays", "Multiplayer")))
-                    {
+                foreach (var toonDir in Directory.GetDirectories(accDir)) {
+                    if (Directory.Exists(Path.Combine(toonDir, "Replays", "Multiplayer"))) {
                         var toonFolder = toonDir.Split(Path.DirectorySeparatorChar).Last();
                         int toonId = 0;
                         int regionId = 0;
                         var match = Regex.Match(toonFolder, @"\d+$");
-                        if (match.Success)
-                        {
-                            if (int.TryParse(match.Value, out int ttoonId))
-                            {
+                        if (match.Success) {
+                            if (int.TryParse(match.Value, out int ttoonId)) {
                                 toonId = ttoonId;
                             }
                         }
                         var regionMatch = Regex.Match(toonFolder, @"^\d+");
-                        if (regionMatch.Success)
-                        {
-                            if (int.TryParse(regionMatch.Value, out int tregionId))
-                            {
+                        if (regionMatch.Success) {
+                            if (int.TryParse(regionMatch.Value, out int tregionId)) {
                                 regionId = tregionId;
                             }
                         }
@@ -161,21 +136,17 @@ internal class UserSettingsService
 
     private static string? GetShortcutTarget(string file)
     {
-        try
-        {
-            if (System.IO.Path.GetExtension(file).ToLower() != ".lnk")
-            {
+        try {
+            if (System.IO.Path.GetExtension(file).ToLower() != ".lnk") {
                 return null;
             }
 
             FileStream fileStream = File.Open(file, FileMode.Open, FileAccess.Read);
-            using (System.IO.BinaryReader fileReader = new BinaryReader(fileStream))
-            {
+            using (System.IO.BinaryReader fileReader = new BinaryReader(fileStream)) {
                 fileStream.Seek(0x14, SeekOrigin.Begin);     // Seek to flags
                 uint flags = fileReader.ReadUInt32();        // Read flags
-                if ((flags & 1) == 1)
-                {                      // Bit 1 set means we have to
-                                       // skip the shell item ID list
+                if ((flags & 1) == 1) {                      // Bit 1 set means we have to
+                                                             // skip the shell item ID list
                     fileStream.Seek(0x4c, SeekOrigin.Begin); // Seek to the end of the header
                     uint offset = fileReader.ReadUInt16();   // Read the length of the Shell item ID list
                     fileStream.Seek(offset, SeekOrigin.Current); // Seek past it (to the file locator info)
@@ -195,8 +166,7 @@ internal class UserSettingsService
                 var link = new string(linkTarget);
 
                 int begin = link.IndexOf("\0\0");
-                if (begin > -1)
-                {
+                if (begin > -1) {
                     int end = link.IndexOf("\\\\", begin + 2) + 2;
                     end = link.IndexOf('\0', end) + 1;
 
@@ -204,15 +174,11 @@ internal class UserSettingsService
                     string secondPart = link[end..];
 
                     return firstPart + secondPart;
-                }
-                else
-                {
+                } else {
                     return link;
                 }
             }
-        }
-        catch
-        {
+        } catch {
             return null;
         }
     }

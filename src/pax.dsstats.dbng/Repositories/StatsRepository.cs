@@ -29,8 +29,7 @@ public partial class StatsRepository : IStatsRepository
 
     public async Task<IStatsResponse> GetStats(StatsRequest request, CancellationToken token = default)
     {
-        return request.StatsMode switch
-        {
+        return request.StatsMode switch {
             StatsMode.Winrate => await GetWinrate(request, token),
             _ => new FailedResponse()
         };
@@ -46,8 +45,7 @@ public partial class StatsRepository : IStatsRepository
         var results = from r in replays
                       from p in r.ReplayPlayers
                       group new { r, p } by new { race = p.Race } into g
-                      select new StatsResponseItem
-                      {
+                      select new StatsResponseItem {
                           Label = g.Key.race.ToString(),
                           Matchups = g.Count(),
                           Wins = g.Count(c => c.p.PlayerResult == PlayerResult.Win),
@@ -65,8 +63,7 @@ public partial class StatsRepository : IStatsRepository
         sw.Start();
 
 
-        var response = new StatsResponse()
-        {
+        var response = new StatsResponse() {
             Request = request,
             Items = items,
             AvgDuration = !items.Any() ? 0 : Convert.ToInt32(items.Select(s => s.duration / (double)s.Matchups).Average())
@@ -88,8 +85,7 @@ public partial class StatsRepository : IStatsRepository
         var bans1 = from e in events
                     where (int)e.Ban1 > 3
                     group new { e } by new { ban = e.Ban1 } into g
-                    select new
-                    {
+                    select new {
                         Ban = g.Key.ban,
                         Count = g.Count()
                     };
@@ -97,8 +93,7 @@ public partial class StatsRepository : IStatsRepository
         var bans2 = from e in events
                     where (int)e.Ban2 > 3
                     group new { e } by new { ban = e.Ban2 } into g
-                    select new
-                    {
+                    select new {
                         Ban = g.Key.ban,
                         Count = g.Count()
                     };
@@ -106,8 +101,7 @@ public partial class StatsRepository : IStatsRepository
         var lbans1 = await bans1.ToListAsync(token);
         var lbans2 = await bans2.ToListAsync(token);
 
-        foreach (var item in response.Items)
-        {
+        foreach (var item in response.Items) {
             var b1 = lbans1.FirstOrDefault(f => f.Ban == item.Cmdr);
             var b2 = lbans2.FirstOrDefault(f => f.Ban == item.Cmdr);
 
@@ -126,8 +120,7 @@ public partial class StatsRepository : IStatsRepository
     {
         IQueryable<Replay> replays;
 
-        if (!String.IsNullOrEmpty(request.Tournament) || !String.IsNullOrEmpty(request.Round))
-        {
+        if (!String.IsNullOrEmpty(request.Tournament) || !String.IsNullOrEmpty(request.Round)) {
 #pragma warning disable CS8602 // Dereference of a possibly null reference. (ef core handles this https://github.com/dotnet/efcore/issues/17212)
             replays = context.Replays
                 .Include(i => i.ReplayEvent)
@@ -135,29 +128,24 @@ public partial class StatsRepository : IStatsRepository
                 .Include(i => i.ReplayPlayers)
                 .Where(x => x.GameTime > request.StartTime);
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
-        }
-        else
-        {
+        } else {
             replays = context.Replays
                 .Include(i => i.ReplayEvent)
                 .Include(i => i.ReplayPlayers)
                 .Where(x => x.GameTime > request.StartTime);
         }
 
-        if (request.EndTime > DateTime.MinValue)
-        {
+        if (request.EndTime > DateTime.MinValue) {
             replays = replays.Where(x => x.GameTime < request.EndTime);
         }
 
-        if (!string.IsNullOrEmpty(request.Tournament))
-        {
+        if (!string.IsNullOrEmpty(request.Tournament)) {
             replays = replays
                 .Where(x => x.ReplayEvent != null
                     && x.ReplayEvent.Event.Name == request.Tournament);
         }
 
-        if (!string.IsNullOrEmpty(request.Round))
-        {
+        if (!string.IsNullOrEmpty(request.Round)) {
             replays = replays.Where(x => x.ReplayEvent != null && x.ReplayEvent.Round.StartsWith(request.Round));
         }
 

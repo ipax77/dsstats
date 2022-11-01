@@ -50,8 +50,7 @@ public partial class StatsService
 
     private static IQueryable<Player> FilterRatingPlayers(IQueryable<Player> players, string? searchString)
     {
-        if (string.IsNullOrEmpty(searchString))
-        {
+        if (string.IsNullOrEmpty(searchString)) {
             return players;
         }
         return players.Where(x => x.Name.ToUpper().Contains(searchString.ToUpper()));
@@ -59,82 +58,47 @@ public partial class StatsService
 
     private static IQueryable<Player> SetOrder(IQueryable<Player> players, List<TableOrder> orders)
     {
-        foreach (var order in orders)
-        {
-            if (order.Property == "WinrateCmdr")
-            {
-                if (order.Ascending)
-                {
+        foreach (var order in orders) {
+            if (order.Property == "WinrateCmdr") {
+                if (order.Ascending) {
                     players = players.OrderBy(o => o.WinsCmdr / o.GamesCmdr);
-                }
-                else
-                {
+                } else {
                     players = players.OrderByDescending(o => o.WinsCmdr / o.GamesCmdr);
                 }
-            }
-            else if (order.Property == "MvprateCmdr")
-            {
-                if (order.Ascending)
-                {
+            } else if (order.Property == "MvprateCmdr") {
+                if (order.Ascending) {
                     players = players.OrderBy(o => o.MvpCmdr / o.GamesCmdr);
-                }
-                else
-                {
+                } else {
                     players = players.OrderByDescending(o => o.MvpCmdr / o.GamesCmdr);
                 }
-            }
-            else if (order.Property == "TeamgamesCmdr")
-            {
-                if (order.Ascending)
-                {
+            } else if (order.Property == "TeamgamesCmdr") {
+                if (order.Ascending) {
                     players = players.OrderBy(o => o.TeamGamesCmdr / o.GamesCmdr);
-                }
-                else
-                {
+                } else {
                     players = players.OrderByDescending(o => o.TeamGamesCmdr / o.GamesCmdr);
                 }
-            }
-            else if (order.Property == "WinrateStd")
-            {
-                if (order.Ascending)
-                {
+            } else if (order.Property == "WinrateStd") {
+                if (order.Ascending) {
                     players = players.OrderBy(o => o.WinsStd / o.GamesStd);
-                }
-                else
-                {
+                } else {
                     players = players.OrderByDescending(o => o.WinsStd / o.GamesStd);
                 }
-            }
-            else if (order.Property == "MvprateStd")
-            {
-                if (order.Ascending)
-                {
+            } else if (order.Property == "MvprateStd") {
+                if (order.Ascending) {
                     players = players.OrderBy(o => o.MvpStd / o.GamesStd);
-                }
-                else
-                {
+                } else {
                     players = players.OrderByDescending(o => o.MvpStd / o.GamesStd);
                 }
-            }
-            else if (order.Property == "TeamgamesStd")
-            {
-                if (order.Ascending)
-                {
+            } else if (order.Property == "TeamgamesStd") {
+                if (order.Ascending) {
                     players = players.OrderBy(o => o.TeamGamesStd / o.GamesStd);
-                }
-                else
-                {
+                } else {
                     players = players.OrderByDescending(o => o.TeamGamesStd / o.GamesStd);
                 }
-            }
-            else
-            {
-                if (order.Ascending)
-                {
+            } else {
+                if (order.Ascending) {
                     players = players.AppendOrderBy(order.Property);
-                }
-                else
-                {
+                } else {
                     players = players.AppendOrderByDescending(order.Property);
                 }
             }
@@ -154,8 +118,7 @@ public partial class StatsService
     {
         var devs = await context.Players
             .GroupBy(g => Math.Round(g.Mmr, 0))
-            .Select(s => new MmrDevDto
-            {
+            .Select(s => new MmrDevDto {
                 Count = s.Count(),
                 Mmr = s.Average(a => Math.Round(a.Mmr, 0))
             }).ToListAsync();
@@ -167,8 +130,7 @@ public partial class StatsService
     {
         var devs = await context.Players
             .GroupBy(g => Math.Round(g.MmrStd, 0))
-            .Select(s => new MmrDevDto
-            {
+            .Select(s => new MmrDevDto {
                 Count = s.Count(),
                 Mmr = s.Average(a => Math.Round(a.MmrStd, 0))
             }).ToListAsync();

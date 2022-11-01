@@ -28,10 +28,8 @@ public record DsTeamInfoDto
     public List<Commander> Bans { get; set; } = new List<Commander>();
     public string RoundInfo()
     {
-        if (Round > 0)
-        {
-            return Round switch
-            {
+        if (Round > 0) {
+            return Round switch {
                 1 => "Ro16",
                 2 => "Ro8",
                 3 => "Ro4",
@@ -40,8 +38,7 @@ public record DsTeamInfoDto
             };
         }
 
-        return Group switch
-        {
+        return Group switch {
             1 => "Group A",
             2 => "Group B",
             3 => "Group C",
@@ -104,8 +101,7 @@ public record DsBreakpointDto
     public List<KeyValuePair<string, int>> GetUnitList()
     {
         Dictionary<string, int> unitList = new Dictionary<string, int>();
-        foreach (var unit in this.Units)
-        {
+        foreach (var unit in this.Units) {
             unitList[unit.Name] = unit.Positions.Count;
         }
         return unitList.OrderByDescending(s => s.Value).ToList();

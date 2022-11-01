@@ -21,10 +21,8 @@ public class WatchService : IDisposable
         filesDetected.Clear();
         manualResetEvent.Reset();
 
-        foreach (var path in UserSettingsService.UserSettings.ReplayPaths)
-        {
-            Task.Factory.StartNew(() =>
-            {
+        foreach (var path in UserSettingsService.UserSettings.ReplayPaths) {
+            Task.Factory.StartNew(() => {
                 CreateWatcher(path);
             });
         }
@@ -52,14 +50,12 @@ public class WatchService : IDisposable
 
     private async void Watcher_Changed(object? sender, FileSystemEventArgs e)
     {
-        lock (lockobject)
-        {
+        lock (lockobject) {
             if (filesDetected.Contains(e.FullPath))
                 return;
             filesDetected.Add(e.FullPath);
         }
-        if (await FileIsReady(e.FullPath))
-        {
+        if (await FileIsReady(e.FullPath)) {
             OnNewFileDetected(new() { Path = e.FullPath });
         }
     }
@@ -70,11 +66,9 @@ public class WatchService : IDisposable
         TimeSpan waitTime = TimeSpan.FromMilliseconds(250);
 
         await Task.Delay(waitTime);
-        while (!IsFileReady(path))
-        {
+        while (!IsFileReady(path)) {
             maxAttempts--;
-            if (maxAttempts == 0)
-            {
+            if (maxAttempts == 0) {
                 return false;
             }
             await Task.Delay(waitTime);
@@ -84,13 +78,10 @@ public class WatchService : IDisposable
 
     private static bool IsFileReady(string filename)
     {
-        try
-        {
+        try {
             using var inputStream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.None);
             return inputStream.Length > 0;
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             Console.WriteLine(ex.Message);
             return false;
         }

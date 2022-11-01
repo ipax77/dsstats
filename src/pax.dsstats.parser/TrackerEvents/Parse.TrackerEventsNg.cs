@@ -68,13 +68,10 @@ public static partial class Parse
         var playerIds = setupEvents.Select(x => x.PlayerId).OrderBy(o => o).ToList();
         var playerPos = replay.Players.Select(s => s.Pos).OrderBy(o => o).ToList();
 
-        if (!playerIds.SequenceEqual(playerPos))
-        {
-            foreach (var player in replay.Players)
-            {
+        if (!playerIds.SequenceEqual(playerPos)) {
+            foreach (var player in replay.Players) {
                 var setupEvent = setupEvents.FirstOrDefault(f => f.UserId == player.Pos - 1);
-                if (setupEvent == null)
-                {
+                if (setupEvent == null) {
                     throw new ArgumentNullException(nameof(setupEvent));
                 }
                 player.Pos = setupEvent.PlayerId;

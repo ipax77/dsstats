@@ -16,8 +16,7 @@ public static class HelperService
 
     public static string GetPercentageString(int? wins, int? games)
     {
-        if (games == null || wins == null || games == 0  || wins == 0)
-        {
+        if (games == null || wins == null || games == 0 || wins == 0) {
             return "0";
         }
         return $"{Math.Round(wins.Value * 100.0 / games.Value, 2).ToString(CultureInfo.InvariantCulture)}%";
@@ -35,8 +34,7 @@ public static class HelperService
     {
         int totalGameloops = (int)(duration * 22.4);
 
-        if (!String.IsNullOrEmpty(middleString))
-        {
+        if (!String.IsNullOrEmpty(middleString)) {
             var ents = middleString.Split('|').Where(x => !String.IsNullOrEmpty(x)).ToArray();
             var ients = ents.Select(s => int.Parse(s)).ToList();
             ients.Add(totalGameloops);
@@ -49,8 +47,7 @@ public static class HelperService
 
     public static (double, double) GetChartMiddle(int startTeam, int[] gameloops, int gameloop)
     {
-        if (gameloops.Length == 0)
-        {
+        if (gameloops.Length == 0) {
             return (0, 0);
         }
 
@@ -60,48 +57,33 @@ public static class HelperService
         int lastLoop = 0;
         bool hasInfo = false;
 
-        for (int i = 0; i < gameloops.Length; i++)
-        {
-            if (lastLoop > gameloop)
-            {
+        for (int i = 0; i < gameloops.Length; i++) {
+            if (lastLoop > gameloop) {
                 hasInfo = true;
                 break;
             }
 
             isFirstTeam = !isFirstTeam;
-            if (lastLoop > 0)
-            {
-                if (isFirstTeam)
-                {
+            if (lastLoop > 0) {
+                if (isFirstTeam) {
                     sumTeam1 += gameloops[i] - lastLoop;
-                }
-                else
-                {
+                } else {
                     sumTeam2 += gameloops[i] - lastLoop;
                 }
             }
             lastLoop = gameloops[i];
         }
 
-        if (hasInfo)
-        {
-            if (isFirstTeam)
-            {
+        if (hasInfo) {
+            if (isFirstTeam) {
                 sumTeam1 -= lastLoop - gameloop;
-            }
-            else
-            {
+            } else {
                 sumTeam2 -= lastLoop - gameloop;
             }
-        }
-        else if (gameloops.Length > 0)
-        {
-            if (isFirstTeam)
-            {
+        } else if (gameloops.Length > 0) {
+            if (isFirstTeam) {
                 sumTeam1 -= gameloops[^1] - gameloop;
-            }
-            else
-            {
+            } else {
                 sumTeam2 -= gameloops[^1] - gameloop;
             }
         }

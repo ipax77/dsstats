@@ -10,19 +10,16 @@ public static partial class Parse
         (Line planetaryLine, Line nexusLine) = GetLines(replay.Layout.Planetary, replay.Layout.Nexus);
 
         var playerTeam1 = replay.Players.FirstOrDefault(f => f.GamePos == 2);
-        if (playerTeam1 == null)
-        {
+        if (playerTeam1 == null) {
             playerTeam1 = replay.Players.Where(x => x.Team == 1).FirstOrDefault();
-            if (playerTeam1 == null)
-            {
+            if (playerTeam1 == null) {
                 return;
                 // throw new ArgumentNullException(nameof(playerTeam1), $"{replay.FileName}");
             }
         }
 
         var playerTeam2 = replay.Players.FirstOrDefault(f => f.GamePos == 4);
-        if (playerTeam2 == null)
-        {
+        if (playerTeam2 == null) {
             playerTeam2 = replay.Players.Where(x => x.Team == 2).FirstOrDefault();
         }
 
@@ -34,8 +31,7 @@ public static partial class Parse
         nexusLine = MoveLine(nexusLine, -mod);
 
 
-        for (int i = 0; i < bornEvents.Count; i++)
-        {
+        for (int i = 0; i < bornEvents.Count; i++) {
             var bornEvent = bornEvents[i];
 
             if (bornEvent.Gameloop == 0) continue;
@@ -44,24 +40,20 @@ public static partial class Parse
 
             var player = replay.Players.FirstOrDefault(f => f.Pos == bornEvent.ControlPlayerId);
 
-            if (player == null)
-            {
+            if (player == null) {
                 continue;
             }
 
-            if (bornEvent.Gameloop < 1440 && bornEvent.UnitTypeName.StartsWith("Worker"))
-            {
+            if (bornEvent.Gameloop < 1440 && bornEvent.UnitTypeName.StartsWith("Worker")) {
                 player.Race = bornEvent.UnitTypeName[6..];
                 player.RaceInGameSelected = true;
             }
 
-            if (DoSkipUnit(bornEvent.UnitTypeName))
-            {
+            if (DoSkipUnit(bornEvent.UnitTypeName)) {
                 continue;
             }
 
-            DsUnit unit = new()
-            {
+            DsUnit unit = new() {
                 Index = bornEvent.UnitIndex,
                 Name = FixUnitName(bornEvent.UnitTypeName, player.Race),
                 Gameloop = bornEvent.Gameloop,
@@ -69,8 +61,7 @@ public static partial class Parse
                 UnitType = GetUnitType(bornEvent, player.Team, planetaryLine, nexusLine, buildTeam1, buildTeam2),
             };
 
-            if (bornEvent.SUnitDiedEvent != null)
-            {
+            if (bornEvent.SUnitDiedEvent != null) {
                 unit.KillerPlayer = bornEvent.SUnitDiedEvent.KillerPlayerId ?? 0;
                 unit.KillerUnit = bornEvent.SUnitDiedEvent.KillerUnitBornEvent?.UnitTypeName;
                 unit.DiedGameloop = bornEvent.SUnitDiedEvent.Gameloop;
@@ -83,15 +74,12 @@ public static partial class Parse
 
     private static bool DoSkipUnit(string unitName)
     {
-        if (IgnoreUnitsNg.Contains(unitName))
-        {
+        if (IgnoreUnitsNg.Contains(unitName)) {
             return true;
         }
 
-        for (int j = 0; j < IgnoreUnitsContains.Count; j++)
-        {
-            if (unitName.Contains(IgnoreUnitsContains[j]))
-            {
+        for (int j = 0; j < IgnoreUnitsContains.Count; j++) {
+            if (unitName.Contains(IgnoreUnitsContains[j])) {
                 return true;
             }
         }
@@ -101,8 +89,7 @@ public static partial class Parse
 
     private static UnitType GetUnitType(SUnitBornEvent bornEvent, int team, Line planetaryLine, Line nexusLine, Line buildTeam1, Line buildTeam2)
     {
-        if (bornEvent.UnitTypeName.StartsWith("Tier"))
-        {
+        if (bornEvent.UnitTypeName.StartsWith("Tier")) {
             return UnitType.Tier;
         }
 
@@ -112,18 +99,11 @@ public static partial class Parse
         var isLeftOfLine1 = IsLeftOfLine(line1.A, line1.B, new(bornEvent.X, bornEvent.Y));
         var isLeftOfLine2 = IsLeftOfLine(line2.A, line2.B, new(bornEvent.X, bornEvent.Y));
 
-        if (isLeftOfLine1 && !isLeftOfLine2)
-        {
+        if (isLeftOfLine1 && !isLeftOfLine2) {
             return UnitType.Spawn;
-        }
-
-        else if (team == 1 && !isLeftOfLine1)
-        {
+        } else if (team == 1 && !isLeftOfLine1) {
             return UnitType.Build;
-        }
-
-        else if (team == 2 && isLeftOfLine2)
-        {
+        } else if (team == 2 && isLeftOfLine2) {
             return UnitType.Build;
         }
 

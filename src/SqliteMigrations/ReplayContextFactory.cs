@@ -12,8 +12,7 @@ public class ReplayContextFactory : IDesignTimeDbContextFactory<ReplayContext>
         // var connectionString = "Data Source=/Users/pax77/AppData/Local/Packages/sc2dsstats.maui_veygnay3cpztg/LocalState/dsstats2.db";
 
         var optionsBuilder = new DbContextOptionsBuilder<ReplayContext>();
-        optionsBuilder.UseSqlite(connectionString, x =>
-        {
+        optionsBuilder.UseSqlite(connectionString, x => {
             x.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
             x.MigrationsAssembly("SqliteMigrations");
         });

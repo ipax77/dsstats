@@ -67,8 +67,7 @@ public class MmrService
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider);
 
 
-        await replays.ForEachAsync(f =>
-        {
+        await replays.ForEachAsync(f => {
             var winnerTeam = f.ReplayPlayers.Where(x => x.Team == f.WinnerTeam).Select(m => m.Player);
             var runnerTeam = f.ReplayPlayers.Where(x => x.Team != f.WinnerTeam).Select(m => m.Player);
 
@@ -99,8 +98,7 @@ public class MmrService
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider);
 
 
-        await replays.ForEachAsync(f =>
-        {
+        await replays.ForEachAsync(f => {
             var winnerTeam = f.ReplayPlayers.Where(x => x.Team == f.WinnerTeam).Select(m => m.Player);
             var runnerTeam = f.ReplayPlayers.Where(x => x.Team != f.WinnerTeam).Select(m => m.Player);
 
@@ -122,14 +120,12 @@ public class MmrService
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         int i = 0;
-        foreach (var ent in ratings)
-        {
+        foreach (var ent in ratings) {
             var player = await context.Players.FirstAsync(f => f.PlayerId == ent.Key);
             player.Mmr = ent.Value.Last().Mmr;
             player.MmrOverTime = GetOverTimeRating(ent.Value);
             i++;
-            if (i % 1000 == 0)
-            {
+            if (i % 1000 == 0) {
                 await context.SaveChangesAsync();
             }
         }
@@ -142,14 +138,12 @@ public class MmrService
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         int i = 0;
-        foreach (var ent in ratingsstd)
-        {
+        foreach (var ent in ratingsstd) {
             var player = await context.Players.FirstAsync(f => f.PlayerId == ent.Key);
             player.MmrStd = ent.Value.Last().MmrStd;
             player.MmrStdOverTime = GetOverTimeRatingStd(ent.Value);
             i++;
-            if (i % 1000 == 0)
-            {
+            if (i % 1000 == 0) {
                 await context.SaveChangesAsync();
             }
         }
@@ -158,27 +152,20 @@ public class MmrService
 
     private static string? GetOverTimeRating(List<DsRCheckpoint> dsRCheckpoints)
     {
-        if (dsRCheckpoints.Count == 0)
-        {
+        if (dsRCheckpoints.Count == 0) {
             return null;
-        }
-
-        else if (dsRCheckpoints.Count == 1)
-        {
+        } else if (dsRCheckpoints.Count == 1) {
             return $"{Math.Round(dsRCheckpoints[0].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{dsRCheckpoints[0].Time:MMyy}";
         }
 
         StringBuilder sb = new();
         sb.Append($"{Math.Round(dsRCheckpoints.First().Mmr, 1).ToString(CultureInfo.InvariantCulture)},{dsRCheckpoints.First().Time:MMyy}");
 
-        if (dsRCheckpoints.Count > 2)
-        {
+        if (dsRCheckpoints.Count > 2) {
             string timeStr = dsRCheckpoints[0].Time.ToString(@"MMyy");
-            for (int i = 1; i < dsRCheckpoints.Count - 1; i++)
-            {
+            for (int i = 1; i < dsRCheckpoints.Count - 1; i++) {
                 string currentTimeStr = dsRCheckpoints[i].Time.ToString(@"MMyy");
-                if (currentTimeStr != timeStr)
-                {
+                if (currentTimeStr != timeStr) {
                     sb.Append('|');
                     sb.Append($"{Math.Round(dsRCheckpoints[i].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{dsRCheckpoints[i].Time:MMyy}");
                 }
@@ -189,8 +176,7 @@ public class MmrService
         sb.Append('|');
         sb.Append($"{Math.Round(dsRCheckpoints.Last().Mmr, 1).ToString(CultureInfo.InvariantCulture)},{dsRCheckpoints.Last().Time:MMyy}");
 
-        if (sb.Length > 1999)
-        {
+        if (sb.Length > 1999) {
             throw new ArgumentOutOfRangeException(nameof(dsRCheckpoints));
         }
 
@@ -199,27 +185,20 @@ public class MmrService
 
     private static string? GetOverTimeRatingStd(List<DsRCheckpoint> dsRCheckpoints)
     {
-        if (dsRCheckpoints.Count == 0)
-        {
+        if (dsRCheckpoints.Count == 0) {
             return null;
-        }
-
-        else if (dsRCheckpoints.Count == 1)
-        {
+        } else if (dsRCheckpoints.Count == 1) {
             return $"{Math.Round(dsRCheckpoints[0].MmrStd, 1).ToString(CultureInfo.InvariantCulture)},{dsRCheckpoints[0].Time:MMyy}";
         }
 
         StringBuilder sb = new();
         sb.Append($"{Math.Round(dsRCheckpoints.First().MmrStd, 1).ToString(CultureInfo.InvariantCulture)},{dsRCheckpoints.First().Time:MMyy}");
 
-        if (dsRCheckpoints.Count > 2)
-        {
+        if (dsRCheckpoints.Count > 2) {
             string timeStr = dsRCheckpoints[0].Time.ToString(@"MMyy");
-            for (int i = 1; i < dsRCheckpoints.Count - 1; i++)
-            {
+            for (int i = 1; i < dsRCheckpoints.Count - 1; i++) {
                 string currentTimeStr = dsRCheckpoints[i].Time.ToString(@"MMyy");
-                if (currentTimeStr != timeStr)
-                {
+                if (currentTimeStr != timeStr) {
                     sb.Append('|');
                     sb.Append($"{Math.Round(dsRCheckpoints[i].MmrStd, 1).ToString(CultureInfo.InvariantCulture)},{dsRCheckpoints[i].Time:MMyy}");
                 }
@@ -230,8 +209,7 @@ public class MmrService
         sb.Append('|');
         sb.Append($"{Math.Round(dsRCheckpoints.Last().MmrStd, 1).ToString(CultureInfo.InvariantCulture)},{dsRCheckpoints.Last().Time:MMyy}");
 
-        if (sb.Length > 1999)
-        {
+        if (sb.Length > 1999) {
             throw new ArgumentOutOfRangeException(nameof(dsRCheckpoints));
         }
 
@@ -254,8 +232,7 @@ public class MmrService
 
     private void SetRunnerMmr(IEnumerable<PlayerDsRDto> teamPlayers, double delta, DateTime gameTime)
     {
-        foreach (var player in teamPlayers)
-        {
+        foreach (var player in teamPlayers) {
             var plRatings = ratings[player.PlayerId];
             var newRating = plRatings.Last().Mmr - delta;
             plRatings.Add(new DsRCheckpoint() { Mmr = newRating, Time = gameTime });
@@ -264,8 +241,7 @@ public class MmrService
 
     private void SetWinnerMmr(IEnumerable<PlayerDsRDto> teamPlayers, double delta, DateTime gameTime)
     {
-        foreach (var player in teamPlayers)
-        {
+        foreach (var player in teamPlayers) {
             var plRatings = ratings[player.PlayerId];
             var newRating = plRatings.Last().Mmr + delta;
             plRatings.Add(new DsRCheckpoint() { Mmr = newRating, Time = gameTime });
@@ -274,8 +250,7 @@ public class MmrService
 
     private void SetRunnerMmrStd(IEnumerable<PlayerDsRDto> teamPlayers, double delta, DateTime gameTime)
     {
-        foreach (var player in teamPlayers)
-        {
+        foreach (var player in teamPlayers) {
             var plRatings = ratingsstd[player.PlayerId];
             var newRating = plRatings.Last().MmrStd - delta;
             plRatings.Add(new DsRCheckpoint() { MmrStd = newRating, Time = gameTime });
@@ -284,8 +259,7 @@ public class MmrService
 
     private void SetWinnerMmrStd(IEnumerable<PlayerDsRDto> teamPlayers, double delta, DateTime gameTime)
     {
-        foreach (var player in teamPlayers)
-        {
+        foreach (var player in teamPlayers) {
             var plRatings = ratingsstd[player.PlayerId];
             var newRating = plRatings.Last().MmrStd + delta;
             plRatings.Add(new DsRCheckpoint() { MmrStd = newRating, Time = gameTime });
@@ -307,15 +281,11 @@ public class MmrService
     {
         double teamMmr = 0;
 
-        foreach (var player in players)
-        {
-            if (!ratings.ContainsKey(player.PlayerId))
-            {
+        foreach (var player in players) {
+            if (!ratings.ContainsKey(player.PlayerId)) {
                 ratings[player.PlayerId] = new List<DsRCheckpoint>() { new() { Mmr = 1000.0, Time = gameTime } };
                 teamMmr += 1000.0;
-            }
-            else
-            {
+            } else {
                 teamMmr += ratings[player.PlayerId].Last().Mmr;
             }
         }
@@ -326,15 +296,11 @@ public class MmrService
     {
         double teamMmr = 0;
 
-        foreach (var player in players)
-        {
-            if (!ratingsstd.ContainsKey(player.PlayerId))
-            {
+        foreach (var player in players) {
+            if (!ratingsstd.ContainsKey(player.PlayerId)) {
                 ratingsstd[player.PlayerId] = new List<DsRCheckpoint>() { new() { MmrStd = 1000.0, Time = gameTime } };
                 teamMmr += 1000.0;
-            }
-            else
-            {
+            } else {
                 teamMmr += ratingsstd[player.PlayerId].Last().Mmr;
             }
         }

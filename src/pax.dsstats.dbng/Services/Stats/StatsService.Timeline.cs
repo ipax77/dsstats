@@ -6,8 +6,7 @@ public partial class StatsService
 {
     private async Task<StatsResponse> GetTimeline(StatsRequest request)
     {
-        if (!request.DefaultFilter)
-        {
+        if (!request.DefaultFilter) {
             return await GetCustomTimeline(request);
         }
 
@@ -19,8 +18,7 @@ public partial class StatsService
 
         int tcount = stats.Sum(s => s.Count);
 
-        StatsResponse response = new()
-        {
+        StatsResponse response = new() {
             Request = request,
             CountResponse = await GetCount(request),
             AvgDuration = tcount == 0 ? 0 : (int)stats.Sum(s => s.Duration) / tcount,
@@ -29,24 +27,18 @@ public partial class StatsService
 
         DateTime requestTime = request.StartTime;
 
-        while (requestTime < endTime)
-        {
+        while (requestTime < endTime) {
             var timeResults = stats.Where(f => f.Year == requestTime.Year && f.Month == requestTime.Month && f.Race == request.Interest);
 
-            if (!timeResults.Any())
-            {
-                response.Items.Add(new()
-                {
+            if (!timeResults.Any()) {
+                response.Items.Add(new() {
                     Label = $"{requestTime.ToString("yyyy-MM")} (0)",
                     Matchups = 0,
                     Wins = 0
                 });
-            }
-            else
-            {
+            } else {
                 int ccount = timeResults.Sum(s => s.Count);
-                response.Items.Add(new()
-                {
+                response.Items.Add(new() {
                     Label = $"{requestTime.ToString("yyyy-MM")} ({ccount})",
                     Matchups = ccount,
                     Wins = timeResults.Sum(s => s.Wins)
@@ -56,8 +48,7 @@ public partial class StatsService
         }
 
         var lastItem = response.Items.LastOrDefault();
-        if (lastItem != null && lastItem.Matchups < 10)
-        {
+        if (lastItem != null && lastItem.Matchups < 10) {
             response.Items.Remove(lastItem);
         }
 
@@ -68,8 +59,7 @@ public partial class StatsService
     {
         var lresults = await GetTimelineData(request);
 
-        StatsResponse response = new StatsResponse()
-        {
+        StatsResponse response = new StatsResponse() {
             Request = request,
             CountResponse = await GetCount(request),
             AvgDuration = lresults.Count == 0 ? 0 : (int)(lresults.Sum(s => s.Duration) / (double)lresults.Count),
@@ -78,13 +68,11 @@ public partial class StatsService
 
         DateTime _dateTime = request.StartTime;
 
-        while (_dateTime < request.EndTime)
-        {
+        while (_dateTime < request.EndTime) {
             DateTime dateTime = _dateTime.AddMonths(1);
             var stepResults = lresults.Where(x => x.GameTime >= _dateTime && x.GameTime < dateTime).ToList();
 
-            response.Items.Add(new()
-            {
+            response.Items.Add(new() {
                 Label = $"{_dateTime.ToString("yyyy-MM-dd")} ({stepResults.Count})",
                 Matchups = stepResults.Count,
                 Wins = stepResults.Where(x => x.Win == true).Count()
@@ -101,21 +89,18 @@ public partial class StatsService
         var results = from r in replays
                       from p in r.ReplayPlayers
                       where p.Race == request.Interest
-                      select new DbStatsResult()
-                      {
+                      select new DbStatsResult() {
                           Id = r.ReplayId,
                           Win = p.PlayerResult == PlayerResult.Win,
                           GameTime = r.GameTime,
                           IsUploader = p.IsUploader,
                           OppRace = p.OppRace
                       };
-        if (request.Uploaders)
-        {
+        if (request.Uploaders) {
             results = results.Where(x => x.IsUploader);
         }
 
-        if (request.Versus != Commander.None)
-        {
+        if (request.Versus != Commander.None) {
             results = results.Where(x => x.OppRace == request.Versus);
         }
 

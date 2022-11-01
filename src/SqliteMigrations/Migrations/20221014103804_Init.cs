@@ -10,93 +10,80 @@ namespace SqliteMigrations.Migrations
         {
             migrationBuilder.CreateTable(
                 name: "Events",
-                columns: table => new
-                {
+                columns: table => new {
                     EventId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     EventGuid = table.Column<Guid>(type: "TEXT", nullable: false),
                     EventStart = table.Column<DateTime>(type: "TEXT", precision: 0, nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_Events", x => x.EventId);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Players",
-                columns: table => new
-                {
+                columns: table => new {
                     PlayerId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     ToonId = table.Column<int>(type: "INTEGER", nullable: false),
                     LatestUpload = table.Column<DateTime>(type: "TEXT", precision: 0, nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_Players", x => x.PlayerId);
                 });
 
             migrationBuilder.CreateTable(
                 name: "ReplayDownloadCounts",
-                columns: table => new
-                {
+                columns: table => new {
                     ReplayDownloadCountId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     ReplayHash = table.Column<string>(type: "TEXT", maxLength: 64, nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_ReplayDownloadCounts", x => x.ReplayDownloadCountId);
                 });
 
             migrationBuilder.CreateTable(
                 name: "ReplayViewCounts",
-                columns: table => new
-                {
+                columns: table => new {
                     ReplayViewCountId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     ReplayHash = table.Column<string>(type: "TEXT", maxLength: 64, nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_ReplayViewCounts", x => x.ReplayViewCountId);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Units",
-                columns: table => new
-                {
+                columns: table => new {
                     UnitId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
                     Cost = table.Column<int>(type: "INTEGER", nullable: false),
                     Commander = table.Column<int>(type: "INTEGER", nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_Units", x => x.UnitId);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Upgrades",
-                columns: table => new
-                {
+                columns: table => new {
                     UpgradeId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     Cost = table.Column<int>(type: "INTEGER", nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_Upgrades", x => x.UpgradeId);
                 });
 
             migrationBuilder.CreateTable(
                 name: "ReplayEvents",
-                columns: table => new
-                {
+                columns: table => new {
                     ReplayEventId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Round = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
@@ -109,8 +96,7 @@ namespace SqliteMigrations.Migrations
                     Ban5 = table.Column<int>(type: "INTEGER", nullable: false),
                     EventId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_ReplayEvents", x => x.ReplayEventId);
                     table.ForeignKey(
                         name: "FK_ReplayEvents_Events_EventId",
@@ -122,8 +108,7 @@ namespace SqliteMigrations.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Replays",
-                columns: table => new
-                {
+                columns: table => new {
                     ReplayId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     FileName = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
@@ -149,8 +134,7 @@ namespace SqliteMigrations.Migrations
                     CommandersTeam2 = table.Column<string>(type: "TEXT", nullable: false),
                     ReplayEventId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_Replays", x => x.ReplayId);
                     table.ForeignKey(
                         name: "FK_Replays_ReplayEvents_ReplayEventId",
@@ -161,8 +145,7 @@ namespace SqliteMigrations.Migrations
 
             migrationBuilder.CreateTable(
                 name: "ReplayPlayers",
-                columns: table => new
-                {
+                columns: table => new {
                     ReplayPlayerId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
@@ -187,8 +170,7 @@ namespace SqliteMigrations.Migrations
                     PlayerId = table.Column<int>(type: "INTEGER", nullable: false),
                     UpgradeId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_ReplayPlayers", x => x.ReplayPlayerId);
                     table.ForeignKey(
                         name: "FK_ReplayPlayers_Players_PlayerId",
@@ -211,16 +193,14 @@ namespace SqliteMigrations.Migrations
 
             migrationBuilder.CreateTable(
                 name: "PlayerUpgrades",
-                columns: table => new
-                {
+                columns: table => new {
                     PlayerUpgradeId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Gameloop = table.Column<int>(type: "INTEGER", nullable: false),
                     UpgradeId = table.Column<int>(type: "INTEGER", nullable: false),
                     ReplayPlayerId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_PlayerUpgrades", x => x.PlayerUpgradeId);
                     table.ForeignKey(
                         name: "FK_PlayerUpgrades_ReplayPlayers_ReplayPlayerId",
@@ -238,8 +218,7 @@ namespace SqliteMigrations.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Spawns",
-                columns: table => new
-                {
+                columns: table => new {
                     SpawnId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Gameloop = table.Column<int>(type: "INTEGER", nullable: false),
@@ -250,8 +229,7 @@ namespace SqliteMigrations.Migrations
                     UpgradeSpent = table.Column<int>(type: "INTEGER", nullable: false),
                     ReplayPlayerId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_Spawns", x => x.SpawnId);
                     table.ForeignKey(
                         name: "FK_Spawns_ReplayPlayers_ReplayPlayerId",
@@ -262,8 +240,7 @@ namespace SqliteMigrations.Migrations
 
             migrationBuilder.CreateTable(
                 name: "SpawnUnits",
-                columns: table => new
-                {
+                columns: table => new {
                     SpawnUnitId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Count = table.Column<byte>(type: "INTEGER", nullable: false),
@@ -271,8 +248,7 @@ namespace SqliteMigrations.Migrations
                     UnitId = table.Column<int>(type: "INTEGER", nullable: false),
                     SpawnId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_SpawnUnits", x => x.SpawnUnitId);
                     table.ForeignKey(
                         name: "FK_SpawnUnits_Spawns_SpawnId",

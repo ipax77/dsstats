@@ -20,8 +20,7 @@ namespace SqliteMigrations.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Uploaders",
-                columns: table => new
-                {
+                columns: table => new {
                     UploaderId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     AppGuid = table.Column<Guid>(type: "TEXT", nullable: false),
@@ -30,8 +29,7 @@ namespace SqliteMigrations.Migrations
                     LatestUpload = table.Column<DateTime>(type: "TEXT", precision: 0, nullable: false),
                     LatestReplay = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_Uploaders", x => x.UploaderId);
                 });
 

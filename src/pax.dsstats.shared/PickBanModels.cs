@@ -20,18 +20,15 @@ public record PickBanState
 
     public PickBanState(int teams = 2, int bansPerTeam = 1, int entsPerTeam = 3)
     {
-        for (int i = 0; i < bansPerTeam * teams; i++)
-        {
+        for (int i = 0; i < bansPerTeam * teams; i++) {
             Bans.Add(new PickBanEnt { Pos = i, Team = i % teams, });
         }
 
-        if (!Bans.Any())
-        {
+        if (!Bans.Any()) {
             IsBansReady = true;
         }
 
-        for (int i = 0; i < entsPerTeam * teams; i++)
-        {
+        for (int i = 0; i < entsPerTeam * teams; i++) {
             Picks.Add(new PickBanEnt { Pos = i, Team = i % teams, });
         }
     }

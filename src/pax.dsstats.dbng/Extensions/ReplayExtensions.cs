@@ -12,24 +12,20 @@ public static class ReplayExtensions
         if (replay.Playercount == 6
             && replay.Duration >= 300
             && replay.Maxleaver < 90
-            && replay.WinnerTeam > 0)
-        {
+            && replay.WinnerTeam > 0) {
             replay.DefaultFilter = true;
         }
     }
 
     public static string GenHash(this Replay replay)
     {
-        if (!replay.ReplayPlayers.Any())
-        {
+        if (!replay.ReplayPlayers.Any()) {
             throw new ArgumentOutOfRangeException(nameof(replay));
         }
 
         StringBuilder sb = new();
-        foreach (var pl in replay.ReplayPlayers.OrderBy(o => o.GamePos))
-        {
-            if (pl.Player == null)
-            {
+        foreach (var pl in replay.ReplayPlayers.OrderBy(o => o.GamePos)) {
+            if (pl.Player == null) {
                 throw new ArgumentOutOfRangeException(nameof(replay));
             }
             sb.Append(pl.GamePos + pl.Race + pl.Player.ToonId);
@@ -84,8 +80,7 @@ public static class ReplayExtensions
     {
         byte[] data = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(input));
         StringBuilder sBuilder = new();
-        for (int i = 0; i < data.Length; i++)
-        {
+        for (int i = 0; i < data.Length; i++) {
             sBuilder.Append(data[i].ToString("x2"));
         }
         return sBuilder.ToString();

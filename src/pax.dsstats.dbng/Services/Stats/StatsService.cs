@@ -22,8 +22,7 @@ public partial class StatsService : IStatsService
 
     public async Task<StatsResponse> GetStatsResponse(StatsRequest request)
     {
-        return request.StatsMode switch
-        {
+        return request.StatsMode switch {
             StatsMode.Winrate => await GetWinrate(request),
             StatsMode.Timeline => await GetTimeline(request),
             _ => new()
@@ -35,17 +34,13 @@ public partial class StatsService : IStatsService
         var field = typeof(MemoryCache).GetProperty("EntriesCollection", BindingFlags.NonPublic | BindingFlags.Instance);
         var collection = field?.GetValue(memoryCache) as ICollection;
         var items = new List<string>();
-        if (collection != null)
-        {
-            foreach (var item in collection)
-            {
+        if (collection != null) {
+            foreach (var item in collection) {
                 var methodInfo = item.GetType().GetProperty("Key");
                 var val = methodInfo?.GetValue(item);
-                if (val != null)
-                {
+                if (val != null) {
                     var memkey = val.ToString();
-                    if (memkey != null && !memkey.StartsWith("Builds"))
-                    {
+                    if (memkey != null && !memkey.StartsWith("Builds")) {
                         items.Add(memkey);
                     }
                 }
@@ -57,14 +52,10 @@ public partial class StatsService : IStatsService
     private async Task<List<CmdrStats>> GetRequestStats(StatsRequest request)
     {
         string memKey = request.Uploaders ? "cmdrstatsuploaders" : "cmdrstats";
-        if (!memoryCache.TryGetValue(memKey, out List<CmdrStats> stats))
-        {
-            if (request.Uploaders)
-            {
+        if (!memoryCache.TryGetValue(memKey, out List<CmdrStats> stats)) {
+            if (request.Uploaders) {
                 stats = await GetUploaderStats();
-            }
-            else
-            {
+            } else {
                 stats = await GetStats();
             }
             memoryCache.Set(memKey, stats, new MemoryCacheEntryOptions()
@@ -82,8 +73,7 @@ public partial class StatsService : IStatsService
                     from p in r.ReplayPlayers
                     where (r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic) && r.DefaultFilter && p.IsUploader
                     group new { r, p } by new { year = r.GameTime.Year, month = r.GameTime.Month, race = p.Race, opprace = p.OppRace } into g
-                    select new CmdrStats()
-                    {
+                    select new CmdrStats() {
                         Year = g.Key.year,
                         Month = g.Key.month,
                         Time = new DateTime(g.Key.year, g.Key.month, 1),
@@ -105,8 +95,7 @@ public partial class StatsService : IStatsService
                     from p in r.ReplayPlayers
                     where (r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic) && r.DefaultFilter
                     group new { r, p } by new { year = r.GameTime.Year, month = r.GameTime.Month, race = p.Race, opprace = p.OppRace } into g
-                    select new CmdrStats()
-                    {
+                    select new CmdrStats() {
                         Year = g.Key.year,
                         Month = g.Key.month,
                         Time = new DateTime(g.Key.year, g.Key.month, 1),

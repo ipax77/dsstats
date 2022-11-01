@@ -17,13 +17,11 @@ namespace SqliteMigrations.Migrations
 
             migrationBuilder.CreateTable(
                 name: "UploaderReplays",
-                columns: table => new
-                {
+                columns: table => new {
                     ReplaysReplayId = table.Column<int>(type: "INTEGER", nullable: false),
                     UploadersUploaderId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_UploaderReplays", x => new { x.ReplaysReplayId, x.UploadersUploaderId });
                     table.ForeignKey(
                         name: "FK_UploaderReplays_Replays_ReplaysReplayId",

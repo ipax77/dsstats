@@ -10,8 +10,7 @@ public static partial class Parse
         var players = GetPlayers(replay, allSpawns);
         var duration = (int)(replay.Duration / 22.4);
 
-        ReplayDto replayDto = new()
-        {
+        ReplayDto replayDto = new() {
             FileName = replay.FileName,
             GameTime = replay.GameTime,
             Duration = duration,
@@ -48,12 +47,10 @@ public static partial class Parse
     {
         List<ReplayPlayerDto> dtos = new();
 
-        foreach (var player in replay.Players)
-        {
+        foreach (var player in replay.Players) {
             var commander = Data.GetCommander(player.Race);
 
-            dtos.Add(new()
-            {
+            dtos.Add(new() {
                 Player = new() { Name = player.Name, ToonId = player.ToonId },
                 Clan = player.Clan,
                 GamePos = player.GamePos,
@@ -85,13 +82,11 @@ public static partial class Parse
         //todo: switch commander in game?        
         var commander = Data.GetCommander(race);
 
-        foreach (var spawn in spawns)
-        {
+        foreach (var spawn in spawns) {
             int gameloop = spawn.Units.FirstOrDefault()?.Gameloop ?? 0;
 
 
-            dtos.Add(new()
-            {
+            dtos.Add(new() {
                 Gameloop = gameloop,
                 Breakpoint = GetBreakpoint(gameloop),
                 Income = spawn.Income,
@@ -112,16 +107,13 @@ public static partial class Parse
         //todo: switch commander in game?        
         var commander = Data.GetCommander(race);
 
-        foreach (var spawn in spawns)
-        {
+        foreach (var spawn in spawns) {
             int gameloop = spawn.Units.FirstOrDefault()?.Gameloop ?? 0;
 
             Breakpoint bp = GetBreakpoint(gameloop);
 
-            if (bp != Breakpoint.None && !dtos.Any(a => a.Breakpoint == bp))
-            {
-                dtos.Add(new()
-                {
+            if (bp != Breakpoint.None && !dtos.Any(a => a.Breakpoint == bp)) {
+                dtos.Add(new() {
                     Gameloop = gameloop,
                     Breakpoint = bp,
                     Income = spawn.Income,
@@ -135,12 +127,9 @@ public static partial class Parse
         }
 
         var lastSpawn = spawns.LastOrDefault();
-        if (lastSpawn != null)
-        {
-            if (dtos.LastOrDefault()?.Income != lastSpawn.Income)
-            {
-                dtos.Add(new()
-                {
+        if (lastSpawn != null) {
+            if (dtos.LastOrDefault()?.Income != lastSpawn.Income) {
+                dtos.Add(new() {
                     Gameloop = lastSpawn.Units.FirstOrDefault()?.Gameloop ?? 0,
                     Breakpoint = Breakpoint.All,
                     Income = lastSpawn.Income,
@@ -150,8 +139,7 @@ public static partial class Parse
                     UpgradeSpent = lastSpawn.UpgradesSpent,
                     Units = GetUnits(lastSpawn.Units, commander)
                 });
-            } else if (dtos.Any())
-            {
+            } else if (dtos.Any()) {
                 var lastSpawnDto = dtos.Last();
                 dtos.Remove(lastSpawnDto);
                 dtos.Add(lastSpawnDto with { Breakpoint = Breakpoint.All });
@@ -162,9 +150,8 @@ public static partial class Parse
 
     private static Breakpoint GetBreakpoint(int gameloop)
     {
-        return gameloop switch
-        {
-            _ when gameloop >= 6240 && gameloop <= 7209  => Breakpoint.Min5,
+        return gameloop switch {
+            _ when gameloop >= 6240 && gameloop <= 7209 => Breakpoint.Min5,
             _ when gameloop >= 12960 && gameloop <= 13928 => Breakpoint.Min10,
             _ when gameloop >= 19680 && gameloop <= 20649 => Breakpoint.Min15,
             _ => Breakpoint.None
@@ -178,23 +165,18 @@ public static partial class Parse
     private static ICollection<SpawnUnitDto> GetUnits(List<DsUnit> units, Commander commander)
     {
         List<UnitBuilder> unitBuilds = new();
-        for (int i = 0; i < units.Count; i++)
-        {
+        for (int i = 0; i < units.Count; i++) {
             var unit = units[i];
 
             var unitBuild = unitBuilds.FirstOrDefault(f => f.Name == unit.Name);
-            if (unitBuild == null)
-            {
+            if (unitBuild == null) {
                 unitBuilds.Add(new(unit.Name, unit.Position));
-            }
-            else
-            {
+            } else {
                 unitBuild.Add(unit.Position);
             }
         }
 
-        return unitBuilds.Select(s => new SpawnUnitDto()
-        {
+        return unitBuilds.Select(s => new SpawnUnitDto() {
             Unit = new() { Name = s.Name, Commander = commander },
             Count = s.Count > 255 ? byte.MaxValue : Convert.ToByte(s.Count),
             Poss = s.StringBuilder.ToString()
@@ -205,12 +187,9 @@ public static partial class Parse
     {
         var oppPos = GetOpp(player.GamePos);
         var oppPlayer = players.FirstOrDefault(f => f.GamePos == oppPos);
-        if (oppPlayer == null)
-        {
+        if (oppPlayer == null) {
             return Commander.None;
-        }
-        else
-        {
+        } else {
             return Data.GetCommander(oppPlayer.Race);
         }
     }

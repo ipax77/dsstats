@@ -9,8 +9,7 @@ public class ReplayContextFactory : IDesignTimeDbContextFactory<ReplayContext>
     {
 
         var optionsBuilder = new DbContextOptionsBuilder<ReplayContext>();
-        optionsBuilder.UseSqlite("Data Source=/data/dsreplaystest2.db", x =>
-        {
+        optionsBuilder.UseSqlite("Data Source=/data/dsreplaystest2.db", x => {
             x.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
             x.MigrationsAssembly("pax.dsstats.dbng");
         });

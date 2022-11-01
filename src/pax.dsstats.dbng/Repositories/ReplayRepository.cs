@@ -1,12 +1,9 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng.Extensions;
-using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
-using System.Numerics;
 
 namespace pax.dsstats.dbng.Repositories;
 
@@ -37,13 +34,11 @@ public class ReplayRepository : IReplayRepository
             .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
             .FirstOrDefaultAsync(f => f.ReplayHash == replayHash, token);
 
-        if (replay == null)
-        {
+        if (replay == null) {
             return null;
         }
 
-        context.ReplayViewCounts.Add(new ReplayViewCount()
-        {
+        context.ReplayViewCounts.Add(new ReplayViewCount() {
             ReplayHash = replay.ReplayHash
         });
         await context.SaveChangesAsync();
@@ -71,12 +66,9 @@ public class ReplayRepository : IReplayRepository
     {
         var replays = GetRequestReplays(request);
 
-        if (token.IsCancellationRequested)
-        {
+        if (token.IsCancellationRequested) {
             return 0;
-        }
-        else
-        {
+        } else {
             return await replays.CountAsync(token);
         }
     }
@@ -87,12 +79,9 @@ public class ReplayRepository : IReplayRepository
 
         replays = SortReplays(request, replays);
 
-        if (token.IsCancellationRequested)
-        {
+        if (token.IsCancellationRequested) {
             return new List<ReplayListDto>();
-        }
-        else
-        {
+        } else {
             return await replays
                 .Skip(request.Skip)
                 .Take(request.Take)
@@ -105,49 +94,29 @@ public class ReplayRepository : IReplayRepository
     private IQueryable<Replay> SortReplays(ReplaysRequest request, IQueryable<Replay> replays)
     {
 
-        foreach (var order in request.Orders)
-        {
-            if (order.Property == "Group/Round")
-            {
-                if (order.Ascending)
-                {
+        foreach (var order in request.Orders) {
+            if (order.Property == "Group/Round") {
+                if (order.Ascending) {
                     replays = replays.AppendOrderBy("ReplayEvent.Round");
-                }
-                else
-                {
+                } else {
                     replays = replays.AppendOrderByDescending("ReplayEvent.Round");
                 }
-            }
-            else if (order.Property == "Teams")
-            {
-                if (order.Ascending)
-                {
+            } else if (order.Property == "Teams") {
+                if (order.Ascending) {
                     replays = replays.AppendOrderBy("ReplayEvent.WinnerTeam").AppendOrderBy("ReplayEvent.RunnerTeam");
-                }
-                else
-                {
+                } else {
                     replays = replays.AppendOrderByDescending("ReplayEvent.WinnerTeam").AppendOrderByDescending("ReplayEvent.RunnerTeam");
                 }
-            }
-            else if (order.Property == "Event")
-            {
-                if (order.Ascending)
-                {
+            } else if (order.Property == "Event") {
+                if (order.Ascending) {
                     replays = replays.AppendOrderBy("ReplayEvent.Event.Name");
-                }
-                else
-                {
+                } else {
                     replays = replays.AppendOrderByDescending("ReplayEvent.Event.Name");
                 }
-            }
-            else
-            {
-                if (order.Ascending)
-                {
+            } else {
+                if (order.Ascending) {
                     replays = replays.AppendOrderBy(order.Property);
-                }
-                else
-                {
+                } else {
                     replays = replays.AppendOrderByDescending(order.Property);
                 }
             }
@@ -179,26 +148,22 @@ public class ReplayRepository : IReplayRepository
 
         var replays = context.Replays.AsNoTracking();
 
-        if (!String.IsNullOrEmpty(request.SearchPlayers))
-        {
+        if (!String.IsNullOrEmpty(request.SearchPlayers)) {
             replays = replays.Include(i => i.ReplayPlayers);
         }
 
         replays = replays.Where(x => x.GameTime >= request.StartTime);
 
-        if (request.EndTime != null)
-        {
+        if (request.EndTime != null) {
             replays = replays.Where(x => x.GameTime < request.EndTime);
         }
 
-        if (!String.IsNullOrEmpty(request.Tournament))
-        {
+        if (!String.IsNullOrEmpty(request.Tournament)) {
             replays = replays.Where(x => x.ReplayEvent != null
                 && x.ReplayEvent.Event.Name.Equals(request.Tournament));
         }
 
-        if (request.GameModes.Any())
-        {
+        if (request.GameModes.Any()) {
             replays = replays.Where(x => request.GameModes.Contains(x.GameMode));
         }
 
@@ -209,8 +174,7 @@ public class ReplayRepository : IReplayRepository
 
     private IQueryable<Replay> SearchReplays(IQueryable<Replay> replays, ReplaysRequest request)
     {
-        if (String.IsNullOrEmpty(request.SearchPlayers) && String.IsNullOrEmpty(request.SearchString))
-        {
+        if (String.IsNullOrEmpty(request.SearchPlayers) && String.IsNullOrEmpty(request.SearchString)) {
             return replays;
         }
 
@@ -219,8 +183,7 @@ public class ReplayRepository : IReplayRepository
         var searchCmdrs = searchStrings.SelectMany(s => GetSearchCommanders(s)).Distinct().ToList();
 
 
-        if (request.LinkSearch)
-        {
+        if (request.LinkSearch) {
             return LinkReplays(replays, searchCmdrs, searchPlayers);
         }
 
@@ -232,8 +195,7 @@ public class ReplayRepository : IReplayRepository
 
     private IQueryable<Replay> FilterCommanders(IQueryable<Replay> replays, List<Commander> searchCmdrs)
     {
-        foreach (var cmdr in searchCmdrs)
-        {
+        foreach (var cmdr in searchCmdrs) {
             replays = replays
                 .Where(x => x.CommandersTeam1.Contains($"|{(int)cmdr}|")
                     || x.CommandersTeam2.Contains($"|{(int)cmdr}|")
@@ -244,8 +206,7 @@ public class ReplayRepository : IReplayRepository
 
     private IQueryable<Replay> FilterNames(IQueryable<Replay> replays, List<string> searchPlayers)
     {
-        foreach (var player in searchPlayers)
-        {
+        foreach (var player in searchPlayers) {
             replays = replays.Where(x => x.ReplayPlayers.Any(a => a.Name.ToUpper().Contains(player.ToUpper())));
         }
         return replays;
@@ -254,23 +215,19 @@ public class ReplayRepository : IReplayRepository
     private IQueryable<Replay> LinkReplays(IQueryable<Replay> replays, List<Commander> searchCmdrs, List<string> searchPlayers)
     {
         int links = Math.Min(searchCmdrs.Count, searchPlayers.Count);
-        if (links > 0)
-        {
-            for (int i = 0; i < links; i++)
-            {
+        if (links > 0) {
+            for (int i = 0; i < links; i++) {
                 var cmdr = searchCmdrs[i];
                 var name = searchPlayers[i].ToUpper();
                 replays = replays.Where(x => x.ReplayPlayers.Any(a => a.Race == cmdr && a.Name.ToUpper().Contains(name)));
             }
         }
 
-        if (searchCmdrs.Count > links)
-        {
+        if (searchCmdrs.Count > links) {
             replays = FilterCommanders(replays, searchCmdrs.Skip(links).ToList());
         }
 
-        if (searchPlayers.Count > links)
-        {
+        if (searchPlayers.Count > links) {
             replays = FilterNames(replays, searchPlayers.Skip(links).ToList());
         }
 
@@ -280,10 +237,8 @@ public class ReplayRepository : IReplayRepository
     private List<Commander> GetSearchCommanders(string searchString)
     {
         List<Commander> cmdrs = new();
-        foreach (var cmdr in Enum.GetValues(typeof(Commander)).Cast<Commander>())
-        {
-            if (cmdr.ToString().ToUpper().Contains(searchString.ToUpper()))
-            {
+        foreach (var cmdr in Enum.GetValues(typeof(Commander)).Cast<Commander>()) {
+            if (cmdr.ToString().ToUpper().Contains(searchString.ToUpper())) {
                 //commanders.Add($"|{(int)cmdr}|");
                 cmdrs.Add(cmdr);
             }
@@ -298,8 +253,7 @@ public class ReplayRepository : IReplayRepository
             .Select(s => s.Path)
             .ToListAsync();
 
-        if (skipReplayPaths.Any())
-        {
+        if (skipReplayPaths.Any()) {
             return (await context.Replays
                 .AsNoTracking()
                 .OrderByDescending(o => o.GameTime)
@@ -307,9 +261,7 @@ public class ReplayRepository : IReplayRepository
                 .ToListAsync())
                 .Union(skipReplayPaths)
                 .ToList();
-        }
-        else
-        {
+        } else {
             return await context.Replays
                 .AsNoTracking()
                 .OrderByDescending(o => o.GameTime)
@@ -323,19 +275,15 @@ public class ReplayRepository : IReplayRepository
         var dbReplay = mapper.Map<Replay>(replayDto);
         dbReplay.SetDefaultFilter();
 
-        if (replayDto.ReplayEvent != null)
-        {
+        if (replayDto.ReplayEvent != null) {
             replayEventDto = replayDto.ReplayEvent;
         }
 
-        if (replayEventDto != null)
-        {
+        if (replayEventDto != null) {
             var dbEvent = await context.Events.FirstOrDefaultAsync(f => f.Name == replayEventDto.Event.Name);
 
-            if (dbEvent == null)
-            {
-                dbEvent = new()
-                {
+            if (dbEvent == null) {
+                dbEvent = new() {
                     Name = replayEventDto.Event.Name,
                     EventStart = DateTime.Today
                 };
@@ -345,10 +293,8 @@ public class ReplayRepository : IReplayRepository
 
             var replayEvent = await context.ReplayEvents.FirstOrDefaultAsync(f => f.Event == dbEvent && f.Round == replayEventDto.Round && f.WinnerTeam == replayEventDto.WinnerTeam && f.RunnerTeam == replayEventDto.RunnerTeam);
 
-            if (replayEvent == null)
-            {
-                replayEvent = new()
-                {
+            if (replayEvent == null) {
+                replayEvent = new() {
                     Round = replayEventDto.Round,
                     WinnerTeam = replayEventDto.WinnerTeam,
                     RunnerTeam = replayEventDto.RunnerTeam,
@@ -365,23 +311,17 @@ public class ReplayRepository : IReplayRepository
             dbReplay.ReplayEvent = replayEvent;
         }
 
-        foreach (var player in dbReplay.ReplayPlayers)
-        {
+        foreach (var player in dbReplay.ReplayPlayers) {
             var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == player.Player.ToonId);
-            if (dbPlayer == null)
-            {
-                dbPlayer = new()
-                {
+            if (dbPlayer == null) {
+                dbPlayer = new() {
                     Name = player.Player.Name,
                     ToonId = player.Player.ToonId
                 };
                 context.Players.Add(dbPlayer);
-                try
-                {
+                try {
                     await context.SaveChangesAsync();
-                }
-                catch (Exception ex)
-                {
+                } catch (Exception ex) {
                     logger.LogError($"failed saving replay: {ex.Message}");
                     throw;
                 }
@@ -389,8 +329,7 @@ public class ReplayRepository : IReplayRepository
             player.Player = dbPlayer;
             player.Name = dbPlayer.Name;
 
-            foreach (var spawn in player.Spawns)
-            {
+            foreach (var spawn in player.Spawns) {
                 (spawn.Units, units) = await GetMapedSpawnUnits(spawn, player.Race, units);
             }
 
@@ -403,12 +342,9 @@ public class ReplayRepository : IReplayRepository
 
         context.Replays.Add(dbReplay);
 
-        try
-        {
+        try {
             await context.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             logger.LogError($"failed saving replay: {ex.Message}");
             throw;
         }
@@ -444,13 +380,10 @@ public class ReplayRepository : IReplayRepository
     private async Task<(ICollection<SpawnUnit>, HashSet<Unit>)> GetMapedSpawnUnits(Spawn spawn, Commander commander, HashSet<Unit> units)
     {
         List<SpawnUnit> spawnUnits = new();
-        foreach (var spawnUnit in spawn.Units)
-        {
+        foreach (var spawnUnit in spawn.Units) {
             var listUnit = units.FirstOrDefault(f => f.Name.Equals(spawnUnit.Unit.Name) && f.Commander.Equals(commander));
-            if (listUnit == null)
-            {
-                listUnit = new()
-                {
+            if (listUnit == null) {
+                listUnit = new() {
                     Name = spawnUnit.Unit.Name,
                     Commander = commander,
                 };
@@ -459,8 +392,7 @@ public class ReplayRepository : IReplayRepository
                 units.Add(listUnit);
             }
 
-            spawnUnits.Add(new()
-            {
+            spawnUnits.Add(new() {
                 Count = spawnUnit.Count,
                 Poss = spawnUnit.Poss,
                 UnitId = listUnit.UnitId,
@@ -473,13 +405,10 @@ public class ReplayRepository : IReplayRepository
     private async Task<(ICollection<PlayerUpgrade>, HashSet<Upgrade>)> GetMapedPlayerUpgrades(ReplayPlayer player, HashSet<Upgrade> upgrades)
     {
         List<PlayerUpgrade> playerUpgrades = new();
-        foreach (var playerUpgrade in player.Upgrades)
-        {
+        foreach (var playerUpgrade in player.Upgrades) {
             var listUpgrade = upgrades.FirstOrDefault(f => f.Name.Equals(playerUpgrade.Upgrade.Name));
-            if (listUpgrade == null)
-            {
-                listUpgrade = new()
-                {
+            if (listUpgrade == null) {
+                listUpgrade = new() {
                     Name = playerUpgrade.Upgrade.Name
                 };
                 context.Upgrades.Add(listUpgrade);
@@ -487,8 +416,7 @@ public class ReplayRepository : IReplayRepository
                 upgrades.Add(listUpgrade);
             }
 
-            playerUpgrades.Add(new()
-            {
+            playerUpgrades.Add(new() {
                 Gameloop = playerUpgrade.Gameloop,
                 UpgradeId = listUpgrade.UpgradeId,
                 ReplayPlayerId = player.ReplayPlayerId
@@ -509,10 +437,8 @@ public class ReplayRepository : IReplayRepository
     public async Task AddSkipReplay(string replayPath)
     {
         var skipReplay = await context.SkipReplays.FirstOrDefaultAsync(f => f.Path == replayPath);
-        if (skipReplay == null)
-        {
-            context.SkipReplays.Add(new()
-            {
+        if (skipReplay == null) {
+            context.SkipReplays.Add(new() {
                 Path = replayPath
             });
             await context.SaveChangesAsync();
@@ -522,8 +448,7 @@ public class ReplayRepository : IReplayRepository
     public async Task RemoveSkipReplay(string replayPath)
     {
         var skipReplay = await context.SkipReplays.FirstOrDefaultAsync(f => f.Path == replayPath);
-        if (skipReplay != null)
-        {
+        if (skipReplay != null) {
             context.SkipReplays.Remove(skipReplay);
             await context.SaveChangesAsync();
         }
@@ -540,8 +465,7 @@ public class ReplayRepository : IReplayRepository
 
             .FirstOrDefaultAsync(f => f.FileName == fileName);
 
-        if (replay != null)
-        {
+        if (replay != null) {
             context.Replays.Remove(replay);
             await context.SaveChangesAsync();
         }

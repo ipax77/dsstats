@@ -9,14 +9,12 @@ public static partial class Parse
     {
         HashSet<string> Modes = new();
 
-        for (int i = 0; i < upgradeEvents.Count; i++)
-        {
+        for (int i = 0; i < upgradeEvents.Count; i++) {
             var upgradeEvent = upgradeEvents[i];
 
             if (upgradeEvent.Gameloop == 0
                 && (upgradeEvent.UpgradeTypeName.StartsWith("Mutation")
-                    || upgradeEvent.UpgradeTypeName.StartsWith("GameMode")))
-            {
+                    || upgradeEvent.UpgradeTypeName.StartsWith("GameMode"))) {
                 Modes.Add(upgradeEvent.UpgradeTypeName);
             }
 
@@ -73,8 +71,7 @@ public static partial class Parse
             if (upgradeEvent.UpgradeTypeName.EndsWith("Bonus10")) continue;
             if (upgradeEvent.UpgradeTypeName == "DehakaPrimalWurm") continue;
 
-            if (upgradeEvent.UpgradeTypeName.Contains("Level"))
-            {
+            if (upgradeEvent.UpgradeTypeName.Contains("Level")) {
                 string urace = player.Race;
                 if (player.Race == "Zagara" || player.Race == "Abathur" || player.Race == "Kerrigan")
                     urace = "Zerg";
@@ -85,8 +82,7 @@ public static partial class Parse
                 if (!upgradeEvent.UpgradeTypeName.StartsWith(urace)) continue;
             }
 
-            player.Upgrades.Add(new()
-            {
+            player.Upgrades.Add(new() {
                 Gameloop = upgradeEvent.Gameloop,
                 Upgrade = upgradeEvent.UpgradeTypeName,
                 Count = upgradeEvent.Count
@@ -95,22 +91,15 @@ public static partial class Parse
 
         replay.Mutations = Modes.Where(x => x.StartsWith("Mutation")).ToList();
 
-        if (Modes.Contains("GameModeTutorial"))
-        {
+        if (Modes.Contains("GameModeTutorial")) {
             replay.GameMode = "GameModeTutorial";
-        }
-        else if (Modes.Contains("GameModeBrawl"))
-        {
-            if (Modes.Contains("GameModeCommanders"))
-            {
+        } else if (Modes.Contains("GameModeBrawl")) {
+            if (Modes.Contains("GameModeCommanders")) {
                 replay.GameMode = "GameModeBrawlCommanders";
-            }
-            else
-            {
+            } else {
                 replay.GameMode = "GameModeBrawl";
             }
-        }
-        else if (Modes.Contains("GameModeCommanders"))
+        } else if (Modes.Contains("GameModeCommanders"))
             replay.GameMode = "GameModeCommanders";
         else if (Modes.Contains("GameModeStandard"))
             replay.GameMode = "GameModeStandard";
@@ -122,16 +111,13 @@ public static partial class Parse
             replay.GameMode = "GameModeSabotage";
         else if (Modes.Contains("GameModeSwitch"))
             replay.GameMode = "GameModeSwitch";
-        else if (replay.Mutations.Contains("MutationCommanders"))
-        {
+        else if (replay.Mutations.Contains("MutationCommanders")) {
             replay.GameMode = "GameModeCommanders"; // fail safe
             if (replay.Mutations.Count == 3 && replay.Mutations.Contains("MutationExpansion") && replay.Mutations.Contains("MutationOvertime")) replay.GameMode = "GameModeCommandersHeroic";
             else if (replay.Mutations.Count == 2 && replay.Mutations.Contains("MutationOvertime")) replay.GameMode = "GameModeCommanders";
             else if (replay.Mutations.Count >= 3) replay.GameMode = "GameModeBrawlCommanders";
             else if (replay.Mutations.Contains("MutationAura")) replay.GameMode = "GameModeBrawlCommanders";
-        }
-        else
-        {
+        } else {
             if (replay.Mutations.Count == 0) replay.GameMode = "GameModeStandard";
             else if (replay.Mutations.Count > 0) replay.GameMode = "GameModeBrawlStandard";
         }

@@ -12,22 +12,17 @@ public partial class Parse
         string csvFile = "/data/ds/dsdata.csv";
         string jsonFile = "/data/ds/dsdata.json";
 
-        if (!File.Exists(jsonFile))
-        {
+        if (!File.Exists(jsonFile)) {
             using (var reader = new StreamReader(csvFile))
-            using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
-            {
+            using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture)) {
                 var records = csv.GetRecords<DsUnitDataCsvDummy>();
                 records.ToList().ForEach(f => DsUnitDatas.Add(new DsUnitData(f)));
             }
             var json = JsonSerializer.Serialize(DsUnitDatas, new JsonSerializerOptions() { WriteIndented = true });
             File.WriteAllText(jsonFile, json);
-        }
-        else
-        {
+        } else {
             var data = JsonSerializer.Deserialize<List<DsUnitData>>(File.ReadAllText(jsonFile));
-            if (data != null)
-            {
+            if (data != null) {
                 DsUnitDatas = data;
             }
         }

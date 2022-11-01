@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Caching.Memory;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace pax.dsstats.dbng.Services;
@@ -11,8 +10,7 @@ public partial class StatsService
     public async Task<CountResponse> GetCount(StatsRequest request)
     {
         var memKey = request.GenMemKey();
-        if (!memoryCache.TryGetValue(memKey, out CountResponse countResponse))
-        {
+        if (!memoryCache.TryGetValue(memKey, out CountResponse countResponse)) {
             countResponse = await GetCountFromDb(request);
             memoryCache.Set(memKey, countResponse, new MemoryCacheEntryOptions()
             .SetPriority(CacheItemPriority.High)
@@ -63,8 +61,7 @@ public partial class StatsService
         var quits = await GetQuits(request);
         var leaver = await GetLeaver(request);
 
-        return new CountResponse()
-        {
+        return new CountResponse() {
             Count = defaultReplays + otherReplays,
             DefaultFilter = defaultReplays,
             Leaver = leaver,
@@ -78,18 +75,15 @@ public partial class StatsService
 
         sb.Append($"WHERE r.GameTime > '{request.StartTime.ToString(@"yyyy-MM-dd")}'");
 
-        if (request.EndTime != DateTime.Today)
-        {
+        if (request.EndTime != DateTime.Today) {
             sb.Append($" AND r.GameTime < '{request.EndTime.ToString(@"yyyy-MM-dd")}'");
         }
 
-        if (request.GameModes.Any())
-        {
+        if (request.GameModes.Any()) {
             sb.Append($" AND r.GameMode IN ({string.Join(", ", request.GameModes.Select(s => (int)s))})");
         }
 
-        if (request.Interest != Commander.None)
-        {
+        if (request.Interest != Commander.None) {
             sb.Append($" AND EXISTS (SELECT 1 FROM ReplayPlayers AS rp WHERE r.ReplayId = rp.ReplayID AND rp.Race = {(int)request.Interest})");
         }
 
@@ -103,35 +97,27 @@ public partial class StatsService
                 .Where(x => x.GameTime > request.StartTime)
                 .AsNoTracking();
 
-        if (request.EndTime != DateTime.Today)
-        {
+        if (request.EndTime != DateTime.Today) {
             replays = replays.Where(x => x.GameTime <= request.EndTime);
         }
 
-        if (request.GameModes.Any())
-        {
+        if (request.GameModes.Any()) {
             replays = replays.Where(x => request.GameModes.Contains(x.GameMode));
         }
 
-        if (request.Interest != Commander.None)
-        {
-            if (request.Versus != Commander.None)
-            {
+        if (request.Interest != Commander.None) {
+            if (request.Versus != Commander.None) {
                 replays = replays.Where(x => x.ReplayPlayers.Any(a => a.Race == request.Interest && a.OppRace == request.Versus));
-            }
-            else
-            {
+            } else {
                 replays = replays.Where(x => x.ReplayPlayers.Any(a => a.Race == request.Interest));
             }
         }
 
-        if (request.PlayerNames.Any())
-        {
+        if (request.PlayerNames.Any()) {
             replays = replays.Where(x => x.ReplayPlayers.Any(a => request.PlayerNames.Contains(a.Name)));
         }
 
-        if (request.PlayerCount > 0)
-        {
+        if (request.PlayerCount > 0) {
             replays = replays.Where(x => x.Playercount == request.PlayerCount);
         }
 

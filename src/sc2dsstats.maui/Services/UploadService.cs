@@ -52,21 +52,18 @@ public class UploadService
     {
         await ss.WaitAsync();
 
-        if (!UserSettingsService.UserSettings.AllowUploads)
-        {
+        if (!UserSettingsService.UserSettings.AllowUploads) {
             return;
         }
 
-        if (!UserSettingsService.UserSettings.AllowCleanUploads)
-        {
+        if (!UserSettingsService.UserSettings.AllowCleanUploads) {
             UploadAnonymizedReplays();
             return;
         }
 
         OnUploadStateChanged(new() { UploadStatus = UploadStatus.Uploading });
 
-        try
-        {
+        try {
             using var scope = serviceProvider.CreateScope();
             using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
@@ -92,23 +89,16 @@ public class UploadService
             var httpClient = GetHttpClient();
 
             var response = await httpClient.PostAsJsonAsync($"api/Upload/ImportReplays/{UserSettingsService.UserSettings.AppGuid}", base64string);
-            if (response.IsSuccessStatusCode)
-            {
+            if (response.IsSuccessStatusCode) {
                 OnUploadStateChanged(new() { UploadStatus = UploadStatus.Success });
-            }
-            else
-            {
+            } else {
                 logger.LogError($"failed uploading replays: {response.StatusCode}");
                 OnUploadStateChanged(new() { UploadStatus = UploadStatus.Error });
             }
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             logger.LogError($"failed uploading replays: {ex.Message}");
             OnUploadStateChanged(new() { UploadStatus = UploadStatus.Error });
-        }
-        finally
-        {
+        } finally {
             ss.Release();
         }
     }
@@ -123,12 +113,10 @@ public class UploadService
 
     private async Task<DateTime> GetLastReplayDate(ReplayContext context)
     {
-        UploaderDto uploaderDto = new()
-        {
+        UploaderDto uploaderDto = new() {
             AppGuid = UserSettingsService.UserSettings.AppGuid,
             AppVersion = UpdateService.CurrentVersion.ToString(),
-            BattleNetInfos = UserSettingsService.UserSettings.BattleNetInfos?.Select(s => new BattleNetInfoDto()
-            {
+            BattleNetInfos = UserSettingsService.UserSettings.BattleNetInfos?.Select(s => new BattleNetInfoDto() {
                 BattleNetId = s.BattleNetId,
                 PlayerUploadDtos = GetPlayerUploadDtos(context, s.ToonIds),
             }).ToList() ?? new()
@@ -136,21 +124,15 @@ public class UploadService
 
         var httpClient = GetHttpClient();
 
-        try
-        {
+        try {
             var response = await httpClient.PostAsJsonAsync("api/Upload/GetLatestReplayDate", uploaderDto);
 
-            if (response.IsSuccessStatusCode)
-            {
+            if (response.IsSuccessStatusCode) {
                 return await response.Content.ReadFromJsonAsync<DateTime>();
-            }
-            else
-            {
+            } else {
                 logger.LogError($"failed getting latest replay: {response.StatusCode}");
             }
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             logger.LogError($"failed getting latest replays: {ex.Message}");
             OnUploadStateChanged(new() { UploadStatus = UploadStatus.Error });
             throw;
@@ -162,10 +144,8 @@ public class UploadService
     {
         List<PlayerUploadDto> playerUploadDtos = new();
 
-        foreach (var info in toonIdInfos)
-        {
-            playerUploadDtos.Add(new()
-            {
+        foreach (var info in toonIdInfos) {
+            playerUploadDtos.Add(new() {
                 Name = context.Players.FirstOrDefault(f => f.ToonId == info.ToonId)?.Name ?? "Anonymouse",
                 RegionId = info.RegionId,
                 ToonId = info.ToonId,
@@ -179,10 +159,8 @@ public class UploadService
         var bytes = Encoding.UTF8.GetBytes(str);
 
         using (var msi = new MemoryStream(bytes))
-        using (var mso = new MemoryStream())
-        {
-            using (var gs = new GZipStream(mso, CompressionMode.Compress))
-            {
+        using (var mso = new MemoryStream()) {
+            using (var gs = new GZipStream(mso, CompressionMode.Compress)) {
                 msi.CopyTo(gs);
             }
             return Convert.ToBase64String(mso.ToArray());

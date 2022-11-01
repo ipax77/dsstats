@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng;
 
@@ -30,8 +29,7 @@ public class ReplayContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Replay>(entity =>
-        {
+        modelBuilder.Entity<Replay>(entity => {
             entity.HasIndex(e => e.FileName);
             entity.HasIndex(e => e.Maxkillsum);
             entity.HasIndex(e => new { e.GameTime, e.GameMode });
@@ -48,26 +46,22 @@ public class ReplayContext : DbContext
 
         });
 
-        modelBuilder.Entity<ReplayPlayer>(entity =>
-        {
+        modelBuilder.Entity<ReplayPlayer>(entity => {
             entity.HasIndex(e => e.Race);
             entity.HasIndex(e => new { e.Race, e.OppRace });
             entity.HasIndex(e => e.Kills);
             entity.HasIndex(e => new { e.IsUploader, e.Team });
         });
 
-        modelBuilder.Entity<Event>(entity =>
-        {
+        modelBuilder.Entity<Event>(entity => {
             entity.HasIndex(e => e.Name).IsUnique();
         });
 
-        modelBuilder.Entity<Player>(entity =>
-        {
+        modelBuilder.Entity<Player>(entity => {
             entity.HasIndex(e => e.ToonId).IsUnique();
         });
 
-        modelBuilder.Entity<Uploader>(entity =>
-        {
+        modelBuilder.Entity<Uploader>(entity => {
             entity.HasIndex(e => e.AppGuid).IsUnique();
         });
 
@@ -76,23 +70,19 @@ public class ReplayContext : DbContext
             .WithMany(p => p.Uploaders)
             .UsingEntity(j => j.ToTable("UploaderReplays"));
 
-        modelBuilder.Entity<Unit>(entity =>
-        {
+        modelBuilder.Entity<Unit>(entity => {
             entity.HasIndex(e => new { e.Name, e.Commander }).IsUnique();
         });
 
-        modelBuilder.Entity<Upgrade>(entity =>
-        {
+        modelBuilder.Entity<Upgrade>(entity => {
             entity.HasIndex(e => e.Name).IsUnique();
         });
 
-        modelBuilder.Entity<CommanderMmr>(entity =>
-        {
+        modelBuilder.Entity<CommanderMmr>(entity => {
             entity.HasIndex(e => new { e.Commander_1, e.Commander_2 });
         });
 
-        modelBuilder.Entity<GroupByHelper>(entity =>
-        {
+        modelBuilder.Entity<GroupByHelper>(entity => {
             entity.HasNoKey();
             entity.ToView("GroupByHelper");
             entity.Property(p => p.Group).HasColumnName("Name");

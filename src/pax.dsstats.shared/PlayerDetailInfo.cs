@@ -8,8 +8,7 @@ public record PlayerDetailInfo
     [JsonIgnore]
     public List<PlayerCmdrInfo> CmdrInfos => MatchupInfos.Any() ? (from m in MatchupInfos
                                                                    group m by m.Commander into g
-                                                                   select new PlayerCmdrInfo
-                                                                   {
+                                                                   select new PlayerCmdrInfo {
                                                                        Commander = g.Key,
                                                                        Count = g.Sum(s => s.Count),
                                                                        Wins = g.Sum(s => s.Wins)

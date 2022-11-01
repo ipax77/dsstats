@@ -152,24 +152,19 @@ public record DsUnitData
     {
         Name = d.Name.Replace(" ", "");
         Race = d.Race;
-        if (int.TryParse(d.Tier, out int tier))
-        {
+        if (int.TryParse(d.Tier, out int tier)) {
             Tier = tier;
         }
-        if (int.TryParse(d.Cost, out int cost))
-        {
+        if (int.TryParse(d.Cost, out int cost)) {
             Cost = cost;
         }
-        if (int.TryParse(d.Life, out int life))
-        {
+        if (int.TryParse(d.Life, out int life)) {
             Life = life;
         }
-        if (int.TryParse(d.Shields, out int shields))
-        {
+        if (int.TryParse(d.Shields, out int shields)) {
             Shields = shields;
         }
-        if (int.TryParse(d.TotalVitality, out int totalVitality))
-        {
+        if (int.TryParse(d.TotalVitality, out int totalVitality)) {
             TotalVitality = totalVitality;
         }
     }

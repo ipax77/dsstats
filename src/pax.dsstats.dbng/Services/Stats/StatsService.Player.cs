@@ -27,8 +27,7 @@ public partial class StatsService
                          from rp in p.ReplayPlayers
                          where toonIds.Contains(p.ToonId)
                          group rp by new { rp.Race, rp.OppRace } into g
-                         select new PlayerMatchupInfo
-                         {
+                         select new PlayerMatchupInfo {
                              Commander = g.Key.Race,
                              Versus = g.Key.OppRace,
                              Count = g.Count(),
@@ -45,8 +44,7 @@ public partial class StatsService
     {
         var cmdrInfos = from m in matchups
                         group m by m.Commander into g
-                        select new PlayerCmdrInfo
-                        {
+                        select new PlayerCmdrInfo {
                             Commander = g.Key,
                             Count = g.Sum(s => s.Count),
                             Wins = g.Sum(s => s.Wins),
@@ -66,28 +64,22 @@ public partial class StatsService
         var teamGamesCmdr = await GetPlayerTeamGames(std: false);
 
 
-        var infos = playerInfosCmdr.ToDictionary(k => k.ToonId, v => new PlayerInfoDto()
-        {
+        var infos = playerInfosCmdr.ToDictionary(k => k.ToonId, v => new PlayerInfoDto() {
             GamesCmdr = v.Games,
             WinsCmdr = v.Wins,
             MvpCmdr = v.Mvp,
             TeamGamesCmdr = teamGamesCmdr.ContainsKey(v.ToonId) ? teamGamesCmdr[v.ToonId] : 0
         });
 
-        foreach (var stdInfo in playerInfosStd)
-        {
-            if (infos.ContainsKey(stdInfo.ToonId))
-            {
+        foreach (var stdInfo in playerInfosStd) {
+            if (infos.ContainsKey(stdInfo.ToonId)) {
                 infos[stdInfo.ToonId].GamesStd = stdInfo.Games;
                 infos[stdInfo.ToonId].WinsStd = stdInfo.Wins;
                 infos[stdInfo.ToonId].MvpStd = stdInfo.Mvp;
                 infos[stdInfo.ToonId].TeamGamesStd = teamGamesStd.ContainsKey(stdInfo.ToonId) ? teamGamesStd[stdInfo.ToonId] : 0;
 
-            }
-            else
-            {
-                infos[stdInfo.ToonId] = new PlayerInfoDto()
-                {
+            } else {
+                infos[stdInfo.ToonId] = new PlayerInfoDto() {
                     GamesStd = stdInfo.Games,
                     WinsStd = stdInfo.Wins,
                     MvpStd = stdInfo.Mvp,
@@ -102,15 +94,11 @@ public partial class StatsService
         sw.Restart();
 
         int i = 0;
-        foreach (var info in infos)
-        {
+        foreach (var info in infos) {
             var player = await context.Players.FirstOrDefaultAsync(f => f.ToonId == info.Key);
-            if (player == null)
-            {
+            if (player == null) {
                 continue;
-            }
-            else
-            {
+            } else {
                 player.GamesStd = info.Value.GamesStd;
                 player.WinsStd = info.Value.WinsStd;
                 player.MvpStd = info.Value.MvpStd;
@@ -122,8 +110,7 @@ public partial class StatsService
                 player.TeamGamesCmdr = info.Value.TeamGamesCmdr;
             }
             i++;
-            if (i % 1000 == 0)
-            {
+            if (i % 1000 == 0) {
                 await context.SaveChangesAsync();
             }
         }
@@ -140,24 +127,22 @@ public partial class StatsService
                      from rp in r.ReplayPlayers
                      where r.DefaultFilter && r.GameMode == GameMode.Standard
                      group rp by rp.Player.ToonId into g
-                     select new PlayerInfo
-                     {
+                     select new PlayerInfo {
                          ToonId = g.Key,
                          Games = g.Count(),
                          Wins = g.Count(c => c.PlayerResult == PlayerResult.Win),
                          Mvp = g.Count(c => c.Kills == c.Replay.Maxkillsum)
                      }
                     : from r in context.Replays
-                    from rp in r.ReplayPlayers
-                    where r.DefaultFilter && new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic }.Contains(r.GameMode)
-                    group rp by rp.Player.ToonId into g
-                    select new PlayerInfo
-                    {
-                        ToonId = g.Key,
-                        Games = g.Count(),
-                        Wins = g.Count(c => c.PlayerResult == PlayerResult.Win),
-                        Mvp = g.Count(c => c.Kills == c.Replay.Maxkillsum)
-                    };
+                      from rp in r.ReplayPlayers
+                      where r.DefaultFilter && new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic }.Contains(r.GameMode)
+                      group rp by rp.Player.ToonId into g
+                      select new PlayerInfo {
+                          ToonId = g.Key,
+                          Games = g.Count(),
+                          Wins = g.Count(c => c.PlayerResult == PlayerResult.Win),
+                          Mvp = g.Count(c => c.Kills == c.Replay.Maxkillsum)
+                      };
 
         return await infos.ToListAsync();
     }
@@ -166,31 +151,29 @@ public partial class StatsService
     {
         var teamGroup = std ?
                         from r in context.Replays
+                        from rp1 in r.ReplayPlayers
+                        where r.DefaultFilter && r.GameMode == GameMode.Standard
+                        join rp2 in context.ReplayPlayers
+                          on new { Id = r.ReplayId, rp1.Team }
+                          equals new { Id = rp2.ReplayId, rp2.Team }
+                        where rp2.ReplayPlayerId != rp1.ReplayPlayerId
+                        group new { rp1, rp2 } by rp1.Player.ToonId into g
+                        select new {
+                            ToonId = g.Key,
+                            Teamgames = g.Count(c => c.rp2.IsUploader)
+                        }
+                        : from r in context.Replays
                           from rp1 in r.ReplayPlayers
-                          where r.DefaultFilter && r.GameMode == GameMode.Standard
+                          where r.DefaultFilter && new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic }.Contains(r.GameMode)
                           join rp2 in context.ReplayPlayers
                             on new { Id = r.ReplayId, rp1.Team }
                             equals new { Id = rp2.ReplayId, rp2.Team }
                           where rp2.ReplayPlayerId != rp1.ReplayPlayerId
                           group new { rp1, rp2 } by rp1.Player.ToonId into g
-                          select new
-                          {
+                          select new {
                               ToonId = g.Key,
                               Teamgames = g.Count(c => c.rp2.IsUploader)
-                          }
-                        : from r in context.Replays
-                        from rp1 in r.ReplayPlayers
-                        where r.DefaultFilter && new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic }.Contains(r.GameMode)
-                          join rp2 in context.ReplayPlayers
-                            on new { Id = r.ReplayId, rp1.Team }
-                            equals new { Id = rp2.ReplayId, rp2.Team }
-                        where rp2.ReplayPlayerId != rp1.ReplayPlayerId
-                        group new { rp1, rp2 } by rp1.Player.ToonId into g
-                        select new
-                        {
-                            ToonId = g.Key,
-                            Teamgames = g.Count(c => c.rp2.IsUploader)
-                        };
+                          };
 
         var teamGames = await teamGroup.ToListAsync();
         return teamGames.ToDictionary(k => k.ToonId, v => v.Teamgames);

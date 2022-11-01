@@ -51,8 +51,7 @@ public partial class TopRow : ComponentBase, IDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
+        if (firstRender) {
             await decodeService.ScanForNewReplays();
             await InvokeAsync(() => StateHasChanged());
             CheckForUpdates(true);
@@ -66,23 +65,17 @@ public partial class TopRow : ComponentBase, IDisposable
 
         elapsed = DateTime.UtcNow - e.Start;
 
-        if (!decodeEventArgs.Done)
-        {
-            if (decodeEventArgs.Decoded < 10)
-            {
+        if (!decodeEventArgs.Done) {
+            if (decodeEventArgs.Decoded < 10) {
                 if (UserSettingsService.UserSettings.CpuCoresUsedForDecoding > 0)
                     eta = TimeSpan.FromSeconds(decodeEventArgs.Total * 6 / UserSettingsService.UserSettings.CpuCoresUsedForDecoding) - elapsed;
                 else
                     eta = TimeSpan.FromSeconds(decodeEventArgs.Total * 6) - elapsed;
-            }
-            else
-            {
+            } else {
                 double one = elapsed.TotalSeconds / (double)decodeEventArgs.Decoded;
                 eta = TimeSpan.FromSeconds(one * (decodeEventArgs.Total - decodeEventArgs.Decoded));
             }
-        }
-        else
-        {
+        } else {
             eta = TimeSpan.Zero;
         }
 
@@ -96,8 +89,7 @@ public partial class TopRow : ComponentBase, IDisposable
 
     public async void CheckForUpdates(bool init = false)
     {
-        if (init)
-        {
+        if (init) {
             await Task.Delay(5000);
         }
         await UpdateService.CheckUpdate(init);

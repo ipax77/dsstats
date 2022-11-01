@@ -22,8 +22,7 @@ public class DataService : IDataService
     public async Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default)
     {
         var replayDto = await replayRepository.GetReplay(replayHash);
-        if (replayDto == null)
-        {
+        if (replayDto == null) {
             return null;
         }
         return replayDto;

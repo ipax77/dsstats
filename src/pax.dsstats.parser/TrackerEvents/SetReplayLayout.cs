@@ -17,91 +17,65 @@ public partial class Parse
 
         bool objectivesSet = false;
 
-        for (int i = 0; i < zeroBornEvents.Count; i++)
-        {
+        for (int i = 0; i < zeroBornEvents.Count; i++) {
             var bornEvent = zeroBornEvents[i];
 
-            if (!objectivesSet)
-            {
+            if (!objectivesSet) {
                 (nexusBornEvent, planetaryBornEvent, cannonBornEvent, bunkerBornEvent) =
                     CheckObjective(bornEvent, nexusBornEvent, planetaryBornEvent, cannonBornEvent, bunkerBornEvent);
 
                 objectivesSet = CheckObjectivesSet(nexusBornEvent, planetaryBornEvent, cannonBornEvent, bunkerBornEvent);
 
-                if (objectivesSet && nexusBornEvent != null && planetaryBornEvent != null && cannonBornEvent != null && bunkerBornEvent != null)
-                {
+                if (objectivesSet && nexusBornEvent != null && planetaryBornEvent != null && cannonBornEvent != null && bunkerBornEvent != null) {
                     (lineTeam1, lineTeam2) = GetLines(nexusBornEvent, planetaryBornEvent);
                     replay.Layout.Nexus = new Position(nexusBornEvent.X, nexusBornEvent.Y);
                     replay.Layout.Planetary = new Position(planetaryBornEvent.X, planetaryBornEvent.Y);
                     replay.Layout.Cannon = new Position(cannonBornEvent.X, cannonBornEvent.Y);
                     replay.Layout.Bunker = new Position(bunkerBornEvent.X, bunkerBornEvent.Y);
 
-                    if (nexusBornEvent.SUnitDiedEvent != null)
-                    {
+                    if (nexusBornEvent.SUnitDiedEvent != null) {
                         replay.Duration = nexusBornEvent.SUnitDiedEvent.Gameloop;
                         replay.WinnerTeam = 1;
-                    }
-                    else if (planetaryBornEvent.SUnitDiedEvent != null)
-                    {
+                    } else if (planetaryBornEvent.SUnitDiedEvent != null) {
                         replay.Duration = planetaryBornEvent.SUnitDiedEvent.Gameloop;
                         replay.WinnerTeam = 2;
                     }
 
-                    if (cannonBornEvent.SUnitDiedEvent != null)
-                    {
+                    if (cannonBornEvent.SUnitDiedEvent != null) {
                         replay.Cannon = cannonBornEvent.SUnitDiedEvent.Gameloop;
                     }
 
-                    if (bunkerBornEvent.SUnitDiedEvent != null)
-                    {
+                    if (bunkerBornEvent.SUnitDiedEvent != null) {
                         replay.Bunker = bunkerBornEvent.SUnitDiedEvent.Gameloop;
                     }
                 }
             }
 
-            if (bornEvent.ControlPlayerId <= 0 || bornEvent.ControlPlayerId > 6)
-            {
+            if (bornEvent.ControlPlayerId <= 0 || bornEvent.ControlPlayerId > 6) {
                 continue;
             }
 
             DsPlayer? player = replay.Players.FirstOrDefault(f => f.Pos == bornEvent.ControlPlayerId);
-            if (player == null)
-            {
+            if (player == null) {
                 continue;
             }
 
-            if (bornEvent.UnitTypeName == "StagingAreaFootprintSouth" || bornEvent.UnitTypeName == "AreaMarkerSouth")
-            {
+            if (bornEvent.UnitTypeName == "StagingAreaFootprintSouth" || bornEvent.UnitTypeName == "AreaMarkerSouth") {
                 player.SpawnArea2.South = new Position(bornEvent.X, bornEvent.Y);
 
                 var distance = Vector2.DistanceSquared(new Vector2(bornEvent.X, 0), new Vector2(bornEvent.X, bornEvent.Y));
-                if (distance > 10000)
-                {
+                if (distance > 10000) {
                     player.Team = 1;
-                }
-                else
-                {
+                } else {
                     player.Team = 2;
                 }
-            }
-
-            else if (bornEvent.UnitTypeName == "StagingAreaFootprintWest" || bornEvent.UnitTypeName == "AreaMarkerWest")
-            {
+            } else if (bornEvent.UnitTypeName == "StagingAreaFootprintWest" || bornEvent.UnitTypeName == "AreaMarkerWest") {
                 player.SpawnArea2.West = new Position(bornEvent.X, bornEvent.Y);
-            }
-
-            else if (bornEvent.UnitTypeName == "StagingAreaFootprintNorth" || bornEvent.UnitTypeName == "AreaMarkerNorth")
-            {
+            } else if (bornEvent.UnitTypeName == "StagingAreaFootprintNorth" || bornEvent.UnitTypeName == "AreaMarkerNorth") {
                 player.SpawnArea2.North = new Position(bornEvent.X, bornEvent.Y);
-            }
-
-            else if (bornEvent.UnitTypeName == "StagingAreaFootprintEast" || bornEvent.UnitTypeName == "AreaMarkerEast")
-            {
+            } else if (bornEvent.UnitTypeName == "StagingAreaFootprintEast" || bornEvent.UnitTypeName == "AreaMarkerEast") {
                 player.SpawnArea2.East = new Position(bornEvent.X, bornEvent.Y);
-            }
-
-            else if (bornEvent.UnitTypeName.StartsWith("Worker"))
-            {
+            } else if (bornEvent.UnitTypeName.StartsWith("Worker")) {
                 player.Race = bornEvent.UnitTypeName[6..];
             }
         }
@@ -111,8 +85,7 @@ public partial class Parse
             || bunkerBornEvent == null
             || cannonBornEvent == null
             || lineTeam1 == null
-            || lineTeam2 == null)
-        {
+            || lineTeam2 == null) {
             throw new ArgumentNullException(nameof(nexusBornEvent));
         }
     }
@@ -144,20 +117,13 @@ public partial class Parse
                                        SUnitBornEvent? cannonBornEvent,
                                        SUnitBornEvent? bunkerBornEvent)
     {
-        if (bornEvent.UnitTypeName == "ObjectiveNexus")
-        {
+        if (bornEvent.UnitTypeName == "ObjectiveNexus") {
             nexusBornEvent = bornEvent;
-        }
-        else if (bornEvent.UnitTypeName == "ObjectivePlanetaryFortress")
-        {
+        } else if (bornEvent.UnitTypeName == "ObjectivePlanetaryFortress") {
             planetaryBornEvent = bornEvent;
-        }
-        else if (bornEvent.UnitTypeName == "ObjectivePhotonCannon")
-        {
+        } else if (bornEvent.UnitTypeName == "ObjectivePhotonCannon") {
             cannonBornEvent = bornEvent;
-        }
-        else if (bornEvent.UnitTypeName == "ObjectiveBunker")
-        {
+        } else if (bornEvent.UnitTypeName == "ObjectiveBunker") {
             bunkerBornEvent = bornEvent;
         }
         return (nexusBornEvent, planetaryBornEvent, cannonBornEvent, bunkerBornEvent);

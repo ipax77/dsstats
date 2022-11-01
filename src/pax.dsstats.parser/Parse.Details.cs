@@ -7,17 +7,14 @@ public static partial class Parse
     private static void ParseDetails(DsReplay replay, Details details)
     {
         int failsafe_pos = 0;
-        foreach (var player in details.Players)
-        {
-            if (player.Observe > 0)
-            {
+        foreach (var player in details.Players) {
+            if (player.Observe > 0) {
                 continue;
             }
 
             failsafe_pos++;
 
-            replay.Players.Add(new DsPlayer()
-            {
+            replay.Players.Add(new DsPlayer() {
                 Name = player.Name,
                 ToonId = player.Toon.Id,
                 Clan = player.ClanName,

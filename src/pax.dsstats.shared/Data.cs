@@ -7,8 +7,7 @@ public static class Data
 {
     public static Commander GetCommander(string race)
     {
-        return race switch
-        {
+        return race switch {
             "Terran" => Commander.Terran,
             "Protoss" => Commander.Protoss,
             "Zerg" => Commander.Zerg,
@@ -36,8 +35,7 @@ public static class Data
 
     public static GameMode GetGameMode(string gameMode)
     {
-        return gameMode switch
-        {
+        return gameMode switch {
             "GameModeBrawlCommanders" => GameMode.BrawlCommanders,
             "GameModeBrawlStandard" => GameMode.BrawlStandard,
             "GameModeBrawl" => GameMode.BrawlStandard,
@@ -85,8 +83,7 @@ public static class Data
 
     public static (DateTime, DateTime) TimeperiodSelected(string period)
     {
-        return period switch
-        {
+        return period switch {
             "This Month" => (DateTime.Today.AddDays(-(DateTime.Today.Day - 1)), DateTime.Today),
             "Last Month" => (DateTime.Today.AddDays(-(DateTime.Today.Day - 1)).AddMonths(-1), DateTime.Today.AddDays(-(DateTime.Today.Day - 1)).AddDays(-1)),
             "This Year" => (new DateTime(DateTime.Now.Year, 1, 1), DateTime.Today),
@@ -102,8 +99,7 @@ public static class Data
 
     public static List<Commander> GetCommanders(CmdrGet cmdrGet)
     {
-        return cmdrGet switch
-        {
+        return cmdrGet switch {
             CmdrGet.All => Enum.GetValues(typeof(Commander)).Cast<Commander>().ToList(),
             CmdrGet.NoNone => Enum.GetValues(typeof(Commander)).Cast<Commander>().Where(x => x != Commander.None).ToList(),
             CmdrGet.NoStd => Enum.GetValues(typeof(Commander)).Cast<Commander>().Where(x => (int)x > 3).ToList(),
@@ -126,8 +122,7 @@ public static class Data
         // 10min: 12960, 13440, 13920
         // 15min: 19680, 20160, 20640
 
-        return gameloop switch
-        {
+        return gameloop switch {
             > 20645 => Breakpoint.All,
             >= 19680 => Breakpoint.Min15,
             >= 13930 => Breakpoint.All,
@@ -141,8 +136,7 @@ public static class Data
     public static string GenHash(ReplayDto replay)
     {
         StringBuilder sb = new();
-        foreach (var pl in replay.ReplayPlayers.OrderBy(o => o.GamePos))
-        {
+        foreach (var pl in replay.ReplayPlayers.OrderBy(o => o.GamePos)) {
             sb.Append(pl.GamePos + pl.Race + pl.Player.ToonId);
         }
         sb.Append(replay.GameMode + replay.Playercount);
@@ -164,8 +158,7 @@ public static class Data
     {
         byte[] data = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(input));
         StringBuilder sBuilder = new StringBuilder();
-        for (int i = 0; i < data.Length; i++)
-        {
+        for (int i = 0; i < data.Length; i++) {
             sBuilder.Append(data[i].ToString("x2"));
         }
         return sBuilder.ToString();

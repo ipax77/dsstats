@@ -10,8 +10,7 @@ namespace SqliteMigrations.Migrations
         {
             migrationBuilder.CreateTable(
                 name: "CommanderMmrs",
-                columns: table => new
-                {
+                columns: table => new {
                     CommanderMmrId = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Commander = table.Column<int>(type: "INTEGER", nullable: false),
@@ -19,8 +18,7 @@ namespace SqliteMigrations.Migrations
                     Synergy = table.Column<double>(type: "REAL", nullable: false),
                     AntiSynergy = table.Column<double>(type: "REAL", nullable: false)
                 },
-                constraints: table =>
-                {
+                constraints: table => {
                     table.PrimaryKey("PK_CommanderMmrs", x => x.CommanderMmrId);
                 });
 
