@@ -65,6 +65,8 @@ public class Player
     public int TeamGamesStd { get; set; }
     public Commander MainCommander { get; set; }
     public int MainCount { get; set; }
+    public int NotUploadCount { get; set; }
+    public int LeaverCount { get; set; }
     public int? UploaderId { get; set; }
     public virtual Uploader? Uploader { get; set; }
     public virtual ICollection<ReplayPlayer> ReplayPlayers { get; set; }
@@ -172,6 +174,8 @@ public class ReplayPlayer
     public int Kills { get; set; }
     public int UpgradesSpent { get; set; }
     public bool IsUploader { get; set; }
+    public bool IsLeaver { get; set; }
+    public bool DidNotUpload { get; set; }
     [MaxLength(300)]
     public string TierUpgrades { get; set; } = null!;
     [MaxLength(300)]

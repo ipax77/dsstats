@@ -12,8 +12,6 @@ namespace pax.dsstats.dbng.Services;
 
 public class FireMmrService
 {
-    bool testBranch = false;
-
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
     private readonly ILogger<FireMmrService> logger;
@@ -99,19 +97,19 @@ public class FireMmrService
             int correctedDuration = replay.Duration;
             bool missingUploader = false;
 
-            //if (replay.WinnerTeam == 0)
-            //{
-            //    correctedDuration = replay.ReplayPlayers.Where(x => !x.IsUploader).Max(x => x.Duration);
 
-            //    var uploaders = replay.ReplayPlayers.Where(x => x.IsUploader);
+            if (replay.WinnerTeam == 0) {
+                correctedDuration = replay.ReplayPlayers.Where(x => !x.IsUploader).Max(x => x.Duration);
 
-            //    if (!uploaders.Any()) {
-            //        missingUploader = true;
-            //    } else {
-            //        winnerTeam = replay.ReplayPlayers.Where(x => !x.IsUploader && x.Duration >= uploaders.First().Duration - 100);
-            //        //loserTeam = 
-            //    }
-            //}
+                var uploaders = replay.ReplayPlayers.Where(x => x.IsUploader);
+
+                if (!uploaders.Any()) {
+                    missingUploader = true;
+                } else {
+                    winnerTeam = replay.ReplayPlayers.Where(x => !x.IsUploader && x.Duration >= uploaders.First().Duration - 100);
+                    //loserTeam = 
+                }
+            }
 
             if (!missingUploader)
             {
