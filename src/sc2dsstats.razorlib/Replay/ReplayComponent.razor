@@ -187,6 +187,8 @@
         {
             chartComponent?.DrawChart();
         }
+        StateHasChanged();
+        JSRuntime.InvokeVoidAsync("enableTooltips");
     }
 
     private void ChartEventTriggered(ChartJsEvent chartJsEvent)
