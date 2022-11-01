@@ -12,7 +12,7 @@ namespace pax.dsstats.dbng.Services;
 
 public class FireMmrService
 {
-    bool testBranch = true;
+    bool testBranch = false;
 
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
