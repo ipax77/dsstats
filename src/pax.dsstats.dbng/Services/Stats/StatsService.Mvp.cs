@@ -5,13 +5,11 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class StatsService
 {
-    private readonly List<GameMode> defaultGameModes = new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic };
-
-    private async Task<StatsResponse> GetWinrate(StatsRequest request)
+    private async Task<StatsResponse> GetMvp(StatsRequest request)
     {
         if (!request.DefaultFilter)
         {
-            return await GetCustomWinrate(request);
+            return await GetCustomMvp(request);
         }
 
         var firstNotSecond = request.GameModes.Except(defaultGameModes).ToList();
@@ -19,7 +17,7 @@ public partial class StatsService
 
         if (firstNotSecond.Any() || secondNotFirst.Any())
         {
-            return await GetCustomWinrate(request);
+            return await GetCustomMvp(request);
         }
 
         var cmdrstats = await GetRequestStats(request);
@@ -47,7 +45,7 @@ public partial class StatsService
             {
                 Label = s.Key.ToString(),
                 Matchups = s.Sum(c => c.Count),
-                Wins = s.Sum(c => c.Wins),
+                Wins = s.Sum(c => c.Mvp),
                 duration = (long)s.Sum(c => c.Duration)
             }).ToList()
             :
@@ -55,7 +53,7 @@ public partial class StatsService
             {
                 Label = s.Key.ToString(),
                 Matchups = s.Sum(c => c.Count),
-                Wins = s.Sum(c => c.Wins),
+                Wins = s.Sum(c => c.Mvp),
                 duration = (long)s.Sum(c => c.Duration)
             }).ToList();
 
@@ -69,7 +67,7 @@ public partial class StatsService
         };
     }
 
-    public async Task<StatsResponse> GetCustomWinrate(StatsRequest request)
+    public async Task<StatsResponse> GetCustomMvp(StatsRequest request)
     {
         var replays = GetCustomRequestReplay(request);
 
@@ -82,7 +80,7 @@ public partial class StatsService
                              {
                                  Label = g.Key.race.ToString(),
                                  Matchups = g.Count(),
-                                 Wins = g.Count(c => c.p.PlayerResult == PlayerResult.Win),
+                                 Wins = g.Count(c => c.p.Kills == c.r.Maxkillsum),
                                  duration = g.Sum(s => s.r.Duration)
                              },
             (false, false) => from r in replays
@@ -93,7 +91,7 @@ public partial class StatsService
                               {
                                   Label = g.Key.race.ToString(),
                                   Matchups = g.Count(),
-                                  Wins = g.Count(c => c.p.PlayerResult == PlayerResult.Win),
+                                  Wins = g.Count(c => c.p.Kills == c.r.Maxkillsum),
                                   duration = g.Sum(s => s.r.Duration)
                               },
             (true, true) => from r in replays
@@ -104,7 +102,7 @@ public partial class StatsService
                             {
                                 Label = g.Key.race.ToString(),
                                 Matchups = g.Count(),
-                                Wins = g.Count(c => c.p.PlayerResult == PlayerResult.Win),
+                                Wins = g.Count(c => c.p.Kills == c.r.Maxkillsum),
                                 duration = g.Sum(s => s.r.Duration)
                             },
             (true, false) => from r in replays
@@ -115,7 +113,7 @@ public partial class StatsService
                              {
                                  Label = g.Key.race.ToString(),
                                  Matchups = g.Count(),
-                                 Wins = g.Count(c => c.p.PlayerResult == PlayerResult.Win),
+                                 Wins = g.Count(c => c.p.Kills == c.r.Maxkillsum),
                                  duration = g.Sum(s => s.r.Duration)
                              },
         };

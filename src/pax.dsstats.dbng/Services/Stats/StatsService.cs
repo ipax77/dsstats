@@ -26,6 +26,8 @@ public partial class StatsService : IStatsService
         {
             StatsMode.Winrate => await GetWinrate(request),
             StatsMode.Timeline => await GetTimeline(request),
+            StatsMode.Mvp => await GetMvp(request),
+            StatsMode.Synergy => await GetSynergy(request),
             _ => new()
         };
     }
@@ -126,6 +128,38 @@ public partial class StatsService : IStatsService
     {
         var cmdrs = Data.GetCommanders(Data.CmdrGet.NoStd);
         return stats.Where(x => cmdrs.Contains(x.Race) && cmdrs.Contains(x.OppRace)).ToList();
+    }
+
+    private IQueryable<Replay> GetCustomRequestReplay(StatsRequest request)
+    {
+        var replays = context.Replays
+                .Include(i => i.ReplayPlayers)
+                .Where(x => x.GameTime > request.StartTime)
+                .AsNoTracking();
+
+        if (request.EndTime != DateTime.Today)
+        {
+            replays = replays.Where(x => x.GameTime <= request.EndTime);
+        }
+
+        if (request.GameModes.Any())
+        {
+            replays = replays.Where(x => request.GameModes.Contains(x.GameMode));
+        }
+
+        if (request.DefaultFilter)
+        {
+            replays = replays.Where(x => x.Duration > 300
+                && x.Maxleaver < 90
+                && x.Playercount == 6
+                && x.WinnerTeam > 0);
+        }
+        else if (request.PlayerCount > 0)
+        {
+            replays = replays.Where(x => x.Playercount == request.PlayerCount);
+        }
+
+        return replays;
     }
 }
 

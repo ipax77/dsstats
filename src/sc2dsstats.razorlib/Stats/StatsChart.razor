@@ -70,7 +70,7 @@
 
     public void SetChart()
     {
-        if (StatsResponse.Request.StatsMode == StatsMode.Winrate)
+        if (StatsResponse.Request.StatsMode == StatsMode.Winrate || StatsResponse.Request.StatsMode == StatsMode.Mvp)
         {
             var items = GetFilterdAndSortedChartData(StatsResponse);
 
@@ -185,6 +185,78 @@
                     }
                 };
         }
+        else if (StatsResponse.Request.StatsMode == StatsMode.Synergy)
+        {
+            chartConfig.Type = ChartType.radar;
+            chartConfig.Data.Labels = StatsResponse.Items.Select(s => s.Label).ToList();
+            chartConfig.Data.Datasets = new List<ChartJsDataset>()
+            {
+                new RadarDataset()
+                {
+                    Label = StatsResponse.Request.Interest == Commander.None ? StatsResponse.Request.StatsMode.ToString() : $"{StatsResponse.Request.StatsMode} - {StatsResponse.Request.Interest}",
+                    Data = StatsResponse.Items.Select(s => (object)Math.Round(s.Winrate, 2)).ToList(),
+                    BackgroundColor = StatsResponse.Request.Interest == Commander.None ? "blue" : Data.GetBackgroundColor(StatsResponse.Request.Interest),
+                    BorderColor = StatsResponse.Request.Interest == Commander.None ? "blue" : Data.CmdrColor[StatsResponse.Request.Interest],
+                    BorderWidth = 3,
+                    PointRadius = new IndexableOption<double>(4),
+                    Fill = true
+                }
+            };
+            chartConfig.Options = new ChartJsOptions()
+                {
+                    Responsive = true,
+                    MaintainAspectRatio = true,
+                    Plugins = new Plugins()
+                    {
+                        Legend = new Legend()
+                        {
+                            Position = "right",
+                            Labels = new Labels()
+                            {
+                                Color = "#f2f2f2",
+                            }
+                        },
+                        Title = new Title()
+                        {
+                            Display = true,
+                            Font = new Font()
+                            {
+                                Size = 20,
+                            },
+                            Text = StatsResponse.Request.StatsMode.ToString(),
+                            Color = "#f2f2f2"
+                        }
+                    },
+                    Scales = new ChartJsOptionsScales()
+                    {
+                        R = new LinearRadialAxis()
+                        {
+                            AngelLines = new AngelLines()
+                            {
+                                Display = true,
+                                Color = "#f2f2f233"
+                            },
+                            Grid = new ChartJsGrid()
+                            {
+                                Display = true,
+                                Color = "#f2f2f233"
+                            },
+                            PointLabels = new PointLabels()
+                            {
+                                Display = true,
+                                Font = new Font()
+                                {
+                                    Size = 12
+                                },
+                                Color = "#f2f2f2"
+                            },
+                            BeginAtZero = true
+                        }
+                    }
+                };
+        }
+
+
         dataSetup = true;
         if (chartSetup && dataSetup)
         {

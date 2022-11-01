@@ -62,7 +62,7 @@
                 </th>
                 <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(StatsResponseItem.Winrate))">
                     <SortArrow Property="@nameof(StatsResponseItem.Winrate)">
-                        Winrate
+                        @StatsResponse.Request.StatsMode
                     </SortArrow>
                 </th>
             </tr>
@@ -80,8 +80,8 @@
                          height="30" />
                         @item.Label
                     </td>
-                    <td class="text-end">@item.Matchups</td>
-                    <td class="text-end">@item.Wins</td>
+                    <td class="text-center">@item.Matchups</td>
+                    <td class="text-center">@item.Wins</td>
                     <td>@item.Winrate.ToString("N2") %</td>
                 </tr>
             }

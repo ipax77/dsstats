@@ -26,5 +26,7 @@ public enum StatsMode
 {
     None = 0,
     Winrate = 1,
-    Timeline = 2
+    Timeline = 2,
+    Mvp = 3,
+    Synergy = 4,
 }

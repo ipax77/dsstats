@@ -9,9 +9,15 @@
     StatsRequest statsRequest = new()
     {
         StatsMode = StatsMode.Winrate,
-        StartTime = new DateTime(2021, 1, 1),
-        EndTime = DateTime.Today,
         Uploaders = true,
-        DefaultFilter = true
+        DefaultFilter = true,
+        GameModes = new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic }
     };
+
+    protected override void OnInitialized()
+    {
+        (statsRequest.StartTime, statsRequest.EndTime) = Data.TimeperiodSelected("This Year");
+        statsRequest.TimePeriod = "This Year";
+        base.OnInitialized();
+    }
 }
