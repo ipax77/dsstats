@@ -27,6 +27,8 @@ public record PlayerDsRDto
     public int PlayerId { get; init; }
     public string Name { get; init; } = null!;
     public int ToonId { get; init; }
+    public int NotUploadCount { get; init; }
+    public int LeaverCount { get; init; }
 }
 
 public record PlayerRatingDto

@@ -120,6 +120,9 @@ namespace SqliteMigrations.Migrations
                     b.Property<int>("GamesStd")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("LeaverCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("MainCommander")
                         .HasColumnType("INTEGER");
 
@@ -150,6 +153,9 @@ namespace SqliteMigrations.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("NotUploadCount")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("RegionId")
                         .HasColumnType("INTEGER");
@@ -386,6 +392,9 @@ namespace SqliteMigrations.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("DidNotUpload")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Downloads")
                         .HasColumnType("INTEGER");
 
@@ -396,6 +405,9 @@ namespace SqliteMigrations.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Income")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsLeaver")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsUploader")
