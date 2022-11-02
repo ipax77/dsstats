@@ -17,5 +17,6 @@ namespace pax.dsstats.dbng.Services
         Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId);
         Task<PlayerRatingDto?> GetPlayerRating(int toonId);
         Task SeedPlayerInfos();
+        Task<List<CmdrStats>> GetRequestStats(StatsRequest request);
     }
 }

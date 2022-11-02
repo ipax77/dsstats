@@ -56,7 +56,7 @@ public partial class StatsService : IStatsService
         items.ForEach(f => memoryCache.Remove(f));
     }
 
-    private async Task<List<CmdrStats>> GetRequestStats(StatsRequest request)
+    public async Task<List<CmdrStats>> GetRequestStats(StatsRequest request)
     {
         string memKey = request.Uploaders ? "cmdrstatsuploaders" : "cmdrstats";
         if (!memoryCache.TryGetValue(memKey, out List<CmdrStats> stats))

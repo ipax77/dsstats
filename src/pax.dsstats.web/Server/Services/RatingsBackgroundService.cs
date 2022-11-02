@@ -1,4 +1,5 @@
 ﻿using pax.dsstats.dbng.Services;
+using System.Diagnostics;
 
 namespace pax.dsstats.web.Server.Services;
 
@@ -7,11 +8,13 @@ namespace pax.dsstats.web.Server.Services;
 public class RatingsBackgroundService : IHostedService, IDisposable
 {
     private readonly IServiceProvider serviceProvider;
+    private readonly ILogger<RatingsBackgroundService> logger;
     private Timer? _timer;
 
-    public RatingsBackgroundService(IServiceProvider serviceProvider)
+    public RatingsBackgroundService(IServiceProvider serviceProvider, ILogger<RatingsBackgroundService> logger)
     {
         this.serviceProvider = serviceProvider;
+        this.logger = logger;
     }
 
     public Task StartAsync(CancellationToken stoppingToken)
@@ -29,11 +32,17 @@ public class RatingsBackgroundService : IHostedService, IDisposable
 
     private async void DoWork(object? state)
     {
+        Stopwatch sw = Stopwatch.StartNew();
+
         using var scope = serviceProvider.CreateScope();
         var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
         await statsService.SeedPlayerInfos();
         var mmrServie = scope.ServiceProvider.GetRequiredService<FireMmrService>();
         await mmrServie.CalcMmmr();
+
+        sw.Stop();
+
+        logger.LogWarning($"{DateTime.UtcNow.ToString(@"yyyy-MM-dd HH:mm:ss")} - Work done in {sw.ElapsedMilliseconds} ms");
     }
 
     public Task StopAsync(CancellationToken stoppingToken)

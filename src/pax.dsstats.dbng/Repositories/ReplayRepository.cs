@@ -554,4 +554,34 @@ public class ReplayRepository : IReplayRepository
             .Select(s => s.Name)
             .ToListAsync();
     }
+
+    public async Task SetReplayViews()
+    {
+        var viewedHashes = await context.ReplayViewCounts
+            .ToListAsync();
+
+        var replayHashViews = viewedHashes.GroupBy(g => g.ReplayHash)
+            .Select(s => new { Hash = s.Key, Count = s.Count() })
+            .ToDictionary(k => k.Hash, v => v.Count);
+
+        int i = 0;
+        foreach (var ent in replayHashViews)
+        {
+            var replay = await context.Replays
+                .FirstOrDefaultAsync(f => f.ReplayHash == ent.Key);
+            if (replay != null)
+            {
+                replay.Views += ent.Value;
+            }
+            if (i % 1000 == 0)
+            {
+                await context.SaveChangesAsync();
+            }
+        }
+        await context.SaveChangesAsync();
+
+        context.ReplayViewCounts.RemoveRange(viewedHashes);
+
+        await context.SaveChangesAsync();
+    }
 }
