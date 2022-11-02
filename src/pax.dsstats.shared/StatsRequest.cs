@@ -30,4 +30,5 @@ public enum StatsMode
     Mvp = 3,
     Synergy = 4,
     Count = 5,
+    Duration = 6,
 }

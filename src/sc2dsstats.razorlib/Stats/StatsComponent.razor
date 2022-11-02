@@ -36,9 +36,12 @@
         <div>
             <span class="badge text-bg-primary display-block ms-1" style="font-size: 1rem;">∅ @statsResponse.Request.StatsMode<br />@HelperService.GetPercentageString(statsResponse.Items.Sum(s => s.Wins), statsResponse.Items.Sum(s => s.Matchups))</span>
         </div>
-        <div>
-            <span class="badge text-bg-primary text-light display-block ms-1" style="font-size: 1rem;">∅ Duration<br />@TimeSpan.FromSeconds(statsResponse.AvgDuration).ToString(@"mm\:ss")min</span>
-        </div>
+        @if (statsResponse.AvgDuration > 0)
+        {
+            <div>
+                <span class="badge text-bg-primary text-light display-block ms-1" style="font-size: 1rem;">∅ Duration<br />@TimeSpan.FromSeconds(statsResponse.AvgDuration).ToString(@"mm\:ss")min</span>
+            </div>
+        }
     }
     @if (isLoading)
     {
@@ -112,7 +115,7 @@
             isLoading = true;
         }
 
-        if (StatsRequest.StatsMode == StatsMode.Timeline || StatsRequest.StatsMode == StatsMode.Synergy)
+        if (StatsRequest.StatsMode == StatsMode.Timeline || StatsRequest.StatsMode == StatsMode.Synergy || StatsRequest.StatsMode == StatsMode.Duration)
         {
             if (StatsRequest.Interest == Commander.None)
             {

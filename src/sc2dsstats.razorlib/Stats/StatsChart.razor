@@ -143,7 +143,7 @@
                 };
             _ = chartComponent?.DrawChart();
         }
-        else if (StatsResponse.Request.StatsMode == StatsMode.Timeline)
+        else if (StatsResponse.Request.StatsMode == StatsMode.Timeline || StatsResponse.Request.StatsMode == StatsMode.Duration)
         {
             chartConfig.Type = ChartType.line;
             chartConfig.Data.Labels = StatsResponse.Items.Select(s => s.Label).ToList();

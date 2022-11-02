@@ -29,6 +29,7 @@ public partial class StatsService : IStatsService
             StatsMode.Mvp => await GetMvp(request),
             StatsMode.Synergy => await GetSynergy(request),
             StatsMode.Count => await GetWinrate(request),
+            StatsMode.Duration => await GetDuration(request),
             _ => new()
         };
     }
