@@ -24,12 +24,12 @@ namespace pax.dsstats.web.Server.Controllers
 
         [HttpGet]
         [Route("GetReplay/{replayHash}")]
-        public async Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default)
+        public async Task<ActionResult<ReplayDto?>> GetReplay(string replayHash, CancellationToken token = default)
         {
-            var replayDto = await replayRepository.GetReplay(replayHash);
+            var replayDto = await replayRepository.GetReplay(replayHash, false, token);
             if (replayDto == null)
             {
-                return null;
+                return NotFound();
             }
             return replayDto;
         }
@@ -113,8 +113,7 @@ namespace pax.dsstats.web.Server.Controllers
         [Route("PlayerRating/{toonId}")]
         public async Task<PlayerRatingDto?> GetPlayerRating(int toonId)
         {
-            var data = await statsService.GetPlayerRating(toonId);
-            return data;
+            return await statsService.GetPlayerRating(toonId);
         }
     }
 

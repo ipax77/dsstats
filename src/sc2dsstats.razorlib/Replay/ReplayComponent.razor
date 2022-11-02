@@ -68,8 +68,8 @@
                                             <tr class="@GetPlayerTableRowCss(player)" @onclick="@(() => showBuilds[player.GamePos] = !showBuilds[player.GamePos])">
                                                 <td>@player.GamePos</td>
                                                 <td>
-                                                    <span class="d-inline-block text-truncate" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Player.Name">
-                                                        @player.Player.Name
+                                                    <span class="d-inline-block text-truncate" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
+                                                        @player.Name
                                                     </span>
                                                 </td>
                                                 <td>@player.APM</td>

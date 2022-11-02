@@ -20,7 +20,7 @@ public class ReplayRepository : IReplayRepository
         this.mapper = mapper;
     }
 
-    public async Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default)
+    public async Task<ReplayDto?> GetReplay(string replayHash, bool dry = false, CancellationToken token = default)
     {
         var replay = await context.Replays
             .Include(i => i.ReplayPlayers)
@@ -28,7 +28,7 @@ public class ReplayRepository : IReplayRepository
                     .ThenInclude(t => t.Units)
                         .ThenInclude(t => t.Unit)
             .Include(i => i.ReplayPlayers)
-                .ThenInclude(t => t.Player)
+             //  .ThenInclude(t => t.Player)
             .AsNoTracking()
             .AsSplitQuery()
             .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
@@ -39,12 +39,14 @@ public class ReplayRepository : IReplayRepository
             return null;
         }
 
-        context.ReplayViewCounts.Add(new ReplayViewCount()
+        if (!dry)
         {
-            ReplayHash = replay.ReplayHash
-        });
-        await context.SaveChangesAsync();
-
+            context.ReplayViewCounts.Add(new ReplayViewCount()
+            {
+                ReplayHash = replay.ReplayHash
+            });
+            await context.SaveChangesAsync();
+        }
         return replay with { Views = replay.Views + 1 };
     }
 
