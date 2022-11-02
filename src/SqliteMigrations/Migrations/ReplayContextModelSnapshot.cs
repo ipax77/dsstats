@@ -26,7 +26,7 @@ namespace SqliteMigrations.Migrations
                     b.Property<int>("BattleNetId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("UploaderId")
+                    b.Property<int>("UploaderId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("BattleNetInfoId");
@@ -650,6 +650,9 @@ namespace SqliteMigrations.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("LatestReplay")
                         .HasPrecision(0)
                         .HasColumnType("TEXT");
@@ -669,6 +672,16 @@ namespace SqliteMigrations.Migrations
 
                     b.Property<int>("TeamGames")
                         .HasColumnType("INTEGER");
+
+                    b.Property<int>("UploadDisabledCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("UploadIsDisabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UploadLastDisabled")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Wins")
                         .HasColumnType("INTEGER");
@@ -698,9 +711,13 @@ namespace SqliteMigrations.Migrations
 
             modelBuilder.Entity("pax.dsstats.dbng.BattleNetInfo", b =>
                 {
-                    b.HasOne("pax.dsstats.dbng.Uploader", null)
+                    b.HasOne("pax.dsstats.dbng.Uploader", "Uploader")
                         .WithMany("BattleNetInfos")
-                        .HasForeignKey("UploaderId");
+                        .HasForeignKey("UploaderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Uploader");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Player", b =>

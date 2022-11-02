@@ -30,12 +30,19 @@ public class Uploader
     public Commander MainCommander { get; set; }
     public int MainCount { get; set; }
     public int TeamGames { get; set; }
+    [Precision(0)]
+    public DateTime UploadLastDisabled { get; set; }
+    public int UploadDisabledCount { get; set; }
+    public bool UploadIsDisabled { get; set; }
+    public bool IsDeleted { get; set; }
 }
 
 public class BattleNetInfo
 {
     public int BattleNetInfoId { get; set; }
     public int BattleNetId { get; set; }
+    public int UploaderId { get; set; }
+    public Uploader Uploader { get; set; } = null!;
 }
 
 public class Player

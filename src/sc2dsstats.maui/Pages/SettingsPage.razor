@@ -7,6 +7,7 @@
 @inject IToastService toastService
 @inject IReplayRepository ReplayRepository
 @inject ReplayContext context
+@inject UploadService UploadService
 
 <h1 class="display-5 fw-bold">Settings</h1>
 
@@ -38,16 +39,20 @@ else
             <div class="col-2">
                 <div class="form-check">
                     <label class="form-check-label">
-                        <InputCheckbox class="form-check-input bg-warning" @bind-Value="UserSettingsService.UserSettings.AllowCleanUploads"></InputCheckbox>
+                        <InputCheckbox class="form-check-input bg-warning" @bind-Value="UserSettingsService.UserSettings.AllowCleanUploads" disabled="@(UserSettingsService.UserSettings.AllowCleanUploads)"></InputCheckbox>
                         Allow Ratings
                     </label>
                 </div>
             </div>
             <div class="col-md-8 fs-4">
-                To get global ratings you allow uploading the full replay information - including playernames. For details check the dsstats website.
+                <p>To get global ratings you allow uploading the full replay information - including playernames. For details check the <a class="text-warning" href="https://dsstats.pax77.org">dsstats website</a></p>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-warning" @onclick="DisableCleanUploads">Disable</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="DeleteMe">Delete my data</button>
+                </div>
             </div>
         </div>
-        <div class="row">
+@*        <div class="row">
             <div class="col-2">
                 <div class="form-check">
                     <label class="form-check-label">
@@ -58,9 +63,9 @@ else
             </div>
             <div class="col-md-8 fs-4">
                 To improve this application it would be very nice if the statistics were uploaded from time to time.
-                All player names (including yours) will be anonymized before sending. By checking you agree that your anonymized DS-replay data will be used at <a class="text-warning" href="https://sc2dsstats.pax77.org">https://sc2dsstats.pax77.org</a> to generate global charts.
+                All player names (including yours) will be anonymized before sending. By checking you agree that your anonymized DS-replay data will be used at <a class="text-warning" href="https://dsstats.pax77.org">https://dsstats.pax77.org</a> to generate global charts.
             </div>
-        </div>
+        </div>*@
         <div class="row">
             <div class="col-2">
                 <div class="form-check">
@@ -319,6 +324,44 @@ else
                 Console.WriteLine(ex.Message);
                 return;
             }
+        }
+    }
+
+    public async Task DisableCleanUploads()
+    {
+        if (Application.Current?.MainPage == null)
+        {
+            return;
+        }
+        bool disable = await Application.Current.MainPage
+            .DisplayAlert("Disable Allow Ratings", "In order to enable fair competition, you can only reactivate this function after a certain period of time after deactivation. Are you sure you want to disable this feature?", "Yes", "Cancel");
+
+        if (disable)
+        {
+            DateTime reactivationTime = await UploadService.DisableUploads();
+            UserSettingsService.UserSettings.AllowCleanUploads = false;
+            UserSettingsService.UserSettings.AllowUploads = false;
+            await UserSettingsService.Save();
+            await Application.Current.MainPage.DisplayAlert("Allow Ratings disabled", $"You will be able to reactive this function at {reactivationTime.ToString(@"yyyy-MM-dd")}", "OK");
+        }
+    }
+
+    public async Task DeleteMe()
+    {
+        if (Application.Current?.MainPage == null)
+        {
+            return;
+        }
+        bool disable = await Application.Current.MainPage
+            .DisplayAlert("Delete my data", "In order to enable fair competition, you can only reactivate this function after a certain period of time after deleting your data. Are you sure you want to continue?", "Yes", "Cancel");
+
+        if (disable)
+        {
+            bool result = await UploadService.DeleteMe();
+            UserSettingsService.UserSettings.AllowCleanUploads = false;
+            UserSettingsService.UserSettings.AllowUploads = false;
+            await UserSettingsService.Save();
+            await Application.Current.MainPage.DisplayAlert("Data deleted", "", "OK");
         }
     }
 

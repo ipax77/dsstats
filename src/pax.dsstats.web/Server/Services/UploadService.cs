@@ -48,7 +48,7 @@ public partial class UploadService
         _ = Produce(gzipbase64String, appGuid);
     }
 
-    public async Task<DateTime> CreateOrUpdateUploader(UploaderDto uploader)
+    public async Task<DateTime?> CreateOrUpdateUploader(UploaderDto uploader)
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -60,6 +60,11 @@ public partial class UploadService
 
         if (dbUploader == null)
         {
+            dbUploader = await FindDuplicateUploader(context, uploader);
+        }
+
+        if (dbUploader == null)
+        {
             dbUploader = mapper.Map<Uploader>(uploader);
             dbUploader.Identifier = uploader.BattleNetInfos.SelectMany(s => s.PlayerUploadDtos).FirstOrDefault()?.Name ?? "Anonymous";
             context.Uploaders.Add(dbUploader);
@@ -67,12 +72,22 @@ public partial class UploadService
         }
         else
         {
-            await UpdateUploaderPlayers(context, dbUploader, uploader);
-            dbUploader.Identifier = dbUploader.Players.FirstOrDefault()?.Name ?? "Anonymous";
-            if (dbUploader.AppGuid != uploader.AppGuid)
+            if (dbUploader.IsDeleted || dbUploader.UploadIsDisabled)
             {
-                dbUploader.AppGuid = uploader.AppGuid;
+                if ((DateTime.UtcNow - dbUploader.UploadLastDisabled) < TimeSpan.FromDays(7))
+                {
+                    return null;
+                }
             }
+
+            await UpdateUploaderPlayers(context, dbUploader, uploader);
+            dbUploader.AppGuid = uploader.AppGuid;
+            dbUploader.Identifier = dbUploader.Players.FirstOrDefault()?.Name ?? "Anonymous";
+            dbUploader.AppVersion = uploader.AppVersion;
+
+            dbUploader.UploadIsDisabled = false;
+            dbUploader.IsDeleted = false;
+
             await context.SaveChangesAsync();
         }
         return await GetUploadersLatestReplay(context, dbUploader);
@@ -201,6 +216,70 @@ public partial class UploadService
         }
 
         await context.SaveChangesAsync();
+    }
+
+    private async Task<Uploader?> FindDuplicateUploader(ReplayContext context, UploaderDto uploader)
+    {
+        var ids = uploader.BattleNetInfos.Select(s => s.BattleNetId).ToList();
+
+        if (!ids.Any())
+        {
+            return null;
+        }
+
+        return await context.BattleNetInfos
+            .Include(i => i.Uploader)
+            .Where(x => ids.Contains(x.BattleNetId))
+            .Select(s => s.Uploader)
+            .Distinct()
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<DateTime> DisableUploader(Guid appGuid)
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var uploader = await context.Uploaders.FirstOrDefaultAsync(f => f.AppGuid == appGuid);
+
+        if (uploader == null)
+        {
+            return DateTime.MinValue;
+        }
+
+        if (uploader.UploadIsDisabled)
+        {
+            return uploader.UploadLastDisabled.AddDays(7);
+        }
+
+        uploader.UploadDisabledCount++;
+        uploader.UploadLastDisabled = DateTime.UtcNow;
+        uploader.UploadIsDisabled = true;
+
+        await context.SaveChangesAsync();
+        return DateTime.Today.AddDays(7);
+    }
+
+    public async Task<bool> DeleteUploader(Guid appGuid)
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var uploader = await context.Uploaders
+            .FirstOrDefaultAsync(f => f.AppGuid == appGuid);
+
+        if (uploader == null || uploader.IsDeleted)
+        {
+            return true;
+        }
+
+        uploader.UploadDisabledCount++;
+        uploader.UploadLastDisabled = DateTime.UtcNow;
+        uploader.UploadIsDisabled = true;
+        uploader.IsDeleted = true;
+
+        await context.SaveChangesAsync();
+        return true;
     }
 
     private static async Task<string> UnzipAsync(string base64string)

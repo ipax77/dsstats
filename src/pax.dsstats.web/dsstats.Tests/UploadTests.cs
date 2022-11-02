@@ -421,4 +421,101 @@ public class UploadTests : IDisposable
 
         Assert.Equal(changeUploaderDto.BattleNetInfos.SelectMany(s => s.PlayerUploadDtos).Count(), uploaderPlayersCount);
     }
+
+    [Fact]
+    public async Task DisableUploadTest()
+    {
+        Guid appGuid = Guid.NewGuid();
+
+        var uploaderDto = new UploaderDto()
+        {
+            AppGuid = appGuid,
+            AppVersion = "0.0.1",
+            BattleNetInfos = new List<BattleNetInfoDto>()
+            {
+                new BattleNetInfoDto()
+                {
+                    BattleNetId = 77123
+                }
+            }
+        };
+
+        var latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto);
+
+        var context = CreateContext();
+        bool dbHasUploader = await context.Uploaders.AnyAsync(a => a.AppGuid == uploaderDto.AppGuid);
+        Assert.True(dbHasUploader);
+
+        await uploadService.DisableUploader(appGuid);
+
+        latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto);
+
+        Assert.Null(latestReplay);
+    }
+
+    [Fact]
+    public async Task DeleteUploadTest()
+    {
+        Guid appGuid = Guid.NewGuid();
+
+        var uploaderDto = new UploaderDto()
+        {
+            AppGuid = appGuid,
+            AppVersion = "0.0.1",
+            BattleNetInfos = new List<BattleNetInfoDto>()
+            {
+                new BattleNetInfoDto()
+                {
+                    BattleNetId = 77123
+                }
+            }
+        };
+
+        var latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto);
+
+        var context = CreateContext();
+        bool dbHasUploader = await context.Uploaders.AnyAsync(a => a.AppGuid == uploaderDto.AppGuid);
+        Assert.True(dbHasUploader);
+
+        await uploadService.DeleteUploader(appGuid);
+
+        latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto);
+
+        Assert.Null(latestReplay);
+    }
+
+    [Fact]
+    public async Task DuplicateUploaderTest()
+    {
+        Guid appGuid = Guid.NewGuid();
+
+        var uploaderDto = new UploaderDto()
+        {
+            AppGuid = appGuid,
+            AppVersion = "0.0.1",
+            BattleNetInfos = new List<BattleNetInfoDto>()
+            {
+                new BattleNetInfoDto()
+                {
+                    BattleNetId = 77123
+                }
+            }
+        };
+
+        var latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto);
+
+        var context = CreateContext();
+        bool dbHasUploader = await context.Uploaders.AnyAsync(a => a.AppGuid == uploaderDto.AppGuid);
+        Assert.True(dbHasUploader);
+
+        var countBefore = await context.Uploaders.CountAsync();
+
+        latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto with { AppGuid = Guid.NewGuid() });
+
+        Assert.NotNull(latestReplay);
+
+        var countAfter = await context.Uploaders.CountAsync();
+
+        Assert.Equal(countBefore, countAfter);
+    }
 }

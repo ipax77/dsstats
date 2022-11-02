@@ -71,6 +71,10 @@ public class UploadService
             using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
             var latestReplayDate = await GetLastReplayDate(context);
+            if (latestReplayDate == null)
+            {
+                return;
+            }
 
             var replays = await context.Replays
                 .Include(i => i.ReplayPlayers)
@@ -121,7 +125,7 @@ public class UploadService
 
 
 
-    private async Task<DateTime> GetLastReplayDate(ReplayContext context)
+    private async Task<DateTime?> GetLastReplayDate(ReplayContext context)
     {
         UploaderDto uploaderDto = new()
         {
@@ -147,15 +151,23 @@ public class UploadService
             else
             {
                 logger.LogError($"failed getting latest replay: {response.StatusCode}");
+
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    OnUploadStateChanged(new() { UploadStatus = UploadStatus.Forbidden });
+                }
+                else
+                {
+                    OnUploadStateChanged(new() { UploadStatus = UploadStatus.Error });
+                }
             }
         }
         catch (Exception ex)
         {
             logger.LogError($"failed getting latest replays: {ex.Message}");
             OnUploadStateChanged(new() { UploadStatus = UploadStatus.Error });
-            throw;
         }
-        return new DateTime(2022, 1, 1);
+        return null;
     }
 
     private List<PlayerUploadDto> GetPlayerUploadDtos(ReplayContext context, List<ToonIdInfo> toonIdInfos)
@@ -222,6 +234,42 @@ public class UploadService
         File.WriteAllText(Path.Combine(testDataPath, "replayDto1.json"), JsonSerializer.Serialize(new List<ReplayDto>() { testReplay1 }));
         File.WriteAllText(Path.Combine(testDataPath, "replayDto2.json"), JsonSerializer.Serialize(new List<ReplayDto>() { testReplay2 }));
     }
+
+    public async Task<DateTime> DisableUploads()
+    {
+        var httpClient = GetHttpClient();
+        try
+        {
+            var response = await httpClient.GetAsync($"api/Upload/DisableUploader/{UserSettingsService.UserSettings.AppGuid}");
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<DateTime>();
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed disabling uploads: {ex.Message}");
+        }
+        return DateTime.MinValue;
+    }
+
+    public async Task<bool> DeleteMe()
+    {
+        var httpClient = GetHttpClient();
+        try
+        {
+            var response = await httpClient.GetAsync($"api/Upload/DeleteUploader/{UserSettingsService.UserSettings.AppGuid}");
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<bool>();
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed deleting uploader: {ex.Message}");
+        }
+        return false;
+    }
 }
 
 public enum UploadStatus
@@ -229,7 +277,8 @@ public enum UploadStatus
     None = 0,
     Uploading = 1,
     Error = 2,
-    Success = 3
+    Success = 3,
+    Forbidden = 4
 }
 
 public class UploadeEventArgs : EventArgs

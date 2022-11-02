@@ -22,7 +22,7 @@
     }
     <button type="button" class="btn btn-outline-success" @onclick="ScanForNewReplays">Scan</button>
     <button type="button" class="btn btn-outline-info" @onclick="Upload">Upload</button>
-    @if (DecodeService.WatchService != null)
+    @if (!UserSettingsService.UserSettings.AllowCleanUploads && DecodeService.WatchService != null)
     {
         @if (DecodeService.WatchService.IsWatching)
         {
@@ -116,7 +116,7 @@
 
     private void Upload()
     {
-        if (UserSettingsService.UserSettings.AllowUploads)
+        if (UserSettingsService.UserSettings.AllowCleanUploads)
         {
             _ = UploadService.UploadReplays();
         }

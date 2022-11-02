@@ -21,7 +21,15 @@ public class UploadController : ControllerBase
     [Route("GetLatestReplayDate")]
     public async Task<ActionResult<DateTime>> GetLatestReplayDate(UploaderDto uploaderDto)
     {
-        return await uploadService.CreateOrUpdateUploader(uploaderDto);
+        var latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto);
+        if (latestReplay == null)
+        {
+            return Unauthorized();
+        }
+        else
+        {
+            return latestReplay.Value;
+        }
     }
 
     [HttpPost]
@@ -31,5 +39,19 @@ public class UploadController : ControllerBase
     {
         await uploadService.ImportReplays(base64string, appGuid);
         return Ok();
+    }
+
+    [HttpGet]
+    [Route("DisableUploader/{appGuid}")]
+    public async Task<ActionResult<DateTime>> DisableUploader(Guid appGuid)
+    {
+        return await uploadService.DisableUploader(appGuid);
+    }
+
+    [HttpGet]
+    [Route("DeleteUploader/{appGuid}")]
+    public async Task<ActionResult<bool>> DeleteUploader(Guid appGuid)
+    {
+        return await uploadService.DeleteUploader(appGuid);
     }
 }

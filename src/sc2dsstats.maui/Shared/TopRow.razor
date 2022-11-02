@@ -58,6 +58,10 @@
             {
                 <span class="oi oi-circle-x text-danger">&nbsp;</span> @("Upload failed. Please try again later.")
             }
+            else if (uploadStatus == UploadStatus.Forbidden)
+            {
+                <span class="oi oi-circle-x text-danger">&nbsp;</span> @("Upload forbidden due to Disable/Delete.")
+            }
         </div>
     }
 
