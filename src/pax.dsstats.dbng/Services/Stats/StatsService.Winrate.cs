@@ -71,7 +71,7 @@ public partial class StatsService
 
     public async Task<StatsResponse> GetCustomWinrate(StatsRequest request)
     {
-        var replays = GetCustomRequestReplay(request);
+        var replays = GetCustomRequestReplays(request);
 
         var responses = (request.Uploaders, request.Interest == Commander.None) switch
         {

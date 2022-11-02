@@ -255,7 +255,37 @@
                     }
                 };
         }
+        else if (StatsResponse.Request.StatsMode == StatsMode.Count)
+        {
+            var items = StatsResponse.Items.OrderByDescending(o => o.Matchups).ToList();
 
+            chartConfig.Type = ChartType.pie;
+            chartConfig.Data.Labels = items.Select(s => s.Label).ToList();
+            chartConfig.Data.Datasets = new List<ChartJsDataset>()
+            {
+                new PieDataset()
+                {
+                    Data = items.Select(s => (object)s.Matchups).ToList(),
+                    BackgroundColor = StatsResponse.Request.Interest == Commander.None ?
+                        new IndexableOption<string>(items.Select(s => Data.GetBackgroundColor(s.Cmdr)).ToList())
+                        : new IndexableOption<string>(Data.GetBackgroundColor(StatsResponse.Request.Interest)),
+                    BorderColor = StatsResponse.Request.Interest == Commander.None ?
+                        new IndexableOption<string>(items.Select(s => Data.CmdrColor[s.Cmdr]).ToList())
+                        : new IndexableOption<string>(Data.CmdrColor[StatsResponse.Request.Interest]),
+                    BorderWidth = new IndexableOption<double>(2)
+                }
+            };
+            chartConfig.Options = new ChartJsOptions()
+            {
+                Plugins = new Plugins()
+                {
+                    Legend = new Legend()
+                    {
+                        Position = "right"
+                    }
+                }
+            };
+        }
 
         dataSetup = true;
         if (chartSetup && dataSetup)

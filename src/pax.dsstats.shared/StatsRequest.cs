@@ -29,4 +29,5 @@ public enum StatsMode
     Timeline = 2,
     Mvp = 3,
     Synergy = 4,
+    Count = 5,
 }

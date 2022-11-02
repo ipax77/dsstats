@@ -28,6 +28,7 @@ public partial class StatsService : IStatsService
             StatsMode.Timeline => await GetTimeline(request),
             StatsMode.Mvp => await GetMvp(request),
             StatsMode.Synergy => await GetSynergy(request),
+            StatsMode.Count => await GetWinrate(request),
             _ => new()
         };
     }
@@ -130,7 +131,7 @@ public partial class StatsService : IStatsService
         return stats.Where(x => cmdrs.Contains(x.Race) && cmdrs.Contains(x.OppRace)).ToList();
     }
 
-    private IQueryable<Replay> GetCustomRequestReplay(StatsRequest request)
+    private IQueryable<Replay> GetCustomRequestReplays(StatsRequest request)
     {
         var replays = context.Replays
                 .Include(i => i.ReplayPlayers)

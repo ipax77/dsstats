@@ -7,7 +7,7 @@ public partial class StatsService
 {
     public async Task<StatsResponse> GetSynergy(StatsRequest request)
     {
-        var replays = GetCustomRequestReplay(request);
+        var replays = GetCustomRequestReplays(request);
 
         var synergy = request.Uploaders ?
                         from r in replays

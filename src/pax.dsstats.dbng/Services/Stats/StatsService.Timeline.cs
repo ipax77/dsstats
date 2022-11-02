@@ -96,7 +96,7 @@ public partial class StatsService
 
     private async Task<List<DbStatsResult>> GetTimelineData(StatsRequest request)
     {
-        var replays = GetCustomRequestReplay(request);
+        var replays = GetCustomRequestReplays(request);
 
         var results = from r in replays
                       from p in r.ReplayPlayers
