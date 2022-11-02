@@ -6,6 +6,7 @@
 @inject FireMmrService FireMmrService
 @inject IToastService ToastService
 @inject DecodeService DecodeService
+@inject IStatsService statsService
 @implements IDisposable
 
 <div class="d-flex mb-2">
@@ -73,6 +74,7 @@
         // ???
         await Task.Run(async () =>
         {
+            await statsService.SeedPlayerInfos().ConfigureAwait(false);
             await MmrService.CalcMmmr().ConfigureAwait(false);
         });
 
@@ -96,9 +98,9 @@
             isLoading = true;
         }
 
-        // ???
         await Task.Run(async () =>
         {
+            await statsService.SeedPlayerInfos().ConfigureAwait(false);
             await FireMmrService.CalcMmmr().ConfigureAwait(false);
         });
 

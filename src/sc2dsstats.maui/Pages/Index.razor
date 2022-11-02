@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using System.Diagnostics;
 @using pax.dsstats.dbng.Repositories
 @using pax.dsstats.dbng.Services;
 @using pax.dsstats.shared
@@ -50,12 +51,23 @@
     }
 </div>
 
+@*<div>
+    <button type="button" class="btn btn-primary" @onclick="UpdateStats">UpdateStats</button>
+</div>
+
+<div>
+    <p>
+        @elapsed.TotalMilliseconds ms
+    </p>
+</div>*@
+
 <UploadConfirmModal @ref="uploadConfirmModal"></UploadConfirmModal>
 
 @code {
     ReplayDto? latestReplay = null;
     UploadConfirmModal? uploadConfirmModal;
     PlayerDetailInfo? playerDetailInfo;
+    TimeSpan elapsed = TimeSpan.Zero;
 
     protected override void OnInitialized()
     {
@@ -124,6 +136,16 @@
         {
             uploadConfirmModal?.Show();
         }
+    }
+
+    private async Task UpdateStats()
+    {
+        Stopwatch sw = new();
+        sw.Start();
+        await StatsService.SeedPlayerInfos();
+        sw.Stop();
+        elapsed = sw.Elapsed;
+        await InvokeAsync(() => StateHasChanged());
     }
 
     public void Dispose()
