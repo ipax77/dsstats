@@ -70,14 +70,29 @@ public static partial class Parse
 
         if (!playerIds.SequenceEqual(playerPos))
         {
-            foreach (var player in replay.Players)
+            if (replay.Players.Any() && (replay.Players.First().Pos != replay.Players.First().WorkingsetSlot))
             {
-                var setupEvent = setupEvents.FirstOrDefault(f => f.UserId == player.Pos - 1);
-                if (setupEvent == null)
+                foreach (var player in replay.Players)
                 {
-                    throw new ArgumentNullException(nameof(setupEvent));
+                    var setupEvent = setupEvents.FirstOrDefault(f => f.PlayerId == player.WorkingsetSlot);
+                    if (setupEvent == null)
+                    {
+                        throw new ArgumentNullException(nameof(setupEvent));
+                    }
+                    player.Pos = setupEvent.PlayerId;
                 }
-                player.Pos = setupEvent.PlayerId;
+            }
+            else
+            {
+                foreach (var player in replay.Players)
+                {
+                    var setupEvent = setupEvents.FirstOrDefault(f => f.UserId == player.Pos - 1);
+                    if (setupEvent == null)
+                    {
+                        throw new ArgumentNullException(nameof(setupEvent));
+                    }
+                    player.Pos = setupEvent.PlayerId;
+                }
             }
         }
     }

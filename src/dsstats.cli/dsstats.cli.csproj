@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="IronPython.StdLib" Version="2.7.12" />
-    <PackageReference Include="s2protocol.NET" Version="0.6.7" />
+    <PackageReference Include="s2protocol.NET" Version="0.6.8" />
   </ItemGroup>
 
   <PropertyGroup>

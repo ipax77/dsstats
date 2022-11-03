@@ -49,7 +49,7 @@ public static class HelperService
 
     public static (double, double) GetChartMiddle(int startTeam, int[] gameloops, int gameloop)
     {
-        if (gameloops.Length == 0)
+        if (gameloops.Length < 2)
         {
             return (0, 0);
         }

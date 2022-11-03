@@ -262,7 +262,7 @@
         }
 
         List<ArbitraryLineConfig> objectives = new();
-        if (cannon > 0)
+        if (cannon > 0 && duration > cannon)
         {
             int nextLabelLoop = labelLoops.First(f => f > cannon * 22.4);
             objectives.Add(new()
@@ -272,7 +272,7 @@
                     Text = "Cannon"
                 });
         }
-        if (bunker > 0)
+        if (bunker > 0 && duration > bunker)
         {
             int nextLabelLoop = labelLoops.First(f => f > bunker * 22.4);
             objectives.Add(new()
