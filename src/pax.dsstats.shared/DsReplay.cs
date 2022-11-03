@@ -13,6 +13,7 @@ public record DsReplay
     public Position Center { get; set; } = Position.Zero;
     public int Bunker { get; set; }
     public int Cannon { get; set; }
+    public bool TournamentEdition { get; set; }
     public float[] LineTeam1 { get; set; } = new float[4] { 0, 0, 0, 0 };
     public float[] LineTeam2 { get; set; } = new float[4] { 0, 0, 0, 0 };
     public List<DsPlayer> Players { get; set; } = new List<DsPlayer>();

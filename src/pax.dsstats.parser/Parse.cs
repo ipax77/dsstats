@@ -137,6 +137,11 @@ public static partial class Parse
             throw new ArgumentNullException(nameof(sc2Replay.Details));
         }
 
+        if (!sc2Replay.Details.Title.StartsWith("Direct Strike"))
+        {
+            return null;
+        }
+
         if (sc2Replay.TrackerEvents == null)
         {
             throw new ArgumentNullException(nameof(sc2Replay.TrackerEvents));
@@ -149,9 +154,15 @@ public static partial class Parse
 
         // Import();
 
-        DsReplay replay = new();
-
-        replay.FileName = sc2Replay.FileName;
+        DsReplay replay = new()
+        {
+            FileName = sc2Replay.FileName
+        };
+        
+        if (sc2Replay.Details.Title.EndsWith("TE"))
+        {
+            replay.TournamentEdition = true;
+        }
 
         ParseDetails(replay, sc2Replay.Details);
         ParseMetadata(replay, sc2Replay.Metadata);

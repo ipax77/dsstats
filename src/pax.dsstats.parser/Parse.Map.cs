@@ -13,6 +13,7 @@ public static partial class Parse
         ReplayDto replayDto = new()
         {
             FileName = replay.FileName,
+            TournamentEdition = replay.TournamentEdition,
             GameTime = replay.GameTime,
             Duration = duration,
             WinnerTeam = replay.WinnerTeam,

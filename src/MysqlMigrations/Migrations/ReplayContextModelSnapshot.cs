@@ -35,7 +35,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("UploaderId");
 
-                    b.ToTable("BattleNetInfos", (string)null);
+                    b.ToTable("BattleNetInfos");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.CommanderMmr", b =>
@@ -69,7 +69,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("Commander_1", "Commander_2");
 
-                    b.ToTable("CommanderMmrs", (string)null);
+                    b.ToTable("CommanderMmrs");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Event", b =>
@@ -95,7 +95,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Events", (string)null);
+                    b.ToTable("Events");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.GroupByHelper", b =>
@@ -187,7 +187,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("UploaderId");
 
-                    b.ToTable("Players", (string)null);
+                    b.ToTable("Players");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.PlayerUpgrade", b =>
@@ -211,7 +211,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("UpgradeId");
 
-                    b.ToTable("PlayerUpgrades", (string)null);
+                    b.ToTable("PlayerUpgrades");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Replay", b =>
@@ -290,6 +290,9 @@ namespace MysqlMigrations.Migrations
                         .HasColumnType("char(64)")
                         .IsFixedLength();
 
+                    b.Property<bool>("TournamentEdition")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<int>("Views")
                         .HasColumnType("int");
 
@@ -315,7 +318,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("GameTime", "GameMode", "WinnerTeam");
 
-                    b.ToTable("Replays", (string)null);
+                    b.ToTable("Replays");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.ReplayDownloadCount", b =>
@@ -331,7 +334,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasKey("ReplayDownloadCountId");
 
-                    b.ToTable("ReplayDownloadCounts", (string)null);
+                    b.ToTable("ReplayDownloadCounts");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.ReplayEvent", b =>
@@ -375,7 +378,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("EventId");
 
-                    b.ToTable("ReplayEvents", (string)null);
+                    b.ToTable("ReplayEvents");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.ReplayPlayer", b =>
@@ -484,7 +487,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("Race", "OppRace");
 
-                    b.ToTable("ReplayPlayers", (string)null);
+                    b.ToTable("ReplayPlayers");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.ReplayViewCount", b =>
@@ -500,7 +503,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasKey("ReplayViewCountId");
 
-                    b.ToTable("ReplayViewCounts", (string)null);
+                    b.ToTable("ReplayViewCounts");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.SkipReplay", b =>
@@ -516,7 +519,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasKey("SkipReplayId");
 
-                    b.ToTable("SkipReplays", (string)null);
+                    b.ToTable("SkipReplays");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Spawn", b =>
@@ -553,7 +556,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("ReplayPlayerId");
 
-                    b.ToTable("Spawns", (string)null);
+                    b.ToTable("Spawns");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.SpawnUnit", b =>
@@ -582,7 +585,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("UnitId");
 
-                    b.ToTable("SpawnUnits", (string)null);
+                    b.ToTable("SpawnUnits");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Unit", b =>
@@ -607,7 +610,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("Name", "Commander")
                         .IsUnique();
 
-                    b.ToTable("Units", (string)null);
+                    b.ToTable("Units");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Upgrade", b =>
@@ -629,7 +632,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Upgrades", (string)null);
+                    b.ToTable("Upgrades");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Uploader", b =>
@@ -693,7 +696,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("AppGuid")
                         .IsUnique();
 
-                    b.ToTable("Uploaders", (string)null);
+                    b.ToTable("Uploaders");
                 });
 
             modelBuilder.Entity("ReplayUploader", b =>

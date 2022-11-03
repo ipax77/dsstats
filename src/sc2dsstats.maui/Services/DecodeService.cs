@@ -145,16 +145,25 @@ public class DecodeService : IDisposable
 
         try
         {
-            await foreach (var sc2rep in decoder.DecodeParallel(replays, UserSettingsService.UserSettings.CpuCoresUsedForDecoding, decoderOptions, decodeCts.Token))
+            await foreach (var decodeResult in decoder.DecodeParallelWithErrorReport(replays, UserSettingsService.UserSettings.CpuCoresUsedForDecoding, decoderOptions, decodeCts.Token))
             {
                 if (decodeCts.IsCancellationRequested)
                 {
                     break;
                 }
 
+                if (decodeResult.Sc2Replay == null)
+                {
+                    logger.DecodeError($"failed decoding replay {decodeResult.ReplayPath}: {decodeResult.Exception}");
+                    errorReplays[decodeResult.ReplayPath] = decodeResult.Exception ?? "unknown";
+                    Interlocked.Increment(ref errorCounter);
+                    OnErrorRaised(new());
+                    continue;
+                }
+
                 try
                 {
-                    var dsRep = Parse.GetDsReplay(sc2rep);
+                    var dsRep = Parse.GetDsReplay(decodeResult.Sc2Replay);
                     if (dsRep != null)
                     {
                         var dtoRep = Parse.GetReplayDto(dsRep);
@@ -167,8 +176,8 @@ public class DecodeService : IDisposable
                 }
                 catch (Exception ex)
                 {
-                    logger.DecodeError($"failed parsing replay {sc2rep.FileName}: {ex.Message}");
-                    errorReplays[sc2rep.FileName] = ex.Message;
+                    logger.DecodeError($"failed parsing replay {decodeResult.ReplayPath}: {ex.Message}");
+                    errorReplays[decodeResult.ReplayPath] = ex.Message;
                     Interlocked.Increment(ref errorCounter);
                     OnErrorRaised(new());
                 }

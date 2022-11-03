@@ -29,6 +29,7 @@ public record ReplayDto
     public string Middle { get; init; } = null!;
     public string CommandersTeam1 { get; init; } = null!;
     public string CommandersTeam2 { get; init; } = null!;
+    public bool TournamentEdition { get; init; }
     public ReplayEventDto? ReplayEvent { get; set; }
     public ICollection<ReplayPlayerDto> ReplayPlayers { get; init; } = new HashSet<ReplayPlayerDto>();
 }
