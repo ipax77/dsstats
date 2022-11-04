@@ -1,4 +1,5 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms;
+@using Microsoft.Extensions.Logging
 @using Microsoft.JSInterop;
 @using pax.dsstats.shared;
 @inject IJSRuntime IJSRuntime
@@ -39,6 +40,17 @@
                 </InputSelect>
             </label>
         </div>
+        @if (StatsRequest.StatsMode == StatsMode.Synergy || StatsRequest.StatsMode == StatsMode.Timeline || StatsRequest.StatsMode == StatsMode.Duration)
+        {
+            <div class="col-auto">
+                <select id="addremovecmdr" class="form-select" multiple aria-label="multiple" @onchange="AddRemoveCmdr">
+                    @foreach (Commander cmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
+                    {
+                        <option value="@cmdr.ToString()">@cmdr</option>
+                    }
+                </select>
+        </div>
+        }
         <div class="col-auto">
             <div class="form-check form-switch">
                 <label class="form-check-label">
@@ -90,6 +102,9 @@
     public EventCallback OnChartOptionsChanged { get; set; }
 
     [Parameter]
+    public EventCallback<List<Commander>> OnAddRemoveCmdrsChanged { get; set; }
+
+    [Parameter]
     public bool IsMaui { get; set; }
 
     EditContext editContext = null!;
@@ -112,14 +127,24 @@
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
-        if (e.FieldIdentifier.FieldName == "TimePeriod")
+        if (e.FieldIdentifier.FieldName == nameof(StatsRequest.TimePeriod))
         {
             (StatsRequest.StartTime, StatsRequest.EndTime) = Data.TimeperiodSelected(StatsRequest.TimePeriod);
         }
-        else if (e.FieldIdentifier.FieldName == "BeginAtZero")
+        else if (e.FieldIdentifier.FieldName == nameof(StatsRequest.BeginAtZero))
         {
             OnChartOptionsChanged.InvokeAsync();
             return;
+        }
+        else if (e.FieldIdentifier.FieldName == nameof(StatsRequest.StatsMode))
+        {
+            IJSRuntime.InvokeVoidAsync("setMultiSelect", "addremovecmdr", Array.Empty<string>());
+            StatsRequest.AddRemoveCommanders.Clear();
+        }
+        else if (e.FieldIdentifier.FieldName == nameof(StatsRequest.Interest))
+        {
+            IJSRuntime.InvokeVoidAsync("setMultiSelect", "addremovecmdr", Array.Empty<string>());
+            StatsRequest.AddRemoveCommanders.Clear();
         }
         OnRequestChanged.InvokeAsync();
     }
@@ -139,6 +164,23 @@
             StatsRequest.GameModes = gameModes;
             OnRequestChanged.InvokeAsync();
         }
+    }
+
+    private void AddRemoveCmdr(ChangeEventArgs e)
+    {
+        List<Commander> cmdrs = new();
+        if (e.Value is string[] values)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (Enum.TryParse(values[i], out Commander cmdr))
+                {
+                    cmdrs.Add(cmdr);
+                }
+            }
+        }
+
+        OnAddRemoveCmdrsChanged.InvokeAsync(cmdrs);
     }
 
     public void Dispose()

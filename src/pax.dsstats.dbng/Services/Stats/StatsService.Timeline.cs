@@ -11,7 +11,8 @@ public partial class StatsService
             return await GetCustomTimeline(request);
         }
 
-        DateTime endTime = request.EndTime == DateTime.MinValue ? DateTime.Today.AddDays(1) : request.EndTime;
+        // DateTime endTime = request.EndTime == DateTime.MinValue ? DateTime.Today.AddDays(1) : request.EndTime;
+        DateTime endTime = GetAdjustedEndTime(request);
 
         var cmdrstats = await GetRequestStats(request);
 
@@ -64,6 +65,16 @@ public partial class StatsService
         return response;
     }
 
+    private DateTime GetAdjustedEndTime(StatsRequest request)
+    {
+        return request.EndTime == DateTime.MinValue || request.EndTime == DateTime.Today ?
+            DateTime.Today.Day > 15 ?
+                new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)
+                : new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1)
+            : request.EndTime;
+    }
+
+
     public async Task<StatsResponse> GetCustomTimeline(StatsRequest request)
     {
         var lresults = await GetTimelineData(request);
@@ -77,8 +88,9 @@ public partial class StatsService
         };
 
         DateTime _dateTime = request.StartTime;
+        DateTime endTime = GetAdjustedEndTime(request);
 
-        while (_dateTime < request.EndTime)
+        while (_dateTime < endTime)
         {
             DateTime dateTime = _dateTime.AddMonths(1);
             var stepResults = lresults.Where(x => x.GameTime >= _dateTime && x.GameTime < dateTime).ToList();

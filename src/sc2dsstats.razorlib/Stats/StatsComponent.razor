@@ -2,10 +2,17 @@
 @using pax.dsstats.shared;
 @using sc2dsstats.razorlib.Services;
 @inject IDataService dataService
+@inject ILogger<StatsComponent> logger
+@implements IDisposable
 
 <div>
     <CascadingValue Value="StatsRequest">
-        <StatsRequestComponent OnRequestChanged="RequestChanged" OnChartOptionsChanged="ChartOptionsChanged" IsMaui="IsMaui"></StatsRequestComponent>
+        <StatsRequestComponent
+            OnRequestChanged="RequestChanged"
+            OnChartOptionsChanged="ChartOptionsChanged"
+            OnAddRemoveCmdrsChanged="AddRemoveCmdrs"
+            IsMaui="IsMaui">
+        </StatsRequestComponent>
     </CascadingValue>
 </div>
 
@@ -22,6 +29,15 @@
     else
     {
         <div>
+            <span class="badge text-bg-primary display-block ms-1" style="font-size: 1rem;">∅ @statsResponse.Request.StatsMode<br />@HelperService.GetPercentageString(statsResponse.Items.Sum(s => s.Wins), statsResponse.Items.Sum(s => s.Matchups))</span>
+        </div>
+        @if (statsResponse.AvgDuration > 0)
+        {
+            <div>
+                <span class="badge text-bg-primary text-light display-block ms-1" style="font-size: 1rem;">∅ Duration<br />@TimeSpan.FromSeconds(statsResponse.AvgDuration).ToString(@"mm\:ss")min</span>
+            </div>
+        }
+        <div>
             <span class="badge text-bg-primary display-block" style="font-size: 1rem;">Replays<br />@(StatsRequest.DefaultFilter ? statsResponse.CountResponse.DefaultFilter : statsResponse.CountResponse.Count)</span>
         </div>
         <div>
@@ -33,15 +49,6 @@
         <div>
             <span class="badge text-bg-primary display-block text-danger ms-1" style="font-size: 1rem;">Quits<br />@statsResponse.CountResponse.Quits</span>
         </div>
-        <div>
-            <span class="badge text-bg-primary display-block ms-1" style="font-size: 1rem;">∅ @statsResponse.Request.StatsMode<br />@HelperService.GetPercentageString(statsResponse.Items.Sum(s => s.Wins), statsResponse.Items.Sum(s => s.Matchups))</span>
-        </div>
-        @if (statsResponse.AvgDuration > 0)
-        {
-            <div>
-                <span class="badge text-bg-primary text-light display-block ms-1" style="font-size: 1rem;">∅ Duration<br />@TimeSpan.FromSeconds(statsResponse.AvgDuration).ToString(@"mm\:ss")min</span>
-            </div>
-        }
     }
     @if (isLoading)
     {
@@ -59,11 +66,9 @@
         </CascadingValue>
     </div>
     <div class="col-7">
-        <StatsChartComponent @ref="statsChartComponent" IsMaui="IsMaui" OnLabelClicked="CommanderClicked"></StatsChartComponent>
+        <StatsChartComponent @ref="statsChartComponent" StatsRequest="StatsRequest" IsMaui="IsMaui" OnLabelClicked="CommanderClicked"></StatsChartComponent>
     </div>
 </div>
-
-
 
 @code {
     [Parameter]
@@ -78,7 +83,7 @@
 
     private bool isLoading = false;
     private StatsResponse statsResponse = new();
-    private object lockobject = new();
+    private SemaphoreSlim ss = new(1, 1);
 
     StatsChartComponent? statsChartComponent;
 
@@ -106,38 +111,108 @@
 
     public async Task LoadData(bool init = false)
     {
-        lock (lockobject)
+        await ss.WaitAsync();
+
+        try
         {
-            if (isLoading)
-            {
-                return;
-            }
             isLoading = true;
-        }
 
-        if (StatsRequest.StatsMode == StatsMode.Timeline || StatsRequest.StatsMode == StatsMode.Synergy || StatsRequest.StatsMode == StatsMode.Duration)
-        {
-            if (StatsRequest.Interest == Commander.None)
+            if (StatsRequest.StatsMode == StatsMode.Timeline || StatsRequest.StatsMode == StatsMode.Synergy || StatsRequest.StatsMode == StatsMode.Duration)
             {
-                StatsRequest.Interest = Commander.Abathur;
+                if (StatsRequest.Interest == Commander.None)
+                {
+                    StatsRequest.Interest = Commander.Abathur;
+                }
             }
-        }
 
-        statsChartComponent?.PrepareChart(StatsRequest, false);
 
-        await InvokeAsync(() => StateHasChanged());
-        statsResponse = await dataService.GetStats(StatsRequest);
+            statsChartComponent?.PrepareChart(StatsRequest, false);
 
-        statsResponse.Request.BeginAtZero = StatsRequest.BeginAtZero;
+            await InvokeAsync(() => StateHasChanged());
+            statsResponse = await dataService.GetStats(StatsRequest);
 
-        isLoading = false;
-        await InvokeAsync(() => StateHasChanged());
+            isLoading = false;
+            await InvokeAsync(() => StateHasChanged());
 
-        statsChartComponent?.SetupChart(statsResponse);
+            statsChartComponent?.SetupChart(statsResponse);
 
-        if (!init)
+            if (!init)
+            {
+                await OnRequestChanged.InvokeAsync();
+            }
+        } 
+        catch (Exception ex)
         {
-            await OnRequestChanged.InvokeAsync();
+            logger.LogError($"failed loading data: {ex.Message}");
         }
+        finally
+        {
+            ss.Release();
+        }
+    }
+
+    public async Task AddRemoveCmdrs(List<Commander> requestCmdrs)
+    {
+        if (statsChartComponent == null)
+        {
+            return;
+        }
+        await ss.WaitAsync();
+        try
+        {
+            isLoading = true;
+            await InvokeAsync(() => StateHasChanged());
+
+            var removeCmdrs = StatsRequest.AddRemoveCommanders.Except(requestCmdrs).ToList();
+            var addCmdrs = requestCmdrs.Except(StatsRequest.AddRemoveCommanders).ToList();
+
+            StatsRequest.AddRemoveCommanders = requestCmdrs;
+
+
+            if (removeCmdrs.Any())
+            {
+                foreach (var removeCmdr in removeCmdrs)
+                {
+                    await statsChartComponent.PrepareChart(StatsRequest with { Interest = removeCmdr }, true);
+                }
+            }
+
+            if (addCmdrs.Any())
+            {
+                List<Task> addTasks = new();
+                foreach (var addCmdr in addCmdrs)
+                {
+                    addTasks.Add(Task.Factory.StartNew(() => LoadAddData(StatsRequest with { Interest = addCmdr })));
+                }
+
+                Task.WaitAll(addTasks.ToArray());
+            }
+
+            isLoading = false;
+            await InvokeAsync(() => StateHasChanged());
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed addRemoving cmdrs: {ex.Message}");
+        }
+        finally
+        {
+            ss.Release();
+        }
+    }
+
+    public async Task LoadAddData(StatsRequest request)
+    {
+        if (statsChartComponent == null)
+        {
+            return;
+        }
+        var response = await dataService.GetStats(request);
+        await statsChartComponent.SetupChart(response);
+    }
+
+    public void Dispose()
+    {
+        ss.Dispose();
     }
 }

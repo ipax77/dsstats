@@ -11,6 +11,8 @@ public record StatsRequest
     public string TimePeriod { get; set; } = "This Year";
     [JsonIgnore]
     public bool BeginAtZero { get; set; }
+    [JsonIgnore]
+    public List<Commander> AddRemoveCommanders { get; set; } = new();
     public Commander Interest { get; set; }
     public Commander Versus { get; set; }
     public bool Uploaders { get; set; }

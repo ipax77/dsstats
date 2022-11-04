@@ -3,11 +3,16 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using pax.BlazorChartJs;
 using pax.dsstats.shared;
+using System.Linq;
 
 namespace sc2dsstats.razorlib.Stats;
 
 public partial class StatsChartComponent : ComponentBase
 {
+    [Parameter]
+    [EditorRequired]
+    public StatsRequest StatsRequest { get; set; } = default!;
+
     [Parameter]
     public EventCallback<Commander> OnLabelClicked { get; set; }
 
@@ -15,19 +20,57 @@ public partial class StatsChartComponent : ComponentBase
     public bool IsMaui { get; set; }
 
     [Inject]
-    protected ILogger<StatsChart> Logger { get; set; } = default!;
+    protected ILogger<StatsChartComponent> Logger { get; set; } = default!;
 
     private ChartJsConfig chartConfig = null!;
     private ChartComponent? chartComponent;
 
-    SemaphoreSlim ss = new(1, 1);
+    SemaphoreSlim ssChart = new(1, 1);
+    SemaphoreSlim ssInit = new(1, 1);
 
     protected override void OnInitialized()
     {
-        ss.WaitAsync();
+        ssInit.WaitAsync();
         chartConfig = new();
-        SetBarChartConfig(new() { StatsMode = StatsMode.Winrate });
+        InitChart();
+
         base.OnInitialized();
+    }
+
+    private void InitChart()
+    {
+        var requestedChartType = GetRequestChartType(StatsRequest);
+        _ = requestedChartType switch
+        {
+            ChartType.bar => SetBarChartConfig(StatsRequest),
+            ChartType.pie => SetPieChartConfig(StatsRequest),
+            ChartType.radar => SetRadarChartConfig(StatsRequest),
+            ChartType.line => SetLineChartConfig(StatsRequest),
+            _ => SetBarChartConfig(StatsRequest)
+        };
+    }
+
+    private void ChartEventTriggered(ChartJsEvent chartJsEvent)
+    {
+        if (chartJsEvent is ChartJsLabelClickEvent labelClickEvent)
+        {
+            if (Enum.TryParse(typeof(Commander), labelClickEvent.Label, out object? cmdrObj))
+            {
+                if (cmdrObj is Commander cmdr)
+                {
+                    OnLabelClicked.InvokeAsync(cmdr);
+                }
+            }
+        }
+        else if (chartJsEvent is ChartJsInitEvent initEvent)
+        {
+            ssInit.Release();
+            Logger.LogInformation("chart init");
+        }
+        else if (chartJsEvent is ChartJsAnimationCompleteEvent animationCompleteEvent)
+        {
+            Logger.LogInformation($"chart animation complete {animationCompleteEvent.Initial}");
+        }
     }
 
     public void SetBeginAtZero(bool beginAtZero)
@@ -41,7 +84,7 @@ public partial class StatsChartComponent : ComponentBase
 
     public async Task PrepareChart(StatsRequest statsRequest, bool addOrRemove)
     {
-        await ss.WaitAsync();
+        await ssChart.WaitAsync();
         try
         {
             var requestedChartType = GetRequestChartType(statsRequest);
@@ -50,12 +93,13 @@ public partial class StatsChartComponent : ComponentBase
             {
                 if (addOrRemove)
                 {
-                    var datasets = GetAddRemoveDatasets(statsRequest);
-                    if (datasets.Any())
+                    var removeDatasets = GetAddRemoveDatasets(statsRequest);
+                    if (removeDatasets.Any())
                     {
-                        chartConfig.RemoveDatasets(datasets);
-                        // fs fix
-                        await Task.Delay(100);
+                        foreach (var removeDataset in removeDatasets)
+                        {
+                            chartConfig.RemoveDataset(removeDataset);
+                        }
                     }
                 }
                 else
@@ -77,13 +121,12 @@ public partial class StatsChartComponent : ComponentBase
                     _ => SetBarChartConfig(statsRequest)
                 };
                 chartComponent?.DrawChart();
-                // fs fix
-                await Task.Delay(100);
+                await ssInit.WaitAsync();
             }
         }
         finally
         {
-            ss.Release();
+            ssChart.Release();
         }
         Logger.LogInformation("chart prepared");
     }
@@ -107,37 +150,35 @@ public partial class StatsChartComponent : ComponentBase
         var datasetLabel = GetRequestDatasetLabel(request);
         if (chartConfig.Type == ChartType.bar)
         {
-            var barDataset = chartConfig.Data.Datasets
+            var barDatasets = chartConfig.Data.Datasets
                 .Cast<BarDataset>()
-                .FirstOrDefault(f => f.Label == datasetLabel);
-            if (barDataset != null)
+                .Where(f => f.Label == datasetLabel);
+            if (barDatasets.Any())
             {
-                return new List<ChartJsDataset>() { barDataset };
+                return new List<ChartJsDataset>(barDatasets);
             }
         }
         else if (chartConfig.Type == ChartType.radar)
         {
-            var radarDataset = chartConfig.Data.Datasets
+            var radarDatasets = chartConfig.Data.Datasets
                 .Cast<RadarDataset>()
-                .FirstOrDefault(f => f.Label == datasetLabel);
-            if (radarDataset != null)
+                .Where(f => f.Label == datasetLabel);
+            if (radarDatasets.Any())
             {
-                return new List<ChartJsDataset>() { radarDataset };
+                return new List<ChartJsDataset>(radarDatasets);
             }
         }
         else if (chartConfig.Type == ChartType.line)
         {
-            var lineDataset = chartConfig.Data.Datasets
-                .Cast<BarDataset>()
-                .FirstOrDefault(f => f.Label == datasetLabel);
-            if (lineDataset != null)
+            var lineDatasets = chartConfig.Data.Datasets
+                .Cast<LineDataset>()
+                .Where(f => f.Label == datasetLabel);
+            if (lineDatasets.Any())
             {
-                var linePointsDataset = chartConfig.Data.Datasets
-                .Cast<BarDataset>()
-                .FirstOrDefault(f => f.Label == $"{datasetLabel} Data");
-                return linePointsDataset == null ?
-                    new List<ChartJsDataset>() { lineDataset }
-                    : new List<ChartJsDataset>() { lineDataset, linePointsDataset };
+                var linePointsDatasets = chartConfig.Data.Datasets
+                .Cast<LineDataset>()
+                .Where(f => f.Label == $"{datasetLabel} Data");
+                return new List<ChartJsDataset>(lineDatasets.Concat(linePointsDatasets));
             }
         }
         return new();
@@ -157,7 +198,8 @@ public partial class StatsChartComponent : ComponentBase
 
     public async Task SetupChart(StatsResponse statsResponse)
     {
-        await ss.WaitAsync();
+        await ssChart.WaitAsync();
+        await ssInit.WaitAsync();
         try
         {
             _ = chartConfig.Type switch
@@ -171,33 +213,13 @@ public partial class StatsChartComponent : ComponentBase
         }
         finally
         {
-            ss.Release();
+            ssChart.Release();
+            ssInit.Release();
         }
         Logger.LogInformation("chart setup");
     }
 
-    private void ChartEventTriggered(ChartJsEvent chartJsEvent)
-    {
-        if (chartJsEvent is ChartJsLabelClickEvent labelClickEvent)
-        {
-            if (Enum.TryParse(typeof(Commander), labelClickEvent.Label, out object? cmdrObj))
-            {
-                if (cmdrObj is Commander cmdr)
-                {
-                    OnLabelClicked.InvokeAsync(cmdr);
-                }
-            }
-        }
-        else if (chartJsEvent is ChartJsInitEvent initEvent)
-        {
-            ss.Release();
-            Logger.LogInformation("chart init");
-        }
-        else if (chartJsEvent is ChartJsAnimationCompleteEvent animationCompleteEvent)
-        {
-            Logger.LogInformation($"chart animation complete {animationCompleteEvent.Initial}");
-        }
-    }
+
 
     private bool AddBarChartDataset(StatsResponse statsResponse)
     {
@@ -236,7 +258,7 @@ public partial class StatsChartComponent : ComponentBase
         var niceLine = new LineDataset()
         {
             Label = GetRequestDatasetLabel(statsResponse.Request),
-            Data = GetNiceLineData(statsResponse.Items.Select(s => s.Winrate).ToList(), Math.Max(statsResponse.Items.Count / 4, 3)).Select(s => (object)Math.Round(s, 2)).ToList(),
+            Data = GetNiceLineData(statsResponse.Items.Select(s => s.Winrate).ToList(), Math.Min(6, Math.Max(statsResponse.Items.Count / 4, 3))).Select(s => (object)Math.Round(s, 2)).ToList(),
             BorderColor = statsResponse.Request.Interest == Commander.None ? "blue" : Data.CmdrColor[statsResponse.Request.Interest],
             BorderWidth = 2,
             Tension = 0.4,
@@ -304,7 +326,7 @@ public partial class StatsChartComponent : ComponentBase
                 Title = new()
                 {
                     Display = true,
-                    Text = $"{statsRequest.StatsMode} {(statsRequest.Interest == Commander.None ? "" : statsRequest.Interest)}",
+                    Text = new IndexableOption<string>($"{statsRequest.StatsMode} {(statsRequest.Interest == Commander.None ? "" : statsRequest.Interest)}"),
                     Color = "white",
                     Font = new()
                     {
@@ -364,7 +386,7 @@ public partial class StatsChartComponent : ComponentBase
                     {
                         Size = 20,
                     },
-                    Text = statsRequest.StatsMode.ToString(),
+                    Text = new IndexableOption<string>(statsRequest.StatsMode.ToString()),
                     Color = "#f2f2f2"
                 }
             }
@@ -400,7 +422,7 @@ public partial class StatsChartComponent : ComponentBase
                     {
                         Size = 20,
                     },
-                    Text = statsRequest.StatsMode.ToString(),
+                    Text = new IndexableOption<string>(statsRequest.StatsMode.ToString()),
                     Color = "#f2f2f2"
                 }
             },
@@ -454,7 +476,7 @@ public partial class StatsChartComponent : ComponentBase
                     {
                         Size = 20,
                     },
-                    Text = statsRequest.StatsMode.ToString(),
+                    Text = new IndexableOption<string>(statsRequest.StatsMode.ToString()),
                     Color = "#f2f2f2"
                 }
             }

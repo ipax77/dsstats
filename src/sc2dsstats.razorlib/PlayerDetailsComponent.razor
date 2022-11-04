@@ -14,7 +14,7 @@
             <ChartComponent @ref="chartComponentStd" ChartJsConfig="chartJsConfigStd" OnEventTriggered="EventTriggered"></ChartComponent>
         </div>
         <div class="col-auto">
-            <span class="oi oi-x text-danger pointer" style="font-size: 2rem;" @onclick="e => OnCloseRequested.InvokeAsync()"></span>
+            <span class="oi oi-x text-danger pointer" style="font-size: 2rem; z-index: 1000;" @onclick="e => OnCloseRequested.InvokeAsync()"></span>
         </div>
     </div>
 

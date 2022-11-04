@@ -14,7 +14,7 @@
   <ItemGroup>
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.10" />
-    <PackageReference Include="pax.BlazorChartJs" Version="0.3.5" />
+    <PackageReference Include="pax.BlazorChartJs" Version="0.4.0" />
   </ItemGroup>
 
   <ItemGroup>
