@@ -220,15 +220,15 @@ public class DecodeService : IDisposable
 
             await ScanForNewReplays();
 
+            using var scope = serviceScopeFactory.CreateScope();
+            var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+            statsService.ResetCache();
+
             notifyCts.Cancel();
 
             IsRunning = false;
             decodeCts.Dispose();
             decodeCts = null;
-
-            using var scope = serviceScopeFactory.CreateScope();
-            var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-            statsService.ResetCache();
 
             if (UserSettingsService.UserSettings.AllowUploads)
             {
@@ -382,7 +382,7 @@ public class DecodeService : IDisposable
         catch (Exception ex)
         {
             logger.DecodeError($"failed saving replay: {ex.Message}");
-            errorReplays[$"{replayDto.FileName}"] = ex.Message + ex.InnerException?.Message;
+            errorReplays[replayDto.FileName] = ex.Message + ex.InnerException?.Message;
             Interlocked.Increment(ref errorCounter);
             OnErrorRaised(new());
         }
@@ -401,6 +401,45 @@ public class DecodeService : IDisposable
             }
             semaphoreSlim.Release();
         }
+    }
+
+    public void DEBUGEmulateErrorsTest()
+    {
+        List<string> errors = new List<string>()
+        {
+            @"C:\data\ds\replays\test1.SC2Replay",
+            @"C:\data\ds\replays\test2.SC2Replay",
+            @"C:\data\ds\replays\test3.SC2Replay",
+            @"C:\data\ds\replays\test4.SC2Replay",
+            @"C:\data\ds\replays\test5.SC2Replay",
+            @"C:\data\ds\replays\test6.SC2Replay",
+            @"C:\data\ds\replays\test7.SC2Replay",
+            @"C:\data\ds\replays\test8.SC2Replay",
+            @"C:\data\ds\replays\test9.SC2Replay",
+            @"C:\data\ds\replays\test10.SC2Replay",
+            @"C:\data\ds\replays\test11.SC2Replay",
+            @"C:\data\ds\replays\test12.SC2Replay",
+            @"C:\data\ds\replays\test13.SC2Replay",
+            @"C:\data\ds\replays\test14.SC2Replay",
+            @"C:\data\ds\replays\test15.SC2Replay",
+            @"C:\data\ds\replays\test16.SC2Replay",
+        };
+
+        foreach (var errorReplay in errors)
+        {
+            errorReplays[errorReplay] = "debuge test error";
+            Interlocked.Increment(ref errorCounter);
+            OnErrorRaised(new());
+        }
+        OnDecodeStateChanged(new()
+        {
+            Start = DateTime.UtcNow.AddMinutes(-5),
+            Total = 100,
+            Decoded = 70,
+            Saved = 69,
+            Error = errorCounter,
+            Done = false,
+        });
     }
 
     public void Dispose()

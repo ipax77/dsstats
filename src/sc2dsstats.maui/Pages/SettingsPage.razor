@@ -8,6 +8,7 @@
 @inject IReplayRepository ReplayRepository
 @inject ReplayContext context
 @inject UploadService UploadService
+@implements IDisposable
 
 <h1 class="display-5 fw-bold">Settings</h1>
 
@@ -94,7 +95,7 @@ else
 
     <div class="container-fluid py-5 bg-primary mt-3">
         <h4 class="fw-bold">Playernames - your ingame Starcraft 2 Player name(s) e.g. shown in the loading screen of Direct Strike</h4>
-        @foreach (var ent in PlayerNames)
+        @foreach (var ent in playerNames)
         {
             <div class="col-6 m-2 p-2">
                 <label class="col-form-label d-flex w-100">
@@ -109,7 +110,7 @@ else
     <div class="container-fluid py-5 bg-primary mt-3">
         <h4 class="fw-bold">Replay directories - location of the Direct Strike replays</h4>
         <small>Somethink like: C:\Users\username\Documents\StarCraft II\Accounts\107095123\2-S2-1-226321\Replays\Multiplayer</small>
-        @foreach (var ent in ReplayPaths)
+        @foreach (var ent in replayPaths)
         {
 
             <div class="col-10 m-2 p-2">
@@ -137,12 +138,12 @@ else
         <small>@FileSystem.Current.AppDataDirectory</small>
     </div>
 
-    @if (SkipReplays.Any())
+    @if (skipReplays.Any())
     {
-        <div class="container-fluid py-5 bg-primary mt-3" style="max-height: 400px;">
-            <h3>Replays skipped from decoding</h3>
+        <div class="container-fluid py-5 bg-primary mt-3" style="max-height: 400px; overflow: auto;">
+            <h3>Replays excluded from decoding</h3>
             <div>
-                <table class="table table-sm table-dark">
+                <table class="table table-sm table-dark w-auto">
                     <thead>
                         <tr>
                             <th></th>
@@ -150,13 +151,13 @@ else
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var path in SkipReplays)
+                        @foreach (var path in skipReplays)
                         {
                             <tr>
+                                <td>@path</td>
                                 <td>
                                     <button type="button" class="btn btn-sm btn-warning" @onclick="e => RemoveSkipReplay(path)">Remove</button>
                                 </td>
-                                <td>@path</td>
                             </tr>
                         }
                     </tbody>
@@ -180,9 +181,10 @@ else
 
 @code {
     private EditContext editContext = null!;
-    private List<ListEnt> PlayerNames = new();
-    private List<ListEnt> ReplayPaths = new();
-    private List<string> SkipReplays = new();
+    private List<ListEnt> playerNames = new();
+    private List<ListEnt> replayPaths = new();
+    private List<string> skipReplays = new();
+    private SemaphoreSlim ss = new(1, 1);
 
     protected override void OnInitialized()
     {
@@ -195,21 +197,29 @@ else
         editContext = new(UserSettingsService.UserSettings);
         editContext.OnFieldChanged += EditContext_OnFieldChanged;
 
-        PlayerNames = UserSettingsService.UserSettings.PlayerNames.Select(s => new ListEnt() { Name = s }).ToList();
-        ReplayPaths = UserSettingsService.UserSettings.ReplayPaths.Select(s => new ListEnt() { Name = s }).ToList();
+        playerNames = UserSettingsService.UserSettings.PlayerNames.Select(s => new ListEnt() { Name = s }).ToList();
+        replayPaths = UserSettingsService.UserSettings.ReplayPaths.Select(s => new ListEnt() { Name = s }).ToList();
         _ = LoadSkipReplays();
     }
 
     private async Task LoadSkipReplays()
     {
-        SkipReplays = await ReplayRepository.GetSkipReplays();
+        skipReplays = await ReplayRepository.GetSkipReplays();
         await InvokeAsync(() => StateHasChanged());
     }
 
     private async Task RemoveSkipReplay(string replayPath)
     {
-        await ReplayRepository.RemoveSkipReplay(replayPath);
-        SkipReplays.Remove(replayPath);
+        await ss.WaitAsync();
+        try
+        {
+            await ReplayRepository.RemoveSkipReplay(replayPath);
+        }
+        finally
+        {
+            ss.Release();
+        }
+        skipReplays.Remove(replayPath);
         toastService.ShowSuccess("Replay sucessfully removed from SkipList");
         await InvokeAsync(() => StateHasChanged());
     }
@@ -228,11 +238,11 @@ else
         UserSettingsService.UserSettings.PlayerNames.Clear();
         UserSettingsService.UserSettings.ReplayPaths.Clear();
 
-        UserSettingsService.UserSettings.PlayerNames.AddRange(PlayerNames
+        UserSettingsService.UserSettings.PlayerNames.AddRange(playerNames
             .Where(x => !String.IsNullOrEmpty(x.Name))
             .Select(s => s.Name.Trim()));
 
-        UserSettingsService.UserSettings.ReplayPaths.AddRange(ReplayPaths
+        UserSettingsService.UserSettings.ReplayPaths.AddRange(replayPaths
             .Where(x => !String.IsNullOrEmpty(x.Name) && Directory.Exists(x.Name))
             .Select(s => s.Name));
 
@@ -247,8 +257,8 @@ else
 
         _ = UserSettingsService.Save();
         toastService.ShowSuccess("Settings saved.");
-        PlayerNames = UserSettingsService.UserSettings.PlayerNames.Select(s => new ListEnt() { Name = s }).ToList();
-        ReplayPaths = UserSettingsService.UserSettings.ReplayPaths.Select(s => new ListEnt() { Name = s }).ToList();
+        playerNames = UserSettingsService.UserSettings.PlayerNames.Select(s => new ListEnt() { Name = s }).ToList();
+        replayPaths = UserSettingsService.UserSettings.ReplayPaths.Select(s => new ListEnt() { Name = s }).ToList();
     }
 
     private void Reset()
@@ -257,30 +267,30 @@ else
 
         editContext = new(UserSettingsService.UserSettings);
 
-        PlayerNames = UserSettingsService.UserSettings.PlayerNames.Select(s => new ListEnt() { Name = s }).ToList();
-        ReplayPaths = UserSettingsService.UserSettings.ReplayPaths.Select(s => new ListEnt() { Name = s }).ToList();
+        playerNames = UserSettingsService.UserSettings.PlayerNames.Select(s => new ListEnt() { Name = s }).ToList();
+        replayPaths = UserSettingsService.UserSettings.ReplayPaths.Select(s => new ListEnt() { Name = s }).ToList();
 
         StateHasChanged();
     }
 
     private void AddPlayerName()
     {
-        PlayerNames.Add(new ListEnt());
+        playerNames.Add(new ListEnt());
     }
 
     private void RemovePlayerName(ListEnt listEnt)
     {
-        PlayerNames.Remove(listEnt);
+        playerNames.Remove(listEnt);
     }
 
     private void AddReplayPath()
     {
-        ReplayPaths.Add(new ListEnt());
+        replayPaths.Add(new ListEnt());
     }
 
     private void RemoveReplayPath(ListEnt listEnt)
     {
-        ReplayPaths.Remove(listEnt);
+        replayPaths.Remove(listEnt);
     }
 
     private async Task Backup()
@@ -368,5 +378,10 @@ else
     internal class ListEnt
     {
         public string Name { get; set; } = "";
+    }
+
+    public void Dispose()
+    {
+        ss.Dispose();
     }
 }

@@ -1,9 +1,14 @@
 ﻿@page "/stats"
+@inject DecodeService DecodeService
+@implements IDisposable
+
 @using pax.dsstats.shared;
+@using sc2dsstats.maui.Services;
+@using sc2dsstats.razorlib.Stats;
 
 <PageTitle>Stats</PageTitle>
 
-<sc2dsstats.razorlib.Stats.StatsComponent StatsRequest="statsRequest" IsMaui="true"></sc2dsstats.razorlib.Stats.StatsComponent>
+<sc2dsstats.razorlib.Stats.StatsComponent @ref="statsComponent" StatsRequest="statsRequest" IsMaui="true"></sc2dsstats.razorlib.Stats.StatsComponent>
 
 @code {
     StatsRequest statsRequest = new()
@@ -13,11 +18,28 @@
         DefaultFilter = true,
         GameModes = new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic }
     };
+    private StatsComponent? statsComponent;
 
     protected override void OnInitialized()
     {
         (statsRequest.StartTime, statsRequest.EndTime) = Data.TimeperiodSelected("This Year");
         statsRequest.TimePeriod = "This Year";
+
+        DecodeService.DecodeStateChanged += DecodeStateChanged;
+
         base.OnInitialized();
+    }
+
+    private void DecodeStateChanged(object? sender, DecodeEventArgs e)
+    {
+        if (e.Done)
+        {
+            _ = statsComponent?.LoadData();
+        }
+    }
+
+    public void Dispose()
+    {
+        DecodeService.DecodeStateChanged += DecodeStateChanged;
     }
 }

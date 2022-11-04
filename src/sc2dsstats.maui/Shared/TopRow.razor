@@ -23,7 +23,14 @@
                 </div>
                 <div class="position-absolute w-100" style="height: 1rem;">
                     <div class="progress">
-                        <div class="progress-bar progress-bar-animated bg-success" role="progressbar" style="width: @(Math.Round((double)decodeEventArgs.Decoded * 100 / (double)decodeEventArgs.Total, 2))%;" aria-valuenow="@(decodeEventArgs.Decoded * 100 / decodeEventArgs.Total)" aria-valuemin="0" aria-valuemax="@decodeEventArgs.Total">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                                role="progressbar"
+                                aria-label="Decode process"
+                                aria-valuenow="@(decodeEventArgs.Decoded)"
+                                aria-valuemin="0"
+                                aria-valuemax="@decodeEventArgs.Total"
+                                style="width: @(Math.Round(decodeEventArgs.Decoded * 100.0 / decodeEventArgs.Total, 2))%;">
+                            @(Math.Round(decodeEventArgs.Decoded * 100.0 / decodeEventArgs.Total, 2))%;"
                         </div>
                     </div>
                 </div>

@@ -22,16 +22,16 @@
     else
     {
         <div>
-            <span class="badge text-bg-primary display-block" style="font-size: 1rem;">Replays<br/>@(StatsRequest.DefaultFilter ? statsResponse.CountResponse.DefaultFilter : statsResponse.CountResponse.Count)</span>
+            <span class="badge text-bg-primary display-block" style="font-size: 1rem;">Replays<br />@(StatsRequest.DefaultFilter ? statsResponse.CountResponse.DefaultFilter : statsResponse.CountResponse.Count)</span>
         </div>
         <div>
-            <span class="badge text-bg-primary display-block text-success ms-1" style="font-size: 1rem;">Filtered<br/>@(StatsRequest.DefaultFilter ? statsResponse.CountResponse.Count - statsResponse.CountResponse.DefaultFilter : 0)</span>
+            <span class="badge text-bg-primary display-block text-success ms-1" style="font-size: 1rem;">Filtered<br />@(StatsRequest.DefaultFilter ? statsResponse.CountResponse.Count - statsResponse.CountResponse.DefaultFilter : 0)</span>
         </div>
         <div>
-            <span class="badge text-bg-primary display-block text-warning ms-1" style="font-size: 1rem;">Leaver<br/>@statsResponse.CountResponse.Leaver</span>
+            <span class="badge text-bg-primary display-block text-warning ms-1" style="font-size: 1rem;">Leaver<br />@statsResponse.CountResponse.Leaver</span>
         </div>
         <div>
-            <span class="badge text-bg-primary display-block text-danger ms-1" style="font-size: 1rem;">Quits<br/>@statsResponse.CountResponse.Quits</span>
+            <span class="badge text-bg-primary display-block text-danger ms-1" style="font-size: 1rem;">Quits<br />@statsResponse.CountResponse.Quits</span>
         </div>
         <div>
             <span class="badge text-bg-primary display-block ms-1" style="font-size: 1rem;">∅ @statsResponse.Request.StatsMode<br />@HelperService.GetPercentageString(statsResponse.Items.Sum(s => s.Wins), statsResponse.Items.Sum(s => s.Matchups))</span>
@@ -51,19 +51,19 @@
     }
 </div>
 
-@if (statsResponse != null)
-{
-    <CascadingValue Value="statsResponse">
-        <div class="row">
-            <div class="col-auto">
-                <StatsTable OnCommanderClicked="CommanderClicked"></StatsTable>
-            </div>
-            <div class="col">
-                <StatsChart OnLabelClicked="CommanderClicked" @ref="statsChart"></StatsChart>
-            </div>
-        </div>
-    </CascadingValue>
-}
+<div class="row">
+    <div class="col-auto">
+        <CascadingValue Value="statsResponse">
+
+            <StatsTable OnCommanderClicked="CommanderClicked"></StatsTable>
+        </CascadingValue>
+    </div>
+    <div class="col-7">
+        <StatsChartComponent @ref="statsChartComponent" IsMaui="IsMaui" OnLabelClicked="CommanderClicked"></StatsChartComponent>
+    </div>
+</div>
+
+
 
 @code {
     [Parameter]
@@ -77,10 +77,10 @@
     public bool IsMaui { get; set; }
 
     private bool isLoading = false;
-    private StatsResponse? statsResponse;
+    private StatsResponse statsResponse = new();
     private object lockobject = new();
 
-    StatsChart? statsChart;
+    StatsChartComponent? statsChartComponent;
 
     protected override void OnInitialized()
     {
@@ -90,7 +90,7 @@
 
     public void ChartOptionsChanged()
     {
-        statsChart?.SetBeginAtZero(StatsRequest.BeginAtZero);
+        statsChartComponent?.SetBeginAtZero(StatsRequest.BeginAtZero);
     }
 
     private void RequestChanged()
@@ -123,6 +123,8 @@
             }
         }
 
+        statsChartComponent?.PrepareChart(StatsRequest, false);
+
         await InvokeAsync(() => StateHasChanged());
         statsResponse = await dataService.GetStats(StatsRequest);
 
@@ -131,9 +133,10 @@
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
 
+        statsChartComponent?.SetupChart(statsResponse);
+
         if (!init)
         {
-            statsChart?.SetChart();
             await OnRequestChanged.InvokeAsync();
         }
     }

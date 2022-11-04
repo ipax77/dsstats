@@ -71,7 +71,7 @@
         <tbody>
             @foreach (var item in GetSortedList())
             {
-                <tr class="pointer" @onclick="e => OnCommanderClicked.InvokeAsync(item.Cmdr)">
+                <tr class="pointer" @onclick="e => RowClicked(item)">
                     <td>
                         <img src="@HelperService.GetImageSrc(item.Cmdr)"
                          alt="@item.Label"
@@ -156,5 +156,14 @@
         }
 
         return items;
+    }
+
+    private void RowClicked(StatsResponseItem item)
+    {
+        var cmdr = item.Cmdr;
+        if (cmdr != Commander.None)
+        {
+            OnCommanderClicked.InvokeAsync(cmdr);
+        }
     }
 }

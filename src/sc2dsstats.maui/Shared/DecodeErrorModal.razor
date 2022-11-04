@@ -15,26 +15,29 @@
             </div>
             <div class="modal-body">
                 <div>
-                    <button type="button" class="btn btn-sm btn-warning" @onclick="SkipAll">Skip All</button>
+                    <button type="button" class="btn btn-sm btn-danger" @onclick="SkipAll">Exclude All</button>
                 </div>
                 <table class="table table-dark table-sm">
                     <thead>
                         <tr>
                             <th></th>
                             <th></th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var ent in DecodeService.errorReplays)
+                        @foreach (var ent in DecodeService.errorReplays.Where(x => !excludeList.Contains(x.Key)))
                         {
-                            <tr>
+                            <tr class="border-top">
+                                <td>@Path.GetFileName(ent.Key)</td>
                                 <td><span class="fw-bold">@ent.Key</span></td>
                                 <td>
-                                    <button type="button" class="btn btn-sm btn-warning" @onclick="e => AddSkipReplay(ent.Key)">Skip next</button>
+                                    <button type="button" class="btn btn-sm btn-danger" @onclick="e => AddSkipReplay(ent.Key)">Exclude permanently</button>
                                 </td>
                             </tr>
-                            <tr colspan="2">
-                                <td>@ent.Value</td>
+                            <tr class="border-bottom">
+                                <td>Error</td>
+                                <td colspan="2">@ent.Value</td>
                             </tr>
                         }
                     </tbody>
@@ -48,6 +51,9 @@
 </div>
 
 @code {
+    private List<string> excludeList = new();
+    SemaphoreSlim ss = new(1, 1);
+
     protected override void OnInitialized()
     {
         DecodeService.ErrorRaised += DecodeService_ErrorRaised;
@@ -61,16 +67,36 @@
 
     private async Task AddSkipReplay(string replayPath)
     {
-        await ReplayRepository.AddSkipReplay(replayPath);
+        await ss.WaitAsync();
+        try
+        {
+            await ReplayRepository.AddSkipReplay(replayPath);
+            excludeList.Add(replayPath);
+        }
+        finally
+        {
+            ss.Release();
+        }
+        await InvokeAsync(() => StateHasChanged());
         ToastService.ShowSuccess("Replay sucessfully added to skip list");
+
     }
 
     private async void SkipAll()
     {
-        foreach (var ent in DecodeService.errorReplays)
+        await ss.WaitAsync();
+        try
         {
-            await ReplayRepository.AddSkipReplay(ent.Key);
+            foreach (var ent in DecodeService.errorReplays)
+            {
+                await ReplayRepository.AddSkipReplay(ent.Key);
+                excludeList.Add(ent.Key);
+            }
+        } finally
+        {
+            ss.Release();
         }
+        await InvokeAsync(() => StateHasChanged());
     }
 
     public void Show()
@@ -80,6 +106,7 @@
 
     public void Dispose()
     {
+        ss.Dispose();
         DecodeService.ErrorRaised -= DecodeService_ErrorRaised;
     }
 }
