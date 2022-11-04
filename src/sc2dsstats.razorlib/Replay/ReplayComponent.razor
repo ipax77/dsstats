@@ -4,6 +4,7 @@
 @using sc2dsstats.razorlib.Services
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
+@implements IDisposable
 
 <div class="row">
     <div class="col-auto">
@@ -153,11 +154,12 @@
     private ChartJsConfig chartJsConfig = null!;
     private ChartComponent? chartComponent;
 
-    private bool chartInit;
-    private bool dataInit;
+    private SemaphoreSlim ss = new(1, 1);
+    private bool isInit;
 
     protected override void OnInitialized()
     {
+        ss.WaitAsync();
         Init(replayDto);
         base.OnInitialized();
     }
@@ -171,7 +173,7 @@
         base.OnAfterRender(firstRender);
     }
 
-    public void Init(ReplayDto replay)
+    public async void Init(ReplayDto replay)
     {
         showBuilds.ForEach(f => f = false);
         (int startTeam, int[] gameloops, int totalGameloops) = HelperService.GetMiddleInfo(replay.Middle, replay.Duration);
@@ -182,24 +184,26 @@
         breakpoint = Breakpoint.All;
         breakpointsCount = replay.ReplayPlayers.Select(s => s.Spawns.Count).Max();
         chartJsConfig = GetMiddleChartConfig(replay.Middle, replay.Duration, replay.WinnerTeam, replay.Cannon, replay.Bunker);
-        dataInit = true;
-        if (chartInit && dataInit)
+
+        if (!isInit)
         {
-            chartComponent?.DrawChart();
+            await ss.WaitAsync();
+        }
+        chartComponent?.DrawChart();
+        if (!isInit)
+        {
+            ss.Release();
         }
         StateHasChanged();
-        JSRuntime.InvokeVoidAsync("enableTooltips");
+        await JSRuntime.InvokeVoidAsync("enableTooltips");
+        isInit = true;
     }
 
     private void ChartEventTriggered(ChartJsEvent chartJsEvent)
     {
         if (chartJsEvent is ChartJsInitEvent initEvent)
         {
-            chartInit = true;
-            if (chartInit && dataInit)
-            {
-                chartComponent?.DrawChart();
-            }
+            ss.Release();
         }
     }
 
@@ -382,5 +386,10 @@
                     }
                 }
             };
+    }
+
+    public void Dispose()
+    {
+        ss.Dispose();
     }
 }
