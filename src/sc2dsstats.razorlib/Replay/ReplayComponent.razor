@@ -18,16 +18,17 @@
                 </div>
             </div>
             <div class="card-body">
-                <div class="collapse" id="chartDiv">
-                    <div class="d-flex" style="min-width: 600px;">
-                        <div class="w-100">
+                @if (showMiddleChart)
+                {
+                    <div class="row" style="min-width: 600px;">
+                        <div class="col-auto w-75">
                             <ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="ChartEventTriggered"></ChartComponent>
                         </div>
-                        <div>
-                            <span class="oi oi-x text-danger pointer" data-bs-toggle="collapse" data-bs-target="#chartDiv" aria-expanded="false" aria-controls="chartDiv"></span>
+                        <div class="col-auto">
+                            <span class="oi oi-x text-danger pointer" @onclick="@(() => showMiddleChart = false)"></span>
                         </div>
                     </div>
-                </div>
+                }
                 <div class="row">
                     @for (int i = 1; i <= 2; i++)
                     {
@@ -44,9 +45,7 @@
                                 {
                                     <button class="btn btn-sm btn-danger"><b>@(@replayDto.ReplayEvent != null ? replayDto.ReplayEvent.RunnerTeam : $"Team {i}")</b></button>
                                 }
-                                <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#chartDiv" aria-expanded="false" aria-controls="chartDiv">
-                                    Middle @(i == 1 ? mid1 : mid2)%
-                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => showMiddleChart = !showMiddleChart)">Middle @(i == 1 ? mid1 : mid2)%</button>
                             </div>
                             <div class="table-responsive" style="max-width: 500px;">
                                 <table class="table table-sm table-hover table-dark pointer">
@@ -154,12 +153,14 @@
     private ChartJsConfig chartJsConfig = null!;
     private ChartComponent? chartComponent;
 
-    private SemaphoreSlim ss = new(1, 1);
-    private bool isInit;
+    private bool showMiddleChart;
 
     protected override void OnInitialized()
     {
-        ss.WaitAsync();
+        chartJsConfig = new()
+            {
+                Type = ChartType.line
+            };
         Init(replayDto);
         base.OnInitialized();
     }
@@ -175,6 +176,11 @@
 
     public async void Init(ReplayDto replay)
     {
+        if (showMiddleChart)
+        {
+            showMiddleChart = false;
+            await InvokeAsync(() => StateHasChanged());
+        }
         showBuilds.ForEach(f => f = false);
         (int startTeam, int[] gameloops, int totalGameloops) = HelperService.GetMiddleInfo(replay.Middle, replay.Duration);
         (mid1, mid2) = HelperService.GetChartMiddle(startTeam, gameloops, totalGameloops);
@@ -185,26 +191,13 @@
         breakpointsCount = replay.ReplayPlayers.Select(s => s.Spawns.Count).Max();
         chartJsConfig = GetMiddleChartConfig(replay.Middle, replay.Duration, replay.WinnerTeam, replay.Cannon, replay.Bunker);
 
-        if (!isInit)
-        {
-            await ss.WaitAsync();
-        }
-        chartComponent?.DrawChart();
-        if (!isInit)
-        {
-            ss.Release();
-        }
         StateHasChanged();
         await JSRuntime.InvokeVoidAsync("enableTooltips");
-        isInit = true;
     }
 
     private void ChartEventTriggered(ChartJsEvent chartJsEvent)
     {
-        if (chartJsEvent is ChartJsInitEvent initEvent)
-        {
-            ss.Release();
-        }
+
     }
 
     private void MoveSpawn(ChangeEventArgs e)
@@ -390,6 +383,5 @@
 
     public void Dispose()
     {
-        ss.Dispose();
     }
 }
