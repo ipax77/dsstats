@@ -84,6 +84,7 @@
     private bool isLoading = false;
     private StatsResponse statsResponse = new();
     private SemaphoreSlim ss = new(1, 1);
+    private object lockobject = new();
 
     StatsChartComponent? statsChartComponent;
 
@@ -171,12 +172,16 @@
             if (addCmdrs.Any())
             {
                 List<Task> addTasks = new();
+
+
                 foreach (var addCmdr in addCmdrs)
                 {
-                    addTasks.Add(Task.Factory.StartNew(() => LoadAddData(StatsRequest with { Interest = addCmdr })));
+                    // addTasks.Add(Task.Factory.StartNew(async() => await LoadAddData(StatsRequest with { Interest = addCmdr })));
+                    addTasks.Add(LoadAddData(StatsRequest with { Interest = addCmdr }));
                 }
 
-                Task.WaitAll(addTasks.ToArray());
+                // Task.WaitAll(addTasks.ToArray());
+                await Task.WhenAll(addTasks);
             }
 
             isLoading = false;
@@ -188,6 +193,7 @@
         }
         finally
         {
+            isLoading = false;
             ss.Release();
         }
     }
@@ -200,6 +206,10 @@
         }
         var response = await dataService.GetStats(request);
         await statsChartComponent.SetupChart(response);
+        lock (lockobject)
+        {
+            statsResponse = response;
+        }
     }
 
     public void Dispose()

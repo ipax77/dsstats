@@ -32,6 +32,8 @@ public partial class StatsChartComponent : ComponentBase
     SemaphoreSlim ssChart = new(1, 1);
     SemaphoreSlim ssInit = new(1, 1);
     bool isIconPluginRegistered;
+    private int iconX = 30;
+    private int iconY = 30;
 
     protected override void OnInitialized()
     {
@@ -71,7 +73,7 @@ public partial class StatsChartComponent : ComponentBase
         {
             if (!isIconPluginRegistered)
             {
-                IJSRuntime.InvokeVoidAsync("registerImagePlugin", chartConfig.ChartJsConfigGuid);
+                IJSRuntime.InvokeVoidAsync("registerImagePlugin", iconX, iconY);
                 isIconPluginRegistered = true;
             }
             Logger.LogInformation("chart init");
@@ -253,10 +255,11 @@ public partial class StatsChartComponent : ComponentBase
 
         List<ChartIconsConfig> icons = items.Select(s => new ChartIconsConfig()
         {
-            XWidth = 30,
-            YWidth = 30,
+            XWidth = iconX,
+            YWidth = iconY,
             YOffset = 0,
-            ImageSrc = HelperService.GetImageSrc(s.Cmdr)
+            ImageSrc = HelperService.GetImageSrc(s.Cmdr),
+            Cmdr = s.Cmdr.ToString().ToLower()
         }).ToList();
         if (chartConfig.Options != null && chartConfig.Options.Plugins != null)
         {
@@ -308,6 +311,20 @@ public partial class StatsChartComponent : ComponentBase
             Fill = true
         };
         chartConfig.AddDataset(radarDataset);
+
+        //List<ChartIconsConfig> icons = statsResponse.Items.Select(s => new ChartIconsConfig()
+        //{
+        //    XWidth = iconX,
+        //    YWidth = iconY,
+        //    YOffset = 0,
+        //    ImageSrc = HelperService.GetImageSrc(s.Cmdr),
+        //    Cmdr = s.Cmdr.ToString().ToLower()
+        //}).ToList();
+        //if (chartConfig.Options != null && chartConfig.Options.Plugins != null)
+        //{
+        //    chartConfig.Options.Plugins.BarIcons = icons;
+        //}
+        //chartComponent?.UpdateChartOptions();
         return true;
     }
 
@@ -332,6 +349,21 @@ public partial class StatsChartComponent : ComponentBase
                 };
 
         chartConfig.AddDataset(pieChartDataset);
+
+        List<ChartIconsConfig> icons = items.Select(s => new ChartIconsConfig()
+        {
+            XWidth = iconX,
+            YWidth = iconY,
+            YOffset = 0,
+            ImageSrc = HelperService.GetImageSrc(s.Cmdr),
+            Cmdr = s.Cmdr.ToString().ToLower()
+        }).ToList();
+        if (chartConfig.Options != null && chartConfig.Options.Plugins != null)
+        {
+            chartConfig.Options.Plugins.BarIcons = icons;
+        }
+        chartComponent?.UpdateChartOptions();
+
         return true;
     }
 

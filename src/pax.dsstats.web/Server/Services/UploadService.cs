@@ -23,7 +23,6 @@ public partial class UploadService
 
     public async Task ImportReplays(string gzipbase64String, Guid appGuid)
     {
-        await ss.WaitAsync();
         try
         {
             using var scope = serviceProvider.CreateScope();
@@ -43,7 +42,6 @@ public partial class UploadService
         {
             logger.LogError($"Failed updating uploader: {ex.Message}");
         }
-        finally { ss.Release(); }
 
         _ = Produce(gzipbase64String, appGuid);
     }
