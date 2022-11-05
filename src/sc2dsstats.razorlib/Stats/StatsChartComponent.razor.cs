@@ -1,9 +1,10 @@
 ﻿using MathNet.Numerics;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
+using Microsoft.JSInterop;
 using pax.BlazorChartJs;
 using pax.dsstats.shared;
-using System.Linq;
+using sc2dsstats.razorlib.Services;
 
 namespace sc2dsstats.razorlib.Stats;
 
@@ -22,11 +23,15 @@ public partial class StatsChartComponent : ComponentBase
     [Inject]
     protected ILogger<StatsChartComponent> Logger { get; set; } = default!;
 
-    private ChartJsConfig chartConfig = null!;
+    [Inject]
+    protected IJSRuntime IJSRuntime { get; set; } = default!;
+
+    private IconsChartJsConfig chartConfig = null!;
     private ChartComponent? chartComponent;
 
     SemaphoreSlim ssChart = new(1, 1);
     SemaphoreSlim ssInit = new(1, 1);
+    bool isIconPluginRegistered;
 
     protected override void OnInitialized()
     {
@@ -64,12 +69,13 @@ public partial class StatsChartComponent : ComponentBase
         }
         else if (chartJsEvent is ChartJsInitEvent initEvent)
         {
-            ssInit.Release();
+            if (!isIconPluginRegistered)
+            {
+                IJSRuntime.InvokeVoidAsync("registerImagePlugin", chartConfig.ChartJsConfigGuid);
+                isIconPluginRegistered = true;
+            }
             Logger.LogInformation("chart init");
-        }
-        else if (chartJsEvent is ChartJsAnimationCompleteEvent animationCompleteEvent)
-        {
-            Logger.LogInformation($"chart animation complete {animationCompleteEvent.Initial}");
+            ssInit.Release();
         }
     }
 
@@ -112,6 +118,10 @@ public partial class StatsChartComponent : ComponentBase
             }
             else
             {
+                if (chartConfig.Options != null && chartConfig.Options.Plugins != null)
+                {
+                    chartConfig.Options.Plugins.BarIcons = null;
+                }
                 _ = requestedChartType switch
                 {
                     ChartType.bar => SetBarChartConfig(statsRequest),
@@ -240,6 +250,20 @@ public partial class StatsChartComponent : ComponentBase
             BorderWidth = new IndexableOption<double>(2)
         };
         chartConfig.AddDataset(barDataset);
+
+        List<ChartIconsConfig> icons = items.Select(s => new ChartIconsConfig()
+        {
+            XWidth = 30,
+            YWidth = 30,
+            YOffset = 0,
+            ImageSrc = HelperService.GetImageSrc(s.Cmdr)
+        }).ToList();
+        if (chartConfig.Options != null && chartConfig.Options.Plugins != null)
+        {
+            chartConfig.Options.Plugins.BarIcons = icons;
+        }
+        chartComponent?.UpdateChartOptions();
+
         return true;
     }
 
@@ -316,12 +340,12 @@ public partial class StatsChartComponent : ComponentBase
         chartConfig.Type = ChartType.bar;
         chartConfig.Data.Labels = new List<string>();
         chartConfig.Data.Datasets = new List<ChartJsDataset>();
-        chartConfig.Options = new ChartJsOptions()
+        chartConfig.Options = new IconsChartJsOptions()
         {
             MaintainAspectRatio = true,
             Responsive = true,
             OnClickEvent = true,
-            Plugins = new Plugins()
+            Plugins = new IconsPlugins()
             {
                 Title = new()
                 {
@@ -357,18 +381,16 @@ public partial class StatsChartComponent : ComponentBase
         return true;
     }
 
-
-
     private bool SetLineChartConfig(StatsRequest statsRequest)
     {
         chartConfig.Type = ChartType.line;
         chartConfig.Data.Labels = new List<string>();
         chartConfig.Data.Datasets = new List<ChartJsDataset>();
-        chartConfig.Options = new ChartJsOptions()
+        chartConfig.Options = new IconsChartJsOptions()
         {
             MaintainAspectRatio = true,
             Responsive = true,
-            Plugins = new Plugins()
+            Plugins = new IconsPlugins()
             {
                 Legend = new Legend()
                 {
@@ -402,11 +424,11 @@ public partial class StatsChartComponent : ComponentBase
         chartConfig.Type = ChartType.radar;
         chartConfig.Data.Labels = new List<string>();
         chartConfig.Data.Datasets = new List<ChartJsDataset>();
-        chartConfig.Options = new ChartJsOptions()
+        chartConfig.Options = new IconsChartJsOptions()
         {
             Responsive = true,
             MaintainAspectRatio = true,
-            Plugins = new Plugins()
+            Plugins = new IconsPlugins()
             {
                 Legend = new Legend()
                 {
@@ -462,9 +484,9 @@ public partial class StatsChartComponent : ComponentBase
         chartConfig.Type = ChartType.pie;
         chartConfig.Data.Labels = new List<string>();
         chartConfig.Data.Datasets = new List<ChartJsDataset>();
-        chartConfig.Options = new ChartJsOptions()
+        chartConfig.Options = new IconsChartJsOptions()
         {
-            Plugins = new Plugins()
+            Plugins = new IconsPlugins()
             {
                 Legend = new Legend()
                 {
@@ -510,6 +532,11 @@ public partial class StatsChartComponent : ComponentBase
         return nicedata;
     }
 
+    private void SetBarChartIcons()
+    {
+
+    }
+
     private void DEBUGRemovaDatasets()
     {
         //chartConfig.RemoveDatasets(chartConfig.Data.Datasets.ToList());
@@ -517,5 +544,20 @@ public partial class StatsChartComponent : ComponentBase
         {
             chartConfig.RemoveDataset(dataset);
         }
+    }
+
+    public class IconsChartJsConfig : ChartJsConfig
+    {
+        public new IconsChartJsOptions? Options { get; set; }
+    }
+
+    public record IconsChartJsOptions : ChartJsOptions
+    {
+        public new IconsPlugins? Plugins { get; set; }
+    }
+
+    public record IconsPlugins : Plugins
+    {
+        public ICollection<ChartIconsConfig>? BarIcons { get; set; }
     }
 }
