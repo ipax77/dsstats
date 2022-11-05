@@ -370,10 +370,13 @@ public partial class StatsChartComponent : ComponentBase
             Responsive = true,
             Plugins = new Plugins()
             {
-                Labels = new LabelsConfig()
+                Legend = new Legend()
                 {
-                    Render = "image",
-                    Images = new List<LabelsConfigImage>()
+                    Position = "right",
+                    Labels = new Labels()
+                    {
+                        Color = "#f2f2f2",
+                    }
                 },
                 Datalabels = new()
                 {
@@ -393,8 +396,6 @@ public partial class StatsChartComponent : ComponentBase
         };
         return true;
     }
-
-
 
     private bool SetRadarChartConfig(StatsRequest statsRequest)
     {

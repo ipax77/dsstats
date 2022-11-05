@@ -29,28 +29,51 @@
                 </InputSelect>
             </label>
         </div>
-        <div class="col-auto">
-            <label class="form-label">
-                Commander
-                <InputSelect class="form-select" @bind-Value="StatsRequest.Interest">
-                    @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
-                    {
-                        <option value="@cmdr">@cmdr</option>
-                    }
-                </InputSelect>
-            </label>
-        </div>
+
         @if (StatsRequest.StatsMode == StatsMode.Synergy || StatsRequest.StatsMode == StatsMode.Timeline || StatsRequest.StatsMode == StatsMode.Duration)
         {
             <div class="col-auto">
-                <select id="addremovecmdr" class="form-select" multiple aria-label="multiple" @onchange="AddRemoveCmdr">
-                    @foreach (Commander cmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
-                    {
-                        <option value="@cmdr.ToString()">@cmdr</option>
-                    }
-                </select>
-        </div>
+                <label class="form-label">
+                    Commanders
+                    <select id="addremovecmdr" class="form-select" multiple aria-label="multiple" @onchange="AddRemoveCmdr">
+                        @foreach (Commander cmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
+                        {
+                            <option value="@cmdr.ToString()">@cmdr</option>
+                        }
+                    </select>
+                </label>
+            </div>
         }
+        else
+        {
+            <div class="col-auto">
+                <label class="form-label">
+                    Commander
+                    <InputSelect class="form-select" @bind-Value="StatsRequest.Interest">
+                        @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                        {
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+        }
+        <div class="col-auto">
+            <label class="form-label">
+                GameModes
+                <select id="gamemodeselect" class="form-select" multiple aria-label="multiple" @onchange="GameModeChange">
+                    <option>All GameModes</option>
+                    <option value="@GameMode.Commanders">@GameMode.Commanders</option>
+                    <option value="@GameMode.CommandersHeroic">@GameMode.CommandersHeroic</option>
+                    <option value="@GameMode.Standard">@GameMode.Standard</option>
+                    <option value="@GameMode.BrawlCommanders">@GameMode.BrawlCommanders</option>
+                    <option value="@GameMode.Switch">@GameMode.Switch</option>
+                    <option value="@GameMode.Gear">@GameMode.Gear</option>
+                    <option value="@GameMode.Sabotage">@GameMode.Sabotage</option>
+                    <option value="@GameMode.Tutorial">@GameMode.Tutorial</option>
+                </select>
+            </label>
+        </div>
         <div class="col-auto">
             <div class="form-check form-switch">
                 <label class="form-check-label">
@@ -73,19 +96,6 @@
                     </InputCheckbox>
                 </label>
             </div>
-        </div>
-        <div class="col-auto">
-            <select id="gamemodeselect" class="form-select" multiple aria-label="multiple" @onchange="GameModeChange">
-                <option>All GameModes</option>
-                <option value="@GameMode.Commanders">@GameMode.Commanders</option>
-                <option value="@GameMode.CommandersHeroic">@GameMode.CommandersHeroic</option>
-                <option value="@GameMode.Standard">@GameMode.Standard</option>
-                <option value="@GameMode.BrawlCommanders">@GameMode.BrawlCommanders</option>
-                <option value="@GameMode.Switch">@GameMode.Switch</option>
-                <option value="@GameMode.Gear">@GameMode.Gear</option>
-                <option value="@GameMode.Sabotage">@GameMode.Sabotage</option>
-                <option value="@GameMode.Tutorial">@GameMode.Tutorial</option>
-            </select>
         </div>
     </div>
 </EditForm>
@@ -130,6 +140,17 @@
         if (e.FieldIdentifier.FieldName == nameof(StatsRequest.TimePeriod))
         {
             (StatsRequest.StartTime, StatsRequest.EndTime) = Data.TimeperiodSelected(StatsRequest.TimePeriod);
+            if (IsMultiselect(StatsRequest.StatsMode))
+            {
+                SetMultiSelect(StatsRequest.Interest);
+            }
+        }
+        else if (e.FieldIdentifier.FieldName == nameof(StatsRequest.Uploaders))
+        {
+            if (IsMultiselect(StatsRequest.StatsMode))
+            {
+                SetMultiSelect(StatsRequest.Interest);
+            }
         }
         else if (e.FieldIdentifier.FieldName == nameof(StatsRequest.BeginAtZero))
         {
@@ -138,8 +159,22 @@
         }
         else if (e.FieldIdentifier.FieldName == nameof(StatsRequest.StatsMode))
         {
-            IJSRuntime.InvokeVoidAsync("setMultiSelect", "addremovecmdr", Array.Empty<string>());
-            StatsRequest.AddRemoveCommanders.Clear();
+            if (IsMultiselect(StatsRequest.StatsMode))
+            {
+                if (StatsRequest.Interest == Commander.None)
+                {
+                    StatsRequest.Interest = Commander.Abathur;
+                    SetMultiSelect(Commander.Abathur);
+                }
+                else
+                {
+                    SetMultiSelect(StatsRequest.Interest);
+                }
+            }
+            else
+            {
+                ClearMultiSelect();
+            }
         }
         else if (e.FieldIdentifier.FieldName == nameof(StatsRequest.Interest))
         {
@@ -147,6 +182,23 @@
             StatsRequest.AddRemoveCommanders.Clear();
         }
         OnRequestChanged.InvokeAsync();
+    }
+
+    private bool IsMultiselect(StatsMode statsMode)
+    {
+        return statsMode == StatsMode.Synergy || statsMode == StatsMode.Timeline || statsMode == StatsMode.Duration;
+    }
+
+    private void ClearMultiSelect()
+    {
+        IJSRuntime.InvokeVoidAsync("setMultiSelect", "addremovecmdr", Array.Empty<string>());
+        StatsRequest.AddRemoveCommanders.Clear();
+    }
+
+    private void SetMultiSelect(Commander cmdr)
+    {
+        StatsRequest.AddRemoveCommanders = new List<Commander>() { cmdr };
+        IJSRuntime.InvokeVoidAsync("setMultiSelect", "addremovecmdr", new string[1] { $"{cmdr.ToString()}" });
     }
 
     private void GameModeChange(ChangeEventArgs e)

@@ -47,6 +47,12 @@
     <div class="d-flex" style="max-width: 850px;">
         <p class="ms-auto">#@ReplaysCount</p>
         <span class="oi oi-reload text-primary pointer ms-2" style="font-size: 1rem;" @onclick="Reload"></span>
+        @if (replayLoading)
+        {
+            <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        }
     </div>
     <div class="table-responsive tableFixHead">
         <table id="replaylist" class="table table-dark table-hover w-auto">
@@ -179,6 +185,7 @@
     CancellationTokenSource cts = new();
     Replay.ReplayComponent? replayComponent;
 
+    private bool replayLoading;
     private string? lastVisitHash;
 
     protected override async Task OnInitializedAsync()
@@ -269,6 +276,8 @@
 
     public async Task ShowReplay(string replayHash)
     {
+        replayLoading = true;
+        await InvokeAsync(() => StateHasChanged());
         replaysRequest.ReplayHash = replayHash;
         await OnRequestChanged.InvokeAsync(replaysRequest);
 
@@ -278,6 +287,7 @@
         {
             replayComponent?.Init(replayDto);
         }
+        replayLoading = false;
         await InvokeAsync(() => StateHasChanged());
     }
 
