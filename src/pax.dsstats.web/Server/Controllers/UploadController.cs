@@ -37,8 +37,15 @@ public class UploadController : ControllerBase
     [Route("ImportReplays/{appGuid}")]
     public async Task<ActionResult> ImportReplays([FromBody] string base64string, Guid appGuid)
     {
-        await uploadService.ImportReplays(base64string, appGuid);
-        return Ok();
+        var result = await uploadService.ImportReplays(base64string, appGuid);
+        if (result)
+        {
+            return Ok();
+        }
+        else
+        {
+            return BadRequest();
+        }
     }
 
     [HttpGet]

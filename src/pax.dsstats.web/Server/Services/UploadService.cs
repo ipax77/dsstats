@@ -13,6 +13,7 @@ public partial class UploadService
     private readonly IMapper mapper;
     private readonly ILogger<UploadService> logger;
     private readonly SemaphoreSlim ss = new(1, 1);
+    private const string blobBaseDir = "/data/ds/replayblobs";
 
     public UploadService(IServiceProvider serviceProvider, IMapper mapper, ILogger<UploadService> logger)
     {
@@ -21,17 +22,19 @@ public partial class UploadService
         this.logger = logger;
     }
 
-    public async Task ImportReplays(string gzipbase64String, Guid appGuid)
+    public async Task<bool> ImportReplays(string gzipbase64String, Guid appGuid)
     {
         try
         {
+            await SaveBlob(gzipbase64String, appGuid);
+
             using var scope = serviceProvider.CreateScope();
             using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
             var uploader = await context.Uploaders.FirstOrDefaultAsync(f => f.AppGuid == appGuid);
             if (uploader == null)
             {
-                return;
+                return false;
             }
 
             uploader.LatestUpload = DateTime.UtcNow;
@@ -44,6 +47,32 @@ public partial class UploadService
         }
 
         _ = Produce(gzipbase64String, appGuid);
+        
+        return true;
+    }
+
+    private async Task SaveBlob(string gzipbase64String, Guid appGuid)
+    {
+        var appDir = Path.Combine(blobBaseDir, appGuid.ToString());
+        if (!Directory.Exists(appDir))
+        {
+            Directory.CreateDirectory(appDir);
+        }
+        var blobFilename = Path.Combine(appDir, DateTime.UtcNow.ToString(@"yyyyMMdd-HHmmss") + ".base64");
+
+        int fs = 0;
+        while (File.Exists(blobFilename))
+        {
+            await Task.Delay(1000);
+            blobFilename = Path.Combine(appDir, DateTime.UtcNow.ToString(@"yyyyMMdd-HHmmss") + ".base64");
+            fs++;
+            if (fs > 5)
+            {
+                logger.LogError($"can't find filename while saving replayblob {blobFilename}");
+                return;
+            }
+        }
+        await File.WriteAllTextAsync(blobFilename, gzipbase64String);
     }
 
     public async Task<DateTime?> CreateOrUpdateUploader(UploaderDto uploader)
