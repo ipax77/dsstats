@@ -12,7 +12,7 @@ namespace pax.dsstats.dbng.Services
         Task<List<MmrDevDto>> GetRatingsDeviation();
         Task<List<MmrDevDto>> GetRatingsDeviationStd();
         Task<StatsResponse> GetStatsResponse(StatsRequest request);
-        void ResetCache();
+        void ResetStatsCache();
         Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(List<int> toonIds);
         Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId);
         Task<PlayerRatingDto?> GetPlayerRating(int toonId);

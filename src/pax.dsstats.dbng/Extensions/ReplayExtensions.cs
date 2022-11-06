@@ -71,10 +71,16 @@ public static class ReplayExtensions
     public static string GenMemKey(this StatsRequest statsRequest)
     {
         var sb = new StringBuilder();
+        if (statsRequest.StatsMode == StatsMode.Duration || statsRequest.StatsMode == StatsMode.Timeline || statsRequest.StatsMode == StatsMode.Synergy)
+        {
+            sb.Append("Lr");
+        }
         sb.Append("Stats");
+        sb.Append(statsRequest.StatsMode.ToString());
         sb.Append(statsRequest.StartTime.ToString(@"yyyyMMdd"));
         sb.Append((int)statsRequest.Interest);
-        sb.Append(statsRequest.EndTime.ToString(@"yyyyMMdd"));
+        // sb.Append(statsRequest.EndTime.ToString(@"yyyyMMdd"));
+        sb.Append(statsRequest.TimePeriod);
         sb.Append(String.Concat(statsRequest.GameModes.Select(s => (int)s)));
         return sb.ToString();
     }

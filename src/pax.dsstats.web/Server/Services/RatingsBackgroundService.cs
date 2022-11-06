@@ -21,7 +21,7 @@ public class RatingsBackgroundService : IHostedService, IDisposable
     {
         // run every day a 3 am utc
         DateTime nowTime = DateTime.UtcNow;
-        DateTime startTime = DateTime.Today.AddHours(3);
+        DateTime startTime = DateTime.UtcNow.Date.AddHours(3);
         if (nowTime > startTime)
             startTime = startTime.AddDays(1);
         TimeSpan waitTime = startTime - nowTime;
