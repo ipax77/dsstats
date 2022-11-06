@@ -222,7 +222,7 @@ public class DecodeService : IDisposable
 
             using var scope = serviceScopeFactory.CreateScope();
             var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-            statsService.ResetCache();
+            statsService.ResetStatsCache();
 
             notifyCts.Cancel();
 
