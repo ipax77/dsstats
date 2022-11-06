@@ -47,7 +47,6 @@ public static class MauiProgram
         builder.Services.AddChartJs();
 
         builder.Services.AddTransient<IStatsService, StatsService>();
-        builder.Services.AddSingleton<MmrService>();
         builder.Services.AddSingleton<FireMmrService>();
 
         builder.Services.AddSingleton<UserSettingsService>();
@@ -63,7 +62,6 @@ public static class MauiProgram
         using var scope = builder.Services.BuildServiceProvider().CreateScope();
 
         var userSettingsService = scope.ServiceProvider.GetRequiredService<UserSettingsService>();
-        var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
 
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         context.Database.Migrate();
