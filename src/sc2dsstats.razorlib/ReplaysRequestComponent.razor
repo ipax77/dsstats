@@ -162,6 +162,8 @@
         replaysRequest.StartTime = new DateTime(2018, 1, 1);
         replaysRequest.EndTime = defaultRequest.EndTime;
         replaysRequest.GameModes = defaultRequest.GameModes;
+        replaysRequest.DefaultFilter = defaultRequest.DefaultFilter;
+        replaysRequest.PlayerCount = defaultRequest.PlayerCount;
         StateHasChanged();
         OnFieldChanged.InvokeAsync();
     }
