@@ -9,7 +9,7 @@ public partial class StatsService
 {
     public async Task<CountResponse> GetCount(StatsRequest request)
     {
-        var memKey = request.GenMemKey();
+        var memKey = request.GenCountMemKey();
         if (!memoryCache.TryGetValue(memKey, out CountResponse countResponse))
         {
             countResponse = await GetCountFromDb(request);
@@ -77,7 +77,7 @@ public partial class StatsService
 
         sb.Append($"WHERE r.GameTime > '{request.StartTime.ToString(@"yyyy-MM-dd")}'");
 
-        if (request.EndTime != DateTime.Today)
+        if (request.EndTime != DateTime.UtcNow.Date)
         {
             sb.Append($" AND r.GameTime < '{request.EndTime.ToString(@"yyyy-MM-dd")}'");
         }

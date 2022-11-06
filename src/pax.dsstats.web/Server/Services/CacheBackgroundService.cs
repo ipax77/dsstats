@@ -35,7 +35,7 @@ public class CacheBackgroundService : IHostedService, IDisposable
         {
             uploadService.WeHaveNewReplays = false;
             var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-            statsService.ResetCache();
+            statsService.ResetStatsCache();
 
             await statsService.GetRequestStats(new shared.StatsRequest() { Uploaders = false });
         }

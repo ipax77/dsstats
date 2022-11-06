@@ -207,6 +207,28 @@ public partial class StatsChartComponent : ComponentBase
             return $"{statsRequest.Interest}";
         }
     }
+    
+    private IndexableOption<string> GetRequestTitle(StatsRequest statsRequest)
+    {
+        string title = $"{statsRequest.StatsMode} - {statsRequest.TimePeriod}";
+        if (statsRequest.Uploaders)
+        {
+            string append = IsMaui ? "Players" : "Uploaders";
+            title = title + " - " + append;
+        }
+        return new IndexableOption<string>(title);
+    }
+
+    private void SetChartTitle(IndexableOption<string> title)
+    {
+        if (chartConfig.Options != null
+            && chartConfig.Options.Plugins != null
+            && chartConfig.Options.Plugins.Title != null)
+        {
+            chartConfig.Options.Plugins.Title.Text = title;
+            chartComponent?.UpdateChartOptions();
+        }
+    }
 
     public async Task SetupChart(StatsResponse statsResponse)
     {
@@ -222,6 +244,12 @@ public partial class StatsChartComponent : ComponentBase
                 ChartType.line => AddLineChartDataset(statsResponse),
                 _ => AddBarChartDataset(statsResponse)
             };
+
+            var title = GetRequestTitle(statsResponse.Request);
+            if (chartConfig.Options?.Plugins?.Title != null && chartConfig.Options?.Plugins?.Title?.Text != title)
+            {
+                SetChartTitle(title);
+            }
         }
         finally
         {
@@ -382,7 +410,7 @@ public partial class StatsChartComponent : ComponentBase
                 Title = new()
                 {
                     Display = true,
-                    Text = new IndexableOption<string>($"{statsRequest.StatsMode} {(statsRequest.Interest == Commander.None ? "" : statsRequest.Interest)}"),
+                    Text = GetRequestTitle(statsRequest),
                     Color = "white",
                     Font = new()
                     {
@@ -443,7 +471,7 @@ public partial class StatsChartComponent : ComponentBase
                     {
                         Size = 20,
                     },
-                    Text = new IndexableOption<string>(statsRequest.StatsMode.ToString()),
+                    Text = GetRequestTitle(statsRequest),
                     Color = "#f2f2f2"
                 }
             }
@@ -477,7 +505,7 @@ public partial class StatsChartComponent : ComponentBase
                     {
                         Size = 20,
                     },
-                    Text = new IndexableOption<string>(statsRequest.StatsMode.ToString()),
+                    Text = GetRequestTitle(statsRequest),
                     Color = "#f2f2f2"
                 }
             },
@@ -531,7 +559,7 @@ public partial class StatsChartComponent : ComponentBase
                     {
                         Size = 20,
                     },
-                    Text = new IndexableOption<string>(statsRequest.StatsMode.ToString()),
+                    Text = GetRequestTitle(statsRequest),
                     Color = "#f2f2f2"
                 }
             }

@@ -7,7 +7,6 @@ public record StatsRequest
     public StatsMode StatsMode { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
-    [JsonIgnore]
     public string TimePeriod { get; set; } = "This Year";
     [JsonIgnore]
     public bool BeginAtZero { get; set; }

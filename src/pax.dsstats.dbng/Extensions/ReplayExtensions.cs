@@ -68,13 +68,31 @@ public static class ReplayExtensions
         return GetMd5Hash(md5Hash, sb.ToString());
     }
 
-    public static string GenMemKey(this StatsRequest statsRequest)
+    public static string GenCountMemKey(this StatsRequest statsRequest)
     {
         var sb = new StringBuilder();
-        sb.Append("Stats");
+        sb.Append("StatsCount");
         sb.Append(statsRequest.StartTime.ToString(@"yyyyMMdd"));
         sb.Append((int)statsRequest.Interest);
-        sb.Append(statsRequest.EndTime.ToString(@"yyyyMMdd"));
+        sb.Append(statsRequest.TimePeriod);
+        sb.Append(String.Concat(statsRequest.GameModes.Select(s => (int)s)));
+        return sb.ToString();
+    }
+
+    public static string GenStatsMemKey(this StatsRequest statsRequest)
+    {
+        var sb = new StringBuilder();
+        if (statsRequest.StatsMode == StatsMode.Duration || statsRequest.StatsMode == StatsMode.Timeline || statsRequest.StatsMode == StatsMode.Synergy)
+        {
+            sb.Append("Lr");
+        }
+        sb.Append("Stats");
+        sb.Append(statsRequest.StatsMode.ToString());
+        sb.Append(statsRequest.StartTime.ToString(@"yyyyMMdd"));
+        sb.Append((int)statsRequest.Interest);
+        sb.Append(statsRequest.DefaultFilter);
+        sb.Append(statsRequest.Uploaders);
+        sb.Append(statsRequest.TimePeriod);
         sb.Append(String.Concat(statsRequest.GameModes.Select(s => (int)s)));
         return sb.ToString();
     }

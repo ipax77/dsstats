@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace pax.dsstats.dbng.Services;
@@ -22,19 +24,30 @@ public partial class StatsService : IStatsService
 
     public async Task<StatsResponse> GetStatsResponse(StatsRequest request)
     {
-        return request.StatsMode switch
+        var memKey = request.GenStatsMemKey();
+
+        if (!memoryCache.TryGetValue(memKey, out StatsResponse response))
         {
-            StatsMode.Winrate => await GetWinrate(request),
-            StatsMode.Timeline => await GetTimeline(request),
-            StatsMode.Mvp => await GetMvp(request),
-            StatsMode.Synergy => await GetSynergy(request),
-            StatsMode.Count => await GetWinrate(request),
-            StatsMode.Duration => await GetDuration(request),
-            _ => new()
-        };
+            response = request.StatsMode switch
+            {
+                StatsMode.Winrate => await GetWinrate(request),
+                StatsMode.Timeline => await GetTimeline(request),
+                StatsMode.Mvp => await GetMvp(request),
+                StatsMode.Synergy => await GetSynergy(request),
+                StatsMode.Count => await GetWinrate(request),
+                StatsMode.Duration => await GetDuration(request),
+                _ => new()
+            };
+
+            memoryCache.Set(memKey, response, new MemoryCacheEntryOptions()
+                .SetPriority(CacheItemPriority.Low)
+                .SetAbsoluteExpiration(TimeSpan.FromDays(7))
+            );
+        }
+        return response;
     }
 
-    public void ResetCache()
+    public void ResetStatsCache()
     {
         var field = typeof(MemoryCache).GetProperty("EntriesCollection", BindingFlags.NonPublic | BindingFlags.Instance);
         var collection = field?.GetValue(memoryCache) as ICollection;
@@ -48,7 +61,7 @@ public partial class StatsService : IStatsService
                 if (val != null)
                 {
                     var memkey = val.ToString();
-                    if (memkey != null && !memkey.StartsWith("Builds"))
+                    if (memkey != null && memkey.StartsWith("Stats"))
                     {
                         items.Add(memkey);
                     }
@@ -60,7 +73,7 @@ public partial class StatsService : IStatsService
 
     public async Task<List<CmdrStats>> GetRequestStats(StatsRequest request)
     {
-        string memKey = request.Uploaders ? "cmdrstatsuploaders" : "cmdrstats";
+        string memKey = request.Uploaders ? "StatsCmdrUploaders" : "StatsCmdr";
         if (!memoryCache.TryGetValue(memKey, out List<CmdrStats> stats))
         {
             if (request.Uploaders)
@@ -139,7 +152,7 @@ public partial class StatsService : IStatsService
                 .Where(x => x.GameTime > request.StartTime)
                 .AsNoTracking();
 
-        if (request.EndTime != DateTime.Today)
+        if (request.EndTime < DateTime.UtcNow.Date.AddDays(-2))
         {
             replays = replays.Where(x => x.GameTime <= request.EndTime);
         }

@@ -190,7 +190,7 @@ public class ReplayRepository : IReplayRepository
 
         replays = replays.Where(x => x.GameTime >= request.StartTime);
 
-        if (request.EndTime < DateTime.Today.AddDays(-2))
+        if (request.EndTime < DateTime.UtcNow.Date.AddDays(-2))
         {
             replays = replays.Where(x => x.GameTime < request.EndTime);
         }
@@ -346,7 +346,7 @@ public class ReplayRepository : IReplayRepository
                 dbEvent = new()
                 {
                     Name = replayEventDto.Event.Name,
-                    EventStart = DateTime.Today
+                    EventStart = DateTime.UtcNow.Date
                 };
                 context.Events.Add(dbEvent);
                 await context.SaveChangesAsync();
