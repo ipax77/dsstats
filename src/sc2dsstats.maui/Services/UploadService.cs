@@ -95,7 +95,7 @@ public class UploadService
                     f.FileName = string.Empty;
                     f.PlayerResult = PlayerResult.None;
                 });
-            replays.SelectMany(s => s.ReplayPlayers).ToList().ForEach(f => f.MmrChange = 0);
+            //replays.SelectMany(s => s.ReplayPlayers).ToList().ForEach(f => f.MmrChange = 0);
 
             var base64string = GetBase64String(replays);
             var httpClient = GetHttpClient();

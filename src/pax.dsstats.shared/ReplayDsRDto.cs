@@ -13,6 +13,7 @@ public record ReplayDsRDto
 
 public record ReplayPlayerDsRDto
 {
+    public int ReplayPlayerId { get; set; }
     public int Team { get; init; }
     public PlayerResult PlayerResult { get; init; }
     public PlayerDsRDto Player { get; init; } = null!;
@@ -20,6 +21,7 @@ public record ReplayPlayerDsRDto
     public Commander OppRace { get; init; }
     public int Duration { get; init; }
     public bool IsUploader { get; init; }
+    public float MmrChange { get; set; }
 }
 
 public record PlayerDsRDto
