@@ -24,7 +24,7 @@ public partial class StatsService : IStatsService
 
     public async Task<StatsResponse> GetStatsResponse(StatsRequest request)
     {
-        var memKey = request.GenMemKey();
+        var memKey = request.GenStatsMemKey();
 
         if (!memoryCache.TryGetValue(memKey, out StatsResponse response))
         {

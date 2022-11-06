@@ -9,7 +9,7 @@ public partial class StatsService
 {
     public async Task<CountResponse> GetCount(StatsRequest request)
     {
-        var memKey = request.GenMemKey();
+        var memKey = request.GenCountMemKey();
         if (!memoryCache.TryGetValue(memKey, out CountResponse countResponse))
         {
             countResponse = await GetCountFromDb(request);
