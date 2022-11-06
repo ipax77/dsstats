@@ -62,6 +62,19 @@
                     }
                 </select>
             </div>
+            <div class="col-auto">
+                <div class="form-check form-switch">
+                    <label class="form-check-label">
+                        DefaultFilter
+                        <InputCheckbox class="form-check-input" @bind-Value="replaysRequest.DefaultFilter">
+                        </InputCheckbox>
+                    </label>
+                </div>
+                <div style="max-width: 150px;">
+                    <label for="playercountrange" class="form-label">PlayerCount @(replaysRequest.PlayerCount == 0 ? "All" : replaysRequest.PlayerCount)</label>
+                    <input type="range" class="form-range" min="0" max="6" step="2" value="0" id="playercountrange" @onchange="PlayerCountChange">
+                </div>
+            </div>
             <div class="col-auto mt-3">
                 <button type="button" class="btn btn-outline-primary" @onclick="Reset">Reset</button>
             </div>
@@ -95,7 +108,7 @@
         if (firstRender)
         {
             IJSRuntime.InvokeVoidAsync("setMultiSelect", "gamemodeselect", replaysRequest.GameModes.Any() ? replaysRequest.GameModes.Select(s => s.ToString()).ToArray() : new string[1] { "All GameModes" });
-    }
+        }
         base.OnAfterRender(firstRender);
     }
 
@@ -118,6 +131,18 @@
             }
             replaysRequest.GameModes = gameModes;
             OnFieldChanged.InvokeAsync();
+        }
+    }
+
+    private void PlayerCountChange(ChangeEventArgs e)
+    {
+        if (e.Value is string stringValue)
+        {
+            if (int.TryParse(stringValue, out int intValue))
+            {
+                replaysRequest.PlayerCount = intValue;
+                OnFieldChanged.InvokeAsync();
+            }
         }
     }
 

@@ -41,10 +41,14 @@
             </NavLink>
         </div>
         <div class="nav-item px-3 mt-2">
-            <button type="button" class="btn btn-outline-light" @onclick="@(() => NavigationManager.NavigateTo("https://github.com/ipax77/dsstats", true))">
-                <span class="oi oi-data-transfer-download"></span>
+@*            <button type="button" class="btn btn-outline-light" @onclick="@(() => NavigationManager.NavigateTo("https://github.com/ipax77/dsstats", true))">
+                <img src="_content/sc2dsstats.razorlib/images/GitHub-Mark-Light-64px.png" alt="GitHub" width="25" />
                 Contribute with your Replays
-            </button>
+            </button>*@
+            <a href="https://github.com/ipax77/dsstats">
+                <img class="me-2" src="_content/sc2dsstats.razorlib/images/GitHub-Mark-Light-64px.png" alt="GitHub" width="25" />
+                Contribute with your Replays
+            </a>
         </div>
     </nav>
 </div>

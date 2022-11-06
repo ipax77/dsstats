@@ -90,7 +90,11 @@ public class UploadService
                 .Where(x => x.GameTime > latestReplayDate)
                 .ToListAsync();
 
-            replays.ForEach(f => f.FileName = string.Empty);
+            replays.ForEach(f =>
+                {
+                    f.FileName = string.Empty;
+                    f.PlayerResult = PlayerResult.None;
+                });
 
             var base64string = GetBase64String(replays);
             var httpClient = GetHttpClient();

@@ -12,7 +12,6 @@ public partial class UploadService
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
     private readonly ILogger<UploadService> logger;
-    private readonly SemaphoreSlim ss = new(1, 1);
     private const string blobBaseDir = "/data/ds/replayblobs";
 
     public UploadService(IServiceProvider serviceProvider, IMapper mapper, ILogger<UploadService> logger)
@@ -26,7 +25,6 @@ public partial class UploadService
     {
         try
         {
-            await SaveBlob(gzipbase64String, appGuid);
 
             using var scope = serviceProvider.CreateScope();
             using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -36,6 +34,13 @@ public partial class UploadService
             {
                 return false;
             }
+
+            if (uploader.IsDeleted || uploader.UploadIsDisabled)
+            {
+                return false;
+            }
+
+            await SaveBlob(gzipbase64String, appGuid);
 
             uploader.LatestUpload = DateTime.UtcNow;
             uploader.LatestReplay = DateTime.UtcNow;
@@ -117,7 +122,8 @@ public partial class UploadService
 
             await context.SaveChangesAsync();
         }
-        return await GetUploadersLatestReplay(context, dbUploader);
+        var latestReplay = await GetUploadersLatestReplay(context, dbUploader);
+        return latestReplay == DateTime.MinValue ? latestReplay : latestReplay.AddMinutes(1);
     }
 
     private async Task<DateTime> GetUploadersLatestReplay(ReplayContext context, Uploader uploader)

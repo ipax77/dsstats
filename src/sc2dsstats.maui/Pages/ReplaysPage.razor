@@ -45,7 +45,7 @@
         replaysRequest = new()
             {
                 StartTime = StartTime ?? new DateTime(2018, 1, 1),
-                EndTime = EndTime,
+                EndTime = EndTime ?? DateTime.Today,
                 Tournament = Tournament,
                 SearchString = SearchString,
                 ReplayHash = ReplayHash
@@ -56,11 +56,13 @@
     {
         Dictionary<string, object?> queryDic = new();
 
-        queryDic.Add("StartTime", request.StartTime.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture));
+        // queryDic.Add("StartTime", request.StartTime.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture));
+        queryDic.Add("StartTime", request.StartTime.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
 
-        if (request.EndTime != null)
+        if (request.EndTime != DateTime.Today)
         {
-            queryDic.Add("EndTime", ((DateTime)request.EndTime).ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture));
+            // queryDic.Add("EndTime", ((DateTime)request.EndTime).ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture));
+            queryDic.Add("EndTime", ((DateTime)request.EndTime).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
         }
         else
         {

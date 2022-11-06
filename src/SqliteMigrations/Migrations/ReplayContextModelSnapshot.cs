@@ -276,6 +276,9 @@ namespace SqliteMigrations.Migrations
                     b.Property<int>("Objective")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("PlayerResult")
+                        .HasColumnType("INTEGER");
+
                     b.Property<byte>("Playercount")
                         .HasColumnType("INTEGER");
 
@@ -423,6 +426,9 @@ namespace SqliteMigrations.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("TEXT")
                         .IsFixedLength();
+
+                    b.Property<float>("MmrChange")
+                        .HasColumnType("REAL");
 
                     b.Property<string>("Name")
                         .IsRequired()

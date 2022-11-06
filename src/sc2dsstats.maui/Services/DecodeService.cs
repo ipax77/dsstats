@@ -338,6 +338,7 @@ public class DecodeService : IDisposable
                 if (playerToonIds.Any(a => a.ToonId == replayPlayer.Player.ToonId))
                 {
                     replayPlayer.IsUploader = true;
+                    replayDto.PlayerResult = replayPlayer.PlayerResult;
                 }
             }
         }
@@ -349,6 +350,7 @@ public class DecodeService : IDisposable
                 if (UserSettingsService.UserSettings.PlayerNames.Contains(player.Name))
                 {
                     player.IsUploader = true;
+                    replayDto.PlayerResult = player.PlayerResult;
                 }
             }
         }

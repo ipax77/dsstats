@@ -12,6 +12,7 @@ public record ReplayDto
     public DateTime GameTime { get; init; }
     public int Duration { get; init; }
     public int WinnerTeam { get; init; }
+    public PlayerResult PlayerResult { get; set; }
     public GameMode GameMode { get; init; }
     public int Objective { get; init; }
     public int Bunker { get; init; }

@@ -8,6 +8,7 @@ public record ReplayListDto
     public DateTime GameTime { get; set; }
     public int Duration { get; set; }
     public int WinnerTeam { get; set; }
+    public PlayerResult PlayerResult { get; set; }
     public GameMode GameMode { get; set; }
     public string ReplayHash { get; set; } = null!;
     public bool DefaultFilter { get; set; }

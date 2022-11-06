@@ -131,6 +131,7 @@ public class Replay
     public DateTime GameTime { get; set; }
     public int Duration { get; set; }
     public int WinnerTeam { get; set; }
+    public PlayerResult PlayerResult { get; set; }
     public GameMode GameMode { get; set; }
     public int Objective { get; set; }
     public int Bunker { get; set; }
@@ -173,6 +174,7 @@ public class ReplayPlayer
     public int GamePos { get; set; }
     public int Team { get; set; }
     public PlayerResult PlayerResult { get; set; }
+    public float MmrChange { get; set; }
     public int Duration { get; set; }
     public Commander Race { get; set; }
     public Commander OppRace { get; set; }

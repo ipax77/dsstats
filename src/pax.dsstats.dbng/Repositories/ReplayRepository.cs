@@ -178,6 +178,11 @@ public class ReplayRepository : IReplayRepository
 
         var replays = context.Replays.AsNoTracking();
 
+        if (request.DefaultFilter)
+        {
+            replays = replays.Where(x => x.DefaultFilter);
+        }
+
         if (!String.IsNullOrEmpty(request.SearchPlayers))
         {
             replays = replays.Include(i => i.ReplayPlayers);
@@ -185,9 +190,14 @@ public class ReplayRepository : IReplayRepository
 
         replays = replays.Where(x => x.GameTime >= request.StartTime);
 
-        if (request.EndTime != null)
+        if (request.EndTime != DateTime.Today)
         {
             replays = replays.Where(x => x.GameTime < request.EndTime);
+        }
+
+        if (request.PlayerCount != 0)
+        {
+            replays = replays.Where(x => x.Playercount == request.PlayerCount);
         }
 
         if (!String.IsNullOrEmpty(request.Tournament))
