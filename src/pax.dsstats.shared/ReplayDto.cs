@@ -42,6 +42,7 @@ public record ReplayPlayerDto
     public int GamePos { get; init; }
     public int Team { get; init; }
     public PlayerResult PlayerResult { get; init; }
+    public float MmrChange { get; set; }
     public int Duration { get; init; }
     public Commander Race { get; init; }
     public Commander OppRace { get; init; }

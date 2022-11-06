@@ -1,4 +1,5 @@
 ﻿@using Microsoft.JSInterop
+@using System.Globalization;
 @using pax.BlazorChartJs
 @using pax.dsstats.shared
 @using sc2dsstats.razorlib.Services
@@ -34,6 +35,7 @@
                     {
                         var players = replayDto.ReplayPlayers.Where(x => x.Team == i).OrderBy(o => o.GamePos).ToList();
                         bool isWinner = replayDto.WinnerTeam == i;
+                        var hasMmrChanges = replayDto.ReplayPlayers.Any(f => f.MmrChange != 0);
 
                         <div class="col-auto">
                             <div class="d-flex">
@@ -47,11 +49,15 @@
                                 }
                                 <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => showMiddleChart = !showMiddleChart)">Middle @(i == 1 ? mid1 : mid2)%</button>
                             </div>
-                            <div class="table-responsive" style="max-width: 500px;">
+                            <div class="table-responsive" style="max-width: 560px;">
                                 <table class="table table-sm table-hover table-dark pointer">
                                     <thead>
                                         <tr>
                                             <th style="width: 30px;">#</th>
+                                            @if (hasMmrChanges)
+                                            {
+                                                <th>Mmr</th>
+                                            }
                                             <th style="width: 120px;">Player</th>
                                             <th>APM</th>
                                             <th>Build</th>
@@ -66,7 +72,13 @@
                                         @foreach (var player in players)
                                         {
                                             <tr class="@GetPlayerTableRowCss(player)" @onclick="@(() => showBuilds[player.GamePos] = !showBuilds[player.GamePos])">
-                                                <td>@player.GamePos</td>
+                                                <td class="table-dark">@player.GamePos</td>
+                                                @if (hasMmrChanges)
+                                                {
+                                                    <td class="table-dark">
+                                                        <span class="oi @(player.MmrChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">@player.MmrChange.ToString("N1", CultureInfo.InvariantCulture)</span>
+                                                    </td>
+                                                }
                                                 <td>
                                                     <span class="d-inline-block text-truncate" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
                                                         @player.Name
