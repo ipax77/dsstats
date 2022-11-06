@@ -190,7 +190,7 @@ public class ReplayRepository : IReplayRepository
 
         replays = replays.Where(x => x.GameTime >= request.StartTime);
 
-        if (request.EndTime != DateTime.Today)
+        if (request.EndTime < DateTime.Today.AddDays(-2))
         {
             replays = replays.Where(x => x.GameTime < request.EndTime);
         }
