@@ -1,4 +1,7 @@
-﻿namespace pax.dsstats.shared;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
+
+namespace pax.dsstats.shared;
 
 public record PlayerDto
 {
@@ -33,6 +36,9 @@ public record ReplayDto
     public bool TournamentEdition { get; init; }
     public ReplayEventDto? ReplayEvent { get; set; }
     public ICollection<ReplayPlayerDto> ReplayPlayers { get; init; } = new HashSet<ReplayPlayerDto>();
+    [NotMapped]
+    [JsonIgnore]
+    public Guid UploaderGuid { get; set; }
 }
 
 public record ReplayPlayerDto

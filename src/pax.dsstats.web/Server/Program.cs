@@ -91,7 +91,9 @@ if (app.Environment.IsDevelopment())
 
     //var playerInfo = statsService.GetPlayerInfo(new() { 226401, 10188255, 8648278 }).GetAwaiter().GetResult();
     //Console.WriteLine(playerInfo);
-    // statsService.SeedPlayerInfos().GetAwaiter().GetResult();
+
+    //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+    //statsService.SeedPlayerInfos().GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.

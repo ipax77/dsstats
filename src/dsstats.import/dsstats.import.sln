@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pax.dsstats.dbng", "..\pax.dsstats.dbng\pax.dsstats.dbng.csproj", "{D32EB44E-6049-4DF9-B76E-93771189AAC9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pax.dsstats.shared", "..\pax.dsstats.shared\pax.dsstats.shared.csproj", "{2DDD4519-8677-48CA-A53F-80D146965A39}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MysqlMigrations", "..\MysqlMigrations\MysqlMigrations.csproj", "{14B757D1-C113-4186-BFF5-C10F7A667ECA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D32EB44E-6049-4DF9-B76E-93771189AAC9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D32EB44E-6049-4DF9-B76E-93771189AAC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D32EB44E-6049-4DF9-B76E-93771189AAC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D32EB44E-6049-4DF9-B76E-93771189AAC9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DDD4519-8677-48CA-A53F-80D146965A39}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DDD4519-8677-48CA-A53F-80D146965A39}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DDD4519-8677-48CA-A53F-80D146965A39}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DDD4519-8677-48CA-A53F-80D146965A39}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14B757D1-C113-4186-BFF5-C10F7A667ECA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14B757D1-C113-4186-BFF5-C10F7A667ECA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14B757D1-C113-4186-BFF5-C10F7A667ECA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14B757D1-C113-4186-BFF5-C10F7A667ECA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
