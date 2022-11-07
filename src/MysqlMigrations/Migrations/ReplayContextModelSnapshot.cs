@@ -44,22 +44,13 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<double>("AntiSynergyElo_1")
+                    b.Property<double>("AntiSynergyMmr")
                         .HasColumnType("double");
 
-                    b.Property<double>("AntiSynergyElo_2")
-                        .HasColumnType("double");
-
-                    b.Property<double>("AntiSynergyMmr_1")
-                        .HasColumnType("double");
-
-                    b.Property<double>("AntiSynergyMmr_2")
-                        .HasColumnType("double");
-
-                    b.Property<int>("Commander_1")
+                    b.Property<int>("OppRace")
                         .HasColumnType("int");
 
-                    b.Property<int>("Commander_2")
+                    b.Property<int>("Race")
                         .HasColumnType("int");
 
                     b.Property<double>("SynergyMmr")
@@ -67,7 +58,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasKey("CommanderMmrId");
 
-                    b.HasIndex("Commander_1", "Commander_2");
+                    b.HasIndex("Race", "OppRace");
 
                     b.ToTable("CommanderMmrs");
                 });

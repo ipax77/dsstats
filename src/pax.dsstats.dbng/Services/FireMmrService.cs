@@ -52,6 +52,7 @@ public class FireMmrService
         Stopwatch sw = new();
         sw.Start();
 
+        await SeedCommanderMmrs();
         await ClearRatings();
 
         await CalcMmrCmdr();
@@ -330,12 +331,11 @@ public class FireMmrService
 
         await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.CommanderMmrs)} SET {nameof(CommanderMmr.SynergyMmr)} = {startMmr}");
         await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.CommanderMmrs)} SET {nameof(CommanderMmr.AntiSynergyMmr)} = {startMmr}");
-        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.CommanderMmrs)} SET {nameof(CommanderMmr.AntiSynergyMmr)} = 0.5");
 
         playerRatingsCmdr.Clear();
         playerRatingsStd.Clear();
         replayPlayerMmrChanges.Clear();
-        commanderRatings = context.CommanderMmrs.ToArray();
+        commanderRatings = await context.CommanderMmrs.AsNoTracking().ToArrayAsync();
         maxMmr = startMmr;
     }
 
@@ -680,13 +680,13 @@ public class FireMmrService
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        if (!context.CommanderMmrs.Any())
+        if (!await context.CommanderMmrs.AnyAsync())
         {
             var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
 
             for (int i = 0; i < allCommanders.Count; i++)
             {
-                for (int k = i; k < allCommanders.Count; k++)
+                for (int k = 0; k < allCommanders.Count; k++)
                 {
                     context.CommanderMmrs.Add(new() {
                         SynergyMmr = FireMmrService.startMmr,
