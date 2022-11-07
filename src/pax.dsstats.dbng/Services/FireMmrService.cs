@@ -83,11 +83,11 @@ public class FireMmrService
             .ToListAsync();
 
         int count = 0;
-        for (count = 0; count < replayDsrDtos.Count; count++) {
-            if (!replayDsrDtos[count].IsMmrCalculated) {
-                break;
-            }
-        }
+        //for (count = 0; count < replayDsrDtos.Count; count++) {
+        //    if (!replayDsrDtos[count].IsMmrCalculated) {
+        //        break;
+        //    }
+        //}
 
         for (count = 0; count < replayDsrDtos.Count; count++) {
             var replay = replayDsrDtos[count];
@@ -161,11 +161,11 @@ public class FireMmrService
             .ToListAsync();
 
         int count = 0;
-        for (count = 0; count < replayDsrDtos.Count; count++) {
-            if (!replayDsrDtos[count].IsMmrCalculated) {
-                break;
-            }
-        }
+        //for (count = 0; count < replayDsrDtos.Count; count++) {
+        //    if (!replayDsrDtos[count].IsMmrCalculated) {
+        //        break;
+        //    }
+        //}
 
         for (count = 0; count < replayDsrDtos.Count; count++) {
             var replay = replayDsrDtos[count];
@@ -259,7 +259,7 @@ public class FireMmrService
             replayPlayer.MmrChange = replayPlayerMmrChange.Value;
 
             var replay = await context.Replays.FirstAsync(x => x.ReplayId == replayPlayer.ReplayId);
-            replay.IsMmrCalculated = true;
+            //replay.IsMmrCalculated = true;
         }
 
         //# commanderRatings
@@ -323,16 +323,14 @@ public class FireMmrService
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         // todo: db-lock (no imports possible during this)
-        await context.Database.ExecuteSqlRawAsync($"UPDATE Players SET Mmr = {startMmr}");
-        await context.Database.ExecuteSqlRawAsync($"UPDATE Players SET MmrStd = {startMmr}");
-        await context.Database.ExecuteSqlRawAsync("UPDATE Players SET MmrOverTime = NULL");
-        await context.Database.ExecuteSqlRawAsync("UPDATE Players SET MmrStdOverTime = NULL");
+        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.Mmr)} = {startMmr}");
+        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.MmrStd)} = {startMmr}");
+        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.MmrOverTime)} = NULL");
+        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.MmrStdOverTime)} = NULL");
 
-        await context.Database.ExecuteSqlRawAsync($"UPDATE CommanderMmrs SET SynergyMmr = {startMmr}");
-        await context.Database.ExecuteSqlRawAsync($"UPDATE CommanderMmrs SET AntiSynergyMmr_1 = {startMmr}");
-        await context.Database.ExecuteSqlRawAsync($"UPDATE CommanderMmrs SET AntiSynergyMmr_2 = {startMmr}");
-        await context.Database.ExecuteSqlRawAsync("UPDATE CommanderMmrs SET AntiSynergyElo_1 = 0.5");
-        await context.Database.ExecuteSqlRawAsync("UPDATE CommanderMmrs SET AntiSynergyElo_2 = 0.5");
+        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.CommanderMmrs)} SET {nameof(CommanderMmr.SynergyMmr)} = {startMmr}");
+        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.CommanderMmrs)} SET {nameof(CommanderMmr.AntiSynergyMmr)} = {startMmr}");
+        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.CommanderMmrs)} SET {nameof(CommanderMmr.AntiSynergyMmr)} = 0.5");
 
         playerRatingsCmdr.Clear();
         playerRatingsStd.Clear();

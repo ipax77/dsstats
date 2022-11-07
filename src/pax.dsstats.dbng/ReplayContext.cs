@@ -93,7 +93,7 @@ public class ReplayContext : DbContext
 
         modelBuilder.Entity<CommanderMmr>(entity =>
         {
-            entity.HasIndex(e => new { e.Commander_1, e.Commander_2 });
+            entity.HasIndex(e => new { e.Race, e.OppRace });
         });
 
         modelBuilder.Entity<GroupByHelper>(entity =>
