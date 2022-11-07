@@ -52,108 +52,54 @@ public partial class MmrService
 
         var winnerTeamExpectationToWin = EloExpectationToWin(winnerTeamMmr, loserTeamMmr);
 
-        var winnersCommandersComboMMR = GetCmdrComboMmrNg(winnerTeam);
-        var losersCommandersComboMMR = GetCommandersComboMMR(loserTeamCommanders, winnerTeamCommanders);
+        var winnersCommandersComboMMR = GetCommandersComboMmr(winnerTeam);
+        var losersCommandersComboMMR = GetCommandersComboMmr(loserTeam);
         var winnerCommandersComboExpectationToWin = EloExpectationToWin(winnersCommandersComboMMR, losersCommandersComboMMR);
 
 
     }
 
-    private double GetCmdrComboMmrNg(IEnumerable<ReplayPlayerDsRDto> players)
+    private double GetCommandersComboMmr(IEnumerable<ReplayPlayerDsRDto> teamPlayers)
     {
-        foreach (var player in players)
-        {
-            var oppCmdrs = players.Select(s => s.OppRace).ToArray();
-            var teamCmdrs = players.Select(s => s.Race).Distinct().ToArray();
+        double commandersComboMMRSum = 0;
 
-            foreach (var oppCmdr in oppCmdrs)
-            {
-                var antiSynergyCommander = commanderRatings
-                    .Where(x => (x.Commander_1 == player.Race && x.Commander_2 == oppCmdr)
-                        || (x.Commander_1 == oppCmdr && x.Commander_2 == player.Race))
-                    .FirstOrDefault();
+        for (int playerIndex = 0; playerIndex < teamPlayers.Count(); playerIndex++) {
+            var playerCmdr = teamPlayers.ElementAt(playerIndex).Race;
 
-                if (antiSynergyCommander == null)
-                {
-                    throw new ArgumentNullException(nameof(antiSynergyCommander));
-                }
-
-                double antiSynergyMmr;
-                if ((antiSynergyCommander.Commander_1 == player.Race) && (antiSynergyCommander.Commander_2 == oppCmdr))
-                {
-                    antiSynergyMmr = antiSynergyCommander.AntiSynergyMmr_1;
-                }
-                else if ((antiSynergyCommander.Commander_2 == player.Race) && (antiSynergyCommander.Commander_1 == oppCmdr))
-                {
-                    antiSynergyMmr = antiSynergyCommander.AntiSynergyMmr_2;
-                }
-            }
-        }
-        return 0;
-    }
-
-    private double GetCommandersComboMMR(Commander[] synergyCmdrs, Commander[] antiSynergyCmdrs)
-    {
-        double[] commandersComboMMR = new double[3];
-
-        for (int i = 0; i < 3; i++)
-        {
-
-            double antiSynergySum = 0;
             double synergySum = 0;
+            double antiSynergySum = 0;
 
-            for (int k = 0; k < 3; k++)
-            {
-
-                var synCmdr = synergyCmdrs[i];
-                var antiSynCmdr = antiSynergyCmdrs[k];
-
-                var antiSynergyCommander = commanderRatings
-                    .Where(x => (x.Commander_1 == synCmdr && x.Commander_2 == antiSynCmdr)
-                        || (x.Commander_1 == antiSynCmdr && x.Commander_2 == synCmdr))
-                    .FirstOrDefault();
-
-                if (antiSynergyCommander == null)
-                {
-                    throw new ArgumentNullException(nameof(antiSynergyCommander));
+            for (int synergyPlayerIndex = 0; synergyPlayerIndex < teamPlayers.Count(); synergyPlayerIndex++) {
+                if (playerIndex == synergyPlayerIndex) {
+                    continue;
                 }
 
-                double antiSynergyMmr;
-                if ((antiSynergyCommander.Commander_1 == synergyCmdrs[i]) && (antiSynergyCommander.Commander_2 == antiSynergyCmdrs[k]))
-                {
-                    antiSynergyMmr = antiSynergyCommander.AntiSynergyMmr_1;
-                }
-                else if ((antiSynergyCommander.Commander_2 == synergyCmdrs[i]) && (antiSynergyCommander.Commander_1 == antiSynergyCmdrs[k]))
-                {
-                    antiSynergyMmr = antiSynergyCommander.AntiSynergyMmr_2;
-                }
-                else throw new Exception();
+                var synergyPlayerCmdr = teamPlayers.ElementAt(synergyPlayerIndex).Race;
+                var synergy = commanderRatings
+                    .First(x => x.Race == playerCmdr && x.OppRace == synergyPlayerCmdr);
 
-                if (i == k)
-                {
-                    antiSynergySum += (OwnMatchupPercentage * antiSynergyMmr);
-                }
-                else
-                {
-                    antiSynergySum += (MatesMatchupsPercentage * antiSynergyMmr);
+                synergySum += ((1 / 2) * synergy.SynergyMmr);
+            }
 
+            for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamPlayers.Count(); antiSynergyPlayerIndex++) {
+                var antiSynergyPlayerCmdr = teamPlayers.ElementAt(antiSynergyPlayerIndex).OppRace;
 
-                    CommanderMmr synergyCommander = this.commanderRatings
-                    .Where(c =>
-                        ((c.Commander_1 == synergyCmdrs[i]) && (c.Commander_2 == synergyCmdrs[k])) ||
-                        ((c.Commander_2 == synergyCmdrs[i]) && (c.Commander_1 == synergyCmdrs[k])))
-                    .FirstOrDefault()!;
+                var antiSynergy = commanderRatings
+                    .First(x => x.Race == playerCmdr && x.OppRace == antiSynergyPlayerCmdr);
 
-                    synergySum += (0.5 * synergyCommander.SynergyMmr);
+                if (playerIndex == antiSynergyPlayerIndex) {
+                    antiSynergySum += (OwnMatchupPercentage * antiSynergy.AntiSynergyMmr);
+                } else {
+                    antiSynergySum += (MatesMatchupsPercentage * antiSynergy.AntiSynergyMmr);
                 }
             }
 
-            commandersComboMMR[i] = 0
-                + (AntiSynergyPercentage * antiSynergySum)
+            commandersComboMMRSum +=
+                (AntiSynergyPercentage * antiSynergySum)
                 + (SynergyPercentage * synergySum);
         }
 
-        return commandersComboMMR.Sum() / 3;
+        return commandersComboMMRSum / 3;
     }
 
     private double GetCmdrTeamMmr(IEnumerable<ReplayPlayerDsRDto> replayPlayers, DateTime gameTime)

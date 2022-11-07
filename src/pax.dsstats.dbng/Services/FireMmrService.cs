@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
 using System.Diagnostics;
 using System.Globalization;
+using System.Numerics;
 using System.Text;
 
 namespace pax.dsstats.dbng.Services;
@@ -82,14 +83,19 @@ public class FireMmrService
             .ToListAsync();
 
         int count = 0;
-        foreach (var replay in replayDsrDtos)
-        {
+        for (count = 0; count < replayDsrDtos.Count; count++) {
+            if (!replayDsrDtos[count].IsMmrCalculated) {
+                break;
+            }
+        }
+
+        for (count = 0; count < replayDsrDtos.Count; count++) {
+            var replay = replayDsrDtos[count];
             var winnerTeam = replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam);
             var loserTeam = replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam);
             IEnumerable<ReplayPlayerDsRDto> leaverTeam = Enumerable.Empty<ReplayPlayerDsRDto>();
 
-            if (winnerTeam.Count() != 3 || loserTeam.Count() != 3)
-            {
+            if (winnerTeam.Count() != 3 || loserTeam.Count() != 3) {
                 logger.LogWarning($"skipping wrong teamcounts");
                 continue;
             }
@@ -112,16 +118,13 @@ public class FireMmrService
             //}
             //leaverTeam = replay.ReplayPlayers.Where(x => x.Duration <= correctedDuration - 89);
 
-            var winnerTeamCommanders = winnerTeam.Select(_ => _.Race).ToArray();
-            var loserTeamCommanders = loserTeam.Select(_ => _.Race).ToArray();
-
 
             var winnerTeamMmr = GetTeamMmr(winnerTeam, GameMode.Commanders, replay.GameTime, replay.Duration);
             var loserTeamMmr = GetTeamMmr(loserTeam, GameMode.Commanders, replay.GameTime, replay.Duration);
             var teamElo = ELO(winnerTeamMmr, loserTeamMmr);
 
-            var winnersCommandersComboMMR = GetCommandersComboMMR(winnerTeamCommanders, loserTeamCommanders);
-            var losersCommandersComboMMR = GetCommandersComboMMR(loserTeamCommanders, winnerTeamCommanders);
+            var winnersCommandersComboMMR = GetCommandersComboMMR(winnerTeam);
+            var losersCommandersComboMMR = GetCommandersComboMMR(loserTeam);
             var commandersElo = ELO(winnersCommandersComboMMR, losersCommandersComboMMR);
 
 
@@ -130,14 +133,12 @@ public class FireMmrService
 
             FixMMR_Equality(winnersMmrDelta, losersMmrDelta);
             //FixMMR_Equality(winnersCommandersMmrDelta, losersCommandersMmrDelta);
-            
+
             AddPlayersRankings(winnerTeam, GameMode.Commanders, winnersMmrDelta, winnersConsistencyDelta, replay.GameTime);
             AddPlayersRankings(loserTeam, GameMode.Commanders, losersMmrDelta, losersConsistencyDelta, replay.GameTime);
 
-            SetCommandersComboMMR(winnersCommandersMmrDelta, winnerTeamCommanders, loserTeamCommanders);
-            SetCommandersComboMMR(losersCommandersMmrDelta, loserTeamCommanders, winnerTeamCommanders);
-
-            count++;
+            SetCommandersComboMMR(winnersCommandersMmrDelta, winnerTeam);
+            SetCommandersComboMMR(losersCommandersMmrDelta, loserTeam);
         }
 
         await SetRatings(GameMode.Commanders);
@@ -160,8 +161,14 @@ public class FireMmrService
             .ToListAsync();
 
         int count = 0;
-        foreach (var replay in replayDsrDtos)
-        {
+        for (count = 0; count < replayDsrDtos.Count; count++) {
+            if (!replayDsrDtos[count].IsMmrCalculated) {
+                break;
+            }
+        }
+
+        for (count = 0; count < replayDsrDtos.Count; count++) {
+            var replay = replayDsrDtos[count];
             var winnerTeam = replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam);
             var loserTeam = replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam);
             IEnumerable<ReplayPlayerDsRDto> leaverTeam = Enumerable.Empty<ReplayPlayerDsRDto>();
@@ -204,8 +211,6 @@ public class FireMmrService
 
             AddPlayersRankings(winnerTeam, GameMode.Standard, winnersMmrDelta, winnersConsistencyDelta, replay.GameTime);
             AddPlayersRankings(loserTeam, GameMode.Standard, losersMmrDelta, losersConsistencyDelta, replay.GameTime);
-
-            count++;
         }
 
         await SetRatings(GameMode.Standard);
@@ -246,50 +251,27 @@ public class FireMmrService
             }
         }
 
-        //# replayMmrChanges
+        //# replayPlayerMmrChanges
         for (int r = 0; r < replayPlayerMmrChanges.Count; r++) {
             var replayPlayerMmrChange = replayPlayerMmrChanges.ElementAt(r);
             var replayPlayer = await context.ReplayPlayers.FirstAsync(x => x.ReplayPlayerId == replayPlayerMmrChange.Key);
 
             replayPlayer.MmrChange = replayPlayerMmrChange.Value;
+
+            var replay = await context.Replays.FirstAsync(x => x.ReplayId == replayPlayer.ReplayId);
+            replay.IsMmrCalculated = true;
         }
 
         //# commanderRatings
         if (gameMode == GameMode.Commanders) {
             var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
-            double[] allCommandersMmrSum = new double[allCommanders.Count];
-            Dictionary<Commander, double> allCommandersMmrSum_dic = new();
 
             foreach (var rating in commanderRatings) {
                 var commanderCombo = await context.CommanderMmrs.FirstAsync(f => f.CommanderMmrId == rating.CommanderMmrId);
 
                 commanderCombo.SynergyMmr = rating.SynergyMmr;
-
-                commanderCombo.AntiSynergyMmr_1 = rating.AntiSynergyMmr_1;
-                commanderCombo.AntiSynergyMmr_2 = rating.AntiSynergyMmr_2;
-
-                commanderCombo.AntiSynergyElo_1 = rating.AntiSynergyElo_1;
-                commanderCombo.AntiSynergyElo_2 = rating.AntiSynergyElo_2;
-
-                for (int i = 0; i < allCommanders.Count; i++) {
-                    if ((commanderCombo.Commander_1 == allCommanders[i]) && (commanderCombo.Commander_2 == allCommanders[i])) {
-                        allCommandersMmrSum[i] += commanderCombo.AntiSynergyMmr_1 / 2;
-                        allCommandersMmrSum[i] += commanderCombo.AntiSynergyMmr_2 / 2;
-                    } else {
-                        if (commanderCombo.Commander_1 == allCommanders[i]) {
-                            allCommandersMmrSum[i] += commanderCombo.AntiSynergyMmr_1;
-                        }
-                        if (commanderCombo.Commander_2 == allCommanders[i]) {
-                            allCommandersMmrSum[i] += commanderCombo.AntiSynergyMmr_2;
-                        }
-                    }
-                }
+                commanderCombo.AntiSynergyMmr = rating.AntiSynergyMmr;
             }
-
-            for (int i = 0; i < allCommanders.Count; i++) {
-                allCommandersMmrSum_dic.Add(allCommanders[i], allCommandersMmrSum[i] / allCommanders.Count);
-            }
-            var ordered = allCommandersMmrSum_dic.OrderByDescending(x => x.Value);
         }
 
         await context.SaveChangesAsync();
@@ -520,109 +502,180 @@ public class FireMmrService
     const double OwnMatchup_Percentage = 1.0 / 3;
     const double MatesMatchups_Percentage = (1 - OwnMatchup_Percentage) / 2;
 
-    private double GetCommandersComboMMR(Commander[] teamCommanders, Commander[] enemyCommanders)
+
+    private double GetCommandersComboMMR(IEnumerable<ReplayPlayerDsRDto> teamPlayers)
     {
-        double[] commandersComboMMR = new double[3];
+        double commandersComboMMRSum = 0;
 
-        for (int i = 0; i < 3; i++)
-        {
+        for (int playerIndex = 0; playerIndex < teamPlayers.Count(); playerIndex++) {
+            var playerCmdr = teamPlayers.ElementAt(playerIndex).Race;
 
-            double antiSynergySum = 0;
             double synergySum = 0;
+            double antiSynergySum = 0;
 
-            for (int k = 0; k < 3; k++)
-            {
-                CommanderMmr antiSynergyCommander = this.commanderRatings
-                    .Where(c =>
-                        ((c.Commander_1 == teamCommanders[i]) && (c.Commander_2 == enemyCommanders[k])) ||
-                        ((c.Commander_2 == teamCommanders[i]) && (c.Commander_1 == enemyCommanders[k])))
-                    .FirstOrDefault()!;
-
-                double antiSynergyMmr;
-                if ((antiSynergyCommander.Commander_1 == teamCommanders[i]) && (antiSynergyCommander.Commander_2 == enemyCommanders[k]))
-                {
-                    antiSynergyMmr = antiSynergyCommander.AntiSynergyMmr_1;
+            for (int synergyPlayerIndex = 0; synergyPlayerIndex < teamPlayers.Count(); synergyPlayerIndex++) {
+                if (playerIndex == synergyPlayerIndex) {
+                    continue;
                 }
-                else if ((antiSynergyCommander.Commander_2 == teamCommanders[i]) && (antiSynergyCommander.Commander_1 == enemyCommanders[k]))
-                {
-                    antiSynergyMmr = antiSynergyCommander.AntiSynergyMmr_2;
-                }
-                else throw new Exception();
 
-                if (i == k)
-                {
-                    antiSynergySum += (OwnMatchup_Percentage * antiSynergyMmr);
-                }
-                else
-                {
-                    antiSynergySum += (MatesMatchups_Percentage * antiSynergyMmr);
+                var synergyPlayerCmdr = teamPlayers.ElementAt(synergyPlayerIndex).Race;
+                var synergy = commanderRatings
+                    .First(x => x.Race == playerCmdr && x.OppRace == synergyPlayerCmdr);
 
+                synergySum += ((1 / 2) * synergy.SynergyMmr);
+            }
 
-                    CommanderMmr synergyCommander = this.commanderRatings
-                    .Where(c =>
-                        ((c.Commander_1 == teamCommanders[i]) && (c.Commander_2 == teamCommanders[k])) ||
-                        ((c.Commander_2 == teamCommanders[i]) && (c.Commander_1 == teamCommanders[k])))
-                    .FirstOrDefault()!;
+            for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamPlayers.Count(); antiSynergyPlayerIndex++) {
+                var antiSynergyPlayerCmdr = teamPlayers.ElementAt(antiSynergyPlayerIndex).OppRace;
 
-                    synergySum += (0.5 * synergyCommander.SynergyMmr);
+                var antiSynergy = commanderRatings
+                    .First(x => x.Race == playerCmdr && x.OppRace == antiSynergyPlayerCmdr);
+
+                if (playerIndex == antiSynergyPlayerIndex) {
+                    antiSynergySum += (OwnMatchup_Percentage * antiSynergy.AntiSynergyMmr);
+                } else {
+                    antiSynergySum += (MatesMatchups_Percentage * antiSynergy.AntiSynergyMmr);
                 }
             }
 
-            commandersComboMMR[i] = 0
-                + (AntiSynergy_Percentage * antiSynergySum)
+            commandersComboMMRSum +=
+                (AntiSynergy_Percentage * antiSynergySum)
                 + (Synergy_Percentage * synergySum);
         }
 
-        return commandersComboMMR.Sum() / 3;
+        return commandersComboMMRSum / 3;
     }
+    //private double GetCommandersComboMMR(ReplayPlayerDsRDto[] teamPlayers)
+    //{
+    //    double[] commandersComboMMR = new double[3];
 
-    private void SetCommandersComboMMR(double[] commandersMmrDelta, Commander[] teamCommanders, Commander[] enemyCommanders)
+    //    for (int i = 0; i < 3; i++)
+    //    {
+
+    //        double antiSynergySum = 0;
+    //        double synergySum = 0;
+
+    //        for (int k = 0; k < 3; k++)
+    //        {
+    //            CommanderMmr antiSynergyCommander = this.commanderRatings
+    //                .Where(c =>
+    //                    ((c.Commander_1 == teamCommanders[i]) && (c.Commander_2 == enemyCommanders[k])) ||
+    //                    ((c.Commander_2 == teamCommanders[i]) && (c.Commander_1 == enemyCommanders[k])))
+    //                .FirstOrDefault()!;
+
+    //            double antiSynergyMmr;
+    //            if ((antiSynergyCommander.Commander_1 == teamCommanders[i]) && (antiSynergyCommander.Commander_2 == enemyCommanders[k]))
+    //            {
+    //                antiSynergyMmr = antiSynergyCommander.AntiSynergyMmr_1;
+    //            }
+    //            else if ((antiSynergyCommander.Commander_2 == teamCommanders[i]) && (antiSynergyCommander.Commander_1 == enemyCommanders[k]))
+    //            {
+    //                antiSynergyMmr = antiSynergyCommander.AntiSynergyMmr_2;
+    //            }
+    //            else throw new Exception();
+
+    //            if (i == k)
+    //            {
+    //                antiSynergySum += (OwnMatchup_Percentage * antiSynergyMmr);
+    //            }
+    //            else
+    //            {
+    //                antiSynergySum += (MatesMatchups_Percentage * antiSynergyMmr);
+
+
+    //                CommanderMmr synergyCommander = this.commanderRatings
+    //                .Where(c =>
+    //                    ((c.Commander_1 == teamCommanders[i]) && (c.Commander_2 == teamCommanders[k])) ||
+    //                    ((c.Commander_2 == teamCommanders[i]) && (c.Commander_1 == teamCommanders[k])))
+    //                .FirstOrDefault()!;
+
+    //                synergySum += (0.5 * synergyCommander.SynergyMmr);
+    //            }
+    //        }
+
+    //        commandersComboMMR[i] = 0
+    //            + (AntiSynergy_Percentage * antiSynergySum)
+    //            + (Synergy_Percentage * synergySum);
+    //    }
+
+    //    return commandersComboMMR.Sum() / 3;
+    //}
+
+    
+    private void SetCommandersComboMMR(double[] commandersMmrDelta, IEnumerable<ReplayPlayerDsRDto> teamPlayers)
     {
-        for (int i = 0; i < 3; i++)
-        {
-            for (int k = 0; k < 3; k++)
-            {
-                CommanderMmr antiSynergyCommander = this.commanderRatings
-                    .Where(c =>
-                        ((c.Commander_1 == teamCommanders[i]) && (c.Commander_2 == enemyCommanders[k])) ||
-                        ((c.Commander_2 == teamCommanders[i]) && (c.Commander_1 == enemyCommanders[k])))
-                    .FirstOrDefault()!;
+        for (int playerIndex = 0; playerIndex < teamPlayers.Count(); playerIndex++) {
+            var playerCmdr = teamPlayers.ElementAt(playerIndex).Race;
 
-                if (antiSynergyCommander.Commander_1 == antiSynergyCommander.Commander_2)
-                {
-                    antiSynergyCommander.AntiSynergyMmr_1 += commandersMmrDelta[i];
-                    antiSynergyCommander.AntiSynergyMmr_2 += commandersMmrDelta[i];
-                    antiSynergyCommander.AntiSynergyElo_1 = 0.5;
-                    antiSynergyCommander.AntiSynergyElo_2 = 0.5;
-                }
-                else
-                {
-                    if ((antiSynergyCommander.Commander_1 == teamCommanders[i]) && (antiSynergyCommander.Commander_2 == enemyCommanders[k]))
-                    {
-                        antiSynergyCommander.AntiSynergyMmr_1 += commandersMmrDelta[i];
-                        antiSynergyCommander.AntiSynergyElo_1 = ELO(antiSynergyCommander.AntiSynergyMmr_1, antiSynergyCommander.AntiSynergyMmr_2);
-                    }
-                    else if ((antiSynergyCommander.Commander_2 == teamCommanders[i]) && (antiSynergyCommander.Commander_1 == enemyCommanders[k]))
-                    {
-                        antiSynergyCommander.AntiSynergyMmr_2 += commandersMmrDelta[i];
-                        antiSynergyCommander.AntiSynergyElo_2 = ELO(antiSynergyCommander.AntiSynergyMmr_2, antiSynergyCommander.AntiSynergyMmr_1);
-                    }
-                    else throw new Exception();
+            for (int synergyPlayerIndex = 0; synergyPlayerIndex < teamPlayers.Count(); synergyPlayerIndex++) {
+                if (playerIndex == synergyPlayerIndex) {
+                    continue;
                 }
 
-                if (i != k)
-                {
-                    CommanderMmr synergyCommander = this.commanderRatings
-                        .Where(c =>
-                            ((c.Commander_1 == teamCommanders[i]) && (c.Commander_2 == teamCommanders[k])) ||
-                            ((c.Commander_2 == teamCommanders[i]) && (c.Commander_1 == teamCommanders[k])))
-                        .FirstOrDefault()!;
+                var synergyPlayerCmdr = teamPlayers.ElementAt(synergyPlayerIndex).Race;
+                var synergy = commanderRatings
+                    .First(x => x.Race == playerCmdr && x.OppRace == synergyPlayerCmdr);
 
-                    synergyCommander.SynergyMmr += commandersMmrDelta[i] / 2;
-                }
+                synergy.SynergyMmr += commandersMmrDelta[playerIndex] / 2;
+            }
+
+            for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamPlayers.Count(); antiSynergyPlayerIndex++) {
+                var antiSynergyPlayerCmdr = teamPlayers.ElementAt(antiSynergyPlayerIndex).OppRace;
+
+                var antiSynergy = commanderRatings
+                    .First(x => x.Race == playerCmdr && x.OppRace == antiSynergyPlayerCmdr);
+
+                antiSynergy.AntiSynergyMmr += commandersMmrDelta[playerIndex];
             }
         }
     }
+    //private void SetCommandersComboMMR(double[] commandersMmrDelta, Commander[] teamCommanders, Commander[] enemyCommanders)
+    //{
+    //    for (int i = 0; i < 3; i++)
+    //    {
+    //        for (int k = 0; k < 3; k++)
+    //        {
+    //            CommanderMmr antiSynergyCommander = this.commanderRatings
+    //                .Where(c =>
+    //                    ((c.Commander_1 == teamCommanders[i]) && (c.Commander_2 == enemyCommanders[k])) ||
+    //                    ((c.Commander_2 == teamCommanders[i]) && (c.Commander_1 == enemyCommanders[k])))
+    //                .FirstOrDefault()!;
+
+    //            if (antiSynergyCommander.Commander_1 == antiSynergyCommander.Commander_2)
+    //            {
+    //                antiSynergyCommander.AntiSynergyMmr_1 += commandersMmrDelta[i];
+    //                antiSynergyCommander.AntiSynergyMmr_2 += commandersMmrDelta[i];
+    //                antiSynergyCommander.AntiSynergyElo_1 = 0.5;
+    //                antiSynergyCommander.AntiSynergyElo_2 = 0.5;
+    //            }
+    //            else
+    //            {
+    //                if ((antiSynergyCommander.Commander_1 == teamCommanders[i]) && (antiSynergyCommander.Commander_2 == enemyCommanders[k]))
+    //                {
+    //                    antiSynergyCommander.AntiSynergyMmr_1 += commandersMmrDelta[i];
+    //                    antiSynergyCommander.AntiSynergyElo_1 = ELO(antiSynergyCommander.AntiSynergyMmr_1, antiSynergyCommander.AntiSynergyMmr_2);
+    //                }
+    //                else if ((antiSynergyCommander.Commander_2 == teamCommanders[i]) && (antiSynergyCommander.Commander_1 == enemyCommanders[k]))
+    //                {
+    //                    antiSynergyCommander.AntiSynergyMmr_2 += commandersMmrDelta[i];
+    //                    antiSynergyCommander.AntiSynergyElo_2 = ELO(antiSynergyCommander.AntiSynergyMmr_2, antiSynergyCommander.AntiSynergyMmr_1);
+    //                }
+    //                else throw new Exception();
+    //            }
+
+    //            if (i != k)
+    //            {
+    //                CommanderMmr synergyCommander = this.commanderRatings
+    //                    .Where(c =>
+    //                        ((c.Commander_1 == teamCommanders[i]) && (c.Commander_2 == teamCommanders[k])) ||
+    //                        ((c.Commander_2 == teamCommanders[i]) && (c.Commander_1 == teamCommanders[k])))
+    //                    .FirstOrDefault()!;
+
+    //                synergyCommander.SynergyMmr += commandersMmrDelta[i] / 2;
+    //            }
+    //        }
+    //    }
+    //}
 
     private async Task SeedCommanderMmrs()
     {
@@ -637,18 +690,13 @@ public class FireMmrService
             {
                 for (int k = i; k < allCommanders.Count; k++)
                 {
-                    context.CommanderMmrs.Add(new()
-                    {
+                    context.CommanderMmrs.Add(new() {
                         SynergyMmr = FireMmrService.startMmr,
 
-                        Commander_1 = allCommanders[i],
-                        Commander_2 = allCommanders[k],
+                        Race = allCommanders[i],
+                        OppRace = allCommanders[k],
 
-                        AntiSynergyMmr_1 = FireMmrService.startMmr,
-                        AntiSynergyMmr_2 = FireMmrService.startMmr,
-
-                        AntiSynergyElo_1 = 0.5,
-                        AntiSynergyElo_2 = 0.5
+                        AntiSynergyMmr = FireMmrService.startMmr
                     });
                 }
             }
