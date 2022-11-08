@@ -7,6 +7,7 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng.Services;
@@ -36,21 +37,21 @@ public partial class ImportService
         sw.Restart();
 
         List<Replay> replays = new();
-        Dictionary<Guid, int> uploaderDic = new();
+        Dictionary<Guid, Uploader> fakeUploaderDic = new();
         foreach (var blob in blobs)
         {
             var blobDir = new DirectoryInfo(Path.GetDirectoryName(blob) ?? "").Name;
             if (Guid.TryParse(blobDir, out Guid uploaderGuid))
             {
                 int uploaderId = 0;
-                if (uploaderDic.ContainsKey(uploaderGuid))
+                if (fakeUploaderDic.ContainsKey(uploaderGuid))
                 {
-                    uploaderId = uploaderDic[uploaderGuid];
+                    uploaderId = fakeUploaderDic[uploaderGuid].UploaderId;
                 }
                 else
                 {
                     uploaderId = await GetUploaderId(uploaderGuid);
-                    uploaderDic[uploaderGuid] = uploaderId;
+                    fakeUploaderDic[uploaderGuid] = new Uploader() { UploaderId = uploaderId };
                 }
                 var uploaderReplayDtos = await GetReplaysFromBlobFile(blob, uploaderGuid);
                 var uploaderReplays = uploaderReplayDtos.Select(s => mapper.Map<Replay>(s)).ToList();
@@ -64,21 +65,70 @@ public partial class ImportService
             }
         }
         sw.Stop();
-        logger.LogInformation($"prepared blobs in {sw.ElapsedMilliseconds}");
+        logger.LogInformation($"prepared blobs in {sw.ElapsedMilliseconds} ms");
         sw.Restart();
         int newPlayers = await CreateAndMapPlayers(replays);
         sw.Stop();
-        logger.LogInformation($"mapped players in {sw.ElapsedMilliseconds}");
+        logger.LogInformation($"mapped players in {sw.ElapsedMilliseconds} ms");
         sw.Restart();
         int newUnits = await CreateAndMapUnits(replays);
         sw.Stop();
-        logger.LogInformation($"mapped units in {sw.ElapsedMilliseconds}");
+        logger.LogInformation($"mapped units in {sw.ElapsedMilliseconds} ms");
         sw.Restart();
         int newUpgrades = await CreateAndMapUpgrades(replays);
         sw.Stop();
-        logger.LogInformation($"mapped upgrades in {sw.ElapsedMilliseconds}");
-
+        logger.LogInformation($"mapped upgrades in {sw.ElapsedMilliseconds} ms");
+        sw.Restart();
+        replays.ForEach(f => SetReplayPlayerLastSpawnHashes(f));
+        sw.Stop();
+        logger.LogInformation($"player spawnHashes generated in {sw.ElapsedMilliseconds} ms");
+        sw.Restart();
+        int countBefore = replays.Count;
+        replays = HandleLocalDuplicates(replays);
+        sw.Stop();
+        logger.LogInformation($"handled local duplicates ({countBefore} => {replays.Count}) in {sw.ElapsedMilliseconds} ms");
+        sw.Restart();
+        var newReplays = await SaveReplays(replays, fakeUploaderDic.Values.ToDictionary(k => k.UploaderId, v => v));
+        sw.Stop();
+        logger.LogInformation($"replays imported {newReplays} in {sw.ElapsedMilliseconds} ms");
         logger.LogInformation($"got {replays.Count} replays - new: Players {newPlayers}, Units: {newUnits}, Upgrades: {newUpgrades}");
+    }
+
+    private async Task<int> SaveReplays(List<Replay> replays, Dictionary<int, Uploader> fakeUploaderDic)
+    {
+        int i = 0;
+        foreach (var replay in replays)
+        {
+            if (await SaveReplay(replay, fakeUploaderDic))
+            {
+                i++;
+            }
+        }
+        return i;
+    }
+
+    private async Task<bool> SaveReplay(Replay replay, Dictionary<int, Uploader> fakeUploaderDic)
+    {
+        // logger.LogError($"saving replay {replay.ReplayHash}");
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        if (!await IsDbDuplicate(context, replay, fakeUploaderDic))
+        {
+            if (replay.UploaderId > 0)
+            {
+                var fakeUploader = fakeUploaderDic[replay.UploaderId];
+                context.Attach(fakeUploader);
+                replay.Uploaders.Add(fakeUploader);
+            }
+            context.Replays.Add(replay);
+            await context.SaveChangesAsync();
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     private async Task<int> GetUploaderId(Guid uploaderGuid)
@@ -94,11 +144,9 @@ public partial class ImportService
 
     private static async Task<List<ReplayDto>> GetReplaysFromBlobFile(string blob, Guid uploaderGuid)
     {
-        var replays = await JsonSerializer.DeserializeAsync<List<ReplayDto>>
+        return await JsonSerializer.DeserializeAsync<List<ReplayDto>>
             (await UnzipAsync(await File.ReadAllTextAsync(blob)), new JsonSerializerOptions() { })
              ?? new();
-        replays.ForEach(f => f.UploaderGuid = uploaderGuid);
-        return replays;
     }
 
     private static List<string> GetReplayBlobsFileNames()
@@ -121,5 +169,28 @@ public partial class ImportService
         }
         mso.Position = 0;
         return mso;
+    }
+
+    public async Task DEBUGSeedUploaders()
+    {
+        var dirs = Directory.GetDirectories(blobBaseDir);
+
+        List<Uploader> uploaders = new();
+        foreach (var dir in dirs)
+        {
+            if (Guid.TryParse(new DirectoryInfo(dir).Name, out Guid guid))
+            {
+                uploaders.Add(new()
+                {
+                    AppGuid = guid
+                });
+            }
+        }
+
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        context.Uploaders.AddRange(uploaders);
+        await context.SaveChangesAsync();
     }
 }

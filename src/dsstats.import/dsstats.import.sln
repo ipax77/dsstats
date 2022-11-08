@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pax.dsstats.shared", "..\pa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MysqlMigrations", "..\MysqlMigrations\MysqlMigrations.csproj", "{14B757D1-C113-4186-BFF5-C10F7A667ECA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.import", "dsstats.import.csproj", "{9EC690FD-9CBA-4797-B230-CD14BC022331}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{14B757D1-C113-4186-BFF5-C10F7A667ECA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{14B757D1-C113-4186-BFF5-C10F7A667ECA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{14B757D1-C113-4186-BFF5-C10F7A667ECA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9EC690FD-9CBA-4797-B230-CD14BC022331}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9EC690FD-9CBA-4797-B230-CD14BC022331}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9EC690FD-9CBA-4797-B230-CD14BC022331}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9EC690FD-9CBA-4797-B230-CD14BC022331}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

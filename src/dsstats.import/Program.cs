@@ -24,8 +24,8 @@ builder.Services.AddDbContext<ReplayContext>(options =>
         p.MigrationsAssembly("MysqlMigrations");
         p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
     })
-    //.EnableDetailedErrors()
-    //.EnableSensitiveDataLogging()
+    // .EnableDetailedErrors()
+    // .EnableSensitiveDataLogging()
     ;
 });
 
@@ -51,6 +51,7 @@ if (app.Environment.IsDevelopment())
     context.Database.Migrate();
 
     var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+    // importService.DEBUGSeedUploaders().GetAwaiter().GetResult();
     importService.ImportReplayBlobs().GetAwaiter().GetResult();
 }
 

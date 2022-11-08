@@ -36,9 +36,6 @@ public record ReplayDto
     public bool TournamentEdition { get; init; }
     public ReplayEventDto? ReplayEvent { get; set; }
     public ICollection<ReplayPlayerDto> ReplayPlayers { get; init; } = new HashSet<ReplayPlayerDto>();
-    [NotMapped]
-    [JsonIgnore]
-    public Guid UploaderGuid { get; set; }
 }
 
 public record ReplayPlayerDto

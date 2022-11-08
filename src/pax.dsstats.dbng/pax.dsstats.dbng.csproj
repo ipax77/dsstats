@@ -22,4 +22,8 @@
     <ProjectReference Include="..\pax.dsstats.shared\pax.dsstats.shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\ImportService\" />
+  </ItemGroup>
+
 </Project>
