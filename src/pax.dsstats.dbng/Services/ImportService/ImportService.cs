@@ -24,68 +24,96 @@ public partial class ImportService
         this.logger = logger;
     }
 
-    public async Task ImportReplayBlobs()
+    public async Task<ImportReport> ImportReplayBlobs()
     {
         Stopwatch sw = Stopwatch.StartNew();
         var blobs = GetReplayBlobsFileNames();
 
-        sw.Stop();
-        logger.LogInformation($"got {blobs.Count} blobs {sw.ElapsedMilliseconds} ms");
-
-        sw.Restart();
+        if (!blobs.Any())
+        {
+            return new();
+        }
 
         Dictionary<Guid, Uploader> fakeUploaderDic = new();
         var replays = await GetReplaysFromBlobs(blobs, fakeUploaderDic);
+
         sw.Stop();
 
-        logger.LogInformation($"prepared blobs in {sw.ElapsedMilliseconds} ms");
-        await ImportReplays(replays);
+        ImportReport importReport = new()
+        {
+            BlobFiles = blobs.Count,
+            ReplaysFromBlobs = replays.Count,
+            BlobPreparationDuration = Convert.ToInt32(sw.Elapsed.TotalSeconds)
+        };
+
+        try
+        {
+            importReport = await ImportReplays(replays, importReport);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed importing replays: {ex.Message}");
+            importReport.Error = ex.Message;
+            return importReport;
+        }
+
+        foreach (var blob in blobs)
+        {
+            File.Move(blob, blob + ".done");
+        }
+
+        importReport.Success = true;
+        return importReport;
     }
 
-    public async Task ImportReplays(List<Replay> replays)
+    public async Task<ImportReport> ImportReplays(List<Replay> replays, ImportReport importReport)
     {
         Stopwatch sw = Stopwatch.StartNew();
         int newPlayers = await CreateAndMapPlayers(replays);
-        sw.Stop();
-        logger.LogInformation($"mapped players in {sw.ElapsedMilliseconds} ms");
-        sw.Restart();
         int newUnits = await CreateAndMapUnits(replays);
-        sw.Stop();
-        logger.LogInformation($"mapped units in {sw.ElapsedMilliseconds} ms");
-        sw.Restart();
         int newUpgrades = await CreateAndMapUpgrades(replays);
         sw.Stop();
-        logger.LogInformation($"mapped upgrades in {sw.ElapsedMilliseconds} ms");
+
+        importReport.NewPlayers = newPlayers;
+        importReport.NewUnits = newUnits;
+        importReport.NewUpgrades = newUpgrades;
+        importReport.MappingDuration = Convert.ToInt32(sw.Elapsed.TotalSeconds);
+
         sw.Restart();
         replays.ForEach(f => SetReplayPlayerLastSpawnHashes(f));
-        sw.Stop();
-        logger.LogInformation($"player spawnHashes generated in {sw.ElapsedMilliseconds} ms");
-        sw.Restart();
         int countBefore = replays.Count;
         replays = HandleLocalDuplicates(replays);
         sw.Stop();
-        logger.LogInformation($"handled local duplicates ({countBefore} => {replays.Count}) in {sw.ElapsedMilliseconds} ms");
+
+        importReport.LocalDupsHandled = countBefore - replays.Count;
+        importReport.LocalDupsDuration = Convert.ToInt32(sw.Elapsed.TotalSeconds);
+
         sw.Restart();
 
+        countBefore = replays.Count;
         (var replayHashMap, var lastSpawnHashMap) = await CollectDbDuplicates(replays);
-        sw.Start();
-        logger.LogInformation($"db duplicates ({replayHashMap.Count | lastSpawnHashMap.Count}) collected in {sw.ElapsedMilliseconds} ms");
-        sw.Restart();
         (int delIds, replays) = await HandleDbDuplicates(replays, replayHashMap, lastSpawnHashMap);
         sw.Stop();
-        logger.LogInformation($"HandleDbDuplicates ({delIds}|{replays.Count}) in {sw.ElapsedMilliseconds} ms");
+
+        importReport.DbDupsHandled = countBefore - replays.Count;
+        importReport.DbDupsDeleted = delIds;
+        importReport.DbDupsDuration = Convert.ToInt32(sw.Elapsed.TotalSeconds);
+
+
         sw.Restart();
         int savedReplays = await SaveReplays(replays);
         sw.Stop();
-        logger.LogInformation($"replays imported {savedReplays} in {sw.ElapsedMilliseconds} ms");
 
-        logger.LogInformation($"got {replays.Count}|{savedReplays}) replays - new: Players {newPlayers}, Units: {newUnits}, Upgrades: {newUpgrades}");
+        importReport.SaveDuration = Convert.ToInt32(sw.Elapsed.TotalSeconds);
+        importReport.SavedReplays = savedReplays;
+
+        return importReport;
     }
 
     private async Task<List<Replay>> GetReplaysFromBlobs(List<string> blobs, Dictionary<Guid, Uploader> fakeUploaderDic)
     {
         List<Replay> replays = new();
-        
+
         foreach (var blob in blobs)
         {
             var blobDir = new DirectoryInfo(Path.GetDirectoryName(blob) ?? "").Name;
@@ -130,7 +158,7 @@ public partial class ImportService
         int i = 0;
         foreach (var replay in replays)
         {
-            AttachUploaders(context, replay, attachedUploaders);
+            await AttachUploaders(context, replay, attachedUploaders);
             context.Replays.Add(replay);
 
             i++;
@@ -143,7 +171,7 @@ public partial class ImportService
         return i;
     }
 
-    private static void AttachUploaders(ReplayContext context, Replay replay, Dictionary<int, Uploader> attachedUploaders)
+    private static async Task AttachUploaders(ReplayContext context, Replay replay, Dictionary<int, Uploader> attachedUploaders)
     {
         List<Uploader> uploaders = new();
         foreach (var uploader in replay.Uploaders)
@@ -154,9 +182,12 @@ public partial class ImportService
             }
             else
             {
-                context.Attach(uploader);
-                attachedUploaders[uploader.UploaderId] = uploader;
-                uploaders.Add(uploader);
+                var dbUploader = await context.Uploaders.FirstOrDefaultAsync(f => f.UploaderId == uploader.UploaderId);
+                if (dbUploader != null)
+                {
+                    attachedUploaders[dbUploader.UploaderId] = dbUploader;
+                    uploaders.Add(dbUploader);
+                }
             }
         }
         replay.Uploaders = uploaders;
@@ -183,13 +214,13 @@ public partial class ImportService
     private static List<string> GetReplayBlobsFileNames()
     {
         DirectoryInfo info = new(blobBaseDir);
-        return info.GetFiles("*", SearchOption.AllDirectories)
+        return info.GetFiles("*.base64", SearchOption.AllDirectories)
                 .OrderBy(p => p.CreationTime)
                 .Select(s => s.FullName)
                 .ToList();
     }
 
-    private static async Task<MemoryStream> UnzipAsync(string base64string)
+    public static async Task<MemoryStream> UnzipAsync(string base64string)
     {
         var bytes = Convert.FromBase64String(base64string);
         using var msi = new MemoryStream(bytes);

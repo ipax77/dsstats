@@ -24,8 +24,8 @@ builder.Services.AddDbContext<ReplayContext>(options =>
         p.MigrationsAssembly("MysqlMigrations");
         p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
     })
-    // .EnableDetailedErrors()
-    // .EnableSensitiveDataLogging()
+     .EnableDetailedErrors()
+     .EnableSensitiveDataLogging()
     ;
 });
 
@@ -47,12 +47,23 @@ if (app.Environment.IsDevelopment())
     mapper.ConfigurationProvider.AssertConfigurationIsValid();
 
     using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-    // context.Database.EnsureDeleted();
+    //context.Database.EnsureDeleted();
     context.Database.Migrate();
 
     var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-    // importService.DEBUGSeedUploaders().GetAwaiter().GetResult();
-    importService.ImportReplayBlobs().GetAwaiter().GetResult();
+    //importService.DEBUGSeedUploaders().GetAwaiter().GetResult();
+    var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
+
+    Console.WriteLine(result);
+
+    var uploader = context.Uploaders
+        .Include(i => i.Replays)
+        .AsNoTracking()
+        .FirstOrDefault(f => f.UploaderId == 115);
+
+    var count = uploader?.Replays.Count;
+    Console.WriteLine(count);
+
 }
 
 // Configure the HTTP request pipeline.

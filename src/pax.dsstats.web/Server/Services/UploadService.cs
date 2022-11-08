@@ -21,7 +21,7 @@ public partial class UploadService
         this.logger = logger;
     }
 
-    public async Task<bool> ImportReplays(string gzipbase64String, Guid appGuid)
+    public async Task<bool> ImportReplays(string gzipbase64String, Guid appGuid, bool dry = false)
     {
         try
         {
@@ -40,7 +40,10 @@ public partial class UploadService
                 return false;
             }
 
-            await SaveBlob(gzipbase64String, appGuid);
+            if (!dry)
+            {
+                await SaveBlob(gzipbase64String, appGuid);
+            }
 
             uploader.LatestUpload = DateTime.UtcNow;
             uploader.LatestReplay = DateTime.UtcNow;
@@ -49,9 +52,10 @@ public partial class UploadService
         catch (Exception ex)
         {
             logger.LogError($"Failed updating uploader: {ex.Message}");
+            return false;
         }
 
-        _ = Produce(gzipbase64String, appGuid);
+        // _ = Produce(gzipbase64String, appGuid);
         
         return true;
     }
@@ -77,7 +81,10 @@ public partial class UploadService
                 return;
             }
         }
-        await File.WriteAllTextAsync(blobFilename, gzipbase64String);
+
+        var tempBlobFilename = blobFilename + ".temp";
+        await File.WriteAllTextAsync(tempBlobFilename, gzipbase64String);
+        File.Move(tempBlobFilename, blobFilename);
     }
 
     public async Task<DateTime?> CreateOrUpdateUploader(UploaderDto uploader)

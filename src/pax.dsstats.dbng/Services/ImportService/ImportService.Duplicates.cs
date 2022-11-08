@@ -151,7 +151,7 @@ public partial class ImportService
                     SyncUploaders(keepReplay, dupReplay, replayFakeUploader);
                 }
                 dupCount++;
-                AttachUploaders(context, keepReplay, fakeUploaderDic);
+                await AttachUploaders(context, keepReplay, fakeUploaderDic);
             }
         }
 

@@ -70,51 +70,8 @@ public class DuplicateTest : IDisposable
         var uploaderDto5 = GetUploaderDto(5);
         var uploaderDto6 = GetUploaderDto(6);
 
-        await uploadService.CreateOrUpdateUploader(uploaderDto1);
-        await uploadService.CreateOrUpdateUploader(uploaderDto2);
-        await uploadService.CreateOrUpdateUploader(uploaderDto3);
-        await uploadService.CreateOrUpdateUploader(uploaderDto4);
-        await uploadService.CreateOrUpdateUploader(uploaderDto5);
-        await uploadService.CreateOrUpdateUploader(uploaderDto6);
-
         var context = CreateContext();
-        var countBefore = await context.Replays.CountAsync();
-
-        string testFile = Startup.GetTestFilePath("uploadtest2.base64");
-
-        Assert.True(File.Exists(testFile));
-        var base64String = File.ReadAllText(testFile);
-
-        await uploadService.ImportReplays(base64String, uploaderDto1.AppGuid);
-        await uploadService.ImportReplays(base64String, uploaderDto2.AppGuid);
-        await uploadService.ImportReplays(base64String, uploaderDto3.AppGuid);
-        await uploadService.ImportReplays(base64String, uploaderDto4.AppGuid);
-        await uploadService.ImportReplays(base64String, uploaderDto5.AppGuid);
-        await uploadService.ImportReplays(base64String, uploaderDto6.AppGuid);
-
-        await Task.Delay(5000);
-
-        var countAfter = await context.Replays.CountAsync();
-
-        Assert.Equal(countBefore, countAfter - 1);
-
-        var replay = await context.Replays
-            .Include(i => i.Uploaders)
-            .OrderBy(o => o.ReplayId)
-            .LastOrDefaultAsync();
-
-        Assert.Equal(6, replay?.Uploaders.Count);
-    }
-
-    [Fact]
-    public async Task Duplicate2Test()
-    {
-        var uploaderDto1 = GetUploaderDto(1);
-        var uploaderDto2 = GetUploaderDto(2);
-        var uploaderDto3 = GetUploaderDto(3);
-        var uploaderDto4 = GetUploaderDto(4);
-        var uploaderDto5 = GetUploaderDto(5);
-        var uploaderDto6 = GetUploaderDto(6);
+        var countBefore = await context.Uploaders.CountAsync();       
 
         await uploadService.CreateOrUpdateUploader(uploaderDto1);
         await uploadService.CreateOrUpdateUploader(uploaderDto2);
@@ -123,50 +80,11 @@ public class DuplicateTest : IDisposable
         await uploadService.CreateOrUpdateUploader(uploaderDto5);
         await uploadService.CreateOrUpdateUploader(uploaderDto6);
 
-        var context = CreateContext();
-        var countBefore = await context.Replays.CountAsync();
 
-        string testFile = Startup.GetTestFilePath("replayDto1.json");
+        var countAfter = await context.Uploaders.CountAsync();
 
-        Assert.True(File.Exists(testFile));
-        ReplayDto? replayDto = JsonSerializer.Deserialize<List<ReplayDto>>(File.ReadAllText(testFile))?.FirstOrDefault();
-        Assert.NotNull(replayDto);
-        if (replayDto == null)
-        {
-            return;
-        }
 
-        replayDto.ReplayPlayers.ToList().ForEach(f => f.IsUploader = false);
-
-        replayDto.ReplayPlayers.ElementAt(0).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayDto), uploaderDto1.AppGuid);
-        replayDto.ReplayPlayers.ElementAt(0).IsUploader = false;
-        replayDto.ReplayPlayers.ElementAt(1).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayDto), uploaderDto2.AppGuid);
-        replayDto.ReplayPlayers.ElementAt(1).IsUploader = false;
-        replayDto.ReplayPlayers.ElementAt(2).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayDto), uploaderDto3.AppGuid);
-        replayDto.ReplayPlayers.ElementAt(2).IsUploader = false;
-        replayDto.ReplayPlayers.ElementAt(3).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayDto), uploaderDto4.AppGuid);
-        replayDto.ReplayPlayers.ElementAt(3).IsUploader = false;
-        replayDto.ReplayPlayers.ElementAt(4).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayDto), uploaderDto5.AppGuid);
-        replayDto.ReplayPlayers.ElementAt(4).IsUploader = false;
-        replayDto.ReplayPlayers.ElementAt(5).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayDto), uploaderDto6.AppGuid);
-
-        await Task.Delay(5000);
-
-        var countAfter = await context.Replays.CountAsync();
-        Assert.Equal(countBefore, countAfter - 1);
-
-        var dbReplay = await context.Replays
-            .Include(i => i.ReplayPlayers)
-            .FirstOrDefaultAsync(f => f.ReplayHash == replayDto.ReplayHash);
-
-        Assert.NotNull(dbReplay);
-        Assert.Equal(6, dbReplay?.ReplayPlayers.Count(c => c.IsUploader));
+        Assert.Equal(countBefore + 6, countAfter);
     }
 
     private static UploaderDto GetUploaderDto(int num)

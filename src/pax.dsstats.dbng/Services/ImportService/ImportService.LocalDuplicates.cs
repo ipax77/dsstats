@@ -28,17 +28,16 @@ public partial class ImportService
     private static List<Replay> GetLocalDuplicateReplays(Replay replay, List<Replay> replays)
     {
         var dupReplays = replays
-            .Where(x => x != replay
-                && x.ReplayHash == replay.ReplayHash)
+            .Where(x => x.ReplayHash == replay.ReplayHash)
             .ToList();
 
         List<string> replayLastSpawnHashes = replay.ReplayPlayers.Select(s => s.LastSpawnHash ?? "")
             .Where(x => !String.IsNullOrEmpty(x))
             .ToList();
 
-        var spawnDupReplays = replayLastSpawnHashes.Any() ? replays.Where(x => x != replay
-            && x.ReplayPlayers.Any(a => a.LastSpawnHash != null
-            && replayLastSpawnHashes.Contains(a.LastSpawnHash))).ToList()
+        var spawnDupReplays = replayLastSpawnHashes.Any() ? 
+            replays.Where(x => x.ReplayPlayers.Any(a => a.LastSpawnHash != null
+                && replayLastSpawnHashes.Contains(a.LastSpawnHash))).ToList()
             : new List<Replay>();
 
         if (spawnDupReplays.Count > 0)
@@ -46,7 +45,7 @@ public partial class ImportService
             dupReplays.AddRange(spawnDupReplays);
         }
 
-        return dupReplays;
+        return dupReplays.Where(x => x != replay).Distinct().ToList();
     }
 
     private (List<Replay>, List<string>)  HandleLocalDuplicate(Replay replay, List<Replay> replays, List<Replay> dupReplays)

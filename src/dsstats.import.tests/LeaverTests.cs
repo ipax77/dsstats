@@ -1,83 +1,43 @@
 ﻿using AutoMapper;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
+using pax.dsstats.dbng.Services;
 using pax.dsstats.dbng;
-using pax.dsstats.dbng.Repositories;
 using pax.dsstats.shared;
-using pax.dsstats.web.Server.Services;
-using System.Data.Common;
-using System.IO.Compression;
-using System.Text;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
-namespace dsstats.Tests;
+namespace dsstats.import.tests;
 
-// [Collection("Sequential")]
-public class LeaverTests : IDisposable
+public class LeaverTests : TestWithSqlite
 {
-    private readonly UploadService uploadService;
-    private readonly DbConnection _connection;
-    private readonly DbContextOptions<ReplayContext> _contextOptions;
-
-    public LeaverTests(IMapper mapper)
+    [Fact]
+    public async Task LeaverTest()
     {
-        _connection = new SqliteConnection("Filename=:memory:");
-        _connection.Open();
-
-        _contextOptions = new DbContextOptionsBuilder<ReplayContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        using var context = new ReplayContext(_contextOptions);
-
-        context.Database.EnsureCreated();
-
         var serviceCollection = new ServiceCollection();
+        serviceCollection
+            .AddDbContext<ReplayContext>(options => options.UseSqlite(_connection),
+        ServiceLifetime.Transient);
 
-        serviceCollection.AddDbContext<ReplayContext>(options =>
-        {
-            options.UseSqlite(_connection, sqlOptions =>
-            {
-                sqlOptions.MigrationsAssembly("SqliteMigrations");
-                sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
-            })
-            //.EnableDetailedErrors()
-            //.EnableDetailedErrors()
-            ;
-        });
-
-        serviceCollection.AddTransient<IReplayRepository, ReplayRepository>();
         serviceCollection.AddAutoMapper(typeof(AutoMapperProfile));
         serviceCollection.AddLogging();
+        serviceCollection.AddScoped<ImportService>();
 
         var serviceProvider = serviceCollection.BuildServiceProvider();
-        uploadService = new UploadService(serviceProvider, mapper, NullLogger<UploadService>.Instance);
-    }
 
-    ReplayContext CreateContext() => new ReplayContext(_contextOptions);
-    public void Dispose() => _connection.Dispose();
+        using var scope = serviceProvider.CreateScope();
+        var importService = scope.ServiceProvider.GetService<ImportService>();
+        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
+        Assert.NotNull(importService);
+        if (importService == null)
+        {
+            return;
+        }
+        await importService.DEBUGSeedUploaders();
 
-    [Fact]
-    public async Task LeaverUploadTest()
-    {
-        var uploaderDto1 = GetUploaderDto(1);
-        var uploaderDto2 = GetUploaderDto(2);
-        var uploaderDto3 = GetUploaderDto(3);
-        var uploaderDto4 = GetUploaderDto(4);
-        var uploaderDto5 = GetUploaderDto(5);
-        var uploaderDto6 = GetUploaderDto(6);
+        Assert.True(context.Uploaders.Count() > 2);
 
-        await uploadService.CreateOrUpdateUploader(uploaderDto1);
-        await uploadService.CreateOrUpdateUploader(uploaderDto2);
-        await uploadService.CreateOrUpdateUploader(uploaderDto3);
-        await uploadService.CreateOrUpdateUploader(uploaderDto4);
-        await uploadService.CreateOrUpdateUploader(uploaderDto5);
-        await uploadService.CreateOrUpdateUploader(uploaderDto6);
-
-        var context = CreateContext();
         var countBefore = await context.Replays.CountAsync();
 
         string testFile = Startup.GetTestFilePath("replayDto2.json");
@@ -90,32 +50,43 @@ public class LeaverTests : IDisposable
             return;
         }
 
+        List<Replay> replays = new();
+
         (var leaverReplay, var leaverPlayer) = GetLeaverReplay(replayDto, replayDto.ReplayPlayers.ElementAt(0));
 
         leaverReplay.ReplayPlayers.ToList().ForEach(f => f.IsUploader = false);
         leaverPlayer.IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(leaverReplay), uploaderDto1.AppGuid);
-        await Task.Delay(3000);
 
+        replays.Add(mapper.Map<Replay>(leaverReplay));
+        replays.Last().UploaderId = 10;
 
         var replayWithLeaver = GetReplayDtoWithLeaverPlayer(replayDto, leaverPlayer);
         replayWithLeaver.ReplayPlayers.ElementAt(5).IsUploader = false;
         replayWithLeaver.ReplayPlayers.ElementAt(0).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayWithLeaver), uploaderDto2.AppGuid);
+        replays.Add(mapper.Map<Replay>(replayWithLeaver));
+        replays.Last().UploaderId = 11;
+
         replayWithLeaver.ReplayPlayers.ElementAt(0).IsUploader = false;
         replayWithLeaver.ReplayPlayers.ElementAt(1).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayWithLeaver), uploaderDto3.AppGuid);
+        replays.Add(mapper.Map<Replay>(replayWithLeaver));
+        replays.Last().UploaderId = 12;
+
         replayWithLeaver.ReplayPlayers.ElementAt(1).IsUploader = false;
         replayWithLeaver.ReplayPlayers.ElementAt(2).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayWithLeaver), uploaderDto4.AppGuid);
+        replays.Add(mapper.Map<Replay>(replayWithLeaver));
+        replays.Last().UploaderId = 13;
+
         replayWithLeaver.ReplayPlayers.ElementAt(2).IsUploader = false;
         replayWithLeaver.ReplayPlayers.ElementAt(3).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayWithLeaver), uploaderDto5.AppGuid);
+        replays.Add(mapper.Map<Replay>(replayWithLeaver));
+        replays.Last().UploaderId = 14;
+
         replayWithLeaver.ReplayPlayers.ElementAt(3).IsUploader = false;
         replayWithLeaver.ReplayPlayers.ElementAt(4).IsUploader = true;
-        await uploadService.ImportReplays(ZipReplay(replayWithLeaver), uploaderDto6.AppGuid);
+        replays.Add(mapper.Map<Replay>(replayWithLeaver));
+        replays.Last().UploaderId = 15;
 
-        await Task.Delay(5000);
+        await importService.ImportReplays(replays, new());
 
         var countAfter = await context.Replays.CountAsync();
         Assert.Equal(countBefore + 1, countAfter);
@@ -178,48 +149,4 @@ public class LeaverTests : IDisposable
 
         return (leaverReplay, leaverReplay.ReplayPlayers.First(f => f.GamePos == leaver.GamePos));
     }
-
-    private static UploaderDto GetUploaderDto(int num)
-    {
-        return new UploaderDto()
-        {
-            AppGuid = Guid.NewGuid(),
-            AppVersion = "0.0.1",
-            BattleNetInfos = new List<BattleNetInfoDto>()
-            {
-                new BattleNetInfoDto()
-                {
-                    BattleNetId = 223456 + num,
-                    PlayerUploadDtos = new List<PlayerUploadDto>()
-                    {
-                        new PlayerUploadDto()
-                        {
-                            Name = "Test" + num,
-                            ToonId = 223456 + num
-                        },
-                    }
-                }
-            }
-        };
-    }
-
-    private static string ZipReplay(ReplayDto replayDto)
-    {
-        return Zip(JsonSerializer.Serialize(new List<ReplayDto>() { replayDto }));
-    }
-
-    private static string Zip(string str)
-    {
-        var bytes = Encoding.UTF8.GetBytes(str);
-
-        using var msi = new MemoryStream(bytes);
-        using var mso = new MemoryStream();
-        using (var gs = new GZipStream(mso, CompressionMode.Compress))
-        {
-            msi.CopyTo(gs);
-        }
-        return Convert.ToBase64String(mso.ToArray());
-    }
 }
-
-
