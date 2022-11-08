@@ -88,32 +88,79 @@ public partial class ImportService
         sw.Stop();
         logger.LogInformation($"handled local duplicates ({countBefore} => {replays.Count}) in {sw.ElapsedMilliseconds} ms");
         sw.Restart();
-        var newReplays = await SaveReplays(replays, fakeUploaderDic.Values.ToDictionary(k => k.UploaderId, v => v));
+
+        (var replayHashMap, var lastSpawnHashMap) = await CollectDbDuplicates(replays);
+        sw.Start();
+        logger.LogInformation($"db duplicates ({replayHashMap.Count | lastSpawnHashMap.Count}) collected in {sw.ElapsedMilliseconds} ms");
+        sw.Restart();
+        (int delIds, replays) = await HandleDbDuplicates(replays, replayHashMap, lastSpawnHashMap);
         sw.Stop();
-        logger.LogInformation($"replays imported {newReplays} in {sw.ElapsedMilliseconds} ms");
-        logger.LogInformation($"got {replays.Count} replays - new: Players {newPlayers}, Units: {newUnits}, Upgrades: {newUpgrades}");
+        logger.LogInformation($"HandleDbDuplicates ({delIds}|{replays.Count}) in {sw.ElapsedMilliseconds} ms");
+        sw.Restart();
+        int savedReplays = await SaveReplays(replays);
+        sw.Stop();
+        logger.LogInformation($"replays imported {savedReplays} in {sw.ElapsedMilliseconds} ms");
+
+        logger.LogInformation($"got {replays.Count}|{savedReplays}) replays - new: Players {newPlayers}, Units: {newUnits}, Upgrades: {newUpgrades}");
     }
 
-    private async Task<int> SaveReplays(List<Replay> replays, Dictionary<int, Uploader> fakeUploaderDic)
+    private async Task<int> SaveReplays(List<Replay> replays)
     {
+        if (!replays.Any())
+        {
+            return 0;
+        }
+
+        Dictionary<int, Uploader> attachedUploaders = new();
+
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
         int i = 0;
         foreach (var replay in replays)
         {
-            if (await SaveReplay(replay, fakeUploaderDic))
+            AttachUploaders(context, replay, attachedUploaders);
+            context.Replays.Add(replay);
+
+            i++;
+            if (i % 1000 == 0)
             {
-                i++;
+                await context.SaveChangesAsync();
             }
         }
+        await context.SaveChangesAsync();
         return i;
     }
 
-    private async Task<bool> SaveReplay(Replay replay, Dictionary<int, Uploader> fakeUploaderDic)
+    private void AttachUploaders(ReplayContext context, Replay replay, Dictionary<int, Uploader> attachedUploaders)
+    {
+        List<Uploader> uploaders = new();
+        foreach (var uploader in replay.Uploaders)
+        {
+            if (attachedUploaders.ContainsKey(uploader.UploaderId))
+            {
+                uploaders.Add(attachedUploaders[uploader.UploaderId]);
+            }
+            else
+            {
+                context.Attach(uploader);
+                attachedUploaders[uploader.UploaderId] = uploader;
+                uploaders.Add(uploader);
+            }
+        }
+        replay.Uploaders = uploaders;
+    }
+
+    private async Task<bool> SaveReplay(Replay replay,
+                                        Dictionary<string, int> replayHashMap,
+                                        Dictionary<string, int> lastSpawnHashMap,
+                                        Dictionary<int, Uploader> fakeUploaderDic)
     {
         // logger.LogError($"saving replay {replay.ReplayHash}");
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        if (!await IsDbDuplicate(context, replay, fakeUploaderDic))
+        if (!await IsDbDuplicate(context, replay, replayHashMap, lastSpawnHashMap, fakeUploaderDic))
         {
             if (replay.UploaderId > 0)
             {

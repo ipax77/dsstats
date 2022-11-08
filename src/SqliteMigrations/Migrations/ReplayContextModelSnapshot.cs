@@ -418,7 +418,7 @@ namespace SqliteMigrations.Migrations
                         .HasColumnType("TEXT")
                         .IsFixedLength();
 
-                    b.Property<float>("MmrChange")
+                    b.Property<float?>("MmrChange")
                         .HasColumnType("REAL");
 
                     b.Property<string>("Name")
