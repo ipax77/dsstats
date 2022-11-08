@@ -75,6 +75,10 @@ public partial class ImportService
             }
             replayPlayers = syncedReplayPlayers;
             uploaders = uploaders.Union(dupReplay.Uploaders).ToHashSet();
+            if (dupReplay.UploaderId > 0 && !uploaders.Any(a => a.UploaderId == dupReplay.UploaderId))
+            {
+                uploaders.Add(new Uploader() { UploaderId = dupReplay.UploaderId });
+            }
 
             if (dupReplay.Duration > keepReplay.Duration)
             {

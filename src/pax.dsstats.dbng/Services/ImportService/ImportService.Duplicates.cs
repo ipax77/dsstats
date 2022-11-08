@@ -151,6 +151,7 @@ public partial class ImportService
                     SyncUploaders(keepReplay, dupReplay, replayFakeUploader);
                 }
                 dupCount++;
+                AttachUploaders(context, keepReplay, fakeUploaderDic);
             }
         }
 
@@ -169,7 +170,7 @@ public partial class ImportService
 
         foreach (var dupUploader in dupReplay.Uploaders)
         {
-            var keepUploader = keepReplay.Uploaders.FirstOrDefault(f => f.UploaderId == dupReplay.UploaderId);
+            var keepUploader = keepReplay.Uploaders.FirstOrDefault(f => f.UploaderId == dupUploader.UploaderId);
             if (keepUploader == null)
             {
                 keepReplay.Uploaders.Add(dupUploader);
@@ -177,7 +178,7 @@ public partial class ImportService
         }
     }
 
-    private HashSet<int> GetDuplicateReplayIds(Replay replay,
+    private static HashSet<int> GetDuplicateReplayIds(Replay replay,
                                          Dictionary<string, int> replayHashMap,
                                          Dictionary<string, int> lastSpawnHashMap)
     {
@@ -196,20 +197,6 @@ public partial class ImportService
             }
         }
         return dupReplayIds;
-    }
-
-    private async Task<bool> IsDbDuplicate(ReplayContext context, Replay replay, Dictionary<string, int> replayHashMap, Dictionary<string, int> lastSpawnHashMap, Dictionary<int, Uploader> fakeUploaderDic)
-    {
-        var dupReplayIds = await GetDuplicateReplayIds(context, replay);
-
-        if (!dupReplayIds.Any())
-        {
-            return false;
-        }
-        else
-        {
-            return await HandleDuplicate(context, replay, dupReplayIds, fakeUploaderDic);
-        }
     }
 
     private static async Task<HashSet<int>> GetDuplicateReplayIds(ReplayContext context, Replay replay)
@@ -236,64 +223,6 @@ public partial class ImportService
         }
 
         return dupReplayIds.ToHashSet();
-    }
-
-    private async Task<bool> HandleDuplicate(ReplayContext context, Replay replay, HashSet<int> dupReplayIds, Dictionary<int, Uploader> fakeUploaderDic)
-    {
-        HashSet<int> delReplayIds = new();
-        Replay keepReplay = replay;
-        HashSet<Uploader> uploaders = new();
-        if (replay.UploaderId > 0)
-        {
-            var uploader = fakeUploaderDic[replay.UploaderId];
-            context.Attach(uploader);
-            uploaders.Add(uploader);
-        }
-
-        foreach (var dupReplayId in dupReplayIds)
-        {
-            var dupReplay = await context.Replays
-                .Include(i => i.Uploaders)
-                .Include(i => i.ReplayPlayers)
-                    .ThenInclude(i => i.Player)
-                .FirstAsync(f => f.ReplayId == dupReplayId);
-
-            if (!DuplicateIsPlausible(replay, dupReplay))
-            {
-                continue;
-            }
-            uploaders = uploaders.Union(dupReplay.Uploaders).ToHashSet();
-
-            if (dupReplay.Duration >= keepReplay.Duration)
-            {
-                keepReplay = dupReplay;
-                keepReplay.ReplayPlayers = SyncReplayPlayers(keepReplay.ReplayPlayers.ToList(), replay.ReplayPlayers.ToList());
-            }
-            else
-            {
-                delReplayIds.Add(dupReplayId);
-                keepReplay.ReplayPlayers = SyncReplayPlayers(keepReplay.ReplayPlayers.ToList(), dupReplay.ReplayPlayers.ToList());
-            }
-        }
-
-        keepReplay.ReplayPlayers.ToList().ForEach(f => { f.Replay = keepReplay; f.ReplayId = keepReplay.ReplayId; });
-        keepReplay.Uploaders = uploaders;
-
-        try
-        {
-            await DeleteReplays(context, delReplayIds);
-
-            if (keepReplay.ReplayId == replay.ReplayId)
-            {
-                context.Replays.Add(keepReplay);
-            }
-            await context.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            logger.LogError($"failed saving/deleting dupReplays: {ex.Message}");
-        }
-        return true;
     }
 
     private static async Task DeleteReplays(ReplayContext context, HashSet<int> delReplayIds)
