@@ -19,12 +19,15 @@ public partial class MmrService
 
     private async Task CalculateCmdr(DateTime startTime)
     {
-        var replayDsRDtos = await GetCmdrReplayDsRDtos(startTime);
+        maxMmr = startMmr;
 
+        var replayDsRDtos = await GetCmdrReplayDsRDtos(startTime);
         foreach (var replay in replayDsRDtos)
         {
             ProcessCmdrReplay(replay);
         }
+
+        await SetCmdrRatings();
     }
 
     private void ProcessCmdrReplay(ReplayDsRDto replay)
@@ -52,12 +55,92 @@ public partial class MmrService
 
         var winnerTeamExpectationToWin = EloExpectationToWin(winnerTeamMmr, loserTeamMmr);
 
-        var winnersCommandersComboMMR = GetCommandersComboMmr(winnerTeam);
-        var losersCommandersComboMMR = GetCommandersComboMmr(loserTeam);
-        var winnerCommandersComboExpectationToWin = EloExpectationToWin(winnersCommandersComboMMR, losersCommandersComboMMR);
+        var winnersCommandersComboMmr = GetCommandersComboMmr(winnerTeam);
+        var losersCommandersComboMmr = GetCommandersComboMmr(loserTeam);
+        var winnerCommandersComboExpectationToWin = EloExpectationToWin(winnersCommandersComboMmr, losersCommandersComboMmr);
 
+        //CalculateRatingsDeltas()
 
+        //FixMmr_Equality(winnersMmrDelta, losersMmrDelta);
+
+        //AddPlayersRankings()
+
+        //SetCommandersComboMmr(winnersCommanderCombosMmrDelta, winnerTeam);
+        //SetCommandersComboMmr(losersCommanderCombosMmrDelta, loserTeam);
     }
+
+    private async Task SetCmdrRatings()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        //# playerRatings
+        var players = await context.Players.ToListAsync();
+        foreach (var player in players) {
+            if (!playerRatingsCmdr.ContainsKey(player.PlayerId)) {
+                continue;
+            }
+
+            var playerRating = playerRatingsCmdr[player.PlayerId];
+
+            player.Mmr = playerRating.Last().Mmr;
+            player.MmrOverTime = GetOverTimeRating(playerRating);
+        }
+
+        //# replayPlayerMmrChanges
+        var replayPlayers = await context.ReplayPlayers.ToListAsync();
+        foreach (var replayPlayer in replayPlayers) {
+            if (!replayPlayerMmrChanges.ContainsKey(replayPlayer.ReplayPlayerId)) {
+                continue;
+            }
+
+            var replayPlayerMmrChange = replayPlayerMmrChanges[replayPlayer.ReplayPlayerId];
+            replayPlayer.MmrChange = replayPlayerMmrChange;
+        }
+
+        //# commanderRatings
+        var commanderMmrs = await context.CommanderMmrs.ToListAsync();
+        foreach (var commanderMmr in commanderMmrs) {
+            var commanderRating = commanderRatings.Find(f => f.CommanderMmrId == commanderMmr.CommanderMmrId)!;
+
+            commanderMmr.SynergyMmr = commanderRating.SynergyMmr;
+            commanderMmr.AntiSynergyMmr = commanderRating.AntiSynergyMmr;
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    private void SetCommandersComboMmr(double[] commandersMmrDelta, IEnumerable<ReplayPlayerDsRDto> teamPlayers)
+    {
+        for (int playerIndex = 0; playerIndex < teamPlayers.Count(); playerIndex++) {
+            var playerCmdr = teamPlayers.ElementAt(playerIndex).Race;
+
+            for (int synergyPlayerIndex = 0; synergyPlayerIndex < teamPlayers.Count(); synergyPlayerIndex++) {
+                if (playerIndex == synergyPlayerIndex) {
+                    continue;
+                }
+
+                var synergyPlayerCmdr = teamPlayers.ElementAt(synergyPlayerIndex).Race;
+                var synergy = commanderRatings
+                    .First(x => x.Race == playerCmdr && x.OppRace == synergyPlayerCmdr);
+
+                synergy.SynergyMmr += commandersMmrDelta[playerIndex] / 2;
+            }
+
+            for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamPlayers.Count(); antiSynergyPlayerIndex++) {
+                var antiSynergyPlayerCmdr = teamPlayers.ElementAt(antiSynergyPlayerIndex).OppRace;
+
+                var antiSynergy = commanderRatings
+                    .First(x => x.Race == playerCmdr && x.OppRace == antiSynergyPlayerCmdr);
+
+                antiSynergy.AntiSynergyMmr += commandersMmrDelta[playerIndex];
+            }
+        }
+    }
+
+    //AddPlayersRankings()
+
+    //CalculateRatingsDeltas()
 
     private double GetCommandersComboMmr(IEnumerable<ReplayPlayerDsRDto> teamPlayers)
     {
@@ -137,5 +220,32 @@ public partial class MmrService
             .AsNoTracking()
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
             .ToListAsync();
+    }
+
+    private async Task SeedCommanderMmrs()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var commanderMmrs = await context.CommanderMmrs.ToListAsync();
+        var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
+
+        foreach (var race in allCommanders) {
+            foreach (var oppRace in allCommanders) {
+                if (commanderMmrs.Any(x => (x.Race == race) && (x.OppRace == oppRace))) {
+                    continue;
+                }
+
+                context.CommanderMmrs.Add(new() {
+                    Race = race,
+                    OppRace = oppRace,
+
+                    SynergyMmr = FireMmrService.startMmr,
+                    AntiSynergyMmr = FireMmrService.startMmr
+                });
+            }
+        }
+
+        await context.SaveChangesAsync();
     }
 }
