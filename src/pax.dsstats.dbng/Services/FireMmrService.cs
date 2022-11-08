@@ -31,7 +31,7 @@ public class FireMmrService
     private static readonly double consistencyImpact = 0.50;
     private static readonly double consistencyDeltaMult = 0.15;
 
-    private static bool useCommanderMmr = true;
+    private static bool useCommanderMmr = false;
     private static bool useConsistency = true;
     private static bool useFactorToTeamMates = true;
 
@@ -52,7 +52,8 @@ public class FireMmrService
         Stopwatch sw = new();
         sw.Start();
 
-        await ClearRatings(false);
+        await SeedCommanderMmrs();
+        await ClearRatings(true);
 
         await CalcMmrCmdr();
         await CalcMmrStd();
@@ -66,7 +67,6 @@ public class FireMmrService
     public async Task CalcMmrCmdr()
     {
         maxMmr = startMmr;
-        await SeedCommanderMmrs();
 
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -706,23 +706,22 @@ public class FireMmrService
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        if (!await context.CommanderMmrs.AnyAsync())
-        {
-            var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
+        var commanderMmrs = await context.CommanderMmrs.ToListAsync();
+        var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
 
-            for (int i = 0; i < allCommanders.Count; i++)
-            {
-                for (int k = 0; k < allCommanders.Count; k++)
-                {
-                    context.CommanderMmrs.Add(new() {
-                        SynergyMmr = FireMmrService.startMmr,
-
-                        Race = allCommanders[i],
-                        OppRace = allCommanders[k],
-
-                        AntiSynergyMmr = FireMmrService.startMmr
-                    });
+        foreach (var race in allCommanders) {
+            foreach (var oppRace in allCommanders) {
+                if (commanderMmrs.Any(x => (x.Race == race) && (x.OppRace == oppRace))) {
+                    continue;
                 }
+
+                context.CommanderMmrs.Add(new() {
+                    Race = race,
+                    OppRace = oppRace,
+
+                    SynergyMmr = FireMmrService.startMmr,
+                    AntiSynergyMmr = FireMmrService.startMmr
+                });
             }
         }
 
