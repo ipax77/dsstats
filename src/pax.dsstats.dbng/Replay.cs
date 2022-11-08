@@ -174,7 +174,7 @@ public class ReplayPlayer
     public int GamePos { get; set; }
     public int Team { get; set; }
     public PlayerResult PlayerResult { get; set; }
-    public float MmrChange { get; set; }
+    public float? MmrChange { get; set; } = null;
     public int Duration { get; set; }
     public Commander Race { get; set; }
     public Commander OppRace { get; set; }

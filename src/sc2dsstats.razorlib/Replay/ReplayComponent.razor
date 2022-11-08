@@ -35,7 +35,7 @@
                     {
                         var players = replayDto.ReplayPlayers.Where(x => x.Team == i).OrderBy(o => o.GamePos).ToList();
                         bool isWinner = replayDto.WinnerTeam == i;
-                        var hasMmrChanges = replayDto.ReplayPlayers.Any(f => f.MmrChange != 0);
+                        var hasMmrChanges = replayDto.ReplayPlayers.Any(f => f.MmrChange.GetValueOrDefault(0) != 0);
 
                         <div class="col-auto">
                             <div class="d-flex">
@@ -76,7 +76,7 @@
                                                 @if (hasMmrChanges)
                                                 {
                                                     <td class="table-dark">
-                                                        <span class="oi @(player.MmrChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">@player.MmrChange.ToString("N1", CultureInfo.InvariantCulture)</span>
+                                                        <span class="oi @(player.MmrChange.GetValueOrDefault(0) < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">@player.MmrChange.GetValueOrDefault(0).ToString("N1", CultureInfo.InvariantCulture)</span>
                                                     </td>
                                                 }
                                                 <td>
