@@ -52,8 +52,7 @@ public class FireMmrService
         Stopwatch sw = new();
         sw.Start();
 
-        await SeedCommanderMmrs();
-        await ClearRatings();
+        await ClearRatings(false);
 
         await CalcMmrCmdr();
         await CalcMmrStd();
@@ -76,7 +75,9 @@ public class FireMmrService
             .Include(r => r.ReplayPlayers)
                 .ThenInclude(rp => rp.Player)
             .Where(r => r.Duration >= 300)
-            .Where(r => r.Playercount == 6 && r.GameMode == GameMode.Commanders && !r.ReplayPlayers.Any(p => !Data.GetCommanders(Data.CmdrGet.NoStd).Contains(p.Race))
+            .Where(r =>
+                (r.Playercount == 6)
+                && (r.GameMode == GameMode.Commanders)
                 /*Fake*/&& (r.WinnerTeam != 0/*Fake*/))
             .OrderBy(r => r.GameTime)
             .AsNoTracking()
@@ -84,14 +85,31 @@ public class FireMmrService
             .ToListAsync();
 
         int count = 0;
-        //for (count = 0; count < replayDsrDtos.Count; count++) {
-        //    if (!replayDsrDtos[count].IsMmrCalculated) {
-        //        break;
-        //    }
-        //}
-
         for (count = 0; count < replayDsrDtos.Count; count++) {
             var replay = replayDsrDtos[count];
+
+            if (replay.ReplayPlayers.Any(a => (int)a.Race <= 3)) {
+                logger.LogWarning($"skipping wrong cmdr commanders");
+                continue;
+            }
+
+            bool isMmrCalculated = replay.ReplayPlayers.Any(p => p.MmrChange.HasValue);
+            if (!isMmrCalculated) {
+                break;
+            }
+        }
+
+        for (; count < replayDsrDtos.Count; count++) {
+            var replay = replayDsrDtos[count];
+
+            if (count == 507) {
+            }
+
+            if (replay.ReplayPlayers.Any(a => (int)a.Race <= 3)) {
+                logger.LogWarning($"skipping wrong cmdr commanders");
+                continue;
+            }
+
             var winnerTeam = replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam);
             var loserTeam = replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam);
             IEnumerable<ReplayPlayerDsRDto> leaverTeam = Enumerable.Empty<ReplayPlayerDsRDto>();
@@ -154,7 +172,9 @@ public class FireMmrService
             .Include(r => r.ReplayPlayers)
                 .ThenInclude(rp => rp.Player)
             .Where(r => r.Duration >= 300)
-            .Where(r => r.Playercount == 6 && r.GameMode == GameMode.Standard
+            .Where(r =>
+                (r.Playercount == 6)
+                && (r.GameMode == GameMode.Standard)
                 /*Fake*/&& (r.WinnerTeam != 0/*Fake*/))
             .OrderBy(r => r.GameTime)
             .AsNoTracking()
@@ -162,13 +182,14 @@ public class FireMmrService
             .ToListAsync();
 
         int count = 0;
-        //for (count = 0; count < replayDsrDtos.Count; count++) {
-        //    if (!replayDsrDtos[count].IsMmrCalculated) {
-        //        break;
-        //    }
-        //}
-
         for (count = 0; count < replayDsrDtos.Count; count++) {
+            bool isMmrCalculated = replayDsrDtos[count].ReplayPlayers.Any(p => p.MmrChange.HasValue);
+            if (!isMmrCalculated) {
+                break;
+            }
+        }
+
+        for (; count < replayDsrDtos.Count; count++) {
             var replay = replayDsrDtos[count];
             var winnerTeam = replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam);
             var loserTeam = replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam);
@@ -235,32 +256,32 @@ public class FireMmrService
             playerRatings = playerRatingsStd;
         }
 
-        for (int i = 0; i < playerRatings.Count; i++)
-        {
-            var playerRating = playerRatings.ElementAt(i);
-            var player = await context.Players.FirstAsync(x => x.PlayerId == playerRating.Key);
-
-            if (gameMode == GameMode.Commanders)
-            {
-                player.Mmr = playerRating.Value.Last().Mmr;
-                player.MmrOverTime = GetOverTimeRating(playerRating.Value);
+        var players = await context.Players.ToListAsync();
+        foreach (var player in players) {
+            if (!playerRatings.ContainsKey(player.PlayerId)) {
+                continue;
             }
-            else if (gameMode == GameMode.Standard)
-            {
-                player.MmrStd = playerRating.Value.Last().Mmr;
-                player.MmrStdOverTime = GetOverTimeRating(playerRating.Value);
+
+            var playerRating = playerRatings[player.PlayerId];
+
+            if (gameMode == GameMode.Commanders) {
+                player.Mmr = playerRating.Last().Mmr;
+                player.MmrOverTime = GetOverTimeRating(playerRating);
+            } else if (gameMode == GameMode.Standard) {
+                player.MmrStd = playerRating.Last().Mmr;
+                player.MmrStdOverTime = GetOverTimeRating(playerRating);
             }
         }
 
         //# replayPlayerMmrChanges
-        for (int r = 0; r < replayPlayerMmrChanges.Count; r++) {
-            var replayPlayerMmrChange = replayPlayerMmrChanges.ElementAt(r);
-            var replayPlayer = await context.ReplayPlayers.FirstAsync(x => x.ReplayPlayerId == replayPlayerMmrChange.Key);
+        var replayPlayers = await context.ReplayPlayers.ToListAsync();
+        foreach (var replayPlayer in replayPlayers) {
+            if (!replayPlayerMmrChanges.ContainsKey(replayPlayer.ReplayPlayerId)) {
+                continue;
+            }
 
-            replayPlayer.MmrChange = replayPlayerMmrChange.Value;
-
-            var replay = await context.Replays.FirstAsync(x => x.ReplayId == replayPlayer.ReplayId);
-            //replay.IsMmrCalculated = true;
+            var replayPlayerMmrChange = replayPlayerMmrChanges[replayPlayer.ReplayPlayerId];
+            replayPlayer.MmrChange = replayPlayerMmrChange;
         }
 
         //# commanderRatings
@@ -276,6 +297,32 @@ public class FireMmrService
         }
 
         await context.SaveChangesAsync();
+    }
+
+    private async Task ClearRatings(bool recalculate)
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        // todo: db-lock (no imports possible during this)
+
+        if (recalculate) {
+            await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.ReplayPlayers)} SET {nameof(ReplayPlayer.MmrChange)} = NULL");
+
+            await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.Mmr)} = {startMmr}");
+            await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.MmrStd)} = {startMmr}");
+            await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.MmrOverTime)} = NULL");
+            await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.MmrStdOverTime)} = NULL");
+
+            await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.CommanderMmrs)} SET {nameof(CommanderMmr.SynergyMmr)} = {startMmr}");
+            await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.CommanderMmrs)} SET {nameof(CommanderMmr.AntiSynergyMmr)} = {startMmr}");
+        }
+
+        playerRatingsCmdr.Clear();
+        playerRatingsStd.Clear();
+        replayPlayerMmrChanges.Clear();
+        commanderRatings = await context.CommanderMmrs.AsNoTracking().ToArrayAsync();
+        maxMmr = startMmr;
     }
 
     private static string? GetOverTimeRating(List<DsRCheckpoint> dsRCheckpoints)
@@ -316,27 +363,6 @@ public class FireMmrService
         }
 
         return sb.ToString();
-    }
-
-    private async Task ClearRatings()
-    {
-        using var scope = serviceProvider.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-        // todo: db-lock (no imports possible during this)
-        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.Mmr)} = {startMmr}");
-        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.MmrStd)} = {startMmr}");
-        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.MmrOverTime)} = NULL");
-        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.MmrStdOverTime)} = NULL");
-
-        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.CommanderMmrs)} SET {nameof(CommanderMmr.SynergyMmr)} = {startMmr}");
-        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.CommanderMmrs)} SET {nameof(CommanderMmr.AntiSynergyMmr)} = {startMmr}");
-
-        playerRatingsCmdr.Clear();
-        playerRatingsStd.Clear();
-        replayPlayerMmrChanges.Clear();
-        commanderRatings = await context.CommanderMmrs.AsNoTracking().ToArrayAsync();
-        maxMmr = startMmr;
     }
 
     private static void FixMMR_Equality(double[] team1_mmrDelta, double[] team2_mmrDelta)
@@ -520,7 +546,7 @@ public class FireMmrService
                 var synergy = commanderRatings
                     .First(x => x.Race == playerCmdr && x.OppRace == synergyPlayerCmdr);
 
-                synergySum += ((1 / 2) * synergy.SynergyMmr);
+                synergySum += ((1 / 2.0) * synergy.SynergyMmr);
             }
 
             for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamPlayers.Count(); antiSynergyPlayerIndex++) {
