@@ -89,29 +89,10 @@ public partial class MmrService
         }
     }
 
-    private static void FixMmrEquality(TeamData teamData, TeamData oppTeamData)
-    {
-        double absSumTeamMmrDelta = teamData.PlayersMmrDelta.Sum();
-        double absSumOppTeamMmrDelta = oppTeamData.PlayersMmrDelta.Sum();
-        double absSumMmrAllDelta = absSumTeamMmrDelta + absSumOppTeamMmrDelta;
-
-        if (teamData.Players.Length != oppTeamData.Players.Length) {
-            throw new Exception("Not same player amount.");
-        }
-
-        for (int i = 0; i < teamData.Players.Length; i++) {
-            teamData.PlayersMmrDelta[i] = teamData.PlayersMmrDelta[i] *
-                ((absSumMmrAllDelta) / (absSumTeamMmrDelta * 2));
-
-            oppTeamData.PlayersMmrDelta[i] = oppTeamData.PlayersMmrDelta[i] *
-                ((absSumMmrAllDelta) / (absSumOppTeamMmrDelta * 2));
-        }
-    }
-
     private void SetMmrs(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData, DateTime gameTime)
     {
         teamData.CmdrComboMmr = GetCommandersComboMmr(teamData.Players);
-        teamData.PlayersMmr = GetCmdrTeamMmr(playerRatingsCmdr, teamData.Players, gameTime);
+        teamData.PlayersMmr = GetTeamMmr(playerRatingsCmdr, teamData.Players, gameTime);
     }
 
     private void SetExpectationsToWin(TeamData winnerTeamData, TeamData loserTeamData)
@@ -235,25 +216,6 @@ public partial class MmrService
         }
 
         return commandersComboMMRSum / 3;
-    }
-
-    private double GetCmdrTeamMmr(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, ReplayPlayerDsRDto[] replayPlayers, DateTime gameTime)
-    {
-        double teamMmr = 0;
-
-        foreach (var replayPlayer in replayPlayers)
-        {
-            if (!playerRatingsCmdr.ContainsKey(replayPlayer.Player.PlayerId))
-            {
-                playerRatingsCmdr[replayPlayer.Player.PlayerId] = new List<DsRCheckpoint>() { new() { Mmr = startMmr, Time = gameTime } };
-                teamMmr += startMmr;
-            }
-            else
-            {
-                teamMmr += playerRatingsCmdr[replayPlayer.Player.PlayerId].Last().Mmr;
-            }
-        }
-        return teamMmr / 3.0;
     }
 
     private async Task<List<ReplayDsRDto>> GetCmdrReplayDsRDtos(DateTime startTime)
