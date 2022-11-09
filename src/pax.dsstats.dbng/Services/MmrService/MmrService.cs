@@ -28,9 +28,8 @@ public partial class MmrService
         EventHandler<MmrRecalculatedEvent>? handler = Recalculated;
         handler?.Invoke(this, e);
     }
-
-    private static readonly double eloK = 128; // default 32
-    private static readonly double eloK_mult = 12.5;
+    private static readonly double eloK = 64 * 3; // default 32
+    private static readonly double eloK_mult = 12.5 / 3;
     private static readonly double clip = eloK * eloK_mult;
     public static readonly double startMmr = 1000.0;
     private static readonly double consistencyImpact = 0.50;
@@ -194,34 +193,14 @@ public partial class MmrService
         return 1.0 / (1.0 + Math.Pow(10.0, (2.0 / clip) * (ratingTwo - ratingOne)));
     }
 
-    private static void FixMmr_Equality(double[] team1_mmrDelta, double[] team2_mmrDelta)
-    {
-        double abs_sumTeam1_mmrDelta = Math.Abs(team1_mmrDelta.Sum());
-        double abs_sumTeam2_mmrDelta = Math.Abs(team2_mmrDelta.Sum());
-
-        for (int i = 0; i < team1_mmrDelta.Length; i++)
-        {
-            team1_mmrDelta[i] = team1_mmrDelta[i] *
-                ((abs_sumTeam1_mmrDelta + abs_sumTeam2_mmrDelta) / (abs_sumTeam1_mmrDelta * 2));
-            team2_mmrDelta[i] = team2_mmrDelta[i] *
-                ((abs_sumTeam2_mmrDelta + abs_sumTeam1_mmrDelta) / (abs_sumTeam2_mmrDelta * 2));
-
-            if (abs_sumTeam1_mmrDelta == 0 || abs_sumTeam2_mmrDelta == 0)
-            {
-                team1_mmrDelta[i] = 0;
-                team2_mmrDelta[i] = 0;
-            }
-        }
-    }
-
     private static double PlayerToTeamMates(double teamMmr, double playerMmr)
     {
         if (teamMmr < 1)
         {
-            return (1.0 / 3);
+            return 1.0;
         }
 
-        return (playerMmr / teamMmr) / 3.0;
+        return (playerMmr / teamMmr);
     }
 
     private static double CalculateMmrDelta(double elo, double playerImpact, double mcv)
@@ -233,6 +212,40 @@ public partial class MmrService
     {
         return 1 + consistencyImpact * (raw_revConsistency - 1);
         //return ((1 - consistencyImpact) + (consistencyImpact * raw_revConsistency)); //Equal to above
+    }
+    
+    private static double GetTeamMmr(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, ReplayPlayerDsRDto[] replayPlayers, DateTime gameTime)
+    {
+        double teamMmr = 0;
+
+        foreach (var replayPlayer in replayPlayers) {
+            if (!playerRatingsCmdr.ContainsKey(replayPlayer.Player.PlayerId)) {
+                playerRatingsCmdr[replayPlayer.Player.PlayerId] = new List<DsRCheckpoint>() { new() { Mmr = startMmr, Time = gameTime } };
+                teamMmr += startMmr;
+            } else {
+                teamMmr += playerRatingsCmdr[replayPlayer.Player.PlayerId].Last().Mmr;
+            }
+        }
+        return teamMmr / 3.0;
+    }
+
+    private static void FixMmrEquality(TeamData teamData, TeamData oppTeamData)
+    {
+        double absSumTeamMmrDelta = teamData.PlayersMmrDelta.Sum();
+        double absSumOppTeamMmrDelta = oppTeamData.PlayersMmrDelta.Sum();
+        double absSumMmrAllDelta = absSumTeamMmrDelta + absSumOppTeamMmrDelta;
+
+        if (teamData.Players.Length != oppTeamData.Players.Length) {
+            throw new Exception("Not same player amount.");
+        }
+
+        for (int i = 0; i < teamData.Players.Length; i++) {
+            teamData.PlayersMmrDelta[i] = teamData.PlayersMmrDelta[i] *
+                ((absSumMmrAllDelta) / (absSumTeamMmrDelta * 2));
+
+            oppTeamData.PlayersMmrDelta[i] = oppTeamData.PlayersMmrDelta[i] *
+                ((absSumMmrAllDelta) / (absSumOppTeamMmrDelta * 2));
+        }
     }
 }
 
