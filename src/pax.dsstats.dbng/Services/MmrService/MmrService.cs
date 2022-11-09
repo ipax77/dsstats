@@ -194,26 +194,6 @@ public partial class MmrService
         return 1.0 / (1.0 + Math.Pow(10.0, (2.0 / clip) * (ratingTwo - ratingOne)));
     }
 
-    private static void FixMmr_Equality(double[] team1_mmrDelta, double[] team2_mmrDelta)
-    {
-        double abs_sumTeam1_mmrDelta = Math.Abs(team1_mmrDelta.Sum());
-        double abs_sumTeam2_mmrDelta = Math.Abs(team2_mmrDelta.Sum());
-
-        for (int i = 0; i < team1_mmrDelta.Length; i++)
-        {
-            team1_mmrDelta[i] = team1_mmrDelta[i] *
-                ((abs_sumTeam1_mmrDelta + abs_sumTeam2_mmrDelta) / (abs_sumTeam1_mmrDelta * 2));
-            team2_mmrDelta[i] = team2_mmrDelta[i] *
-                ((abs_sumTeam2_mmrDelta + abs_sumTeam1_mmrDelta) / (abs_sumTeam2_mmrDelta * 2));
-
-            if (abs_sumTeam1_mmrDelta == 0 || abs_sumTeam2_mmrDelta == 0)
-            {
-                team1_mmrDelta[i] = 0;
-                team2_mmrDelta[i] = 0;
-            }
-        }
-    }
-
     private static double PlayerToTeamMates(double teamMmr, double playerMmr)
     {
         if (teamMmr < 1)
