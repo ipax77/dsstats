@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
@@ -19,6 +20,13 @@ public partial class MmrService
         this.serviceProvider = serviceProvider;
         this.mapper = mapper;
         this.logger = logger;
+    }
+
+    public event EventHandler<MmrRecalculatedEvent>? Recalculated;
+    protected virtual void OnRecalculated(MmrRecalculatedEvent e)
+    {
+        EventHandler<MmrRecalculatedEvent>? handler = Recalculated;
+        handler?.Invoke(this, e);
     }
 
     private static readonly double eloK = 128; // default 32
@@ -39,6 +47,7 @@ public partial class MmrService
 
     public async Task ReCalculate(DateTime startTime)
     {
+        Stopwatch sw = Stopwatch.StartNew();
         await ClearRatingsInDb();
 
         await ResetGlobals();
@@ -48,8 +57,14 @@ public partial class MmrService
         //await CalculateStd(startTime);
 
         await SavePlayersData(playerRatingsCmdr);
-        await SaveReplayPlayersData(replayPlayerMmrChanges);
         await SaveCommanderData();
+        await SaveReplayPlayersData(replayPlayerMmrChanges);
+
+        // var playerRatingsStd = await CalculateStd(startTime);
+        // await SavePlayersData(playerRatingsStd);
+
+        sw.Stop();
+        OnRecalculated(new() { Duration = sw.Elapsed });
     }
 
     private async Task ResetGlobals()
@@ -90,8 +105,10 @@ public partial class MmrService
         foreach (var ent in playerRatingsCmdr)
         {
             var lastRating = ent.Value.Last();
+            var mmr = lastRating.Mmr == double.NaN ? "0" : lastRating.Mmr.ToString(CultureInfo.InvariantCulture);
+
             sb.Append($"UPDATE {nameof(ReplayContext.Players)}" +
-                $" SET {nameof(Player.Mmr)} = {lastRating.Mmr.ToString(CultureInfo.InvariantCulture)}, {nameof(Player.MmrOverTime)} = '{GetOverTimeRating(ent.Value)}'" +
+                $" SET {nameof(Player.Mmr)} = {mmr}, {nameof(Player.MmrOverTime)} = '{GetOverTimeRating(ent.Value)}'" +
                 $" WHERE {nameof(Player.PlayerId)} = {ent.Key}; ");
         }
 
@@ -224,4 +241,9 @@ internal record CmdrMmmrKey
 {
     public Commander Race { get; init; }
     public Commander Opprace { get; init; }
+}
+
+public class MmrRecalculatedEvent : EventArgs
+{
+    public TimeSpan Duration { get; set; }
 }
