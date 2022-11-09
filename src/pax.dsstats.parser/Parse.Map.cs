@@ -152,7 +152,8 @@ public static partial class Parse
                     UpgradeSpent = lastSpawn.UpgradesSpent,
                     Units = GetUnits(lastSpawn.Units, commander)
                 });
-            } else if (dtos.Any())
+            }
+            else if (dtos.Any())
             {
                 var lastSpawnDto = dtos.Last();
                 dtos.Remove(lastSpawnDto);
@@ -166,7 +167,7 @@ public static partial class Parse
     {
         return gameloop switch
         {
-            _ when gameloop >= 6240 && gameloop <= 7209  => Breakpoint.Min5,
+            _ when gameloop >= 6240 && gameloop <= 7209 => Breakpoint.Min5,
             _ when gameloop >= 12960 && gameloop <= 13928 => Breakpoint.Min10,
             _ when gameloop >= 19680 && gameloop <= 20649 => Breakpoint.Min15,
             _ => Breakpoint.None

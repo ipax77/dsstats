@@ -11,13 +11,13 @@ using pax.dsstats.dbng;
 namespace SqliteMigrations.Migrations
 {
     [DbContext(typeof(ReplayContext))]
-    [Migration("20221028025913_CountIndexes")]
-    partial class CountIndexes
+    [Migration("20221109104252_Init")]
+    partial class Init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "6.0.10");
+            modelBuilder.HasAnnotation("ProductVersion", "6.0.11");
 
             modelBuilder.Entity("pax.dsstats.dbng.BattleNetInfo", b =>
                 {
@@ -28,7 +28,7 @@ namespace SqliteMigrations.Migrations
                     b.Property<int>("BattleNetId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("UploaderId")
+                    b.Property<int>("UploaderId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("BattleNetInfoId");
@@ -44,21 +44,21 @@ namespace SqliteMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<double>("AntiSynergy")
+                    b.Property<double>("AntiSynergyMmr")
                         .HasColumnType("REAL");
 
-                    b.Property<int>("Commander")
+                    b.Property<int>("OppRace")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("SynCommander")
+                    b.Property<int>("Race")
                         .HasColumnType("INTEGER");
 
-                    b.Property<double>("Synergy")
+                    b.Property<double>("SynergyMmr")
                         .HasColumnType("REAL");
 
                     b.HasKey("CommanderMmrId");
 
-                    b.HasIndex("Commander", "SynCommander");
+                    b.HasIndex("Race", "OppRace");
 
                     b.ToTable("CommanderMmrs");
                 });
@@ -107,6 +107,21 @@ namespace SqliteMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("GamesCmdr")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("GamesStd")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("LeaverCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MainCommander")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MainCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<double>("Mmr")
                         .HasColumnType("REAL");
 
@@ -121,18 +136,39 @@ namespace SqliteMigrations.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("MvpCmdr")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MvpStd")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("NotUploadCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("RegionId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TeamGamesCmdr")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TeamGamesStd")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("ToonId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("UploaderId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WinsCmdr")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WinsStd")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("PlayerId");
@@ -218,7 +254,7 @@ namespace SqliteMigrations.Migrations
 
                     b.Property<string>("Middle")
                         .IsRequired()
-                        .HasMaxLength(2000)
+                        .HasMaxLength(4000)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Minarmy")
@@ -233,6 +269,9 @@ namespace SqliteMigrations.Migrations
                     b.Property<int>("Objective")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("PlayerResult")
+                        .HasColumnType("INTEGER");
+
                     b.Property<byte>("Playercount")
                         .HasColumnType("INTEGER");
 
@@ -245,6 +284,9 @@ namespace SqliteMigrations.Migrations
                         .HasColumnType("TEXT")
                         .IsFixedLength();
 
+                    b.Property<bool>("TournamentEdition")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Views")
                         .HasColumnType("INTEGER");
 
@@ -254,6 +296,8 @@ namespace SqliteMigrations.Migrations
                     b.HasKey("ReplayId");
 
                     b.HasIndex("FileName");
+
+                    b.HasIndex("Maxkillsum");
 
                     b.HasIndex("ReplayEventId");
 
@@ -347,6 +391,9 @@ namespace SqliteMigrations.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("DidNotUpload")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Downloads")
                         .HasColumnType("INTEGER");
 
@@ -359,11 +406,22 @@ namespace SqliteMigrations.Migrations
                     b.Property<int>("Income")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsLeaver")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsUploader")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Kills")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("LastSpawnHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT")
+                        .IsFixedLength();
+
+                    b.Property<float?>("MmrChange")
+                        .HasColumnType("REAL");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -409,6 +467,11 @@ namespace SqliteMigrations.Migrations
 
                     b.HasKey("ReplayPlayerId");
 
+                    b.HasIndex("Kills");
+
+                    b.HasIndex("LastSpawnHash")
+                        .IsUnique();
+
                     b.HasIndex("PlayerId");
 
                     b.HasIndex("Race");
@@ -416,6 +479,8 @@ namespace SqliteMigrations.Migrations
                     b.HasIndex("ReplayId");
 
                     b.HasIndex("UpgradeId");
+
+                    b.HasIndex("IsUploader", "Team");
 
                     b.HasIndex("Race", "OppRace");
 
@@ -461,6 +526,9 @@ namespace SqliteMigrations.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("ArmyValue")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Breakpoint")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Gameloop")
@@ -523,21 +591,12 @@ namespace SqliteMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("Commander")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Cost")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.HasKey("UnitId");
-
-                    b.HasIndex("Name", "Commander")
-                        .IsUnique();
 
                     b.ToTable("Units");
                 });
@@ -577,9 +636,15 @@ namespace SqliteMigrations.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Games")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Identifier")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("LatestReplay")
                         .HasPrecision(0)
@@ -588,6 +653,31 @@ namespace SqliteMigrations.Migrations
                     b.Property<DateTime>("LatestUpload")
                         .HasPrecision(0)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("MainCommander")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MainCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Mvp")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TeamGames")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UploadDisabledCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("UploadIsDisabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UploadLastDisabled")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Wins")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("UploaderId");
 
@@ -614,9 +704,13 @@ namespace SqliteMigrations.Migrations
 
             modelBuilder.Entity("pax.dsstats.dbng.BattleNetInfo", b =>
                 {
-                    b.HasOne("pax.dsstats.dbng.Uploader", null)
+                    b.HasOne("pax.dsstats.dbng.Uploader", "Uploader")
                         .WithMany("BattleNetInfos")
-                        .HasForeignKey("UploaderId");
+                        .HasForeignKey("UploaderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Uploader");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Player", b =>

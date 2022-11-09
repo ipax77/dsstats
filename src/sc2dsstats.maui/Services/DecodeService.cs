@@ -193,7 +193,7 @@ public class DecodeService : IDisposable
             {
                 using var scope = serviceScopeFactory.CreateScope();
                 var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-                
+
                 var dbPaths = await replayRepository.GetReplayPaths();
                 var failedReplays = replays.Except(dbPaths).ToList();
                 for (int i = 0; i < failedReplays.Count; i++)
@@ -373,7 +373,7 @@ public class DecodeService : IDisposable
             {
                 Upgrades = (await context.Upgrades.AsNoTracking().ToListAsync()).ToHashSet();
             }
-            
+
             SetIsUploader(replayDto);
 
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();

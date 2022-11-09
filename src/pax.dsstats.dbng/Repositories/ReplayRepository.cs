@@ -28,7 +28,7 @@ public class ReplayRepository : IReplayRepository
                     .ThenInclude(t => t.Units)
                         .ThenInclude(t => t.Unit)
             .Include(i => i.ReplayPlayers)
-             //  .ThenInclude(t => t.Player)
+            //  .ThenInclude(t => t.Player)
             .AsNoTracking()
             .AsSplitQuery()
             .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)

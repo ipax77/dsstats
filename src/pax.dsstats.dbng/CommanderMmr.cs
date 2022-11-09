@@ -11,6 +11,6 @@ public class CommanderMmr
 
     public double SynergyMmr { get; set; }
     public double AntiSynergyMmr { get; set; }
-    
+
     //public double AntiSynergyElo { get; set; }//=> FireMmrService.ELO(this.AntiSynergyMmr_1, this.AntiSynergyMmr_2);
 }

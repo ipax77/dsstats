@@ -1,7 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
-
-namespace pax.dsstats.shared;
+﻿namespace pax.dsstats.shared;
 
 public record PlayerDto
 {

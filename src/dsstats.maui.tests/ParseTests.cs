@@ -1,11 +1,6 @@
-using s2protocol.NET;
 using pax.dsstats.parser;
-using System;
-using System.IO;
-using System.Linq;
+using s2protocol.NET;
 using System.Reflection;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace dsstats.maui.tests;
 
@@ -41,7 +36,7 @@ public class ParseTests
             decoder.Dispose();
             return;
         }
-        
+
         var dsReplay = Parse.GetDsReplay(replay);
 
         Assert.NotNull(dsReplay);
@@ -52,10 +47,10 @@ public class ParseTests
         }
 
         var replayDto = Parse.GetReplayDto(dsReplay);
-        
+
         var replayPlayerMaxDuration = replayDto.ReplayPlayers.Select(s => s.Duration).Max();
         var uploader = replayDto.ReplayPlayers.FirstOrDefault(f => f.Duration == replayPlayerMaxDuration);
-        
+
         Assert.NotNull(uploader);
         if (uploader == null)
         {

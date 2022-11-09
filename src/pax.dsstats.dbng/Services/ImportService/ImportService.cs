@@ -1,12 +1,12 @@
 
-using System.Diagnostics;
-using System.IO.Compression;
-using System.Text.Json;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
+using System.Diagnostics;
+using System.IO.Compression;
+using System.Text.Json;
 
 namespace pax.dsstats.dbng.Services;
 

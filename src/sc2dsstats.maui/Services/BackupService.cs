@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO.Compression;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO.Compression;
+
 
 namespace sc2dsstats.maui.Services;
 
@@ -12,7 +8,7 @@ public static class BackupService
     public static string Backup()
     {
         var appDir = FileSystem.Current.AppDataDirectory;
-        var dbFile = Path.Combine(appDir, "dsstats2.db");
+        var dbFile = Path.Combine(appDir, MauiProgram.DbName);
         var configFile = Path.Combine(appDir, "config.json");
 
         var tempDir = Path.Combine(Path.GetTempPath(), "dsstatsbak");
@@ -21,7 +17,7 @@ public static class BackupService
             Directory.CreateDirectory(tempDir);
         }
 
-        var backDbFile = Path.Combine(tempDir, "dsstats2.db");
+        var backDbFile = Path.Combine(tempDir, MauiProgram.DbName);
         var backConfigFile = Path.Combine(tempDir, "config.json");
         File.Copy(dbFile, backDbFile, true);
         File.Copy(configFile, backConfigFile, true);
@@ -55,7 +51,7 @@ public static class BackupService
             return false;
         }
         var appDir = FileSystem.Current.AppDataDirectory;
-        var dbFile = Path.Combine(appDir, "dsstats2.db");
+        var dbFile = Path.Combine(appDir, MauiProgram.DbName);
         var configFile = Path.Combine(appDir, "config.json");
 
         if (File.Exists(dbFile))

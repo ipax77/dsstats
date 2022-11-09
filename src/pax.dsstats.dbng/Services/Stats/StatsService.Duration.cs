@@ -28,18 +28,18 @@ public partial class StatsService
                 rp.PlayerResult,
             };
 
-        var group = list.GroupBy(g => new 
-            { 
-                Min8 = g.Duration > 300 && g.Duration <= 480,
-                Min11 = g.Duration > 480 && g.Duration <= 660,
-                Min14 = g.Duration > 660 && g.Duration <= 840,
-                Min17 = g.Duration > 840 && g.Duration <= 1020,
-                Min21 = g.Duration > 1020 && g.Duration <= 1260,
-                Min24 = g.Duration > 1260 && g.Duration <= 1440,
-                Min27 = g.Duration > 1440 && g.Duration <= 1620,
-                Min30 = g.Duration > 1620 && g.Duration <= 1800,
-                Min33 = g.Duration > 1800,
-            })
+        var group = list.GroupBy(g => new
+        {
+            Min8 = g.Duration > 300 && g.Duration <= 480,
+            Min11 = g.Duration > 480 && g.Duration <= 660,
+            Min14 = g.Duration > 660 && g.Duration <= 840,
+            Min17 = g.Duration > 840 && g.Duration <= 1020,
+            Min21 = g.Duration > 1020 && g.Duration <= 1260,
+            Min24 = g.Duration > 1260 && g.Duration <= 1440,
+            Min27 = g.Duration > 1440 && g.Duration <= 1620,
+            Min30 = g.Duration > 1620 && g.Duration <= 1800,
+            Min33 = g.Duration > 1800,
+        })
             .Select(s => new
             {
                 Key = s.Key,

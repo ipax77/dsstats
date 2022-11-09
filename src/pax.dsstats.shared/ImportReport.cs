@@ -18,5 +18,5 @@ public record ImportReport
     public int NewUnits { get; set; }
     public int NewUpgrades { get; set; }
     public bool Success { get; set; }
-    public string? Error {get; set; }
+    public string? Error { get; set; }
 }

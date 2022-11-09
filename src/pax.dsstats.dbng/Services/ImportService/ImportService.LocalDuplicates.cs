@@ -35,7 +35,7 @@ public partial class ImportService
             .Where(x => !String.IsNullOrEmpty(x))
             .ToList();
 
-        var spawnDupReplays = replayLastSpawnHashes.Any() ? 
+        var spawnDupReplays = replayLastSpawnHashes.Any() ?
             replays.Where(x => x.ReplayPlayers.Any(a => a.LastSpawnHash != null
                 && replayLastSpawnHashes.Contains(a.LastSpawnHash))).ToList()
             : new List<Replay>();
@@ -48,7 +48,7 @@ public partial class ImportService
         return dupReplays.Where(x => x != replay).Distinct().ToList();
     }
 
-    private (List<Replay>, List<string>)  HandleLocalDuplicate(Replay replay, List<Replay> replays, List<Replay> dupReplays)
+    private (List<Replay>, List<string>) HandleLocalDuplicate(Replay replay, List<Replay> replays, List<Replay> dupReplays)
     {
         List<ReplayPlayer> replayPlayers = replay.ReplayPlayers.ToList();
         HashSet<Replay> delReplays = new();

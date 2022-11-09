@@ -12,6 +12,7 @@ namespace sc2dsstats.maui;
 
 public static class MauiProgram
 {
+    public static readonly string DbName = "dsstats3.db";
     public static MauiApp CreateMauiApp()
     {
         var builder = MauiApp.CreateBuilder();
@@ -30,7 +31,7 @@ public static class MauiProgram
 #endif
 
         builder.Services.AddDbContext<ReplayContext>(options => options
-            .UseSqlite($"Data Source={Path.Combine(FileSystem.Current.AppDataDirectory, "dsstats2.db")}", sqlOptions =>
+            .UseSqlite($"Data Source={Path.Combine(FileSystem.Current.AppDataDirectory, DbName)}", sqlOptions =>
             {
                 sqlOptions.MigrationsAssembly("SqliteMigrations");
                 sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);

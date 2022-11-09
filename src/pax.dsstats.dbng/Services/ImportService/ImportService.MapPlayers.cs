@@ -52,7 +52,7 @@ public partial class ImportService
                 var newPlayer = mapper.Map<Player>(player);
                 newPlayers.Add(newPlayer);
                 context.Players.Add(newPlayer);
-                
+
                 if (newPlayers.Count % 1000 == 0)
                 {
                     await context.SaveChangesAsync();

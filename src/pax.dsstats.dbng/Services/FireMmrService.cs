@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
 using System.Diagnostics;
 using System.Globalization;
-using System.Numerics;
 using System.Text;
 
 namespace pax.dsstats.dbng.Services;
@@ -80,32 +79,39 @@ public class FireMmrService
                 && (r.GameMode == GameMode.Commanders)
                 /*Fake*/&& (r.WinnerTeam != 0/*Fake*/))
             .OrderBy(r => r.GameTime)
+                .ThenBy(r => r.ReplayId)
             .AsNoTracking()
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
             .ToListAsync();
 
         int count = 0;
-        for (count = 0; count < replayDsrDtos.Count; count++) {
+        for (count = 0; count < replayDsrDtos.Count; count++)
+        {
             var replay = replayDsrDtos[count];
 
-            if (replay.ReplayPlayers.Any(a => (int)a.Race <= 3)) {
+            if (replay.ReplayPlayers.Any(a => (int)a.Race <= 3))
+            {
                 logger.LogWarning($"skipping wrong cmdr commanders");
                 continue;
             }
 
             bool isMmrCalculated = replay.ReplayPlayers.Any(p => p.MmrChange.HasValue);
-            if (!isMmrCalculated) {
+            if (!isMmrCalculated)
+            {
                 break;
             }
         }
 
-        for (; count < replayDsrDtos.Count; count++) {
+        for (; count < replayDsrDtos.Count; count++)
+        {
             var replay = replayDsrDtos[count];
 
-            if (count == 507) {
+            if (count == 507)
+            {
             }
 
-            if (replay.ReplayPlayers.Any(a => (int)a.Race <= 3)) {
+            if (replay.ReplayPlayers.Any(a => (int)a.Race <= 3))
+            {
                 logger.LogWarning($"skipping wrong cmdr commanders");
                 continue;
             }
@@ -114,7 +120,8 @@ public class FireMmrService
             var loserTeam = replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam);
             IEnumerable<ReplayPlayerDsRDto> leaverTeam = Enumerable.Empty<ReplayPlayerDsRDto>();
 
-            if (winnerTeam.Count() != 3 || loserTeam.Count() != 3) {
+            if (winnerTeam.Count() != 3 || loserTeam.Count() != 3)
+            {
                 logger.LogWarning($"skipping wrong teamcounts");
                 continue;
             }
@@ -182,14 +189,17 @@ public class FireMmrService
             .ToListAsync();
 
         int count = 0;
-        for (count = 0; count < replayDsrDtos.Count; count++) {
+        for (count = 0; count < replayDsrDtos.Count; count++)
+        {
             bool isMmrCalculated = replayDsrDtos[count].ReplayPlayers.Any(p => p.MmrChange.HasValue);
-            if (!isMmrCalculated) {
+            if (!isMmrCalculated)
+            {
                 break;
             }
         }
 
-        for (; count < replayDsrDtos.Count; count++) {
+        for (; count < replayDsrDtos.Count; count++)
+        {
             var replay = replayDsrDtos[count];
             var winnerTeam = replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam);
             var loserTeam = replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam);
@@ -257,17 +267,22 @@ public class FireMmrService
         }
 
         var players = await context.Players.ToListAsync();
-        foreach (var player in players) {
-            if (!playerRatings.ContainsKey(player.PlayerId)) {
+        foreach (var player in players)
+        {
+            if (!playerRatings.ContainsKey(player.PlayerId))
+            {
                 continue;
             }
 
             var playerRating = playerRatings[player.PlayerId];
 
-            if (gameMode == GameMode.Commanders) {
+            if (gameMode == GameMode.Commanders)
+            {
                 player.Mmr = playerRating.Last().Mmr;
                 player.MmrOverTime = GetOverTimeRating(playerRating);
-            } else if (gameMode == GameMode.Standard) {
+            }
+            else if (gameMode == GameMode.Standard)
+            {
                 player.MmrStd = playerRating.Last().Mmr;
                 player.MmrStdOverTime = GetOverTimeRating(playerRating);
             }
@@ -275,8 +290,10 @@ public class FireMmrService
 
         //# replayPlayerMmrChanges
         var replayPlayers = await context.ReplayPlayers.ToListAsync();
-        foreach (var replayPlayer in replayPlayers) {
-            if (!replayPlayerMmrChanges.ContainsKey(replayPlayer.ReplayPlayerId)) {
+        foreach (var replayPlayer in replayPlayers)
+        {
+            if (!replayPlayerMmrChanges.ContainsKey(replayPlayer.ReplayPlayerId))
+            {
                 continue;
             }
 
@@ -285,10 +302,12 @@ public class FireMmrService
         }
 
         //# commanderRatings
-        if (gameMode == GameMode.Commanders) {
+        if (gameMode == GameMode.Commanders)
+        {
             var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
 
-            foreach (var rating in commanderRatings) {
+            foreach (var rating in commanderRatings)
+            {
                 var commanderCombo = await context.CommanderMmrs.FirstAsync(f => f.CommanderMmrId == rating.CommanderMmrId);
 
                 commanderCombo.SynergyMmr = rating.SynergyMmr;
@@ -306,7 +325,8 @@ public class FireMmrService
 
         // todo: db-lock (no imports possible during this)
 
-        if (recalculate) {
+        if (recalculate)
+        {
             await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.ReplayPlayers)} SET {nameof(ReplayPlayer.MmrChange)} = NULL");
 
             await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.Mmr)} = {startMmr}");
@@ -531,14 +551,17 @@ public class FireMmrService
     {
         double commandersComboMMRSum = 0;
 
-        for (int playerIndex = 0; playerIndex < teamPlayers.Count(); playerIndex++) {
+        for (int playerIndex = 0; playerIndex < teamPlayers.Count(); playerIndex++)
+        {
             var playerCmdr = teamPlayers.ElementAt(playerIndex).Race;
 
             double synergySum = 0;
             double antiSynergySum = 0;
 
-            for (int synergyPlayerIndex = 0; synergyPlayerIndex < teamPlayers.Count(); synergyPlayerIndex++) {
-                if (playerIndex == synergyPlayerIndex) {
+            for (int synergyPlayerIndex = 0; synergyPlayerIndex < teamPlayers.Count(); synergyPlayerIndex++)
+            {
+                if (playerIndex == synergyPlayerIndex)
+                {
                     continue;
                 }
 
@@ -549,15 +572,19 @@ public class FireMmrService
                 synergySum += ((1 / 2.0) * synergy.SynergyMmr);
             }
 
-            for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamPlayers.Count(); antiSynergyPlayerIndex++) {
+            for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamPlayers.Count(); antiSynergyPlayerIndex++)
+            {
                 var antiSynergyPlayerCmdr = teamPlayers.ElementAt(antiSynergyPlayerIndex).OppRace;
 
                 var antiSynergy = commanderRatings
                     .First(x => x.Race == playerCmdr && x.OppRace == antiSynergyPlayerCmdr);
 
-                if (playerIndex == antiSynergyPlayerIndex) {
+                if (playerIndex == antiSynergyPlayerIndex)
+                {
                     antiSynergySum += (OwnMatchup_Percentage * antiSynergy.AntiSynergyMmr);
-                } else {
+                }
+                else
+                {
                     antiSynergySum += (MatesMatchups_Percentage * antiSynergy.AntiSynergyMmr);
                 }
             }
@@ -625,14 +652,17 @@ public class FireMmrService
     //    return commandersComboMMR.Sum() / 3;
     //}
 
-    
+
     private void SetCommandersComboMMR(double[] commandersMmrDelta, IEnumerable<ReplayPlayerDsRDto> teamPlayers)
     {
-        for (int playerIndex = 0; playerIndex < teamPlayers.Count(); playerIndex++) {
+        for (int playerIndex = 0; playerIndex < teamPlayers.Count(); playerIndex++)
+        {
             var playerCmdr = teamPlayers.ElementAt(playerIndex).Race;
 
-            for (int synergyPlayerIndex = 0; synergyPlayerIndex < teamPlayers.Count(); synergyPlayerIndex++) {
-                if (playerIndex == synergyPlayerIndex) {
+            for (int synergyPlayerIndex = 0; synergyPlayerIndex < teamPlayers.Count(); synergyPlayerIndex++)
+            {
+                if (playerIndex == synergyPlayerIndex)
+                {
                     continue;
                 }
 
@@ -643,7 +673,8 @@ public class FireMmrService
                 synergy.SynergyMmr += commandersMmrDelta[playerIndex] / 2;
             }
 
-            for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamPlayers.Count(); antiSynergyPlayerIndex++) {
+            for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamPlayers.Count(); antiSynergyPlayerIndex++)
+            {
                 var antiSynergyPlayerCmdr = teamPlayers.ElementAt(antiSynergyPlayerIndex).OppRace;
 
                 var antiSynergy = commanderRatings
@@ -709,13 +740,17 @@ public class FireMmrService
         var commanderMmrs = await context.CommanderMmrs.ToListAsync();
         var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
 
-        foreach (var race in allCommanders) {
-            foreach (var oppRace in allCommanders) {
-                if (commanderMmrs.Any(x => (x.Race == race) && (x.OppRace == oppRace))) {
+        foreach (var race in allCommanders)
+        {
+            foreach (var oppRace in allCommanders)
+            {
+                if (commanderMmrs.Any(x => (x.Race == race) && (x.OppRace == oppRace)))
+                {
                     continue;
                 }
 
-                context.CommanderMmrs.Add(new() {
+                context.CommanderMmrs.Add(new()
+                {
                     Race = race,
                     OppRace = oppRace,
 

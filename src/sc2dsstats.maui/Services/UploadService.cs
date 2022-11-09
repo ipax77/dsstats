@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
@@ -87,9 +86,25 @@ public class UploadService
                     .AsNoTracking()
                     .AsSplitQuery()
                 .OrderBy(o => o.GameTime)
-                .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
+                    .ThenBy(o => o.ReplayId)
                 .Where(x => x.GameTime > latestReplayDate)
+                .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
                 .ToListAsync();
+
+            if (!replays.Any())
+            {
+                OnUploadStateChanged(new() { UploadStatus = UploadStatus.Success });
+                return;
+            }
+
+            var myLatestReplayDate = replays.Last().GameTime.AddSeconds(10);
+            myLatestReplayDate = new DateTime(myLatestReplayDate.Year,
+                myLatestReplayDate.Month,
+                myLatestReplayDate.Day,
+                myLatestReplayDate.Hour,
+                myLatestReplayDate.Minute,
+                myLatestReplayDate.Second);
+
 
             replays.ForEach(f =>
                 {
@@ -101,7 +116,14 @@ public class UploadService
             var base64string = GetBase64String(replays);
             var httpClient = GetHttpClient();
 
-            var response = await httpClient.PostAsJsonAsync($"api/Upload/ImportReplays/{UserSettingsService.UserSettings.AppGuid}", base64string);
+            UploadDto uploadDto = new()
+            {
+                AppGuid = UserSettingsService.UserSettings.AppGuid,
+                LatestReplays = myLatestReplayDate,
+                Base64ReplayBlob = base64string
+            };
+
+            var response = await httpClient.PostAsJsonAsync($"api/Upload/ImportReplays", uploadDto);
             if (response.IsSuccessStatusCode)
             {
                 OnUploadStateChanged(new() { UploadStatus = UploadStatus.Success });

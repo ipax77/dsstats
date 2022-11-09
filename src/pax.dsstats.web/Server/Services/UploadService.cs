@@ -21,7 +21,7 @@ public partial class UploadService
         this.logger = logger;
     }
 
-    public async Task<bool> ImportReplays(string gzipbase64String, Guid appGuid, bool dry = false)
+    public async Task<bool> ImportReplays(string gzipbase64String, Guid appGuid, DateTime latestReplay, bool dry = false)
     {
         try
         {
@@ -46,7 +46,7 @@ public partial class UploadService
             }
 
             uploader.LatestUpload = DateTime.UtcNow;
-            uploader.LatestReplay = DateTime.UtcNow;
+            uploader.LatestReplay = latestReplay;
             await context.SaveChangesAsync();
         }
         catch (Exception ex)
@@ -56,7 +56,7 @@ public partial class UploadService
         }
 
         // _ = Produce(gzipbase64String, appGuid);
-        
+
         return true;
     }
 
@@ -129,31 +129,17 @@ public partial class UploadService
 
             await context.SaveChangesAsync();
         }
-        var latestReplay = await GetUploadersLatestReplay(context, dbUploader);
-        return latestReplay == DateTime.MinValue ? latestReplay : latestReplay.AddMinutes(1);
+        return await GetUploadersLatestReplay(context, dbUploader);
     }
 
     private async Task<DateTime> GetUploadersLatestReplay(ReplayContext context, Uploader uploader)
     {
-        if (uploader.LatestReplay == DateTime.MinValue)
-        {
-            return uploader.LatestReplay;
-        }
-
-        return await context.Uploaders
-            .Include(i => i.Replays)
-            .Where(x => x.UploaderId == uploader.UploaderId)
-            .SelectMany(s => s.Replays)
-            .OrderByDescending(o => o.GameTime)
-            .Select(s => s.GameTime)
-            .FirstOrDefaultAsync();
-
-        //return await context.Replays
-        //    .Include(i => i.ReplayPlayers)
-        //        .ThenInclude(i => i.Player)
-        //        .ThenInclude(i => i.Uploader)
+        return await Task.FromResult(uploader.LatestReplay);
+        //return await context.Uploaders
+        //    .Include(i => i.Replays)
+        //    .Where(x => x.UploaderId == uploader.UploaderId)
+        //    .SelectMany(s => s.Replays)
         //    .OrderByDescending(o => o.GameTime)
-        //    .Where(x => x.ReplayPlayers.Any(a => a.Player.Uploader != null && a.Player.Uploader.UploaderId == uploader.UploaderId))
         //    .Select(s => s.GameTime)
         //    .FirstOrDefaultAsync();
     }

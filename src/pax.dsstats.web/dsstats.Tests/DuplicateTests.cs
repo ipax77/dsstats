@@ -71,7 +71,7 @@ public class DuplicateTest : IDisposable
         var uploaderDto6 = GetUploaderDto(6);
 
         var context = CreateContext();
-        var countBefore = await context.Uploaders.CountAsync();       
+        var countBefore = await context.Uploaders.CountAsync();
 
         await uploadService.CreateOrUpdateUploader(uploaderDto1);
         await uploadService.CreateOrUpdateUploader(uploaderDto2);

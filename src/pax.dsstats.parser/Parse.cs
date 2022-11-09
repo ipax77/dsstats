@@ -158,7 +158,7 @@ public static partial class Parse
         {
             FileName = sc2Replay.FileName
         };
-        
+
         if (sc2Replay.Details.Title.EndsWith("TE"))
         {
             replay.TournamentEdition = true;

@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 using System.Text.RegularExpressions;
-using Windows.Media.Devices.Core;
 
 namespace sc2dsstats.maui.Services;
 
@@ -120,7 +119,7 @@ internal class UserSettingsService
         var sc2AccDirs = Directory.GetDirectories(sc2AccDir);
 
         List<BattleNetInfo> battleNetInfos = new();
-        
+
         foreach (var accDir in sc2AccDirs)
         {
             if (int.TryParse(accDir.Split(Path.DirectorySeparatorChar).Last(), out int battleNetId))

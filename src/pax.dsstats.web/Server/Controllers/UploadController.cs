@@ -34,10 +34,10 @@ public class UploadController : ControllerBase
 
     [HttpPost]
     [RequestSizeLimit(1024000000)]
-    [Route("ImportReplays/{appGuid}")]
-    public async Task<ActionResult> ImportReplays([FromBody] string base64string, Guid appGuid)
+    [Route("ImportReplays")]
+    public async Task<ActionResult> ImportReplays([FromBody] UploadDto uploadDto)
     {
-        var result = await uploadService.ImportReplays(base64string, appGuid);
+        var result = await uploadService.ImportReplays(uploadDto.Base64ReplayBlob, uploadDto.AppGuid, uploadDto.LatestReplays);
         if (result)
         {
             return Ok();

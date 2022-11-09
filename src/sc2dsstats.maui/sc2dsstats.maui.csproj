@@ -36,7 +36,7 @@
 
 		<AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
 
-		<PackageCertificateThumbprint>1A910ACDBF37CF1DD8D3D967D7D24847B3CB033C</PackageCertificateThumbprint>
+		<PackageCertificateThumbprint>4CCF5C69DA656900B956B8F9D8D6C415382DE326</PackageCertificateThumbprint>
 
 		<AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
 
@@ -51,7 +51,7 @@
 
 	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows' and '$(Configuration)' == 'Release'">
 		<AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
-		<PackageCertificateThumbprint>1A910ACDBF37CF1DD8D3D967D7D24847B3CB033C</PackageCertificateThumbprint>
+		<PackageCertificateThumbprint>4CCF5C69DA656900B956B8F9D8D6C415382DE326</PackageCertificateThumbprint>
 	</PropertyGroup>
 	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows' and '$(RuntimeIdentifierOverride)' != ''">
 		<RuntimeIdentifier>$(RuntimeIdentifierOverride)</RuntimeIdentifier>

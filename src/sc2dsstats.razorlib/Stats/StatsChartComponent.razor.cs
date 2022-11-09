@@ -207,7 +207,7 @@ public partial class StatsChartComponent : ComponentBase
             return $"{statsRequest.Interest}";
         }
     }
-    
+
     private IndexableOption<string> GetRequestTitle(StatsRequest statsRequest)
     {
         string title = $"{statsRequest.StatsMode} - {statsRequest.TimePeriod}";

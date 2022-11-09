@@ -76,8 +76,10 @@ public partial class MmrService
 
         //# playerRatings
         var players = await context.Players.ToListAsync();
-        foreach (var player in players) {
-            if (!playerRatingsCmdr.ContainsKey(player.PlayerId)) {
+        foreach (var player in players)
+        {
+            if (!playerRatingsCmdr.ContainsKey(player.PlayerId))
+            {
                 continue;
             }
 
@@ -89,8 +91,10 @@ public partial class MmrService
 
         //# replayPlayerMmrChanges
         var replayPlayers = await context.ReplayPlayers.ToListAsync();
-        foreach (var replayPlayer in replayPlayers) {
-            if (!replayPlayerMmrChanges.ContainsKey(replayPlayer.ReplayPlayerId)) {
+        foreach (var replayPlayer in replayPlayers)
+        {
+            if (!replayPlayerMmrChanges.ContainsKey(replayPlayer.ReplayPlayerId))
+            {
                 continue;
             }
 
@@ -100,7 +104,8 @@ public partial class MmrService
 
         //# commanderRatings
         var commanderMmrs = await context.CommanderMmrs.ToListAsync();
-        foreach (var commanderMmr in commanderMmrs) {
+        foreach (var commanderMmr in commanderMmrs)
+        {
             var commanderRating = commanderRatings.Find(f => f.CommanderMmrId == commanderMmr.CommanderMmrId)!;
 
             commanderMmr.SynergyMmr = commanderRating.SynergyMmr;
@@ -112,11 +117,14 @@ public partial class MmrService
 
     private void SetCommandersComboMmr(double[] commandersMmrDelta, IEnumerable<ReplayPlayerDsRDto> teamPlayers)
     {
-        for (int playerIndex = 0; playerIndex < teamPlayers.Count(); playerIndex++) {
+        for (int playerIndex = 0; playerIndex < teamPlayers.Count(); playerIndex++)
+        {
             var playerCmdr = teamPlayers.ElementAt(playerIndex).Race;
 
-            for (int synergyPlayerIndex = 0; synergyPlayerIndex < teamPlayers.Count(); synergyPlayerIndex++) {
-                if (playerIndex == synergyPlayerIndex) {
+            for (int synergyPlayerIndex = 0; synergyPlayerIndex < teamPlayers.Count(); synergyPlayerIndex++)
+            {
+                if (playerIndex == synergyPlayerIndex)
+                {
                     continue;
                 }
 
@@ -127,7 +135,8 @@ public partial class MmrService
                 synergy.SynergyMmr += commandersMmrDelta[playerIndex] / 2;
             }
 
-            for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamPlayers.Count(); antiSynergyPlayerIndex++) {
+            for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamPlayers.Count(); antiSynergyPlayerIndex++)
+            {
                 var antiSynergyPlayerCmdr = teamPlayers.ElementAt(antiSynergyPlayerIndex).OppRace;
 
                 var antiSynergy = commanderRatings
@@ -146,14 +155,17 @@ public partial class MmrService
     {
         double commandersComboMMRSum = 0;
 
-        for (int playerIndex = 0; playerIndex < teamPlayers.Count(); playerIndex++) {
+        for (int playerIndex = 0; playerIndex < teamPlayers.Count(); playerIndex++)
+        {
             var playerCmdr = teamPlayers.ElementAt(playerIndex).Race;
 
             double synergySum = 0;
             double antiSynergySum = 0;
 
-            for (int synergyPlayerIndex = 0; synergyPlayerIndex < teamPlayers.Count(); synergyPlayerIndex++) {
-                if (playerIndex == synergyPlayerIndex) {
+            for (int synergyPlayerIndex = 0; synergyPlayerIndex < teamPlayers.Count(); synergyPlayerIndex++)
+            {
+                if (playerIndex == synergyPlayerIndex)
+                {
                     continue;
                 }
 
@@ -164,15 +176,19 @@ public partial class MmrService
                 synergySum += ((1 / 2) * synergy.SynergyMmr);
             }
 
-            for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamPlayers.Count(); antiSynergyPlayerIndex++) {
+            for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamPlayers.Count(); antiSynergyPlayerIndex++)
+            {
                 var antiSynergyPlayerCmdr = teamPlayers.ElementAt(antiSynergyPlayerIndex).OppRace;
 
                 var antiSynergy = commanderRatings
                     .First(x => x.Race == playerCmdr && x.OppRace == antiSynergyPlayerCmdr);
 
-                if (playerIndex == antiSynergyPlayerIndex) {
+                if (playerIndex == antiSynergyPlayerIndex)
+                {
                     antiSynergySum += (OwnMatchupPercentage * antiSynergy.AntiSynergyMmr);
-                } else {
+                }
+                else
+                {
                     antiSynergySum += (MatesMatchupsPercentage * antiSynergy.AntiSynergyMmr);
                 }
             }
@@ -215,8 +231,8 @@ public partial class MmrService
             .Where(r => r.DefaultFilter
                 && (r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic)
                 && r.GameTime >= startTime)
-            .OrderBy(o => o.ReplayId)
-                .ThenBy(r => r.GameTime)
+            .OrderBy(o => o.GameTime)
+                .ThenBy(r => r.ReplayId)
             .AsNoTracking()
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
             .ToListAsync();
@@ -230,13 +246,17 @@ public partial class MmrService
         var commanderMmrs = await context.CommanderMmrs.ToListAsync();
         var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
 
-        foreach (var race in allCommanders) {
-            foreach (var oppRace in allCommanders) {
-                if (commanderMmrs.Any(x => (x.Race == race) && (x.OppRace == oppRace))) {
+        foreach (var race in allCommanders)
+        {
+            foreach (var oppRace in allCommanders)
+            {
+                if (commanderMmrs.Any(x => (x.Race == race) && (x.OppRace == oppRace)))
+                {
                     continue;
                 }
 
-                context.CommanderMmrs.Add(new() {
+                context.CommanderMmrs.Add(new()
+                {
                     Race = race,
                     OppRace = oppRace,
 

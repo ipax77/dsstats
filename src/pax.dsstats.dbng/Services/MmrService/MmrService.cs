@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using pax.dsstats.shared;
 using System.Globalization;
 using System.Text;
 
@@ -35,7 +34,7 @@ public partial class MmrService
     public async Task ReCalculate(DateTime startTime)
     {
         await ClearRatingsInDb();
-        
+
         await ResetGlobals();
 
         await CalculateCmdr(startTime);
@@ -76,20 +75,26 @@ public partial class MmrService
 
     private static string? GetOverTimeRating(List<DsRCheckpoint> dsRCheckpoints)
     {
-        if (dsRCheckpoints.Count == 0) {
+        if (dsRCheckpoints.Count == 0)
+        {
             return null;
-        } else if (dsRCheckpoints.Count == 1) {
+        }
+        else if (dsRCheckpoints.Count == 1)
+        {
             return $"{Math.Round(dsRCheckpoints[0].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{dsRCheckpoints[0].Time:MMyy}";
         }
 
         StringBuilder sb = new();
         sb.Append($"{Math.Round(dsRCheckpoints.First().Mmr, 1).ToString(CultureInfo.InvariantCulture)},{dsRCheckpoints.First().Time:MMyy}");
 
-        if (dsRCheckpoints.Count > 2) {
+        if (dsRCheckpoints.Count > 2)
+        {
             string timeStr = dsRCheckpoints[0].Time.ToString(@"MMyy");
-            for (int i = 1; i < dsRCheckpoints.Count - 1; i++) {
+            for (int i = 1; i < dsRCheckpoints.Count - 1; i++)
+            {
                 string currentTimeStr = dsRCheckpoints[i].Time.ToString(@"MMyy");
-                if (currentTimeStr != timeStr) {
+                if (currentTimeStr != timeStr)
+                {
                     sb.Append('|');
                     sb.Append($"{Math.Round(dsRCheckpoints[i].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{dsRCheckpoints[i].Time:MMyy}");
                 }
@@ -100,7 +105,8 @@ public partial class MmrService
         sb.Append('|');
         sb.Append($"{Math.Round(dsRCheckpoints.Last().Mmr, 1).ToString(CultureInfo.InvariantCulture)},{dsRCheckpoints.Last().Time:MMyy}");
 
-        if (sb.Length > 1999) {
+        if (sb.Length > 1999)
+        {
             throw new ArgumentOutOfRangeException(nameof(dsRCheckpoints));
         }
 
@@ -117,13 +123,15 @@ public partial class MmrService
         double abs_sumTeam1_mmrDelta = Math.Abs(team1_mmrDelta.Sum());
         double abs_sumTeam2_mmrDelta = Math.Abs(team2_mmrDelta.Sum());
 
-        for (int i = 0; i < team1_mmrDelta.Length; i++) {
+        for (int i = 0; i < team1_mmrDelta.Length; i++)
+        {
             team1_mmrDelta[i] = team1_mmrDelta[i] *
                 ((abs_sumTeam1_mmrDelta + abs_sumTeam2_mmrDelta) / (abs_sumTeam1_mmrDelta * 2));
             team2_mmrDelta[i] = team2_mmrDelta[i] *
                 ((abs_sumTeam2_mmrDelta + abs_sumTeam1_mmrDelta) / (abs_sumTeam2_mmrDelta * 2));
 
-            if (abs_sumTeam1_mmrDelta == 0 || abs_sumTeam2_mmrDelta == 0) {
+            if (abs_sumTeam1_mmrDelta == 0 || abs_sumTeam2_mmrDelta == 0)
+            {
                 team1_mmrDelta[i] = 0;
                 team2_mmrDelta[i] = 0;
             }
