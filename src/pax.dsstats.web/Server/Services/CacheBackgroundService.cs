@@ -21,8 +21,8 @@ public class CacheBackgroundService : IHostedService, IDisposable
 
     public Task StartAsync(CancellationToken stoppingToken)
     {
-        // _timer = new Timer(DoWork, null, new TimeSpan(0, 0, 4), new TimeSpan(1, 0, 0));
-        _timer = new Timer(DoWork, null, new TimeSpan(0, 0, 4), new TimeSpan(0, 1, 0));
+        _timer = new Timer(DoWork, null, new TimeSpan(0, 0, 4), new TimeSpan(1, 0, 0));
+        // _timer = new Timer(DoWork, null, new TimeSpan(0, 0, 4), new TimeSpan(0, 1, 0));
         return Task.CompletedTask;
     }
 

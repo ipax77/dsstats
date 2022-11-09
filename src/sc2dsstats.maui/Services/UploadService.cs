@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
@@ -36,8 +37,8 @@ public class UploadService
     private HttpClient GetHttpClient()
     {
         var httpClient = new HttpClient();
-        httpClient.BaseAddress = new Uri("https://localhost:7174");
-        // httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
+        // httpClient.BaseAddress = new Uri("https://localhost:7174");
+        httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("DSupload77");
         return httpClient;

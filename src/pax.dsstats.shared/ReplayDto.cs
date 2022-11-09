@@ -92,7 +92,6 @@ public record PlayerUpgradeDto
 public record UnitDto
 {
     public string Name { get; init; } = null!;
-    public Commander Commander { get; init; }
 }
 
 public record UpgradeDto

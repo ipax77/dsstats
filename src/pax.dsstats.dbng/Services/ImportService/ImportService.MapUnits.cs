@@ -26,7 +26,6 @@ public partial class ImportService
             .AsNoTracking()
             .ToListAsync();
 
-        // return untrackedDbUnits.ToDictionary(key => new UnitDicKey(key.Name, key.Commander), value => value.UnitId);
         return untrackedDbUnits.ToDictionary(key => key.Name, value => value.UnitId);
     }
 

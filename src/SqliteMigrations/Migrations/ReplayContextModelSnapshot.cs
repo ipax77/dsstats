@@ -589,21 +589,12 @@ namespace SqliteMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("Commander")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Cost")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
                     b.HasKey("UnitId");
-
-                    b.HasIndex("Name", "Commander")
-                        .IsUnique();
 
                     b.ToTable("Units");
                 });

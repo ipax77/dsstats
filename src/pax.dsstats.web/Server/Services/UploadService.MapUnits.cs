@@ -7,7 +7,7 @@ namespace pax.dsstats.web.Server.Services;
 public partial class UploadService
 {
     private SemaphoreSlim ssMapUnits = new(1, 1);
-    private Dictionary<UnitDicKey, int> unitsDic = new();
+    private Dictionary<string, int> unitsDic = new();
 
     public async Task MapUnits(ICollection<Replay> replays)
     {
@@ -42,10 +42,10 @@ public partial class UploadService
             .AsNoTracking()
             .ToListAsync();
 
-        unitsDic = untrackedDbUnits.ToDictionary(key => new UnitDicKey(key.Name, key.Commander), value => value.UnitId);
+        unitsDic = untrackedDbUnits.ToDictionary(key => key.Name, value => value.UnitId);
     }
 
-    private static void MapSpawnUnits(Dictionary<UnitDicKey, int> untrackedDbUnits, ICollection<Replay> replays)
+    private static void MapSpawnUnits(Dictionary<string, int> untrackedDbUnits, ICollection<Replay> replays)
     {
         foreach (var spawn in replays.SelectMany(s => s.ReplayPlayers).SelectMany(s => s.Spawns))
         {
@@ -54,16 +54,16 @@ public partial class UploadService
                 Count = s.Count,
                 Poss = s.Poss,
                 SpawnId = 0,
-                UnitId = untrackedDbUnits[new(s.Unit.Name, s.Unit.Commander)]
+                UnitId = untrackedDbUnits[s.Unit.Name]
             }).ToList();
         }
     }
 
-    private async Task CreateMissingUnits(ReplayContext context, Dictionary<UnitDicKey, int> untrackedDbUnits, ICollection<Replay> replays)
+    private async Task CreateMissingUnits(ReplayContext context, Dictionary<string, int> untrackedDbUnits, ICollection<Replay> replays)
     {
         foreach (var unit in replays.SelectMany(s => s.ReplayPlayers).SelectMany(s => s.Spawns).SelectMany(s => s.Units).Select(s => mapper.Map<UnitDto>(s.Unit)).Distinct())
         {
-            var dicKey = new UnitDicKey(unit.Name, unit.Commander);
+            var dicKey = unit.Name;
             if (!untrackedDbUnits.ContainsKey(dicKey))
             {
                 var dbUnit = await CreateUnit(context, unit);
@@ -81,13 +81,4 @@ public partial class UploadService
     }
 }
 
-internal record UnitDicKey
-{
-    public UnitDicKey(string name, Commander commander)
-    {
-        Name = name;
-        Commander = commander;
-    }
-    public string Name { get; init; } = null!;
-    public Commander Commander { get; init; }
-}
+

@@ -197,7 +197,7 @@ public static partial class Parse
 
         return unitBuilds.Select(s => new SpawnUnitDto()
         {
-            Unit = new() { Name = s.Name, Commander = commander },
+            Unit = new() { Name = s.Name },
             Count = s.Count > 255 ? byte.MaxValue : Convert.ToByte(s.Count),
             Poss = s.StringBuilder.ToString()
         }).ToList();

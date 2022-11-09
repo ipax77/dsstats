@@ -249,8 +249,6 @@ public class Unit
     public int UnitId { get; set; }
     [MaxLength(50)]
     public string Name { get; set; } = null!;
-    public int Cost { get; set; }
-    public Commander Commander { get; set; }
 }
 
 public class Upgrade

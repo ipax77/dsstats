@@ -83,7 +83,7 @@ public class ReplayContext : DbContext
 
         modelBuilder.Entity<Unit>(entity =>
         {
-            entity.HasIndex(e => new { e.Name, e.Commander }).IsUnique();
+            //entity.HasIndex(e => e.Name).IsUnique();
         });
 
         modelBuilder.Entity<Upgrade>(entity =>

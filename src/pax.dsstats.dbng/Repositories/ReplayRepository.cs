@@ -455,13 +455,12 @@ public class ReplayRepository : IReplayRepository
         List<SpawnUnit> spawnUnits = new();
         foreach (var spawnUnit in spawn.Units)
         {
-            var listUnit = units.FirstOrDefault(f => f.Name.Equals(spawnUnit.Unit.Name) && f.Commander.Equals(commander));
+            var listUnit = units.FirstOrDefault(f => f.Name.Equals(spawnUnit.Unit.Name));
             if (listUnit == null)
             {
                 listUnit = new()
                 {
-                    Name = spawnUnit.Unit.Name,
-                    Commander = commander,
+                    Name = spawnUnit.Unit.Name
                 };
                 context.Units.Add(listUnit);
                 await context.SaveChangesAsync();

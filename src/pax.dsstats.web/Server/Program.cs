@@ -73,6 +73,7 @@ var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
 mapper.ConfigurationProvider.AssertConfigurationIsValid();
 
 using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+// context.Database.EnsureDeleted();
 context.Database.Migrate();
 
 // SEED
