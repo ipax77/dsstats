@@ -35,13 +35,18 @@ public partial class MmrService
             return;
         }
 
+
         ReplayProcessData replayProcessData = new(replay);
+        if (replayProcessData.WinnerTeamData.Players.Length != 3 || replayProcessData.LoserTeamData.Players.Length != 3) {
+            logger.LogWarning($"skipping wrong teamcounts");
+            return;
+        }
 
         SetMmrs(playerRatingsCmdr, replayProcessData.WinnerTeamData, replayProcessData.ReplayGameTime);
         SetMmrs(playerRatingsCmdr, replayProcessData.LoserTeamData, replayProcessData.ReplayGameTime);
 
         SetExpectationsToWin(replayProcessData.WinnerTeamData, replayProcessData.LoserTeamData);
-        SetExpectationsToWin(replayProcessData.LoserTeamData, replayProcessData.WinnerTeamData);
+        //SetExpectationsToWin(replayProcessData.LoserTeamData, replayProcessData.WinnerTeamData);
 
         CalculateRatingsDeltas(playerRatingsCmdr, replayProcessData.WinnerTeamData);
         CalculateRatingsDeltas(playerRatingsCmdr, replayProcessData.LoserTeamData);
@@ -84,40 +89,16 @@ public partial class MmrService
         }
     }
 
-    private static void FixMmrEquality(TeamData teamData, TeamData oppTeamData)
-    {
-        double absSumTeamMmrDelta = teamData.PlayersMmrDelta.Sum();
-        double absSumOppTeamMmrDelta = oppTeamData.PlayersMmrDelta.Sum();
-        double absSumMmrAllDelta = absSumTeamMmrDelta + absSumOppTeamMmrDelta;
-
-        SetFixedDelta(teamData, absSumTeamMmrDelta, absSumMmrAllDelta);
-        SetFixedDelta(teamData, absSumOppTeamMmrDelta, absSumMmrAllDelta);
-    }
-
-    private static void SetFixedDelta(TeamData teamData, double absSumTeamMmrDelta, double absSumMmrAllDelta)
-    {
-        for (int i = 0; i < teamData.Players.Length; i++)
-        {
-            if (absSumMmrAllDelta == 0)
-            {
-                teamData.PlayersMmrDelta[i] = 0;
-                continue;
-            }
-
-            teamData.PlayersMmrDelta[i] = teamData.PlayersMmrDelta[i] *
-                ((absSumMmrAllDelta) / (absSumTeamMmrDelta * 2));
-        }
-    }
     private void SetMmrs(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData, DateTime gameTime)
     {
         teamData.CmdrComboMmr = GetCommandersComboMmr(teamData.Players);
-        teamData.PlayersMmr = GetCmdrTeamMmr(playerRatingsCmdr, teamData.Players, gameTime);
+        teamData.PlayersMmr = GetTeamMmr(playerRatingsCmdr, teamData.Players, gameTime);
     }
 
-    private void SetExpectationsToWin(TeamData teamData, TeamData opponentTeamData)
+    private void SetExpectationsToWin(TeamData winnerTeamData, TeamData loserTeamData)
     {
-        teamData.PlayersExpectationToWin = EloExpectationToWin(teamData.PlayersMmr, opponentTeamData.PlayersMmr);
-        teamData.CmdrExpectationToWin = EloExpectationToWin(teamData.CmdrComboMmr, opponentTeamData.CmdrComboMmr);
+        winnerTeamData.WinnerPlayersExpectationToWin = loserTeamData.WinnerPlayersExpectationToWin = EloExpectationToWin(winnerTeamData.PlayersMmr, loserTeamData.PlayersMmr);
+        winnerTeamData.WinnerCmdrExpectationToWin = loserTeamData.WinnerCmdrExpectationToWin = EloExpectationToWin(winnerTeamData.CmdrComboMmr, loserTeamData.CmdrComboMmr);
     }
 
     private void CalculateRatingsDeltas(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData)
@@ -134,18 +115,26 @@ public partial class MmrService
                 maxMmr = playerMmr;
             }
 
-            double factor_playerToTeamMates = PlayerToTeamMates(teamData.PlayersMmr, playerMmr);
+            double factor_playerToTeamMates = PlayerToTeamMates(teamData.PlayersMmr * teamData.Players.Length, playerMmr);
             double factor_consistency = GetCorrectedRevConsistency(1 - playerConsistency);
 
-            double playerImpact = 1.0
-                * (useFactorToTeamMates ? factor_playerToTeamMates : (1.0 / 3))
+            double playerImpact = 1
+                * (useFactorToTeamMates ? factor_playerToTeamMates : 1.0)
                 * (useConsistency ? factor_consistency : 1.0);
 
-            teamData.PlayersMmrDelta[i] = CalculateMmrDelta(teamData.PlayersExpectationToWin, playerImpact, (useCommanderMmr ? (1 - teamData.CmdrExpectationToWin) : 1));
-            teamData.PlayersConsistencyDelta[i] = consistencyDeltaMult * 2 * (teamData.PlayersExpectationToWin - 0.50);
+            if (playerImpact > 1 || playerImpact < 0) {
+            }
+
+            teamData.PlayersMmrDelta[i] = CalculateMmrDelta(teamData.WinnerPlayersExpectationToWin, playerImpact, (useCommanderMmr ? (1 - teamData.WinnerCmdrExpectationToWin) : 1));
+            teamData.PlayersConsistencyDelta[i] = consistencyDeltaMult * 2 * (teamData.WinnerPlayersExpectationToWin - 0.50);
 
             double commandersMmrImpact = Math.Pow(startMmr, (playerMmr / maxMmr)) / startMmr;
-            teamData.CmdrMmrDelta[i] = CalculateMmrDelta(teamData.CmdrExpectationToWin, 1, commandersMmrImpact);
+            teamData.CmdrMmrDelta[i] = CalculateMmrDelta(teamData.WinnerCmdrExpectationToWin, 1, commandersMmrImpact);
+
+
+            if (teamData.PlayersMmrDelta[i] > eloK) {
+                throw new Exception("MmrDelta is bigger than eloK");
+            }
         }
     }
 
@@ -202,7 +191,7 @@ public partial class MmrService
 
                 var synergy = cmdrMmrDic[new CmdrMmmrKey() { Race = playerCmdr, Opprace = synergyPlayerCmdr }];
 
-                synergySum += ((1 / 2) * synergy.SynergyMmr);
+                synergySum += ((1 / 2.0) * synergy.SynergyMmr);
             }
 
             for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamPlayers.Length; antiSynergyPlayerIndex++)
@@ -227,25 +216,6 @@ public partial class MmrService
         }
 
         return commandersComboMMRSum / 3;
-    }
-
-    private double GetCmdrTeamMmr(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, ReplayPlayerDsRDto[] replayPlayers, DateTime gameTime)
-    {
-        double teamMmr = 0;
-
-        foreach (var replayPlayer in replayPlayers)
-        {
-            if (!playerRatingsCmdr.ContainsKey(replayPlayer.Player.PlayerId))
-            {
-                playerRatingsCmdr[replayPlayer.Player.PlayerId] = new List<DsRCheckpoint>() { new() { Mmr = startMmr, Time = gameTime } };
-                teamMmr += startMmr;
-            }
-            else
-            {
-                teamMmr += playerRatingsCmdr[replayPlayer.Player.PlayerId].Last().Mmr;
-            }
-        }
-        return teamMmr / 3.0;
     }
 
     private async Task<List<ReplayDsRDto>> GetCmdrReplayDsRDtos(DateTime startTime)
