@@ -2,7 +2,7 @@
 @using pax.dsstats.dbng.Services
 @using pax.dsstats.shared;
 @using sc2dsstats.maui.Services;
-@inject FireMmrService FireMmrService
+@inject MmrService MmrService
 @inject IToastService ToastService
 @inject DecodeService DecodeService
 @inject IStatsService statsService
@@ -20,7 +20,12 @@
     }
     else
     {
-
+        @if (calculationDuration != TimeSpan.Zero)
+        {
+            <div class="align-self-center">
+                <span class="badge bg-info" style="font-size: 1rem;">Elapsed: @calculationDuration.TotalSeconds.ToString("N2") sec.</span>
+            </div>
+        }
     }
 </div>
 <div>
@@ -30,6 +35,7 @@
     private sc2dsstats.razorlib.PlayerRatings? playerRatings;
     private bool isLoading = false;
     private readonly object lockobject = new();
+    private TimeSpan calculationDuration = TimeSpan.Zero;
 
     private RatingsRequest ratingsRequest = new()
         {
@@ -48,7 +54,7 @@
 
     protected override void OnInitialized()
     {
-        FireMmrService.Recalculated += MmrService_Recalculated;
+        MmrService.Recalculated += MmrService_Recalculated;
         base.OnInitialized();
     }
 
@@ -70,7 +76,7 @@
         await Task.Run(async () =>
         {
             await statsService.SeedPlayerInfos().ConfigureAwait(false);
-            await FireMmrService.CalcMmmr().ConfigureAwait(false);
+            await MmrService.ReCalculate(DateTime.MinValue).ConfigureAwait(false);
         });
 
         isLoading = false;
@@ -93,17 +99,19 @@
         return false;
     }
 
-    private async void MmrService_Recalculated(object? sender, EventArgs e)
+    private async void MmrService_Recalculated(object? sender, MmrRecalculatedEvent e)
     {
         if (playerRatings != null)
         {
             await playerRatings.Reload();
         }
+        calculationDuration = e.Duration;
         isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
     }
 
     public void Dispose()
     {
-        FireMmrService.Recalculated -= MmrService_Recalculated;
+        MmrService.Recalculated -= MmrService_Recalculated;
     }
 }
