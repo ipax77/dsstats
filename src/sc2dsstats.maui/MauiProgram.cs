@@ -48,7 +48,7 @@ public static class MauiProgram
         builder.Services.AddChartJs();
 
         builder.Services.AddTransient<IStatsService, StatsService>();
-        builder.Services.AddSingleton<FireMmrService>();
+        builder.Services.AddScoped<MmrService>();
 
         builder.Services.AddSingleton<UserSettingsService>();
         builder.Services.AddSingleton<DecodeService>();
