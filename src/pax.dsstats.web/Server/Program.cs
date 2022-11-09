@@ -52,6 +52,9 @@ builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
 builder.Services.AddSingleton<FireMmrService>();
+
+builder.Services.AddScoped<MmrService>();
+
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 
@@ -81,6 +84,9 @@ if (app.Environment.IsProduction())
 {
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
+
+    var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+    mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
 }
 
 // DEBUG
@@ -97,6 +103,10 @@ if (app.Environment.IsDevelopment())
 
     //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
     //statsService.SeedPlayerInfos().GetAwaiter().GetResult();
+
+    var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+    mmrService.SeedCommanderMmrs().Wait();
+    mmrService.ReCalculate(DateTime.MinValue).Wait();
 }
 
 // Configure the HTTP request pipeline.
