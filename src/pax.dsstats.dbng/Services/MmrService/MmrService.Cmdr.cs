@@ -134,12 +134,15 @@ public partial class MmrService
                 maxMmr = playerMmr;
             }
 
-            double factor_playerToTeamMates = PlayerToTeamMates(teamData.PlayersMmr, playerMmr);
+            double factor_playerToTeamMates = PlayerToTeamMates(teamData.PlayersMmr * teamData.Players.Length, playerMmr);
             double factor_consistency = GetCorrectedRevConsistency(1 - playerConsistency);
 
-            double playerImpact = teamData.Players.Length
-                * (useFactorToTeamMates ? factor_playerToTeamMates : (1.0 / teamData.Players.Length))
+            double playerImpact = 1
+                * (useFactorToTeamMates ? factor_playerToTeamMates : 1.0)
                 * (useConsistency ? factor_consistency : 1.0);
+
+            if (playerImpact > 1 || playerImpact < 0) {
+            }
 
             teamData.PlayersMmrDelta[i] = CalculateMmrDelta(teamData.WinnerPlayersExpectationToWin, playerImpact, (useCommanderMmr ? (1 - teamData.WinnerCmdrExpectationToWin) : 1));
             teamData.PlayersConsistencyDelta[i] = consistencyDeltaMult * 2 * (teamData.WinnerPlayersExpectationToWin - 0.50);

@@ -28,9 +28,8 @@ public partial class MmrService
         EventHandler<MmrRecalculatedEvent>? handler = Recalculated;
         handler?.Invoke(this, e);
     }
-
-    private static readonly double eloK = 128; // default 32
-    private static readonly double eloK_mult = 12.5;
+    private static readonly double eloK = 64 * 3; // default 32
+    private static readonly double eloK_mult = 12.5 / 3;
     private static readonly double clip = eloK * eloK_mult;
     public static readonly double startMmr = 1000.0;
     private static readonly double consistencyImpact = 0.50;
@@ -198,10 +197,10 @@ public partial class MmrService
     {
         if (teamMmr < 1)
         {
-            return (1.0 / 3);
+            return 1.0;
         }
 
-        return (playerMmr / teamMmr) / 3.0;
+        return (playerMmr / teamMmr);
     }
 
     private static double CalculateMmrDelta(double elo, double playerImpact, double mcv)
