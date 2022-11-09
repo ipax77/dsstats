@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -10,6 +11,23 @@ namespace MysqlMigrations.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterDatabase()
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "CommanderMmrs",
+                columns: table => new
+                {
+                    CommanderMmrId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Race = table.Column<int>(type: "int", nullable: false),
+                    OppRace = table.Column<int>(type: "int", nullable: false),
+                    SynergyMmr = table.Column<double>(type: "double", nullable: false),
+                    AntiSynergyMmr = table.Column<double>(type: "double", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CommanderMmrs", x => x.CommanderMmrId);
+                })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
@@ -26,27 +44,6 @@ namespace MysqlMigrations.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Events", x => x.EventId);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.CreateTable(
-                name: "Players",
-                columns: table => new
-                {
-                    PlayerId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Name = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    ToonId = table.Column<int>(type: "int", nullable: false),
-                    Mmr = table.Column<double>(type: "double", nullable: false),
-                    MmrStd = table.Column<double>(type: "double", nullable: false),
-                    MmrOverTime = table.Column<string>(type: "varchar(2000)", maxLength: 2000, nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    LatestUpload = table.Column<DateTime>(type: "datetime(0)", precision: 0, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Players", x => x.PlayerId);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -81,15 +78,28 @@ namespace MysqlMigrations.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "SkipReplays",
+                columns: table => new
+                {
+                    SkipReplayId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Path = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SkipReplays", x => x.SkipReplayId);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "Units",
                 columns: table => new
                 {
                     UnitId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Name = table.Column<string>(type: "varchar(30)", maxLength: 30, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    Cost = table.Column<int>(type: "int", nullable: false),
-                    Commander = table.Column<int>(type: "int", nullable: false)
+                    Name = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4")
                 },
                 constraints: table =>
                 {
@@ -110,6 +120,36 @@ namespace MysqlMigrations.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Upgrades", x => x.UpgradeId);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "Uploaders",
+                columns: table => new
+                {
+                    UploaderId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    AppGuid = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
+                    AppVersion = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Identifier = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    LatestUpload = table.Column<DateTime>(type: "datetime(0)", precision: 0, nullable: false),
+                    LatestReplay = table.Column<DateTime>(type: "datetime(0)", precision: 0, nullable: false),
+                    Games = table.Column<int>(type: "int", nullable: false),
+                    Wins = table.Column<int>(type: "int", nullable: false),
+                    Mvp = table.Column<int>(type: "int", nullable: false),
+                    MainCommander = table.Column<int>(type: "int", nullable: false),
+                    MainCount = table.Column<int>(type: "int", nullable: false),
+                    TeamGames = table.Column<int>(type: "int", nullable: false),
+                    UploadLastDisabled = table.Column<DateTime>(type: "datetime(0)", precision: 0, nullable: false),
+                    UploadDisabledCount = table.Column<int>(type: "int", nullable: false),
+                    UploadIsDisabled = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "tinyint(1)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Uploaders", x => x.UploaderId);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -145,6 +185,68 @@ namespace MysqlMigrations.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "BattleNetInfos",
+                columns: table => new
+                {
+                    BattleNetInfoId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    BattleNetId = table.Column<int>(type: "int", nullable: false),
+                    UploaderId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BattleNetInfos", x => x.BattleNetInfoId);
+                    table.ForeignKey(
+                        name: "FK_BattleNetInfos_Uploaders_UploaderId",
+                        column: x => x.UploaderId,
+                        principalTable: "Uploaders",
+                        principalColumn: "UploaderId",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "Players",
+                columns: table => new
+                {
+                    PlayerId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Name = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    ToonId = table.Column<int>(type: "int", nullable: false),
+                    RegionId = table.Column<int>(type: "int", nullable: false),
+                    Mmr = table.Column<double>(type: "double", nullable: false),
+                    MmrStd = table.Column<double>(type: "double", nullable: false),
+                    MmrOverTime = table.Column<string>(type: "varchar(2000)", maxLength: 2000, nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    MmrStdOverTime = table.Column<string>(type: "varchar(2000)", maxLength: 2000, nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    GamesCmdr = table.Column<int>(type: "int", nullable: false),
+                    WinsCmdr = table.Column<int>(type: "int", nullable: false),
+                    MvpCmdr = table.Column<int>(type: "int", nullable: false),
+                    TeamGamesCmdr = table.Column<int>(type: "int", nullable: false),
+                    GamesStd = table.Column<int>(type: "int", nullable: false),
+                    WinsStd = table.Column<int>(type: "int", nullable: false),
+                    MvpStd = table.Column<int>(type: "int", nullable: false),
+                    TeamGamesStd = table.Column<int>(type: "int", nullable: false),
+                    MainCommander = table.Column<int>(type: "int", nullable: false),
+                    MainCount = table.Column<int>(type: "int", nullable: false),
+                    NotUploadCount = table.Column<int>(type: "int", nullable: false),
+                    LeaverCount = table.Column<int>(type: "int", nullable: false),
+                    UploaderId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Players", x => x.PlayerId);
+                    table.ForeignKey(
+                        name: "FK_Players_Uploaders_UploaderId",
+                        column: x => x.UploaderId,
+                        principalTable: "Uploaders",
+                        principalColumn: "UploaderId");
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "Replays",
                 columns: table => new
                 {
@@ -152,9 +254,11 @@ namespace MysqlMigrations.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     FileName = table.Column<string>(type: "varchar(500)", maxLength: 500, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
+                    TournamentEdition = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     GameTime = table.Column<DateTime>(type: "datetime(0)", precision: 0, nullable: false),
                     Duration = table.Column<int>(type: "int", nullable: false),
                     WinnerTeam = table.Column<int>(type: "int", nullable: false),
+                    PlayerResult = table.Column<int>(type: "int", nullable: false),
                     GameMode = table.Column<int>(type: "int", nullable: false),
                     Objective = table.Column<int>(type: "int", nullable: false),
                     Bunker = table.Column<int>(type: "int", nullable: false),
@@ -170,7 +274,7 @@ namespace MysqlMigrations.Migrations
                     DefaultFilter = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     Views = table.Column<int>(type: "int", nullable: false),
                     Downloads = table.Column<int>(type: "int", nullable: false),
-                    Middle = table.Column<string>(type: "varchar(2000)", maxLength: 2000, nullable: false)
+                    Middle = table.Column<string>(type: "varchar(4000)", maxLength: 4000, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     CommandersTeam1 = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
@@ -202,6 +306,7 @@ namespace MysqlMigrations.Migrations
                     GamePos = table.Column<int>(type: "int", nullable: false),
                     Team = table.Column<int>(type: "int", nullable: false),
                     PlayerResult = table.Column<int>(type: "int", nullable: false),
+                    MmrChange = table.Column<float>(type: "float", nullable: true),
                     Duration = table.Column<int>(type: "int", nullable: false),
                     Race = table.Column<int>(type: "int", nullable: false),
                     OppRace = table.Column<int>(type: "int", nullable: false),
@@ -211,9 +316,13 @@ namespace MysqlMigrations.Migrations
                     Kills = table.Column<int>(type: "int", nullable: false),
                     UpgradesSpent = table.Column<int>(type: "int", nullable: false),
                     IsUploader = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    IsLeaver = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    DidNotUpload = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     TierUpgrades = table.Column<string>(type: "varchar(300)", maxLength: 300, nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Refineries = table.Column<string>(type: "varchar(300)", maxLength: 300, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    LastSpawnHash = table.Column<string>(type: "char(64)", fixedLength: true, maxLength: 64, nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Downloads = table.Column<int>(type: "int", nullable: false),
                     Views = table.Column<int>(type: "int", nullable: false),
@@ -241,6 +350,31 @@ namespace MysqlMigrations.Migrations
                         column: x => x.UpgradeId,
                         principalTable: "Upgrades",
                         principalColumn: "UpgradeId");
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "UploaderReplays",
+                columns: table => new
+                {
+                    ReplaysReplayId = table.Column<int>(type: "int", nullable: false),
+                    UploadersUploaderId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UploaderReplays", x => new { x.ReplaysReplayId, x.UploadersUploaderId });
+                    table.ForeignKey(
+                        name: "FK_UploaderReplays_Replays_ReplaysReplayId",
+                        column: x => x.ReplaysReplayId,
+                        principalTable: "Replays",
+                        principalColumn: "ReplayId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UploaderReplays_Uploaders_UploadersUploaderId",
+                        column: x => x.UploadersUploaderId,
+                        principalTable: "Uploaders",
+                        principalColumn: "UploaderId",
+                        onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -279,12 +413,13 @@ namespace MysqlMigrations.Migrations
                     SpawnId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     Gameloop = table.Column<int>(type: "int", nullable: false),
+                    Breakpoint = table.Column<int>(type: "int", nullable: false),
                     Income = table.Column<int>(type: "int", nullable: false),
                     GasCount = table.Column<int>(type: "int", nullable: false),
                     ArmyValue = table.Column<int>(type: "int", nullable: false),
                     KilledValue = table.Column<int>(type: "int", nullable: false),
                     UpgradeSpent = table.Column<int>(type: "int", nullable: false),
-                    ReplayPlayerId = table.Column<int>(type: "int", nullable: true)
+                    ReplayPlayerId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -293,7 +428,8 @@ namespace MysqlMigrations.Migrations
                         name: "FK_Spawns_ReplayPlayers_ReplayPlayerId",
                         column: x => x.ReplayPlayerId,
                         principalTable: "ReplayPlayers",
-                        principalColumn: "ReplayPlayerId");
+                        principalColumn: "ReplayPlayerId",
+                        onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -328,15 +464,19 @@ namespace MysqlMigrations.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateIndex(
+                name: "IX_BattleNetInfos_UploaderId",
+                table: "BattleNetInfos",
+                column: "UploaderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CommanderMmrs_Race_OppRace",
+                table: "CommanderMmrs",
+                columns: new[] { "Race", "OppRace" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Events_Name",
                 table: "Events",
                 column: "Name",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Players_ToonId",
-                table: "Players",
-                column: "ToonId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -350,9 +490,36 @@ namespace MysqlMigrations.Migrations
                 column: "UpgradeId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Players_ToonId",
+                table: "Players",
+                column: "ToonId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Players_UploaderId",
+                table: "Players",
+                column: "UploaderId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ReplayEvents_EventId",
                 table: "ReplayEvents",
                 column: "EventId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ReplayPlayers_IsUploader_Team",
+                table: "ReplayPlayers",
+                columns: new[] { "IsUploader", "Team" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ReplayPlayers_Kills",
+                table: "ReplayPlayers",
+                column: "Kills");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ReplayPlayers_LastSpawnHash",
+                table: "ReplayPlayers",
+                column: "LastSpawnHash",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ReplayPlayers_PlayerId",
@@ -395,6 +562,21 @@ namespace MysqlMigrations.Migrations
                 columns: new[] { "GameTime", "GameMode", "DefaultFilter" });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Replays_GameTime_GameMode_Maxleaver",
+                table: "Replays",
+                columns: new[] { "GameTime", "GameMode", "Maxleaver" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Replays_GameTime_GameMode_WinnerTeam",
+                table: "Replays",
+                columns: new[] { "GameTime", "GameMode", "WinnerTeam" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Replays_Maxkillsum",
+                table: "Replays",
+                column: "Maxkillsum");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Replays_ReplayEventId",
                 table: "Replays",
                 column: "ReplayEventId");
@@ -406,11 +588,6 @@ namespace MysqlMigrations.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Spawns_ReplayPlayerId",
-                table: "Spawns",
-                column: "ReplayPlayerId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_SpawnUnits_SpawnId",
                 table: "SpawnUnits",
                 column: "SpawnId");
@@ -419,10 +596,38 @@ namespace MysqlMigrations.Migrations
                 name: "IX_SpawnUnits_UnitId",
                 table: "SpawnUnits",
                 column: "UnitId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Spawns_ReplayPlayerId",
+                table: "Spawns",
+                column: "ReplayPlayerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Upgrades_Name",
+                table: "Upgrades",
+                column: "Name",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UploaderReplays_UploadersUploaderId",
+                table: "UploaderReplays",
+                column: "UploadersUploaderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Uploaders_AppGuid",
+                table: "Uploaders",
+                column: "AppGuid",
+                unique: true);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "BattleNetInfos");
+
+            migrationBuilder.DropTable(
+                name: "CommanderMmrs");
+
             migrationBuilder.DropTable(
                 name: "PlayerUpgrades");
 
@@ -433,7 +638,13 @@ namespace MysqlMigrations.Migrations
                 name: "ReplayViewCounts");
 
             migrationBuilder.DropTable(
+                name: "SkipReplays");
+
+            migrationBuilder.DropTable(
                 name: "SpawnUnits");
+
+            migrationBuilder.DropTable(
+                name: "UploaderReplays");
 
             migrationBuilder.DropTable(
                 name: "Spawns");
@@ -452,6 +663,9 @@ namespace MysqlMigrations.Migrations
 
             migrationBuilder.DropTable(
                 name: "Upgrades");
+
+            migrationBuilder.DropTable(
+                name: "Uploaders");
 
             migrationBuilder.DropTable(
                 name: "ReplayEvents");

@@ -11,15 +11,30 @@ using pax.dsstats.dbng;
 namespace MysqlMigrations.Migrations
 {
     [DbContext(typeof(ReplayContext))]
-    [Migration("20221102102517_DisableDeleteUploader")]
-    partial class DisableDeleteUploader
+    [Migration("20221109014957_Init")]
+    partial class Init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.10")
+                .HasAnnotation("ProductVersion", "6.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
+
+            modelBuilder.Entity("ReplayUploader", b =>
+                {
+                    b.Property<int>("ReplaysReplayId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UploadersUploaderId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReplaysReplayId", "UploadersUploaderId");
+
+                    b.HasIndex("UploadersUploaderId");
+
+                    b.ToTable("UploaderReplays", (string)null);
+                });
 
             modelBuilder.Entity("pax.dsstats.dbng.BattleNetInfo", b =>
                 {
@@ -46,22 +61,13 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<double>("AntiSynergyElo_1")
+                    b.Property<double>("AntiSynergyMmr")
                         .HasColumnType("double");
 
-                    b.Property<double>("AntiSynergyElo_2")
-                        .HasColumnType("double");
-
-                    b.Property<double>("AntiSynergyMmr_1")
-                        .HasColumnType("double");
-
-                    b.Property<double>("AntiSynergyMmr_2")
-                        .HasColumnType("double");
-
-                    b.Property<int>("Commander_1")
+                    b.Property<int>("OppRace")
                         .HasColumnType("int");
 
-                    b.Property<int>("Commander_2")
+                    b.Property<int>("Race")
                         .HasColumnType("int");
 
                     b.Property<double>("SynergyMmr")
@@ -69,7 +75,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasKey("CommanderMmrId");
 
-                    b.HasIndex("Commander_1", "Commander_2");
+                    b.HasIndex("Race", "OppRace");
 
                     b.ToTable("CommanderMmrs");
                 });
@@ -280,6 +286,9 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("Objective")
                         .HasColumnType("int");
 
+                    b.Property<int>("PlayerResult")
+                        .HasColumnType("int");
+
                     b.Property<byte>("Playercount")
                         .HasColumnType("tinyint unsigned");
 
@@ -291,6 +300,9 @@ namespace MysqlMigrations.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("char(64)")
                         .IsFixedLength();
+
+                    b.Property<bool>("TournamentEdition")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<int>("Views")
                         .HasColumnType("int");
@@ -424,6 +436,9 @@ namespace MysqlMigrations.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("char(64)")
                         .IsFixedLength();
+
+                    b.Property<float?>("MmrChange")
+                        .HasColumnType("float");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -593,21 +608,12 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("Commander")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Cost")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
                     b.HasKey("UnitId");
-
-                    b.HasIndex("Name", "Commander")
-                        .IsUnique();
 
                     b.ToTable("Units");
                 });
@@ -700,17 +706,17 @@ namespace MysqlMigrations.Migrations
 
             modelBuilder.Entity("ReplayUploader", b =>
                 {
-                    b.Property<int>("ReplaysReplayId")
-                        .HasColumnType("int");
+                    b.HasOne("pax.dsstats.dbng.Replay", null)
+                        .WithMany()
+                        .HasForeignKey("ReplaysReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Property<int>("UploadersUploaderId")
-                        .HasColumnType("int");
-
-                    b.HasKey("ReplaysReplayId", "UploadersUploaderId");
-
-                    b.HasIndex("UploadersUploaderId");
-
-                    b.ToTable("UploaderReplays", (string)null);
+                    b.HasOne("pax.dsstats.dbng.Uploader", null)
+                        .WithMany()
+                        .HasForeignKey("UploadersUploaderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.BattleNetInfo", b =>
@@ -823,21 +829,6 @@ namespace MysqlMigrations.Migrations
                     b.Navigation("Spawn");
 
                     b.Navigation("Unit");
-                });
-
-            modelBuilder.Entity("ReplayUploader", b =>
-                {
-                    b.HasOne("pax.dsstats.dbng.Replay", null)
-                        .WithMany()
-                        .HasForeignKey("ReplaysReplayId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("pax.dsstats.dbng.Uploader", null)
-                        .WithMany()
-                        .HasForeignKey("UploadersUploaderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Event", b =>
