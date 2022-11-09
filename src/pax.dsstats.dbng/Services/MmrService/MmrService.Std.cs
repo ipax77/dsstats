@@ -9,10 +9,11 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class MmrService
 {
+    private double maxMmrStd = startMmr; //ToDo - load for continuation!!!
+
     private async Task<Dictionary<int, List<DsRCheckpoint>>> CalculateStd(DateTime startTime)
     {
         Dictionary<int, List<DsRCheckpoint>> playerRatingsStd = new();
-        maxMmr = startMmr;
 
         var replayDsRDtos = await GetStdReplayDsRDtos(startTime);
         foreach (var replay in replayDsRDtos) {
@@ -29,12 +30,19 @@ public partial class MmrService
         }
 
         ReplayProcessData replayProcessData = new(replay);
+        if (replayProcessData.WinnerTeamData.Players.Length != 3 || replayProcessData.LoserTeamData.Players.Length != 3) {
+            logger.LogWarning($"skipping wrong teamcounts");
+            return;
+        }
+
+        if (replay.WinnerTeam == 0) {
+            return;
+        }
 
         SetStdMmrs(playerRatingsStd, replayProcessData.WinnerTeamData, replayProcessData.ReplayGameTime);
         SetStdMmrs(playerRatingsStd, replayProcessData.LoserTeamData, replayProcessData.ReplayGameTime);
 
         SetExpectationsToWin(replayProcessData.WinnerTeamData, replayProcessData.LoserTeamData);
-        SetExpectationsToWin(replayProcessData.LoserTeamData, replayProcessData.WinnerTeamData);
 
         CalculateRatingsDeltas(playerRatingsStd, replayProcessData.WinnerTeamData);
         CalculateRatingsDeltas(playerRatingsStd, replayProcessData.LoserTeamData);
@@ -66,8 +74,8 @@ public partial class MmrService
         return await context.Replays
             .Include(r => r.ReplayPlayers)
                 .ThenInclude(rp => rp.Player)
-            .Where(r => r.DefaultFilter
-                && (r.GameMode == GameMode.Standard)
+            .Where(r => /*r.DefaultFilter
+                &&*/ (r.GameMode == GameMode.Standard)
                 && r.GameTime >= startTime)
         .OrderBy(o => o.GameTime)
                 .ThenBy(r => r.ReplayId)

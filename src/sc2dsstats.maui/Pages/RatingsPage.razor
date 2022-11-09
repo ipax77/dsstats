@@ -10,7 +10,8 @@
 
 <div class="d-flex mb-2">
     <div class="btn-group">
-        <button class="btn btn-sm btn-primary" @onclick="RecalculateFire">(Re-)Calculate Ratings</button>
+        <button class="btn btn-sm btn-primary" @onclick="RecalculateFire">Recalculate Ratings</button>
+        <button class="btn btn-sm btn-primary" @onclick="ContinueCalculateFire">Continue calculate Ratings</button>
     </div>
     @if (isLoading)
     {
@@ -77,6 +78,32 @@
         {
             await statsService.SeedPlayerInfos().ConfigureAwait(false);
             await MmrService.ReCalculate(DateTime.MinValue).ConfigureAwait(false);
+        });
+
+        isLoading = false;
+
+        await InvokeAsync(() => StateHasChanged());
+
+        //if (playerRatings != null)
+        //{
+        //    await playerRatings.Reload();
+        //}
+    }
+    private async void ContinueCalculateFire()
+    {
+        if (CantDoIt()) {
+            return;
+        }
+        lock (lockobject) {
+            if (isLoading) {
+                return;
+            }
+            isLoading = true;
+        }
+
+        await Task.Run(async () => {
+            await statsService.SeedPlayerInfos().ConfigureAwait(false);
+            await MmrService.ContinueCalculate(DateTime.MinValue).ConfigureAwait(false);
         });
 
         isLoading = false;

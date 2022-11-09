@@ -38,7 +38,6 @@ public partial class MmrService
 
     // todo get rid of it
     private readonly Dictionary<int, float> replayPlayerMmrChanges = new();
-    private double maxMmr;
 
     private static bool useCommanderMmr = false;
     private static bool useConsistency = true;
@@ -52,15 +51,31 @@ public partial class MmrService
         await ResetGlobals();
 
         var playerRatingsCmdr = await CalculateCmdr(startTime);
-
-        //await CalculateStd(startTime);
-
-        await SavePlayersData(playerRatingsCmdr);
         await SaveCommanderData();
+        await SavePlayersData(playerRatingsCmdr);
         await SaveReplayPlayersData(replayPlayerMmrChanges);
 
-        // var playerRatingsStd = await CalculateStd(startTime);
+        // (var playerRatingsStd, var replayPlayerMmrChanges) = await CalculateStd(startTime);
         // await SavePlayersData(playerRatingsStd);
+        // await SaveReplayPlayersData(replayPlayerMmrChanges);
+
+        sw.Stop();
+        OnRecalculated(new() { Duration = sw.Elapsed });
+    }
+
+    public async Task ContinueCalculate(DateTime startTime) //ToDo - load maxMmr's for continuation!!!
+    {
+        Stopwatch sw = Stopwatch.StartNew();
+        await ResetGlobals();
+        
+        var playerRatingsCmdr = await CalculateCmdr(startTime);
+        await SaveCommanderData();
+        await SavePlayersData(playerRatingsCmdr);
+        await SaveReplayPlayersData(replayPlayerMmrChanges);
+
+        // (var playerRatingsStd, var replayPlayerMmrChanges) = await CalculateStd(startTime);
+        // await SavePlayersData(playerRatingsStd);
+        // await SaveReplayPlayersData(replayPlayerMmrChanges);
 
         sw.Stop();
         OnRecalculated(new() { Duration = sw.Elapsed });
@@ -78,7 +93,24 @@ public partial class MmrService
 
         replayPlayerMmrChanges.Clear();
     }
-    
+
+    private async Task ClearRatingsInDb()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        // todo: db-lock (no imports possible during this)
+        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.ReplayPlayers)} SET {nameof(ReplayPlayer.MmrChange)} = NULL");
+
+        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.Mmr)} = {startMmr}");
+        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.MmrStd)} = {startMmr}");
+        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.MmrOverTime)} = NULL");
+        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.MmrStdOverTime)} = NULL");
+
+        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.CommanderMmrs)} SET {nameof(CommanderMmr.SynergyMmr)} = {startMmr}");
+        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.CommanderMmrs)} SET {nameof(CommanderMmr.AntiSynergyMmr)} = {startMmr}");
+    }
+
     private async Task SaveReplayPlayersData(Dictionary<int, float> replayPlayerMmrChanges)
     {
         using var scope = serviceProvider.CreateScope();
@@ -128,23 +160,6 @@ public partial class MmrService
         }
 
         await context.SaveChangesAsync();
-    }
-
-    private async Task ClearRatingsInDb()
-    {
-        using var scope = serviceProvider.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-        // todo: db-lock (no imports possible during this)
-        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.ReplayPlayers)} SET {nameof(ReplayPlayer.MmrChange)} = NULL");
-
-        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.Mmr)} = {startMmr}");
-        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.MmrStd)} = {startMmr}");
-        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.MmrOverTime)} = NULL");
-        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.Players)} SET {nameof(Player.MmrStdOverTime)} = NULL");
-
-        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.CommanderMmrs)} SET {nameof(CommanderMmr.SynergyMmr)} = {startMmr}");
-        await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.CommanderMmrs)} SET {nameof(CommanderMmr.AntiSynergyMmr)} = {startMmr}");
     }
 
 
