@@ -89,6 +89,7 @@ if (app.Environment.IsProduction())
 
     var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
     mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
+    await mmrService.ReCalculateWithDictionary(DateTime.MinValue, DateTime.Today.AddDays(1));
 }
 
 // DEBUG
