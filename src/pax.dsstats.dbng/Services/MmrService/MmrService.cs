@@ -46,7 +46,7 @@ public partial class MmrService
     private static bool useConsistency = true;
     private static bool useFactorToTeamMates = true;
 
-    public async Task ReCalculate(DateTime startTime)
+    public async Task ReCalculate(DateTime startTime, DateTime endTime)
     {
         Stopwatch sw = Stopwatch.StartNew();
 
@@ -54,7 +54,7 @@ public partial class MmrService
 
         await ResetGlobals();
 
-        var playerRatingsCmdr = await CalculateCmdr(startTime);
+        var playerRatingsCmdr = await CalculateCmdr(startTime, endTime);
         await SaveCommanderData();
         await SavePlayersData(playerRatingsCmdr);
         await SaveReplayPlayersData(replayPlayerMmrChanges);
@@ -67,31 +67,13 @@ public partial class MmrService
         OnRecalculated(new() { Duration = sw.Elapsed });
     }
 
-    public async Task ContinueCalculate(DateTime startTime) //ToDo - load maxMmr's for continuation!!!
-    {
-        Stopwatch sw = Stopwatch.StartNew();
-        await ResetGlobals();
-        
-        var playerRatingsCmdr = await CalculateCmdr(startTime);
-        await SaveCommanderData();
-        await SavePlayersData(playerRatingsCmdr);
-        await SaveReplayPlayersData(replayPlayerMmrChanges);
-
-        // (var playerRatingsStd, var replayPlayerMmrChanges) = await CalculateStd(startTime);
-        // await SavePlayersData(playerRatingsStd);
-        // await SaveReplayPlayersData(replayPlayerMmrChanges);
-
-        sw.Stop();
-        OnRecalculated(new() { Duration = sw.Elapsed });
-    }
-
-    public async Task ReCalculateWithDictionary(DateTime startTime)
+    public async Task ReCalculateWithDictionary(DateTime startTime, DateTime endTime)
     {
         Stopwatch sw = Stopwatch.StartNew();
 
         await ResetGlobals();
 
-        var playerRatingsCmdr = await CalculateCmdr(startTime);
+        var playerRatingsCmdr = await CalculateCmdr(startTime, endTime);
         var playerInfos = await GetPlayerInfos();
 
         await SetGlobals(playerRatingsCmdr, playerInfos);
