@@ -76,8 +76,12 @@
 
         await Task.Run(async () =>
         {
+            DateTime currentTime = DateTime.UtcNow.Date;
+            const int seasonMonths = 6;
+            var recentSeasonStart = currentTime.AddMonths(-(currentTime.Month % seasonMonths)).AddDays(-(currentTime.Day - 1));
+
             await statsService.SeedPlayerInfos().ConfigureAwait(false);
-            await MmrService.ReCalculate(DateTime.MinValue).ConfigureAwait(false);
+            await MmrService.ReCalculate(recentSeasonStart).ConfigureAwait(false);
         });
 
         isLoading = false;

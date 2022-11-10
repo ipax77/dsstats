@@ -16,11 +16,11 @@ public partial class MmrService
     private const double OwnMatchupPercentage = 1.0 / 3;
     private const double MatesMatchupsPercentage = (1 - OwnMatchupPercentage) / 2;
 
-    private async Task<Dictionary<int, List<DsRCheckpoint>>> CalculateCmdr(DateTime startTime)
+    private async Task<Dictionary<int, List<DsRCheckpoint>>> CalculateCmdr(DateTime startTime, DateTime endTime)
     {
         Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr = new();
 
-        var replayDsRDtos = await GetCmdrReplayDsRDtos(startTime);
+        var replayDsRDtos = await GetCmdrReplayDsRDtos(startTime, endTime);
         foreach (var replay in replayDsRDtos)
         {
             ProcessCmdrReplay(playerRatingsCmdr, replay);
@@ -221,7 +221,7 @@ public partial class MmrService
         return commandersComboMMRSum / 3;
     }
 
-    private async Task<List<ReplayDsRDto>> GetCmdrReplayDsRDtos(DateTime startTime)
+    private async Task<List<ReplayDsRDto>> GetCmdrReplayDsRDtos(DateTime startTime, DateTime endTime)
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -231,7 +231,8 @@ public partial class MmrService
                 .ThenInclude(rp => rp.Player)
             .Where(r => /*r.DefaultFilter
                 && */(r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic)
-                && r.GameTime >= startTime)
+                && (r.GameTime >= startTime)
+                && (r.GameTime <= endTime))
             .OrderBy(o => o.GameTime)
                 .ThenBy(r => r.ReplayId)
             .AsNoTracking()
