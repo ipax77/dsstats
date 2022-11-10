@@ -76,6 +76,9 @@ public static class MauiProgram
         //var uploadService = scope.ServiceProvider.GetRequiredService<UploadService>();
         //uploadService.ProduceTestData();
 
+        //var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+        //mmrService.ReCalculateWithTimes(DateTime.MinValue).Wait();
+
         return builder.Build();
     }
 }

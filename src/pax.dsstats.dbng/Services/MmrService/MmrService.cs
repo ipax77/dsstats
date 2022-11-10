@@ -47,6 +47,7 @@ public partial class MmrService
     public async Task ReCalculate(DateTime startTime)
     {
         Stopwatch sw = Stopwatch.StartNew();
+
         await ClearRatingsInDb();
 
         await ResetGlobals();
@@ -58,6 +59,45 @@ public partial class MmrService
         await SavePlayersData(playerRatingsCmdr);
         await SaveCommanderData();
         await SaveReplayPlayersData(replayPlayerMmrChanges);
+
+        // var playerRatingsStd = await CalculateStd(startTime);
+        // await SavePlayersData(playerRatingsStd);
+
+        sw.Stop();
+        OnRecalculated(new() { Duration = sw.Elapsed });
+    }
+
+    public async Task ReCalculateWithTimes(DateTime startTime)
+    {
+        Stopwatch sw = Stopwatch.StartNew();
+
+        await ClearRatingsInDb();
+        sw.Stop();
+        logger.LogWarning($"cleared db in {sw.ElapsedMilliseconds} ms");
+        sw.Restart();
+        await ResetGlobals();
+        sw.Stop();
+        logger.LogWarning($"reset globals in {sw.ElapsedMilliseconds} ms");
+        sw.Restart();
+        var playerRatingsCmdr = await CalculateCmdr(startTime);
+        sw.Stop();
+        logger.LogWarning($"calculated in {sw.ElapsedMilliseconds} ms");
+        sw.Restart();
+
+        //await CalculateStd(startTime);
+
+        await SavePlayersData(playerRatingsCmdr);
+        sw.Stop();
+        logger.LogWarning($"players saved in {sw.ElapsedMilliseconds} ms");
+        sw.Restart();
+        await SaveCommanderData();
+        sw.Stop();
+        logger.LogWarning($"cmdrs saved in {sw.ElapsedMilliseconds} ms");
+        sw.Restart();
+        await SaveReplayPlayersData(replayPlayerMmrChanges);
+        sw.Stop();
+        logger.LogWarning($"replayplayers saved in {sw.ElapsedMilliseconds} ms");
+        sw.Restart();
 
         // var playerRatingsStd = await CalculateStd(startTime);
         // await SavePlayersData(playerRatingsStd);
@@ -78,21 +118,31 @@ public partial class MmrService
 
         replayPlayerMmrChanges.Clear();
     }
-    
+
     private async Task SaveReplayPlayersData(Dictionary<int, float> replayPlayerMmrChanges)
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         StringBuilder sb = new();
+        int i = 0;
         foreach (var ent in replayPlayerMmrChanges)
         {
             sb.Append($"UPDATE {nameof(ReplayContext.ReplayPlayers)}" +
                 $" SET {nameof(ReplayPlayer.MmrChange)} = {ent.Value.ToString(CultureInfo.InvariantCulture)}" +
                 $" WHERE {nameof(ReplayPlayer.ReplayPlayerId)} = {ent.Key}; ");
+            i++;
+            if (i % 1000 == 0)
+            {
+                await context.Database.ExecuteSqlRawAsync(sb.ToString());
+                sb.Clear();
+            }
         }
 
-        await context.Database.ExecuteSqlRawAsync(sb.ToString());
+        if (sb.Length > 0)
+        {
+            await context.Database.ExecuteSqlRawAsync(sb.ToString());
+        }
     }
 
     private async Task SavePlayersData(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr)
@@ -101,6 +151,7 @@ public partial class MmrService
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         StringBuilder sb = new();
+        int i = 0;
         foreach (var ent in playerRatingsCmdr)
         {
             var lastRating = ent.Value.Last();
@@ -109,9 +160,20 @@ public partial class MmrService
             sb.Append($"UPDATE {nameof(ReplayContext.Players)}" +
                 $" SET {nameof(Player.Mmr)} = {mmr}, {nameof(Player.MmrOverTime)} = '{GetOverTimeRating(ent.Value)}'" +
                 $" WHERE {nameof(Player.PlayerId)} = {ent.Key}; ");
+
+            i++;
+            if (i % 1000 == 0)
+            {
+                await context.Database.ExecuteSqlRawAsync(sb.ToString());
+                sb.Clear();
+            }
         }
 
-        await context.Database.ExecuteSqlRawAsync(sb.ToString());
+
+        if (sb.Length > 0)
+        {
+            await context.Database.ExecuteSqlRawAsync(sb.ToString());
+        }
     }
 
     private async Task SaveCommanderData()
@@ -120,7 +182,8 @@ public partial class MmrService
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         var commanderMmrs = await context.CommanderMmrs.ToListAsync();
-        foreach (var commanderMmr in commanderMmrs) {
+        foreach (var commanderMmr in commanderMmrs)
+        {
             var commanderRating = cmdrMmrDic[new CmdrMmmrKey() { Race = commanderMmr.Race, Opprace = commanderMmr.OppRace }];
 
             commanderMmr.SynergyMmr = commanderRating.SynergyMmr;
@@ -207,22 +270,26 @@ public partial class MmrService
     {
         return (double)(eloK * mcv * (1 - elo) * playerImpact);
     }
-    
+
     private static double GetCorrectedRevConsistency(double raw_revConsistency)
     {
         return 1 + consistencyImpact * (raw_revConsistency - 1);
         //return ((1 - consistencyImpact) + (consistencyImpact * raw_revConsistency)); //Equal to above
     }
-    
+
     private static double GetTeamMmr(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, ReplayPlayerDsRDto[] replayPlayers, DateTime gameTime)
     {
         double teamMmr = 0;
 
-        foreach (var replayPlayer in replayPlayers) {
-            if (!playerRatingsCmdr.ContainsKey(replayPlayer.Player.PlayerId)) {
+        foreach (var replayPlayer in replayPlayers)
+        {
+            if (!playerRatingsCmdr.ContainsKey(replayPlayer.Player.PlayerId))
+            {
                 playerRatingsCmdr[replayPlayer.Player.PlayerId] = new List<DsRCheckpoint>() { new() { Mmr = startMmr, Time = gameTime } };
                 teamMmr += startMmr;
-            } else {
+            }
+            else
+            {
                 teamMmr += playerRatingsCmdr[replayPlayer.Player.PlayerId].Last().Mmr;
             }
         }
@@ -235,11 +302,13 @@ public partial class MmrService
         double absSumOppTeamMmrDelta = oppTeamData.PlayersMmrDelta.Sum();
         double absSumMmrAllDelta = absSumTeamMmrDelta + absSumOppTeamMmrDelta;
 
-        if (teamData.Players.Length != oppTeamData.Players.Length) {
+        if (teamData.Players.Length != oppTeamData.Players.Length)
+        {
             throw new Exception("Not same player amount.");
         }
 
-        for (int i = 0; i < teamData.Players.Length; i++) {
+        for (int i = 0; i < teamData.Players.Length; i++)
+        {
             teamData.PlayersMmrDelta[i] = teamData.PlayersMmrDelta[i] *
                 ((absSumMmrAllDelta) / (absSumTeamMmrDelta * 2));
 

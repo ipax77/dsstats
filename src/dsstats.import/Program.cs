@@ -24,8 +24,8 @@ builder.Services.AddDbContext<ReplayContext>(options =>
         p.MigrationsAssembly("MysqlMigrations");
         p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
     })
-     .EnableDetailedErrors()
-     .EnableSensitiveDataLogging()
+     //.EnableDetailedErrors()
+     //.EnableSensitiveDataLogging()
     ;
 });
 
@@ -36,6 +36,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 builder.Services.AddScoped<ImportService>();
+builder.Services.AddScoped<MmrService>();
 
 var app = builder.Build();
 
@@ -50,12 +51,14 @@ if (app.Environment.IsDevelopment())
     // context.Database.EnsureDeleted();
     context.Database.Migrate();
 
-    var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-    // importService.DEBUGSeedUploaders().GetAwaiter().GetResult();
-    importService.DEBUGResetBlobs();
-    var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
+    // var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+    // importService.DEBUGSeedUploaders();
+    // importService.DEBUGResetBlobs();
+    // var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
 
-    Console.WriteLine(result);
+    var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+    mmrService.SeedCommanderMmrs().Wait();
+    mmrService.ReCalculateWithTimes(DateTime.MinValue).Wait();
 }
 
 // Configure the HTTP request pipeline.

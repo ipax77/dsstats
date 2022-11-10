@@ -237,7 +237,7 @@ public partial class ImportService
         return mso;
     }
 
-    public async Task DEBUGSeedUploaders()
+    public void DEBUGSeedUploaders()
     {
         var dirs = Directory.GetDirectories(blobBaseDir).ToList();
 
@@ -258,15 +258,18 @@ public partial class ImportService
         {
             if (Guid.TryParse(new DirectoryInfo(dir).Name, out Guid guid))
             {
-                uploaders.Add(new()
+                if (context.Uploaders.FirstOrDefault(f => f.AppGuid == guid) == null)
                 {
-                    AppGuid = guid
-                });
+                    uploaders.Add(new()
+                    {
+                        AppGuid = guid
+                    });
+                }
             }
         }
 
         context.Uploaders.AddRange(uploaders);
-        await context.SaveChangesAsync();
+        context.SaveChanges();
     }
 
     public void DEBUGResetBlobs()
