@@ -10,13 +10,19 @@ public class DataService : IDataService
     private readonly IStatsRepository statsRepository;
     private readonly BuildService buildService;
     private readonly IStatsService statsService;
+    private readonly MmrService mmrService;
 
-    public DataService(IReplayRepository replayRepository, IStatsRepository statsRepository, BuildService buildService, IStatsService statsService)
+    public DataService(IReplayRepository replayRepository,
+                       IStatsRepository statsRepository,
+                       BuildService buildService,
+                       IStatsService statsService,
+                       MmrService mmrService)
     {
         this.replayRepository = replayRepository;
         this.statsRepository = statsRepository;
         this.buildService = buildService;
         this.statsService = statsService;
+        this.mmrService = mmrService;
     }
 
     public async Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default)
@@ -61,22 +67,22 @@ public class DataService : IDataService
 
     public async Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default)
     {
-        return await statsService.GetRatingsCount(request, token);
+        return await mmrService.GetRatingsCount(request, token);
     }
 
     public async Task<List<PlayerRatingDto>> GetRatings(RatingsRequest request, CancellationToken token = default)
     {
-        return await statsService.GetRatings(request, token);
+        return await mmrService.GetRatings(request, token);
     }
 
     public async Task<string?> GetPlayerRatings(int toonId)
     {
-        return await statsService.GetPlayerRatings(toonId);
+        return await mmrService.GetPlayerRatings(toonId);
     }
 
     public async Task<List<MmrDevDto>> GetRatingsDeviation()
     {
-        return await statsService.GetRatingsDeviation();
+        return await mmrService.GetRatingsDeviation();
     }
 
     public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId)
@@ -86,11 +92,11 @@ public class DataService : IDataService
 
     public async Task<List<MmrDevDto>> GetRatingsDeviationStd()
     {
-        return await statsService.GetRatingsDeviationStd();
+        return await mmrService.GetRatingsDeviationStd();
     }
 
     public async Task<PlayerRatingDto?> GetPlayerRating(int toonId)
     {
-        return await statsService.GetPlayerRating(toonId);
+        return await mmrService.GetPlayerRating(toonId);
     }
 }
