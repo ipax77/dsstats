@@ -52,6 +52,10 @@ public partial class ImportService
         }
         catch (Exception ex)
         {
+            foreach (var blob in blobs)
+            {
+                File.Move(blob, blob + ".error");
+            }
             logger.LogError($"failed importing replays: {ex.Message}");
             importReport.Error = ex.Message;
             return importReport;
@@ -233,26 +237,57 @@ public partial class ImportService
         return mso;
     }
 
-    public async Task DEBUGSeedUploaders()
+    public void DEBUGSeedUploaders()
     {
-        var dirs = Directory.GetDirectories(blobBaseDir);
+        var dirs = Directory.GetDirectories(blobBaseDir).ToList();
+
+        var files = Directory.GetFiles(blobBaseDir, "*.error", SearchOption.AllDirectories).ToList();
+
+        files.ForEach(f =>
+        {
+            string newFile = f.Remove(f.Length - 5);
+            File.Move(f, newFile);
+        });
+
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
 
         List<Uploader> uploaders = new();
         foreach (var dir in dirs)
         {
             if (Guid.TryParse(new DirectoryInfo(dir).Name, out Guid guid))
             {
-                uploaders.Add(new()
+                if (context.Uploaders.FirstOrDefault(f => f.AppGuid == guid) == null)
                 {
-                    AppGuid = guid
-                });
+                    uploaders.Add(new()
+                    {
+                        AppGuid = guid
+                    });
+                }
             }
         }
 
-        using var scope = serviceProvider.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
         context.Uploaders.AddRange(uploaders);
-        await context.SaveChangesAsync();
+        context.SaveChanges();
+    }
+
+    public void DEBUGResetBlobs()
+    {
+        var files = Directory.GetFiles(blobBaseDir, "*.done", SearchOption.AllDirectories).ToList();
+
+        files.ForEach(f =>
+        {
+            string newFile = f.Remove(f.Length - 4);
+            File.Move(f, newFile);
+        });
+
+        var errorFiles = Directory.GetFiles(blobBaseDir, "*.error", SearchOption.AllDirectories).ToList();
+
+        errorFiles.ForEach(f =>
+        {
+            string newFile = f.Remove(f.Length - 5);
+            File.Move(f, newFile);
+        });
     }
 }

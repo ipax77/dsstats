@@ -35,10 +35,11 @@ public record PlayerDsRDto
 
 public record PlayerRatingDto
 {
+    public int PlayerId { get; init; }
     public string Name { get; init; } = null!;
     public int ToonId { get; init; }
-    public double Mmr { get; init; }
-    public double MmrStd { get; init; }
+    public double Mmr { get; set; }
+    public double MmrStd { get; set; }
     public int GamesCmdr { get; set; }
     public int WinsCmdr { get; set; }
     public int MvpCmdr { get; set; }

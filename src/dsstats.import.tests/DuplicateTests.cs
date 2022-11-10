@@ -34,7 +34,7 @@ public class DuplicateTests : TestWithSqlite
         {
             return;
         }
-        await importService.DEBUGSeedUploaders();
+        importService.DEBUGSeedUploaders();
 
         Assert.True(context.Uploaders.Count() > 2);
 
@@ -115,7 +115,7 @@ public class DuplicateTests : TestWithSqlite
         {
             return;
         }
-        await importService.DEBUGSeedUploaders();
+        importService.DEBUGSeedUploaders();
 
         string testFile = Startup.GetTestFilePath("uploadtest2.base64");
 
@@ -179,7 +179,7 @@ public class DuplicateTests : TestWithSqlite
         {
             return;
         }
-        await importService.DEBUGSeedUploaders();
+        importService.DEBUGSeedUploaders();
 
         Assert.True(context.Uploaders.Count() > 2);
 
@@ -256,7 +256,7 @@ public class DuplicateTests : TestWithSqlite
         {
             return;
         }
-        await importService.DEBUGSeedUploaders();
+        importService.DEBUGSeedUploaders();
 
         var countBefore = await context.Replays.CountAsync();
 

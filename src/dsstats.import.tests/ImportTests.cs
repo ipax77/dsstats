@@ -76,7 +76,7 @@ public class ImportTests : TestWithSqlite
         {
             return;
         }
-        await importService.DEBUGSeedUploaders();
+        importService.DEBUGSeedUploaders();
 
         Assert.True(context.Uploaders.Count() > 2);
 
@@ -141,7 +141,7 @@ public class ImportTests : TestWithSqlite
         {
             return;
         }
-        await importService.DEBUGSeedUploaders();
+        importService.DEBUGSeedUploaders();
 
         bool dbHasUploader = await context.Uploaders.AnyAsync();
         Assert.True(dbHasUploader);
