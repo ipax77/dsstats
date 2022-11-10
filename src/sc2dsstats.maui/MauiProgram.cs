@@ -12,6 +12,9 @@ namespace sc2dsstats.maui;
 
 public static class MauiProgram
 {
+    public static DateTime RecentSeasonStart { get; set; }
+
+
     public static readonly string DbName = "dsstats3.db";
     public static MauiApp CreateMauiApp()
     {
@@ -68,8 +71,13 @@ public static class MauiProgram
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         context.Database.Migrate();
 
+
+        DateTime currentTime = DateTime.UtcNow.Date;
+        const int seasonMonths = 6;
+        RecentSeasonStart = currentTime.AddMonths(-(currentTime.Month % seasonMonths)).AddDays(-(currentTime.Day - 1));
+
         var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-        _ = mmrService.ReCalculateWithDictionary(DateTime.MinValue);
+        _ = mmrService.ReCalculateWithDictionary(RecentSeasonStart, DateTime.UtcNow);
 
         return builder.Build();
     }
