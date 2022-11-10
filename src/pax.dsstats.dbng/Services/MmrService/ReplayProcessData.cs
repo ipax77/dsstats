@@ -15,5 +15,8 @@ internal record ReplayProcessData
     public TeamData WinnerTeamData { get; init; }
     public TeamData LoserTeamData { get; init; }
 
+    public double WinnerPlayersExpectationToWin { get; set; }
+    public double WinnerCmdrExpectationToWin { get; set; }
+
     public DateTime ReplayGameTime { get; init; }
 }

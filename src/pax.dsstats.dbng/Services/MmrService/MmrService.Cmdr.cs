@@ -49,10 +49,10 @@ public partial class MmrService
         SetMmrs(playerRatingsCmdr, replayProcessData.WinnerTeamData, replayProcessData.ReplayGameTime);
         SetMmrs(playerRatingsCmdr, replayProcessData.LoserTeamData, replayProcessData.ReplayGameTime);
 
-        SetExpectationsToWin(replayProcessData.WinnerTeamData, replayProcessData.LoserTeamData);
+        SetExpectationsToWin(replayProcessData);
 
-        CalculateRatingsDeltas(playerRatingsCmdr, replayProcessData.WinnerTeamData);
-        CalculateRatingsDeltas(playerRatingsCmdr, replayProcessData.LoserTeamData);
+        CalculateRatingsDeltas(playerRatingsCmdr, replayProcessData, replayProcessData.WinnerTeamData);
+        CalculateRatingsDeltas(playerRatingsCmdr, replayProcessData, replayProcessData.LoserTeamData);
 
         FixMmrEquality(replayProcessData.WinnerTeamData, replayProcessData.LoserTeamData);
 
@@ -98,13 +98,13 @@ public partial class MmrService
         teamData.PlayersMmr = GetTeamMmr(playerRatingsCmdr, teamData.Players, gameTime);
     }
 
-    private void SetExpectationsToWin(TeamData winnerTeamData, TeamData loserTeamData)
+    private static void SetExpectationsToWin(ReplayProcessData replayProcessData)
     {
-        winnerTeamData.WinnerPlayersExpectationToWin = loserTeamData.WinnerPlayersExpectationToWin = EloExpectationToWin(winnerTeamData.PlayersMmr, loserTeamData.PlayersMmr);
-        winnerTeamData.WinnerCmdrExpectationToWin = loserTeamData.WinnerCmdrExpectationToWin = EloExpectationToWin(winnerTeamData.CmdrComboMmr, loserTeamData.CmdrComboMmr);
+        replayProcessData.WinnerPlayersExpectationToWin = EloExpectationToWin(replayProcessData.WinnerTeamData.PlayersMmr, replayProcessData.LoserTeamData.PlayersMmr);
+        replayProcessData.WinnerCmdrExpectationToWin = EloExpectationToWin(replayProcessData.WinnerTeamData.CmdrComboMmr, replayProcessData.LoserTeamData.CmdrComboMmr);
     }
 
-    private void CalculateRatingsDeltas(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData)
+    private void CalculateRatingsDeltas(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, ReplayProcessData replayProcessData, TeamData teamData)
     {
         for (int i = 0; i < teamData.Players.Length; i++)
         {
@@ -128,11 +128,11 @@ public partial class MmrService
             if (playerImpact > 1 || playerImpact < 0) {
             }
 
-            teamData.PlayersMmrDelta[i] = CalculateMmrDelta(teamData.WinnerPlayersExpectationToWin, playerImpact, (useCommanderMmr ? (1 - teamData.WinnerCmdrExpectationToWin) : 1));
-            teamData.PlayersConsistencyDelta[i] = consistencyDeltaMult * 2 * (teamData.WinnerPlayersExpectationToWin - 0.50);
+            teamData.PlayersMmrDelta[i] = CalculateMmrDelta(replayProcessData.WinnerPlayersExpectationToWin, playerImpact, (useCommanderMmr ? (1 - replayProcessData.WinnerCmdrExpectationToWin) : 1));
+            teamData.PlayersConsistencyDelta[i] = consistencyDeltaMult * 2 * (replayProcessData.WinnerPlayersExpectationToWin - 0.50);
 
             double commandersMmrImpact = Math.Pow(startMmr, (playerMmr / maxMmrCmdr)) / startMmr;
-            teamData.CmdrMmrDelta[i] = CalculateMmrDelta(teamData.WinnerCmdrExpectationToWin, 1, commandersMmrImpact);
+            teamData.CmdrMmrDelta[i] = CalculateMmrDelta(replayProcessData.WinnerCmdrExpectationToWin, 1, commandersMmrImpact);
 
 
             if (teamData.PlayersMmrDelta[i] > eloK) {
