@@ -20,9 +20,6 @@ internal record TeamData
     public double CmdrComboMmr { get; set; }
     public double PlayersMmr { get; set; }
 
-    public double WinnerPlayersExpectationToWin { get; set; }
-    public double WinnerCmdrExpectationToWin { get; set; }
-
     public double[] PlayersMmrDelta { get; init; }
     public double[] PlayersConsistencyDelta { get; init; }
     public double[] CmdrMmrDelta { get; init; }

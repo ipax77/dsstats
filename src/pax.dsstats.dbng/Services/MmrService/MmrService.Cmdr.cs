@@ -9,17 +9,18 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class MmrService
 {
+    private double maxMmrCmdr = startMmr; //ToDo - load for continuation!!!
+
     private const double AntiSynergyPercentage = 0.50;
     private const double SynergyPercentage = 1 - AntiSynergyPercentage;
     private const double OwnMatchupPercentage = 1.0 / 3;
     private const double MatesMatchupsPercentage = (1 - OwnMatchupPercentage) / 2;
 
-    private async Task<Dictionary<int, List<DsRCheckpoint>>> CalculateCmdr(DateTime startTime)
+    private async Task<Dictionary<int, List<DsRCheckpoint>>> CalculateCmdr(DateTime startTime, DateTime endTime)
     {
         Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr = new();
-        maxMmr = startMmr;
 
-        var replayDsRDtos = await GetCmdrReplayDsRDtos(startTime);
+        var replayDsRDtos = await GetCmdrReplayDsRDtos(startTime, endTime);
         foreach (var replay in replayDsRDtos)
         {
             ProcessCmdrReplay(playerRatingsCmdr, replay);
@@ -35,21 +36,23 @@ public partial class MmrService
             return;
         }
 
-
         ReplayProcessData replayProcessData = new(replay);
         if (replayProcessData.WinnerTeamData.Players.Length != 3 || replayProcessData.LoserTeamData.Players.Length != 3) {
             logger.LogWarning($"skipping wrong teamcounts");
             return;
         }
 
+        if (replay.WinnerTeam == 0) {
+            return;
+        }
+
         SetMmrs(playerRatingsCmdr, replayProcessData.WinnerTeamData, replayProcessData.ReplayGameTime);
         SetMmrs(playerRatingsCmdr, replayProcessData.LoserTeamData, replayProcessData.ReplayGameTime);
 
-        SetExpectationsToWin(replayProcessData.WinnerTeamData, replayProcessData.LoserTeamData);
-        //SetExpectationsToWin(replayProcessData.LoserTeamData, replayProcessData.WinnerTeamData);
+        SetExpectationsToWin(replayProcessData);
 
-        CalculateRatingsDeltas(playerRatingsCmdr, replayProcessData.WinnerTeamData);
-        CalculateRatingsDeltas(playerRatingsCmdr, replayProcessData.LoserTeamData);
+        CalculateRatingsDeltas(playerRatingsCmdr, replayProcessData, replayProcessData.WinnerTeamData);
+        CalculateRatingsDeltas(playerRatingsCmdr, replayProcessData, replayProcessData.LoserTeamData);
 
         FixMmrEquality(replayProcessData.WinnerTeamData, replayProcessData.LoserTeamData);
 
@@ -95,13 +98,13 @@ public partial class MmrService
         teamData.PlayersMmr = GetTeamMmr(playerRatingsCmdr, teamData.Players, gameTime);
     }
 
-    private void SetExpectationsToWin(TeamData winnerTeamData, TeamData loserTeamData)
+    private static void SetExpectationsToWin(ReplayProcessData replayProcessData)
     {
-        winnerTeamData.WinnerPlayersExpectationToWin = loserTeamData.WinnerPlayersExpectationToWin = EloExpectationToWin(winnerTeamData.PlayersMmr, loserTeamData.PlayersMmr);
-        winnerTeamData.WinnerCmdrExpectationToWin = loserTeamData.WinnerCmdrExpectationToWin = EloExpectationToWin(winnerTeamData.CmdrComboMmr, loserTeamData.CmdrComboMmr);
+        replayProcessData.WinnerPlayersExpectationToWin = EloExpectationToWin(replayProcessData.WinnerTeamData.PlayersMmr, replayProcessData.LoserTeamData.PlayersMmr);
+        replayProcessData.WinnerCmdrExpectationToWin = EloExpectationToWin(replayProcessData.WinnerTeamData.CmdrComboMmr, replayProcessData.LoserTeamData.CmdrComboMmr);
     }
 
-    private void CalculateRatingsDeltas(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData)
+    private void CalculateRatingsDeltas(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, ReplayProcessData replayProcessData, TeamData teamData)
     {
         for (int i = 0; i < teamData.Players.Length; i++)
         {
@@ -110,9 +113,9 @@ public partial class MmrService
             double playerConsistency = lastPlRating.Consistency;
 
             double playerMmr = lastPlRating.Mmr;
-            if (playerMmr > maxMmr)
+            if (playerMmr > maxMmrCmdr)
             {
-                maxMmr = playerMmr;
+                maxMmrCmdr = playerMmr;
             }
 
             double factor_playerToTeamMates = PlayerToTeamMates(teamData.PlayersMmr * teamData.Players.Length, playerMmr);
@@ -125,11 +128,11 @@ public partial class MmrService
             if (playerImpact > 1 || playerImpact < 0) {
             }
 
-            teamData.PlayersMmrDelta[i] = CalculateMmrDelta(teamData.WinnerPlayersExpectationToWin, playerImpact, (useCommanderMmr ? (1 - teamData.WinnerCmdrExpectationToWin) : 1));
-            teamData.PlayersConsistencyDelta[i] = consistencyDeltaMult * 2 * (teamData.WinnerPlayersExpectationToWin - 0.50);
+            teamData.PlayersMmrDelta[i] = CalculateMmrDelta(replayProcessData.WinnerPlayersExpectationToWin, playerImpact, (useCommanderMmr ? (1 - replayProcessData.WinnerCmdrExpectationToWin) : 1));
+            teamData.PlayersConsistencyDelta[i] = consistencyDeltaMult * 2 * (replayProcessData.WinnerPlayersExpectationToWin - 0.50);
 
-            double commandersMmrImpact = Math.Pow(startMmr, (playerMmr / maxMmr)) / startMmr;
-            teamData.CmdrMmrDelta[i] = CalculateMmrDelta(teamData.WinnerCmdrExpectationToWin, 1, commandersMmrImpact);
+            double commandersMmrImpact = Math.Pow(startMmr, (playerMmr / maxMmrCmdr)) / startMmr;
+            teamData.CmdrMmrDelta[i] = CalculateMmrDelta(replayProcessData.WinnerCmdrExpectationToWin, 1, commandersMmrImpact);
 
 
             if (teamData.PlayersMmrDelta[i] > eloK) {
@@ -218,7 +221,7 @@ public partial class MmrService
         return commandersComboMMRSum / 3;
     }
 
-    private async Task<List<ReplayDsRDto>> GetCmdrReplayDsRDtos(DateTime startTime)
+    private async Task<List<ReplayDsRDto>> GetCmdrReplayDsRDtos(DateTime startTime, DateTime endTime)
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -226,9 +229,10 @@ public partial class MmrService
         return await context.Replays
             .Include(r => r.ReplayPlayers)
                 .ThenInclude(rp => rp.Player)
-            .Where(r => r.DefaultFilter
-                && (r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic)
-                && r.GameTime >= startTime)
+            .Where(r => /*r.DefaultFilter
+                && */(r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic)
+                && (r.GameTime >= startTime)
+                && (r.GameTime <= endTime))
             .OrderBy(o => o.GameTime)
                 .ThenBy(r => r.ReplayId)
             .AsNoTracking()
