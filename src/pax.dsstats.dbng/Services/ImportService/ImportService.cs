@@ -85,6 +85,8 @@ public partial class ImportService
 
         sw.Restart();
         replays.ForEach(f => SetReplayPlayerLastSpawnHashes(f));
+        replays.SelectMany(s => s.ReplayPlayers).ToList().ForEach(f => f.ReplayPlayerId = 0);
+
         int countBefore = replays.Count;
         replays = HandleLocalDuplicates(replays);
         sw.Stop();
