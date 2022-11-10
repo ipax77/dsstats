@@ -38,6 +38,7 @@ public partial class MmrService
     private static readonly double consistencyImpact = 0.50;
     private static readonly double consistencyDeltaMult = 0.15;
     private Dictionary<CmdrMmmrKey, CommanderMmr> cmdrMmrDic = new();
+    private static DateTime LatestReplayGameTime = DateTime.MinValue;
 
     // todo get rid of it
     private readonly Dictionary<int, float> replayPlayerMmrChanges = new();
@@ -45,45 +46,89 @@ public partial class MmrService
     private static bool useCommanderMmr = false;
     private static bool useConsistency = true;
     private static bool useFactorToTeamMates = true;
+    SemaphoreSlim ss = new(1, 1);
 
-    public async Task ReCalculate(DateTime startTime, DateTime endTime)
-    {
-        Stopwatch sw = Stopwatch.StartNew();
+    //public async Task ReCalculate(DateTime startTime, DateTime endTime)
+    //{
+    //    Stopwatch sw = Stopwatch.StartNew();
 
-        await ClearRatingsInDb();
+    //    await ClearRatingsInDb();
 
-        await ResetGlobals();
+    //    await ResetGlobals();
 
-        var playerRatingsCmdr = await CalculateCmdr(startTime, endTime);
-        await SaveCommanderData();
-        await SavePlayersData(playerRatingsCmdr);
-        await SaveReplayPlayersData(replayPlayerMmrChanges);
+    //    var playerRatingsCmdr = await CalculateCmdr(startTime, endTime);
+    //    await SaveCommanderData();
+    //    await SavePlayersData(playerRatingsCmdr);
+    //    await SaveReplayPlayersData(replayPlayerMmrChanges);
 
-        // (var playerRatingsStd, var replayPlayerMmrChanges) = await CalculateStd(startTime);
-        // await SavePlayersData(playerRatingsStd);
-        // await SaveReplayPlayersData(replayPlayerMmrChanges);
+    //    // (var playerRatingsStd, var replayPlayerMmrChanges) = await CalculateStd(startTime);
+    //    // await SavePlayersData(playerRatingsStd);
+    //    // await SaveReplayPlayersData(replayPlayerMmrChanges);
 
-        sw.Stop();
-        OnRecalculated(new() { Duration = sw.Elapsed });
-    }
+    //    sw.Stop();
+    //    OnRecalculated(new() { Duration = sw.Elapsed });
+    //}
 
     public async Task ReCalculateWithDictionary(DateTime startTime, DateTime endTime)
     {
-        Stopwatch sw = Stopwatch.StartNew();
+        await ss.WaitAsync();
+        try {
+            Stopwatch sw = Stopwatch.StartNew();
 
-        await ResetGlobals();
+            await ResetGlobals();
 
-        var playerRatingsCmdr = await CalculateCmdr(startTime, endTime);
-        var playerInfos = await GetPlayerInfos();
+            var playerRatingsCmdr = await ReCalculateCmdr(startTime, endTime);
+            var playerInfos = await GetPlayerInfos();
 
-        await SetGlobals(playerRatingsCmdr, playerInfos);
+            await SetGlobals(playerRatingsCmdr, playerInfos);
 
-        //var json = JsonSerializer.Serialize(PlayerIdRatings);
-        //File.WriteAllText("/data/ds/playeridratings.json", json);
+            //var json = JsonSerializer.Serialize(PlayerIdRatings);
+            //File.WriteAllText("/data/ds/playeridratings.json", json);
 
-        sw.Stop();
-        logger.LogInformation($"recalcualated in {sw.ElapsedMilliseconds} ms");
-        OnRecalculated(new() { Duration = sw.Elapsed });
+            sw.Stop();
+            logger.LogInformation($"recalcualated in {sw.ElapsedMilliseconds} ms");
+            OnRecalculated(new() { Duration = sw.Elapsed });
+        }
+        finally {
+            ss.Release();
+        }
+    }
+
+    public async Task<bool> ContinueCalculateWithDictionary(List<Replay> newReplays)
+    {
+        if (newReplays.Any(x => x.GameTime < LatestReplayGameTime)) {
+            //ReCalculateWithDictionary(startTime, DateTime.Today.AddDays(1));
+            return false;
+        }
+
+        var newReplaysCmdr = newReplays.Where(x => x.GameMode == GameMode.Commanders || x.GameMode == GameMode.CommandersHeroic)
+            .Select(s => mapper.Map<ReplayDsRDto>(s)).ToList();
+
+        await ss.WaitAsync();
+        try {
+            Stopwatch sw = Stopwatch.StartNew();
+
+            var playerRatingsCmdr = ContinueCalculateCmdr(GetPlayerRatingsCmdr(), newReplaysCmdr);
+            var playerInfos = await GetPlayerInfos();
+
+            await ContinueGlobals(playerRatingsCmdr, playerInfos);
+
+            //var json = JsonSerializer.Serialize(PlayerIdRatings);
+            //File.WriteAllText("/data/ds/playeridratings.json", json);
+
+            sw.Stop();
+            logger.LogInformation($"continue calculation in {sw.ElapsedMilliseconds} ms");
+            OnRecalculated(new() { Duration = sw.Elapsed });
+        } finally {
+            ss.Release();
+        }
+
+        return true;
+    }
+
+    private static Dictionary<int, List<DsRCheckpoint>> GetPlayerRatingsCmdr()
+    {
+        return new();
     }
 
     private async Task SetGlobals(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, Dictionary<int, PlayerInfoDto> playerInfos)
@@ -93,33 +138,27 @@ public partial class MmrService
 
         var toonIdPlayerIdMap = await GetToonIdPlayerIdMap();
 
-
-        for (int i = 0; i < playerInfos.Count; i++)
-        {
+        for (int i = 0; i < playerInfos.Count; i++) {
             var playerInfo = playerInfos.ElementAt(i);
             int playerId = 0;
             string name = "";
-            if (toonIdPlayerIdMap.ContainsKey(playerInfo.Key))
-            {
+            if (toonIdPlayerIdMap.ContainsKey(playerInfo.Key)) {
                 var tpMap = toonIdPlayerIdMap[playerInfo.Key];
                 playerId = tpMap.Key;
                 name = tpMap.Value;
             }
 
             MmrInfo? mmrInfo = null;
-            if (playerId > 0 && playerRatingsCmdr.ContainsKey(playerId))
-            {
+            if (playerId > 0 && playerRatingsCmdr.ContainsKey(playerId)) {
                 var plRat = playerRatingsCmdr[playerId];
-                mmrInfo = new()
-                {
+                mmrInfo = new() {
                     CmdrMmr = plRat.LastOrDefault()?.Mmr ?? 0,
                     CmdrOverTime = GetOverTimeRating(plRat) ?? ""
                 };
                 ToonIdCmdrRatingOverTime[playerInfo.Key] = mmrInfo.CmdrOverTime;
             }
 
-            ToonIdRatings[playerInfo.Key] = new PlayerRatingDto()
-            {
+            ToonIdRatings[playerInfo.Key] = new PlayerRatingDto() {
                 PlayerId = playerId,
                 Name = name,
                 ToonId = playerInfo.Key,
@@ -134,6 +173,10 @@ public partial class MmrService
                 TeamGamesStd = playerInfo.Value.TeamGamesStd,
             };
         }
+    }
+    private async Task ContinueGlobals(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, Dictionary<int, PlayerInfoDto> playerInfos)
+    {
+        
     }
 
     private async Task<Dictionary<int, KeyValuePair<int, string>>> GetToonIdPlayerIdMap()
@@ -324,17 +367,23 @@ public partial class MmrService
 
         foreach (var replayPlayer in replayPlayers)
         {
-            if (!playerRatingsCmdr.ContainsKey(replayPlayer.Player.PlayerId))
+            if (!playerRatingsCmdr.ContainsKey(GetMmrId(replayPlayer.Player)))
             {
-                playerRatingsCmdr[replayPlayer.Player.PlayerId] = new List<DsRCheckpoint>() { new() { Mmr = startMmr, Time = gameTime } };
+                playerRatingsCmdr[GetMmrId(replayPlayer.Player)] = new List<DsRCheckpoint>() { new() { Mmr = startMmr, Time = gameTime } };
                 teamMmr += startMmr;
             }
             else
             {
-                teamMmr += playerRatingsCmdr[replayPlayer.Player.PlayerId].Last().Mmr;
+                teamMmr += playerRatingsCmdr[GetMmrId(replayPlayer.Player)].Last().Mmr;
             }
         }
         return teamMmr / 3.0;
+    }
+
+    private static int GetMmrId(PlayerDsRDto player)
+    {
+        //todo
+        return player.PlayerId;
     }
 
     private static void FixMmrEquality(TeamData teamData, TeamData oppTeamData)
