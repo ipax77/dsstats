@@ -49,3 +49,22 @@ public record PlayerRatingDto
     public int MvpStd { get; set; }
     public int TeamGamesStd { get; set; }
 }
+
+//public record PlayerRatingDtoNg
+//{
+//    public int PlayerId { get; init; }
+//    public string Name { get; init; } = null!;
+//    public int ToonId { get; init; }
+//    public RatingStatsDto CmdrRatingStats { get; set; } = new();
+//    public RatingStatsDto StdRatingStats { get; set; } = new();
+//}
+
+//public record RatingStatsDto
+//{
+//    public int Games { get; set; }
+//    public int Wins { get; set; }
+//    public int Mvp { get; set; }
+//    public int TeamGames { get; set; }
+//    public double Mmr { get; set; }
+//    public double Consistency { get; set; }
+//}

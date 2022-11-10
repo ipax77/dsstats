@@ -16,17 +16,22 @@ public partial class MmrService
     private const double OwnMatchupPercentage = 1.0 / 3;
     private const double MatesMatchupsPercentage = (1 - OwnMatchupPercentage) / 2;
 
-    private async Task<Dictionary<int, List<DsRCheckpoint>>> CalculateCmdr(DateTime startTime, DateTime endTime)
+    private async Task<Dictionary<int, List<DsRCheckpoint>>> ReCalculateCmdr(DateTime startTime, DateTime endTime)
     {
         Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr = new();
 
         var replayDsRDtos = await GetCmdrReplayDsRDtos(startTime, endTime);
-        foreach (var replay in replayDsRDtos)
-        {
+        return ContinueCalculateCmdr(playerRatingsCmdr, replayDsRDtos);
+    }
+    private Dictionary<int, List<DsRCheckpoint>> ContinueCalculateCmdr(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, List<ReplayDsRDto> newReplays)
+    {
+        foreach (var replay in newReplays) {
             ProcessCmdrReplay(playerRatingsCmdr, replay);
         }
+        LatestReplayGameTime = newReplays.LastOrDefault()?.GameTime ?? DateTime.MinValue;
         return playerRatingsCmdr;
     }
+
 
     private void ProcessCmdrReplay(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, ReplayDsRDto replay)
     {
@@ -76,7 +81,7 @@ public partial class MmrService
         for (int i = 0; i < teamData.Players.Length; i++)
         {
             var player = teamData.Players[i];
-            var plRatings = playerRatingsCmdr[player.Player.PlayerId];
+            var plRatings = playerRatingsCmdr[GetMmrId(player.Player)];
             var currentPlayerRating = plRatings.Last();
 
             double mmrBefore = currentPlayerRating.Mmr;
@@ -108,7 +113,7 @@ public partial class MmrService
     {
         for (int i = 0; i < teamData.Players.Length; i++)
         {
-            var plRatings = playerRatingsCmdr[teamData.Players[i].Player.PlayerId];
+            var plRatings = playerRatingsCmdr[GetMmrId(teamData.Players[i].Player)];
             var lastPlRating = plRatings.Last();
             double playerConsistency = lastPlRating.Consistency;
 
