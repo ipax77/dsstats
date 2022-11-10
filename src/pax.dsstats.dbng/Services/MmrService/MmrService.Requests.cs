@@ -159,7 +159,9 @@ public partial class MmrService
             {
                 Count = s.Count(),
                 Mmr = s.Average(a => Math.Round(a.Mmr, 0))
-            }).ToList();
+            })
+            .OrderBy(o => o.Mmr)
+            .ToList();
 
         return await Task.FromResult(devs);
     }
@@ -172,7 +174,9 @@ public partial class MmrService
             {
                 Count = s.Count(),
                 Mmr = s.Average(a => Math.Round(a.MmrStd, 0))
-            }).ToList();
+            })
+            .OrderBy(o => o.Mmr)
+            .ToList();
 
         return await Task.FromResult(devs);
     }
