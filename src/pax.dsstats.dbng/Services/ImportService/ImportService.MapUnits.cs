@@ -60,6 +60,7 @@ public partial class ImportService
                 {
                     await context.SaveChangesAsync();
                 }
+                untrackedDbUnits[unitName] = dbUnit.UnitId;
             }
         }
         if (newUnits.Count > 0)
