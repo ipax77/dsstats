@@ -58,7 +58,7 @@ if (app.Environment.IsDevelopment())
 
     var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
     mmrService.SeedCommanderMmrs().Wait();
-    mmrService.ReCalculateWithTimes(DateTime.MinValue).Wait();
+    mmrService.ReCalculateWithDictionary(DateTime.MinValue).Wait();
 }
 
 // Configure the HTTP request pipeline.

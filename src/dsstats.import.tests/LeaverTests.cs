@@ -34,7 +34,7 @@ public class LeaverTests : TestWithSqlite
         {
             return;
         }
-        await importService.DEBUGSeedUploaders();
+        importService.DEBUGSeedUploaders();
 
         Assert.True(context.Uploaders.Count() > 2);
 

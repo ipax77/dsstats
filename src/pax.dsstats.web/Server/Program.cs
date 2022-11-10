@@ -18,8 +18,10 @@ builder.Host.ConfigureAppConfiguration((context, config) =>
 // Add services to the container.
 
 var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 39));
-var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
+// var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
 // var connectionString = builder.Configuration["ServerConfig:DsstatsProdConnectionString"];
+var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
+
 var oldConnectionString = builder.Configuration["ServerConfig:DBConnectionString2"];
 
 builder.Services.AddDbContext<ReplayContext>(options =>
@@ -53,7 +55,7 @@ builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
 builder.Services.AddSingleton<FireMmrService>();
 
-builder.Services.AddScoped<MmrService>();
+builder.Services.AddSingleton<MmrService>();
 
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
@@ -87,26 +89,15 @@ if (app.Environment.IsProduction())
 
     var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
     mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
+    mmrService.ReCalculateWithDictionary(DateTime.MinValue).GetAwaiter().GetResult();
 }
 
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    //var mmrServie = scope.ServiceProvider.GetRequiredService<MmrService>();
-    //mmrServie.CalcMmmr().GetAwaiter().GetResult();
-
-    //var mmrServie = scope.ServiceProvider.GetRequiredService<FireMmrService>();
-    //mmrServie.CalcMmmr().GetAwaiter().GetResult();
-
-    //var playerInfo = statsService.GetPlayerInfo(new() { 226401, 10188255, 8648278 }).GetAwaiter().GetResult();
-    //Console.WriteLine(playerInfo);
-
-    //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-    //statsService.SeedPlayerInfos().GetAwaiter().GetResult();
-
     var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-    mmrService.SeedCommanderMmrs().Wait();
-    mmrService.ReCalculate(DateTime.MinValue).Wait();
+    mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
+    mmrService.ReCalculateWithDictionary(DateTime.MinValue).GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.

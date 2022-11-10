@@ -11,6 +11,9 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class MmrService
 {
+    public static Dictionary<int, PlayerRatingDto> ToonIdRatings { get; private set; } = new();
+    public static Dictionary<int, string> ToonIdCmdrRatingOverTime { get; private set; } = new();
+
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
     private readonly ILogger<MmrService> logger;
@@ -67,43 +70,84 @@ public partial class MmrService
         OnRecalculated(new() { Duration = sw.Elapsed });
     }
 
-    public async Task ReCalculateWithTimes(DateTime startTime)
+    public async Task ReCalculateWithDictionary(DateTime startTime)
     {
         Stopwatch sw = Stopwatch.StartNew();
 
-        await ClearRatingsInDb();
-        sw.Stop();
-        logger.LogWarning($"cleared db in {sw.ElapsedMilliseconds} ms");
-        sw.Restart();
         await ResetGlobals();
-        sw.Stop();
-        logger.LogWarning($"reset globals in {sw.ElapsedMilliseconds} ms");
-        sw.Restart();
+
         var playerRatingsCmdr = await CalculateCmdr(startTime);
-        sw.Stop();
-        logger.LogWarning($"calculated in {sw.ElapsedMilliseconds} ms");
-        sw.Restart();
+        var playerInfos = await GetPlayerInfos();
 
-        //await CalculateStd(startTime);
+        await SetGlobals(playerRatingsCmdr, playerInfos);
 
-        await SavePlayersData(playerRatingsCmdr);
-        sw.Stop();
-        logger.LogWarning($"players saved in {sw.ElapsedMilliseconds} ms");
-        sw.Restart();
-        await SaveCommanderData();
-        sw.Stop();
-        logger.LogWarning($"cmdrs saved in {sw.ElapsedMilliseconds} ms");
-        sw.Restart();
-        await SaveReplayPlayersData(replayPlayerMmrChanges);
-        sw.Stop();
-        logger.LogWarning($"replayplayers saved in {sw.ElapsedMilliseconds} ms");
-        sw.Restart();
-
-        // var playerRatingsStd = await CalculateStd(startTime);
-        // await SavePlayersData(playerRatingsStd);
+        //var json = JsonSerializer.Serialize(PlayerIdRatings);
+        //File.WriteAllText("/data/ds/playeridratings.json", json);
 
         sw.Stop();
+        logger.LogInformation($"recalcualated in {sw.ElapsedMilliseconds} ms");
         OnRecalculated(new() { Duration = sw.Elapsed });
+    }
+
+    private async Task SetGlobals(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, Dictionary<int, PlayerInfoDto> playerInfos)
+    {
+        ToonIdRatings.Clear();
+        ToonIdCmdrRatingOverTime.Clear();
+
+        var toonIdPlayerIdMap = await GetToonIdPlayerIdMap();
+
+
+        for (int i = 0; i < playerInfos.Count; i++)
+        {
+            var playerInfo = playerInfos.ElementAt(i);
+            int playerId = 0;
+            string name = "";
+            if (toonIdPlayerIdMap.ContainsKey(playerInfo.Key))
+            {
+                var tpMap = toonIdPlayerIdMap[playerInfo.Key];
+                playerId = tpMap.Key;
+                name = tpMap.Value;
+            }
+
+            MmrInfo? mmrInfo = null;
+            if (playerId > 0 && playerRatingsCmdr.ContainsKey(playerId))
+            {
+                var plRat = playerRatingsCmdr[playerId];
+                mmrInfo = new()
+                {
+                    CmdrMmr = plRat.LastOrDefault()?.Mmr ?? 0,
+                    CmdrOverTime = GetOverTimeRating(plRat) ?? ""
+                };
+                ToonIdCmdrRatingOverTime[playerInfo.Key] = mmrInfo.CmdrOverTime;
+            }
+
+            ToonIdRatings[playerInfo.Key] = new PlayerRatingDto()
+            {
+                PlayerId = playerId,
+                Name = name,
+                ToonId = playerInfo.Key,
+                Mmr = mmrInfo?.CmdrMmr ?? 0,
+                GamesCmdr = playerInfo.Value.GamesCmdr,
+                WinsCmdr = playerInfo.Value.WinsCmdr,
+                MvpCmdr = playerInfo.Value.MvpCmdr,
+                TeamGamesCmdr = playerInfo.Value.TeamGamesCmdr,
+                GamesStd = playerInfo.Value.GamesStd,
+                WinsStd = playerInfo.Value.WinsStd,
+                MvpStd = playerInfo.Value.MvpStd,
+                TeamGamesStd = playerInfo.Value.TeamGamesStd,
+            };
+        }
+    }
+
+    private async Task<Dictionary<int, KeyValuePair<int, string>>> GetToonIdPlayerIdMap()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return (await context.Players
+            .Select(s => new { s.PlayerId, s.ToonId, s.Name })
+            .ToListAsync())
+            .ToDictionary(k => k.ToonId, v => new KeyValuePair<int, string>(v.PlayerId, v.Name));
     }
 
     private async Task ResetGlobals()
@@ -162,7 +206,7 @@ public partial class MmrService
                 $" WHERE {nameof(Player.PlayerId)} = {ent.Key}; ");
 
             i++;
-            if (i % 1000 == 0)
+            if (i % 500 == 0)
             {
                 await context.Database.ExecuteSqlRawAsync(sb.ToString());
                 sb.Clear();
@@ -328,4 +372,12 @@ internal record CmdrMmmrKey
 public class MmrRecalculatedEvent : EventArgs
 {
     public TimeSpan Duration { get; set; }
+}
+
+public record MmrInfo
+{
+    public double CmdrMmr { get; set; }
+    public double StdMmr { get; set; }
+    public string CmdrOverTime { get; set; } = string.Empty;
+    public string StdOverTime { get; set; } = string.Empty;
 }

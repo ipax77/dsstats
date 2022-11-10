@@ -13,13 +13,19 @@ namespace pax.dsstats.web.Server.Controllers
         private readonly IStatsRepository statsRepository;
         private readonly BuildService buildService;
         private readonly IStatsService statsService;
+        private readonly MmrService mmrService;
 
-        public StatsController(IReplayRepository replayRepository, IStatsRepository statsRepository, BuildService buildService, IStatsService statsService)
+        public StatsController(IReplayRepository replayRepository,
+                               IStatsRepository statsRepository,
+                               BuildService buildService,
+                               IStatsService statsService,
+                               MmrService mmrService)
         {
             this.replayRepository = replayRepository;
             this.statsRepository = statsRepository;
             this.buildService = buildService;
             this.statsService = statsService;
+            this.mmrService = mmrService;
         }
 
         [HttpGet]
@@ -66,21 +72,22 @@ namespace pax.dsstats.web.Server.Controllers
         [Route("GetRatingsCount")]
         public async Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default)
         {
-            return await statsService.GetRatingsCount(request, token);
+            // return await statsService.GetRatingsCount(request, token);
+            return await mmrService.GetRatingsCount(request, token);
         }
 
         [HttpPost]
         [Route("GetRatings")]
         public async Task<List<PlayerRatingDto>> GetRatings(RatingsRequest request, CancellationToken token = default)
         {
-            return await statsService.GetRatings(request, token);
+            return await mmrService.GetRatings(request, token);
         }
 
         [HttpGet]
         [Route("GetPlayerRatings/{toonId}")]
         public async Task<ActionResult<string>> GetPlayerRatings(int toonId)
         {
-            var rating = await statsService.GetPlayerRatings(toonId);
+            var rating = await mmrService.GetPlayerRatings(toonId);
             if (rating == null)
             {
                 return NotFound();
@@ -92,14 +99,14 @@ namespace pax.dsstats.web.Server.Controllers
         [Route("GetRatingsDeviation")]
         public async Task<List<MmrDevDto>> GetRatingsDeviation()
         {
-            return await statsService.GetRatingsDeviation();
+            return await mmrService.GetRatingsDeviation();
         }
 
         [HttpGet]
         [Route("GetRatingsDeviationStd")]
         public async Task<List<MmrDevDto>> GetRatingsDeviationStd()
         {
-            return await statsService.GetRatingsDeviationStd();
+            return await mmrService.GetRatingsDeviationStd();
         }
 
         [HttpGet]
@@ -113,7 +120,7 @@ namespace pax.dsstats.web.Server.Controllers
         [Route("PlayerRating/{toonId}")]
         public async Task<PlayerRatingDto?> GetPlayerRating(int toonId)
         {
-            return await statsService.GetPlayerRating(toonId);
+            return await mmrService.GetPlayerRating(toonId);
         }
     }
 
