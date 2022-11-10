@@ -107,7 +107,7 @@ public partial class ImportService
                 if (!fakeUploaderDic.ContainsKey(replay.UploaderId))
                 {
                     replayFakeUploader = new Uploader() { UploaderId = replay.UploaderId };
-                    fakeUploaderDic[replay.UploaderId] = replayFakeUploader;
+                    // fakeUploaderDic[replay.UploaderId] = replayFakeUploader;
                 }
                 else
                 {
@@ -197,32 +197,6 @@ public partial class ImportService
             }
         }
         return dupReplayIds;
-    }
-
-    private static async Task<HashSet<int>> GetDuplicateReplayIds(ReplayContext context, Replay replay)
-    {
-        var dupReplayId = await context.Replays
-            .Where(x => x.ReplayHash == replay.ReplayHash)
-            .Select(s => s.ReplayId)
-            .FirstOrDefaultAsync();
-
-        List<string> replayLastSpawnHashes = replay.ReplayPlayers.Select(s => s.LastSpawnHash ?? "")
-            .Where(x => !String.IsNullOrEmpty(x))
-            .ToList();
-
-        var dupReplayIds = replayLastSpawnHashes.Any() ? await context.ReplayPlayers
-                .Include(i => i.Replay)
-                .Where(x => x.LastSpawnHash != null && replayLastSpawnHashes.Contains(x.LastSpawnHash))
-                .Select(s => s.Replay.ReplayId)
-                .ToListAsync()
-            : new List<int>();
-
-        if (dupReplayId > 0)
-        {
-            dupReplayIds.Add(dupReplayId);
-        }
-
-        return dupReplayIds.ToHashSet();
     }
 
     private static async Task DeleteReplays(ReplayContext context, HashSet<int> delReplayIds)

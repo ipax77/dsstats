@@ -42,6 +42,7 @@ public partial class ImportService
                 {
                     await context.SaveChangesAsync();
                 }
+                untrackedUpgradesDic[upgrade.Name] = dbUpgrade.UpgradeId;
             }
         }
         if (newUpgrades.Count > 0)

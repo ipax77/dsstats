@@ -24,8 +24,8 @@ builder.Services.AddDbContext<ReplayContext>(options =>
         p.MigrationsAssembly("MysqlMigrations");
         p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
     })
-     .EnableDetailedErrors()
-     .EnableSensitiveDataLogging()
+     //.EnableDetailedErrors()
+     //.EnableSensitiveDataLogging()
     ;
 });
 
@@ -36,6 +36,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 builder.Services.AddScoped<ImportService>();
+builder.Services.AddScoped<MmrService>();
 
 var app = builder.Build();
 
@@ -47,23 +48,17 @@ if (app.Environment.IsDevelopment())
     mapper.ConfigurationProvider.AssertConfigurationIsValid();
 
     using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-    //context.Database.EnsureDeleted();
+    // context.Database.EnsureDeleted();
     context.Database.Migrate();
 
-    var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-    //importService.DEBUGSeedUploaders().GetAwaiter().GetResult();
-    var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
+    // var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+    // importService.DEBUGSeedUploaders();
+    // importService.DEBUGResetBlobs();
+    // var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
 
-    Console.WriteLine(result);
-
-    var uploader = context.Uploaders
-        .Include(i => i.Replays)
-        .AsNoTracking()
-        .FirstOrDefault(f => f.UploaderId == 115);
-
-    var count = uploader?.Replays.Count;
-    Console.WriteLine(count);
-
+    var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+    mmrService.SeedCommanderMmrs().Wait();
+    mmrService.ReCalculateWithTimes(DateTime.MinValue).Wait();
 }
 
 // Configure the HTTP request pipeline.

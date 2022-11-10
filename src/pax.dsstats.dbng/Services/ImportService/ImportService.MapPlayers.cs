@@ -57,6 +57,7 @@ public partial class ImportService
                 {
                     await context.SaveChangesAsync();
                 }
+                playersDic[player.ToonId] = newPlayer.PlayerId;
             }
         }
         if (newPlayers.Count > 0)
