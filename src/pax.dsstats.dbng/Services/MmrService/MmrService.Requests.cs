@@ -74,66 +74,66 @@ public partial class MmrService
             {
                 if (order.Ascending)
                 {
-                    players = players.OrderBy(o => o.WinsCmdr / o.GamesCmdr);
+                    players = players.OrderBy(o => o.GamesCmdr > 0 ? o.WinsCmdr / o.GamesCmdr : o.WinsCmdr);
                 }
                 else
                 {
-                    players = players.OrderByDescending(o => o.WinsCmdr / o.GamesCmdr);
+                    players = players.OrderByDescending(o => o.GamesCmdr > 0 ? o.WinsCmdr / o.GamesCmdr : o.WinsCmdr);
                 }
             }
             else if (order.Property == "MvprateCmdr")
             {
                 if (order.Ascending)
                 {
-                    players = players.OrderBy(o => o.MvpCmdr / o.GamesCmdr);
+                    players = players.OrderBy(o => o.GamesCmdr > 0 ? o.MvpCmdr / o.GamesCmdr : o.MvpCmdr);
                 }
                 else
                 {
-                    players = players.OrderByDescending(o => o.MvpCmdr / o.GamesCmdr);
+                    players = players.OrderByDescending(o => o.GamesCmdr > 0 ? o.MvpCmdr / o.GamesCmdr : o.MvpCmdr);
                 }
             }
             else if (order.Property == "TeamgamesCmdr")
             {
                 if (order.Ascending)
                 {
-                    players = players.OrderBy(o => o.TeamGamesCmdr / o.GamesCmdr);
+                    players = players.OrderBy(o =>  o.GamesCmdr > 0 ? o.TeamGamesCmdr / o.GamesCmdr : o.TeamGamesCmdr);
                 }
                 else
                 {
-                    players = players.OrderByDescending(o => o.TeamGamesCmdr / o.GamesCmdr);
+                    players = players.OrderByDescending(o => o.GamesCmdr > 0 ? o.TeamGamesCmdr / o.GamesCmdr : o.TeamGamesCmdr);
                 }
             }
             else if (order.Property == "WinrateStd")
             {
                 if (order.Ascending)
                 {
-                    players = players.OrderBy(o => o.WinsStd / o.GamesStd);
+                    players = players.OrderBy(o => o.GamesStd > 0 ? o.WinsStd / o.GamesStd : o.WinsCmdr);
                 }
                 else
                 {
-                    players = players.OrderByDescending(o => o.WinsStd / o.GamesStd);
+                    players = players.OrderByDescending(o => o.WinsStd > 0 ? o.WinsStd / o.GamesStd : o.WinsStd);
                 }
             }
             else if (order.Property == "MvprateStd")
             {
                 if (order.Ascending)
                 {
-                    players = players.OrderBy(o => o.MvpStd / o.GamesStd);
+                    players = players.OrderBy(o => o.GamesStd > 0 ? o.MvpStd / o.GamesStd : o.MvpStd);
                 }
                 else
                 {
-                    players = players.OrderByDescending(o => o.MvpStd / o.GamesStd);
+                    players = players.OrderByDescending(o => o.GamesStd > 0 ? o.MvpStd / o.GamesStd : o.MvpStd);
                 }
             }
             else if (order.Property == "TeamgamesStd")
             {
                 if (order.Ascending)
                 {
-                    players = players.OrderBy(o => o.TeamGamesStd / o.GamesStd);
+                    players = players.OrderBy(o => o.GamesStd > 0 ? o.TeamGamesStd / o.GamesStd : o.TeamGamesStd);
                 }
                 else
                 {
-                    players = players.OrderByDescending(o => o.TeamGamesStd / o.GamesStd);
+                    players = players.OrderByDescending(o => o.GamesStd > 0 ? o.TeamGamesStd / o.GamesStd : o.TeamGamesStd);
                 }
             }
             else

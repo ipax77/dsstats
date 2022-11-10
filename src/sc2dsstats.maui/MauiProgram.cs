@@ -68,16 +68,8 @@ public static class MauiProgram
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         context.Database.Migrate();
 
-        // ??? when to do
-        //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-        //statsService.SeedPlayerInfos().GetAwaiter().GetResult();
-
-        // DEBUG
-        //var uploadService = scope.ServiceProvider.GetRequiredService<UploadService>();
-        //uploadService.ProduceTestData();
-
-        //var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-        //mmrService.ReCalculateWithTimes(DateTime.MinValue).Wait();
+        var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+        _ = mmrService.ReCalculateWithDictionary(DateTime.MinValue);
 
         return builder.Build();
     }
