@@ -18,8 +18,8 @@ namespace pax.dsstats.dbng
             CreateMap<ReplayDto, Replay>(MemberList.Source);
 
             CreateMap<ReplayPlayer, ReplayPlayerDto>(MemberList.Destination);
-            CreateMap<ReplayPlayerDto, ReplayPlayer>(MemberList.Source)
-                .ForSourceMember(x => x.ReplayPlayerId, opt => opt.DoNotValidate());
+            CreateMap<ReplayPlayerDto, ReplayPlayer>(MemberList.Source);
+
 
             CreateMap<Spawn, SpawnDto>(MemberList.Destination);
             CreateMap<SpawnDto, Spawn>(MemberList.Source);
