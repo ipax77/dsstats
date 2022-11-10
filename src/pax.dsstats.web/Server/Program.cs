@@ -68,7 +68,7 @@ builder.Services.AddTransient<IStatsRepository, StatsRepository>();
 builder.Services.AddTransient<BuildService>();
 
 builder.Services.AddHostedService<CacheBackgroundService>();
-builder.Services.AddHostedService<RatingsBackgroundService>();
+// builder.Services.AddHostedService<RatingsBackgroundService>();
 
 var app = builder.Build();
 
@@ -89,7 +89,6 @@ if (app.Environment.IsProduction())
 
     var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
     mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
-    mmrService.ReCalculateWithDictionary(DateTime.MinValue).GetAwaiter().GetResult();
 }
 
 // DEBUG
@@ -97,7 +96,7 @@ if (app.Environment.IsDevelopment())
 {
     var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
     mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
-    mmrService.ReCalculateWithDictionary(DateTime.MinValue).GetAwaiter().GetResult();
+    mmrService.ReCalculateWithDictionary(DateTime.MinValue, DateTime.Today.AddDays(1)).GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.

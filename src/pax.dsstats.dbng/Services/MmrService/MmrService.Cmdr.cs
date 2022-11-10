@@ -92,7 +92,7 @@ public partial class MmrService
 
             consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
 
-            replayPlayerMmrChanges.Add(teamData.Players[i].ReplayPlayerId, (float)teamData.PlayersMmrDelta[i]);
+            ReplayPlayerMmrChanges.Add(teamData.Players[i].ReplayPlayerId, (float)teamData.PlayersMmrDelta[i]);
             plRatings.Add(new DsRCheckpoint() { Mmr = mmrAfter, Consistency = consistencyAfter, Time = gameTime });
         }
     }

@@ -18,7 +18,8 @@ namespace pax.dsstats.dbng
             CreateMap<ReplayDto, Replay>(MemberList.Source);
 
             CreateMap<ReplayPlayer, ReplayPlayerDto>(MemberList.Destination);
-            CreateMap<ReplayPlayerDto, ReplayPlayer>(MemberList.Source);
+            CreateMap<ReplayPlayerDto, ReplayPlayer>(MemberList.Source)
+                .ForSourceMember(x => x.ReplayPlayerId, opt => opt.DoNotValidate());
 
             CreateMap<Spawn, SpawnDto>(MemberList.Destination);
             CreateMap<SpawnDto, Spawn>(MemberList.Source);
@@ -49,10 +50,6 @@ namespace pax.dsstats.dbng
             CreateMap<Replay, ReplayDsRDto>(MemberList.Destination);
             CreateMap<ReplayPlayer, ReplayPlayerDsRDto>(MemberList.Destination);
             CreateMap<Player, PlayerDsRDto>(MemberList.Destination);
-
-            //CreateMap<ReplayDto, ReplayDsRDto>(MemberList.Destination);
-            //CreateMap<ReplayPlayerDto, ReplayPlayerDsRDto>(MemberList.Destination);
-            //CreateMap<PlayerDto, PlayerDsRDto>(MemberList.Destination);
 
             CreateMap<Player, PlayerRatingDto>(MemberList.Destination);
 

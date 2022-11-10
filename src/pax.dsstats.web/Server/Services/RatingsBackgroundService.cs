@@ -34,11 +34,6 @@ public class RatingsBackgroundService : IHostedService, IDisposable
     {
         Stopwatch sw = Stopwatch.StartNew();
 
-        using var scope = serviceProvider.CreateScope();
-        var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-        await statsService.SeedPlayerInfos();
-        var mmrServie = scope.ServiceProvider.GetRequiredService<FireMmrService>();
-        await mmrServie.CalcMmmr();
 
         sw.Stop();
 

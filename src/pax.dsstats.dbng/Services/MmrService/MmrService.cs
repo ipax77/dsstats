@@ -13,6 +13,8 @@ public partial class MmrService
 {
     public static Dictionary<int, PlayerRatingDto> ToonIdRatings { get; private set; } = new();
     public static Dictionary<int, string> ToonIdCmdrRatingOverTime { get; private set; } = new();
+    public static Dictionary<int, float> ReplayPlayerMmrChanges { get; private set; } = new();
+
 
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
@@ -39,9 +41,6 @@ public partial class MmrService
     private static readonly double consistencyDeltaMult = 0.15;
     private Dictionary<CmdrMmmrKey, CommanderMmr> cmdrMmrDic = new();
     private static DateTime LatestReplayGameTime = DateTime.MinValue;
-
-    // todo get rid of it
-    private readonly Dictionary<int, float> replayPlayerMmrChanges = new();
 
     private static bool useCommanderMmr = false;
     private static bool useConsistency = true;
@@ -200,7 +199,7 @@ public partial class MmrService
 
         cmdrMmrDic = commanderRatings.ToDictionary(k => new CmdrMmmrKey() { Race = k.Race, Opprace = k.OppRace }, v => v);
 
-        replayPlayerMmrChanges.Clear();
+        ReplayPlayerMmrChanges.Clear();
     }
 
     private async Task ClearRatingsInDb()
