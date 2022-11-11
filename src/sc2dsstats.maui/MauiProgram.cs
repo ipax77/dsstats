@@ -69,6 +69,7 @@ public static class MauiProgram
         context.Database.Migrate();
 
         var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+        mmrService.SeedCommanderMmrs().ConfigureAwait(false);
         _ = mmrService.ReCalculateWithDictionary();
 
         return builder.Build();
