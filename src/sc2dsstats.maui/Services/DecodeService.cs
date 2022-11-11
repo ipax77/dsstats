@@ -123,8 +123,7 @@ public class DecodeService : IDisposable
                 Saved = dbCounter,
                 Done = true
             });
-
-            this.IsRunning = false;
+            IsRunning = false;
             return;
         }
 

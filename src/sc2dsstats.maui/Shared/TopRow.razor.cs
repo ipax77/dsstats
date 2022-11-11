@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using Blazored.Toast.Services;
+using Microsoft.AspNetCore.Components;
 using sc2dsstats.maui.Services;
 
 namespace sc2dsstats.maui.Shared;
@@ -14,6 +15,9 @@ public partial class TopRow : ComponentBase, IDisposable
 
     [Inject]
     protected NavigationManager navigationManager { get; set; } = null!;
+
+    [Inject]
+    protected IToastService ToastService { get; set; } = default!;
 
     private DecodeEventArgs? decodeEventArgs;
     private TimeSpan elapsed = TimeSpan.Zero;
@@ -83,15 +87,11 @@ public partial class TopRow : ComponentBase, IDisposable
         }
         else
         {
+            ToastService.ShowSuccess("Decoding finished");
             eta = TimeSpan.Zero;
         }
 
         InvokeAsync(() => StateHasChanged());
-    }
-
-    private void ShowFailedReplays()
-    {
-        // replaysFailedModal?.Show(decodeService.GetErrorReplays().ToList());
     }
 
     public async void CheckForUpdates(bool init = false)
