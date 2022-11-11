@@ -27,6 +27,6 @@ public static partial class Parse
                 WorkingsetSlot = player.WorkingSetSlotId > 0 ? player.WorkingSetSlotId : failsafe_pos,
             });
         }
-        replay.GameTime = details.DateTimeUTC;
+        replay.GameTime = DateTime.FromFileTimeUtc(details.TimeUTC);
     }
 }
