@@ -64,18 +64,17 @@ public class ReplayRepository : IReplayRepository
 
     public async Task<ReplayDto?> GetLatestReplay(CancellationToken token = default)
     {
-        return await context.Replays
-            .Include(i => i.ReplayPlayers)
-                .ThenInclude(t => t.Spawns)
-                    .ThenInclude(t => t.Units)
-                        .ThenInclude(t => t.Unit)
-            .Include(i => i.ReplayPlayers)
-                .ThenInclude(t => t.Player)
-            .AsNoTracking()
-            .AsSplitQuery()
+        var hash = await context.Replays
             .OrderByDescending(o => o.GameTime)
-            .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
+            .Select(s => s.ReplayHash)
             .FirstOrDefaultAsync(token);
+
+        if (String.IsNullOrEmpty(hash))
+        {
+            return null;
+        }
+
+        return await GetReplay(hash, true, token);
     }
 
     public async Task<int> GetReplaysCount(ReplaysRequest request, CancellationToken token = default)

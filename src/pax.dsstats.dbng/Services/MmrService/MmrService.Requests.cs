@@ -1,5 +1,4 @@
 ﻿
-using AutoMapper.QueryableExtensions;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 
@@ -42,11 +41,24 @@ public partial class MmrService
 
     public async Task<string?> GetPlayerRatings(int toonId)
     {
+        string cmdr = "";
+        string std = "";
+        if (ToonIdStdRatingOverTime.ContainsKey(toonId))
+        {
+            std = ToonIdStdRatingOverTime[toonId];
+        }
+
         if (ToonIdCmdrRatingOverTime.ContainsKey(toonId))
         {
-            return await Task.FromResult($"{ToonIdCmdrRatingOverTime[toonId]}X");
+            cmdr = ToonIdCmdrRatingOverTime[toonId];
         }
-        return null;
+
+        if (String.IsNullOrEmpty(cmdr) && String.IsNullOrEmpty(std))
+        {
+            return null;
+        }
+
+        return await Task.FromResult($"{cmdr}X{std}");
     }
 
     private IQueryable<PlayerRatingDto> GetQueriablePlayers(RatingsRequest request)

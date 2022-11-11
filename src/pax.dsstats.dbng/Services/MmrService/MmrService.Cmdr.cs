@@ -35,19 +35,20 @@ public partial class MmrService
 
     private void ProcessCmdrReplay(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, ReplayDsRDto replay)
     {
+        if (replay.WinnerTeam == 0)
+        {
+            return;
+        }
+
         if (replay.ReplayPlayers.Any(a => (int)a.Race <= 3))
         {
-            logger.LogWarning($"skipping wrong cmdr commanders");
+            logger.LogInformation($"skipping wrong cmdr commanders");
             return;
         }
 
         ReplayProcessData replayProcessData = new(replay);
         if (replayProcessData.WinnerTeamData.Players.Length != 3 || replayProcessData.LoserTeamData.Players.Length != 3) {
-            logger.LogWarning($"skipping wrong teamcounts");
-            return;
-        }
-
-        if (replay.WinnerTeam == 0) {
+            logger.LogInformation($"skipping wrong teamcounts");
             return;
         }
 
@@ -231,16 +232,26 @@ public partial class MmrService
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        return await context.Replays
+        var replays = context.Replays
             .Include(r => r.ReplayPlayers)
                 .ThenInclude(rp => rp.Player)
-            .Where(r => /*r.DefaultFilter
-                && */(r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic)
-                && (r.GameTime >= startTime)
-                && (r.GameTime <= endTime))
+            .Where(r => r.DefaultFilter
+                && (r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic))
+            .AsNoTracking();
+
+        if (startTime != DateTime.MinValue)
+        {
+            replays = replays.Where(x => x.GameTime >= startTime);
+        }
+
+        if (endTime != DateTime.MinValue && endTime < DateTime.Today)
+        {
+            replays = replays.Where(x => x.GameTime < endTime);
+        }
+
+        return await replays
             .OrderBy(o => o.GameTime)
-                .ThenBy(r => r.ReplayId)
-            .AsNoTracking()
+                .ThenBy(o => o.ReplayId)
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
             .ToListAsync();
     }

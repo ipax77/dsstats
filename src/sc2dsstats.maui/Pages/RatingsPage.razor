@@ -76,7 +76,7 @@
         await Task.Run(async () =>
         {
             await statsService.SeedPlayerInfos().ConfigureAwait(false);
-            await MmrService.ReCalculateWithDictionary(MauiProgram.RecentSeasonStart, DateTime.Today.AddDays(1)).ConfigureAwait(false);
+            await MmrService.ReCalculateWithDictionary().ConfigureAwait(false);
         });
 
         isLoading = false;
