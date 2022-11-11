@@ -9,6 +9,7 @@
 @inject DecodeService DecodeService
 @inject UploadService UploadService
 @inject IStatsService StatsService
+@inject IToastService toastSerivce
 @implements IDisposable
 
 <div class="btn-group border border-3 rounded-2 border-light p-2">
@@ -112,6 +113,7 @@
 
     private void Decode()
     {
+        toastSerivce.ShowWarning("Start decoding");
         _ = DecodeService.DecodeParallel().ConfigureAwait(false);
     }
 
