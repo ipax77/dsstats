@@ -225,7 +225,7 @@ public class DecodeService : IDisposable
             statsService.ResetStatsCache();
 
             var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-            await mmrService.ReCalculateWithDictionary(DateTime.MinValue, DateTime.Today.AddDays(1));
+            await mmrService.ReCalculateWithDictionary();
 
             notifyCts.Cancel();
 
