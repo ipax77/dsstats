@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng.Extensions;
+using System.Net.NetworkInformation;
 
 namespace pax.dsstats.dbng.Services;
 
@@ -257,10 +258,18 @@ public partial class ImportService
         return true;
     }
 
-    private static void SetReplayPlayerLastSpawnHashes(Replay replay)
+    private static void AdjustImportValues(Replay replay)
     {
+        if (replay.Middle.Length > 4000)
+        {
+            replay.Middle = replay.Middle[..3999];
+            var middles = replay.Middle.Split('|', StringSplitOptions.RemoveEmptyEntries).SkipLast(1);
+            replay.Middle = string.Join('|', middles);
+        }
+
         foreach (var replayPlayer in replay.ReplayPlayers)
         {
+            replayPlayer.ReplayPlayerId = 0;
             replayPlayer.LastSpawnHash = replayPlayer.Spawns
                 .FirstOrDefault(f => f.Breakpoint == shared.Breakpoint.All)?
                 .GenHash(replay);
