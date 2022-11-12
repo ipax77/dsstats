@@ -5,6 +5,7 @@
 @using pax.dsstats.shared
 @using sc2dsstats.maui.Services
 @using sc2dsstats.razorlib
+@using sc2dsstats.razorlib.Replay;
 @inject IReplayRepository ReplayRepository
 @inject DecodeService DecodeService
 @inject UploadService UploadService
@@ -63,6 +64,7 @@
     UploadConfirmModal? uploadConfirmModal;
     PlayerDetailInfo? playerDetailInfo;
     TimeSpan elapsed = TimeSpan.Zero;
+    ReplayComponent? replayComponent;
 
     protected override void OnInitialized()
     {
@@ -95,6 +97,10 @@
     private async Task LoadLatestReplay()
     {
         latestReplay = await ReplayRepository.GetLatestReplay();
+        if (latestReplay != null)
+        {
+            replayComponent?.Init(latestReplay);
+        }
         await InvokeAsync(() => StateHasChanged());
         if (UserSettingsService.UserSettings.BattleNetInfos != null)
         {
