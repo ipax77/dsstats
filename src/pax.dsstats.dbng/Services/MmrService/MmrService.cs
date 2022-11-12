@@ -158,23 +158,25 @@ public partial class MmrService
             MmrInfo? mmrInfo = null;
             if (playerId > 0 && playerRatingsCmdr.ContainsKey(playerId)) {
                 var plRat = playerRatingsCmdr[playerId];
+                var lastPlRat = plRat.LastOrDefault();
                 mmrInfo = new() {
-                    CmdrMmr = plRat.LastOrDefault()?.Mmr ?? 0,
-                    CmdrOverTime = GetOverTimeRating(plRat) ?? ""
+                    Mmr = lastPlRat?.Mmr ?? 0,
+                    Consistency = lastPlRat?.Consistency ?? 0
                 };
-                ToonIdCmdrRatingOverTime[toonId] = mmrInfo.CmdrOverTime;
+                ToonIdCmdrRatingOverTime[toonId] = GetOverTimeRating(plRat) ?? "";
             }
 
             MmrInfo? mmrInfoStd = null;
             if (playerId > 0 && playerRatingsStd.ContainsKey(playerId))
             {
                 var plRat = playerRatingsStd[playerId];
+                var lastPlRat = plRat.LastOrDefault();
                 mmrInfoStd = new()
                 {
-                    StdMmr = plRat.LastOrDefault()?.Mmr ?? 0,
-                    StdOverTime = GetOverTimeRating(plRat) ?? ""
+                    Mmr = lastPlRat?.Mmr ?? 0,
+                    Consistency = lastPlRat?.Consistency ?? 0
                 };
-                ToonIdStdRatingOverTime[toonId] = mmrInfoStd.StdOverTime;
+                ToonIdStdRatingOverTime[toonId] = GetOverTimeRating(plRat) ?? "";
             }
 
             ToonIdRatings[toonId] = new PlayerRatingDto() 
@@ -182,16 +184,25 @@ public partial class MmrService
                 PlayerId = playerId,
                 Name = name,
                 ToonId = toonId,
-                Mmr = mmrInfo?.CmdrMmr ?? 0,
-                MmrStd = mmrInfoStd?.StdMmr ?? 0,
-                GamesCmdr = playerInfo.Value.GamesCmdr,
-                WinsCmdr = playerInfo.Value.WinsCmdr,
-                MvpCmdr = playerInfo.Value.MvpCmdr,
-                TeamGamesCmdr = playerInfo.Value.TeamGamesCmdr,
-                GamesStd = playerInfo.Value.GamesStd,
-                WinsStd = playerInfo.Value.WinsStd,
-                MvpStd = playerInfo.Value.MvpStd,
-                TeamGamesStd = playerInfo.Value.TeamGamesStd,
+
+                CmdrRatingStats = new()
+                {
+                    Mmr = mmrInfo?.Mmr ?? 0,
+                    Games = playerInfo.Value.GamesCmdr,
+                    Wins = playerInfo.Value.WinsCmdr,
+                    Mvp = playerInfo.Value.MvpCmdr,
+                    TeamGames = playerInfo.Value.TeamGamesCmdr,
+                    Consistency = mmrInfo?.Consistency ?? 0
+                },
+                StdRatingStats = new()
+                {
+                    Mmr = mmrInfoStd?.Mmr ?? 0,
+                    Games = playerInfo.Value.GamesStd,
+                    Wins = playerInfo.Value.WinsStd,
+                    Mvp = playerInfo.Value.MvpStd,
+                    TeamGames = playerInfo.Value.TeamGamesStd,
+                    Consistency = mmrInfo?.Consistency ?? 0
+                }
             };
         }
     }
@@ -443,8 +454,6 @@ public class MmrRecalculatedEvent : EventArgs
 
 public record MmrInfo
 {
-    public double CmdrMmr { get; set; }
-    public double StdMmr { get; set; }
-    public string CmdrOverTime { get; set; } = string.Empty;
-    public string StdOverTime { get; set; } = string.Empty;
+    public double Mmr { get; set; }
+    public double Consistency { get; set; }
 }
