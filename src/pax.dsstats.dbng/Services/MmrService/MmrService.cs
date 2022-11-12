@@ -34,10 +34,11 @@ public partial class MmrService
         EventHandler<MmrRecalculatedEvent>? handler = Recalculated;
         handler?.Invoke(this, e);
     }
-    // private static readonly double eloK = Math.Pow(2, 8) * 3; // default 32
-    private static readonly double eloK = 64 * 3; // default 32
-    private static readonly double eloK_mult = 12.5 / 3;
-    private static readonly double clip = eloK * eloK_mult;
+
+    // private static readonly double eloK = Math.Pow(2, 6); // default 32
+    private static readonly double eloK = 64; // default 32
+    private static readonly double eloK_mult = 12.5;
+    private static readonly double clip = eloK * eloK_mult; //shouldn't be bigger than startMmr!
     public static readonly double startMmr = 1000.0;
     private static readonly double consistencyImpact = 0.50;
     private static readonly double consistencyDeltaMult = 0.15;
@@ -360,14 +361,14 @@ public partial class MmrService
         return 1.0 / (1.0 + Math.Pow(10.0, (2.0 / clip) * (ratingTwo - ratingOne)));
     }
 
-    private static double PlayerToTeamMates(double teamMmr, double playerMmr)
+    private static double PlayerToTeamMates(double teamMmrMean, double playerMmr, int teamSize)
     {
-        if (teamMmr < 1)
+        if (teamMmrMean <= 0)
         {
-            return 1.0;
+            throw new Exception("Team MMR can't be 0 or less!");
         }
 
-        return (playerMmr / teamMmr);
+        return teamSize * (playerMmr / (teamMmrMean * teamSize));
     }
 
     private static double CalculateMmrDelta(double elo, double playerImpact, double mcv)
@@ -381,20 +382,20 @@ public partial class MmrService
         //return ((1 - consistencyImpact) + (consistencyImpact * raw_revConsistency)); //Equal to above
     }
 
-    private static double GetTeamMmr(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, ReplayPlayerDsRDto[] replayPlayers, DateTime gameTime)
+    private static double GetTeamMmr(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, PlayerData[] playerDatas, DateTime gameTime)
     {
         double teamMmr = 0;
 
-        foreach (var replayPlayer in replayPlayers)
+        foreach (var playerData in playerDatas)
         {
-            if (!playerRatingsCmdr.ContainsKey(GetMmrId(replayPlayer.Player)))
+            if (!playerRatingsCmdr.ContainsKey(GetMmrId(playerData.ReplayPlayer.Player)))
             {
-                playerRatingsCmdr[GetMmrId(replayPlayer.Player)] = new List<DsRCheckpoint>() { new() { Mmr = startMmr, Time = gameTime } };
+                playerRatingsCmdr[GetMmrId(playerData.ReplayPlayer.Player)] = new List<DsRCheckpoint>() { new() { Mmr = startMmr, Time = gameTime } };
                 teamMmr += startMmr;
             }
             else
             {
-                teamMmr += playerRatingsCmdr[GetMmrId(replayPlayer.Player)].Last().Mmr;
+                teamMmr += playerRatingsCmdr[GetMmrId(playerData.ReplayPlayer.Player)].Last().Mmr;
             }
         }
         return teamMmr / 3.0;
@@ -408,8 +409,8 @@ public partial class MmrService
 
     private static void FixMmrEquality(TeamData teamData, TeamData oppTeamData)
     {
-        double absSumTeamMmrDelta = teamData.PlayersMmrDelta.Sum();
-        double absSumOppTeamMmrDelta = oppTeamData.PlayersMmrDelta.Sum();
+        double absSumTeamMmrDelta = teamData.Players.Sum(x => x.PlayerMmrDelta);
+        double absSumOppTeamMmrDelta = oppTeamData.Players.Sum(x => x.PlayerMmrDelta);
         double absSumMmrAllDelta = absSumTeamMmrDelta + absSumOppTeamMmrDelta;
 
         if (teamData.Players.Length != oppTeamData.Players.Length)
@@ -419,10 +420,10 @@ public partial class MmrService
 
         for (int i = 0; i < teamData.Players.Length; i++)
         {
-            teamData.PlayersMmrDelta[i] = teamData.PlayersMmrDelta[i] *
+            teamData.Players[i].PlayerMmrDelta = teamData.Players[i].PlayerMmrDelta *
                 ((absSumMmrAllDelta) / (absSumTeamMmrDelta * 2));
 
-            oppTeamData.PlayersMmrDelta[i] = oppTeamData.PlayersMmrDelta[i] *
+            oppTeamData.Players[i].PlayerMmrDelta = oppTeamData.Players[i].PlayerMmrDelta *
                 ((absSumMmrAllDelta) / (absSumOppTeamMmrDelta * 2));
         }
     }
