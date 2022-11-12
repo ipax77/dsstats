@@ -243,7 +243,7 @@ public class DataService : IDataService
             var response = await httpClient.GetAsync($"{statsController}PlayerRating/{toonId}");
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<PlayerRatingDto>();
+                return await response.Content.ReadFromJsonAsync<PlayerRatingDto?>();
             }
             else
             {
