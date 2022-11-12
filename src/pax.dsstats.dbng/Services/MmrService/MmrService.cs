@@ -95,45 +95,6 @@ public partial class MmrService
         }
     }
 
-    public async Task<bool> ContinueCalculateWithDictionary(List<Replay> newReplays)
-    {
-        if (newReplays.Any(x => x.GameTime < LatestReplayGameTime)) {
-            //ReCalculateWithDictionary(startTime, DateTime.Today.AddDays(1));
-            return false;
-        }
-
-        var newReplaysCmdr = newReplays.Where(x => x.GameMode == GameMode.Commanders || x.GameMode == GameMode.CommandersHeroic)
-            .Select(s => mapper.Map<ReplayDsRDto>(s)).ToList();
-
-        await ss.WaitAsync();
-        try {
-            Stopwatch sw = Stopwatch.StartNew();
-
-            var playerRatingsCmdr = ContinueCalculateCmdr(GetPlayerRatingsCmdr(), newReplaysCmdr);
-            var playerInfos = await GetPlayerInfos();
-
-            await ContinueGlobals(playerRatingsCmdr, playerInfos);
-
-            //var json = JsonSerializer.Serialize(PlayerIdRatings);
-            //File.WriteAllText("/data/ds/playeridratings.json", json);
-
-            await SaveCommanderData();
-
-            sw.Stop();
-            logger.LogInformation($"continue calculation in {sw.ElapsedMilliseconds} ms");
-            OnRecalculated(new() { Duration = sw.Elapsed });
-        } finally {
-            ss.Release();
-        }
-
-        return true;
-    }
-
-    private static Dictionary<int, List<DsRCheckpoint>> GetPlayerRatingsCmdr()
-    {
-        return new();
-    }
-
     private async Task SetGlobals(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr,
                                   Dictionary<int, List<DsRCheckpoint>> playerRatingsStd,
                                   Dictionary<int, PlayerInfoDto> playerInfos)
@@ -206,10 +167,7 @@ public partial class MmrService
             };
         }
     }
-    private async Task ContinueGlobals(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, Dictionary<int, PlayerInfoDto> playerInfos)
-    {
-        
-    }
+
 
     private async Task<Dictionary<int, KeyValuePair<int, string>>> GetToonIdPlayerIdMap()
     {
