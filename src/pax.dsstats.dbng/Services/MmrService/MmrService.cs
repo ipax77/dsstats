@@ -34,7 +34,8 @@ public partial class MmrService
         EventHandler<MmrRecalculatedEvent>? handler = Recalculated;
         handler?.Invoke(this, e);
     }
-    private static readonly double eloK = Math.Pow(2, 8) * 3; // default 32
+    // private static readonly double eloK = Math.Pow(2, 8) * 3; // default 32
+    private static readonly double eloK = 64 * 3; // default 32
     private static readonly double eloK_mult = 12.5 / 3;
     private static readonly double clip = eloK * eloK_mult;
     public static readonly double startMmr = 1000.0;
