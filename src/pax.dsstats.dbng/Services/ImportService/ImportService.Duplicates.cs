@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng.Extensions;
-using System.Net.NetworkInformation;
 
 namespace pax.dsstats.dbng.Services;
 
