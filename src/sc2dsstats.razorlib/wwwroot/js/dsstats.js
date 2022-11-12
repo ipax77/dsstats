@@ -7,8 +7,22 @@ function delay(time) {
 
 async function enableTooltips() {
     await delay(100);
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    //const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    //const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+}
+
+function disableTooltips() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        var tooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+        tooltip.hide();
+        tooltip.disable();
+    })
 }
 
 function ReplayModalOpen(name) {

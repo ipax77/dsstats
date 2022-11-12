@@ -3,11 +3,11 @@
 @using pax.BlazorChartJs
 @using pax.dsstats.shared
 @using sc2dsstats.razorlib.Services
-@inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
+@inject IDataService dataService
 @implements IDisposable
 
-<div class="row">
+<div  class="row @(Interest == null ? "" : "visually-hidden")">
     <div class="col-auto">
         <div class="card" style="max-width: 1200px;">
             <div class="card-header">
@@ -80,7 +80,7 @@
                                                     </td>
                                                 }
                                                 <td>
-                                                    <span class="d-inline-block text-truncate" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
+                                                    <span @onclick:stopPropagation @onclick="e => ShowPlayerDetails(player.Player.ToonId)" class="d-inline-block text-truncate" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
                                                         @player.Name
                                                     </span>
                                                 </td>
@@ -118,6 +118,11 @@
         </div>
     </div>
 </div>
+
+@if (Interest != null)
+{
+    <PlayerDetailsComponent PlayerRatingDto="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
+}
 
 @if (showBuilds.Where(x => x).Any())
 {
@@ -166,6 +171,8 @@
     private ChartComponent? chartComponent;
 
     private bool showMiddleChart;
+
+    private PlayerRatingDto? Interest = null;
 
     protected override void OnInitialized()
     {
@@ -246,6 +253,18 @@
         }
 
         return "";
+    }
+
+    private async Task ShowPlayerDetails(int toonId)
+    {
+        Interest = await dataService.GetPlayerRating(toonId);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void DetailsClose()
+    {
+        Interest = null;
+        StateHasChanged();
     }
 
     private ChartJsConfig GetMiddleChartConfig(string middle, int duration, int winnerTeam, int cannon, int bunker)

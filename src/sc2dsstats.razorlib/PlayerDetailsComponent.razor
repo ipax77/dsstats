@@ -1,4 +1,5 @@
 ﻿@using System.Globalization;
+@using Microsoft.JSInterop;
 @using pax.dsstats.shared
 @using pax.BlazorChartJs
 @using sc2dsstats.razorlib.Services
@@ -14,7 +15,7 @@
             <ChartComponent @ref="chartComponentStd" ChartJsConfig="chartJsConfigStd" OnEventTriggered="EventTriggered"></ChartComponent>
         </div>
         <div class="col-auto">
-            <span class="oi oi-x text-danger pointer" style="font-size: 2rem; z-index: 1000;" @onclick="e => OnCloseRequested.InvokeAsync()"></span>
+            <span class="oi oi-x text-danger pointer" style="font-size: 2rem; z-index: 1000;" @onclick="Close"></span>
         </div>
     </div>
 
@@ -37,6 +38,10 @@
 
     [Parameter]
     public EventCallback OnCloseRequested { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "return")]
+    public string? ReturnPath { get; set; }
 
     ChartComponent? chartComponent;
     ChartComponent? chartComponentStd;
@@ -101,6 +106,12 @@
         {
             SetupCharts();
         }
+    }
+
+    private void Close()
+    {
+
+        OnCloseRequested.InvokeAsync();
     }
 
     private void SetupCharts()
