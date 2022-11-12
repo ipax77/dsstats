@@ -34,7 +34,7 @@ public partial class MmrService
         EventHandler<MmrRecalculatedEvent>? handler = Recalculated;
         handler?.Invoke(this, e);
     }
-    private static readonly double eloK = 64 * 3; // default 32
+    private static readonly double eloK = Math.Pow(2, 8) * 3; // default 32
     private static readonly double eloK_mult = 12.5 / 3;
     private static readonly double clip = eloK * eloK_mult;
     public static readonly double startMmr = 1000.0;
@@ -45,29 +45,29 @@ public partial class MmrService
 
     private static bool useCommanderMmr = false;
     private static bool useConsistency = true;
-    private static bool useFactorToTeamMates = true;
+    private static bool useFactorToTeamMates = false;
     SemaphoreSlim ss = new(1, 1);
 
-    public async Task ReCalculate(DateTime startTime, DateTime endTime)
-    {
-        Stopwatch sw = Stopwatch.StartNew();
+    //public async Task ReCalculate(DateTime startTime, DateTime endTime)
+    //{
+    //    Stopwatch sw = Stopwatch.StartNew();
 
-        await ClearRatingsInDb();
+    //    await ClearRatingsInDb();
 
-        await ResetGlobals();
+    //    await ResetGlobals();
 
-        var playerRatingsCmdr = await ReCalculateCmdr(startTime, endTime);
-        await SaveCommanderData();
-        await SavePlayersData(playerRatingsCmdr);
-        await SaveReplayPlayersData(ReplayPlayerMmrChanges);
+    //    var playerRatingsCmdr = await ReCalculateCmdr(startTime, endTime);
+    //    await SaveCommanderData();
+    //    await SavePlayersData(playerRatingsCmdr);
+    //    await SaveReplayPlayersData(ReplayPlayerMmrChanges);
 
-        // (var playerRatingsStd, var replayPlayerMmrChanges) = await CalculateStd(startTime);
-        // await SavePlayersData(playerRatingsStd);
-        // await SaveReplayPlayersData(replayPlayerMmrChanges);
+    //    // (var playerRatingsStd, var replayPlayerMmrChanges) = await CalculateStd(startTime);
+    //    // await SavePlayersData(playerRatingsStd);
+    //    // await SaveReplayPlayersData(replayPlayerMmrChanges);
 
-        sw.Stop();
-        OnRecalculated(new() { Duration = sw.Elapsed });
-    }
+    //    sw.Stop();
+    //    OnRecalculated(new() { Duration = sw.Elapsed });
+    //}
 
     public async Task ReCalculateWithDictionary(DateTime startTime = new(), DateTime endTime = new())
     {
