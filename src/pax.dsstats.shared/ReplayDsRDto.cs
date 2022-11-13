@@ -42,15 +42,6 @@ public record PlayerRatingDto
     public RatingStatsDto StdRatingStats { get; init; } = new();
 }
 
-//public record PlayerRatingDtoNg
-//{
-//    public int PlayerId { get; init; }
-//    public string Name { get; init; } = null!;
-//    public int ToonId { get; init; }
-//    public RatingStatsDto CmdrRatingStats { get; set; } = new();
-//    public RatingStatsDto StdRatingStats { get; set; } = new();
-//}
-
 public record RatingStatsDto
 {
     public int Games { get; set; }

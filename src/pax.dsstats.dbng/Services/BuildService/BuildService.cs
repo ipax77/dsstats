@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace pax.dsstats.dbng.Services;
 
-public class BuildService
+public partial class BuildService
 {
     private readonly ReplayContext context;
     private readonly IMemoryCache memoryCache;
@@ -36,11 +36,13 @@ public class BuildService
         return buildResponse;
     }
 
+
+
     public async Task SeedBuildsCache()
     {
         BuildRequest request = new()
         {
-            PlayerNames = new() { "PAX" },
+            PlayerNames = Data.GetDefaultRequestNames(),
         };
 
         Dictionary<int, string> units = (await context.Units
@@ -68,6 +70,8 @@ public class BuildService
     private async Task<BuildResponse> GetBuildFromDb(BuildRequest request, Dictionary<int, string>? units = null)
     {
         var replays = context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Player)
             .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Spawns)
                 .ThenInclude(i => i.Units)
@@ -134,6 +138,8 @@ public class BuildService
 
     private static IQueryable<BuildHelper> GetBuildResultQuery(IQueryable<Replay> replays, BuildRequest request)
     {
+        List<int> toonIds = request.PlayerNames.Select(s => s.ToonId).ToList();
+
         return (request.Versus == Commander.None, !request.PlayerNames.Any()) switch
         {
             (true, true) => from r in replays
@@ -157,7 +163,7 @@ public class BuildService
                              from p in r.ReplayPlayers
                              from s in p.Spawns
                              from u in s.Units
-                             where p.Race == request.Interest && request.PlayerNames.Contains(p.Name)
+                             where p.Race == request.Interest && toonIds.Contains(p.Player.ToonId)
                              select new BuildHelper()
                              {
                                  Id = r.ReplayId,
@@ -191,7 +197,7 @@ public class BuildService
                               from p in r.ReplayPlayers
                               from s in p.Spawns
                               from u in s.Units
-                              where p.Race == request.Interest && p.OppRace == request.Versus && request.PlayerNames.Contains(p.Name)
+                              where p.Race == request.Interest && p.OppRace == request.Versus && toonIds.Contains(p.Player.ToonId)
                               select new BuildHelper()
                               {
                                   Id = r.ReplayId,
@@ -262,18 +268,3 @@ public class BuildService
     }
 
 }
-
-
-public record BuildHelper
-{
-    public int Id { get; init; }
-    public string Hash { get; init; } = null!;
-    public DateTime Gametime { get; init; }
-    public List<KeyValuePair<int, int>> Units { get; init; } = new();
-    public PlayerResult Result { get; init; }
-    public int UpgradeSpending { get; init; }
-    public int GasCount { get; init; }
-    public int Gameloop { get; init; }
-    public int Duration { get; init; }
-}
-

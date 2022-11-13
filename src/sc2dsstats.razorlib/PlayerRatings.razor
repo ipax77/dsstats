@@ -149,6 +149,7 @@
                 @if (ratingsCount > 0)
                 {
                     <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings">
+                        <ItemContent>
                         <tr class="pointer" @onclick="e => LoadPlayerChart(rating)">
                             <td>@rating.ToonId</td>
                             <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Name</span></td>
@@ -163,6 +164,10 @@
                             <td>@HelperService.GetPercentageString(rating.StdRatingStats.Mvp, rating.StdRatingStats.Games)</td>
                             <td>@HelperService.GetPercentageString(rating.StdRatingStats.TeamGames, rating.StdRatingStats.Games)</td>
                         </tr>
+                        </ItemContent>
+                        <Placeholder>
+                            <tr height="47px"><td>Loading ...</td></tr>
+                        </Placeholder>
                     </Virtualize>
                 }
             </tbody>
