@@ -122,7 +122,9 @@ public partial class MmrService
         var replays = context.Replays
             .Include(r => r.ReplayPlayers)
                 .ThenInclude(rp => rp.Player)
-            .Where(r => r.DefaultFilter
+            .Where(r => r.Playercount == 6
+                && r.Duration >= 300
+                && r.WinnerTeam > 0
                 && (r.GameMode == GameMode.Standard))
             .AsNoTracking();
 

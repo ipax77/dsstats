@@ -17,13 +17,17 @@ public partial class MmrService
 
         var newReplaysCmdr = newReplays
             .Where(x =>
-                x.DefaultFilter
+                x.Playercount == 6
+                && x.Duration >= 300
+                && x.WinnerTeam > 0
                 && (x.GameMode == GameMode.Commanders || x.GameMode == GameMode.CommandersHeroic))
             .Select(s => mapper.Map<ReplayDsRDto>(s)).ToList();
 
         var newReplaysStd = newReplays
             .Where(x =>
-                x.DefaultFilter
+                x.Playercount == 6
+                && x.Duration >= 300
+                && x.WinnerTeam > 0
                 && x.GameMode == GameMode.Standard)
             .Select(s => mapper.Map<ReplayDsRDto>(s)).ToList();
 

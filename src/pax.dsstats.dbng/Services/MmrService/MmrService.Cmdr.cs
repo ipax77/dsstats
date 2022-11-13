@@ -248,8 +248,10 @@ public partial class MmrService
         var replays = context.Replays
             .Include(r => r.ReplayPlayers)
                 .ThenInclude(rp => rp.Player)
-            .Where(r => /*r.DefaultFilter
-                && */(r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic))
+            .Where(r => r.Playercount == 6
+                && r.Duration >= 300
+                && r.WinnerTeam > 0
+                && (r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic))
             .AsNoTracking();
 
         if (startTime != DateTime.MinValue)
