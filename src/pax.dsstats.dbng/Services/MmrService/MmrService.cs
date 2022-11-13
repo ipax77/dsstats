@@ -367,7 +367,7 @@ public partial class MmrService
                 teamMmr += playerRatingsCmdr[GetMmrId(playerData.ReplayPlayer.Player)].Last().Mmr;
             }
         }
-        return teamMmr / 3.0;
+        return teamMmr / playerDatas.Length;
     }
 
     private static int GetMmrId(PlayerDsRDto player)
@@ -378,22 +378,40 @@ public partial class MmrService
 
     private static void FixMmrEquality(TeamData teamData, TeamData oppTeamData)
     {
-        double absSumTeamMmrDelta = teamData.Players.Sum(x => x.PlayerMmrDelta);
-        double absSumOppTeamMmrDelta = oppTeamData.Players.Sum(x => x.PlayerMmrDelta);
-        double absSumMmrAllDelta = absSumTeamMmrDelta + absSumOppTeamMmrDelta;
+        PlayerData[] posDeltaPlayers =
+            teamData.Players.Where(x => x.PlayerMmrDelta >= 0).Concat(
+            oppTeamData.Players.Where(x => x.PlayerMmrDelta >= 0)).ToArray();
 
-        if (teamData.Players.Length != oppTeamData.Players.Length)
-        {
-            throw new Exception("Not same player amount.");
+        PlayerData[] negPlayerDeltas =
+            teamData.Players.Where(x => x.PlayerMmrDelta < 0).Concat(
+            oppTeamData.Players.Where(x => x.PlayerMmrDelta < 0)).ToArray();
+
+
+
+        double absSumPosDeltas = Math.Abs(teamData.Players.Sum(x => Math.Max(0, x.PlayerMmrDelta)) + oppTeamData.Players.Sum(x => Math.Max(0, x.PlayerMmrDelta)));
+        double absSumNegDeltas = Math.Abs(teamData.Players.Sum(x => Math.Min(0, x.PlayerMmrDelta)) + oppTeamData.Players.Sum(x => Math.Min(0, x.PlayerMmrDelta)));
+        double absSumAllDeltas = absSumPosDeltas + absSumNegDeltas;
+
+        //if (teamData.Players.Length != oppTeamData.Players.Length)
+        //{
+        //    throw new Exception("Not same player amount.");
+        //}
+
+        if (absSumPosDeltas == 0 || absSumNegDeltas == 0) {
+            foreach (var player in teamData.Players) {
+                player.PlayerMmrDelta = 0;
+            }
+            foreach (var player in oppTeamData.Players) {
+                player.PlayerMmrDelta = 0;
+            }
+            return;
         }
 
-        for (int i = 0; i < teamData.Players.Length; i++)
-        {
-            teamData.Players[i].PlayerMmrDelta = teamData.Players[i].PlayerMmrDelta *
-                ((absSumMmrAllDelta) / (absSumTeamMmrDelta * 2));
-
-            oppTeamData.Players[i].PlayerMmrDelta = oppTeamData.Players[i].PlayerMmrDelta *
-                ((absSumMmrAllDelta) / (absSumOppTeamMmrDelta * 2));
+        foreach (var posDeltaPlayer in posDeltaPlayers) {
+            posDeltaPlayer.PlayerMmrDelta *= (absSumAllDeltas / (absSumPosDeltas * 2));
+        }
+        foreach (var negDeltaPlayer in negPlayerDeltas) {
+            negDeltaPlayer.PlayerMmrDelta *= (absSumAllDeltas / (absSumNegDeltas * 2));
         }
     }
 }

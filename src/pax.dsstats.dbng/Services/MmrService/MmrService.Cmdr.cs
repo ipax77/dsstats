@@ -60,17 +60,28 @@ public partial class MmrService
         CalculateRatingsDeltas(playerRatingsCmdr, replayProcessData, replayProcessData.WinnerTeamData);
         CalculateRatingsDeltas(playerRatingsCmdr, replayProcessData, replayProcessData.LoserTeamData);
 
-        FixMmrEquality(replayProcessData.WinnerTeamData, replayProcessData.LoserTeamData);
-
         // Adjust Loser delta
-        for (int i = 0; i < replayProcessData.LoserTeamData.Players.Length; i++)
-        {
-            replayProcessData.LoserTeamData.Players[i].PlayerMmrDelta *= -1;
-            replayProcessData.LoserTeamData.Players[i].PlayerConsistencyDelta *= -1;
-            replayProcessData.LoserTeamData.Players[i].CommanderMmrDelta *= -1;
+        foreach (var loserPlayer in replayProcessData.LoserTeamData.Players) {
+            loserPlayer.PlayerMmrDelta *= -1;
+            loserPlayer.PlayerConsistencyDelta *= -1;
+            loserPlayer.CommanderMmrDelta *= -1;
+        }
+        // Adjust Leaver delta
+        foreach (var winnerPlayer in replayProcessData.WinnerTeamData.Players) {
+            if (winnerPlayer.IsLeaver) {
+                winnerPlayer.PlayerMmrDelta *= -1;
+                winnerPlayer.PlayerConsistencyDelta *= -1;
+                winnerPlayer.CommanderMmrDelta = 0;
+            }
+        }
+        if (replayProcessData.WinnerTeamData.Players.Count(x => x.IsLeaver) > 0) {
+        }
+        if (replayProcessData.WinnerTeamData.Players.Count(x => x.IsLeaver) > 1) {
         }
 
-        // consider Leavers here
+        FixMmrEquality(replayProcessData.WinnerTeamData, replayProcessData.LoserTeamData);
+
+
         AddPlayersRankings(playerRatingsCmdr, replayProcessData.WinnerTeamData, replayProcessData.ReplayGameTime);
         AddPlayersRankings(playerRatingsCmdr, replayProcessData.LoserTeamData, replayProcessData.ReplayGameTime);
 
@@ -78,23 +89,23 @@ public partial class MmrService
         SetCommandersComboMmr(replayProcessData.LoserTeamData);
     }
 
-    private void AddPlayersRankings(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData, DateTime gameTime)
+    private static void AddPlayersRankings(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData, DateTime gameTime)
     {
-        for (int i = 0; i < teamData.Players.Length; i++)
-        {
-            var player = teamData.Players[i];
+        foreach (var player in teamData.Players) {
             var plRatings = playerRatingsCmdr[GetMmrId(player.ReplayPlayer.Player)];
             var currentPlayerRating = plRatings.Last();
 
             double mmrBefore = currentPlayerRating.Mmr;
             double consistencyBefore = currentPlayerRating.Consistency;
 
-            double mmrAfter = mmrBefore + teamData.Players[i].PlayerMmrDelta;
-            double consistencyAfter = consistencyBefore + teamData.Players[i].PlayerConsistencyDelta;
+            double mmrAfter = Math.Max(1, mmrBefore + player.PlayerMmrDelta);
+            double consistencyAfter = consistencyBefore + player.PlayerConsistencyDelta;
+            if (double.IsNaN(mmrAfter) || double.IsInfinity(mmrAfter)) {
+            }
 
             consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
 
-            ReplayPlayerMmrChanges.Add(teamData.Players[i].ReplayPlayer.ReplayPlayerId, (float)(teamData.Players[i].PlayerMmrDelta));
+            ReplayPlayerMmrChanges.Add(player.ReplayPlayer.ReplayPlayerId, (float)(mmrAfter - mmrBefore));
             plRatings.Add(new DsRCheckpoint() { Mmr = mmrAfter, Consistency = consistencyAfter, Time = gameTime });
         }
     }
@@ -113,15 +124,13 @@ public partial class MmrService
 
     private void CalculateRatingsDeltas(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, ReplayProcessData replayProcessData, TeamData teamData)
     {
-        for (int i = 0; i < teamData.Players.Length; i++)
-        {
-            var plRatings = playerRatingsCmdr[GetMmrId(teamData.Players[i].ReplayPlayer.Player)];
+        foreach (var player in teamData.Players) {
+            var plRatings = playerRatingsCmdr[GetMmrId(player.ReplayPlayer.Player)];
             var lastPlRating = plRatings.Last();
             double playerConsistency = lastPlRating.Consistency;
 
             double playerMmr = lastPlRating.Mmr;
-            if (playerMmr > maxMmrCmdr)
-            {
+            if (playerMmr > maxMmrCmdr) {
                 maxMmrCmdr = playerMmr;
             }
 
@@ -135,14 +144,17 @@ public partial class MmrService
             if (playerImpact > teamData.Players.Length || playerImpact < 0) {
             }
 
-            teamData.Players[i].PlayerMmrDelta = CalculateMmrDelta(replayProcessData.WinnerPlayersExpectationToWin, playerImpact, (useCommanderMmr ? (1 - replayProcessData.WinnerCmdrExpectationToWin) : 1));
-            teamData.Players[i].PlayerConsistencyDelta = consistencyDeltaMult * 2 * (replayProcessData.WinnerPlayersExpectationToWin - 0.50);
+            player.PlayerMmrDelta = CalculateMmrDelta(replayProcessData.WinnerPlayersExpectationToWin, playerImpact, (useCommanderMmr ? (1 - replayProcessData.WinnerCmdrExpectationToWin) : 1));
+            player.PlayerConsistencyDelta = consistencyDeltaMult * 2 * (replayProcessData.WinnerPlayersExpectationToWin - 0.50);
+            if (double.IsNaN(player.PlayerMmrDelta) || double.IsInfinity(player.PlayerMmrDelta)) {
+            }
 
             double commandersMmrImpact = Math.Pow(startMmr, (playerMmr / maxMmrCmdr)) / startMmr;
-            teamData.Players[i].CommanderMmrDelta = CalculateMmrDelta(replayProcessData.WinnerCmdrExpectationToWin, 1, commandersMmrImpact);
+            player.CommanderMmrDelta = CalculateMmrDelta(replayProcessData.WinnerCmdrExpectationToWin, 1, commandersMmrImpact);
+            if (double.IsNaN(player.CommanderMmrDelta) || double.IsInfinity(player.CommanderMmrDelta)) {
+            }
 
-
-            if (teamData.Players[i].PlayerMmrDelta > eloK) {
+            if (player.PlayerMmrDelta > eloK) {
                 throw new Exception("MmrDelta is bigger than eloK");
             }
         }
