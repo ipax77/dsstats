@@ -8,6 +8,7 @@ public class DataService : IDataService
     private readonly HttpClient httpClient;
     private readonly ILogger<DataService> logger;
     private readonly string statsController = "api/Stats/";
+    private readonly string buildsController = "api/Builds/";
 
     public DataService(HttpClient httpClient, ILogger<DataService> logger)
     {
@@ -255,6 +256,23 @@ public class DataService : IDataService
             logger.LogError($"failed getting playerRating: {ex.Message}");
         }
         return null;
+    }
+
+    public async Task<List<RequestNames>> GetTopPlayers()
+    {
+        try
+        {
+            var topPlayers = await httpClient.GetFromJsonAsync<List<RequestNames>>($"{buildsController}topplayers");
+            if (topPlayers != null)
+            {
+                return topPlayers;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting topPlayers: {ex.Message}");
+        }
+        return Data.GetDefaultRequestNames();
     }
 
     public async Task<ICollection<string>> GetReplayPaths()

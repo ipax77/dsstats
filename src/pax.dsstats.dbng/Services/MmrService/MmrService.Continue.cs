@@ -106,6 +106,7 @@ public partial class MmrService
                                    Dictionary<int, List<DsRCheckpoint>> playerRatingsStd,
                                    Dictionary<int, PlayerInfoDto> playerInfos)
     {
+        // todo: optimize for continue
         var toonIdPlayerIdMap = await GetToonIdPlayerIdMap();
 
         for (int i = 0; i < playerInfos.Count; i++)

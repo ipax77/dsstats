@@ -17,4 +17,5 @@ public interface IDataService
     Task<List<MmrDevDto>> GetRatingsDeviationStd();
     Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId);
     Task<PlayerRatingDto?> GetPlayerRating(int toonId);
+    Task<List<RequestNames>> GetTopPlayers();
 }

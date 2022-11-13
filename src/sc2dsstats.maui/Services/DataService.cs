@@ -99,4 +99,9 @@ public class DataService : IDataService
     {
         return await mmrService.GetPlayerRating(toonId);
     }
+
+    public async Task<List<RequestNames>> GetTopPlayers()
+    {
+        return await Task.FromResult(buildService.GetTopPlayers());
+    }
 }
