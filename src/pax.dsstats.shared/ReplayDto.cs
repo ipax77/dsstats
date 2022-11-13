@@ -24,7 +24,7 @@ public record ReplayDto
     public int Maxleaver { get; init; }
     public byte Playercount { get; init; }
     public string ReplayHash { get; set; } = "";
-    public bool DefaultFilter { get; init; }
+    public bool DefaultFilter { get; set; }
     public int Views { get; init; }
     public int Downloads { get; init; }
     public string Middle { get; init; } = null!;

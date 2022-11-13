@@ -61,6 +61,8 @@ public class DecodeService : IDisposable
     private SemaphoreSlim semaphoreSlim = new(1, 1);
     private HashSet<Unit> Units = new();
     private HashSet<Upgrade> Upgrades = new();
+    private List<Replay> newReplays = new();
+    private bool continueMmrCalc;
 
     private int decodeCounter;
     private int dbCounter;
@@ -109,6 +111,8 @@ public class DecodeService : IDisposable
         dbCounter = 0;
         errorReplays.Clear();
         errorCounter = 0;
+        newReplays.Clear();
+        continueMmrCalc = false;
 
         var replays = await ScanForNewReplays(true);
 
@@ -133,6 +137,11 @@ public class DecodeService : IDisposable
         decodeCts = new();
         notifyCts = new();
         _ = Notify();
+
+        if (MmrService.ToonIdRatings.Any() && total <= 10)
+        {
+            continueMmrCalc = true;
+        }
 
         Stopwatch sw = Stopwatch.StartNew();
 
@@ -224,7 +233,14 @@ public class DecodeService : IDisposable
             statsService.ResetStatsCache();
 
             var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-            await mmrService.ReCalculateWithDictionary();
+            if (continueMmrCalc && newReplays.Any())
+            {
+                await mmrService.ContinueCalculateWithDictionary(newReplays);
+            }
+            else
+            {
+                await mmrService.ReCalculateWithDictionary();
+            }
 
             notifyCts.Cancel();
 
@@ -379,7 +395,12 @@ public class DecodeService : IDisposable
             SetIsUploader(replayDto);
 
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-            (Units, Upgrades) = await replayRepository.SaveReplay(replayDto, Units, Upgrades, null);
+            (Units, Upgrades, var replay) = await replayRepository.SaveReplay(replayDto, Units, Upgrades, null);
+
+            if (continueMmrCalc)
+            {
+                newReplays.Add(replay);
+            }
 
             Interlocked.Increment(ref dbCounter);
         }

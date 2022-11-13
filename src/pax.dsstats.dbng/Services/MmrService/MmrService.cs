@@ -42,7 +42,7 @@ public partial class MmrService
     public static readonly double startMmr = 1000.0;
     private static readonly double consistencyImpact = 0.50;
     private static readonly double consistencyDeltaMult = 0.15;
-    private Dictionary<CmdrMmmrKey, CommanderMmr> cmdrMmrDic = new();
+    private static Dictionary<CmdrMmmrKey, CommanderMmr> cmdrMmrDic = new();
     private static DateTime LatestReplayGameTime = DateTime.MinValue;
 
     private static bool useCommanderMmr = false;

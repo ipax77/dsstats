@@ -18,9 +18,9 @@ builder.Host.ConfigureAppConfiguration((context, config) =>
 // Add services to the container.
 
 var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 39));
-// var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
+var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
 // var connectionString = builder.Configuration["ServerConfig:DsstatsProdConnectionString"];
-var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
+// var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
 
 var oldConnectionString = builder.Configuration["ServerConfig:DBConnectionString2"];
 
