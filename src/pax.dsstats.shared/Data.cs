@@ -170,4 +170,13 @@ public static class Data
         }
         return sBuilder.ToString();
     }
+    public static List<RequestNames> GetDefaultRequestNames()
+    {
+        return new() {
+                new() { Name = "PAX", ToonId = 226401 },
+                new() { Name = "PAX", ToonId = 10188255 },
+                new() { Name = "Feralan", ToonId = 8497675 },
+                new() { Name = "Feralan", ToonId = 1488340 }
+            };
+    }
 }

@@ -1,0 +1,73 @@
+﻿@using pax.dsstats.shared
+@using sc2dsstats.razorlib.Replay;
+@inject IDataService dataService
+
+<CascadingValue Value="BuildRequest">
+    <BuildsRequestComponent MauiPlayers="MauiPlayers" OnRequestChanged="Load"></BuildsRequestComponent>
+</CascadingValue>
+
+<div>
+    @buildResponse
+</div>
+
+@if (replayDto != null)
+{
+    <sc2dsstats.razorlib.Replay.ReplayComponent @ref="replayComponent" replayDto="replayDto" OnCloseRequested="ReplayClose"></sc2dsstats.razorlib.Replay.ReplayComponent>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public BuildRequest BuildRequest { get; set; } = default!;
+
+    [Parameter]
+    public List<RequestNames> MauiPlayers { get; set; } = new();
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    private ReplayComponent? replayComponent;
+
+    private bool isLoading;
+    private bool isReplayLoading;
+    private BuildResponse? buildResponse;
+    private ReplayDto? replayDto;
+    private string replayHash = "";
+
+    private async Task Load()
+    {
+        if (isLoading)
+            return;
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        buildResponse = await dataService.GetBuild(BuildRequest);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+        if (buildResponse != null && buildResponse.Replays.Any())
+        {
+            await ShowReplay(buildResponse.Replays.OrderByDescending(o => o.Gametime).First().Hash);
+        }
+
+        await OnRequestChanged.InvokeAsync();
+    }
+
+    private async Task ShowReplay(string hash)
+    {
+        if (isReplayLoading)
+            return;
+        isReplayLoading = true;
+        replayHash = hash;
+        replayDto = await dataService.GetReplay(hash);
+        if (replayDto != null)
+        {
+            replayComponent?.Init(replayDto);
+        }
+        isReplayLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void ReplayClose()
+    {
+        replayDto = null;
+        StateHasChanged();
+    }
+}

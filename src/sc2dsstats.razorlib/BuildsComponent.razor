@@ -336,25 +336,25 @@
 
     void SelectPlayer(string name)
     {
-        BuildRequest.PlayerNames = new() { name };
-        _ = LoadData();
+        //BuildRequest.PlayerNames = new() { name };
+        //_ = LoadData();
     }
 
     void PlayersSelected(ChangeEventArgs e)
     {
-        if (e.Value is string[] players)
-        {
-            if (!players.Any() || (players.Contains("All Players")))
-            {
-                BuildRequest.PlayerNames = Players;
-            }
-            else
-            {
-                BuildRequest.PlayerNames = players.ToList();
-            }
-            _ = LoadData();
-        }
-        IJSRuntime.InvokeVoidAsync("setMultiSelect", "playerselect", BuildRequest.PlayerNames.Any() ? BuildRequest.PlayerNames.ToArray() : new string[1] { "All Players" });
+        //if (e.Value is string[] players)
+        //{
+        //    if (!players.Any() || (players.Contains("All Players")))
+        //    {
+        //        BuildRequest.PlayerNames = Players;
+        //    }
+        //    else
+        //    {
+        //        BuildRequest.PlayerNames = players.ToList();
+        //    }
+        //    _ = LoadData();
+        //}
+        //IJSRuntime.InvokeVoidAsync("setMultiSelect", "playerselect", BuildRequest.PlayerNames.Any() ? BuildRequest.PlayerNames.ToArray() : new string[1] { "All Players" });
     }
 
     async Task ShowReplay(string hash)

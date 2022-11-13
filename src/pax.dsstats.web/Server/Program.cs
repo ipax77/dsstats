@@ -53,8 +53,6 @@ builder.Services.AddRazorPages();
 builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
-builder.Services.AddSingleton<FireMmrService>();
-
 builder.Services.AddSingleton<MmrService>();
 
 builder.Services.AddSingleton<UploadService>();
@@ -84,12 +82,12 @@ context.Database.Migrate();
 // SEED
 if (app.Environment.IsProduction())
 {
-    var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
-    buildService.SeedBuildsCache().GetAwaiter().GetResult();
-
     var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
     mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
-    await mmrService.ReCalculateWithDictionary(DateTime.MinValue, DateTime.Today.AddDays(1));
+    await mmrService.ReCalculateWithDictionary();
+
+    var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
+    buildService.SeedBuildsCache().GetAwaiter().GetResult();
 }
 
 // DEBUG
@@ -97,7 +95,10 @@ if (app.Environment.IsDevelopment())
 {
     var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
     mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
-    mmrService.ReCalculateWithDictionary(DateTime.MinValue, DateTime.Today.AddDays(1)).GetAwaiter().GetResult();
+    mmrService.ReCalculateWithDictionary().GetAwaiter().GetResult();
+
+    //var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
+    //buildService.SeedBuildsCache().GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.

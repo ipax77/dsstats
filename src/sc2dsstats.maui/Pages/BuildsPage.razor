@@ -9,9 +9,14 @@
 @code {
     BuildRequest buildRequest = new()
     {
-        PlayerNames = UserSettingsService.UserSettings.PlayerNames,
+        // PlayerNames = UserSettingsService.UserSettings.PlayerNames,
         Interest = Commander.Abathur
     };
 
     List<string> players = UserSettingsService.UserSettings.PlayerNames;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
 }
