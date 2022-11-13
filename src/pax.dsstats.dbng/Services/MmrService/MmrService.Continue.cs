@@ -21,6 +21,8 @@ public partial class MmrService
                 && x.Duration >= 300
                 && x.WinnerTeam > 0
                 && (x.GameMode == GameMode.Commanders || x.GameMode == GameMode.CommandersHeroic))
+            .OrderBy(o => o.GameTime)
+                .ThenBy(t => t.ReplayId)
             .Select(s => mapper.Map<ReplayDsRDto>(s)).ToList();
 
         var newReplaysStd = newReplays
@@ -29,6 +31,8 @@ public partial class MmrService
                 && x.Duration >= 300
                 && x.WinnerTeam > 0
                 && x.GameMode == GameMode.Standard)
+            .OrderBy(o => o.GameTime)
+                .ThenBy(t => t.ReplayId)
             .Select(s => mapper.Map<ReplayDsRDto>(s)).ToList();
 
         await ss.WaitAsync();
@@ -120,7 +124,9 @@ public partial class MmrService
             int playerId = 0;
             string name = "";
 
-            if (toonIdPlayerIdMap.ContainsKey(toonId)) {
+
+            if (toonIdPlayerIdMap.ContainsKey(toonId))
+            {
                 var tpMap = toonIdPlayerIdMap[toonId];
                 playerId = tpMap.Key;
                 name = tpMap.Value;
@@ -179,7 +185,7 @@ public partial class MmrService
 
                     CmdrRatingStats = new()
                     {
-                        Mmr = mmrInfoCmdr?.Mmr ?? 0,
+                        Mmr = mmrInfoCmdr?.Mmr ?? startMmr,
                         Games = playerInfo.Value.GamesCmdr,
                         Wins = playerInfo.Value.WinsCmdr,
                         Mvp = playerInfo.Value.MvpCmdr,
