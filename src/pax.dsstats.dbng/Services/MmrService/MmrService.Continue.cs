@@ -153,6 +153,11 @@ public partial class MmrService
                 ToonIdStdRatingOverTime[toonId] = ContinueOverTimeRatingStd(toonId, plRat) ?? "";
             }
 
+            if (mmrInfoCmdr == null && mmrInfoStd == null)
+            {
+                continue;
+            }
+
             if (ToonIdRatings.ContainsKey(toonId))
             {
                 var toonIdRating = ToonIdRatings[toonId];

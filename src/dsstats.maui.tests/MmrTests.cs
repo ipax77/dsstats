@@ -61,6 +61,67 @@ public class MmrTests : TestWithSqlite
     }
 
     [Fact]
+    public async Task MultipleMmrTest()
+    {
+        var serviceCollection = new ServiceCollection();
+        serviceCollection
+            .AddDbContext<ReplayContext>(options => options.UseSqlite(_connection),
+        ServiceLifetime.Transient);
+
+        serviceCollection.AddAutoMapper(typeof(AutoMapperProfile));
+        serviceCollection.AddLogging();
+        serviceCollection.AddSingleton<MmrService>();
+        serviceCollection.AddTransient<IReplayRepository, ReplayRepository>();
+
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+
+        using var scope = serviceProvider.CreateScope();
+        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+        var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
+
+        await mmrService.SeedCommanderMmrs();
+
+        var testReplays1 = JsonSerializer.Deserialize<List<ReplayDto>>(File.ReadAllText(Path.Combine(assemblyPath, "testdata", "testreplays1.json")));
+
+        Assert.True(testReplays1?.Any());
+
+        if (testReplays1 == null)
+        {
+            return;
+        }
+
+        var units = (await context.Units.AsNoTracking().ToListAsync()).ToHashSet();
+        var upgrades = (await context.Upgrades.AsNoTracking().ToListAsync()).ToHashSet();
+
+        foreach (var replayDto in testReplays1)
+        {
+            (units, upgrades, var replay) = await replayRepository.SaveReplay(replayDto, units, upgrades, null);
+        }
+
+        await mmrService.ReCalculateWithDictionary();
+
+        Assert.True(MmrService.ToonIdRatings.Any());
+
+        var dataBefore = MmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
+
+        await mmrService.ReCalculateWithDictionary();
+
+        var dataAfter = MmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
+
+        Assert.Equal(dataBefore.Count, dataAfter.Count);
+
+        for (int i = 0; i < dataBefore.Count; i++)
+        {
+            var entBefore = dataBefore.ElementAt(i);
+            var entAfter = dataAfter.ElementAt(i);
+
+            Assert.Equal(entBefore.Value, entAfter.Value);
+        }
+    }
+
+    [Fact]
     public async Task ContinueMmrTest()
     {
         var serviceCollection = new ServiceCollection();
