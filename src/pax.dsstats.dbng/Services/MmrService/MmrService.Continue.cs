@@ -17,7 +17,9 @@ public partial class MmrService
 
         var newReplaysCmdr = newReplays
             .Where(x =>
-                x.DefaultFilter
+                x.Playercount == 6
+                && x.Duration >= 300
+                && x.WinnerTeam > 0
                 && (x.GameMode == GameMode.Commanders || x.GameMode == GameMode.CommandersHeroic))
             .OrderBy(o => o.GameTime)
                 .ThenBy(t => t.ReplayId)
@@ -25,7 +27,9 @@ public partial class MmrService
 
         var newReplaysStd = newReplays
             .Where(x =>
-                x.DefaultFilter
+                x.Playercount == 6
+                && x.Duration >= 300
+                && x.WinnerTeam > 0
                 && x.GameMode == GameMode.Standard)
             .OrderBy(o => o.GameTime)
                 .ThenBy(t => t.ReplayId)
@@ -119,6 +123,7 @@ public partial class MmrService
             int toonId = playerInfo.Key;
             int playerId = 0;
             string name = "";
+
 
             if (toonIdPlayerIdMap.ContainsKey(toonId))
             {

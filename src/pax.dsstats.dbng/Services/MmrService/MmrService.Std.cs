@@ -55,16 +55,23 @@ public partial class MmrService
         CalculateRatingsDeltasStd(playerRatingsStd, replayProcessData, replayProcessData.WinnerTeamData);
         CalculateRatingsDeltasStd(playerRatingsStd, replayProcessData, replayProcessData.LoserTeamData);
 
+        // Adjust Loser delta
+        foreach (var loserPlayer in replayProcessData.LoserTeamData.Players) {
+            loserPlayer.PlayerMmrDelta *= -1;
+            loserPlayer.PlayerConsistencyDelta *= -1;
+            loserPlayer.CommanderMmrDelta *= -1;
+        }
+        // Adjust Leaver delta
+        foreach (var winnerPlayer in replayProcessData.WinnerTeamData.Players) {
+            if (winnerPlayer.IsLeaver) {
+                winnerPlayer.PlayerMmrDelta *= -1;
+                winnerPlayer.PlayerConsistencyDelta *= -1;
+                winnerPlayer.CommanderMmrDelta = 0;
+            }
+        }
         FixMmrEquality(replayProcessData.WinnerTeamData, replayProcessData.LoserTeamData);
 
-        // Adjust Loser delta
-        for (int i = 0; i < replayProcessData.LoserTeamData.Players.Length; i++) {
-            replayProcessData.LoserTeamData.Players[i].PlayerMmrDelta *= -1;
-            replayProcessData.LoserTeamData.Players[i].PlayerConsistencyDelta *= -1;
-            replayProcessData.LoserTeamData.Players[i].CommanderMmrDelta *= -1;
-        }
 
-        // consider Leavers here
         AddPlayersRankings(playerRatingsStd, replayProcessData.WinnerTeamData, replayProcessData.ReplayGameTime);
         AddPlayersRankings(playerRatingsStd, replayProcessData.LoserTeamData, replayProcessData.ReplayGameTime);
     }
@@ -115,7 +122,9 @@ public partial class MmrService
         var replays = context.Replays
             .Include(r => r.ReplayPlayers)
                 .ThenInclude(rp => rp.Player)
-            .Where(r => r.DefaultFilter
+            .Where(r => r.Playercount == 6
+                && r.Duration >= 300
+                && r.WinnerTeam > 0
                 && (r.GameMode == GameMode.Standard))
             .AsNoTracking();
 
