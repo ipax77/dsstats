@@ -19,12 +19,16 @@ public partial class MmrService
             .Where(x =>
                 x.DefaultFilter
                 && (x.GameMode == GameMode.Commanders || x.GameMode == GameMode.CommandersHeroic))
+            .OrderBy(o => o.GameTime)
+                .ThenBy(t => t.ReplayId)
             .Select(s => mapper.Map<ReplayDsRDto>(s)).ToList();
 
         var newReplaysStd = newReplays
             .Where(x =>
                 x.DefaultFilter
                 && x.GameMode == GameMode.Standard)
+            .OrderBy(o => o.GameTime)
+                .ThenBy(t => t.ReplayId)
             .Select(s => mapper.Map<ReplayDsRDto>(s)).ToList();
 
         await ss.WaitAsync();
@@ -176,7 +180,7 @@ public partial class MmrService
 
                     CmdrRatingStats = new()
                     {
-                        Mmr = mmrInfoCmdr?.Mmr ?? 0,
+                        Mmr = mmrInfoCmdr?.Mmr ?? startMmr,
                         Games = playerInfo.Value.GamesCmdr,
                         Wins = playerInfo.Value.WinsCmdr,
                         Mvp = playerInfo.Value.MvpCmdr,
