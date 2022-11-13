@@ -25,8 +25,14 @@ public partial class MmrService
     }
     private Dictionary<int, List<DsRCheckpoint>> ContinueCalculateCmdr(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, List<ReplayDsRDto> newReplays)
     {
+        int i = 0;
         foreach (var replay in newReplays) {
             ProcessCmdrReplay(playerRatingsCmdr, replay);
+            i++;
+            if (i == newReplays.Count - 1)
+            {
+                Console.WriteLine("indahouse");
+            }
         }
         LatestReplayGameTime = newReplays.LastOrDefault()?.GameTime ?? DateTime.MinValue;
         return playerRatingsCmdr;

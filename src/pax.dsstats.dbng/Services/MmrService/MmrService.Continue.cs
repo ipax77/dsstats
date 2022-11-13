@@ -139,7 +139,7 @@ public partial class MmrService
                 var lastPlRat = plRat.LastOrDefault();
                 mmrInfoCmdr = new()
                 {
-                    Mmr = lastPlRat?.Mmr ?? 0,
+                    Mmr = lastPlRat?.Mmr ?? startMmr,
                     Consistency = lastPlRat?.Consistency ?? 0
                 };
                 ToonIdCmdrRatingOverTime[toonId] = ContinueOverTimeRatingCmdr(toonId, plRat) ?? "";
@@ -152,7 +152,7 @@ public partial class MmrService
                 var lastPlRat = plRat.LastOrDefault();
                 mmrInfoStd = new()
                 {
-                    Mmr = lastPlRat?.Mmr ?? 0,
+                    Mmr = lastPlRat?.Mmr ?? startMmr,
                     Consistency = lastPlRat?.Consistency ?? 0
                 };
                 ToonIdStdRatingOverTime[toonId] = ContinueOverTimeRatingStd(toonId, plRat) ?? "";
@@ -199,7 +199,7 @@ public partial class MmrService
                     },
                     StdRatingStats = new()
                     {
-                        Mmr = mmrInfoStd?.Mmr ?? 0,
+                        Mmr = mmrInfoStd?.Mmr ?? startMmr,
                         Games = playerInfo.Value.GamesStd,
                         Wins = playerInfo.Value.WinsStd,
                         Mvp = playerInfo.Value.MvpStd,

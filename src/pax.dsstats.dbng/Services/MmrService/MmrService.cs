@@ -190,6 +190,8 @@ public partial class MmrService
 
         cmdrMmrDic = commanderRatings.ToDictionary(k => new CmdrMmmrKey() { Race = k.Race, Opprace = k.OppRace }, v => v);
 
+        maxMmrCmdr = startMmr;
+        maxMmrStd = startMmr;
         ReplayPlayerMmrChanges.Clear();
     }
 
