@@ -20,6 +20,11 @@ public partial class StatsService
             return await GetCustomMvp(request);
         }
 
+        if (request.PlayerNames.Any())
+        {
+            return await GetCustomMvp(request);
+        }
+
         var cmdrstats = await GetRequestStats(request);
 
         DateTime endTime = request.EndTime == DateTime.MinValue ? DateTime.Today.AddDays(1) : request.EndTime;
@@ -67,14 +72,15 @@ public partial class StatsService
         };
     }
 
-    public async Task<StatsResponse> GetCustomMvp(StatsRequest request)
+    public IQueryable<StatsResponseItem> GetStatsResponseItemQueryable(StatsRequest request, IQueryable<Replay> replays)
     {
-        var replays = GetCustomRequestReplays(request);
+        var toonIds = request.PlayerNames.Select(s => s.ToonId).ToList();
 
-        var responses = (request.Uploaders, request.Interest == Commander.None) switch
+        return (request.Uploaders, request.Interest == Commander.None) switch
         {
             (false, true) => from r in replays
                              from p in r.ReplayPlayers
+                             where toonIds.Contains(p.Player.ToonId)
                              group new { r, p } by new { race = p.Race } into g
                              select new StatsResponseItem()
                              {
@@ -85,7 +91,7 @@ public partial class StatsService
                              },
             (false, false) => from r in replays
                               from p in r.ReplayPlayers
-                              where p.Race == request.Interest
+                              where p.Race == request.Interest && toonIds.Contains(p.Player.ToonId)
                               group new { r, p } by new { race = p.OppRace } into g
                               select new StatsResponseItem()
                               {
@@ -96,7 +102,7 @@ public partial class StatsService
                               },
             (true, true) => from r in replays
                             from p in r.ReplayPlayers
-                            where p.IsUploader
+                            where p.IsUploader && toonIds.Contains(p.Player.ToonId)
                             group new { r, p } by new { race = p.Race } into g
                             select new StatsResponseItem()
                             {
@@ -107,7 +113,7 @@ public partial class StatsService
                             },
             (true, false) => from r in replays
                              from p in r.ReplayPlayers
-                             where p.IsUploader && p.Race == request.Interest
+                             where p.IsUploader && p.Race == request.Interest && toonIds.Contains(p.Player.ToonId)
                              group new { r, p } by new { race = p.OppRace } into g
                              select new StatsResponseItem()
                              {
@@ -117,6 +123,67 @@ public partial class StatsService
                                  duration = g.Sum(s => s.r.Duration)
                              },
         };
+    }
+
+    public async Task<StatsResponse> GetCustomMvp(StatsRequest request)
+    {
+        var replays = GetCustomRequestReplays(request);
+
+        IQueryable<StatsResponseItem> responses;
+
+        if (request.PlayerNames.Any())
+        {
+            responses = GetStatsResponseItemQueryable(request, replays);
+        }
+        else
+        {
+            responses = (request.Uploaders, request.Interest == Commander.None) switch
+            {
+                (false, true) => from r in replays
+                                 from p in r.ReplayPlayers
+                                 group new { r, p } by new { race = p.Race } into g
+                                 select new StatsResponseItem()
+                                 {
+                                     Label = g.Key.race.ToString(),
+                                     Matchups = g.Count(),
+                                     Wins = g.Count(c => c.p.Kills == c.r.Maxkillsum),
+                                     duration = g.Sum(s => s.r.Duration)
+                                 },
+                (false, false) => from r in replays
+                                  from p in r.ReplayPlayers
+                                  where p.Race == request.Interest
+                                  group new { r, p } by new { race = p.OppRace } into g
+                                  select new StatsResponseItem()
+                                  {
+                                      Label = g.Key.race.ToString(),
+                                      Matchups = g.Count(),
+                                      Wins = g.Count(c => c.p.Kills == c.r.Maxkillsum),
+                                      duration = g.Sum(s => s.r.Duration)
+                                  },
+                (true, true) => from r in replays
+                                from p in r.ReplayPlayers
+                                where p.IsUploader
+                                group new { r, p } by new { race = p.Race } into g
+                                select new StatsResponseItem()
+                                {
+                                    Label = g.Key.race.ToString(),
+                                    Matchups = g.Count(),
+                                    Wins = g.Count(c => c.p.Kills == c.r.Maxkillsum),
+                                    duration = g.Sum(s => s.r.Duration)
+                                },
+                (true, false) => from r in replays
+                                 from p in r.ReplayPlayers
+                                 where p.IsUploader && p.Race == request.Interest
+                                 group new { r, p } by new { race = p.OppRace } into g
+                                 select new StatsResponseItem()
+                                 {
+                                     Label = g.Key.race.ToString(),
+                                     Matchups = g.Count(),
+                                     Wins = g.Count(c => c.p.Kills == c.r.Maxkillsum),
+                                     duration = g.Sum(s => s.r.Duration)
+                                 },
+            };
+        }
 
         var items = await responses.ToListAsync();
 

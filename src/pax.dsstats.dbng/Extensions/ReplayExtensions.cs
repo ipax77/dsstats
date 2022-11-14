@@ -93,6 +93,10 @@ public static class ReplayExtensions
         sb.Append(statsRequest.DefaultFilter);
         sb.Append(statsRequest.Uploaders);
         sb.Append(statsRequest.TimePeriod);
+        if (statsRequest.PlayerNames.Any())
+        {
+            sb.Append(string.Join('x', statsRequest.PlayerNames.Select(s => s.ToonId.ToString())));
+        }
         sb.Append(String.Concat(statsRequest.GameModes.Select(s => (int)s)));
         return sb.ToString();
     }

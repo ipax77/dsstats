@@ -146,10 +146,23 @@ public partial class StatsService : IStatsService
 
     private IQueryable<Replay> GetCustomRequestReplays(StatsRequest request)
     {
-        var replays = context.Replays
+        IQueryable<Replay> replays;
+
+        if (request.PlayerNames.Any())
+        {
+            replays = context.Replays
                 .Include(i => i.ReplayPlayers)
+                    .ThenInclude(i => i.Player)
                 .Where(x => x.GameTime > request.StartTime)
                 .AsNoTracking();
+        }
+        else
+        {
+            replays = context.Replays
+                    .Include(i => i.ReplayPlayers)
+                    .Where(x => x.GameTime > request.StartTime)
+                    .AsNoTracking();
+        }
 
         if (request.EndTime < DateTime.UtcNow.Date.AddDays(-2))
         {
@@ -174,6 +187,68 @@ public partial class StatsService : IStatsService
         }
 
         return replays;
+    }
+
+    private IQueryable<ReplayPlayer> GetCustomRequestReplayPlayers(StatsRequest request)
+    {
+        IQueryable<Replay> replays;
+
+        if (request.PlayerNames.Any())
+        {
+            replays = context.Replays
+                    .Include(i => i.ReplayPlayers)
+                        .ThenInclude(i => i.Player)
+                    .Where(x => x.GameTime > request.StartTime)
+                    .AsNoTracking();
+        }
+        else
+        {
+            replays = context.Replays
+                    .Include(i => i.ReplayPlayers)
+                    .Where(x => x.GameTime > request.StartTime)
+                    .AsNoTracking();
+        }
+
+        if (request.EndTime < DateTime.UtcNow.Date.AddDays(-2))
+        {
+            replays = replays.Where(x => x.GameTime <= request.EndTime);
+        }
+
+        if (request.GameModes.Any())
+        {
+            replays = replays.Where(x => request.GameModes.Contains(x.GameMode));
+        }
+
+        if (request.DefaultFilter)
+        {
+            replays = replays.Where(x => x.Duration > 300
+                && x.Maxleaver < 90
+                && x.Playercount == 6
+                && x.WinnerTeam > 0);
+        }
+        else if (request.PlayerCount > 0)
+        {
+            replays = replays.Where(x => x.Playercount == request.PlayerCount);
+        }
+        var players = replays.SelectMany(s => s.ReplayPlayers);
+
+        if (request.Uploaders)
+        {
+            players = players.Where(x => x.IsUploader);
+        }
+
+        if (request.Interest != Commander.None)
+        {
+            players = players.Where(x => x.Race == request.Interest);
+        }
+
+        if (request.PlayerNames.Any())
+        {
+            var toonIds = request.PlayerNames.Select(s => s.ToonId).ToList();
+            players = players.Where(x => toonIds.Contains(x.Player.ToonId));
+        }
+
+        return players;
     }
 }
 

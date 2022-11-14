@@ -22,6 +22,11 @@ public partial class StatsService
             return await GetCustomWinrate(request);
         }
 
+        if (request.PlayerNames.Any())
+        {
+            return await GetCustomWinrate(request);
+        }
+
         var cmdrstats = await GetRequestStats(request);
 
         DateTime endTime = request.EndTime == DateTime.MinValue ? DateTime.Today.AddDays(1) : request.EndTime;
@@ -71,56 +76,27 @@ public partial class StatsService
 
     public async Task<StatsResponse> GetCustomWinrate(StatsRequest request)
     {
-        var replays = GetCustomRequestReplays(request);
+        var replayPlayers = GetCustomRequestReplayPlayers(request);
 
-        var responses = (request.Uploaders, request.Interest == Commander.None) switch
-        {
-            (false, true) => from r in replays
-                             from p in r.ReplayPlayers
-                             group new { r, p } by new { race = p.Race } into g
-                             select new StatsResponseItem()
-                             {
-                                 Label = g.Key.race.ToString(),
-                                 Matchups = g.Count(),
-                                 Wins = g.Count(c => c.p.PlayerResult == PlayerResult.Win),
-                                 duration = g.Sum(s => s.r.Duration)
-                             },
-            (false, false) => from r in replays
-                              from p in r.ReplayPlayers
-                              where p.Race == request.Interest
-                              group new { r, p } by new { race = p.OppRace } into g
-                              select new StatsResponseItem()
-                              {
-                                  Label = g.Key.race.ToString(),
-                                  Matchups = g.Count(),
-                                  Wins = g.Count(c => c.p.PlayerResult == PlayerResult.Win),
-                                  duration = g.Sum(s => s.r.Duration)
-                              },
-            (true, true) => from r in replays
-                            from p in r.ReplayPlayers
-                            where p.IsUploader
-                            group new { r, p } by new { race = p.Race } into g
-                            select new StatsResponseItem()
-                            {
-                                Label = g.Key.race.ToString(),
-                                Matchups = g.Count(),
-                                Wins = g.Count(c => c.p.PlayerResult == PlayerResult.Win),
-                                duration = g.Sum(s => s.r.Duration)
-                            },
-            (true, false) => from r in replays
-                             from p in r.ReplayPlayers
-                             where p.IsUploader && p.Race == request.Interest
-                             group new { r, p } by new { race = p.OppRace } into g
-                             select new StatsResponseItem()
-                             {
-                                 Label = g.Key.race.ToString(),
-                                 Matchups = g.Count(),
-                                 Wins = g.Count(c => c.p.PlayerResult == PlayerResult.Win),
-                                 duration = g.Sum(s => s.r.Duration)
-                             },
-        };
+        var rps = request.Interest == Commander.None ?
+             from p in replayPlayers
+                    group new { p } by new { race = p.Race } into g
+                    select new StatsResponseItem()
+                    {
+                        Label = g.Key.race.ToString(),
+                        Matchups = g.Count(),
+                        Wins = g.Count(c => c.p.PlayerResult == PlayerResult.Win),
+                    }
+            : from p in replayPlayers
+                     group new { p } by new { race = p.OppRace } into g
+                     select new StatsResponseItem()
+                     {
+                         Label = g.Key.race.ToString(),
+                         Matchups = g.Count(),
+                         Wins = g.Count(c => c.p.PlayerResult == PlayerResult.Win),
+                     };
 
-        var items = await responses.ToListAsync();
+        var items = await rps.ToListAsync();
 
         if (!items.Any())
         {

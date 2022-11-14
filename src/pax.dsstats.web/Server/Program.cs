@@ -33,8 +33,8 @@ builder.Services.AddDbContext<ReplayContext>(options =>
         p.MigrationsAssembly("MysqlMigrations");
         p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
     })
-    //.EnableDetailedErrors()
-    //.EnableSensitiveDataLogging()
+    .EnableDetailedErrors()
+    .EnableSensitiveDataLogging()
     ;
 });
 
