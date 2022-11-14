@@ -65,7 +65,7 @@ public partial class MmrService
     {
         return ToonIdRatings.Values
             .OrderBy(o => o.PlayerId)
-            .Where(x => x.GamesCmdr >= 20 || x.GamesStd >= 20)
+            .Where(x => x.CmdrRatingStats.Games >= 20 || x.StdRatingStats.Games >= 20)
             .AsQueryable();
     }
 
@@ -75,6 +75,12 @@ public partial class MmrService
         {
             return players;
         }
+
+        if (int.TryParse(searchString, out int toonId))
+        {
+            return players.Where(x => x.ToonId == toonId);
+        }
+
         return players.Where(x => x.Name.ToUpper().Contains(searchString.ToUpper()));
     }
 
@@ -86,66 +92,66 @@ public partial class MmrService
             {
                 if (order.Ascending)
                 {
-                    players = players.OrderBy(o => o.GamesCmdr > 0 ? o.WinsCmdr / o.GamesCmdr : o.WinsCmdr);
+                    players = players.OrderBy(o => o.CmdrRatingStats.Games > 0 ? o.CmdrRatingStats.Wins * 100.0 / o.CmdrRatingStats.Games : o.CmdrRatingStats.Wins);
                 }
                 else
                 {
-                    players = players.OrderByDescending(o => o.GamesCmdr > 0 ? o.WinsCmdr / o.GamesCmdr : o.WinsCmdr);
+                    players = players.OrderByDescending(o => o.CmdrRatingStats.Games > 0 ? o.CmdrRatingStats.Wins * 100.0 / o.CmdrRatingStats.Games : o.CmdrRatingStats.Wins);
                 }
             }
             else if (order.Property == "MvprateCmdr")
             {
                 if (order.Ascending)
                 {
-                    players = players.OrderBy(o => o.GamesCmdr > 0 ? o.MvpCmdr / o.GamesCmdr : o.MvpCmdr);
+                    players = players.OrderBy(o => o.CmdrRatingStats.Games > 0 ? o.CmdrRatingStats.Mvp * 100.0 / o.CmdrRatingStats.Games : o.CmdrRatingStats.Mvp);
                 }
                 else
                 {
-                    players = players.OrderByDescending(o => o.GamesCmdr > 0 ? o.MvpCmdr / o.GamesCmdr : o.MvpCmdr);
+                    players = players.OrderByDescending(o => o.CmdrRatingStats.Games > 0 ? o.CmdrRatingStats.Mvp * 100.0 / o.CmdrRatingStats.Games : o.CmdrRatingStats.Mvp);
                 }
             }
             else if (order.Property == "TeamgamesCmdr")
             {
                 if (order.Ascending)
                 {
-                    players = players.OrderBy(o =>  o.GamesCmdr > 0 ? o.TeamGamesCmdr / o.GamesCmdr : o.TeamGamesCmdr);
+                    players = players.OrderBy(o =>  o.CmdrRatingStats.Games > 0 ? o.CmdrRatingStats.TeamGames * 100.0 / o.CmdrRatingStats.Games : o.CmdrRatingStats.Games);
                 }
                 else
                 {
-                    players = players.OrderByDescending(o => o.GamesCmdr > 0 ? o.TeamGamesCmdr / o.GamesCmdr : o.TeamGamesCmdr);
+                    players = players.OrderByDescending(o => o.CmdrRatingStats.Games > 0 ? o.CmdrRatingStats.TeamGames * 100.0 / o.CmdrRatingStats.Games : o.CmdrRatingStats.Games);
                 }
             }
             else if (order.Property == "WinrateStd")
             {
                 if (order.Ascending)
                 {
-                    players = players.OrderBy(o => o.GamesStd > 0 ? o.WinsStd / o.GamesStd : o.WinsCmdr);
+                    players = players.OrderBy(o => o.StdRatingStats.Games > 0 ? o.StdRatingStats.Wins * 100.0 / o.StdRatingStats.Games : o.CmdrRatingStats.Wins);
                 }
                 else
                 {
-                    players = players.OrderByDescending(o => o.WinsStd > 0 ? o.WinsStd / o.GamesStd : o.WinsStd);
+                    players = players.OrderByDescending(o => o.StdRatingStats.Wins > 0 ? o.StdRatingStats.Wins * 100.0 / o.StdRatingStats.Games : o.StdRatingStats.Wins);
                 }
             }
             else if (order.Property == "MvprateStd")
             {
                 if (order.Ascending)
                 {
-                    players = players.OrderBy(o => o.GamesStd > 0 ? o.MvpStd / o.GamesStd : o.MvpStd);
+                    players = players.OrderBy(o => o.StdRatingStats.Games > 0 ? o.StdRatingStats.Mvp * 100.0 / o.StdRatingStats.Games : o.StdRatingStats.Mvp);
                 }
                 else
                 {
-                    players = players.OrderByDescending(o => o.GamesStd > 0 ? o.MvpStd / o.GamesStd : o.MvpStd);
+                    players = players.OrderByDescending(o => o.StdRatingStats.Games > 0 ? o.StdRatingStats.Mvp * 100.0 / o.StdRatingStats.Games : o.StdRatingStats.Mvp);
                 }
             }
             else if (order.Property == "TeamgamesStd")
             {
                 if (order.Ascending)
                 {
-                    players = players.OrderBy(o => o.GamesStd > 0 ? o.TeamGamesStd / o.GamesStd : o.TeamGamesStd);
+                    players = players.OrderBy(o => o.StdRatingStats.Games > 0 ? o.StdRatingStats.TeamGames * 100.0 / o.StdRatingStats.Games : o.StdRatingStats.TeamGames);
                 }
                 else
                 {
-                    players = players.OrderByDescending(o => o.GamesStd > 0 ? o.TeamGamesStd / o.GamesStd : o.TeamGamesStd);
+                    players = players.OrderByDescending(o => o.StdRatingStats.Games > 0 ? o.StdRatingStats.TeamGames * 100.0 / o.StdRatingStats.Games : o.StdRatingStats.TeamGames);
                 }
             }
             else
@@ -166,11 +172,11 @@ public partial class MmrService
     public async Task<List<MmrDevDto>> GetRatingsDeviation()
     {
         var devs = ToonIdRatings.Values
-            .GroupBy(g => Math.Round(g.Mmr, 0))
+            .GroupBy(g => Math.Round(g.CmdrRatingStats.Mmr, 0))
             .Select(s => new MmrDevDto
             {
                 Count = s.Count(),
-                Mmr = s.Average(a => Math.Round(a.Mmr, 0))
+                Mmr = s.Average(a => Math.Round(a.CmdrRatingStats.Mmr, 0))
             })
             .OrderBy(o => o.Mmr)
             .ToList();
@@ -181,11 +187,11 @@ public partial class MmrService
     public async Task<List<MmrDevDto>> GetRatingsDeviationStd()
     {
         var devs = ToonIdRatings.Values
-            .GroupBy(g => Math.Round(g.MmrStd, 0))
+            .GroupBy(g => Math.Round(g.StdRatingStats.Mmr, 0))
             .Select(s => new MmrDevDto
             {
                 Count = s.Count(),
-                Mmr = s.Average(a => Math.Round(a.MmrStd, 0))
+                Mmr = s.Average(a => Math.Round(a.StdRatingStats.Mmr, 0))
             })
             .OrderBy(o => o.Mmr)
             .ToList();

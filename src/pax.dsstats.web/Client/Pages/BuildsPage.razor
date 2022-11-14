@@ -4,7 +4,9 @@
 
 <PageTitle>Builds</PageTitle>
 
-<sc2dsstats.razorlib.BuildsComponent BuildRequest="buildRequest" Players="players" OnRequestChanged="RequestChanged"></sc2dsstats.razorlib.BuildsComponent>
+@*<sc2dsstats.razorlib.BuildsComponent BuildRequest="buildRequest" Players="players" OnRequestChanged="RequestChanged"></sc2dsstats.razorlib.BuildsComponent>*@
+
+<sc2dsstats.razorlib.Builds.BuildsNgComponent BuildRequest="buildRequest" OnRequestChanged="RequestChanged"></sc2dsstats.razorlib.Builds.BuildsNgComponent>
 
 @code {
     [Parameter]
@@ -25,15 +27,10 @@
 
 
     private BuildRequest buildRequest = new()
-    {
-        PlayerNames = new() { "PAX" },
-        Interest = Commander.Abathur,
-    };
-
-    private List<string> players = new() {
-        "PAX",
-        "Feralan"
-    };
+        {
+            PlayerNames = Data.GetDefaultRequestNames(),
+            Interest = Commander.Abathur,
+        };
 
     protected override void OnInitialized()
     {
@@ -67,7 +64,20 @@
 
         if (!string.IsNullOrEmpty(PlayerNames))
         {
-            buildRequest.PlayerNames = PlayerNames.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+            var toonIdStrs = PlayerNames.Split('x', StringSplitOptions.RemoveEmptyEntries).ToList();
+            List<int> toonIds = new();
+            foreach (var toonIdstr in toonIdStrs)
+            {
+                if (int.TryParse(toonIdstr, out int toonId))
+                {
+                    toonIds.Add(toonId);
+                    if (toonIds.Count >= 10)
+                    {
+                        break;
+                    }
+                }
+            }
+            buildRequest.PlayerNames = toonIds.Select(s => new RequestNames() { Name = "", ToonId = s }).ToList();
         }
     }
 
@@ -78,7 +88,7 @@
         queryDic.Add("Timespan", buildRequest.Timespan);
         queryDic.Add("Interest", buildRequest.Interest.ToString());
         queryDic.Add("Versus", buildRequest.Versus.ToString());
-        queryDic.Add("PlayerNames", string.Join(',', buildRequest.PlayerNames));
+        queryDic.Add("PlayerNames", string.Join('x', buildRequest.PlayerNames.Select(s => s.ToonId)));
 
         NavigationManager.NavigateTo(
             NavigationManager.GetUriWithQueryParameters(

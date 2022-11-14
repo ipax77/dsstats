@@ -267,6 +267,37 @@ public class UploadService
         File.WriteAllText(Path.Combine(testDataPath, "replayDto2.json"), JsonSerializer.Serialize(new List<ReplayDto>() { testReplay2 }));
     }
 
+    internal void ProduceMauiTestData()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var replays = context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(t => t.Spawns)
+                    .ThenInclude(t => t.Units)
+                        .ThenInclude(t => t.Unit)
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(t => t.Player)
+                .AsNoTracking()
+                .AsSplitQuery()
+            .OrderByDescending(o => o.GameTime)
+            .Take(33)
+            .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
+            .ToList();
+
+        replays.ForEach(f => f.FileName = string.Empty);
+        replays.SelectMany(s => s.ReplayPlayers).ToList().ForEach(f => f.ReplayPlayerId = 0);
+
+        var json1 = JsonSerializer.Serialize(replays.Take(30));
+        var json2 = JsonSerializer.Serialize(replays.Skip(30));
+
+        var testDataPath = "/data/ds/testdata";
+        File.WriteAllText(Path.Combine(testDataPath, "testreplays1.json"), json1);
+        File.WriteAllText(Path.Combine(testDataPath, "testreplays2.json"), json2);
+
+    }
+
     public async Task<DateTime> DisableUploads()
     {
         var httpClient = GetHttpClient();

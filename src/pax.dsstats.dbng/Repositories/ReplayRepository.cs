@@ -338,7 +338,7 @@ public class ReplayRepository : IReplayRepository
         }
     }
 
-    public async Task<(HashSet<Unit>, HashSet<Upgrade>)> SaveReplay(ReplayDto replayDto, HashSet<Unit> units, HashSet<Upgrade> upgrades, ReplayEventDto? replayEventDto)
+    public async Task<(HashSet<Unit>, HashSet<Upgrade>, Replay)> SaveReplay(ReplayDto replayDto, HashSet<Unit> units, HashSet<Upgrade> upgrades, ReplayEventDto? replayEventDto)
     {
         var dbReplay = mapper.Map<Replay>(replayDto);
         dbReplay.SetDefaultFilter();
@@ -433,7 +433,7 @@ public class ReplayRepository : IReplayRepository
             throw;
         }
 
-        return (units, upgrades);
+        return (units, upgrades, dbReplay);
     }
 
     //private async Task AddDbCommanderMmr(string commanders)

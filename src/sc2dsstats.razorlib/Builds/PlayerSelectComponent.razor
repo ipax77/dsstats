@@ -1,0 +1,253 @@
+﻿@using Blazored.Toast.Services;
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using System.Globalization
+@using pax.dsstats.shared
+@using sc2dsstats.razorlib.Services
+@inject IDataService dataService
+@inject IToastService toastService
+@implements IDisposable
+
+<style>
+    .tableFixHead {
+        overflow-y: auto;
+    }
+
+        .tableFixHead thead th {
+            position: sticky;
+            top: 0;
+        }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+
+    th {
+        background: purple;
+    }
+
+    .tablebackground {
+        position: absolute;
+        z-index: -1;
+        opacity: 0.15;
+    }
+</style>
+
+<div>
+    <div class="d-flex">
+        <EditForm EditContext="editContext">
+            <div class="row">
+                <div class="col-auto">
+                    <label class="form-label">
+                        Search:
+                        <InputText class="form-control" @bind-Value="ratingsRequest.Search"></InputText>
+                    </label>
+                </div>
+            </div>
+        </EditForm>
+        <div class="align-self-center ms-2">
+            <span class="oi oi-x text-danger pointer" @onclick="ResetSearch"></span>
+        </div>
+    </div>
+    <div class="tableFixHead">
+        <table class="table table-sm table-dark table-hover table-striped w-auto">
+            <colgroup>
+                <col class="col">
+                <col class="col">
+                <col class="col">
+                <col class="col">
+                <col class="col">
+                <col class="col">
+                <col class="col">
+                <col class="col">
+            </colgroup>
+            <thead>
+                <CascadingValue Value="ratingsRequest.Orders">
+                    <tr>
+                        <th colspan="2"></th>
+                        <th colspan="3" class="text-center text-warning">Commanders</th>
+                        <th colspan="3" class="text-center text-warning">Standard</th>
+                    </tr>
+                    <tr>
+                        <th>Select</th>
+                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Name"))">
+                            <SortArrow Property="Name">
+                                Name
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "CmdrRatingStats.Games"))">
+                            <SortArrow Property="GamesCmdr">
+                                Games
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "CmdrRatingStats.Mmr"))">
+                            <SortArrow Property="Mmr">
+                                Rating
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "WinrateCmdr"))">
+                            <SortArrow Property="WinrateCmdr">
+                                Winrate
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "StdRatingStats.Games"))">
+                            <SortArrow Property="GamesStd">
+                                Games
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "StdRatingStats.Mmr"))">
+                            <SortArrow Property="MmrStd">
+                                Rating
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "WinrateStd"))">
+                            <SortArrow Property="WinrateStd">
+                                Winrate
+                            </SortArrow>
+                        </th>
+                    </tr>
+                </CascadingValue>
+            </thead>
+            <tbody>
+                @if (ratingsCount > 0)
+                {
+                    <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings">
+                        <ItemContent>
+                            <tr>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-primary" @onclick="e => OnPlayersSelected.InvokeAsync(rating)">Select</button>
+                                </td>
+                                <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Name</span></td>
+                                <td class="border-start">@rating.CmdrRatingStats.Games</td>
+                                <td class="text-warning">@Math.Round(rating.CmdrRatingStats.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
+                                <td>@HelperService.GetPercentageString(rating.CmdrRatingStats.Wins, rating.CmdrRatingStats.Games)</td>
+                                <td class="border-start">@rating.StdRatingStats.Games</td>
+                                <td class="text-warning">@Math.Round(rating.StdRatingStats.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
+                                <td>@HelperService.GetPercentageString(rating.StdRatingStats.Wins, rating.StdRatingStats.Games)</td>
+                            </tr>
+                        </ItemContent>
+                        <Placeholder>
+                            <tr height="47px"><td>Loading ...</td></tr>
+                        </Placeholder>
+                    </Virtualize>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2"></td>
+                    <td colspan="3" class="text-center">Commanders</td>
+                    <td colspan="3" class="text-center">Standard</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<PlayerRatingDto> OnPlayersSelected { get; set; }
+
+    private RatingsRequest ratingsRequest = new()
+        {
+            Skip = 0,
+            Take = 20,
+            Orders = new()
+        {
+            new()
+            {
+                Property = "CmdrRatingStats.Mmr",
+                Ascending = false
+            },
+        }
+        };
+
+    private EditContext editContext = null!;
+    private int ratingsCount;
+    private Virtualize<PlayerRatingDto>? virtualize;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(ratingsRequest);
+        editContext.OnFieldChanged += FieldChanged;
+        _ = SetCount();
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        _ = Reload();
+    }
+
+    public async Task Reload()
+    {
+        await SetCount();
+        await InvokeAsync(() => StateHasChanged());
+        if (virtualize != null)
+        {
+            await virtualize.RefreshDataAsync();
+        }
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task SetCount()
+    {
+        ratingsCount = await dataService.GetRatingsCount(ratingsRequest);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async ValueTask<ItemsProviderResult<PlayerRatingDto>> LoadRatings(ItemsProviderRequest request)
+    {
+        var numRatings = Math.Min(request.Count, ratingsCount - request.StartIndex);
+        ratingsRequest.Skip = request.StartIndex;
+        ratingsRequest.Take = numRatings;
+        var ratings = await dataService.GetRatings(ratingsRequest, request.CancellationToken);
+
+        return new ItemsProviderResult<PlayerRatingDto>(ratings, ratingsCount);
+    }
+
+    private async Task SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = ratingsRequest.Orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                ratingsRequest.Orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            ratingsRequest.Orders.Clear();
+            ratingsRequest.Orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+        await Reload();
+    }
+
+    private void ResetSearch()
+    {
+        ratingsRequest.Search = null;
+        _ = Reload();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}

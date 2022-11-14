@@ -26,6 +26,8 @@
   <ItemGroup>
     <ProjectReference Include="..\pax.dsstats.shared\pax.dsstats.shared.csproj" />
     <ProjectReference Include="..\pax.dsstats.parser\pax.dsstats.parser.csproj" />
+	<ProjectReference Include="..\pax.dsstats.dbng\pax.dsstats.dbng.csproj" />
+	<ProjectReference Include="..\SqliteMigrations\SqliteMigrations.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -34,6 +36,12 @@
     </None>
     <None Update="testdata\test2.SC2Replay">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>    
+    </None>
+    <None Update="testdata\testreplays1.json">
+     <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\testreplays2.json">
+     <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

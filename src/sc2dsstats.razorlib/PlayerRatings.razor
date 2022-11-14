@@ -91,12 +91,12 @@
                                 Name
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GamesCmdr"))">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "CmdrRatingStats.Games"))">
                             <SortArrow Property="GamesCmdr">
                                 Games
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "Mmr"))">
+                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "CmdrRatingStats.Mmr"))">
                             <SortArrow Property="Mmr">
                                 Rating
                             </SortArrow>
@@ -117,12 +117,12 @@
                             </SortArrow>
                         </th>
 
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GamesStd"))">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "StdRatingStats.Games"))">
                             <SortArrow Property="GamesStd">
                                 Games
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "MmrStd"))">
+                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "StdRatingStats.Mmr"))">
                             <SortArrow Property="MmrStd">
                                 Rating
                             </SortArrow>
@@ -149,20 +149,25 @@
                 @if (ratingsCount > 0)
                 {
                     <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings">
+                        <ItemContent>
                         <tr class="pointer" @onclick="e => LoadPlayerChart(rating)">
                             <td>@rating.ToonId</td>
                             <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Name</span></td>
-                            <td class="border-start">@rating.GamesCmdr</td>
-                            <td class="text-warning">@Math.Round(rating.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
-                            <td>@HelperService.GetPercentageString(rating.WinsCmdr, rating.GamesCmdr)</td>
-                            <td>@HelperService.GetPercentageString(rating.MvpCmdr, rating.GamesCmdr)</td>
-                            <td class="border-end">@HelperService.GetPercentageString(rating.TeamGamesCmdr, rating.GamesCmdr)</td>
-                            <td>@rating.GamesStd</td>
-                            <td class="text-warning">@Math.Round(rating.MmrStd, 2).ToString(CultureInfo.InvariantCulture)</td>
-                            <td>@HelperService.GetPercentageString(rating.WinsStd, rating.GamesStd)</td>
-                            <td>@HelperService.GetPercentageString(rating.MvpStd, rating.GamesStd)</td>
-                            <td>@HelperService.GetPercentageString(rating.TeamGamesStd, rating.GamesStd)</td>
+                            <td class="border-start">@rating.CmdrRatingStats.Games</td>
+                            <td class="text-warning">@Math.Round(rating.CmdrRatingStats.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
+                            <td>@HelperService.GetPercentageString(rating.CmdrRatingStats.Wins, rating.CmdrRatingStats.Games)</td>
+                            <td>@HelperService.GetPercentageString(rating.CmdrRatingStats.Mvp, rating.CmdrRatingStats.Games)</td>
+                            <td class="border-end">@HelperService.GetPercentageString(rating.CmdrRatingStats.TeamGames, rating.CmdrRatingStats.Games)</td>
+                            <td>@rating.StdRatingStats.Games</td>
+                            <td class="text-warning">@Math.Round(rating.StdRatingStats.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
+                            <td>@HelperService.GetPercentageString(rating.StdRatingStats.Wins, rating.StdRatingStats.Games)</td>
+                            <td>@HelperService.GetPercentageString(rating.StdRatingStats.Mvp, rating.StdRatingStats.Games)</td>
+                            <td>@HelperService.GetPercentageString(rating.StdRatingStats.TeamGames, rating.StdRatingStats.Games)</td>
                         </tr>
+                        </ItemContent>
+                        <Placeholder>
+                            <tr height="47px"><td>Loading ...</td></tr>
+                        </Placeholder>
                     </Virtualize>
                 }
             </tbody>

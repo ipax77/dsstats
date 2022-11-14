@@ -40,8 +40,6 @@ public static class MauiProgram
         //.EnableSensitiveDataLogging()
         );
 
-        // builder.Services.AddSingleton<HttpClient>();
-
         builder.Services.AddMemoryCache();
         builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
         builder.Services.AddBlazoredToast();
@@ -71,6 +69,25 @@ public static class MauiProgram
         var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
         mmrService.SeedCommanderMmrs().ConfigureAwait(false);
         _ = mmrService.ReCalculateWithDictionary();
+
+        // DEBUG
+
+        //var uploadService = scope.ServiceProvider.GetRequiredService<UploadService>();
+        //uploadService.ProduceMauiTestData();
+
+        //var replays = context.Replays
+        //    .Include(i => i.ReplayPlayers)
+        //        .ThenInclude(i => i.Spawns)
+        //            .ThenInclude(i => i.Units)
+        //    .Include(i => i.ReplayPlayers)
+        //        .ThenInclude(i => i.Upgrades)
+        //    .OrderByDescending(o => o.GameTime)
+        //    .Take(2)
+        //    .ToList();
+
+        //context.Replays.RemoveRange(replays);
+        //context.SaveChanges();
+
 
         return builder.Build();
     }

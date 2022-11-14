@@ -38,33 +38,16 @@ public record PlayerRatingDto
     public int PlayerId { get; init; }
     public string Name { get; init; } = null!;
     public int ToonId { get; init; }
-    public double Mmr { get; set; }
-    public double MmrStd { get; set; }
-    public int GamesCmdr { get; set; }
-    public int WinsCmdr { get; set; }
-    public int MvpCmdr { get; set; }
-    public int TeamGamesCmdr { get; set; }
-    public int GamesStd { get; set; }
-    public int WinsStd { get; set; }
-    public int MvpStd { get; set; }
-    public int TeamGamesStd { get; set; }
+    public RatingStatsDto CmdrRatingStats { get; init; } = new();
+    public RatingStatsDto StdRatingStats { get; init; } = new();
 }
 
-//public record PlayerRatingDtoNg
-//{
-//    public int PlayerId { get; init; }
-//    public string Name { get; init; } = null!;
-//    public int ToonId { get; init; }
-//    public RatingStatsDto CmdrRatingStats { get; set; } = new();
-//    public RatingStatsDto StdRatingStats { get; set; } = new();
-//}
-
-//public record RatingStatsDto
-//{
-//    public int Games { get; set; }
-//    public int Wins { get; set; }
-//    public int Mvp { get; set; }
-//    public int TeamGames { get; set; }
-//    public double Mmr { get; set; }
-//    public double Consistency { get; set; }
-//}
+public record RatingStatsDto
+{
+    public int Games { get; set; }
+    public int Wins { get; set; }
+    public int Mvp { get; set; }
+    public int TeamGames { get; set; }
+    public double Mmr { get; set; }
+    public double Consistency { get; set; }
+}

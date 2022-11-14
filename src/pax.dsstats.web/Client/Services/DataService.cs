@@ -8,6 +8,7 @@ public class DataService : IDataService
     private readonly HttpClient httpClient;
     private readonly ILogger<DataService> logger;
     private readonly string statsController = "api/Stats/";
+    private readonly string buildsController = "api/Builds/";
 
     public DataService(HttpClient httpClient, ILogger<DataService> logger)
     {
@@ -30,6 +31,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting replay: {response.StatusCode}");
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             logger.LogError($"failed getting replay: {e.Message}");
@@ -52,6 +54,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting replay count: {response.StatusCode}");
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             logger.LogError($"failed getting replay count: {e.Message}");
@@ -74,6 +77,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting replays: {response.StatusCode}");
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             logger.LogError($"failed getting replays: {e.Message}");
@@ -97,6 +101,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting stats: {response.StatusCode}");
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             logger.LogError($"failed getting stats: {e.Message}");
@@ -104,7 +109,7 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<BuildResponse> GetBuild(BuildRequest request)
+    public async Task<BuildResponse> GetBuild(BuildRequest request, CancellationToken token = default)
     {
         try
         {
@@ -119,6 +124,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting build: {response.StatusCode}");
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             logger.LogError($"failed getting build: {e.Message}");
@@ -141,6 +147,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting ratings count: {response.StatusCode}");
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             logger.LogError($"failed getting ratings count: {e.Message}");
@@ -164,6 +171,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting ratings: {response.StatusCode}");
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             logger.LogError($"failed getting ratings: {e.Message}");
@@ -255,6 +263,23 @@ public class DataService : IDataService
             logger.LogError($"failed getting playerRating: {ex.Message}");
         }
         return null;
+    }
+
+    public async Task<List<RequestNames>> GetTopPlayers()
+    {
+        try
+        {
+            var topPlayers = await httpClient.GetFromJsonAsync<List<RequestNames>>($"{buildsController}topplayers");
+            if (topPlayers != null)
+            {
+                return topPlayers;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting topPlayers: {ex.Message}");
+        }
+        return Data.GetDefaultRequestNames();
     }
 
     public async Task<ICollection<string>> GetReplayPaths()

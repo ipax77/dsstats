@@ -1,17 +1,53 @@
 ﻿@page "/builds"
+@using pax.dsstats.dbng.Services;
 @using pax.dsstats.shared;
 @using sc2dsstats.maui.Services;
+@inject IToastService toastService
 
 <PageTitle>Builds</PageTitle>
 
-<sc2dsstats.razorlib.BuildsComponent BuildRequest="buildRequest" Players="players"></sc2dsstats.razorlib.BuildsComponent>
+<sc2dsstats.razorlib.Builds.BuildsNgComponent BuildRequest="buildRequest" MauiPlayers="defaultPlayers"></sc2dsstats.razorlib.Builds.BuildsNgComponent>
 
 @code {
-    BuildRequest buildRequest = new()
-    {
-        PlayerNames = UserSettingsService.UserSettings.PlayerNames,
-        Interest = Commander.Abathur
-    };
+    BuildRequest buildRequest = null!;
 
-    List<string> players = UserSettingsService.UserSettings.PlayerNames;
+    List<RequestNames> defaultPlayers = new();
+
+    protected override void OnInitialized()
+    {
+        defaultPlayers = GetDefaultPlayers();
+        buildRequest = new()
+        {
+            Interest = Commander.Abathur,
+            PlayerNames = defaultPlayers
+        };
+        base.OnInitialized();
+    }
+
+    private List<RequestNames> GetDefaultPlayers()
+    {
+        List<RequestNames> requestNames = new();
+
+        foreach (var name in UserSettingsService.UserSettings.PlayerNames)
+        {
+            var toonIdRatings = MmrService.ToonIdRatings.Values.Where(x => x.Name == name);
+            if (toonIdRatings.Any())
+            {
+                foreach (var toonIdRating in toonIdRatings)
+                {
+                    requestNames.Add(new()
+                        {
+                            Name = name,
+                            ToonId = toonIdRating.ToonId
+                        });
+                }
+            }
+            else
+            {
+                toastService.ShowWarning($"Players need at least 10 games to show up ({name})");
+            }
+        }
+
+        return requestNames;
+    }
 }

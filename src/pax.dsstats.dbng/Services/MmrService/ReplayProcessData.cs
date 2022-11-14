@@ -9,8 +9,8 @@ internal record ReplayProcessData
         ReplayGameTime = replay.GameTime;
         Duration = replay.Duration;
 
-        WinnerTeamData = new(replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam));
-        LoserTeamData = new(replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam));
+        WinnerTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam));
+        LoserTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam));
     }
 
     public TeamData WinnerTeamData { get; init; }
@@ -25,9 +25,9 @@ internal record ReplayProcessData
 
 internal record TeamData
 {
-    public TeamData(IEnumerable<ReplayPlayerDsRDto> replayPlayers)
+    public TeamData(ReplayDsRDto replay, IEnumerable<ReplayPlayerDsRDto> replayPlayers)
     {
-        Players = replayPlayers.Select(x => new PlayerData(x)).ToArray();
+        Players = replayPlayers.Select(x => new PlayerData(replay, x)).ToArray();
     }
 
     public PlayerData[] Players { get; init; }
@@ -38,15 +38,19 @@ internal record TeamData
 
 internal record PlayerData
 {
-    public PlayerData(ReplayPlayerDsRDto replayPlayer)
+    public PlayerData(ReplayDsRDto replay, ReplayPlayerDsRDto replayPlayer)
     {
         ReplayPlayer = replayPlayer;
         Commander = ReplayPlayer.Race;
+
+        IsLeaver = Duration < replay.Duration - 90;
     }
 
     public ReplayPlayerDsRDto ReplayPlayer { get; init; }
+    public int Duration => ReplayPlayer.Duration;
     public Commander Commander { get; init; }
-    
+    public bool IsLeaver { get; init; }
+
     public double PlayerMmrDelta { get; set; }
     public double PlayerConsistencyDelta { get; set; }
     public double CommanderMmrDelta { get; set; }

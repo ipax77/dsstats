@@ -7,7 +7,7 @@ public interface IDataService
     Task<ICollection<string>> GetReplayPaths();
     Task<List<string>> GetTournaments();
     Task<StatsResponse> GetStats(StatsRequest request, CancellationToken token = default);
-    Task<BuildResponse> GetBuild(BuildRequest request);
+    Task<BuildResponse> GetBuild(BuildRequest request, CancellationToken token = default);
 
     // ratings
     Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default);
@@ -17,4 +17,5 @@ public interface IDataService
     Task<List<MmrDevDto>> GetRatingsDeviationStd();
     Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId);
     Task<PlayerRatingDto?> GetPlayerRating(int toonId);
+    Task<List<RequestNames>> GetTopPlayers();
 }

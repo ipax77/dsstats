@@ -42,7 +42,7 @@ public partial class MmrService
     public static readonly double startMmr = 1000.0;
     private static readonly double consistencyImpact = 0.50;
     private static readonly double consistencyDeltaMult = 0.15;
-    private Dictionary<CmdrMmmrKey, CommanderMmr> cmdrMmrDic = new();
+    private static Dictionary<CmdrMmmrKey, CommanderMmr> cmdrMmrDic = new();
     private static DateTime LatestReplayGameTime = DateTime.MinValue;
 
     private static bool useCommanderMmr = false;
@@ -95,45 +95,6 @@ public partial class MmrService
         }
     }
 
-    public async Task<bool> ContinueCalculateWithDictionary(List<Replay> newReplays)
-    {
-        if (newReplays.Any(x => x.GameTime < LatestReplayGameTime)) {
-            //ReCalculateWithDictionary(startTime, DateTime.Today.AddDays(1));
-            return false;
-        }
-
-        var newReplaysCmdr = newReplays.Where(x => x.GameMode == GameMode.Commanders || x.GameMode == GameMode.CommandersHeroic)
-            .Select(s => mapper.Map<ReplayDsRDto>(s)).ToList();
-
-        await ss.WaitAsync();
-        try {
-            Stopwatch sw = Stopwatch.StartNew();
-
-            var playerRatingsCmdr = ContinueCalculateCmdr(GetPlayerRatingsCmdr(), newReplaysCmdr);
-            var playerInfos = await GetPlayerInfos();
-
-            await ContinueGlobals(playerRatingsCmdr, playerInfos);
-
-            //var json = JsonSerializer.Serialize(PlayerIdRatings);
-            //File.WriteAllText("/data/ds/playeridratings.json", json);
-
-            await SaveCommanderData();
-
-            sw.Stop();
-            logger.LogInformation($"continue calculation in {sw.ElapsedMilliseconds} ms");
-            OnRecalculated(new() { Duration = sw.Elapsed });
-        } finally {
-            ss.Release();
-        }
-
-        return true;
-    }
-
-    private static Dictionary<int, List<DsRCheckpoint>> GetPlayerRatingsCmdr()
-    {
-        return new();
-    }
-
     private async Task SetGlobals(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr,
                                   Dictionary<int, List<DsRCheckpoint>> playerRatingsStd,
                                   Dictionary<int, PlayerInfoDto> playerInfos)
@@ -158,23 +119,25 @@ public partial class MmrService
             MmrInfo? mmrInfo = null;
             if (playerId > 0 && playerRatingsCmdr.ContainsKey(playerId)) {
                 var plRat = playerRatingsCmdr[playerId];
+                var lastPlRat = plRat.LastOrDefault();
                 mmrInfo = new() {
-                    CmdrMmr = plRat.LastOrDefault()?.Mmr ?? 0,
-                    CmdrOverTime = GetOverTimeRating(plRat) ?? ""
+                    Mmr = lastPlRat?.Mmr ?? startMmr,
+                    Consistency = lastPlRat?.Consistency ?? 0
                 };
-                ToonIdCmdrRatingOverTime[toonId] = mmrInfo.CmdrOverTime;
+                ToonIdCmdrRatingOverTime[toonId] = GetOverTimeRating(plRat) ?? "";
             }
 
             MmrInfo? mmrInfoStd = null;
             if (playerId > 0 && playerRatingsStd.ContainsKey(playerId))
             {
                 var plRat = playerRatingsStd[playerId];
+                var lastPlRat = plRat.LastOrDefault();
                 mmrInfoStd = new()
                 {
-                    StdMmr = plRat.LastOrDefault()?.Mmr ?? 0,
-                    StdOverTime = GetOverTimeRating(plRat) ?? ""
+                    Mmr = lastPlRat?.Mmr ?? startMmr,
+                    Consistency = lastPlRat?.Consistency ?? 0
                 };
-                ToonIdStdRatingOverTime[toonId] = mmrInfoStd.StdOverTime;
+                ToonIdStdRatingOverTime[toonId] = GetOverTimeRating(plRat) ?? "";
             }
 
             ToonIdRatings[toonId] = new PlayerRatingDto() 
@@ -182,23 +145,29 @@ public partial class MmrService
                 PlayerId = playerId,
                 Name = name,
                 ToonId = toonId,
-                Mmr = mmrInfo?.CmdrMmr ?? 0,
-                MmrStd = mmrInfoStd?.StdMmr ?? 0,
-                GamesCmdr = playerInfo.Value.GamesCmdr,
-                WinsCmdr = playerInfo.Value.WinsCmdr,
-                MvpCmdr = playerInfo.Value.MvpCmdr,
-                TeamGamesCmdr = playerInfo.Value.TeamGamesCmdr,
-                GamesStd = playerInfo.Value.GamesStd,
-                WinsStd = playerInfo.Value.WinsStd,
-                MvpStd = playerInfo.Value.MvpStd,
-                TeamGamesStd = playerInfo.Value.TeamGamesStd,
+
+                CmdrRatingStats = new()
+                {
+                    Mmr = mmrInfo?.Mmr ?? startMmr,
+                    Games = playerInfo.Value.GamesCmdr,
+                    Wins = playerInfo.Value.WinsCmdr,
+                    Mvp = playerInfo.Value.MvpCmdr,
+                    TeamGames = playerInfo.Value.TeamGamesCmdr,
+                    Consistency = mmrInfo?.Consistency ?? 0
+                },
+                StdRatingStats = new()
+                {
+                    Mmr = mmrInfoStd?.Mmr ?? startMmr,
+                    Games = playerInfo.Value.GamesStd,
+                    Wins = playerInfo.Value.WinsStd,
+                    Mvp = playerInfo.Value.MvpStd,
+                    TeamGames = playerInfo.Value.TeamGamesStd,
+                    Consistency = mmrInfo?.Consistency ?? 0
+                }
             };
         }
     }
-    private async Task ContinueGlobals(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, Dictionary<int, PlayerInfoDto> playerInfos)
-    {
-        
-    }
+
 
     private async Task<Dictionary<int, KeyValuePair<int, string>>> GetToonIdPlayerIdMap()
     {
@@ -221,6 +190,8 @@ public partial class MmrService
 
         cmdrMmrDic = commanderRatings.ToDictionary(k => new CmdrMmmrKey() { Race = k.Race, Opprace = k.OppRace }, v => v);
 
+        maxMmrCmdr = startMmr;
+        maxMmrStd = startMmr;
         ReplayPlayerMmrChanges.Clear();
     }
 
@@ -398,7 +369,7 @@ public partial class MmrService
                 teamMmr += playerRatingsCmdr[GetMmrId(playerData.ReplayPlayer.Player)].Last().Mmr;
             }
         }
-        return teamMmr / 3.0;
+        return teamMmr / playerDatas.Length;
     }
 
     private static int GetMmrId(PlayerDsRDto player)
@@ -409,22 +380,40 @@ public partial class MmrService
 
     private static void FixMmrEquality(TeamData teamData, TeamData oppTeamData)
     {
-        double absSumTeamMmrDelta = teamData.Players.Sum(x => x.PlayerMmrDelta);
-        double absSumOppTeamMmrDelta = oppTeamData.Players.Sum(x => x.PlayerMmrDelta);
-        double absSumMmrAllDelta = absSumTeamMmrDelta + absSumOppTeamMmrDelta;
+        PlayerData[] posDeltaPlayers =
+            teamData.Players.Where(x => x.PlayerMmrDelta >= 0).Concat(
+            oppTeamData.Players.Where(x => x.PlayerMmrDelta >= 0)).ToArray();
 
-        if (teamData.Players.Length != oppTeamData.Players.Length)
-        {
-            throw new Exception("Not same player amount.");
+        PlayerData[] negPlayerDeltas =
+            teamData.Players.Where(x => x.PlayerMmrDelta < 0).Concat(
+            oppTeamData.Players.Where(x => x.PlayerMmrDelta < 0)).ToArray();
+
+
+
+        double absSumPosDeltas = Math.Abs(teamData.Players.Sum(x => Math.Max(0, x.PlayerMmrDelta)) + oppTeamData.Players.Sum(x => Math.Max(0, x.PlayerMmrDelta)));
+        double absSumNegDeltas = Math.Abs(teamData.Players.Sum(x => Math.Min(0, x.PlayerMmrDelta)) + oppTeamData.Players.Sum(x => Math.Min(0, x.PlayerMmrDelta)));
+        double absSumAllDeltas = absSumPosDeltas + absSumNegDeltas;
+
+        //if (teamData.Players.Length != oppTeamData.Players.Length)
+        //{
+        //    throw new Exception("Not same player amount.");
+        //}
+
+        if (absSumPosDeltas == 0 || absSumNegDeltas == 0) {
+            foreach (var player in teamData.Players) {
+                player.PlayerMmrDelta = 0;
+            }
+            foreach (var player in oppTeamData.Players) {
+                player.PlayerMmrDelta = 0;
+            }
+            return;
         }
 
-        for (int i = 0; i < teamData.Players.Length; i++)
-        {
-            teamData.Players[i].PlayerMmrDelta = teamData.Players[i].PlayerMmrDelta *
-                ((absSumMmrAllDelta) / (absSumTeamMmrDelta * 2));
-
-            oppTeamData.Players[i].PlayerMmrDelta = oppTeamData.Players[i].PlayerMmrDelta *
-                ((absSumMmrAllDelta) / (absSumOppTeamMmrDelta * 2));
+        foreach (var posDeltaPlayer in posDeltaPlayers) {
+            posDeltaPlayer.PlayerMmrDelta *= (absSumAllDeltas / (absSumPosDeltas * 2));
+        }
+        foreach (var negDeltaPlayer in negPlayerDeltas) {
+            negDeltaPlayer.PlayerMmrDelta *= (absSumAllDeltas / (absSumNegDeltas * 2));
         }
     }
 }
@@ -443,8 +432,6 @@ public class MmrRecalculatedEvent : EventArgs
 
 public record MmrInfo
 {
-    public double CmdrMmr { get; set; }
-    public double StdMmr { get; set; }
-    public string CmdrOverTime { get; set; } = string.Empty;
-    public string StdOverTime { get; set; } = string.Empty;
+    public double Mmr { get; set; }
+    public double Consistency { get; set; }
 }
