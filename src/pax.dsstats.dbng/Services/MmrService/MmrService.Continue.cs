@@ -190,17 +190,17 @@ public partial class MmrService
             {
                 var toonIdRating = ToonIdRatings[toonId];
                 toonIdRating.CmdrRatingStats.Mmr = mmrInfoCmdr?.Mmr ?? toonIdRating.CmdrRatingStats.Mmr;
-                toonIdRating.CmdrRatingStats.Games += playerInfo.GamesCmdr;
-                toonIdRating.CmdrRatingStats.Wins += playerInfo.WinsCmdr;
-                toonIdRating.CmdrRatingStats.Mvp += playerInfo.MvpCmdr;
-                toonIdRating.CmdrRatingStats.TeamGames += playerInfo.TeamGamesCmdr;
+                toonIdRating.CmdrRatingStats.Games = playerInfo.GamesCmdr;
+                toonIdRating.CmdrRatingStats.Wins = playerInfo.WinsCmdr;
+                toonIdRating.CmdrRatingStats.Mvp = playerInfo.MvpCmdr;
+                toonIdRating.CmdrRatingStats.TeamGames = playerInfo.TeamGamesCmdr;
                 toonIdRating.CmdrRatingStats.Consistency = mmrInfoCmdr?.Consistency ?? toonIdRating.CmdrRatingStats.Consistency;
 
                 toonIdRating.StdRatingStats.Mmr = mmrInfoStd?.Mmr ?? toonIdRating.StdRatingStats.Mmr;
-                toonIdRating.StdRatingStats.Games += playerInfo.GamesStd;
-                toonIdRating.StdRatingStats.Wins += playerInfo.WinsStd;
-                toonIdRating.StdRatingStats.Mvp += playerInfo.MvpStd;
-                toonIdRating.StdRatingStats.TeamGames += playerInfo.TeamGamesStd;
+                toonIdRating.StdRatingStats.Games = playerInfo.GamesStd;
+                toonIdRating.StdRatingStats.Wins = playerInfo.WinsStd;
+                toonIdRating.StdRatingStats.Mvp = playerInfo.MvpStd;
+                toonIdRating.StdRatingStats.TeamGames = playerInfo.TeamGamesStd;
                 toonIdRating.StdRatingStats.Consistency = mmrInfoStd?.Consistency ?? toonIdRating.StdRatingStats.Consistency;
             }
             else

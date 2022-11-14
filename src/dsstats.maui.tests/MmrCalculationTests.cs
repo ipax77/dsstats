@@ -400,6 +400,62 @@ public class MmrCalculationTests : TestWithSqlite
         }
     }
 
+    [Fact]
+    public async Task MmrContinueGameCountTest()
+    {
+        var serviceProvider = GetTestServiceProvider();
+
+        // GetRequiredServices
+        using var scope = serviceProvider.CreateScope();
+        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+        var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
+
+        // PrepareData
+        await mmrService.SeedCommanderMmrs();
+
+        var testReplays1 = JsonSerializer.Deserialize<List<ReplayDto>>(File.ReadAllText(Path.Combine(assemblyPath, "testdata", "testreplays1.json")));
+
+        Assert.True(testReplays1?.Any());
+
+        if (testReplays1 == null)
+        {
+            return;
+        }
+
+        var units = (await context.Units.AsNoTracking().ToListAsync()).ToHashSet();
+        var upgrades = (await context.Upgrades.AsNoTracking().ToListAsync()).ToHashSet();
+
+        var beforeReplays = testReplays1.Take(1).ToList();
+        var afterReplays = testReplays1.Skip(1).Take(1).ToList();
+
+        foreach (var replayDto in beforeReplays)
+        {
+            (units, upgrades, var replay) = await replayRepository.SaveReplay(replayDto, units, upgrades, null);
+        }
+
+        var playerStats = await mmrService.GetPlayerRating(226401);
+        int countBefore = playerStats?.CmdrRatingStats.Games ?? 0;
+
+        // ProcessData
+        await mmrService.ReCalculateWithDictionary();
+        List<Replay> newReplays = new();
+        foreach (var replayDto in afterReplays)
+        {
+            (units, upgrades, var replay) = await replayRepository.SaveReplay(replayDto, units, upgrades, null);
+            newReplays.Add(replay);
+        }
+
+        await mmrService.ContinueCalculateWithDictionary(newReplays);
+
+        playerStats = await mmrService.GetPlayerRating(226401);
+        int countAfter = playerStats?.CmdrRatingStats.Games ?? 0;
+
+        // Assert
+        Assert.Equal(countBefore + 1, countAfter);
+    }
+
 
     private ServiceProvider GetTestServiceProvider()
     {

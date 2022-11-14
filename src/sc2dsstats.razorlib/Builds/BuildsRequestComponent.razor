@@ -131,7 +131,7 @@
         }
         else
         {
-            BuildRequest.PlayerNames = MauiPlayers;
+            BuildRequest.PlayerNames = new(MauiPlayers);
         }
         requestNames = new(BuildRequest.PlayerNames);
         StateHasChanged();
