@@ -68,6 +68,11 @@ public partial class MmrService
     {
         Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr = new();
 
+        if (!newReplaysCmdr.Any())
+        {
+            return playerRatingsCmdr;
+        }
+
         foreach (var rp in newReplaysCmdr.SelectMany(s => s.ReplayPlayers).ToList())
         {
             if (ToonIdRatings.ContainsKey(rp.Player.ToonId))
@@ -87,11 +92,16 @@ public partial class MmrService
         return playerRatingsCmdr;
     }
 
-    private static Dictionary<int, List<DsRCheckpoint>> GetPlayerRatingsStd(List<ReplayDsRDto> newReplaysCmdr)
+    private static Dictionary<int, List<DsRCheckpoint>> GetPlayerRatingsStd(List<ReplayDsRDto> newReplaysStd)
     {
         Dictionary<int, List<DsRCheckpoint>> playerRatingsStd = new();
 
-        foreach (var rp in newReplaysCmdr.SelectMany(s => s.ReplayPlayers).ToList())
+        if (!newReplaysStd.Any())
+        {
+            return playerRatingsStd;
+        }
+
+        foreach (var rp in newReplaysStd.SelectMany(s => s.ReplayPlayers).ToList())
         {
             if (ToonIdRatings.ContainsKey(rp.Player.ToonId))
             {
@@ -111,8 +121,123 @@ public partial class MmrService
     }
 
     private async Task ContinueGlobals(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr,
-                                   Dictionary<int, List<DsRCheckpoint>> playerRatingsStd,
-                                   Dictionary<int, PlayerInfoDto> playerInfos)
+                               Dictionary<int, List<DsRCheckpoint>> playerRatingsStd,
+                               Dictionary<int, PlayerInfoDto> playerInfos)
+    {
+        // todo: optimize for continue
+        var playerIdToonIdMap = await GetPlayerIdToonIdMap();
+
+        foreach (var playerRatingEnt in playerRatingsCmdr)
+        {
+            int playerId = playerRatingEnt.Key;
+
+            int toonId = 0;
+            string name = "";
+
+            if (playerIdToonIdMap.ContainsKey(playerId))
+            {
+                var playerMap = playerIdToonIdMap[playerId];
+                toonId = playerMap.Key;
+                name = playerMap.Value;
+            }
+
+            PlayerInfoDto playerInfo;
+            if (playerInfos.ContainsKey(toonId))
+            {
+                playerInfo = playerInfos[toonId];
+            }
+            else
+            {
+                playerInfo = new PlayerInfoDto()
+                {
+                    ToonId = toonId
+                };
+                playerInfos[toonId] = playerInfo;
+            }
+
+            MmrInfo? mmrInfoCmdr = null;
+            if (playerId > 0 && playerRatingsCmdr.ContainsKey(playerId))
+            {
+                var plRat = playerRatingsCmdr[playerId];
+                var lastPlRat = plRat.LastOrDefault();
+                mmrInfoCmdr = new()
+                {
+                    Mmr = lastPlRat?.Mmr ?? startMmr,
+                    Consistency = lastPlRat?.Consistency ?? 0
+                };
+                ToonIdCmdrRatingOverTime[toonId] = ContinueOverTimeRatingCmdr(toonId, plRat) ?? "";
+            }
+
+            MmrInfo? mmrInfoStd = null;
+            if (playerId > 0 && playerRatingsStd.ContainsKey(playerId))
+            {
+                var plRat = playerRatingsStd[playerId];
+                var lastPlRat = plRat.LastOrDefault();
+                mmrInfoStd = new()
+                {
+                    Mmr = lastPlRat?.Mmr ?? startMmr,
+                    Consistency = lastPlRat?.Consistency ?? 0
+                };
+                ToonIdStdRatingOverTime[toonId] = ContinueOverTimeRatingStd(toonId, plRat) ?? "";
+            }
+
+            if (mmrInfoCmdr == null && mmrInfoStd == null)
+            {
+                continue;
+            }
+
+            if (ToonIdRatings.ContainsKey(toonId))
+            {
+                var toonIdRating = ToonIdRatings[toonId];
+                toonIdRating.CmdrRatingStats.Mmr = mmrInfoCmdr?.Mmr ?? toonIdRating.CmdrRatingStats.Mmr;
+                toonIdRating.CmdrRatingStats.Games += playerInfo.GamesCmdr;
+                toonIdRating.CmdrRatingStats.Wins += playerInfo.WinsCmdr;
+                toonIdRating.CmdrRatingStats.Mvp += playerInfo.MvpCmdr;
+                toonIdRating.CmdrRatingStats.TeamGames += playerInfo.TeamGamesCmdr;
+                toonIdRating.CmdrRatingStats.Consistency = mmrInfoCmdr?.Consistency ?? toonIdRating.CmdrRatingStats.Consistency;
+
+                toonIdRating.StdRatingStats.Mmr = mmrInfoStd?.Mmr ?? toonIdRating.StdRatingStats.Mmr;
+                toonIdRating.StdRatingStats.Games += playerInfo.GamesStd;
+                toonIdRating.StdRatingStats.Wins += playerInfo.WinsStd;
+                toonIdRating.StdRatingStats.Mvp += playerInfo.MvpStd;
+                toonIdRating.StdRatingStats.TeamGames += playerInfo.TeamGamesStd;
+                toonIdRating.StdRatingStats.Consistency = mmrInfoStd?.Consistency ?? toonIdRating.StdRatingStats.Consistency;
+            }
+            else
+            {
+                ToonIdRatings[toonId] = new PlayerRatingDto()
+                {
+                    PlayerId = playerId,
+                    Name = name,
+                    ToonId = toonId,
+
+                    CmdrRatingStats = new()
+                    {
+                        Mmr = mmrInfoCmdr?.Mmr ?? startMmr,
+                        Games = playerInfo.GamesCmdr,
+                        Wins = playerInfo.WinsCmdr,
+                        Mvp = playerInfo.MvpCmdr,
+                        TeamGames = playerInfo.TeamGamesCmdr,
+                        Consistency = mmrInfoCmdr?.Consistency ?? 0
+                    },
+                    StdRatingStats = new()
+                    {
+                        Mmr = mmrInfoStd?.Mmr ?? startMmr,
+                        Games = playerInfo.GamesStd,
+                        Wins = playerInfo.WinsStd,
+                        Mvp = playerInfo.MvpStd,
+                        TeamGames = playerInfo.TeamGamesStd,
+                        Consistency = mmrInfoCmdr?.Consistency ?? 0
+                    }
+                };
+            }
+
+        }
+    }
+
+    private async Task ContinueGlobals_deprecated(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr,
+                               Dictionary<int, List<DsRCheckpoint>> playerRatingsStd,
+                               Dictionary<int, PlayerInfoDto> playerInfos)
     {
         // todo: optimize for continue
         var toonIdPlayerIdMap = await GetToonIdPlayerIdMap();
