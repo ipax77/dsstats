@@ -39,57 +39,48 @@ public class MmrContinueTests : TestWithSqlite
         await mmrService.SeedCommanderMmrs();
 
         var testReplays1 = JsonSerializer.Deserialize<List<ReplayDto>>(File.ReadAllText(Path.Combine(assemblyPath, "testdata", "testreplays1.json")));
-        var testReplays2 = JsonSerializer.Deserialize<List<ReplayDto>>(File.ReadAllText(Path.Combine(assemblyPath, "testdata", "testreplays2.json")));
 
         Assert.True(testReplays1?.Any());
-        Assert.True(testReplays2?.Any());
 
-        if (testReplays1 == null || testReplays2 == null)
+        if (testReplays1 == null)
         {
             return;
         }
 
+        var replaysBefore = testReplays1.OrderBy(o => o.GameTime).Take(25).ToList();
+        var replaysAfter = testReplays1.OrderBy(o => o.GameTime).Skip(25).Take(4).ToList();
+
         var units = (await context.Units.AsNoTracking().ToListAsync()).ToHashSet();
         var upgrades = (await context.Upgrades.AsNoTracking().ToListAsync()).ToHashSet();
 
-        foreach (var replayDto in testReplays1)
+        foreach (var replayDto in replaysBefore)
         {
             (units, upgrades, var replay) = await replayRepository.SaveReplay(replayDto, units, upgrades, null);
         }
 
         await mmrService.ReCalculateWithDictionary();
-        var dataVeryBefore = MmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
+        var dataVeryBefore = mmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
 
-        Assert.True(MmrService.ToonIdRatings.Any());
+        Assert.True(mmrService.ToonIdRatings.Any());
 
         List<Replay> newReplays = new();
-        foreach (var replayDto in testReplays2)
+        foreach (var replayDto in replaysAfter)
         {
             (units, upgrades, var replay) = await replayRepository.SaveReplay(replayDto, units, upgrades, null);
             newReplays.Add(replay);
             break;
         }
 
-        int countBefore = MmrService.ToonIdRatings.Count;
+        int countBefore = mmrService.ToonIdRatings.Count;
         await mmrService.ContinueCalculateWithDictionary(newReplays);
 
-        Assert.True(MmrService.ToonIdRatings.Count > countBefore);
+        Assert.True(mmrService.ToonIdRatings.Count > countBefore);
 
-        var dataBefore = MmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
+        var dataBefore = mmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
 
         await mmrService.ReCalculateWithDictionary();
 
-        var dataAfter = MmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
-
-        for (int i = 0; i < dataVeryBefore.Count; i++)
-        {
-            var entBefore = dataVeryBefore.ElementAt(i);
-            var entAfter = dataAfter.ElementAt(i);
-
-            Assert.Equal(entBefore.Value, entAfter.Value);
-        }
-
-        Assert.Equal(dataBefore.Count, dataAfter.Count);
+        var dataAfter = mmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
 
         for (int i = 0; i < dataBefore.Count; i++)
         {
@@ -124,45 +115,46 @@ public class MmrContinueTests : TestWithSqlite
         await mmrService.SeedCommanderMmrs();
 
         var testReplays1 = JsonSerializer.Deserialize<List<ReplayDto>>(File.ReadAllText(Path.Combine(assemblyPath, "testdata", "testreplays1.json")));
-        var testReplays2 = JsonSerializer.Deserialize<List<ReplayDto>>(File.ReadAllText(Path.Combine(assemblyPath, "testdata", "testreplays2.json")));
 
         Assert.True(testReplays1?.Any());
-        Assert.True(testReplays2?.Any());
 
-        if (testReplays1 == null || testReplays2 == null)
+        if (testReplays1 == null)
         {
             return;
         }
 
+        var replaysBefore= testReplays1.OrderBy(o => o.GameTime).Take(25).ToList();
+        var replaysAfter = testReplays1.OrderBy(o => o.GameTime).Skip(25).Take(4).ToList();
+
         var units = (await context.Units.AsNoTracking().ToListAsync()).ToHashSet();
         var upgrades = (await context.Upgrades.AsNoTracking().ToListAsync()).ToHashSet();
 
-        foreach (var replayDto in testReplays1)
+        foreach (var replayDto in replaysBefore)
         {
             (units, upgrades, var replay) = await replayRepository.SaveReplay(replayDto, units, upgrades, null);
         }
 
         await mmrService.ReCalculateWithDictionary();
 
-        Assert.True(MmrService.ToonIdRatings.Any());
+        Assert.True(mmrService.ToonIdRatings.Any());
 
         List<Replay> newReplays = new();
-        foreach (var replayDto in testReplays2)
+        foreach (var replayDto in replaysAfter)
         {
             (units, upgrades, var replay) = await replayRepository.SaveReplay(replayDto, units, upgrades, null);
             newReplays.Add(replay);
         }
 
-        int countBefore = MmrService.ToonIdRatings.Count;
+        int countBefore = mmrService.ToonIdRatings.Count;
         await mmrService.ContinueCalculateWithDictionary(newReplays);
 
-        Assert.True(MmrService.ToonIdRatings.Count > countBefore);
+        Assert.True(mmrService.ToonIdRatings.Count > countBefore);
 
-        var dataBefore = MmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
+        var dataBefore = mmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
 
         await mmrService.ReCalculateWithDictionary();
 
-        var dataAfter = MmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
+        var dataAfter = mmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
 
         Assert.Equal(dataBefore.Count, dataAfter.Count);
 

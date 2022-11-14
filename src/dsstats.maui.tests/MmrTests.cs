@@ -57,7 +57,7 @@ public class MmrTests : TestWithSqlite
 
         await mmrService.ReCalculateWithDictionary();
 
-        Assert.True(MmrService.ToonIdRatings.Any());
+        Assert.True(mmrService.ToonIdRatings.Any());
     }
 
     [Fact]
@@ -102,13 +102,13 @@ public class MmrTests : TestWithSqlite
 
         await mmrService.ReCalculateWithDictionary();
 
-        Assert.True(MmrService.ToonIdRatings.Any());
+        Assert.True(mmrService.ToonIdRatings.Any());
 
-        var dataBefore = MmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
+        var dataBefore = mmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
 
         await mmrService.ReCalculateWithDictionary();
 
-        var dataAfter = MmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
+        var dataAfter = mmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
 
         Assert.Equal(dataBefore.Count, dataAfter.Count);
 
@@ -165,7 +165,7 @@ public class MmrTests : TestWithSqlite
 
         await mmrService.ReCalculateWithDictionary();
 
-        Assert.True(MmrService.ToonIdRatings.Any());
+        Assert.True(mmrService.ToonIdRatings.Any());
 
         List<Replay> newReplays = new();
         foreach (var replayDto in testReplays2)
@@ -174,9 +174,9 @@ public class MmrTests : TestWithSqlite
             newReplays.Add(replay);
         }
 
-        int countBefore = MmrService.ToonIdRatings.Count;
+        int countBefore = mmrService.ToonIdRatings.Count;
         await mmrService.ContinueCalculateWithDictionary(newReplays);
 
-        Assert.True(MmrService.ToonIdRatings.Count > countBefore);
+        Assert.True(mmrService.ToonIdRatings.Count > countBefore);
     }
 }
