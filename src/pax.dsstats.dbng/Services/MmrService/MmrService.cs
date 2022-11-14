@@ -11,10 +11,10 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class MmrService
 {
-    public static Dictionary<int, PlayerRatingDto> ToonIdRatings { get; private set; } = new();
-    public static Dictionary<int, string> ToonIdCmdrRatingOverTime { get; private set; } = new();
-    public static Dictionary<int, string> ToonIdStdRatingOverTime { get; private set; } = new();
-    public static Dictionary<int, float> ReplayPlayerMmrChanges { get; private set; } = new();
+    public Dictionary<int, PlayerRatingDto> ToonIdRatings { get; private set; } = new();
+    public Dictionary<int, string> ToonIdCmdrRatingOverTime { get; private set; } = new();
+    public Dictionary<int, string> ToonIdStdRatingOverTime { get; private set; } = new();
+    public Dictionary<int, float> ReplayPlayerMmrChanges { get; private set; } = new();
 
 
     private readonly IServiceProvider serviceProvider;
@@ -42,12 +42,12 @@ public partial class MmrService
     public static readonly double startMmr = 1000.0;
     private static readonly double consistencyImpact = 0.50;
     private static readonly double consistencyDeltaMult = 0.15;
-    private static Dictionary<CmdrMmmrKey, CommanderMmr> cmdrMmrDic = new();
-    private static DateTime LatestReplayGameTime = DateTime.MinValue;
+    private Dictionary<CmdrMmmrKey, CommanderMmr> cmdrMmrDic = new();
+    private DateTime LatestReplayGameTime = DateTime.MinValue;
 
-    private static bool useCommanderMmr = false;
-    private static bool useConsistency = true;
-    private static bool useFactorToTeamMates = false;
+    private readonly bool useCommanderMmr = false;
+    private readonly bool useConsistency = true;
+    private readonly bool useFactorToTeamMates = false;
     SemaphoreSlim ss = new(1, 1);
 
     //public async Task ReCalculate(DateTime startTime, DateTime endTime)
@@ -74,7 +74,8 @@ public partial class MmrService
     public async Task ReCalculateWithDictionary(DateTime startTime = new(), DateTime endTime = new())
     {
         await ss.WaitAsync();
-        try {
+        try
+        {
             Stopwatch sw = Stopwatch.StartNew();
 
             await ResetGlobals();
@@ -90,14 +91,112 @@ public partial class MmrService
             logger.LogInformation($"recalcualated in {sw.ElapsedMilliseconds} ms");
             OnRecalculated(new() { Duration = sw.Elapsed });
         }
-        finally {
+        finally
+        {
             ss.Release();
         }
     }
 
     private async Task SetGlobals(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr,
-                                  Dictionary<int, List<DsRCheckpoint>> playerRatingsStd,
-                                  Dictionary<int, PlayerInfoDto> playerInfos)
+                              Dictionary<int, List<DsRCheckpoint>> playerRatingsStd,
+                              Dictionary<int, PlayerInfoDto> playerInfos)
+    {
+        ToonIdRatings.Clear();
+        ToonIdCmdrRatingOverTime.Clear();
+        ToonIdStdRatingOverTime.Clear();
+
+        var playerIdToonIdMap = await GetPlayerIdToonIdMap();
+
+        foreach (var playerRatingEnt in playerRatingsCmdr)
+        {
+            int playerId = playerRatingEnt.Key;
+
+            int toonId = 0;
+            string name = "";
+
+            if (playerIdToonIdMap.ContainsKey(playerId))
+            {
+                var playerMap = playerIdToonIdMap[playerId];
+                toonId = playerMap.Key;
+                name = playerMap.Value;
+            }
+
+            PlayerInfoDto playerInfo;
+            if (playerInfos.ContainsKey(toonId))
+            {
+                playerInfo = playerInfos[toonId];
+            }
+            else
+            {
+                playerInfo = new PlayerInfoDto()
+                {
+                    ToonId = toonId
+                };
+                playerInfos[toonId] = playerInfo;
+            }
+
+            MmrInfo? mmrInfoCmdr = null;
+            if (playerId > 0 && playerRatingsCmdr.ContainsKey(playerId))
+            {
+                var plRat = playerRatingsCmdr[playerId];
+                var lastPlRat = plRat.LastOrDefault();
+                mmrInfoCmdr = new()
+                {
+                    Mmr = lastPlRat?.Mmr ?? startMmr,
+                    Consistency = lastPlRat?.Consistency ?? 0
+                };
+                ToonIdCmdrRatingOverTime[toonId] = ContinueOverTimeRatingCmdr(toonId, plRat) ?? "";
+            }
+
+            MmrInfo? mmrInfoStd = null;
+            if (playerId > 0 && playerRatingsStd.ContainsKey(playerId))
+            {
+                var plRat = playerRatingsStd[playerId];
+                var lastPlRat = plRat.LastOrDefault();
+                mmrInfoStd = new()
+                {
+                    Mmr = lastPlRat?.Mmr ?? startMmr,
+                    Consistency = lastPlRat?.Consistency ?? 0
+                };
+                ToonIdStdRatingOverTime[toonId] = ContinueOverTimeRatingStd(toonId, plRat) ?? "";
+            }
+
+            if (mmrInfoCmdr == null && mmrInfoStd == null)
+            {
+                continue;
+            }
+
+            ToonIdRatings[toonId] = new PlayerRatingDto()
+            {
+                PlayerId = playerId,
+                Name = name,
+                ToonId = toonId,
+
+                CmdrRatingStats = new()
+                {
+                    Mmr = mmrInfoCmdr?.Mmr ?? startMmr,
+                    Games = playerInfo.GamesCmdr,
+                    Wins = playerInfo.WinsCmdr,
+                    Mvp = playerInfo.MvpCmdr,
+                    TeamGames = playerInfo.TeamGamesCmdr,
+                    Consistency = mmrInfoCmdr?.Consistency ?? 0
+                },
+                StdRatingStats = new()
+                {
+                    Mmr = mmrInfoStd?.Mmr ?? startMmr,
+                    Games = playerInfo.GamesStd,
+                    Wins = playerInfo.WinsStd,
+                    Mvp = playerInfo.MvpStd,
+                    TeamGames = playerInfo.TeamGamesStd,
+                    Consistency = mmrInfoCmdr?.Consistency ?? 0
+                }
+            };
+        }
+    }
+
+    private async Task SetGlobals_deprecated(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr,
+                              Dictionary<int, List<DsRCheckpoint>> playerRatingsStd,
+                              Dictionary<int, PlayerInfoDto> playerInfos)
     {
         ToonIdRatings.Clear();
         ToonIdCmdrRatingOverTime.Clear();
@@ -105,22 +204,26 @@ public partial class MmrService
 
         var toonIdPlayerIdMap = await GetToonIdPlayerIdMap();
 
-        for (int i = 0; i < playerInfos.Count; i++) {
+        for (int i = 0; i < playerInfos.Count; i++)
+        {
             var playerInfo = playerInfos.ElementAt(i);
             int toonId = playerInfo.Key;
             int playerId = 0;
             string name = "";
-            if (toonIdPlayerIdMap.ContainsKey(toonId)) {
+            if (toonIdPlayerIdMap.ContainsKey(toonId))
+            {
                 var tpMap = toonIdPlayerIdMap[toonId];
                 playerId = tpMap.Key;
                 name = tpMap.Value;
             }
 
             MmrInfo? mmrInfo = null;
-            if (playerId > 0 && playerRatingsCmdr.ContainsKey(playerId)) {
+            if (playerId > 0 && playerRatingsCmdr.ContainsKey(playerId))
+            {
                 var plRat = playerRatingsCmdr[playerId];
                 var lastPlRat = plRat.LastOrDefault();
-                mmrInfo = new() {
+                mmrInfo = new()
+                {
                     Mmr = lastPlRat?.Mmr ?? startMmr,
                     Consistency = lastPlRat?.Consistency ?? 0
                 };
@@ -140,7 +243,7 @@ public partial class MmrService
                 ToonIdStdRatingOverTime[toonId] = GetOverTimeRating(plRat) ?? "";
             }
 
-            ToonIdRatings[toonId] = new PlayerRatingDto() 
+            ToonIdRatings[toonId] = new PlayerRatingDto()
             {
                 PlayerId = playerId,
                 Name = name,
@@ -180,6 +283,17 @@ public partial class MmrService
             .ToDictionary(k => k.ToonId, v => new KeyValuePair<int, string>(v.PlayerId, v.Name));
     }
 
+    private async Task<Dictionary<int, KeyValuePair<int, string>>> GetPlayerIdToonIdMap()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return (await context.Players
+            .Select(s => new { s.PlayerId, s.ToonId, s.Name })
+            .ToListAsync())
+            .ToDictionary(k => k.PlayerId, v => new KeyValuePair<int, string>(v.ToonId, v.Name));
+    }
+
     private async Task ResetGlobals()
     {
         using var scope = serviceProvider.CreateScope();
@@ -193,6 +307,7 @@ public partial class MmrService
         maxMmrCmdr = startMmr;
         maxMmrStd = startMmr;
         ReplayPlayerMmrChanges.Clear();
+        LatestReplayGameTime = DateTime.MinValue;
     }
 
     private async Task ClearRatingsInDb()
@@ -399,20 +514,25 @@ public partial class MmrService
         //    throw new Exception("Not same player amount.");
         //}
 
-        if (absSumPosDeltas == 0 || absSumNegDeltas == 0) {
-            foreach (var player in teamData.Players) {
+        if (absSumPosDeltas == 0 || absSumNegDeltas == 0)
+        {
+            foreach (var player in teamData.Players)
+            {
                 player.PlayerMmrDelta = 0;
             }
-            foreach (var player in oppTeamData.Players) {
+            foreach (var player in oppTeamData.Players)
+            {
                 player.PlayerMmrDelta = 0;
             }
             return;
         }
 
-        foreach (var posDeltaPlayer in posDeltaPlayers) {
+        foreach (var posDeltaPlayer in posDeltaPlayers)
+        {
             posDeltaPlayer.PlayerMmrDelta *= (absSumAllDeltas / (absSumPosDeltas * 2));
         }
-        foreach (var negDeltaPlayer in negPlayerDeltas) {
+        foreach (var negDeltaPlayer in negPlayerDeltas)
+        {
             negDeltaPlayer.PlayerMmrDelta *= (absSumAllDeltas / (absSumNegDeltas * 2));
         }
     }

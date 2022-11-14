@@ -5,13 +5,13 @@ public partial class BuildService
 {
     public List<RequestNames> GetTopPlayers(int minGames = 100)
     {
-        var topPlayersCmdr = MmrService.ToonIdRatings.Values
+        var topPlayersCmdr = mmrService.ToonIdRatings.Values
             .Where(x => x.CmdrRatingStats.Games >= minGames)
             .OrderByDescending(o => o.CmdrRatingStats.Wins * 100.0 / o.CmdrRatingStats.Games)
             .Take(5)
             .ToList();
 
-        var topPlayersStd = MmrService.ToonIdRatings.Values
+        var topPlayersStd = mmrService.ToonIdRatings.Values
             .Where(x => x.StdRatingStats.Games >= minGames)
             .OrderByDescending(o => o.StdRatingStats.Wins * 100.0 / o.StdRatingStats.Games)
             .Take(5)

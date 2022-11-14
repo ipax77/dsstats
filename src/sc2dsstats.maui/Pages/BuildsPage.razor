@@ -2,11 +2,12 @@
 @using pax.dsstats.dbng.Services;
 @using pax.dsstats.shared;
 @using sc2dsstats.maui.Services;
+@inject MmrService mmrService
 @inject IToastService toastService
 
 <PageTitle>Builds</PageTitle>
 
-<sc2dsstats.razorlib.Builds.BuildsNgComponent BuildRequest="buildRequest" MauiPlayers="defaultPlayers"></sc2dsstats.razorlib.Builds.BuildsNgComponent>
+<sc2dsstats.razorlib.Builds.BuildsNgComponent BuildRequest="buildRequest" MauiPlayers="new(defaultPlayers)"></sc2dsstats.razorlib.Builds.BuildsNgComponent>
 
 @code {
     BuildRequest buildRequest = null!;
@@ -30,7 +31,7 @@
 
         foreach (var name in UserSettingsService.UserSettings.PlayerNames)
         {
-            var toonIdRatings = MmrService.ToonIdRatings.Values.Where(x => x.Name == name);
+            var toonIdRatings = mmrService.ToonIdRatings.Values.Where(x => x.Name == name);
             if (toonIdRatings.Any())
             {
                 foreach (var toonIdRating in toonIdRatings)

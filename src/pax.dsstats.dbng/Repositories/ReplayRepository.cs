@@ -13,12 +13,14 @@ public class ReplayRepository : IReplayRepository
     private readonly ILogger<ReplayRepository> logger;
     private readonly ReplayContext context;
     private readonly IMapper mapper;
+    private readonly MmrService mmrService;
 
-    public ReplayRepository(ILogger<ReplayRepository> logger, ReplayContext context, IMapper mapper)
+    public ReplayRepository(ILogger<ReplayRepository> logger, ReplayContext context, IMapper mapper, MmrService mmrService)
     {
         this.logger = logger;
         this.context = context;
         this.mapper = mapper;
+        this.mmrService = mmrService;
     }
 
     public async Task<ReplayDto?> GetReplay(string replayHash, bool dry = false, CancellationToken token = default)
@@ -42,9 +44,9 @@ public class ReplayRepository : IReplayRepository
 
         foreach (var rp in replay.ReplayPlayers)
         {
-            if (MmrService.ReplayPlayerMmrChanges.ContainsKey(rp.ReplayPlayerId))
+            if (mmrService.ReplayPlayerMmrChanges.ContainsKey(rp.ReplayPlayerId))
             {
-                rp.MmrChange = MmrService.ReplayPlayerMmrChanges[rp.ReplayPlayerId];
+                rp.MmrChange = mmrService.ReplayPlayerMmrChanges[rp.ReplayPlayerId];
             } else
             {
                 rp.MmrChange = 0;
