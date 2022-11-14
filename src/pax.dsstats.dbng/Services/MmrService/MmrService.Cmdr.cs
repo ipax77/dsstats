@@ -255,7 +255,7 @@ public partial class MmrService
             .Include(r => r.ReplayPlayers)
                 .ThenInclude(rp => rp.Player)
             .Where(r => r.Playercount == 6
-                && r.Duration >= 300
+                && r.Duration >= 210
                 && r.WinnerTeam > 0
                 && (r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic))
             .AsNoTracking();

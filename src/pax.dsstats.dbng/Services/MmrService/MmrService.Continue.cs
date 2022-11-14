@@ -18,7 +18,7 @@ public partial class MmrService
         var newReplaysCmdr = newReplays
             .Where(x =>
                 x.Playercount == 6
-                && x.Duration >= 300
+                && x.Duration >= 210
                 && x.WinnerTeam > 0
                 && (x.GameMode == GameMode.Commanders || x.GameMode == GameMode.CommandersHeroic))
             .OrderBy(o => o.GameTime)
@@ -28,7 +28,7 @@ public partial class MmrService
         var newReplaysStd = newReplays
             .Where(x =>
                 x.Playercount == 6
-                && x.Duration >= 300
+                && x.Duration >= 210
                 && x.WinnerTeam > 0
                 && x.GameMode == GameMode.Standard)
             .OrderBy(o => o.GameTime)
@@ -167,17 +167,17 @@ public partial class MmrService
             {
                 var toonIdRating = ToonIdRatings[toonId];
                 toonIdRating.CmdrRatingStats.Mmr = mmrInfoCmdr?.Mmr ?? toonIdRating.CmdrRatingStats.Mmr;
-                toonIdRating.CmdrRatingStats.Games += playerInfo.Value.GamesCmdr;
-                toonIdRating.CmdrRatingStats.Wins += playerInfo.Value.WinsCmdr;
-                toonIdRating.CmdrRatingStats.Mvp += playerInfo.Value.MvpCmdr;
-                toonIdRating.CmdrRatingStats.TeamGames += playerInfo.Value.TeamGamesCmdr;
+                toonIdRating.CmdrRatingStats.Games = playerInfo.Value.GamesCmdr;
+                toonIdRating.CmdrRatingStats.Wins = playerInfo.Value.WinsCmdr;
+                toonIdRating.CmdrRatingStats.Mvp = playerInfo.Value.MvpCmdr;
+                toonIdRating.CmdrRatingStats.TeamGames = playerInfo.Value.TeamGamesCmdr;
                 toonIdRating.CmdrRatingStats.Consistency = mmrInfoCmdr?.Consistency ?? toonIdRating.CmdrRatingStats.Consistency;
 
                 toonIdRating.StdRatingStats.Mmr = mmrInfoStd?.Mmr ?? toonIdRating.StdRatingStats.Mmr;
-                toonIdRating.StdRatingStats.Games += playerInfo.Value.GamesStd;
-                toonIdRating.StdRatingStats.Wins += playerInfo.Value.WinsStd;
-                toonIdRating.StdRatingStats.Mvp += playerInfo.Value.MvpStd;
-                toonIdRating.StdRatingStats.TeamGames += playerInfo.Value.TeamGamesStd;
+                toonIdRating.StdRatingStats.Games = playerInfo.Value.GamesStd;
+                toonIdRating.StdRatingStats.Wins = playerInfo.Value.WinsStd;
+                toonIdRating.StdRatingStats.Mvp = playerInfo.Value.MvpStd;
+                toonIdRating.StdRatingStats.TeamGames = playerInfo.Value.TeamGamesStd;
                 toonIdRating.StdRatingStats.Consistency = mmrInfoStd?.Consistency ?? toonIdRating.StdRatingStats.Consistency;
             }
             else
