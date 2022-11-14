@@ -1,19 +1,150 @@
 ﻿@using pax.dsstats.shared
+@using sc2dsstats.razorlib.Options
 @using sc2dsstats.razorlib.Replay;
+@using sc2dsstats.razorlib.Services;
 @inject IDataService dataService
-
-<CascadingValue Value="BuildRequest">
-    <BuildsRequestComponent MauiPlayers="MauiPlayers" OnRequestChanged="Load"></BuildsRequestComponent>
-</CascadingValue>
+@implements IDisposable
 
 <div>
-    @buildResponse
+    <CascadingValue Value="BuildRequest">
+        <BuildsRequestComponent MauiPlayers="MauiPlayers" OnRequestChanged="Load"></BuildsRequestComponent>
+    </CascadingValue>
 </div>
 
+@if (isLoading && buildResponse == null)
+{
+    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+
+@if (buildResponse != null)
+{
+    <div class="row">
+        <div class="col-auto isdesktop">
+            <div class="d-flex">
+                <CmdrSelect Label="Commander" IsSelected="@BuildRequest.Interest" OnCmdrSelected="SelectCommander"></CmdrSelect>
+                <CmdrSelect Label="Vs" IsSelected="@BuildRequest.Versus" OnCmdrSelected="SelectOpponent"></CmdrSelect>
+            </div>
+        </div>
+        <div class="col-auto mt-2">
+            <div class="fw-bold text-wrap h3">
+                Average unit count for
+                <span class="text-danger text-nowrap">
+                    @buildResponse.Interest @(BuildRequest.Versus == Commander.None ? "" : $" vs {buildResponse.Versus}")
+                </span>
+            </div>
+            <div class="fw-bold text-warning text-wrap h4">
+                Players @(String.Join(", ", BuildRequest.PlayerNames.Select(s => s.Name).Distinct()))
+            </div>
+            <div>
+                <div class="d-flex">
+                    @if (isLoading)
+                    {
+                        <span style="font-size: 1rem;" class="col-auto spinner-border spinner-border-sm"></span>
+                    }
+                    else
+                    {
+                        <span style="width: 20px; display: inline-block;" class="col-auto"></span>
+                    }
+                    <div>
+                        <span class="badge text-bg-primary display-block ms-1" style="font-size: 1rem;">∅ Winrate<br />@HelperService.GetPercentageString(buildResponse.Wins, buildResponse.Count)</span>
+                    </div>
+                    <div>
+                        <span class="badge text-bg-primary display-block ms-1" style="font-size: 1rem;">Replays<br />@buildResponse.Count</span>
+                    </div>
+                    <div>
+                        <span class="badge text-bg-primary text-light display-block ms-1" style="font-size: 1rem;">∅ Duration<br />@TimeSpan.FromSeconds(buildResponse.Duration).ToString(@"mm\:ss")min</span>
+                    </div>
+                    <div>
+                        <span class="badge text-bg-primary text-warning display-block ms-1" style="font-size: 1rem;">Gas<br />@((buildResponse.Gas / (double)buildResponse.Count).ToString("N2"))</span>
+                    </div>
+                </div>
+                <div class="d-flex mt-2 mb-3" style="font-size: 24px;">
+                    <div class="col-auto" style="min-width: 175px;">
+                        <span class="badge bg-primary">
+                            Breakpoint @breakpoint
+                        </span>
+                    </div>
+                    <div class="col-auto" style="min-width: 175px;">
+                        <input type="range" class="form-range" value="@((int)breakpoint)" min="1" max="4" step="1" id="spawnrange" @onchange="ChangeBreakpoint">
+                    </div>
+                </div>
+                <div class="">
+                    @{
+                        var bp = buildResponse.Breakpoints.FirstOrDefault(f => f.Breakpoint == breakpoint.ToString());
+                        int i = 0;
+                    }
+                    <table class="table table-dark table-striped w-auto" style="min-width: 450px; overflow-y: auto;">
+                        <thead>
+                            <tr>
+                                <th>Unit</th>
+                                <th>Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            @if (bp != null)
+                            {
+                                @foreach (var unit in bp.Units.OrderByDescending(o => o.Count))
+                                {
+                                    i++;
+                                    string background = i switch
+                                    {
+                                        1 => "table-primary text-warning",
+                                        2 => "table-primary text-warning",
+                                        3 => "table-primary text-warning",
+                                        _ => ""
+                                    };
+                                    <tr class="@background">
+                                        <td>@unit.Name</td>
+                                        <td>
+                                            @(
+                                                ((double)unit.Count / (double)bp.Count).ToString("N2")
+                                                )
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td clospan="100%">No data available.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-auto isdesktop ms-4 mt-3">
+            <div style="max-height: 650px; overflow: auto;">
+                <table class="table table-sm table-dark">
+                    <thead>
+                        <tr>
+                            <th>Replays</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var brr in buildResponse.Replays)
+                        {
+                            <tr class="pointer" style="text-decoration: underline;" @onclick="e => ShowReplay(brr.Hash)">
+                                <td class="@(brr.Hash == replayHash ? "table-primary" : "")">@brr.Gametime.ToString("yyyy-MM-dd")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="mt-2">
 @if (replayDto != null)
 {
     <sc2dsstats.razorlib.Replay.ReplayComponent @ref="replayComponent" replayDto="replayDto" OnCloseRequested="ReplayClose"></sc2dsstats.razorlib.Replay.ReplayComponent>
 }
+</div>
 
 @code {
     [Parameter, EditorRequired]
@@ -32,6 +163,15 @@
     private BuildResponse? buildResponse;
     private ReplayDto? replayDto;
     private string replayHash = "";
+    private Breakpoint breakpoint = Breakpoint.All;
+
+    CancellationTokenSource cts = new();
+
+    protected override void OnInitialized()
+    {
+        _ = Load();
+        base.OnInitialized();
+    }
 
     private async Task Load()
     {
@@ -39,7 +179,7 @@
             return;
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
-        buildResponse = await dataService.GetBuild(BuildRequest);
+        buildResponse = await dataService.GetBuild(BuildRequest, cts.Token);
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
         if (buildResponse != null && buildResponse.Replays.Any())
@@ -48,6 +188,29 @@
         }
 
         await OnRequestChanged.InvokeAsync();
+    }
+
+    private void ChangeBreakpoint(ChangeEventArgs e)
+    {
+        if (int.TryParse(e?.Value?.ToString(), out int value))
+        {
+            breakpoint = (Breakpoint)value;
+            StateHasChanged();
+        }
+    }
+
+    void SelectCommander(Commander cmdr)
+    {
+        BuildRequest.Interest = cmdr;
+        _ = Load();
+        OnRequestChanged.InvokeAsync();
+    }
+
+    void SelectOpponent(Commander cmdr)
+    {
+        BuildRequest.Versus = cmdr;
+        _ = Load();
+        OnRequestChanged.InvokeAsync();
     }
 
     private async Task ShowReplay(string hash)
@@ -69,5 +232,11 @@
     {
         replayDto = null;
         StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
     }
 }

@@ -1,0 +1,104 @@
+﻿@using Microsoft.JSInterop
+@using pax.dsstats.shared
+@inject IJSRuntime jsRuntime
+
+<style>
+    .tableFixHead {
+        overflow-y: auto;
+    }
+
+        .tableFixHead thead th {
+            position: sticky;
+            top: 0;
+        }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+
+    th {
+        background: purple;
+    }
+
+    .tablebackground {
+        position: absolute;
+        z-index: -1;
+        opacity: 0.15;
+    }
+</style>
+
+<div id="playerdeselectmodal" class="modal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Remove Player</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="tableFixHead">
+                    <table class="table table-sm table-dark table-hover table-striped w-auto">
+                        <colgroup>
+                            <col class="col">
+                            <col class="col">
+                            <col class="col">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>ToonId</th>
+                                <th>Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var player in RequestNames)
+                            {
+                                <tr>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-primary" @onclick="e => PlayerSelected(player)">Select</button>
+                                    </td>
+                                    <td>@player.ToonId</td>
+                                    <td>@player.Name</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<RequestNames> OnPlayerDeSelected { get; set; }
+
+    [Parameter, EditorRequired]
+    public List<RequestNames> RequestNames { get; set; } = default!;
+
+    public void Show()
+    {
+        StateHasChanged();
+        jsRuntime.InvokeVoidAsync("ReplayModalOpen", "playerdeselectmodal");
+    }
+
+    public void Hide()
+    {
+        jsRuntime.InvokeVoidAsync("ReplayModalClose");
+        StateHasChanged();
+    }
+
+    public void PlayerSelected(RequestNames requestNames)
+    {
+        OnPlayerDeSelected.InvokeAsync(requestNames);
+        Hide();
+    }
+}

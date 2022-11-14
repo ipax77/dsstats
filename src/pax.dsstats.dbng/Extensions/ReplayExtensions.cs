@@ -104,7 +104,7 @@ public static class ReplayExtensions
         sb.Append(buildRequest.StartTime.ToString(@"yyyyMMdd"));
         sb.Append(buildRequest.Interest);
         sb.Append(buildRequest.Versus);
-        sb.Append(String.Concat(buildRequest.PlayerNames));
+        sb.Append(String.Concat(buildRequest.PlayerNames.Select(s => s.ToonId.ToString())));
         return sb.ToString();
     }
 

@@ -75,6 +75,12 @@ public partial class MmrService
         {
             return players;
         }
+
+        if (int.TryParse(searchString, out int toonId))
+        {
+            return players.Where(x => x.ToonId == toonId);
+        }
+
         return players.Where(x => x.Name.ToUpper().Contains(searchString.ToUpper()));
     }
 

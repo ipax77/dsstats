@@ -31,6 +31,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting replay: {response.StatusCode}");
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             logger.LogError($"failed getting replay: {e.Message}");
@@ -53,6 +54,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting replay count: {response.StatusCode}");
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             logger.LogError($"failed getting replay count: {e.Message}");
@@ -75,6 +77,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting replays: {response.StatusCode}");
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             logger.LogError($"failed getting replays: {e.Message}");
@@ -98,6 +101,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting stats: {response.StatusCode}");
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             logger.LogError($"failed getting stats: {e.Message}");
@@ -105,7 +109,7 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<BuildResponse> GetBuild(BuildRequest request)
+    public async Task<BuildResponse> GetBuild(BuildRequest request, CancellationToken token = default)
     {
         try
         {
@@ -120,6 +124,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting build: {response.StatusCode}");
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             logger.LogError($"failed getting build: {e.Message}");
@@ -142,6 +147,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting ratings count: {response.StatusCode}");
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             logger.LogError($"failed getting ratings count: {e.Message}");
@@ -165,6 +171,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting ratings: {response.StatusCode}");
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             logger.LogError($"failed getting ratings: {e.Message}");

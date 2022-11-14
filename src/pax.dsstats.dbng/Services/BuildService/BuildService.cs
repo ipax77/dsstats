@@ -20,13 +20,13 @@ public partial class BuildService
         this.logger = logger;
     }
 
-    public async Task<BuildResponse> GetBuild(BuildRequest buildRequest, Dictionary<int, string>? units = null)
+    public async Task<BuildResponse> GetBuild(BuildRequest buildRequest, CancellationToken token = default, Dictionary<int, string>? units = null)
     {
         var memKey = buildRequest.GenMemKey();
 
         if (!memoryCache.TryGetValue(memKey, out BuildResponse buildResponse))
         {
-            buildResponse = await GetBuildFromDb(buildRequest, units);
+            buildResponse = await GetBuildFromDb(buildRequest, token, units);
 
             memoryCache.Set(memKey, buildResponse, new MemoryCacheEntryOptions()
             .SetPriority(CacheItemPriority.High)
@@ -35,8 +35,6 @@ public partial class BuildService
         }
         return buildResponse;
     }
-
-
 
     public async Task SeedBuildsCache()
     {
@@ -60,14 +58,14 @@ public partial class BuildService
             {
                 request.Interest = cmdr;
                 request.Versus = cmdrVs;
-                await GetBuild(request, units);
+                await GetBuild(request, default, units);
             }
         }
         sw.Stop();
         logger.LogWarning($"buildCache built in {sw.ElapsedMilliseconds} ms");
     }
 
-    private async Task<BuildResponse> GetBuildFromDb(BuildRequest request, Dictionary<int, string>? units = null)
+    private async Task<BuildResponse> GetBuildFromDb(BuildRequest request, CancellationToken token, Dictionary<int, string>? units = null)
     {
         var replays = context.Replays
             .Include(i => i.ReplayPlayers)
@@ -96,7 +94,7 @@ public partial class BuildService
 
         var buildResults = GetBuildResultQuery(replays, request);
 
-        var builds = await buildResults.AsSplitQuery().ToListAsync();
+        var builds = await buildResults.AsSplitQuery().ToListAsync(token);
         var uniqueBuilds = builds.GroupBy(g => g.Id).Select(s => s.First()).ToList();
 
 

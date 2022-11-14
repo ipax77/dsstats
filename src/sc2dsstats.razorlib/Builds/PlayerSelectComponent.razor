@@ -11,7 +11,6 @@
 <style>
     .tableFixHead {
         overflow-y: auto;
-        height: 600px;
     }
 
         .tableFixHead thead th {
@@ -116,40 +115,13 @@
                 </CascadingValue>
             </thead>
             <tbody>
-                @foreach (var player in PlayersSelected)
-                {
-                    <tr>
-                        <td>
-                            <div class="form-check form-switch">
-                                <input type="checkbox" class="form-check-input" checked @onchange="e => ChangeReuquestPlayer(e, player)" />
-                            </div>
-                        </td>
-                        <td><span class="text-truncate text-info" style="display: block; width: 150px;">@player.Name</span></td>
-                        <td class="border-start"></td>
-                        <td class="text-warning"></td>
-                        <td></td>
-                        <td class="border-start"></td>
-                        <td class="text-warning"></td>
-                        <td></td>
-                    </tr>
-                }
                 @if (ratingsCount > 0)
                 {
                     <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings">
                         <ItemContent>
                             <tr>
                                 <td>
-                                    @if (PlayersSelected.Any(a => a.ToonId == rating.ToonId))
-                                    {
-                                        <div class="form-check form-switch">
-                                            <input disabled type="checkbox" class="form-check-input" checked @onchange="e => ChangeReuquestPlayer(e, rating)" />
-                                        </div>
-                                    } else
-                                    {
-                                        <div class="form-check form-switch">
-                                            <input type="checkbox" class="form-check-input" @onchange="e => ChangeReuquestPlayer(e, rating)" />
-                                        </div>
-                                    }
+                                    <button type="button" class="btn btn-sm btn-primary" @onclick="e => OnPlayersSelected.InvokeAsync(rating)">Select</button>
                                 </td>
                                 <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Name</span></td>
                                 <td class="border-start">@rating.CmdrRatingStats.Games</td>
@@ -178,11 +150,8 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired]
-    public List<RequestNames> PlayersSelected { get; set; } = new();
-
     [Parameter]
-    public EventCallback OnPlayersSelected { get; set; }
+    public EventCallback<PlayerRatingDto> OnPlayersSelected { get; set; }
 
     private RatingsRequest ratingsRequest = new()
         {
@@ -208,64 +177,6 @@
         editContext.OnFieldChanged += FieldChanged;
         _ = SetCount();
         base.OnInitialized();
-    }
-
-    private void ChangeReuquestPlayer(ChangeEventArgs e, PlayerRatingDto playerRatingDto)
-    {
-        if (e.Value is bool selected)
-        {
-            if (selected)
-            {
-                if (PlayersSelected.Count >= 10)
-                {
-                    toastService.ShowError($"Maximum number of selectable players exceeded");
-                    return;
-                }
-                PlayersSelected.Add(new RequestNames()
-                    {
-                        Name = playerRatingDto.Name,
-                        ToonId = playerRatingDto.ToonId
-                    });
-            }
-            else
-            {
-                var removePlayer = PlayersSelected.FirstOrDefault(f => f.ToonId == playerRatingDto.ToonId);
-                if (removePlayer != null)
-                {
-                    PlayersSelected.Remove(removePlayer);
-                }
-            }
-            StateHasChanged();
-        }
-    }
-
-    private void ChangeReuquestPlayer(ChangeEventArgs e, RequestNames requestNames)
-    {
-        if (e.Value is bool selected)
-        {
-            if (selected)
-            {
-                if (PlayersSelected.Count >= 10)
-                {
-                    toastService.ShowError($"Maximum number of selectable players exceeded");
-                    return;
-                }
-                PlayersSelected.Add(new RequestNames()
-                    {
-                        Name = requestNames.Name,
-                        ToonId = requestNames.ToonId
-                    });
-            }
-            else
-            {
-                var removePlayer = PlayersSelected.FirstOrDefault(f => f.ToonId == requestNames.ToonId);
-                if (removePlayer != null)
-                {
-                    PlayersSelected.Remove(removePlayer);
-                }
-            }
-            StateHasChanged();
-        }
     }
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
