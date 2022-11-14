@@ -21,15 +21,24 @@ public partial class MmrService
         Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr = new();
 
         var replayDsRDtos = await GetCmdrReplayDsRDtos(startTime, endTime);
-        return ContinueCalculateCmdr(playerRatingsCmdr, replayDsRDtos);
+        foreach (var replay in replayDsRDtos)
+        {
+            ProcessCmdrReplay(playerRatingsCmdr, replay);
+        }
+        return playerRatingsCmdr;
     }
     private Dictionary<int, List<DsRCheckpoint>> ContinueCalculateCmdr(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, List<ReplayDsRDto> newReplays)
     {
+        if (!newReplays.Any())
+        {
+            return new();
+        }
+
         foreach (var replay in newReplays)
         {
             ProcessCmdrReplay(playerRatingsCmdr, replay);
         }
-        LatestReplayGameTime = newReplays.LastOrDefault()?.GameTime ?? DateTime.MinValue;
+        LatestReplayGameTime = newReplays.Last().GameTime;
         return playerRatingsCmdr;
     }
 
@@ -96,7 +105,7 @@ public partial class MmrService
         SetCommandersComboMmr(replayProcessData.LoserTeamData);
     }
 
-    private static void AddPlayersRankings(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData, DateTime gameTime)
+    private void AddPlayersRankings(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData, DateTime gameTime)
     {
         foreach (var player in teamData.Players)
         {

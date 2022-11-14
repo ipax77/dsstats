@@ -64,7 +64,7 @@ public partial class MmrService
         return true;
     }
 
-    private static Dictionary<int, List<DsRCheckpoint>> GetPlayerRatingsCmdr(List<ReplayDsRDto> newReplaysCmdr)
+    private Dictionary<int, List<DsRCheckpoint>> GetPlayerRatingsCmdr(List<ReplayDsRDto> newReplaysCmdr)
     {
         Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr = new();
 
@@ -92,7 +92,7 @@ public partial class MmrService
         return playerRatingsCmdr;
     }
 
-    private static Dictionary<int, List<DsRCheckpoint>> GetPlayerRatingsStd(List<ReplayDsRDto> newReplaysStd)
+    private Dictionary<int, List<DsRCheckpoint>> GetPlayerRatingsStd(List<ReplayDsRDto> newReplaysStd)
     {
         Dictionary<int, List<DsRCheckpoint>> playerRatingsStd = new();
 
@@ -350,7 +350,7 @@ public partial class MmrService
         }
     }
 
-    private static string? ContinueOverTimeRatingCmdr(int toonId, List<DsRCheckpoint> dsRCheckpoints)
+    private string? ContinueOverTimeRatingCmdr(int toonId, List<DsRCheckpoint> dsRCheckpoints)
     {
         if (ToonIdCmdrRatingOverTime.ContainsKey(toonId))
         {
@@ -363,7 +363,7 @@ public partial class MmrService
         }
     }
 
-    private static string? ContinueOverTimeRatingStd(int toonId, List<DsRCheckpoint> dsRCheckpoints)
+    private string? ContinueOverTimeRatingStd(int toonId, List<DsRCheckpoint> dsRCheckpoints)
     {
         if (ToonIdStdRatingOverTime.ContainsKey(toonId))
         {

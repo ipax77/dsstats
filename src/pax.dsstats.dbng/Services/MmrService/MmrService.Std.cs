@@ -15,18 +15,27 @@ public partial class MmrService
         Dictionary<int, List<DsRCheckpoint>> playerRatingsStd = new();
 
         var replayDsRDtos = await GetStdReplayDsRDtos(startTime, endTime);
-        return ContinueCalculateStd(playerRatingsStd, replayDsRDtos);
+        foreach (var replay in replayDsRDtos)
+        {
+            ProcessStdReplay(playerRatingsStd, replay);
+        }
+        return playerRatingsStd;
     }
+
     private Dictionary<int, List<DsRCheckpoint>> ContinueCalculateStd(Dictionary<int, List<DsRCheckpoint>> playerRatingsStd, List<ReplayDsRDto> newReplays)
     {
+        if (!newReplays.Any())
+        {
+            return new();
+        }
+
         foreach (var replay in newReplays)
         {
             ProcessStdReplay(playerRatingsStd, replay);
         }
-        LatestReplayGameTime = newReplays.LastOrDefault()?.GameTime ?? DateTime.MinValue;
+        LatestReplayGameTime = newReplays.Last().GameTime;
         return playerRatingsStd;
     }
-
 
     private void ProcessStdReplay(Dictionary<int, List<DsRCheckpoint>> playerRatingsStd, ReplayDsRDto replay)
     {
@@ -42,7 +51,8 @@ public partial class MmrService
         }
 
         ReplayProcessData replayProcessData = new(replay);
-        if (replayProcessData.WinnerTeamData.Players.Length != 3 || replayProcessData.LoserTeamData.Players.Length != 3) {
+        if (replayProcessData.WinnerTeamData.Players.Length != 3 || replayProcessData.LoserTeamData.Players.Length != 3)
+        {
             logger.LogInformation($"skipping wrong teamcounts");
             return;
         }
@@ -56,14 +66,17 @@ public partial class MmrService
         CalculateRatingsDeltasStd(playerRatingsStd, replayProcessData, replayProcessData.LoserTeamData);
 
         // Adjust Loser delta
-        foreach (var loserPlayer in replayProcessData.LoserTeamData.Players) {
+        foreach (var loserPlayer in replayProcessData.LoserTeamData.Players)
+        {
             loserPlayer.PlayerMmrDelta *= -1;
             loserPlayer.PlayerConsistencyDelta *= -1;
             loserPlayer.CommanderMmrDelta *= -1;
         }
         // Adjust Leaver delta
-        foreach (var winnerPlayer in replayProcessData.WinnerTeamData.Players) {
-            if (winnerPlayer.IsLeaver) {
+        foreach (var winnerPlayer in replayProcessData.WinnerTeamData.Players)
+        {
+            if (winnerPlayer.IsLeaver)
+            {
                 winnerPlayer.PlayerMmrDelta *= -1;
                 winnerPlayer.PlayerConsistencyDelta *= -1;
                 winnerPlayer.CommanderMmrDelta = 0;
