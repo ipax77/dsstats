@@ -60,15 +60,9 @@ public static class MauiProgram
 
         // init services
         using var scope = builder.Services.BuildServiceProvider().CreateScope();
-
-        var userSettingsService = scope.ServiceProvider.GetRequiredService<UserSettingsService>();
-
+        
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         context.Database.Migrate();
-
-        var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-        mmrService.SeedCommanderMmrs().ConfigureAwait(false);
-        _ = mmrService.ReCalculateWithDictionary();
 
         // DEBUG
 
@@ -88,7 +82,16 @@ public static class MauiProgram
         context.Replays.RemoveRange(replays);
         context.SaveChanges();
 
+        // END DEBUG
 
-        return builder.Build();
+        var build =  builder.Build();
+
+        var userSettingsService = build.Services.GetRequiredService<UserSettingsService>();
+
+        var mmrService = build.Services.GetRequiredService<MmrService>();
+        mmrService.SeedCommanderMmrs().ConfigureAwait(false);
+        _ = mmrService.ReCalculateWithDictionary();
+        
+        return build;
     }
 }
