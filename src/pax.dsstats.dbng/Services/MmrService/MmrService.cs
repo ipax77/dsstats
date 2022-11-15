@@ -47,6 +47,7 @@ public partial class MmrService
 
     private readonly bool useCommanderMmr = false;
     private readonly bool useConsistency = true;
+    private readonly bool useUncertanity = true;
     private readonly bool useFactorToTeamMates = false;
     SemaphoreSlim ss = new(1, 1);
 
@@ -123,7 +124,8 @@ public partial class MmrService
                 mmrInfoCmdr = new()
                 {
                     Mmr = lastPlRat?.Mmr ?? startMmr,
-                    Consistency = lastPlRat?.Consistency ?? 0
+                    Consistency = lastPlRat?.Consistency ?? 0,
+                    Uncertainty = lastPlRat?.Uncertainty ?? 1
                 };
                 ToonIdCmdrRatingOverTime[toonId] = ContinueOverTimeRatingCmdr(toonId, plRat) ?? "";
             }
@@ -136,7 +138,8 @@ public partial class MmrService
                 mmrInfoStd = new()
                 {
                     Mmr = lastPlRat?.Mmr ?? startMmr,
-                    Consistency = lastPlRat?.Consistency ?? 0
+                    Consistency = lastPlRat?.Consistency ?? 0,
+                    Uncertainty = lastPlRat?.Uncertainty ?? 1
                 };
                 ToonIdStdRatingOverTime[toonId] = ContinueOverTimeRatingStd(toonId, plRat) ?? "";
             }
@@ -159,7 +162,8 @@ public partial class MmrService
                     Wins = playerInfo.WinsCmdr,
                     Mvp = playerInfo.MvpCmdr,
                     TeamGames = playerInfo.TeamGamesCmdr,
-                    Consistency = mmrInfoCmdr?.Consistency ?? 0
+                    Consistency = mmrInfoCmdr?.Consistency ?? 0,
+                    Uncertainty = mmrInfoCmdr?.Uncertainty ?? 1
                 },
                 StdRatingStats = new()
                 {
@@ -168,7 +172,8 @@ public partial class MmrService
                     Wins = playerInfo.WinsStd,
                     Mvp = playerInfo.MvpStd,
                     TeamGames = playerInfo.TeamGamesStd,
-                    Consistency = mmrInfoCmdr?.Consistency ?? 0
+                    Consistency = mmrInfoStd?.Consistency ?? 0,
+                    Uncertainty = mmrInfoStd?.Uncertainty ?? 1
                 }
             };
         }
@@ -197,15 +202,16 @@ public partial class MmrService
                 name = tpMap.Value;
             }
 
-            MmrInfo? mmrInfo = null;
+            MmrInfo? mmrInfoCmdr = null;
             if (playerId > 0 && playerRatingsCmdr.ContainsKey(playerId))
             {
                 var plRat = playerRatingsCmdr[playerId];
                 var lastPlRat = plRat.LastOrDefault();
-                mmrInfo = new()
+                mmrInfoCmdr = new()
                 {
                     Mmr = lastPlRat?.Mmr ?? startMmr,
-                    Consistency = lastPlRat?.Consistency ?? 0
+                    Consistency = lastPlRat?.Consistency ?? 0,
+                    Uncertainty = lastPlRat?.Uncertainty ?? 1
                 };
                 ToonIdCmdrRatingOverTime[toonId] = GetOverTimeRating(plRat) ?? "";
             }
@@ -218,7 +224,8 @@ public partial class MmrService
                 mmrInfoStd = new()
                 {
                     Mmr = lastPlRat?.Mmr ?? startMmr,
-                    Consistency = lastPlRat?.Consistency ?? 0
+                    Consistency = lastPlRat?.Consistency ?? 0,
+                    Uncertainty = lastPlRat?.Uncertainty ?? 1
                 };
                 ToonIdStdRatingOverTime[toonId] = GetOverTimeRating(plRat) ?? "";
             }
@@ -231,12 +238,13 @@ public partial class MmrService
 
                 CmdrRatingStats = new()
                 {
-                    Mmr = mmrInfo?.Mmr ?? startMmr,
+                    Mmr = mmrInfoCmdr?.Mmr ?? startMmr,
                     Games = playerInfo.Value.GamesCmdr,
                     Wins = playerInfo.Value.WinsCmdr,
                     Mvp = playerInfo.Value.MvpCmdr,
                     TeamGames = playerInfo.Value.TeamGamesCmdr,
-                    Consistency = mmrInfo?.Consistency ?? 0
+                    Consistency = mmrInfoCmdr?.Consistency ?? 0,
+                    Uncertainty = mmrInfoCmdr?.Uncertainty ?? 1
                 },
                 StdRatingStats = new()
                 {
@@ -245,7 +253,8 @@ public partial class MmrService
                     Wins = playerInfo.Value.WinsStd,
                     Mvp = playerInfo.Value.MvpStd,
                     TeamGames = playerInfo.Value.TeamGamesStd,
-                    Consistency = mmrInfo?.Consistency ?? 0
+                    Consistency = mmrInfoStd?.Consistency ?? 0,
+                    Uncertainty = mmrInfoStd?.Uncertainty ?? 1
                 }
             };
         }
@@ -448,7 +457,7 @@ public partial class MmrService
         //return ((1 - consistencyImpact) + (consistencyImpact * raw_revConsistency)); //Equal to above
     }
 
-    private static double GetTeamMmr(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, PlayerData[] playerDatas, DateTime gameTime)
+    private static double GetPlayersComboMmr(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, PlayerData[] playerDatas, DateTime gameTime)
     {
         double teamMmr = 0;
 
@@ -456,7 +465,12 @@ public partial class MmrService
         {
             if (!playerRatingsCmdr.ContainsKey(GetMmrId(playerData.ReplayPlayer.Player)))
             {
-                playerRatingsCmdr[GetMmrId(playerData.ReplayPlayer.Player)] = new List<DsRCheckpoint>() { new() { Mmr = startMmr, Time = gameTime } };
+                playerRatingsCmdr[GetMmrId(playerData.ReplayPlayer.Player)] = new List<DsRCheckpoint>() { new() {
+                    Mmr = startMmr,
+                    Consistency = 0,
+                    Uncertainty = 0.5,
+                    Time = gameTime
+                } };
                 teamMmr += startMmr;
             }
             else
@@ -534,4 +548,5 @@ public record MmrInfo
 {
     public double Mmr { get; set; }
     public double Consistency { get; set; }
+    public double Uncertainty { get; set; }
 }

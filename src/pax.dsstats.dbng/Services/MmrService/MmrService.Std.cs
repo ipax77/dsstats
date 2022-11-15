@@ -60,7 +60,7 @@ public partial class MmrService
         SetMmrsStd(playerRatingsStd, replayProcessData.WinnerTeamData, replayProcessData.ReplayGameTime);
         SetMmrsStd(playerRatingsStd, replayProcessData.LoserTeamData, replayProcessData.ReplayGameTime);
 
-        SetExpectationsToWin(replayProcessData);
+        SetExpectationsToWin(playerRatingsStd, replayProcessData);
 
         CalculateRatingsDeltasStd(playerRatingsStd, replayProcessData, replayProcessData.WinnerTeamData);
         CalculateRatingsDeltasStd(playerRatingsStd, replayProcessData, replayProcessData.LoserTeamData);
@@ -92,7 +92,7 @@ public partial class MmrService
     private void SetMmrsStd(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData, DateTime gameTime)
     {
         teamData.CmdrComboMmr = 1.0;
-        teamData.PlayersMeanMmr = GetTeamMmr(playerRatingsCmdr, teamData.Players, gameTime);
+        teamData.PlayersMeanMmr = GetPlayersComboMmr(playerRatingsCmdr, teamData.Players, gameTime);
     }
 
     private void CalculateRatingsDeltasStd(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, ReplayProcessData replayProcessData, TeamData teamData)
