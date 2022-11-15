@@ -1,14 +1,21 @@
 ﻿@page "/stats"
 @inject DecodeService DecodeService
+@inject MmrService mmrService
+@inject IToastService toastService
 @implements IDisposable
 
+@using pax.dsstats.dbng.Services;
 @using pax.dsstats.shared;
 @using sc2dsstats.maui.Services;
 @using sc2dsstats.razorlib.Stats;
 
 <PageTitle>Stats</PageTitle>
 
-<sc2dsstats.razorlib.Stats.StatsComponent @ref="statsComponent" StatsRequest="statsRequest" IsMaui="true"></sc2dsstats.razorlib.Stats.StatsComponent>
+<sc2dsstats.razorlib.Stats.StatsComponent @ref="statsComponent"
+    StatsRequest="statsRequest"
+    IsMaui="true"
+    DefaultPlayers="GetDefaultPlayers()">
+</sc2dsstats.razorlib.Stats.StatsComponent>
 
 @code {
     StatsRequest statsRequest = new()
@@ -36,6 +43,33 @@
         {
             _ = statsComponent?.LoadData();
         }
+    }
+
+    private List<RequestNames> GetDefaultPlayers()
+    {
+        List<RequestNames> requestNames = new();
+
+        foreach (var name in UserSettingsService.UserSettings.PlayerNames)
+        {
+            var toonIdRatings = mmrService.ToonIdRatings.Values.Where(x => x.Name == name);
+            if (toonIdRatings.Any())
+            {
+                foreach (var toonIdRating in toonIdRatings)
+                {
+                    requestNames.Add(new()
+                        {
+                            Name = name,
+                            ToonId = toonIdRating.ToonId
+                        });
+                }
+            }
+            else
+            {
+                // toastService.ShowWarning($"Players need at least 10 games to show up ({name})");
+            }
+        }
+
+        return requestNames;
     }
 
     public void Dispose()

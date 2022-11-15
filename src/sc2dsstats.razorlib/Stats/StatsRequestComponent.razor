@@ -62,9 +62,13 @@
             </div>
         }
         <div class="col-auto">
-            <label class="form-label">
-                GameModes
-                <select id="gamemodeselect" class="form-select" multiple aria-label="multiple" @onchange="GameModeChange">
+            <div>
+                <label for="gamemodeselect" class="form-label">
+                    GameModes
+                </label>
+            </div>
+            <div>
+                <select id="gamemodeselect" class="selectpicker" multiple aria-label="multiple" @onchange="GameModeChange">
                     <option>All GameModes</option>
                     <option value="@GameMode.Commanders">@GameMode.Commanders</option>
                     <option value="@GameMode.CommandersHeroic">@GameMode.CommandersHeroic</option>
@@ -75,7 +79,7 @@
                     <option value="@GameMode.Sabotage">@GameMode.Sabotage</option>
                     <option value="@GameMode.Tutorial">@GameMode.Tutorial</option>
                 </select>
-            </label>
+            </div>
         </div>
         <div class="col-auto">
             <div class="form-check form-switch">
@@ -102,18 +106,24 @@
         </div>
         @if (withPlayers)
         {
-            <div class="col-auto form-group" style="max-width: 250px;">
-                <select id="playerselect" class="selectpicker" multiple aria-label="playerselect" @onchange="PlayersSelected">
-                    <option value="All" selected>All Players</option>
-                    @foreach (var player in requestNames)
-                    {
-                        <option value="@player.ToonId">@player.Name</option>
-                    }
-                </select>
-            </div>
-            <div class="col-auto btn-group-vertical">
-                <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => playerSelectModal?.Show()">Add Player</button>
-                <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => playerDeselectModal?.Show()">Remove Player</button>
+            <div class="col-auto">
+                <div class="d-flex">
+                    <div class="form-group" style="max-width: 250px;">
+                        <select id="playerselect" class="selectpicker" multiple aria-label="playerselect" @onchange="PlayersSelected">
+                            <option value="All" selected>All Players</option>
+                            @foreach (var player in requestNames)
+                            {
+                                <option value="@player.ToonId">@player.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="align-items-center">
+                        <div class="btn-group-vertical ms-2">
+                            <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => playerSelectModal?.Show()">Add Player</button>
+                            <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => playerDeselectModal?.Show()">Remove Player</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         }
     </div>
@@ -139,7 +149,13 @@
     [Parameter]
     public bool IsMaui { get; set; }
 
-    private bool withPlayers;
+    [Parameter]
+    public List<RequestNames> DefaultPlayers { get; set; } = new();
+
+    private bool withPlayers => DefaultPlayers.Any()
+        && StatsRequest.Uploaders
+        && (StatsRequest.StatsMode == StatsMode.Winrate || StatsRequest.StatsMode == StatsMode.Mvp);
+
     private PlayerSelectModal? playerSelectModal;
     private PlayerDeselectModal? playerDeselectModal;
     private List<RequestNames> requestNames = new();
@@ -150,6 +166,7 @@
     {
         editContext = new EditContext(StatsRequest);
         editContext.OnFieldChanged += FieldChanged;
+        requestNames = new(DefaultPlayers);
         base.OnInitialized();
     }
 
@@ -174,6 +191,11 @@
         }
         else if (e.FieldIdentifier.FieldName == nameof(StatsRequest.Uploaders))
         {
+            if (!StatsRequest.Uploaders && StatsRequest.PlayerNames.Any())
+            {
+                StatsRequest.PlayerNames.Clear();
+                IJSRuntime.InvokeVoidAsync("setMultiSelect", "playerselect", new string[] { "All" });
+            }
             if (IsMultiselect(StatsRequest.StatsMode))
             {
                 SetMultiSelect(StatsRequest.Interest);
@@ -268,7 +290,7 @@
         {
             if (!toonIdStrs.Any() || (toonIdStrs.Contains("All")))
             {
-                StatsRequest.PlayerNames = requestNames;
+                StatsRequest.PlayerNames = new();
             }
             else
             {
