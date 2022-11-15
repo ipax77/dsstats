@@ -7,11 +7,11 @@
 
 <div>
     <CascadingValue Value="StatsRequest">
-        <StatsRequestComponent
-            OnRequestChanged="RequestChanged"
-            OnChartOptionsChanged="ChartOptionsChanged"
-            OnAddRemoveCmdrsChanged="AddRemoveCmdrs"
-            IsMaui="IsMaui">
+        <StatsRequestComponent OnRequestChanged="RequestChanged"
+                               OnChartOptionsChanged="ChartOptionsChanged"
+                               OnAddRemoveCmdrsChanged="AddRemoveCmdrs"
+                               IsMaui="IsMaui"
+                               DefaultPlayers="DefaultPlayers">
         </StatsRequestComponent>
     </CascadingValue>
 </div>
@@ -81,6 +81,9 @@
     [Parameter]
     public bool IsMaui { get; set; }
 
+    [Parameter]
+    public List<RequestNames> DefaultPlayers { get; set; } = new();
+
     private bool isLoading = false;
     private StatsResponse statsResponse = new();
     private SemaphoreSlim ss = new(1, 1);
@@ -132,7 +135,7 @@
             {
                 await OnRequestChanged.InvokeAsync();
             }
-        } 
+        }
         catch (Exception ex)
         {
             logger.LogError($"failed loading data: {ex.Message}");

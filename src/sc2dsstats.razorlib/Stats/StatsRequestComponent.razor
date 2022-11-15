@@ -1,8 +1,11 @@
-﻿@using Microsoft.AspNetCore.Components.Forms;
+﻿@using Blazored.Toast.Services;
+@using Microsoft.AspNetCore.Components.Forms;
 @using Microsoft.Extensions.Logging
 @using Microsoft.JSInterop;
 @using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Builds;
 @inject IJSRuntime IJSRuntime
+@inject IToastService toastService
 @implements IDisposable
 
 <EditForm EditContext="editContext">
@@ -59,9 +62,13 @@
             </div>
         }
         <div class="col-auto">
-            <label class="form-label">
-                GameModes
-                <select id="gamemodeselect" class="form-select" multiple aria-label="multiple" @onchange="GameModeChange">
+            <div>
+                <label for="gamemodeselect" class="form-label">
+                    GameModes
+                </label>
+            </div>
+            <div>
+                <select id="gamemodeselect" class="selectpicker" multiple aria-label="multiple" @onchange="GameModeChange">
                     <option>All GameModes</option>
                     <option value="@GameMode.Commanders">@GameMode.Commanders</option>
                     <option value="@GameMode.CommandersHeroic">@GameMode.CommandersHeroic</option>
@@ -72,7 +79,7 @@
                     <option value="@GameMode.Sabotage">@GameMode.Sabotage</option>
                     <option value="@GameMode.Tutorial">@GameMode.Tutorial</option>
                 </select>
-            </label>
+            </div>
         </div>
         <div class="col-auto">
             <div class="form-check form-switch">
@@ -97,8 +104,33 @@
                 </label>
             </div>
         </div>
+        @if (withPlayers)
+        {
+            <div class="col-auto">
+                <div class="d-flex">
+                    <div class="form-group" style="max-width: 250px;">
+                        <select id="playerselect" class="selectpicker" multiple aria-label="playerselect" @onchange="PlayersSelected">
+                            <option value="All" selected>All Players</option>
+                            @foreach (var player in requestNames)
+                            {
+                                <option value="@player.ToonId">@player.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="align-items-center">
+                        <div class="btn-group-vertical ms-2">
+                            <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => playerSelectModal?.Show()">Add Player</button>
+                            <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => playerDeselectModal?.Show()">Remove Player</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
 </EditForm>
+
+<PlayerSelectModal @ref="playerSelectModal" OnPlayerSelected="AddPlayer"></PlayerSelectModal>
+<PlayerDeselectModal @ref="playerDeselectModal" OnPlayerDeSelected="RemovePlayer" RequestNames="requestNames"></PlayerDeselectModal>
 
 @code {
     [CascadingParameter]
@@ -117,12 +149,24 @@
     [Parameter]
     public bool IsMaui { get; set; }
 
+    [Parameter]
+    public List<RequestNames> DefaultPlayers { get; set; } = new();
+
+    private bool withPlayers => DefaultPlayers.Any()
+        && StatsRequest.Uploaders
+        && (StatsRequest.StatsMode == StatsMode.Winrate || StatsRequest.StatsMode == StatsMode.Mvp);
+
+    private PlayerSelectModal? playerSelectModal;
+    private PlayerDeselectModal? playerDeselectModal;
+    private List<RequestNames> requestNames = new();
+
     EditContext editContext = null!;
 
     protected override void OnInitialized()
     {
         editContext = new EditContext(StatsRequest);
         editContext.OnFieldChanged += FieldChanged;
+        requestNames = new(DefaultPlayers);
         base.OnInitialized();
     }
 
@@ -147,6 +191,11 @@
         }
         else if (e.FieldIdentifier.FieldName == nameof(StatsRequest.Uploaders))
         {
+            if (!StatsRequest.Uploaders && StatsRequest.PlayerNames.Any())
+            {
+                StatsRequest.PlayerNames.Clear();
+                IJSRuntime.InvokeVoidAsync("setMultiSelect", "playerselect", new string[] { "All" });
+            }
             if (IsMultiselect(StatsRequest.StatsMode))
             {
                 SetMultiSelect(StatsRequest.Interest);
@@ -233,6 +282,80 @@
         }
 
         OnAddRemoveCmdrsChanged.InvokeAsync(cmdrs);
+    }
+
+    void PlayersSelected(ChangeEventArgs e)
+    {
+        if (e.Value is string[] toonIdStrs)
+        {
+            if (!toonIdStrs.Any() || (toonIdStrs.Contains("All")))
+            {
+                StatsRequest.PlayerNames = new();
+            }
+            else
+            {
+                List<RequestNames> newNames = new();
+                foreach (var toonIdStr in toonIdStrs)
+                {
+                    if (int.TryParse(toonIdStr, out int toonId))
+                    {
+                        var pl = requestNames.FirstOrDefault(f => f.ToonId == toonId);
+                        if (pl != null)
+                        {
+                            newNames.Add(pl);
+                        }
+                    }
+                }
+                StatsRequest.PlayerNames = newNames;
+            }
+            OnRequestChanged.InvokeAsync();
+        }
+    }
+
+    private void AddPlayer(PlayerRatingDto player)
+    {
+        if (requestNames.Count >= 10)
+        {
+            toastService.ShowError("Maximum number of players exceeded.");
+            return;
+        }
+
+        var requestName = new RequestNames()
+            {
+                Name = player.Name,
+                ToonId = player.ToonId
+            };
+        if (!requestNames.Contains(requestName))
+        {
+            requestNames.Add(requestName);
+        }
+        if (!StatsRequest.PlayerNames.Contains(requestName))
+        {
+            StatsRequest.PlayerNames.Add(requestName);
+        }
+        StateHasChanged();
+        UpdateMultiselect();
+        OnRequestChanged.InvokeAsync();
+    }
+
+    private void RemovePlayer(RequestNames requestName)
+    {
+        requestNames.Remove(requestName);
+        if (StatsRequest.PlayerNames.Contains(requestName))
+        {
+            StatsRequest.PlayerNames.Remove(requestName);
+        }
+        StateHasChanged();
+        OnRequestChanged.InvokeAsync();
+    }
+
+    private void UpdateMultiselect()
+    {
+        var selected = StatsRequest.PlayerNames.Any() ?
+            StatsRequest.PlayerNames.Select(s => s.ToonId.ToString()).ToArray() :
+            new string[1] { "All" };
+
+        IJSRuntime.InvokeVoidAsync("setMultiSelect", "playerselect", selected);
     }
 
     public void Dispose()
