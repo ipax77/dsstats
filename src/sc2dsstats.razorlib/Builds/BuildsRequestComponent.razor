@@ -10,7 +10,10 @@
 <EditForm EditContext="editContext">
     <div class="row align-items-center">
         <div class="col-auto btn-group-vertical">
-            <button type="button" class="btn btn-outline-success" @onclick="TopPlayers">Top Players</button>
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-warning" @onclick="e => TopPlayers(true)">Top Std</button>
+                <button type="button" class="btn btn-outline-warning" @onclick="e => TopPlayers(false)">Top Cmdr</button>
+            </div>
             <button type="button" class="btn btn-outline-light" @onclick="DefaultPlayers">Default Players</button>
         </div>
         <div class="col-auto">
@@ -115,9 +118,9 @@
         OnRequestChanged.InvokeAsync();
     }
 
-    private async Task TopPlayers()
+    private async Task TopPlayers(bool std)
     {
-        BuildRequest.PlayerNames = await dataService.GetTopPlayers();
+        BuildRequest.PlayerNames = await dataService.GetTopPlayers(std);
         requestNames = new(BuildRequest.PlayerNames);
         StateHasChanged();
         await OnRequestChanged.InvokeAsync();
@@ -131,7 +134,7 @@
         }
         else
         {
-            BuildRequest.PlayerNames = MauiPlayers;
+            BuildRequest.PlayerNames = new(MauiPlayers);
         }
         requestNames = new(BuildRequest.PlayerNames);
         StateHasChanged();

@@ -100,8 +100,15 @@ public class DataService : IDataService
         return await mmrService.GetPlayerRating(toonId);
     }
 
-    public async Task<List<RequestNames>> GetTopPlayers()
+    public async Task<List<RequestNames>> GetTopPlayers(bool std)
     {
-        return await Task.FromResult(buildService.GetTopPlayers());
+        if (std)
+        {
+            return await Task.FromResult(buildService.GetTopPlayersStd(100));
+        }
+        else
+        {
+            return await Task.FromResult(buildService.GetTopPlayersCmdr(100));
+        }
     }
 }

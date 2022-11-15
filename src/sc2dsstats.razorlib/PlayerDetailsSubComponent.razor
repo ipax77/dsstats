@@ -50,7 +50,7 @@
                         <tr>
                         </tr>
                         <tr>
-                            <td colspan="4" class="fw-bold">Matchups (∅ > 10)</td>
+                            <td colspan="4" class="fw-bold">Matchups (&sum; > 10)</td>
                         </tr>
                         @foreach (var ent in PlayerDetailInfo.MatchupInfos.Where(x => x.Count > 10).OrderByDescending(o => o.Wins * 100.0 / o.Count))
                         {

@@ -12,7 +12,9 @@
             <div class="modal-body">
                 @if (isShowing)
                 {
-                    <PlayerSelectComponent OnPlayersSelected="PlayerSelected"></PlayerSelectComponent>
+                    <div class="offset-md-2">
+                        <PlayerSelectComponent OnPlayersSelected="PlayerSelected"></PlayerSelectComponent>
+                    </div>
                 }
             </div>
             <div class="modal-footer">

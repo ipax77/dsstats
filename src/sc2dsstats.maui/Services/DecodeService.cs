@@ -1,6 +1,7 @@
 using Blazored.Toast.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Scripting.Runtime;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
@@ -138,7 +139,10 @@ public class DecodeService : IDisposable
         notifyCts = new();
         _ = Notify();
 
-        if (MmrService.ToonIdRatings.Any() && total <= 10)
+        using var scope = serviceScopeFactory.CreateScope();
+        var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+
+        if (mmrService.ToonIdRatings.Any() && total <= 10)
         {
             continueMmrCalc = true;
         }
@@ -199,7 +203,6 @@ public class DecodeService : IDisposable
             // report missing replays
             if (dbCounter != replays.Count - errorCounter)
             {
-                using var scope = serviceScopeFactory.CreateScope();
                 var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
 
                 var dbPaths = await replayRepository.GetReplayPaths();
@@ -228,14 +231,12 @@ public class DecodeService : IDisposable
 
             await ScanForNewReplays();
 
-            using var scope = serviceScopeFactory.CreateScope();
             var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
             statsService.ResetStatsCache();
 
-            var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
             if (continueMmrCalc && newReplays.Any())
             {
-                await mmrService.ContinueCalculateWithDictionary(newReplays);
+                await mmrService.ContinueCalculateWithDictionary(newReplays.OrderBy(o => o.GameTime).ToList());
             }
             else
             {
@@ -465,6 +466,28 @@ public class DecodeService : IDisposable
             Error = errorCounter,
             Done = false,
         });
+    }
+
+    public void DEBUGDeleteLatestReplay()
+    {
+        using var scope = serviceScopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var replay = context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Spawns)
+                    .ThenInclude(i => i.Units)
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Upgrades)
+            .OrderByDescending(o => o.GameTime)
+            .Take(1)
+            .AsSplitQuery()
+            .FirstOrDefault();
+
+        if (replay != null)
+        {
+            context.Replays.Remove(replay);
+            context.SaveChanges();
+        }
     }
 
     public void Dispose()

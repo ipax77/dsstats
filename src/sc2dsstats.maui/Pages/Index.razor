@@ -36,6 +36,10 @@
             <button type="button" class="btn btn-outline-light" @onclick="e => DecodeService.WatchService.WatchForNewReplays()">Start Watching</button>
         }
     }
+    @if (DEBUG)
+    {
+        <button type="button" class="btn btn-danger" @onclick="e => DecodeService.DEBUGDeleteLatestReplay()">D</button>
+    }
 </div>
 
 <div class="mt-2">
@@ -65,6 +69,8 @@
     PlayerDetailInfo? playerDetailInfo;
     TimeSpan elapsed = TimeSpan.Zero;
     ReplayComponent? replayComponent;
+
+    private bool DEBUG = false;
 
     protected override void OnInitialized()
     {

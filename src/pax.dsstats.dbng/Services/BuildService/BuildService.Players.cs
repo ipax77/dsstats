@@ -3,15 +3,15 @@
 namespace pax.dsstats.dbng.Services;
 public partial class BuildService
 {
-    public List<RequestNames> GetTopPlayers(int minGames = 100)
+    public List<RequestNames> GetTopPlayers(bool std = false, int minGames = 100)
     {
-        var topPlayersCmdr = MmrService.ToonIdRatings.Values
+        var topPlayersCmdr = mmrService.ToonIdRatings.Values
             .Where(x => x.CmdrRatingStats.Games >= minGames)
             .OrderByDescending(o => o.CmdrRatingStats.Wins * 100.0 / o.CmdrRatingStats.Games)
             .Take(5)
             .ToList();
 
-        var topPlayersStd = MmrService.ToonIdRatings.Values
+        var topPlayersStd = mmrService.ToonIdRatings.Values
             .Where(x => x.StdRatingStats.Games >= minGames)
             .OrderByDescending(o => o.StdRatingStats.Wins * 100.0 / o.StdRatingStats.Games)
             .Take(5)
@@ -26,5 +26,35 @@ public partial class BuildService
 
         var topPlayers = topPlayersCmdr.Union(topPlayersStd).Select(s => new RequestNames() { Name = s.Name, ToonId = s.ToonId });
         return topNames.Union(topPlayers).Distinct().ToList();
+    }
+
+    public  List<RequestNames> GetTopPlayersStd(int minGames)
+    {
+        var topPlayersStd = mmrService.ToonIdRatings.Values
+            .Where(x => x.StdRatingStats.Games >= minGames)
+            .OrderByDescending(o => o.StdRatingStats.Wins * 100.0 / o.StdRatingStats.Games)
+            .Take(5)
+            .ToList();
+
+        return topPlayersStd.Select(s => new RequestNames()
+        {
+            Name = s.Name,
+            ToonId = s.ToonId
+        }).ToList();
+    }
+
+    public List<RequestNames> GetTopPlayersCmdr(int minGames)
+    {
+        var topPlayersCmdr = mmrService.ToonIdRatings.Values
+            .Where(x => x.CmdrRatingStats.Games >= minGames)
+            .OrderByDescending(o => o.CmdrRatingStats.Wins * 100.0 / o.CmdrRatingStats.Games)
+            .Take(5)
+            .ToList();
+
+        return topPlayersCmdr.Select(s => new RequestNames()
+        {
+            Name = s.Name,
+            ToonId = s.ToonId
+        }).ToList();
     }
 }

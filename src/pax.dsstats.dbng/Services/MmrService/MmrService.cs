@@ -11,10 +11,10 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class MmrService
 {
-    public static Dictionary<int, PlayerRatingDto> ToonIdRatings { get; private set; } = new();
-    public static Dictionary<int, string> ToonIdCmdrRatingOverTime { get; private set; } = new();
-    public static Dictionary<int, string> ToonIdStdRatingOverTime { get; private set; } = new();
-    public static Dictionary<int, float> ReplayPlayerMmrChanges { get; private set; } = new();
+    public Dictionary<int, PlayerRatingDto> ToonIdRatings { get; private set; } = new();
+    public Dictionary<int, string> ToonIdCmdrRatingOverTime { get; private set; } = new();
+    public Dictionary<int, string> ToonIdStdRatingOverTime { get; private set; } = new();
+    public Dictionary<int, float> ReplayPlayerMmrChanges { get; private set; } = new();
 
 
     private readonly IServiceProvider serviceProvider;
@@ -42,12 +42,12 @@ public partial class MmrService
     public static readonly double startMmr = 1000.0;
     private static readonly double consistencyImpact = 0.50;
     private static readonly double consistencyDeltaMult = 0.15;
-    private static Dictionary<CmdrMmmrKey, CommanderMmr> cmdrMmrDic = new();
-    private static DateTime LatestReplayGameTime = DateTime.MinValue;
+    private Dictionary<CmdrMmmrKey, CommanderMmr> cmdrMmrDic = new();
+    private DateTime LatestReplayGameTime = DateTime.MinValue;
 
-    private static bool useCommanderMmr = false;
-    private static bool useConsistency = true;
-    private static bool useFactorToTeamMates = false;
+    private readonly bool useCommanderMmr = false;
+    private readonly bool useConsistency = true;
+    private readonly bool useFactorToTeamMates = false;
     SemaphoreSlim ss = new(1, 1);
 
     //public async Task ReCalculate(DateTime startTime, DateTime endTime)
