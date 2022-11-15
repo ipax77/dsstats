@@ -472,7 +472,7 @@ public class DecodeService : IDisposable
     {
         using var scope = serviceScopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-        var replays = context.Replays
+        var replay = context.Replays
             .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Spawns)
                     .ThenInclude(i => i.Units)
@@ -480,10 +480,14 @@ public class DecodeService : IDisposable
                 .ThenInclude(i => i.Upgrades)
             .OrderByDescending(o => o.GameTime)
             .Take(1)
-            .ToList();
+            .AsSplitQuery()
+            .FirstOrDefault();
 
-        context.Replays.RemoveRange(replays);
-        context.SaveChanges();
+        if (replay != null)
+        {
+            context.Replays.Remove(replay);
+            context.SaveChanges();
+        }
     }
 
     public void Dispose()
