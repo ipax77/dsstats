@@ -17,7 +17,7 @@ public record StatsRequest
     public bool Uploaders { get; set; }
     public bool DefaultFilter { get; set; } = true;
     public int PlayerCount { get; set; }
-    public List<string> PlayerNames { get; set; } = new();
+    public List<RequestNames> PlayerNames { get; set; } = new();
     public List<GameMode> GameModes { get; set; } = new();
     public string? Tournament { get; set; }
     public string? Round { get; set; }

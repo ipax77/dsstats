@@ -15,10 +15,17 @@ public class BuildsController : Controller
         this.buildService = buildService;
     }
 
-    [HttpGet("topplayers")]
-    public List<RequestNames> GetTopPlayers()
+    [HttpGet("topplayers/{std}/{min}")]
+    public List<RequestNames> GetTopPlayers(bool std, int min)
     {
-        return buildService.GetTopPlayers();
+        if (std)
+        {
+            return buildService.GetTopPlayersStd(min);
+        }
+        else
+        {
+            return buildService.GetTopPlayersCmdr(min);
+        }
     }
 
     [HttpPost]

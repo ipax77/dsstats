@@ -177,6 +177,11 @@ public partial class MmrService
             {
                 throw new Exception("MmrDelta is bigger than eloK");
             }
+
+            if (IsProgressActive)
+            {
+                SetCmdrProgress(player);
+            }
         }
     }
 

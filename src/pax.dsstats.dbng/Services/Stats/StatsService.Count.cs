@@ -48,6 +48,11 @@ public partial class StatsService
 
     private async Task<CountResponse> GetCountFromDb(StatsRequest request, bool details = false)
     {
+        if (request.PlayerNames.Any())
+        {
+            return await GetPlayersCountFromDb(request);
+        }
+
         var defaultFilterGroup = context.GroupByHelpers.FromSqlRaw(
                         @$"SELECT r.DefaultFilter AS Name, count(*) AS Count
                             FROM Replays AS r
@@ -95,7 +100,94 @@ public partial class StatsService
         return sb.ToString();
     }
 
+    private async Task<CountResponse> GetPlayersCountFromDb(StatsRequest request)
+    {
+        var replays = GetCountReplaysQueryiable(request);
 
+        var toonIds = request.PlayerNames.Select(s => s.ToonId).ToList();
+
+        var playerReplays = from r in replays
+                            from rp in r.ReplayPlayers
+                            where toonIds.Contains(rp.Player.ToonId)
+                            select r;
+
+        var defaultGroup = from r in playerReplays
+                           group r by r.DefaultFilter into g
+                           select new GroupByHelper()
+                           {
+                               Group = g.Key,
+                               Count = g.Count()
+                           };
+
+        var group = await defaultGroup.ToListAsync();
+
+        int defaultReplays = group.FirstOrDefault(f => f.Group)?.Count ?? 0;
+        int otherReplays = group.FirstOrDefault(f => !f.Group)?.Count ?? 0;
+
+        var quits = await GetPlayersQuits(replays, toonIds);
+        var leaver = await GetPlayersLeavers(replays, toonIds);
+
+        return new CountResponse()
+        {
+            Count = defaultReplays + otherReplays,
+            DefaultFilter = defaultReplays,
+            Leaver = leaver,
+            Quits = quits
+        };
+    }
+
+    private async Task<int> GetPlayersQuits(IQueryable<Replay> replays, List<int> toonIds)
+    {
+        var quitGroup = from r in replays
+                        from rp in r.ReplayPlayers
+                        where toonIds.Contains(rp.Player.ToonId)
+                        group r by r.WinnerTeam > 0 into g
+                        select new GroupByHelper()
+                        {
+                            Group = g.Key,
+                            Count = g.Count()
+                        };
+        var group = await quitGroup.ToListAsync();
+
+        return group.FirstOrDefault(f => !f.Group)?.Count ?? 0;
+    }
+
+    private async Task<int> GetPlayersLeavers(IQueryable<Replay> replays, List<int> toonIds)
+    {
+        var leaverGroup = from r in replays
+                          from rp in r.ReplayPlayers
+                          where toonIds.Contains(rp.Player.ToonId)
+                          group r by r.Maxleaver > 89 into g
+                          select new GroupByHelper()
+                          {
+                              Group = g.Key,
+                              Count = g.Count()
+                          };
+
+        var group = await leaverGroup.ToListAsync();
+        return group.FirstOrDefault(f => f.Group)?.Count ?? 0;
+    }
+
+    private IQueryable<Replay> GetCountReplaysQueryiable(StatsRequest request)
+    {
+        var replays = context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Player)
+            .Where(x => x.GameTime > request.StartTime)
+            .AsNoTracking();
+
+        if (request.EndTime < DateTime.UtcNow.Date.AddDays(-2))
+        {
+            replays = replays.Where(x => x.GameTime <= request.EndTime);
+        }
+
+        if (request.GameModes.Any())
+        {
+            replays = replays.Where(x => request.GameModes.Contains(x.GameMode));
+        }
+
+        return replays;
+    }
 }
 
 

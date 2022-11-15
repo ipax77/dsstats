@@ -1,4 +1,7 @@
-﻿using System.Text.Json;
+﻿using Blazored.Toast.Services;
+using pax.dsstats.dbng.Services;
+using pax.dsstats.shared;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace sc2dsstats.maui.Services;
@@ -9,11 +12,13 @@ internal class UserSettingsService
     public static UserSettings UserSettings = new UserSettings();
     private SemaphoreSlim semaphoreSlim = new(1, 1);
     private static readonly bool debug = false;
+    private readonly IServiceProvider serviceProvider;
 
-    public UserSettingsService()
+    public UserSettingsService(IServiceProvider serviceProvider)
     {
         ReloadConfig();
         UserSettings.BattleNetInfos = GetBattleNetIds();
+        this.serviceProvider = serviceProvider;
     }
 
     public static void ReloadConfig()
@@ -156,6 +161,32 @@ internal class UserSettingsService
             }
         }
         return battleNetInfos;
+    }
+
+    public List<RequestNames> GetDefaultPlayers()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+
+        List<RequestNames> requestNames = new();
+
+        foreach (var name in UserSettingsService.UserSettings.PlayerNames)
+        {
+            var toonIdRatings = mmrService.ToonIdRatings.Values.Where(x => x.Name == name);
+            if (toonIdRatings.Any())
+            {
+                foreach (var toonIdRating in toonIdRatings)
+                {
+                    requestNames.Add(new()
+                    {
+                        Name = name,
+                        ToonId = toonIdRating.ToonId
+                    });
+                }
+            }
+        }
+
+        return requestNames;
     }
 
     private static string? GetShortcutTarget(string file)

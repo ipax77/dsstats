@@ -210,7 +210,7 @@
         breakpointsCount = replay.ReplayPlayers.Select(s => s.Spawns.Count).Max();
         chartJsConfig = GetMiddleChartConfig(replay.Middle, replay.Duration, replay.WinnerTeam, replay.Cannon, replay.Bunker);
 
-        StateHasChanged();
+        await InvokeAsync(() => StateHasChanged());
         await JSRuntime.InvokeVoidAsync("enableTooltips");
     }
 

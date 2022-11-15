@@ -236,7 +236,10 @@ public class DecodeService : IDisposable
 
             if (continueMmrCalc && newReplays.Any())
             {
-                await mmrService.ContinueCalculateWithDictionary(newReplays.OrderBy(o => o.GameTime).ToList());
+                var userSettingsService = scope.ServiceProvider.GetRequiredService<UserSettingsService>();
+                var mauiPlayers = userSettingsService.GetDefaultPlayers();
+
+                await mmrService.ContinueCalculateWithDictionary(newReplays, mauiPlayers);
             }
             else
             {
@@ -466,6 +469,28 @@ public class DecodeService : IDisposable
             Error = errorCounter,
             Done = false,
         });
+    }
+
+    public void DEBUGDeleteLatestReplay()
+    {
+        using var scope = serviceScopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var replay = context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Spawns)
+                    .ThenInclude(i => i.Units)
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Upgrades)
+            .OrderByDescending(o => o.GameTime)
+            .Take(1)
+            .AsSplitQuery()
+            .FirstOrDefault();
+
+        if (replay != null)
+        {
+            context.Replays.Remove(replay);
+            context.SaveChanges();
+        }
     }
 
     public void Dispose()
