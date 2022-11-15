@@ -33,7 +33,7 @@
                                 </span>
                                 <span class="badge bg-secondary @(deltaSum < 0 ? "text-danger" : "text-success")" style="font-size: 1rem;">
                                     <span class="@(deltaSum < 0 ? "oi oi-arrow-bottom text-danger" : "oi oi-arrow-top text-success")"></span>
-                                    @deltaSum
+                                    @deltaSum.ToString("N1", CultureInfo.InvariantCulture)
                                 </span>
                             </div>
                         </div>
@@ -95,7 +95,7 @@
                                 </span>
                                 <span class="badge bg-secondary @(deltaSum < 0 ? "text-danger" : "text-success")" style="font-size: 1rem;">
                                     <span class="@(deltaSum < 0 ? "oi oi-arrow-bottom text-danger" : "oi oi-arrow-top text-success")"></span>
-                                    @deltaSum
+                                    @deltaSum.ToString("N1", CultureInfo.InvariantCulture)
                                 </span>
                             </div>
                         </div>
