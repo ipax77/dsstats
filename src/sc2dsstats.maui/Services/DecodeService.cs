@@ -468,6 +468,24 @@ public class DecodeService : IDisposable
         });
     }
 
+    public void DEBUGDeleteLatestReplay()
+    {
+        using var scope = serviceScopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var replays = context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Spawns)
+                    .ThenInclude(i => i.Units)
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Upgrades)
+            .OrderByDescending(o => o.GameTime)
+            .Take(1)
+            .ToList();
+
+        context.Replays.RemoveRange(replays);
+        context.SaveChanges();
+    }
+
     public void Dispose()
     {
         notifyCts?.Cancel();

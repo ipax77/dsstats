@@ -265,11 +265,11 @@ public class DataService : IDataService
         return null;
     }
 
-    public async Task<List<RequestNames>> GetTopPlayers()
+    public async Task<List<RequestNames>> GetTopPlayers(bool std)
     {
         try
         {
-            var topPlayers = await httpClient.GetFromJsonAsync<List<RequestNames>>($"{buildsController}topplayers");
+            var topPlayers = await httpClient.GetFromJsonAsync<List<RequestNames>>($"{buildsController}topplayers/{std}/1000");
             if (topPlayers != null)
             {
                 return topPlayers;
