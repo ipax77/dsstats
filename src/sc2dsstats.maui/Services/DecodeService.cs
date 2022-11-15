@@ -236,7 +236,10 @@ public class DecodeService : IDisposable
 
             if (continueMmrCalc && newReplays.Any())
             {
-                await mmrService.ContinueCalculateWithDictionary(newReplays.OrderBy(o => o.GameTime).ToList());
+                var userSettingsService = scope.ServiceProvider.GetRequiredService<UserSettingsService>();
+                var mauiPlayers = userSettingsService.GetDefaultPlayers();
+
+                await mmrService.ContinueCalculateWithDictionary(newReplays, mauiPlayers);
             }
             else
             {

@@ -116,13 +116,18 @@ public partial class MmrService
                 * (useFactorToTeamMates ? factor_playerToTeamMates : 1.0)
                 * (useConsistency ? factor_consistency : 1.0);
 
+            var player = teamData.Players[i];
+            player.PlayerMmrDelta = CalculateMmrDelta(replayProcessData.WinnerPlayersExpectationToWin, playerImpact, 1);
+            player.PlayerConsistencyDelta = consistencyDeltaMult * 2 * (replayProcessData.WinnerPlayersExpectationToWin - 0.50);
 
-            teamData.Players[i].PlayerMmrDelta = CalculateMmrDelta(replayProcessData.WinnerPlayersExpectationToWin, playerImpact, 1);
-            teamData.Players[i].PlayerConsistencyDelta = consistencyDeltaMult * 2 * (replayProcessData.WinnerPlayersExpectationToWin - 0.50);
-
-            if (teamData.Players[i].PlayerMmrDelta > eloK)
+            if (player.PlayerMmrDelta > eloK)
             {
                 throw new Exception("MmrDelta is bigger than eloK");
+            }
+
+            if (IsProgressActive)
+            {
+                SetStdProgress(player);
             }
         }
     }

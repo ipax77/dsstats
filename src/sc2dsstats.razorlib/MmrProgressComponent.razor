@@ -1,0 +1,130 @@
+﻿@using System.Globalization;
+@using pax.dsstats.shared;
+@inject NavigationManager NavigationManager
+
+@if (MauiMmrProgress.Values.Any(a => a.CmdrMmrStart > 0))
+{
+    <div class="d-flex bg-secondary p-2">
+        <h4 class="text-warning">Session Progress Cmdr</h4>
+    </div>
+    <div class="row">
+        @foreach (var progress in MauiMmrProgress.Where(x => x.Value.CmdrMmrStart > 0))
+        {
+            var start = progress.Value.CmdrMmrStart;
+            var deltaSum = progress.Value.CmdrMmrDeltas.Sum();
+            <div class="col-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex bg-secondary p-2">
+                            <div class="align-self-center">
+                                <span class="badge bg-primary" style="font-size: 1rem;">
+                                    <span class="small">Rating Start</span>
+                                    <br />
+                                    <span class="text-warning">
+                                        @start.ToString("N2", CultureInfo.InvariantCulture)
+                                    </span>
+                                </span>
+                                <span class="badge bg-primary" style="font-size: 1rem;">
+                                    <span class="small">Current Rating</span>
+                                    <br />
+                                    <span class="text-warning">
+                                        @((start + deltaSum).ToString("N2", CultureInfo.InvariantCulture))
+                                    </span>
+                                </span>
+                                <span class="badge bg-secondary @(deltaSum < 0 ? "text-danger" : "text-success")" style="font-size: 1rem;">
+                                    <span class="@(deltaSum < 0 ? "oi oi-arrow-bottom text-danger" : "oi oi-arrow-top text-success")"></span>
+                                    @deltaSum
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height: 275px; overflow: auto;">
+                            <table class="table table-sm table-striped w-auto offset-md-2" @onclick="@(() => NavigationManager.NavigateTo("replays"))">
+                                <thead>
+                                    <tr>
+                                        <th>MmrChange <span class="text-warning">@progress.Key.Name</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < progress.Value.CmdrMmrDeltas.Count; i++)
+                                    {
+                                        var delta = progress.Value.CmdrMmrDeltas[i];
+                                        <tr class="text-center">
+                                            <td class="@(delta < 0 ? "text-danger" : "text-success")">@delta.ToString("N1", CultureInfo.InvariantCulture)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (MauiMmrProgress.Values.Any(a => a.StdMmrStart > 0))
+{
+    <div class="d-flex bg-secondary p-2">
+        <h4 class="text-warning">Session Progress Std</h4>
+    </div>
+    <div class="row">
+        @foreach (var progress in MauiMmrProgress.Where(x => x.Value.StdMmrStart > 0))
+        {
+            var start = progress.Value.StdMmrStart;
+            var deltaSum = progress.Value.StdMmrDeltas.Sum();
+            <div class="col-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex bg-secondary p-2">
+                            <div class="align-self-center">
+                                <span class="badge bg-primary" style="font-size: 1rem;">
+                                    <span class="small">Rating Start</span>
+                                    <br />
+                                    <span class="text-warning">
+                                        @start.ToString("N2", CultureInfo.InvariantCulture)
+                                    </span>
+                                </span>
+                                <span class="badge bg-primary" style="font-size: 1rem;">
+                                    <span class="small">Current Rating</span>
+                                    <br />
+                                    <span class="text-warning">
+                                        @((start + deltaSum).ToString("N2", CultureInfo.InvariantCulture))
+                                    </span>
+                                </span>
+                                <span class="badge bg-secondary @(deltaSum < 0 ? "text-danger" : "text-success")" style="font-size: 1rem;">
+                                    <span class="@(deltaSum < 0 ? "oi oi-arrow-bottom text-danger" : "oi oi-arrow-top text-success")"></span>
+                                    @deltaSum
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm table-striped w-auto offset-md-2" style="max-height: 400px; overflow: auto;">
+                            <thead>
+                                <tr>
+                                    <th>MmrChange <span class="text-warning">@progress.Key.Name</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < progress.Value.StdMmrDeltas.Count; i++)
+                                {
+                                    var delta = progress.Value.StdMmrDeltas[i];
+                                    <tr class="text-center">
+                                        <td class="@(delta < 0 ? "text-danger" : "text-success")">@delta.ToString("N1", CultureInfo.InvariantCulture)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public Dictionary<RequestNames, MmrProgress> MauiMmrProgress { get; set; } = default!;
+}

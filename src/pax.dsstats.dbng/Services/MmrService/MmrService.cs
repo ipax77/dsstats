@@ -50,30 +50,10 @@ public partial class MmrService
     private readonly bool useFactorToTeamMates = false;
     SemaphoreSlim ss = new(1, 1);
 
-    //public async Task ReCalculate(DateTime startTime, DateTime endTime)
-    //{
-    //    Stopwatch sw = Stopwatch.StartNew();
-
-    //    await ClearRatingsInDb();
-
-    //    await ResetGlobals();
-
-    //    var playerRatingsCmdr = await ReCalculateCmdr(startTime, endTime);
-    //    await SaveCommanderData();
-    //    await SavePlayersData(playerRatingsCmdr);
-    //    await SaveReplayPlayersData(ReplayPlayerMmrChanges);
-
-    //    // (var playerRatingsStd, var replayPlayerMmrChanges) = await CalculateStd(startTime);
-    //    // await SavePlayersData(playerRatingsStd);
-    //    // await SaveReplayPlayersData(replayPlayerMmrChanges);
-
-    //    sw.Stop();
-    //    OnRecalculated(new() { Duration = sw.Elapsed });
-    //}
-
     public async Task ReCalculateWithDictionary(DateTime startTime = new(), DateTime endTime = new())
     {
         await ss.WaitAsync();
+        IsProgressActive = false;
         try
         {
             Stopwatch sw = Stopwatch.StartNew();

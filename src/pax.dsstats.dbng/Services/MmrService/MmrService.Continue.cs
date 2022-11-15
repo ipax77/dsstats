@@ -7,8 +7,10 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class MmrService
 {
-    public async Task<bool> ContinueCalculateWithDictionary(List<Replay> newReplays)
+    public async Task<bool> ContinueCalculateWithDictionary(List<Replay> newReplays, List<RequestNames> mauiPlayers)
     {
+        toonIdmauiPlayers = mauiPlayers.ToDictionary(k => k.ToonId, v => v);
+
         if (newReplays.Any(x => x.GameTime < LatestReplayGameTime))
         {
             //ReCalculateWithDictionary(startTime, DateTime.Today.AddDays(1));
@@ -36,6 +38,7 @@ public partial class MmrService
             .Select(s => mapper.Map<ReplayDsRDto>(s)).ToList();
 
         await ss.WaitAsync();
+        IsProgressActive = true;
         try
         {
             Stopwatch sw = Stopwatch.StartNew();
