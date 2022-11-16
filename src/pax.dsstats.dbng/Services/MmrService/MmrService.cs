@@ -92,7 +92,8 @@ public partial class MmrService
 
         var playerIdToonIdMap = await GetPlayerIdToonIdMap();
 
-        if (playerRatingsCmdr.Count != playerRatingsStd.Count && playerRatingsCmdr.Count > 0 && playerRatingsStd.Count > 0) {
+        if (playerRatingsCmdr.Count != playerRatingsStd.Count && playerRatingsCmdr.Count > 0 && playerRatingsStd.Count > 0)
+        {
         }
 
         foreach (var playerRatingEnt in playerRatingsCmdr.Concat(playerRatingsStd))
@@ -135,7 +136,7 @@ public partial class MmrService
                     Consistency = lastPlRat?.Consistency ?? 0,
                     Uncertainty = lastPlRat?.Uncertainty ?? 0.5
                 };
-                ToonIdCmdrRatingOverTime[toonId] = ContinueOverTimeRatingCmdr(toonId, plRat) ?? "";
+                ToonIdCmdrRatingOverTime[toonId] = GetOverTimeRating(plRat) ?? "";
             }
 
             MmrInfo? mmrInfoStd = null;
@@ -150,7 +151,7 @@ public partial class MmrService
                     Consistency = lastPlRat?.Consistency ?? 0,
                     Uncertainty = lastPlRat?.Uncertainty ?? 0.5
                 };
-                ToonIdStdRatingOverTime[toonId] = ContinueOverTimeRatingStd(toonId, plRat) ?? "";
+                ToonIdStdRatingOverTime[toonId] = GetOverTimeRating(plRat) ?? "";
             }
 
             if (mmrInfoCmdr == null && mmrInfoStd == null)
@@ -323,10 +324,12 @@ public partial class MmrService
 
     private void AddPlayersRankings(Dictionary<int, List<DsRCheckpoint>> playerRatings, TeamData teamData, DateTime gameTime)
     {
-        if (gameTime.ToString() == new DateTime(2022, 11, 10, 21, 33, 38).ToString()) {
+        if (gameTime.ToString() == new DateTime(2022, 11, 10, 21, 33, 38).ToString())
+        {
         }
 
-        foreach (var player in teamData.Players) {
+        foreach (var player in teamData.Players)
+        {
             var plRatings = playerRatings[GetMmrId(player.ReplayPlayer.Player)];
             var currentPlayerRating = plRatings.Last();
             int gamesCountBefore = currentPlayerRating.Index;
@@ -342,12 +345,14 @@ public partial class MmrService
             consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
             mmrAfter = Math.Max(1, mmrAfter);
 
-            if (uncertaintyAfter != Math.Clamp(uncertaintyAfter, 0, 1)) {
+            if (uncertaintyAfter != Math.Clamp(uncertaintyAfter, 0, 1))
+            {
                 throw new InvalidProgramException("ERROR: Uncertainty always has to be between 0 and 1!");
             }
 
             ReplayPlayerMmrChanges[player.ReplayPlayer.ReplayPlayerId] = (float)(mmrAfter - mmrBefore);
-            plRatings.Add(new DsRCheckpoint() {
+            plRatings.Add(new DsRCheckpoint()
+            {
                 Mmr = mmrAfter,
                 Consistency = consistencyAfter,
                 Uncertainty = uncertaintyAfter,
