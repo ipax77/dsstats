@@ -48,6 +48,8 @@ public record RatingStatsDto
     public int Wins { get; set; }
     public int Mvp { get; set; }
     public int TeamGames { get; set; }
+
+    public int MmrGames { get; set; }
     public double Mmr { get; set; }
     public double Consistency { get; set; }
     public double Uncertainty { get; set; }
