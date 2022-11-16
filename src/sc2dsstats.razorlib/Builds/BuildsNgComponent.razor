@@ -126,7 +126,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var brr in buildResponse.Replays.OrderBy(o => o))
+                        @foreach (var brr in buildResponse.Replays.OrderByDescending(o => o.Gametime))
                         {
                             <tr class="pointer" style="text-decoration: underline;" @onclick="e => ShowReplay(brr.Hash)">
                                 <td class="@(brr.Hash == replayHash ? "table-primary" : "")">@brr.Gametime.ToString("yyyy-MM-dd")</td>
