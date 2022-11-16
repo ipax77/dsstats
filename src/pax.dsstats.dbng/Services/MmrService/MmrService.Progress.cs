@@ -9,6 +9,33 @@ public partial class MmrService
     private Dictionary<int, RequestNames> toonIdmauiPlayers = new();
     public bool IsProgressActive;
 
+
+    private void SetProgress(ReplayProcessData processData, bool std)
+    {
+        foreach (var playerData in processData.WinnerTeamData.Players)
+        {
+            if (std)
+            {
+                SetStdProgress(playerData);
+            }
+            else
+            {
+                SetCmdrProgress(playerData);
+            }
+        }
+        foreach (var playerData in processData.LoserTeamData.Players)
+        {
+            if (std)
+            {
+                SetStdProgress(playerData);
+            }
+            else
+            {
+                SetCmdrProgress(playerData);
+            }
+        }
+    }
+
     private void SetCmdrProgress(PlayerData playerData)
     {
         if (toonIdmauiPlayers.ContainsKey(playerData.ReplayPlayer.Player.ToonId))
@@ -22,7 +49,7 @@ public partial class MmrService
                 if (mmrProgress.CmdrMmrStart == 0)
                 {
                     mmrProgress.CmdrMmrStart = ToonIdRatings.ContainsKey(playerData.ReplayPlayer.Player.ToonId) ?
-                        ToonIdRatings[playerData.ReplayPlayer.Player.ToonId].CmdrRatingStats.Mmr - playerData.PlayerMmrDelta
+                        ToonIdRatings[playerData.ReplayPlayer.Player.ToonId].CmdrRatingStats.Mmr
                     : startMmr;
                 }
             }
@@ -31,7 +58,7 @@ public partial class MmrService
                 MauiMmrProgress[requestNames] = new()
                 {
                     CmdrMmrStart = ToonIdRatings.ContainsKey(playerData.ReplayPlayer.Player.ToonId) ?
-                        ToonIdRatings[playerData.ReplayPlayer.Player.ToonId].CmdrRatingStats.Mmr - playerData.PlayerMmrDelta
+                        ToonIdRatings[playerData.ReplayPlayer.Player.ToonId].CmdrRatingStats.Mmr
                         : startMmr,
                     CmdrMmrDeltas = new() { playerData.PlayerMmrDelta }
                 };
@@ -52,7 +79,7 @@ public partial class MmrService
                 if (mmrProgress.StdMmrStart == 0)
                 {
                     mmrProgress.StdMmrStart = ToonIdRatings.ContainsKey(playerData.ReplayPlayer.Player.ToonId) ?
-                        ToonIdRatings[playerData.ReplayPlayer.Player.ToonId].StdRatingStats.Mmr - playerData.PlayerMmrDelta
+                        ToonIdRatings[playerData.ReplayPlayer.Player.ToonId].StdRatingStats.Mmr
                     : startMmr;
                 }
             }
@@ -61,7 +88,7 @@ public partial class MmrService
                 MauiMmrProgress[requestNames] = new()
                 {
                     StdMmrStart = ToonIdRatings.ContainsKey(playerData.ReplayPlayer.Player.ToonId) ?
-                        ToonIdRatings[playerData.ReplayPlayer.Player.ToonId].StdRatingStats.Mmr - playerData.PlayerMmrDelta
+                        ToonIdRatings[playerData.ReplayPlayer.Player.ToonId].StdRatingStats.Mmr
                         : startMmr,
                     StdMmrDeltas = new() { playerData.PlayerMmrDelta }
                 };

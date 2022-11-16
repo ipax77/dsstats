@@ -16,7 +16,7 @@ public class MmrProgressTests : TestWithSqlite
     public static readonly string assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
 
     [Fact]
-    public async Task ContinueMmrTest()
+    public async Task MmrProgressTest()
     {
         var serviceCollection = new ServiceCollection();
         serviceCollection
@@ -68,9 +68,22 @@ public class MmrProgressTests : TestWithSqlite
             newReplays.Add(replay);
         }
 
-        int countBefore = mmrService.ToonIdRatings.Count;
-        await mmrService.ContinueCalculateWithDictionary(newReplays, new());
+        var interestToonId = newReplays.First().ReplayPlayers.First(f => f.Name == "PAX").Player.ToonId;
+        Assert.True(interestToonId > 0);
 
-        Assert.True(mmrService.ToonIdRatings.Count > countBefore);
+        var interest = new RequestNames() { Name = "PAX", ToonId = interestToonId };
+
+        var mmrBefore = mmrService.ToonIdRatings[interestToonId].CmdrRatingStats.Mmr;
+        
+        await mmrService.ContinueCalculateWithDictionary(newReplays, new() { interest });
+
+        var mmrAfter = mmrService.ToonIdRatings[interestToonId].CmdrRatingStats.Mmr;
+
+        var mmrProgress = mmrService.MauiMmrProgress[interest];
+
+        var progressSum = mmrProgress.CmdrMmrStart + mmrProgress.CmdrMmrDeltas.Sum();
+
+        Assert.Equal(mmrBefore, mmrProgress.CmdrMmrStart);
+        Assert.Equal(mmrAfter, progressSum);
     }
 }

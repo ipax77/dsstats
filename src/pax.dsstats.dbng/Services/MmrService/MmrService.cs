@@ -47,7 +47,7 @@ public partial class MmrService
 
     private readonly bool useCommanderMmr = false;
     private readonly bool useConsistency = true;
-    private readonly bool useUncertanity = true;
+    private readonly bool useUncertanity = false;
     private readonly bool useFactorToTeamMates = false;
     SemaphoreSlim ss = new(1, 1);
 
