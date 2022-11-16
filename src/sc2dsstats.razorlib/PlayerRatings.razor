@@ -148,9 +148,9 @@
             <tbody>
                 @if (ratingsCount > 0)
                 {
-                    <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings">
+                    <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings" ItemSize="41">
                         <ItemContent>
-                        <tr class="pointer" @onclick="e => LoadPlayerChart(rating)">
+                        <tr height="41px;" class="pointer" @onclick="e => LoadPlayerChart(rating)">
                             <td>@rating.ToonId</td>
                             <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Name</span></td>
                                 <td>@(rating.MainPercentage < 9 ? "Random" : rating.Main.ToString())</td>
@@ -166,7 +166,7 @@
                         </tr>
                         </ItemContent>
                         <Placeholder>
-                            <tr height="47px"><td>Loading ...</td></tr>
+                            <tr height="41px"><td>Loading ...</td></tr>
                         </Placeholder>
                     </Virtualize>
                 }
