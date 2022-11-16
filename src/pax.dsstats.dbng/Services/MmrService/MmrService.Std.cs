@@ -90,7 +90,7 @@ public partial class MmrService
 
         if (IsProgressActive)
         {
-            SetProgress(replayProcessData, false);
+            SetProgress(replayProcessData, true);
         }
     }
 
