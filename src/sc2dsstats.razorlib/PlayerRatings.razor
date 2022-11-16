@@ -76,9 +76,9 @@
             <thead>
                 <CascadingValue Value="RatingsRequest.Orders">
                     <tr>
-                        <th colspan="2"></th>
-                        <th colspan="5" class="text-center text-warning">Commanders</th>
-                        <th colspan="5" class="text-center text-warning">Standard</th>
+                        <th colspan="4"></th>
+                        <th colspan="4" class="text-center text-warning">Commanders</th>
+                        <th colspan="4" class="text-center text-warning">Standard</th>
                     </tr>
                     <tr>
                         <th scope="col" class="pointer" @onclick="@(e => SortList(e, "ToonId"))">
@@ -89,6 +89,16 @@
                         <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Name"))">
                             <SortArrow Property="Name">
                                 Name
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Main"))">
+                            <SortArrow Property="Main">
+                                Main
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "MainPercentage"))">
+                            <SortArrow Property="MainPercentage">
+                                Main %
                             </SortArrow>
                         </th>
                         <th scope="col" class="pointer" @onclick="@(e => SortList(e, "CmdrRatingStats.Games"))">
@@ -111,12 +121,6 @@
                                 Mvp
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "TeamgamesCmdr"))">
-                            <SortArrow Property="TeamgamesCmdr">
-                                Teamgames
-                            </SortArrow>
-                        </th>
-
                         <th scope="col" class="pointer" @onclick="@(e => SortList(e, "StdRatingStats.Games"))">
                             <SortArrow Property="GamesStd">
                                 Games
@@ -137,11 +141,7 @@
                                 Mvp
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "TeamgamesStd"))">
-                            <SortArrow Property="TeamgamesStd">
-                                Teamgames
-                            </SortArrow>
-                        </th>
+
                     </tr>
                 </CascadingValue>
             </thead>
@@ -153,16 +153,16 @@
                         <tr class="pointer" @onclick="e => LoadPlayerChart(rating)">
                             <td>@rating.ToonId</td>
                             <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Name</span></td>
+                                <td>@(rating.MainPercentage < 9 ? "Random" : rating.Main.ToString())</td>
+                            <td>@rating.MainPercentage.ToString("N2", CultureInfo.InvariantCulture)</td>
                             <td class="border-start">@rating.CmdrRatingStats.Games</td>
                             <td class="text-warning">@Math.Round(rating.CmdrRatingStats.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
                             <td>@HelperService.GetPercentageString(rating.CmdrRatingStats.Wins, rating.CmdrRatingStats.Games)</td>
                             <td>@HelperService.GetPercentageString(rating.CmdrRatingStats.Mvp, rating.CmdrRatingStats.Games)</td>
-                            <td class="border-end">@HelperService.GetPercentageString(rating.CmdrRatingStats.TeamGames, rating.CmdrRatingStats.Games)</td>
-                            <td>@rating.StdRatingStats.Games</td>
+                                <td class="border-start">@rating.StdRatingStats.Games</td>
                             <td class="text-warning">@Math.Round(rating.StdRatingStats.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
                             <td>@HelperService.GetPercentageString(rating.StdRatingStats.Wins, rating.StdRatingStats.Games)</td>
                             <td>@HelperService.GetPercentageString(rating.StdRatingStats.Mvp, rating.StdRatingStats.Games)</td>
-                            <td>@HelperService.GetPercentageString(rating.StdRatingStats.TeamGames, rating.StdRatingStats.Games)</td>
                         </tr>
                         </ItemContent>
                         <Placeholder>
@@ -173,9 +173,9 @@
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="2"></td>
-                    <td colspan="5" class="text-center">Commanders</td>
-                    <td colspan="5" class="text-center">Standard</td>
+                    <td colspan="4"></td>
+                    <td colspan="4" class="text-center">Commanders</td>
+                    <td colspan="4" class="text-center">Standard</td>
                 </tr>
             </tfoot>
         </table>

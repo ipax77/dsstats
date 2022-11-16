@@ -163,6 +163,8 @@ public partial class MmrService
                 PlayerId = playerId,
                 Name = name,
                 ToonId = toonId,
+                Main = playerInfo.Main,
+                MainPercentage = playerInfo.MainPercentage,
 
                 CmdrRatingStats = new()
                 {

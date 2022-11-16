@@ -205,4 +205,6 @@ public record PlayerInfoDto
     public int WinsStd { get; set; }
     public int MvpStd { get; set; }
     public int TeamGamesStd { get; set; }
+    public Commander Main { get; set; }
+    public float MainPercentage { get; set; }
 }
