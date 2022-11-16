@@ -76,23 +76,26 @@ public partial class MmrService
             return playerRatingsCmdr;
         }
 
-        foreach (var rp in newReplaysCmdr.SelectMany(s => s.ReplayPlayers).ToList())
-        {
-            if (ToonIdRatings.ContainsKey(rp.Player.ToonId))
-            {
+        foreach (var replayDsRDto in newReplaysCmdr) {
+            foreach (var rp in replayDsRDto.ReplayPlayers) {
+                if (!ToonIdRatings.ContainsKey(rp.Player.ToonId)) {
+                    continue;
+                }
+
                 var rpCp = ToonIdRatings[rp.Player.ToonId];
-                playerRatingsCmdr[GetMmrId(rp.Player)] = new List<DsRCheckpoint>()
-                {
-                    new DsRCheckpoint()
-                    {
+
+                playerRatingsCmdr[GetMmrId(rp.Player)] = new List<DsRCheckpoint>() {
+                    new DsRCheckpoint() {
                         Consistency = rpCp.CmdrRatingStats.Consistency,
                         Uncertainty = rpCp.CmdrRatingStats.Uncertainty,
                         Mmr = rpCp.CmdrRatingStats.Mmr,
-                        Time = DateTime.Today
+                        Index = rpCp.CmdrRatingStats.MmrGames,
+                        Time = DateTime.MinValue
                     }
                 };
             }
         }
+
         return playerRatingsCmdr;
     }
 
@@ -105,23 +108,26 @@ public partial class MmrService
             return playerRatingsStd;
         }
 
-        foreach (var rp in newReplaysStd.SelectMany(s => s.ReplayPlayers).ToList())
-        {
-            if (ToonIdRatings.ContainsKey(rp.Player.ToonId))
-            {
+        foreach (var replayDsRDto in newReplaysStd) {
+            foreach (var rp in replayDsRDto.ReplayPlayers) {
+                if (!ToonIdRatings.ContainsKey(rp.Player.ToonId)) {
+                    continue;
+                }
+
                 var rpCp = ToonIdRatings[rp.Player.ToonId];
-                playerRatingsStd[rp.Player.ToonId] = new List<DsRCheckpoint>()
-                {
-                    new DsRCheckpoint()
-                    {
+
+                playerRatingsStd[GetMmrId(rp.Player)] = new List<DsRCheckpoint>() {
+                    new DsRCheckpoint() {
                         Consistency = rpCp.StdRatingStats.Consistency,
                         Uncertainty = rpCp.StdRatingStats.Uncertainty,
                         Mmr = rpCp.StdRatingStats.Mmr,
-                        Time = DateTime.Today
+                        Index = rpCp.CmdrRatingStats.MmrGames,
+                        Time = replayDsRDto.GameTime
                     }
                 };
             }
         }
+
         return playerRatingsStd;
     }
 
@@ -132,7 +138,10 @@ public partial class MmrService
         // todo: optimize for continue
         var playerIdToonIdMap = await GetPlayerIdToonIdMap();
 
-        foreach (var playerRatingEnt in playerRatingsCmdr)
+        if (playerRatingsCmdr.Count != playerRatingsStd.Count && playerRatingsCmdr.Count > 0 && playerRatingsStd.Count > 0) {
+        }
+
+        foreach (var playerRatingEnt in playerRatingsCmdr.Concat(playerRatingsStd))
         {
             int playerId = playerRatingEnt.Key;
 
@@ -168,8 +177,9 @@ public partial class MmrService
                 mmrInfoCmdr = new()
                 {
                     Mmr = lastPlRat?.Mmr ?? startMmr,
+                    MmrGames = lastPlRat?.Index ?? 0,
                     Consistency = lastPlRat?.Consistency ?? 0,
-                    Uncertainty = lastPlRat?.Uncertainty ?? 1
+                    Uncertainty = lastPlRat?.Uncertainty ?? 0.5
                 };
                 ToonIdCmdrRatingOverTime[toonId] = ContinueOverTimeRatingCmdr(toonId, plRat) ?? "";
             }
@@ -182,8 +192,9 @@ public partial class MmrService
                 mmrInfoStd = new()
                 {
                     Mmr = lastPlRat?.Mmr ?? startMmr,
+                    MmrGames = lastPlRat?.Index ?? 0,
                     Consistency = lastPlRat?.Consistency ?? 0,
-                    Uncertainty = lastPlRat?.Uncertainty ?? 1
+                    Uncertainty = lastPlRat?.Uncertainty ?? 0.5
                 };
                 ToonIdStdRatingOverTime[toonId] = ContinueOverTimeRatingStd(toonId, plRat) ?? "";
             }
@@ -196,8 +207,11 @@ public partial class MmrService
             if (ToonIdRatings.ContainsKey(toonId))
             {
                 var toonIdRating = ToonIdRatings[toonId];
+                
                 toonIdRating.Main = playerInfo.Main;
                 toonIdRating.MainPercentage = playerInfo.MainPercentage;
+                
+                toonIdRating.CmdrRatingStats.MmrGames = mmrInfoCmdr?.MmrGames ?? toonIdRating.CmdrRatingStats.MmrGames;
                 toonIdRating.CmdrRatingStats.Mmr = mmrInfoCmdr?.Mmr ?? toonIdRating.CmdrRatingStats.Mmr;
                 toonIdRating.CmdrRatingStats.Games = playerInfo.GamesCmdr;
                 toonIdRating.CmdrRatingStats.Wins = playerInfo.WinsCmdr;
@@ -206,6 +220,7 @@ public partial class MmrService
                 toonIdRating.CmdrRatingStats.Consistency = mmrInfoCmdr?.Consistency ?? toonIdRating.CmdrRatingStats.Consistency;
                 toonIdRating.CmdrRatingStats.Uncertainty = mmrInfoCmdr?.Uncertainty ?? toonIdRating.CmdrRatingStats.Uncertainty;
 
+                toonIdRating.StdRatingStats.MmrGames = mmrInfoStd?.MmrGames ?? toonIdRating.StdRatingStats.MmrGames;
                 toonIdRating.StdRatingStats.Mmr = mmrInfoStd?.Mmr ?? toonIdRating.StdRatingStats.Mmr;
                 toonIdRating.StdRatingStats.Games = playerInfo.GamesStd;
                 toonIdRating.StdRatingStats.Wins = playerInfo.WinsStd;
@@ -226,23 +241,25 @@ public partial class MmrService
 
                     CmdrRatingStats = new()
                     {
+                        MmrGames = mmrInfoCmdr?.MmrGames ?? 0,
                         Mmr = mmrInfoCmdr?.Mmr ?? startMmr,
                         Games = playerInfo.GamesCmdr,
                         Wins = playerInfo.WinsCmdr,
                         Mvp = playerInfo.MvpCmdr,
                         TeamGames = playerInfo.TeamGamesCmdr,
                         Consistency = mmrInfoCmdr?.Consistency ?? 0,
-                        Uncertainty = mmrInfoCmdr?.Uncertainty ?? 1
+                        Uncertainty = mmrInfoCmdr?.Uncertainty ?? 0.5
                     },
                     StdRatingStats = new()
                     {
+                        MmrGames = mmrInfoStd?.MmrGames ?? 0,
                         Mmr = mmrInfoStd?.Mmr ?? startMmr,
                         Games = playerInfo.GamesStd,
                         Wins = playerInfo.WinsStd,
                         Mvp = playerInfo.MvpStd,
                         TeamGames = playerInfo.TeamGamesStd,
                         Consistency = mmrInfoStd?.Consistency ?? 0,
-                        Uncertainty = mmrInfoStd?.Uncertainty ?? 1
+                        Uncertainty = mmrInfoStd?.Uncertainty ?? 0.5
                     }
                 };
             }
@@ -280,8 +297,9 @@ public partial class MmrService
                 mmrInfoCmdr = new()
                 {
                     Mmr = lastPlRat?.Mmr ?? startMmr,
+                    MmrGames = lastPlRat?.Index ?? 0,
                     Consistency = lastPlRat?.Consistency ?? 0,
-                    Uncertainty = lastPlRat?.Uncertainty ?? 1
+                    Uncertainty = lastPlRat?.Uncertainty ?? 0.5
                 };
                 ToonIdCmdrRatingOverTime[toonId] = ContinueOverTimeRatingCmdr(toonId, plRat) ?? "";
             }
@@ -294,8 +312,9 @@ public partial class MmrService
                 mmrInfoStd = new()
                 {
                     Mmr = lastPlRat?.Mmr ?? startMmr,
+                    MmrGames = lastPlRat?.Index ?? 0,
                     Consistency = lastPlRat?.Consistency ?? 0,
-                    Uncertainty = lastPlRat?.Uncertainty ?? 1
+                    Uncertainty = lastPlRat?.Uncertainty ?? 0.5
                 };
                 ToonIdStdRatingOverTime[toonId] = ContinueOverTimeRatingStd(toonId, plRat) ?? "";
             }
@@ -334,23 +353,25 @@ public partial class MmrService
 
                     CmdrRatingStats = new()
                     {
+                        MmrGames = mmrInfoCmdr?.MmrGames ?? 0,
                         Mmr = mmrInfoCmdr?.Mmr ?? startMmr,
                         Games = playerInfo.Value.GamesCmdr,
                         Wins = playerInfo.Value.WinsCmdr,
                         Mvp = playerInfo.Value.MvpCmdr,
                         TeamGames = playerInfo.Value.TeamGamesCmdr,
                         Consistency = mmrInfoCmdr?.Consistency ?? 0,
-                        Uncertainty = mmrInfoCmdr?.Uncertainty ?? 1
+                        Uncertainty = mmrInfoCmdr?.Uncertainty ?? 0.5
                     },
                     StdRatingStats = new()
                     {
+                        MmrGames = mmrInfoStd?.MmrGames ?? 0,
                         Mmr = mmrInfoStd?.Mmr ?? startMmr,
                         Games = playerInfo.Value.GamesStd,
                         Wins = playerInfo.Value.WinsStd,
                         Mvp = playerInfo.Value.MvpStd,
                         TeamGames = playerInfo.Value.TeamGamesStd,
                         Consistency = mmrInfoStd?.Consistency ?? 0,
-                        Uncertainty = mmrInfoStd?.Uncertainty ?? 1
+                        Uncertainty = mmrInfoStd?.Uncertainty ?? 0.5
                     }
                 };
             }
@@ -388,7 +409,7 @@ public partial class MmrService
     {
         if (ToonIdStdRatingOverTime.ContainsKey(toonId))
         {
-            string currentOtr = ToonIdCmdrRatingOverTime[toonId];
+            string currentOtr = ToonIdStdRatingOverTime[toonId];
             return ContinueOverTimeRating(currentOtr, dsRCheckpoints);
         }
         else
