@@ -14,7 +14,6 @@ public record ReplayListDto
     public bool DefaultFilter { get; set; }
     public string CommandersTeam1 { get; set; } = null!;
     public string CommandersTeam2 { get; set; } = null!;
-    public ReplayEventListDto? ReplayEvent { get; set; }
 
     [NotMapped]
     [JsonIgnore]

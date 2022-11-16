@@ -1,0 +1,193 @@
+﻿.tableFixHead {
+    overflow-y: auto;
+    height: 750px;
+}
+
+    .tableFixHead thead th {
+        position: sticky;
+        top: 0;
+    }
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    padding: 8px 16px;
+    white-space: nowrap;
+}
+
+.tablebackground {
+    position: absolute;
+    z-index: -1;
+    opacity: 0.15;
+}
+
+.preload-terran {
+    background-image: url("/_content/sc2dsstats.razorlib/images/terran-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-protoss {
+    background-image: url("/_content/sc2dsstats.razorlib/images/protoss-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-zerg {
+    background-image: url("/_content/sc2dsstats.razorlib/images/zerg-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-abathur {
+    background-image: url("/_content/sc2dsstats.razorlib/images/abathur-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-alarak {
+    background-image: url("/_content/sc2dsstats.razorlib/images/alarak-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-artanis {
+    background-image: url("/_content/sc2dsstats.razorlib/images/artanis-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-dehaka {
+    background-image: url("/_content/sc2dsstats.razorlib/images/dehaka-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-fenix {
+    background-image: url("/_content/sc2dsstats.razorlib/images/fenix-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-horner {
+    background-image: url("/_content/sc2dsstats.razorlib/images/horner-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-karax {
+    background-image: url("/_content/sc2dsstats.razorlib/images/karax-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-kerrigan {
+    background-image: url("/_content/sc2dsstats.razorlib/images/kerrigan-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-mengsk {
+    background-image: url("/_content/sc2dsstats.razorlib/images/mengsk-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-nova {
+    background-image: url("/_content/sc2dsstats.razorlib/images/nova-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-raynor {
+    background-image: url("/_content/sc2dsstats.razorlib/images/raynor-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-stetmann {
+    background-image: url("/_content/sc2dsstats.razorlib/images/stetmann-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-stukov {
+    background-image: url("/_content/sc2dsstats.razorlib/images/stukov-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-swann {
+    background-image: url("/_content/sc2dsstats.razorlib/images/swann-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-tychus {
+    background-image: url("/_content/sc2dsstats.razorlib/images/tychus-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-vorazun {
+    background-image: url("/_content/sc2dsstats.razorlib/images/vorazun-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-zagara {
+    background-image: url("/_content/sc2dsstats.razorlib/images/zagara-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-zeratul {
+    background-image: url("/_content/sc2dsstats.razorlib/images/zeratul-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
