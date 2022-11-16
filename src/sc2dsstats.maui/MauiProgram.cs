@@ -76,7 +76,7 @@ public static class MauiProgram
         //    .Include(i => i.ReplayPlayers)
         //        .ThenInclude(i => i.Upgrades)
         //    .OrderByDescending(o => o.GameTime)
-        //    .Take(5)
+        //    .Take(1)
         //    .ToList();
 
         //context.Replays.RemoveRange(replays);

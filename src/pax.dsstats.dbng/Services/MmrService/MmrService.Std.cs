@@ -60,7 +60,7 @@ public partial class MmrService
         SetMmrsStd(playerRatingsStd, replayProcessData.WinnerTeamData, replayProcessData.ReplayGameTime);
         SetMmrsStd(playerRatingsStd, replayProcessData.LoserTeamData, replayProcessData.ReplayGameTime);
 
-        SetExpectationsToWin(replayProcessData);
+        SetExpectationsToWin(playerRatingsStd, replayProcessData);
 
         CalculateRatingsDeltasStd(playerRatingsStd, replayProcessData, replayProcessData.WinnerTeamData);
         CalculateRatingsDeltasStd(playerRatingsStd, replayProcessData, replayProcessData.LoserTeamData);
@@ -89,17 +89,17 @@ public partial class MmrService
         AddPlayersRankings(playerRatingsStd, replayProcessData.LoserTeamData, replayProcessData.ReplayGameTime);
     }
 
-    private void SetMmrsStd(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData, DateTime gameTime)
+    private void SetMmrsStd(Dictionary<int, List<DsRCheckpoint>> playerRatingsStd, TeamData teamData, DateTime gameTime)
     {
         teamData.CmdrComboMmr = 1.0;
-        teamData.PlayersMeanMmr = GetTeamMmr(playerRatingsCmdr, teamData.Players, gameTime);
+        teamData.PlayersMeanMmr = GetPlayersComboMmr(playerRatingsStd, teamData.Players, gameTime);
     }
 
-    private void CalculateRatingsDeltasStd(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, ReplayProcessData replayProcessData, TeamData teamData)
+    private void CalculateRatingsDeltasStd(Dictionary<int, List<DsRCheckpoint>> playerRatingsStd, ReplayProcessData replayProcessData, TeamData teamData)
     {
         for (int i = 0; i < teamData.Players.Length; i++)
         {
-            var plRatings = playerRatingsCmdr[GetMmrId(teamData.Players[i].ReplayPlayer.Player)];
+            var plRatings = playerRatingsStd[GetMmrId(teamData.Players[i].ReplayPlayer.Player)];
             var lastPlRating = plRatings.Last();
             double playerConsistency = lastPlRating.Consistency;
 
@@ -111,10 +111,12 @@ public partial class MmrService
 
             double factor_playerToTeamMates = PlayerToTeamMates(teamData.PlayersMeanMmr, playerMmr, teamData.Players.Length);
             double factor_consistency = GetCorrectedRevConsistency(1 - playerConsistency);
+            double factor_uncertainty = (1 - replayProcessData.Uncertainty);
 
             double playerImpact = 1
                 * (useFactorToTeamMates ? factor_playerToTeamMates : 1.0)
-                * (useConsistency ? factor_consistency : 1.0);
+                * (useConsistency ? factor_consistency : 1.0)
+                * (useUncertanity ? factor_uncertainty : 1.0);
 
             var player = teamData.Players[i];
             player.PlayerMmrDelta = CalculateMmrDelta(replayProcessData.WinnerPlayersExpectationToWin, playerImpact, 1);
@@ -141,7 +143,7 @@ public partial class MmrService
             .Include(r => r.ReplayPlayers)
                 .ThenInclude(rp => rp.Player)
             .Where(r => r.Playercount == 6
-                && r.Duration >= 300
+                && r.Duration >= 210
                 && r.WinnerTeam > 0
                 && (r.GameMode == GameMode.Standard))
             .AsNoTracking();
