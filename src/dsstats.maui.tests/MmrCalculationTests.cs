@@ -337,8 +337,8 @@ public class MmrCalculationTests : TestWithSqlite
         var units = (await context.Units.AsNoTracking().ToListAsync()).ToHashSet();
         var upgrades = (await context.Upgrades.AsNoTracking().ToListAsync()).ToHashSet();
 
-        var beforeReplays = testReplays1.Take(20).ToList();
-        var afterReplays = testReplays1.Skip(20).Take(7).ToList();
+        var beforeReplays = testReplays1.Take(10).ToList();
+        var afterReplays = testReplays1.Skip(10).Take(20).ToList();
 
         foreach (var replayDto in beforeReplays)
         {
@@ -348,7 +348,7 @@ public class MmrCalculationTests : TestWithSqlite
         // ProcessData
         await mmrService.ReCalculateWithDictionary();
 
-        var dataBefore = mmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
+        var dataBefore = mmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats);
 
         List<Replay> newReplays = new();
         foreach (var replayDto in afterReplays)
@@ -359,44 +359,27 @@ public class MmrCalculationTests : TestWithSqlite
 
         await mmrService.ContinueCalculateWithDictionary(newReplays, new());
 
-        var dataAfterContinue = mmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
-
-        int count = 0;
-        int equal = 0;
-        int newCount = 0;
-        int different = 0;
-
-        foreach (var ent in dataAfterContinue)
-        {
-            if (dataBefore.ContainsKey(ent.Key))
-            {
-                if (ent.Value == dataBefore[ent.Key])
-                {
-                    equal++;
-                }
-                else
-                {
-                    different++;
-                }
-            }
-            else
-            {
-                newCount++;
-            }
-            count++;
-        }
+        var dataAfterContinue = mmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats);
 
         await mmrService.ReCalculateWithDictionary();
 
-        var dataAfterReRecalculate = mmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
+        var dataAfterReRecalculate = mmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats);
 
         // Assert
         for (int i = 0; i < dataAfterContinue.Count; i++)
         {
             var entBefore = dataAfterContinue.ElementAt(i);
             Assert.True(mmrService.ToonIdRatings.ContainsKey(entBefore.Key));
-            var entAfter = mmrService.ToonIdRatings[entBefore.Key];
-            Assert.Equal(entBefore.Value, entAfter.CmdrRatingStats.Mmr);
+            var entAfter = dataAfterReRecalculate[entBefore.Key];
+            
+            if (entBefore.Value.Mmr != entAfter.Mmr) {
+            }
+            if (entBefore.Value.Consistency != entAfter.Consistency) {
+            }
+            if (entBefore.Value.Uncertainty != entAfter.Uncertainty) {
+            }
+
+            Assert.Equal(entBefore.Value.Mmr, entAfter.Mmr);
         }
     }
 

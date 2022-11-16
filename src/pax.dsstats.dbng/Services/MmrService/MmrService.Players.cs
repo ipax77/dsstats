@@ -11,18 +11,16 @@ public partial class MmrService
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         var playerInfosStd = await GetPlayerInfos(context, std: true);
-        var teamGamesStd = await GetPlayerTeamGames(context, std: true);
 
         var playerInfosCmdr = await GetPlayerInfos(context, std: false);
-        var teamGamesCmdr = await GetPlayerTeamGames(context, std: false);
 
+        var mainCmdrs = await GetMains(context);
 
         var infos = playerInfosCmdr.ToDictionary(k => k.ToonId, v => new PlayerInfoDto()
         {
             GamesCmdr = v.Games,
             WinsCmdr = v.Wins,
             MvpCmdr = v.Mvp,
-            TeamGamesCmdr = teamGamesCmdr.ContainsKey(v.ToonId) ? teamGamesCmdr[v.ToonId] : 0
         });
 
         foreach (var stdInfo in playerInfosStd)
@@ -32,7 +30,6 @@ public partial class MmrService
                 infos[stdInfo.ToonId].GamesStd = stdInfo.Games;
                 infos[stdInfo.ToonId].WinsStd = stdInfo.Wins;
                 infos[stdInfo.ToonId].MvpStd = stdInfo.Mvp;
-                infos[stdInfo.ToonId].TeamGamesStd = teamGamesStd.ContainsKey(stdInfo.ToonId) ? teamGamesStd[stdInfo.ToonId] : 0;
 
             }
             else
@@ -42,10 +39,19 @@ public partial class MmrService
                     GamesStd = stdInfo.Games,
                     WinsStd = stdInfo.Wins,
                     MvpStd = stdInfo.Mvp,
-                    TeamGamesStd = teamGamesStd.ContainsKey(stdInfo.ToonId) ? teamGamesStd[stdInfo.ToonId] : 0
                 };
             }
         }
+
+        foreach (var mainCmdr in mainCmdrs)
+        {
+            if (infos.ContainsKey(mainCmdr.ToonId))
+            {
+                infos[mainCmdr.ToonId].Main = mainCmdr.Commander;
+                infos[mainCmdr.ToonId].MainPercentage = mainCmdr.PlayedPercentage;
+            }
+        }
+
         return infos;
     }
 
@@ -55,6 +61,7 @@ public partial class MmrService
                      from r in context.Replays
                      from rp in r.ReplayPlayers
                      where r.DefaultFilter && r.GameMode == GameMode.Standard
+                     where rp.Player.RegionId >= 0 && rp.Player.Name != "Anonymouse"
                      group rp by rp.Player.ToonId into g
                      select new PlayerInfo
                      {
@@ -66,6 +73,7 @@ public partial class MmrService
                     : from r in context.Replays
                       from rp in r.ReplayPlayers
                       where r.DefaultFilter && new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic }.Contains(r.GameMode)
+                      where rp.Player.RegionId >= 0 && rp.Player.Name != "Anonymouse"
                       group rp by rp.Player.ToonId into g
                       select new PlayerInfo
                       {
@@ -78,37 +86,65 @@ public partial class MmrService
         return await infos.ToListAsync();
     }
 
-    private async Task<Dictionary<int, int>> GetPlayerTeamGames(ReplayContext context, bool std)
+    private async Task<List<MainInfo>> GetMains(ReplayContext context)
     {
-        var teamGroup = std ?
-                        from r in context.Replays
-                        from rp1 in r.ReplayPlayers
-                        where r.DefaultFilter && r.GameMode == GameMode.Standard
-                        join rp2 in context.ReplayPlayers
-                          on new { Id = r.ReplayId, rp1.Team }
-                          equals new { Id = rp2.ReplayId, rp2.Team }
-                        where rp2.ReplayPlayerId != rp1.ReplayPlayerId
-                        group new { rp1, rp2 } by rp1.Player.ToonId into g
-                        select new
-                        {
-                            ToonId = g.Key,
-                            Teamgames = g.Count(c => c.rp2.IsUploader)
-                        }
-                        : from r in context.Replays
-                          from rp1 in r.ReplayPlayers
-                          where r.DefaultFilter && new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic }.Contains(r.GameMode)
-                          join rp2 in context.ReplayPlayers
-                            on new { Id = r.ReplayId, rp1.Team }
-                            equals new { Id = rp2.ReplayId, rp2.Team }
-                          where rp2.ReplayPlayerId != rp1.ReplayPlayerId
-                          group new { rp1, rp2 } by rp1.Player.ToonId into g
-                          select new
-                          {
-                              ToonId = g.Key,
-                              Teamgames = g.Count(c => c.rp2.IsUploader)
-                          };
+        //var players = GetInfoPlayersQueriable(context);
 
-        var teamGames = await teamGroup.ToListAsync();
-        return teamGames.ToDictionary(k => k.ToonId, v => v.Teamgames);
+        var mainQuery = from p in context.Players
+                   from rp in p.ReplayPlayers
+                   group new { p, rp } by new { p.ToonId, rp.Race } into g
+                   select new
+                   {
+                       ToonId = g.Key.ToonId,
+                       Race = g.Key.Race,
+                       Count = g.Count()
+                   };
+
+        var toonQuery = from m in mainQuery
+                        where m.Count > 20
+                        select m;
+
+        var mainCounts = await mainQuery.ToListAsync();
+
+        var mainGroup = mainCounts.GroupBy(g => g.ToonId)
+            .Select(s => new
+            {
+                ToonId = s.Key,
+                Sum = s.Sum(t => t.Count),
+                Max = s.Max(m => m.Count),
+                Main = s.First(f => f.Count == s.Max(m => m.Count)).Race
+            });
+
+
+        List<MainInfo> mainInfos = new();
+
+        foreach (var ent in mainGroup)
+        {
+            mainInfos.Add(new()
+            {
+                ToonId = ent.ToonId,
+                Commander = ent.Main,
+                PlayedPercentage = MathF.Round(ent.Max * 100.0f / (float)ent.Sum, 2)
+
+            });
+        }
+        return mainInfos;
     }
+
+    private IQueryable<Player> GetInfoPlayersQueriable(ReplayContext context)
+    {
+        var players = from p in context.Players.Include(i => i.ReplayPlayers)
+                      from rp in p.ReplayPlayers
+                      where p.RegionId >= 0 && p.Name != "Anonymouse"
+                      select p;
+
+        return players;
+    }
+}
+
+public record MainInfo
+{
+    public int ToonId { get; set; }
+    public Commander Commander { get; set; }
+    public float PlayedPercentage { get; set; }
 }

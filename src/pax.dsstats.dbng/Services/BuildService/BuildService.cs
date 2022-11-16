@@ -105,8 +105,8 @@ public partial class BuildService
             Interest = request.Interest,
             Versus = request.Versus,
             Count = uniqueBuilds.Count,
-            Wins = uniqueBuilds.Where(s => s.Result == PlayerResult.Win).Count(),
-            Duration = uniqueBuilds.Sum(s => s.Duration),
+            Wins = uniqueBuilds.Count(c => c.Result == PlayerResult.Win),
+            Duration = uniqueBuilds.Sum(s => s.Duration) / uniqueBuilds.Count,
             Gas = uniqueBuilds.Sum(s => s.GasCount),
             Upgrades = uniqueBuilds.Sum(s => s.UpgradeSpending),
             Replays = uniqueBuilds.Select(t => new BuildResponseReplay()

@@ -57,8 +57,8 @@ public partial class MmrService
             return;
         }
 
-        SetMmrsStd(playerRatingsStd, replayProcessData.WinnerTeamData, replayProcessData.ReplayGameTime);
-        SetMmrsStd(playerRatingsStd, replayProcessData.LoserTeamData, replayProcessData.ReplayGameTime);
+        SetMmrsStd(playerRatingsStd, replayProcessData.WinnerTeamData);
+        SetMmrsStd(playerRatingsStd, replayProcessData.LoserTeamData);
 
         SetExpectationsToWin(playerRatingsStd, replayProcessData);
 
@@ -90,14 +90,14 @@ public partial class MmrService
 
         if (IsProgressActive)
         {
-            SetProgress(replayProcessData, false);
+            SetProgress(replayProcessData, true);
         }
     }
 
-    private void SetMmrsStd(Dictionary<int, List<DsRCheckpoint>> playerRatingsStd, TeamData teamData, DateTime gameTime)
+    private void SetMmrsStd(Dictionary<int, List<DsRCheckpoint>> playerRatingsStd, TeamData teamData)
     {
         teamData.CmdrComboMmr = 1.0;
-        teamData.PlayersMeanMmr = GetPlayersComboMmr(playerRatingsStd, teamData.Players, gameTime);
+        teamData.PlayersMeanMmr = GetPlayersComboMmr(playerRatingsStd, teamData.Players);
     }
 
     private void CalculateRatingsDeltasStd(Dictionary<int, List<DsRCheckpoint>> playerRatingsStd, ReplayProcessData replayProcessData, TeamData teamData)
