@@ -59,6 +59,8 @@ public partial class MmrService
         {
             Stopwatch sw = Stopwatch.StartNew();
 
+            await ClearRatingsInDb();
+
             await ResetGlobals();
 
             var playerRatingsCmdr = await ReCalculateCmdr(startTime, endTime);
@@ -67,6 +69,8 @@ public partial class MmrService
             var playerInfos = await GetPlayerInfos();
 
             await SetGlobals(playerRatingsCmdr, playerRatingsStd, playerInfos);
+
+            await SaveCommanderData();
 
             sw.Stop();
             logger.LogInformation($"recalcualated in {sw.ElapsedMilliseconds} ms");
@@ -316,62 +320,62 @@ public partial class MmrService
         await context.Database.ExecuteSqlRawAsync($"UPDATE {nameof(context.CommanderMmrs)} SET {nameof(CommanderMmr.AntiSynergyMmr)} = {startMmr}");
     }
 
-    private async Task SaveReplayPlayersData(Dictionary<int, float> replayPlayerMmrChanges)
-    {
-        using var scope = serviceProvider.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+    //private async Task SaveReplayPlayersData(Dictionary<int, float> replayPlayerMmrChanges)
+    //{
+    //    using var scope = serviceProvider.CreateScope();
+    //    using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        StringBuilder sb = new();
-        int i = 0;
-        foreach (var ent in replayPlayerMmrChanges)
-        {
-            sb.Append($"UPDATE {nameof(ReplayContext.ReplayPlayers)}" +
-                $" SET {nameof(ReplayPlayer.MmrChange)} = {ent.Value.ToString(CultureInfo.InvariantCulture)}" +
-                $" WHERE {nameof(ReplayPlayer.ReplayPlayerId)} = {ent.Key}; ");
-            i++;
-            if (i % 1000 == 0)
-            {
-                await context.Database.ExecuteSqlRawAsync(sb.ToString());
-                sb.Clear();
-            }
-        }
+    //    StringBuilder sb = new();
+    //    int i = 0;
+    //    foreach (var ent in replayPlayerMmrChanges)
+    //    {
+    //        sb.Append($"UPDATE {nameof(ReplayContext.ReplayPlayers)}" +
+    //            $" SET {nameof(ReplayPlayer.MmrChange)} = {ent.Value.ToString(CultureInfo.InvariantCulture)}" +
+    //            $" WHERE {nameof(ReplayPlayer.ReplayPlayerId)} = {ent.Key}; ");
+    //        i++;
+    //        if (i % 1000 == 0)
+    //        {
+    //            await context.Database.ExecuteSqlRawAsync(sb.ToString());
+    //            sb.Clear();
+    //        }
+    //    }
 
-        if (sb.Length > 0)
-        {
-            await context.Database.ExecuteSqlRawAsync(sb.ToString());
-        }
-    }
+    //    if (sb.Length > 0)
+    //    {
+    //        await context.Database.ExecuteSqlRawAsync(sb.ToString());
+    //    }
+    //}
 
-    private async Task SavePlayersData(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr)
-    {
-        using var scope = serviceProvider.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+    //private async Task SavePlayersData(Dictionary<int, List<DsRCheckpoint>> playerRatings)
+    //{
+    //    using var scope = serviceProvider.CreateScope();
+    //    using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        StringBuilder sb = new();
-        int i = 0;
-        foreach (var ent in playerRatingsCmdr)
-        {
-            var lastRating = ent.Value.Last();
-            var mmr = lastRating.Mmr == double.NaN ? "0" : lastRating.Mmr.ToString(CultureInfo.InvariantCulture);
+    //    StringBuilder sb = new();
+    //    int i = 0;
+    //    foreach (var ent in playerRatings)
+    //    {
+    //        var lastRating = ent.Value.Last();
+    //        var mmr = lastRating.Mmr == double.NaN ? "0" : lastRating.Mmr.ToString(CultureInfo.InvariantCulture);
 
-            sb.Append($"UPDATE {nameof(ReplayContext.Players)}" +
-                $" SET {nameof(Player.Mmr)} = {mmr}, {nameof(Player.MmrOverTime)} = '{GetOverTimeRating(ent.Value)}'" +
-                $" WHERE {nameof(Player.PlayerId)} = {ent.Key}; ");
+    //        sb.Append($"UPDATE {nameof(ReplayContext.Players)}" +
+    //            $" SET {nameof(Player.Mmr)} = {mmr}, {nameof(Player.MmrOverTime)} = '{GetOverTimeRating(ent.Value)}'" +
+    //            $" WHERE {nameof(Player.PlayerId)} = {ent.Key}; ");
 
-            i++;
-            if (i % 500 == 0)
-            {
-                await context.Database.ExecuteSqlRawAsync(sb.ToString());
-                sb.Clear();
-            }
-        }
+    //        i++;
+    //        if (i % 500 == 0)
+    //        {
+    //            await context.Database.ExecuteSqlRawAsync(sb.ToString());
+    //            sb.Clear();
+    //        }
+    //    }
 
 
-        if (sb.Length > 0)
-        {
-            await context.Database.ExecuteSqlRawAsync(sb.ToString());
-        }
-    }
+    //    if (sb.Length > 0)
+    //    {
+    //        await context.Database.ExecuteSqlRawAsync(sb.ToString());
+    //    }
+    //}
 
     private async Task SaveCommanderData()
     {
@@ -390,6 +394,37 @@ public partial class MmrService
         await context.SaveChangesAsync();
     }
 
+    private void AddPlayersRankings(Dictionary<int, List<DsRCheckpoint>> playerRatings, TeamData teamData, DateTime gameTime)
+    {
+        foreach (var player in teamData.Players) {
+            var plRatings = playerRatings[GetMmrId(player.ReplayPlayer.Player)];
+            var currentPlayerRating = plRatings.Last();
+            int gamesCountBefore = plRatings.Count - 1;
+
+            double mmrBefore = currentPlayerRating.Mmr;
+            double consistencyBefore = currentPlayerRating.Consistency;
+            double uncertaintyBeforeSummed = currentPlayerRating.Uncertainty * gamesCountBefore;
+
+            double mmrAfter = mmrBefore + player.PlayerMmrDelta;
+            double consistencyAfter = consistencyBefore + player.PlayerConsistencyDelta;
+            double uncertaintyAfter = (uncertaintyBeforeSummed + teamData.UncertaintyDelta) / (gamesCountBefore + 1);
+
+            consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
+            mmrAfter = Math.Max(1, mmrAfter);
+
+            if (uncertaintyAfter != Math.Clamp(uncertaintyAfter, 0, 1)) {
+                throw new InvalidProgramException("ERROR: Uncertainty always has to be between 0 and 1!");
+            }
+
+            ReplayPlayerMmrChanges[player.ReplayPlayer.ReplayPlayerId] = (float)(mmrAfter - mmrBefore);
+            plRatings.Add(new DsRCheckpoint() {
+                Mmr = mmrAfter,
+                Consistency = consistencyAfter,
+                Uncertainty = uncertaintyAfter,
+                Time = gameTime
+            });
+        }
+    }
 
     private static string? GetOverTimeRating(List<DsRCheckpoint> dsRCheckpoints)
     {
@@ -431,6 +466,22 @@ public partial class MmrService
         return sb.ToString();
     }
 
+    private static void SetExpectationsToWin(Dictionary<int, List<DsRCheckpoint>> playerRatings, ReplayProcessData replayProcessData)
+    {
+        replayProcessData.WinnerPlayersExpectationToWin = EloExpectationToWin(replayProcessData.WinnerTeamData.PlayersMeanMmr, replayProcessData.LoserTeamData.PlayersMeanMmr);
+        replayProcessData.WinnerCmdrExpectationToWin = EloExpectationToWin(replayProcessData.WinnerTeamData.CmdrComboMmr, replayProcessData.LoserTeamData.CmdrComboMmr);
+
+        double winnerTotalExpectationToWin = replayProcessData.WinnerPlayersExpectationToWin/* * replayProcessData.WinnerCmdrExpectationToWin*/;
+        replayProcessData.WinnerTeamData.UncertaintyDelta = 1 - winnerTotalExpectationToWin;
+        replayProcessData.LoserTeamData.UncertaintyDelta = 1 - winnerTotalExpectationToWin;
+
+        double uncertaintyWinnerTeam = replayProcessData.WinnerTeamData.Players.Sum(x => playerRatings[GetMmrId(x.ReplayPlayer.Player)].Last().Uncertainty)
+            / replayProcessData.WinnerTeamData.Players.Length;
+        double uncertaintyLoserTeam = replayProcessData.LoserTeamData.Players.Sum(x => playerRatings[GetMmrId(x.ReplayPlayer.Player)].Last().Uncertainty)
+            / replayProcessData.LoserTeamData.Players.Length;
+        replayProcessData.Uncertainty = (uncertaintyWinnerTeam + uncertaintyLoserTeam) / 2;
+    }
+
     private static double EloExpectationToWin(double ratingOne, double ratingTwo)
     {
         return 1.0 / (1.0 + Math.Pow(10.0, (2.0 / clip) * (ratingTwo - ratingOne)));
@@ -457,15 +508,15 @@ public partial class MmrService
         //return ((1 - consistencyImpact) + (consistencyImpact * raw_revConsistency)); //Equal to above
     }
 
-    private static double GetPlayersComboMmr(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, PlayerData[] playerDatas, DateTime gameTime)
+    private static double GetPlayersComboMmr(Dictionary<int, List<DsRCheckpoint>> playerRatings, PlayerData[] playerDatas, DateTime gameTime)
     {
         double teamMmr = 0;
 
         foreach (var playerData in playerDatas)
         {
-            if (!playerRatingsCmdr.ContainsKey(GetMmrId(playerData.ReplayPlayer.Player)))
+            if (!playerRatings.ContainsKey(GetMmrId(playerData.ReplayPlayer.Player)))
             {
-                playerRatingsCmdr[GetMmrId(playerData.ReplayPlayer.Player)] = new List<DsRCheckpoint>() { new() {
+                playerRatings[GetMmrId(playerData.ReplayPlayer.Player)] = new List<DsRCheckpoint>() { new() {
                     Mmr = startMmr,
                     Consistency = 0,
                     Uncertainty = 0.5,
@@ -475,7 +526,7 @@ public partial class MmrService
             }
             else
             {
-                teamMmr += playerRatingsCmdr[GetMmrId(playerData.ReplayPlayer.Player)].Last().Mmr;
+                teamMmr += playerRatings[GetMmrId(playerData.ReplayPlayer.Player)].Last().Mmr;
             }
         }
         return teamMmr / playerDatas.Length;

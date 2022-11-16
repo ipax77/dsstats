@@ -69,8 +69,8 @@ public partial class MmrService
             return;
         }
 
-        SetMmrs(playerRatingsCmdr, replayProcessData.WinnerTeamData, replayProcessData.ReplayGameTime);
-        SetMmrs(playerRatingsCmdr, replayProcessData.LoserTeamData, replayProcessData.ReplayGameTime);
+        SetCmdrMmrs(playerRatingsCmdr, replayProcessData.WinnerTeamData, replayProcessData.ReplayGameTime);
+        SetCmdrMmrs(playerRatingsCmdr, replayProcessData.LoserTeamData, replayProcessData.ReplayGameTime);
 
         SetExpectationsToWin(playerRatingsCmdr, replayProcessData);
 
@@ -111,59 +111,10 @@ public partial class MmrService
         SetCommandersComboMmr(replayProcessData.LoserTeamData);
     }
 
-    private void AddPlayersRankings(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData, DateTime gameTime)
-    {
-        foreach (var player in teamData.Players)
-        {
-            var plRatings = playerRatingsCmdr[GetMmrId(player.ReplayPlayer.Player)];
-            var currentPlayerRating = plRatings.Last();
-            int gamesCountBefore = plRatings.Count - 1;
-
-            double mmrBefore = currentPlayerRating.Mmr;
-            double consistencyBefore = currentPlayerRating.Consistency;
-            double uncertaintyBeforeSummed = currentPlayerRating.Uncertainty * gamesCountBefore;
-
-            double mmrAfter = mmrBefore + player.PlayerMmrDelta;
-            double consistencyAfter = consistencyBefore + player.PlayerConsistencyDelta;
-            double uncertaintyAfter = (uncertaintyBeforeSummed + teamData.UncertaintyDelta) / (gamesCountBefore + 1);
-
-            consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
-            mmrAfter = Math.Max(1, mmrAfter);
-
-            if (uncertaintyAfter != Math.Clamp(uncertaintyAfter, 0, 1)) {
-                throw new InvalidProgramException("ERROR: Uncertainty always has to be between 0 and 1!");
-            }
-
-            ReplayPlayerMmrChanges[player.ReplayPlayer.ReplayPlayerId] = (float)(mmrAfter - mmrBefore);
-            plRatings.Add(new DsRCheckpoint() {
-                Mmr = mmrAfter,
-                Consistency = consistencyAfter,
-                Uncertainty = uncertaintyAfter,
-                Time = gameTime
-            });
-        }
-    }
-
-    private void SetMmrs(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData, DateTime gameTime)
+    private void SetCmdrMmrs(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData, DateTime gameTime)
     {
         teamData.CmdrComboMmr = GetCommandersComboMmr(teamData.Players);
         teamData.PlayersMeanMmr = GetPlayersComboMmr(playerRatingsCmdr, teamData.Players, gameTime);
-    }
-
-    private static void SetExpectationsToWin(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, ReplayProcessData replayProcessData)
-    {
-        replayProcessData.WinnerPlayersExpectationToWin = EloExpectationToWin(replayProcessData.WinnerTeamData.PlayersMeanMmr, replayProcessData.LoserTeamData.PlayersMeanMmr);
-        replayProcessData.WinnerCmdrExpectationToWin = EloExpectationToWin(replayProcessData.WinnerTeamData.CmdrComboMmr, replayProcessData.LoserTeamData.CmdrComboMmr);
-
-        double winnerTotalExpectationToWin = replayProcessData.WinnerPlayersExpectationToWin/* * replayProcessData.WinnerCmdrExpectationToWin*/;
-        replayProcessData.WinnerTeamData.UncertaintyDelta = 1 - winnerTotalExpectationToWin;
-        replayProcessData.LoserTeamData.UncertaintyDelta = 1 - winnerTotalExpectationToWin;
-        
-        double uncertaintyWinnerTeam = replayProcessData.WinnerTeamData.Players.Sum(x => playerRatingsCmdr[GetMmrId(x.ReplayPlayer.Player)].Last().Uncertainty)
-            / replayProcessData.WinnerTeamData.Players.Length;
-        double uncertaintyLoserTeam = replayProcessData.LoserTeamData.Players.Sum(x => playerRatingsCmdr[GetMmrId(x.ReplayPlayer.Player)].Last().Uncertainty)
-            / replayProcessData.LoserTeamData.Players.Length;
-        replayProcessData.Uncertainty = (uncertaintyWinnerTeam + uncertaintyLoserTeam) / 2;
     }
 
     private void CalculateRatingsDeltas(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, ReplayProcessData replayProcessData, TeamData teamData)
@@ -173,7 +124,6 @@ public partial class MmrService
             var plRatings = playerRatingsCmdr[GetMmrId(player.ReplayPlayer.Player)];
             var lastPlRating = plRatings.Last();
             double playerConsistency = lastPlRating.Consistency;
-            double playerUncertainty = lastPlRating.Uncertainty;
             
             double playerMmr = lastPlRating.Mmr;
             if (playerMmr > maxMmrCmdr)
