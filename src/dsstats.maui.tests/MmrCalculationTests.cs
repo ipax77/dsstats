@@ -146,7 +146,7 @@ public class MmrCalculationTests : TestWithSqlite
         }
 
         int countBefore = mmrService.ToonIdRatings.Count;
-        await mmrService.ContinueCalculateWithDictionary(newReplays);
+        await mmrService.ContinueCalculateWithDictionary(newReplays, new());
         int countAfter = mmrService.ToonIdRatings.Count;
 
         // Assert
@@ -199,7 +199,7 @@ public class MmrCalculationTests : TestWithSqlite
             newReplays.Add(replay);
         }
 
-        await mmrService.ContinueCalculateWithDictionary(newReplays);
+        await mmrService.ContinueCalculateWithDictionary(newReplays, new());
 
         newReplays = new();
 
@@ -210,7 +210,7 @@ public class MmrCalculationTests : TestWithSqlite
         }
         int countBefore = mmrService.ToonIdRatings.Count;
 
-        await mmrService.ContinueCalculateWithDictionary(newReplays);
+        await mmrService.ContinueCalculateWithDictionary(newReplays, new());
         int countAfter = mmrService.ToonIdRatings.Count;
 
         // Assert
@@ -266,7 +266,7 @@ public class MmrCalculationTests : TestWithSqlite
             newReplays.Add(replay);
         }
 
-        await mmrService.ContinueCalculateWithDictionary(newReplays);
+        await mmrService.ContinueCalculateWithDictionary(newReplays, new());
 
         var dataAfterContinue = mmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
 
@@ -357,7 +357,7 @@ public class MmrCalculationTests : TestWithSqlite
             newReplays.Add(replay);
         }
 
-        await mmrService.ContinueCalculateWithDictionary(newReplays);
+        await mmrService.ContinueCalculateWithDictionary(newReplays, new());
 
         var dataAfterContinue = mmrService.ToonIdRatings.ToDictionary(k => k.Key, v => v.Value.CmdrRatingStats.Mmr);
 
@@ -447,7 +447,7 @@ public class MmrCalculationTests : TestWithSqlite
             newReplays.Add(replay);
         }
 
-        await mmrService.ContinueCalculateWithDictionary(newReplays);
+        await mmrService.ContinueCalculateWithDictionary(newReplays, new());
 
         playerStats = await mmrService.GetPlayerRating(226401);
         int countAfter = playerStats?.CmdrRatingStats.Games ?? 0;
