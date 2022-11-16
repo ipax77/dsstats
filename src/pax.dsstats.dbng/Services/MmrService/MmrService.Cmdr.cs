@@ -109,6 +109,11 @@ public partial class MmrService
 
         SetCommandersComboMmr(replayProcessData.WinnerTeamData);
         SetCommandersComboMmr(replayProcessData.LoserTeamData);
+
+        if (IsProgressActive)
+        {
+            SetProgress(replayProcessData, false);
+        }
     }
 
     private void SetCmdrMmrs(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData, DateTime gameTime)
@@ -159,11 +164,6 @@ public partial class MmrService
             if (player.PlayerMmrDelta > eloK * teamData.Players.Length)
             {
                 throw new Exception("MmrDelta is bigger than eloK");
-            }
-
-            if (IsProgressActive)
-            {
-                SetCmdrProgress(player);
             }
         }
     }

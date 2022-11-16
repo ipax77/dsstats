@@ -72,7 +72,7 @@ public class MmrContinueTests : TestWithSqlite
         }
 
         int countBefore = mmrService.ToonIdRatings.Count;
-        await mmrService.ContinueCalculateWithDictionary(newReplays);
+        await mmrService.ContinueCalculateWithDictionary(newReplays, new());
 
         Assert.True(mmrService.ToonIdRatings.Count > countBefore);
 
@@ -146,7 +146,7 @@ public class MmrContinueTests : TestWithSqlite
         }
 
         int countBefore = mmrService.ToonIdRatings.Count;
-        await mmrService.ContinueCalculateWithDictionary(newReplays);
+        await mmrService.ContinueCalculateWithDictionary(newReplays, new());
 
         Assert.True(mmrService.ToonIdRatings.Count > countBefore);
 

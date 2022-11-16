@@ -87,6 +87,11 @@ public partial class MmrService
 
         AddPlayersRankings(playerRatingsStd, replayProcessData.WinnerTeamData, replayProcessData.ReplayGameTime);
         AddPlayersRankings(playerRatingsStd, replayProcessData.LoserTeamData, replayProcessData.ReplayGameTime);
+
+        if (IsProgressActive)
+        {
+            SetProgress(replayProcessData, false);
+        }
     }
 
     private void SetMmrsStd(Dictionary<int, List<DsRCheckpoint>> playerRatingsStd, TeamData teamData, DateTime gameTime)
@@ -125,11 +130,6 @@ public partial class MmrService
             if (player.PlayerMmrDelta > eloK)
             {
                 throw new Exception("MmrDelta is bigger than eloK");
-            }
-
-            if (IsProgressActive)
-            {
-                SetStdProgress(player);
             }
         }
     }
