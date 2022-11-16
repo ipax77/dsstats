@@ -196,6 +196,8 @@ public partial class MmrService
             if (ToonIdRatings.ContainsKey(toonId))
             {
                 var toonIdRating = ToonIdRatings[toonId];
+                toonIdRating.Main = playerInfo.Main;
+                toonIdRating.MainPercentage = playerInfo.MainPercentage;
                 toonIdRating.CmdrRatingStats.Mmr = mmrInfoCmdr?.Mmr ?? toonIdRating.CmdrRatingStats.Mmr;
                 toonIdRating.CmdrRatingStats.Games = playerInfo.GamesCmdr;
                 toonIdRating.CmdrRatingStats.Wins = playerInfo.WinsCmdr;
@@ -219,6 +221,8 @@ public partial class MmrService
                     PlayerId = playerId,
                     Name = name,
                     ToonId = toonId,
+                    Main = playerInfo.Main,
+                    MainPercentage = playerInfo.MainPercentage,
 
                     CmdrRatingStats = new()
                     {
