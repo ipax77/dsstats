@@ -82,15 +82,7 @@ public class ReplayRepository : IReplayRepository
     public async Task<int> GetReplaysCount(ReplaysRequest request, CancellationToken token = default)
     {
         var replays = GetRequestReplays(request);
-
-        if (token.IsCancellationRequested)
-        {
-            return 0;
-        }
-        else
-        {
-            return await replays.CountAsync(token);
-        }
+        return await replays.CountAsync(token);
     }
 
     public async Task<ICollection<ReplayListDto>> GetReplays(ReplaysRequest request, CancellationToken token = default)
@@ -103,15 +95,13 @@ public class ReplayRepository : IReplayRepository
         {
             return new List<ReplayListDto>();
         }
-        else
-        {
-            return await replays
-                .Skip(request.Skip)
-                .Take(request.Take)
-                .AsNoTracking()
-                .ProjectTo<ReplayListDto>(mapper.ConfigurationProvider)
-                .ToListAsync(token);
-        }
+
+        return await replays
+            .Skip(request.Skip)
+            .Take(request.Take)
+            .AsNoTracking()
+            .ProjectTo<ReplayListDto>(mapper.ConfigurationProvider)
+            .ToListAsync(token);
     }
 
     private IQueryable<Replay> SortReplays(ReplaysRequest request, IQueryable<Replay> replays)
@@ -169,26 +159,6 @@ public class ReplayRepository : IReplayRepository
 
     private IQueryable<Replay> GetRequestReplays(ReplaysRequest request)
     {
-
-        //#pragma warning disable CS8602
-        //        var replays = (String.IsNullOrEmpty(request.Tournament), String.IsNullOrEmpty(request.SearchPlayers)) switch
-        //        {
-        //            (false, false) => context.Replays
-        //                                .Include(i => i.ReplayEvent)
-        //                                    .ThenInclude(i => i.Event)
-        //                                .Include(i => i.ReplayPlayers)
-        //                                .AsNoTracking(),
-        //            (false, true) => context.Replays
-        //                                .Include(i => i.ReplayEvent)
-        //                                    .ThenInclude(i => i.Event)
-        //                                .AsNoTracking(),
-        //            (true, true) => context.Replays
-        //                                .AsNoTracking(),
-        //            _ => context.Replays
-        //                .AsNoTracking()
-        //        };
-        //#pragma warning restore CS8602
-
         var replays = context.Replays.AsNoTracking();
 
         if (request.DefaultFilter)
@@ -213,11 +183,11 @@ public class ReplayRepository : IReplayRepository
             replays = replays.Where(x => x.Playercount == request.PlayerCount);
         }
 
-        if (!String.IsNullOrEmpty(request.Tournament))
-        {
-            replays = replays.Where(x => x.ReplayEvent != null
-                && x.ReplayEvent.Event.Name.Equals(request.Tournament));
-        }
+        //if (!String.IsNullOrEmpty(request.Tournament))
+        //{
+        //    replays = replays.Where(x => x.ReplayEvent != null
+        //        && x.ReplayEvent.Event.Name.Equals(request.Tournament));
+        //}
 
         if (request.GameModes.Any())
         {

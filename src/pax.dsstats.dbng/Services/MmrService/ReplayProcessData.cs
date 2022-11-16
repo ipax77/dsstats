@@ -19,6 +19,8 @@ internal record ReplayProcessData
     public double WinnerPlayersExpectationToWin { get; set; }
     public double WinnerCmdrExpectationToWin { get; set; }
 
+    public double Uncertainty { get; set; }
+
     public int Duration { get; set; }
     public DateTime ReplayGameTime { get; init; }
 }
@@ -34,6 +36,8 @@ internal record TeamData
     
     public double PlayersMeanMmr { get; set; }
     public double CmdrComboMmr { get; set; }
+
+    public double UncertaintyDelta { get; set; }
 }
 
 internal record PlayerData
