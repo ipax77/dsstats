@@ -184,9 +184,9 @@ public static class Data
     {
         return regionId switch
         {
-            1 => "Am",
-            2 => "Eu",
-            3 => "As",
+            1 => "NA",
+            2 => "EU",
+            3 => "AS",
             _ => ""
         };
     }
