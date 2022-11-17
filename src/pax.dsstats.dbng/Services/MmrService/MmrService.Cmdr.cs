@@ -26,10 +26,9 @@ public partial class MmrService
             ProcessCmdrReplay(playerRatingsCmdr, replay);
         }
 
-        var orderedByGames = playerRatingsCmdr.OrderByDescending(x => x.Value.Count);
-
         var weightedSum = playerRatingsCmdr.Sum(x => ((x.Value.Count - 1) * x.Value.Last().Uncertainty));
         var weightedUncertanity = weightedSum / playerRatingsCmdr.Sum(x => (x.Value.Count - 1));
+        var accuracy = 1 - weightedUncertanity;
 
         return playerRatingsCmdr;
     }
