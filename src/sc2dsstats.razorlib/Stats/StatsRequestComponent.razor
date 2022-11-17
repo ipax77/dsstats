@@ -53,7 +53,8 @@
                 <label class="form-label">
                     Commander
                     <InputSelect class="form-select" @bind-Value="StatsRequest.Interest">
-                        @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                        <option value="@Commander.None">All</option>
+                        @foreach (Commander cmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
                         {
                             <option value="@cmdr">@cmdr</option>
                         }
