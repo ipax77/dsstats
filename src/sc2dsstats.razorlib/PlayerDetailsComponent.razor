@@ -3,6 +3,7 @@
 @using pax.dsstats.shared
 @using pax.BlazorChartJs
 @using sc2dsstats.razorlib.Services
+@inject NavigationManager NavigationManager
 @inject IDataService dataService
 
 <div>
@@ -24,6 +25,9 @@
             {
                 <span class="badge bg-primary ms-3" style="font-size: 1.2rem;"><span class="small">Std Rating</span><br/><span class="text-warning">@PlayerRatingDto.StdRatingStats.Mmr.ToString("N2", CultureInfo.InvariantCulture)</span></span>
             }
+        </div>
+        <div class="align-self-center ms-3">
+            <button type="button" class="btn btn-outline-light" @onclick="ShowReplays">Replays</button>
         </div>
     </div>
     <div class="row">
@@ -131,6 +135,15 @@
     {
 
         OnCloseRequested.InvokeAsync();
+    }
+
+    private void ShowReplays()
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("replays",
+                new Dictionary<string, object?>() { { "Players", PlayerRatingDto.Name } }
+            )
+        );
     }
 
     private void SetupCharts()

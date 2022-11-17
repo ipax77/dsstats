@@ -6,9 +6,7 @@
 
 <PageTitle>Replays</PageTitle>
 
-<ReplaysComponent
-    replaysRequest="replaysRequest"
-    OnRequestChanged="SetUrl">
+<ReplaysComponent replaysRequest="replaysRequest">
 </ReplaysComponent>
 
 @code {
@@ -30,6 +28,10 @@
 
     [Parameter]
     [SupplyParameterFromQuery]
+    public string? Players { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
     public string? ReplayHash { get; set; }
 
     ReplaysRequest replaysRequest = new();
@@ -48,58 +50,8 @@
                 EndTime = EndTime ?? DateTime.Today,
                 Tournament = Tournament,
                 SearchString = SearchString,
+                SearchPlayers = Players,
                 ReplayHash = ReplayHash
             };
-    }
-
-    private void SetUrl(ReplaysRequest request)
-    {
-        Dictionary<string, object?> queryDic = new();
-
-        // queryDic.Add("StartTime", request.StartTime.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture));
-        queryDic.Add("StartTime", request.StartTime.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
-
-        if (request.EndTime != DateTime.Today)
-        {
-            // queryDic.Add("EndTime", ((DateTime)request.EndTime).ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture));
-            queryDic.Add("EndTime", ((DateTime)request.EndTime).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
-        }
-        else
-        {
-            queryDic.Add("EndTime", null);
-        }
-
-        if (!String.IsNullOrEmpty(request.Tournament))
-        {
-            queryDic.Add("Tournament", request.Tournament);
-        }
-        else
-        {
-            queryDic.Add("Tournament", null);
-        }
-
-        if (!String.IsNullOrEmpty(request.SearchString))
-        {
-            queryDic.Add("SearchString", request.SearchString);
-        } 
-        else
-        {
-            queryDic.Add("SearchString", null);
-        }
-
-        if (!String.IsNullOrEmpty(request.ReplayHash))
-        {
-            queryDic.Add("ReplayHash", request.ReplayHash);
-        }
-        else
-        {
-            queryDic.Add("ReplayHash", null);
-        }
-
-        NavigationManager.NavigateTo(
-            NavigationManager.GetUriWithQueryParameters(
-                new Dictionary<string, object?>(queryDic)
-            )
-        );
     }
 }
