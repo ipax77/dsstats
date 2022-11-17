@@ -94,6 +94,17 @@ public partial class TopRow : ComponentBase, IDisposable
         InvokeAsync(() => StateHasChanged());
     }
 
+    private void StartDecoding()
+    {
+        if (decodeService.IsRunning)
+        {
+            navigationManager.NavigateTo("/");
+            return;
+        }
+        ToastService.ShowWarning("Start decoding");
+        _ = decodeService.DecodeParallel().ConfigureAwait(false);
+    }
+
     public async void CheckForUpdates(bool init = false)
     {
         if (init)

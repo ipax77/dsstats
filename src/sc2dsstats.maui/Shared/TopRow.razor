@@ -1,10 +1,14 @@
 ﻿@using System.Globalization;
 @using sc2dsstats.maui.Services;
 <div class="top-row bg-secondary px-4">
-    <span class="pointer badge bg-info px-1 me-1" style="height: 80% !important; padding: 1rem 0; font-size: 1em;" @onclick="@(() => { navigationManager.NavigateTo("replays"); })">
+    <span class="pointer badge bg-info px-1 me-1"
+        style="height: 80% !important; padding: 1rem 0; font-size: 1em;"
+        @onclick="@(() => { navigationManager.NavigateTo("replays"); })">
         Replays: @decodeService.DbReplays
     </span>
-    <span class="pointer badge @(decodeService.NewReplays == 0 ? "bg-success" : "bg-warning") px-1 me-1" style="height: 80% !important; padding: 1rem 0; font-size: 1em;">
+    <span class="pointer badge @(decodeService.NewReplays == 0 ? "bg-success" : "bg-warning") px-1 me-1"
+        style="height: 80% !important; padding: 1rem 0; font-size: 1em;"
+        @onclick="StartDecoding">
         New Replays: @decodeService.NewReplays
     </span>
 
