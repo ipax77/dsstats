@@ -147,12 +147,14 @@ public partial class MmrService
 
             int toonId = 0;
             string name = "";
+            int regionId = 0;
 
             if (playerIdToonIdMap.ContainsKey(playerId))
             {
                 var playerMap = playerIdToonIdMap[playerId];
-                toonId = playerMap.Key;
-                name = playerMap.Value;
+                toonId = playerMap.ToonId;
+                name = playerMap.Name;
+                regionId = playerMap.RegionId;
             }
 
             PlayerInfoDto playerInfo;
@@ -236,6 +238,7 @@ public partial class MmrService
                     PlayerId = playerId,
                     Name = name,
                     ToonId = toonId,
+                    RegionId= regionId,
                     Main = playerInfo.Main,
                     MainPercentage = playerInfo.MainPercentage,
 

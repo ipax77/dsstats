@@ -179,4 +179,15 @@ public static class Data
                 new() { Name = "Feralan", ToonId = 1488340 }
             };
     }
+
+    public static string GetRegionString(int regionId)
+    {
+        return regionId switch
+        {
+            1 => "Am",
+            2 => "Eu",
+            3 => "As",
+            _ => ""
+        };
+    }
 }
