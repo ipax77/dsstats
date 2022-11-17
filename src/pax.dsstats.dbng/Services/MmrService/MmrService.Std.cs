@@ -46,14 +46,14 @@ public partial class MmrService
 
         if (replay.ReplayPlayers.Any(a => (int)a.Race > 3))
         {
-            logger.LogInformation($"skipping wrong cmdr commanders");
+            logger.LogDebug($"skipping wrong cmdr commanders");
             return;
         }
 
         ReplayProcessData replayProcessData = new(replay);
         if (replayProcessData.WinnerTeamData.Players.Length != 3 || replayProcessData.LoserTeamData.Players.Length != 3)
         {
-            logger.LogInformation($"skipping wrong teamcounts");
+            logger.LogDebug($"skipping wrong teamcounts");
             return;
         }
 

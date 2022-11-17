@@ -38,6 +38,7 @@ public record PlayerRatingDto
     public int PlayerId { get; init; }
     public string Name { get; init; } = null!;
     public int ToonId { get; init; }
+    public int RegionId { get; init; }
     public Commander Main { get; set; }
     public float MainPercentage { get; set; }
     public RatingStatsDto CmdrRatingStats { get; init; } = new();

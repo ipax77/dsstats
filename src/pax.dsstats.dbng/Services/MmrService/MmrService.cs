@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -97,12 +98,14 @@ public partial class MmrService
 
             int toonId = 0;
             string name = "";
+            int regionId = 0;
 
             if (playerIdToonIdMap.ContainsKey(playerId))
             {
                 var playerMap = playerIdToonIdMap[playerId];
-                toonId = playerMap.Key;
-                name = playerMap.Value;
+                toonId = playerMap.ToonId;
+                name = playerMap.Name;
+                regionId = playerMap.RegionId;
             }
 
             PlayerInfoDto playerInfo;
@@ -132,6 +135,7 @@ public partial class MmrService
                 PlayerId = playerId,
                 Name = name,
                 ToonId = toonId,
+                RegionId = regionId,
                 Main = playerInfo.Main,
                 MainPercentage = playerInfo.MainPercentage,
 
@@ -192,15 +196,16 @@ public partial class MmrService
             .ToDictionary(k => k.ToonId, v => new KeyValuePair<int, string>(v.PlayerId, v.Name));
     }
 
-    private async Task<Dictionary<int, KeyValuePair<int, string>>> GetPlayerIdToonIdMap()
+    private async Task<Dictionary<int, PlayerMapDto>> GetPlayerIdToonIdMap()
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         return (await context.Players
-            .Select(s => new { s.PlayerId, s.ToonId, s.Name })
+            .AsNoTracking()
+            .ProjectTo<PlayerMapDto>(mapper.ConfigurationProvider)
             .ToListAsync())
-            .ToDictionary(k => k.PlayerId, v => new KeyValuePair<int, string>(v.ToonId, v.Name));
+            .ToDictionary(k => k.PlayerId, v => v);
     }
 
     private async Task ResetGlobals()

@@ -365,7 +365,8 @@ public class ReplayRepository : IReplayRepository
                 dbPlayer = new()
                 {
                     Name = player.Player.Name,
-                    ToonId = player.Player.ToonId
+                    ToonId = player.Player.ToonId,
+                    RegionId = player.Player.RegionId,
                 };
                 context.Players.Add(dbPlayer);
                 try
@@ -377,7 +378,12 @@ public class ReplayRepository : IReplayRepository
                     logger.LogError($"failed saving replay: {ex.Message}");
                     throw;
                 }
+            } else
+            {
+                dbPlayer.RegionId = player.Player.RegionId;
+                dbPlayer.Name = player.Player.Name;
             }
+
             player.Player = dbPlayer;
             player.Name = dbPlayer.Name;
 

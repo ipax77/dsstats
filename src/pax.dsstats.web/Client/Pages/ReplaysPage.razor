@@ -29,6 +29,10 @@
 
     [Parameter]
     [SupplyParameterFromQuery]
+    public string? Players { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
     public string? ReplayHash { get; set; }
 
     ReplaysRequest replaysRequest = new();
@@ -47,6 +51,7 @@
                 EndTime = EndTime ?? DateTime.Today,
                 Tournament = Tournament,
                 SearchString = SearchString,
+                SearchPlayers = Players,
                 ReplayHash = ReplayHash
             };
     }
@@ -84,6 +89,15 @@
         else
         {
             queryDic.Add("SearchString", null);
+        }
+
+        if (!String.IsNullOrEmpty(request.SearchPlayers))
+        {
+            queryDic.Add("Players", request.SearchPlayers);
+        }
+        else
+        {
+            queryDic.Add("Players", null);
         }
 
         if (!String.IsNullOrEmpty(request.ReplayHash))
