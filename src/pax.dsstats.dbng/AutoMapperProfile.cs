@@ -52,6 +52,7 @@ namespace pax.dsstats.dbng
             CreateMap<Player, PlayerDsRDto>(MemberList.Destination);
 
             //CreateMap<Player, PlayerRatingDto>(MemberList.Destination);
+            CreateMap<Player, PlayerMapDto>(MemberList.Destination);
 
             CreateMap<UploaderDto, Uploader>(MemberList.Source);
             CreateMap<BattleNetInfoDto, BattleNetInfo>(MemberList.Source)
