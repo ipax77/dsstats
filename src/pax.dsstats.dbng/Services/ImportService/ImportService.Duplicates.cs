@@ -272,6 +272,20 @@ public partial class ImportService
             replayPlayer.LastSpawnHash = replayPlayer.Spawns
                 .FirstOrDefault(f => f.Breakpoint == shared.Breakpoint.All)?
                 .GenHash(replay);
+
+            foreach (var spawnUnit in replayPlayer.Spawns.SelectMany(s => s.Units))
+            {
+                if (spawnUnit.Poss.Length > 3999)
+                {
+                    spawnUnit.Poss = spawnUnit.Poss[..3999];
+                    var poss = spawnUnit.Poss.Split(',', StringSplitOptions.RemoveEmptyEntries).SkipLast(1);
+                    if (poss.Count() % 2 != 0)
+                    {
+                        poss = poss.SkipLast(1);
+                    }
+                    spawnUnit.Poss = string.Join(',', poss);
+                }
+            }
         }
     }
 }

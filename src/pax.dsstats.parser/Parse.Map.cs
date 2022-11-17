@@ -55,7 +55,7 @@ public static partial class Parse
 
             dtos.Add(new()
             {
-                Player = new() { Name = player.Name, ToonId = player.ToonId },
+                Player = new() { Name = player.Name, ToonId = player.ToonId, RegionId = player.RegionId },
                 Name = player.Name,
                 Clan = player.Clan,
                 GamePos = player.GamePos,
