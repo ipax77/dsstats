@@ -476,5 +476,3 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
-src/pax.dsstats.web/Server/start.ps1
-src/pax.dsstats.web/startServer.bat
