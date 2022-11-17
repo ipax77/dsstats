@@ -36,7 +36,6 @@ public partial class MmrService
         handler?.Invoke(this, e);
     }
 
-    // private static readonly double eloK = Math.Pow(2, 6); // default 32
     private static readonly double eloK = 64; // default 32
     private static readonly double eloK_mult = 12.5;
     private static readonly double clip = eloK * eloK_mult; //shouldn't be bigger than startMmr!
@@ -93,10 +92,6 @@ public partial class MmrService
 
         var playerIdToonIdMap = await GetPlayerIdToonIdMap();
 
-        if (playerRatingsCmdr.Count != playerRatingsStd.Count && playerRatingsCmdr.Count > 0 && playerRatingsStd.Count > 0)
-        {
-        }
-
         foreach (var playerRatingEnt in playerRatingsCmdr.Concat(playerRatingsStd))
         {
             int playerId = playerRatingEnt.Key;
@@ -127,36 +122,9 @@ public partial class MmrService
                 playerInfos[toonId] = playerInfo;
             }
 
-            MmrInfo? mmrInfoCmdr = null;
-            if (playerId > 0 && playerRatingsCmdr.ContainsKey(playerId))
-            {
-                var plRat = playerRatingsCmdr[playerId];
-                var lastPlRat = plRat.LastOrDefault();
-                mmrInfoCmdr = new()
-                {
-                    Mmr = lastPlRat?.Mmr ?? startMmr,
-                    MmrGames = lastPlRat?.Index ?? 0,
-                    Consistency = lastPlRat?.Consistency ?? 0,
-                    Uncertainty = lastPlRat?.Uncertainty ?? 0.5
-                };
-                ToonIdCmdrRatingOverTime[toonId] = GetOverTimeRating(plRat) ?? "";
-            }
-
-            MmrInfo? mmrInfoStd = null;
-            if (playerId > 0 && playerRatingsStd.ContainsKey(playerId))
-            {
-                var plRat = playerRatingsStd[playerId];
-                var lastPlRat = plRat.LastOrDefault();
-                mmrInfoStd = new()
-                {
-                    Mmr = lastPlRat?.Mmr ?? startMmr,
-                    MmrGames = lastPlRat?.Index ?? 0,
-                    Consistency = lastPlRat?.Consistency ?? 0,
-                    Uncertainty = lastPlRat?.Uncertainty ?? 0.5
-                };
-                ToonIdStdRatingOverTime[toonId] = GetOverTimeRating(plRat) ?? "";
-            }
-
+            MmrInfo? mmrInfoCmdr = GetMmrInfo(ToonIdCmdrRatingOverTime, playerRatingsCmdr, toonId, playerId);
+            MmrInfo? mmrInfoStd = GetMmrInfo(ToonIdStdRatingOverTime, playerRatingsStd, toonId, playerId);
+            
             if (mmrInfoCmdr == null && mmrInfoStd == null)
             {
                 continue;
@@ -195,6 +163,26 @@ public partial class MmrService
                 }
             };
         }
+    }
+
+    private static MmrInfo? GetMmrInfo(Dictionary<int, string> toonIdRatingOverTime, Dictionary<int, List<DsRCheckpoint>> playerRatings, int toonId, int playerId)
+    {
+        MmrInfo? mmrInfo = null;
+
+        if (playerId > 0 && playerRatings.ContainsKey(playerId)) {
+            var plRat = playerRatings[playerId];
+            var lastPlRat = plRat.LastOrDefault();
+
+            mmrInfo = new() {
+                Mmr = lastPlRat?.Mmr ?? startMmr,
+                MmrGames = lastPlRat?.Index ?? 0,
+                Consistency = lastPlRat?.Consistency ?? 0,
+                Uncertainty = lastPlRat?.Uncertainty ?? 0.5
+            };
+
+            toonIdRatingOverTime[toonId] = GetOverTimeRating(plRat) ?? "";
+        }
+        return mmrInfo;
     }
 
     private async Task<Dictionary<int, KeyValuePair<int, string>>> GetToonIdPlayerIdMap()
