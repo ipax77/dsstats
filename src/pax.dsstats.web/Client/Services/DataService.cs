@@ -282,6 +282,28 @@ public class DataService : IDataService
         return Data.GetDefaultRequestNames();
     }
 
+    public async Task<CmdrResult> GetCmdrInfo(CmdrRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var result = await httpClient.PostAsJsonAsync($"{statsController}GetCmdrInfo", request);
+            if (result.IsSuccessStatusCode)
+            {
+                var cmdrResult = await result.Content.ReadFromJsonAsync<CmdrResult>();
+                if (cmdrResult != null)
+                {
+                    return cmdrResult;
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting cmdrInfo: {ex.Message}");
+        }
+        return new();
+    }
+
     public async Task<ICollection<string>> GetReplayPaths()
     {
         return await Task.FromResult(new List<string>());

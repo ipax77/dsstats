@@ -18,4 +18,5 @@ public interface IDataService
     Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId);
     Task<PlayerRatingDto?> GetPlayerRating(int toonId);
     Task<List<RequestNames>> GetTopPlayers(bool std);
+    Task<CmdrResult> GetCmdrInfo(CmdrRequest request, CancellationToken token = default);
 }

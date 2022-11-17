@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
+using pax.dsstats.shared;
 using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Services;
 using sc2dsstats.db;
@@ -33,8 +34,8 @@ builder.Services.AddDbContext<ReplayContext>(options =>
         p.MigrationsAssembly("MysqlMigrations");
         p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
     })
-    //.EnableDetailedErrors()
-    //.EnableSensitiveDataLogging()
+    .EnableDetailedErrors()
+    .EnableSensitiveDataLogging()
     ;
 });
 
@@ -64,6 +65,7 @@ builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
 builder.Services.AddTransient<IStatsRepository, StatsRepository>();
 builder.Services.AddTransient<BuildService>();
+builder.Services.AddTransient<CmdrsService>();
 
 builder.Services.AddHostedService<CacheBackgroundService>();
 // builder.Services.AddHostedService<RatingsBackgroundService>();
@@ -93,12 +95,13 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-    mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
-    mmrService.ReCalculateWithDictionary().GetAwaiter().GetResult();
+    //var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+    //mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
+    //mmrService.ReCalculateWithDictionary().GetAwaiter().GetResult();
 
-    //var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
-    //buildService.SeedBuildsCache().GetAwaiter().GetResult();
+    var cmdrsService = scope.ServiceProvider.GetRequiredService<CmdrsService>();
+    var cmdrInfo = cmdrsService.GetCmdrInfo(Commander.Kerrigan).GetAwaiter().GetResult();
+    Console.WriteLine(cmdrInfo);
 }
 
 // Configure the HTTP request pipeline.

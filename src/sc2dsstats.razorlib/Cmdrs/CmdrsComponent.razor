@@ -1,0 +1,48 @@
+﻿@using pax.dsstats.shared;
+@inject IDataService dataService
+@implements IDisposable
+
+@if (cmdrResult == null)
+{
+    <div>
+        <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div>
+
+    </div>
+}
+
+
+@code {
+    [Parameter, EditorRequired]
+    public CmdrRequest CmdrRequest { get; set; } = default!;
+
+    private CmdrResult? cmdrResult;
+    private CancellationTokenSource cts = new();
+    private bool isLoading;
+
+
+    private async Task LoadData()
+    {
+        if (isLoading)
+        {
+            return;
+        }
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        cmdrResult = await dataService.GetCmdrInfo(CmdrRequest);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}
