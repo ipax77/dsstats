@@ -1,0 +1,13 @@
+﻿@page "/commander"
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Cmdrs
+
+<CmdrsComponent CmdrRequest="cmdrRequest"></CmdrsComponent>
+
+@code {
+    CmdrRequest cmdrRequest = new()
+    {
+        TimeSpan = "This Year",
+        Cmdr = Commander.Abathur
+    };
+}

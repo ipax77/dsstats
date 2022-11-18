@@ -37,6 +37,16 @@ public partial class CmdrsService
     {
         (var startTime, var endTime) = Data.TimeperiodSelected(cmdrRequest.TimeSpan);
 
+        List<GameMode> gameModes;
+        if ((int)cmdrRequest.Cmdr > 3)
+        {
+            gameModes = new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic };
+        }
+        else
+        {
+            gameModes = new List<GameMode>() { GameMode.Standard };
+        }
+
         if (token.IsCancellationRequested)
         {
             throw new OperationCanceledException();
@@ -46,9 +56,11 @@ public partial class CmdrsService
         {
             StatsMode = StatsMode.Winrate,
             Interest = cmdrRequest.Cmdr,
+            TimePeriod = cmdrRequest.TimeSpan,
             StartTime = startTime,
             EndTime = endTime,
             DefaultFilter = true,
+            GameModes = gameModes,
             Uploaders = cmdrRequest.Uploaders
         });
 
@@ -61,9 +73,11 @@ public partial class CmdrsService
         {
             StatsMode = StatsMode.Count,
             Interest = Commander.None,
+            TimePeriod = cmdrRequest.TimeSpan,
             StartTime = startTime,
             EndTime = endTime,
             DefaultFilter = true,
+            GameModes = gameModes,
             Uploaders = cmdrRequest.Uploaders
         });
 
@@ -76,9 +90,11 @@ public partial class CmdrsService
         {
             StatsMode = StatsMode.Duration,
             Interest = cmdrRequest.Cmdr,
+            TimePeriod = cmdrRequest.TimeSpan,
             StartTime = startTime,
             EndTime = endTime,
             DefaultFilter = true,
+            GameModes = gameModes,
             Uploaders = cmdrRequest.Uploaders
         });
 
@@ -101,9 +117,11 @@ public partial class CmdrsService
         {
             StatsMode = StatsMode.Synergy,
             Interest = cmdrRequest.Cmdr,
+            TimePeriod = cmdrRequest.TimeSpan,
             StartTime = startTime,
             EndTime = endTime,
             DefaultFilter = true,
+            GameModes = gameModes,
             Uploaders = cmdrRequest.Uploaders
         });
 
@@ -112,7 +130,9 @@ public partial class CmdrsService
             throw new OperationCanceledException();
         }
 
-        int countSum = count.Items.FirstOrDefault(f => f.Label == cmdrRequest.Cmdr.ToString())?.Matchups ?? 0;
+        int countSum = count.Items.Sum(s => s.Matchups);
+        int countCmdr = count.Items.FirstOrDefault(f => f.Label == cmdrRequest.Cmdr.ToString())?.Matchups ?? 0;
+        float countPer = countSum == 0 ? 0 : MathF.Round(countCmdr * 100.0f / countSum, 2);
         var bestDur = duration.Items.OrderByDescending(o => o.Winrate).FirstOrDefault();
         var bestSynergy = synergy.Items.OrderByDescending(o => o.Winrate).FirstOrDefault();
         var worstSynergy = synergy.Items.OrderByDescending(o => o.Winrate).LastOrDefault();
@@ -122,13 +142,13 @@ public partial class CmdrsService
             Cmdr = cmdrRequest.Cmdr,
             Played = new()
             {
-                Matchups = countSum,
-                Per = countSum == 0 ? 0 : MathF.Round(count.Items.Sum(s => s.Matchups) * 100.0f / countSum, 2)
+                Matchups = countCmdr,
+                Per = countPer
             },
             Winrate = MathF.Round(winrate.Items.Sum(s => s.Wins) * 100.0f / winrate.Items.Sum(s => s.Matchups), 2),
             AvgDuration = winrate.AvgDuration,
             BestMatchup = winrate.Items.OrderBy(o => o.Winrate).LastOrDefault(),
-            WorstMatchup = winrate.Items.OrderBy(o => o.Winrate).LastOrDefault(),
+            WorstMatchup = winrate.Items.OrderBy(o => o.Winrate).FirstOrDefault(),
             BestDuration = new CmdrDuration()
             {
                 Dur = bestDur?.Label ?? "",
@@ -178,7 +198,7 @@ public partial class CmdrsService
         var bestPlayersQuery = from rp in replayPlayersQuery
                                group new { rp, rp.Player } by rp.Player.ToonId into g
                                where g.Count() > 15
-                               //orderby g.Count(c => c.ReplayPlayers.Where(x => x.PlayerResult == PlayerResult.Win) / g.Count() descending
+                               orderby g.Count(c => c.rp.PlayerResult == PlayerResult.Win) / g.Count() descending
                                select new CmdrTopPlayer
                                {
                                    ToonId = g.Key,

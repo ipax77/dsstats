@@ -95,13 +95,9 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    //var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-    //mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
-    //mmrService.ReCalculateWithDictionary().GetAwaiter().GetResult();
-
-    var cmdrsService = scope.ServiceProvider.GetRequiredService<CmdrsService>();
-    var cmdrInfo = cmdrsService.GetCmdrInfo(Commander.Kerrigan).GetAwaiter().GetResult();
-    Console.WriteLine(cmdrInfo);
+    var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+    mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
+    mmrService.ReCalculateWithDictionary().GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.

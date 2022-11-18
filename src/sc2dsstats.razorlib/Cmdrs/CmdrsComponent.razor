@@ -1,20 +1,161 @@
-﻿@using pax.dsstats.shared;
+﻿@using Humanizer;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
 @inject IDataService dataService
 @implements IDisposable
 
+<div>
+    <CascadingValue Value="CmdrRequest">
+        <CmdrsRequestComponent IsMaui="IsMaui" OnRequestChanged="LoadData"></CmdrsRequestComponent>
+    </CascadingValue>
+</div>
 @if (cmdrResult == null)
 {
-    <div>
-        <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
-            <span class="visually-hidden">Loading...</span>
+        <div>
+            <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
         </div>
-    </div>
 }
 else
 {
-    <div>
+        <div>
+            <div class="d-flex bg-secondary p-2">
+                @if (isLoading)
+                {
+                    <div class="align-self-center me-2">
+                        <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                } else
+                {
+                    <div class="align-self-center me-4">
+                    </div>                
+                }
+                <div class="align-self-center me-2 border p-1">
+                    <img src="@HelperService.GetImageSrc(cmdrResult.Cmdr)" alt="@cmdrResult.Cmdr" width="45" height="45" />
+                </div>
+                <div class="align-self-center">
+                    <h3 class="text-warning fw-bold">@cmdrResult.Cmdr Details</h3>
+                </div>
+                <div class="align-self-center">
+                    <span class="badge bg-primary ms-3" style="font-size: 1.2rem;"><span class="small">∅ Winrate</span><br/><span class="text-warning">@cmdrResult.Winrate</span></span>
+                </div>
+                <div class="align-self-center">
+                    <span class="badge bg-primary ms-3" style="font-size: 1.2rem;"><span class="small">Played</span><br/><span class="text-warning">@cmdrResult.Played.Per % (@cmdrResult.Played.Matchups.ToMetric())</span></span>
+                </div>
+                <div class="align-self-center">
+                    <span class="badge bg-primary ms-3" style="font-size: 1.2rem;"><span class="small">∅ Duration</span><br/><span class="text-warning">@TimeSpan.FromSeconds(cmdrResult.AvgDuration).Humanize()</span></span>
+                </div>
+            </div>
 
-    </div>
+            <div class="row">
+            @if (cmdrResult.BestMatchup != null)
+            {
+                        <div class="col-auto card mt-2 me-2">
+                            <div class="card-title">
+                                Best Matchup vs @cmdrResult.BestMatchup.Cmdr
+                                <img src="@HelperService.GetImageSrc(cmdrResult.BestMatchup.Cmdr)" alt="@cmdrResult.BestMatchup.Cmdr" width="35" height="35" />
+                            </div>
+                            <div class="card-body">
+                                <span>Winrate @Math.Round(cmdrResult.BestMatchup.Winrate, 2) %</span>
+                                <span>Matchups @cmdrResult.BestMatchup.Matchups.ToMetric()</span>
+                            </div>
+                            <div class="card-footer">
+                                Card footer
+                            </div>
+                        </div>
+            }
+            @if (cmdrResult.WorstMatchup != null)
+            {
+                        <div class="col-auto card mt-2 me-2">
+                            <div class="card-title">
+                                Worst Matchup vs @cmdrResult.WorstMatchup.Cmdr
+                                <img src="@HelperService.GetImageSrc(cmdrResult.WorstMatchup.Cmdr)" alt="@cmdrResult.WorstMatchup.Cmdr" width="35" height="35" />
+                            </div>
+                            <div class="card-body">
+                                <span>Winrate @Math.Round(cmdrResult.WorstMatchup.Winrate, 2) %</span>
+                                <span>Matchups @cmdrResult.WorstMatchup.Matchups.ToMetric()</span>
+                            </div>
+                            <div class="card-footer">
+                                Card footer
+                            </div>
+                        </div>
+            }
+            @if (cmdrResult.BestSynergy != null)
+            {
+                        <div class="col-auto card mt-2 me-2">
+                            <div class="card-title">
+                                Best Synergy with @cmdrResult.BestSynergy.Cmdr
+                                <img src="@HelperService.GetImageSrc(cmdrResult.BestSynergy.Cmdr)" alt="@cmdrResult.BestSynergy.Cmdr" width="35" height="35" />
+                            </div>
+                            <div class="card-body">
+                                <span>Winrate @cmdrResult.BestSynergy.Wr %</span>
+                            </div>
+                            <div class="card-footer">
+                                Card footer
+                            </div>
+                        </div>
+            }
+            @if (cmdrResult.WorstSynergy != null)
+            {
+                        <div class="col-auto card mt-2 me-2">
+                            <div class="card-title">
+                                Worst Synergy with @cmdrResult.WorstSynergy.Cmdr
+                                <img src="@HelperService.GetImageSrc(cmdrResult.WorstSynergy.Cmdr)" alt="@cmdrResult.WorstSynergy.Cmdr" width="35" height="35" />
+                            </div>
+                            <div class="card-body">
+                                <span>Winrate @cmdrResult.WorstSynergy.Wr %</span>
+                            </div>
+                            <div class="card-footer">
+                                Card footer
+                            </div>
+                        </div>
+            }
+            @if (!String.IsNullOrEmpty(cmdrResult.BestDuration.Dur))
+            {
+                        <div class="col-auto card mt-2 me-2">
+                            <div class="card-title">
+                                Best performance
+                            </div>
+                            <div class="card-body">
+                                at @cmdrResult.BestDuration.Dur
+                                <span>Winrate @cmdrResult.BestDuration.Wr %</span>
+                            </div>
+                            <div class="card-footer">
+                                Card footer
+                            </div>
+                        </div>
+            }
+            @if (cmdrResult.TopPlayers.Any())
+            {
+                        <div class="col-auto">
+                            <h3>Best players</h3>
+                            <table class="table table-sm table-dark table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Games</th>
+                                        <th>Winrate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                            @foreach (var player in cmdrResult.TopPlayers.OrderByDescending(o => o.Wins * 100.0f / o.Count))
+                            {
+                                            <tr>
+                                                <td>@player.Name</td>
+                                                <td>@player.Count</td>
+                                                <td>@Math.Round(player.Wins * 100.0 / player.Count, 2) %</td>
+                                            </tr>
+                            }
+                                </tbody>
+                            </table>
+
+                        </div>
+            }
+            </div>
+        </div>
 }
 
 
@@ -22,10 +163,18 @@ else
     [Parameter, EditorRequired]
     public CmdrRequest CmdrRequest { get; set; } = default!;
 
+    [Parameter]
+    public bool IsMaui { get; set; }
+
     private CmdrResult? cmdrResult;
     private CancellationTokenSource cts = new();
     private bool isLoading;
 
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
 
     private async Task LoadData()
     {
