@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
@@ -10,12 +9,14 @@ public partial class CmdrsService
 {
     private readonly ReplayContext context;
     private readonly IStatsService statsService;
+    private readonly MmrService mmrService;
     private readonly IMemoryCache memoryCache;
 
-    public CmdrsService(ReplayContext context, IStatsService statsService, IMemoryCache memoryCache)
+    public CmdrsService(ReplayContext context, IStatsService statsService, MmrService mmrService, IMemoryCache memoryCache)
     {
         this.context = context;
         this.statsService = statsService;
+        this.mmrService = mmrService;
         this.memoryCache = memoryCache;
     }
 
@@ -206,9 +207,19 @@ public partial class CmdrsService
                                    Wins = g.Count(c => c.rp.PlayerResult == PlayerResult.Win)
                                };
 
-        return await bestPlayersQuery
+        var bestPlayers = await bestPlayersQuery
             .Take(5)
             .ToListAsync(token);
+
+        foreach (var bestPlayer in bestPlayers)
+        {
+            if (mmrService.ToonIdRatings.ContainsKey(bestPlayer.ToonId))
+            {
+                bestPlayer.Name = mmrService.ToonIdRatings[bestPlayer.ToonId].Name;
+            }
+        }
+
+        return bestPlayers;
     }
 }
 
