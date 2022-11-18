@@ -111,4 +111,10 @@ public class DataService : IDataService
             return await Task.FromResult(buildService.GetTopPlayersCmdr(100));
         }
     }
+
+    public async Task<CmdrResult> GetCmdrInfo(CmdrRequest request, CancellationToken token = default)
+    {
+        return await Task.FromResult(new CmdrResult());
+    }
+
 }
