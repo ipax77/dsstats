@@ -116,6 +116,16 @@ public static class ReplayExtensions
         return sb.ToString();
     }
 
+    public static string GenMemKey(this CmdrRequest cmdrRequest)
+    {
+        var sb = new StringBuilder();
+        sb.Append("Cmdr");
+        sb.Append(cmdrRequest.TimeSpan);
+        sb.Append(cmdrRequest.Cmdr);
+        sb.Append(cmdrRequest.Uploaders);
+        return sb.ToString();
+    }
+
     public static string GetMd5Hash(MD5 md5Hash, string input)
     {
         byte[] data = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(input));

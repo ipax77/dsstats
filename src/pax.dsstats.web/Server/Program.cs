@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
+using pax.dsstats.shared;
 using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Services;
 using sc2dsstats.db;
@@ -64,6 +65,7 @@ builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
 builder.Services.AddTransient<IStatsRepository, StatsRepository>();
 builder.Services.AddTransient<BuildService>();
+builder.Services.AddTransient<CmdrsService>();
 
 builder.Services.AddHostedService<CacheBackgroundService>();
 // builder.Services.AddHostedService<RatingsBackgroundService>();
@@ -96,9 +98,6 @@ if (app.Environment.IsDevelopment())
     var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
     mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
     mmrService.ReCalculateWithDictionary().GetAwaiter().GetResult();
-
-    //var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
-    //buildService.SeedBuildsCache().GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.
