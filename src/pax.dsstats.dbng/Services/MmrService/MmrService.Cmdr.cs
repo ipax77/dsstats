@@ -30,6 +30,7 @@ public partial class MmrService
 
         var weightedSum = playerRatingsCmdr.Sum(x => ((x.Value.Count - 1) * x.Value.Last().Uncertainty));
         var weightedUncertanity = weightedSum / playerRatingsCmdr.Sum(x => (x.Value.Count - 1));
+        var accuracy = 1 - weightedUncertanity;
 
         return playerRatingsCmdr;
     }
@@ -137,7 +138,7 @@ public partial class MmrService
             }
 
             double factor_playerToTeamMates = PlayerToTeamMates(teamData.PlayersMeanMmr, playerMmr, teamData.Players.Length);
-            double factor_consistency = GetCorrectedRevConsistency(1 - playerConsistency);
+            double factor_consistency = /*consistencyImpact * replayProcessData.Uncertainty; //*/GetCorrectedRevConsistency(1 - playerConsistency);
             double factor_uncertainty = (1 - replayProcessData.Uncertainty);
 
             double playerImpact = 1
