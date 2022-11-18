@@ -43,7 +43,7 @@ internal static class UpdateService
             {
                 if (!init && Application.Current != null && Application.Current.MainPage != null)
                 {
-                    await Application.Current.MainPage.DisplayAlert("Update Reuslt", "Current Version is up to date.", "Ok");
+                    await Application.Current.MainPage.DisplayAlert("Update Result", "Current Version is up to date.", "Ok");
                 }
             }
         }

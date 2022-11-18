@@ -2,6 +2,7 @@
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
+using System.Net;
 
 namespace pax.dsstats.web.Server.Controllers
 {
@@ -14,18 +15,21 @@ namespace pax.dsstats.web.Server.Controllers
         private readonly BuildService buildService;
         private readonly IStatsService statsService;
         private readonly MmrService mmrService;
+        private readonly CmdrsService cmdrService;
 
         public StatsController(IReplayRepository replayRepository,
                                IStatsRepository statsRepository,
                                BuildService buildService,
                                IStatsService statsService,
-                               MmrService mmrService)
+                               MmrService mmrService,
+                               CmdrsService cmdrService)
         {
             this.replayRepository = replayRepository;
             this.statsRepository = statsRepository;
             this.buildService = buildService;
             this.statsService = statsService;
             this.mmrService = mmrService;
+            this.cmdrService = cmdrService;
         }
 
         [HttpGet]
@@ -42,16 +46,28 @@ namespace pax.dsstats.web.Server.Controllers
 
         [HttpPost]
         [Route("GetReplaysCount")]
-        public async Task<int> GetReplaysCount(ReplaysRequest request, CancellationToken token = default)
+        public async Task<ActionResult<int>> GetReplaysCount(ReplaysRequest request, CancellationToken token = default)
         {
-            return await replayRepository.GetReplaysCount(request, token);
+            try
+            {
+                return await replayRepository.GetReplaysCount(request, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
         }
 
         [HttpPost]
         [Route("GetReplays")]
-        public async Task<ICollection<ReplayListDto>> GetReplays(ReplaysRequest request, CancellationToken token = default)
+        public async Task<ActionResult<ICollection<ReplayListDto>>> GetReplays(ReplaysRequest request, CancellationToken token = default)
         {
-            return await replayRepository.GetReplays(request, token);
+            try
+            {
+                return Ok(await replayRepository.GetReplays(request, token));
+            }
+            catch (OperationCanceledException)
+            {
+                return NoContent();
+            }
         }
 
         [HttpPost]
@@ -70,17 +86,27 @@ namespace pax.dsstats.web.Server.Controllers
 
         [HttpPost]
         [Route("GetRatingsCount")]
-        public async Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default)
+        public async Task<ActionResult<int>> GetRatingsCount(RatingsRequest request, CancellationToken token = default)
         {
             // return await statsService.GetRatingsCount(request, token);
-            return await mmrService.GetRatingsCount(request, token);
+            try
+            {
+                return await mmrService.GetRatingsCount(request, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
         }
 
         [HttpPost]
         [Route("GetRatings")]
-        public async Task<List<PlayerRatingDto>> GetRatings(RatingsRequest request, CancellationToken token = default)
+        public async Task<ActionResult<List<PlayerRatingDto>>> GetRatings(RatingsRequest request, CancellationToken token = default)
         {
-            return await mmrService.GetRatings(request, token);
+            try
+            {
+                return await mmrService.GetRatings(request, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
         }
 
         [HttpGet]
@@ -121,6 +147,18 @@ namespace pax.dsstats.web.Server.Controllers
         public async Task<PlayerRatingDto?> GetPlayerRating(int toonId)
         {
             return await mmrService.GetPlayerRating(toonId);
+        }
+
+        [HttpPost]
+        [Route("GetCmdrInfo")]
+        public async Task<ActionResult<CmdrResult>> GetCmdrInfo(CmdrRequest cmdrRequest, CancellationToken token = default)
+        {
+            try
+            {
+                return await cmdrService.GetCmdrInfo(cmdrRequest, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
         }
     }
 

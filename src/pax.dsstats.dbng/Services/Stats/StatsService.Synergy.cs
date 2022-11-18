@@ -45,6 +45,15 @@ public partial class StatsService
             };
         }
 
+        if ((int)request.Interest > 3)
+        {
+            items = items.Where(x => (int)x.Cmdr > 3).ToList();
+        }
+        else
+        {
+            items = items.Where(x => (int)x.Cmdr <= 3).ToList();
+        }
+
         return new StatsResponse()
         {
             Request = request,

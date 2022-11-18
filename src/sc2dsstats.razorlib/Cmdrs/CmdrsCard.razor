@@ -1,0 +1,25 @@
+﻿@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
+
+@if (Cmdr != null && Cmdr != Commander.None)
+{
+    <div class="border rounded p-1">
+        <div class="fw-bold">
+            @Desc <img src="@HelperService.GetImageSrc(Cmdr.Value)" alt="@Cmdr" width="35" height="35" /> @Cmdr
+        </div>
+        <div>
+            <span class="badge bg-secondary">@ChildContent</span>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public Commander? Cmdr { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Desc { get; set; } = "";
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}
