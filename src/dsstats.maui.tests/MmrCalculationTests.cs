@@ -371,15 +371,11 @@ public class MmrCalculationTests : TestWithSqlite
             var entBefore = dataAfterContinue.ElementAt(i);
             Assert.True(mmrService.ToonIdRatings.ContainsKey(entBefore.Key));
             var entAfter = dataAfterReRecalculate[entBefore.Key];
-            
-            if (entBefore.Value.Mmr != entAfter.Mmr) {
-            }
-            if (entBefore.Value.Consistency != entAfter.Consistency) {
-            }
-            if (entBefore.Value.Uncertainty != entAfter.Uncertainty) {
-            }
 
             Assert.Equal(entBefore.Value.Mmr, entAfter.Mmr);
+            Assert.Equal(entBefore.Value.ConsistencyUp, entAfter.ConsistencyUp);
+            Assert.Equal(entBefore.Value.ConsistencyDown, entAfter.ConsistencyDown);
+            Assert.Equal(entBefore.Value.Uncertainty, entAfter.Uncertainty);
         }
     }
 

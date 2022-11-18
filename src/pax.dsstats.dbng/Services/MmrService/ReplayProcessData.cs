@@ -9,8 +9,8 @@ internal record ReplayProcessData
         ReplayGameTime = replay.GameTime;
         Duration = replay.Duration;
 
-        WinnerTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam));
-        LoserTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam));
+        WinnerTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam), true);
+        LoserTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam), false);
     }
 
     public TeamData WinnerTeamData { get; init; }
@@ -27,9 +27,10 @@ internal record ReplayProcessData
 
 internal record TeamData
 {
-    public TeamData(ReplayDsRDto replay, IEnumerable<ReplayPlayerDsRDto> replayPlayers)
+    public TeamData(ReplayDsRDto replay, IEnumerable<ReplayPlayerDsRDto> replayPlayers, bool isWinner)
     {
         Players = replayPlayers.Select(x => new PlayerData(replay, x)).ToArray();
+        this.IsWinner = isWinner;
     }
 
     public PlayerData[] Players { get; init; }
@@ -38,6 +39,8 @@ internal record TeamData
     public double CmdrComboMmr { get; set; }
 
     public double UncertaintyDelta { get; set; }
+
+    public bool IsWinner { get; init; }
 }
 
 internal record PlayerData
