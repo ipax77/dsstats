@@ -16,15 +16,16 @@ public class DocumentStoreHolder
 
         X509Certificate2 clientCertificate = new X509Certificate2("/data/ravenClientCert.pfx", ravenCertPassword);
 
-        // string serverURL = "http://localhost:9102";
-        string serverURL = ravenServerUrl ?? "http://localhost:9102";
+        string serverURL = "http://localhost:9102";
+        // string serverURL = ravenServerUrl ?? "http://localhost:9102";
         string databaseName = "mmrdb";
+
 
         IDocumentStore documentStore = new DocumentStore
         {
             Urls = new[] { serverURL },
             Database = databaseName,
-            Certificate = clientCertificate
+            // Certificate = clientCertificate
         };
 
         documentStore.Initialize();

@@ -25,6 +25,7 @@ internal class Program
 
         services.AddAutoMapper(typeof(AutoMapperProfile));
         services.AddSingleton<DocumentStoreHolder>();
+        services.AddScoped<IRatingRepository, RatingRepository>();
         services.AddLogging(builder =>
             {
                 builder.ClearProviders();
@@ -49,6 +50,9 @@ internal class Program
         });
 
         var serviceProvider = services.BuildServiceProvider();
+
+        using var scope = serviceProvider.CreateScope();
+        var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
 
         // END SERVICE CONFIG
 
@@ -78,7 +82,7 @@ internal class Program
             }
         };
 
-        var ratings = RavenService.GetPlayerRatings(ratingsRequest).GetAwaiter().GetResult();
+        // var ratings = RatingRepository.GetPlayerRatings(ratingsRequest).GetAwaiter().GetResult();
     }
 
     internal static void CollectInital(int take)
@@ -113,6 +117,7 @@ internal class Program
 
     internal static void Produce(IServiceProvider serviceProvider, bool mysql = false)
     {
+
         Stopwatch sw = Stopwatch.StartNew();
 
         // RavenService.DeleteRatings().GetAwaiter().GetResult();
@@ -140,10 +145,12 @@ internal class Program
         }
         else
         {
+            using var scope = serviceProvider.CreateScope();
+            var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
             // RavenService.BulkInsert(ratingResult.Values.ToList()).GetAwaiter().GetResult();
             // RavenService.BulkInsert(changeResult).GetAwaiter().GetResult();
-            var result = RavenService.UpdatePlayerRatings(ratingResult.Values.ToList()).GetAwaiter().GetResult();
-            var updateResult = RavenService.UpdateReplayPlayermmrChanges(changeResult).GetAwaiter().GetResult();
+            var result = ratingRepository.UpdatePlayerRatings(ratingResult.Values.ToList()).GetAwaiter().GetResult();
+            var updateResult = ratingRepository.UpdateReplayPlayerMmrChanges(changeResult).GetAwaiter().GetResult();
             Console.WriteLine(result);
             Console.WriteLine(updateResult);
         }

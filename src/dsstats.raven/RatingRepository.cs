@@ -8,9 +8,10 @@ using Raven.Client.Documents.Session;
 
 namespace dsstats.raven;
 
-public static class RavenService
+#pragma warning disable CA1822 // insterface and static are not best friends
+public class RatingRepository : IRatingRepository
 {
-    public static async Task DeleteRatings()
+    public async Task DeleteRatings()
     {
         var ratingOperation = await DocumentStoreHolder.Store
             .Operations
@@ -21,27 +22,7 @@ public static class RavenService
             .SendAsync(new DeleteByQueryOperation<ReplayPlayerMmrChange, ReplayPlayerMmrChange_ByReplayPlayerId>(x => x.ReplayPlayerId > 0));
     }
 
-    public static async Task BulkInsert(List<PlayerRating> playerRatings)
-    {
-        using BulkInsertOperation bulkInsert = DocumentStoreHolder.Store.BulkInsert();
-
-        for (int i = 0; i < playerRatings.Count; i++)
-        {
-            await bulkInsert.StoreAsync(playerRatings[i]);
-        }
-    }
-
-    public static async Task BulkInsert(List<ReplayPlayerMmrChange> replayPlayerMmrChanges)
-    {
-        using BulkInsertOperation bulkInsert = DocumentStoreHolder.Store.BulkInsert();
-
-        for (int i = 0; i < replayPlayerMmrChanges.Count; i++)
-        {
-            await bulkInsert.StoreAsync(replayPlayerMmrChanges[i]);
-        }
-    }
-
-    public static async Task<UpdateResult> UpdateReplayPlayermmrChanges(List<ReplayPlayerMmrChange> replayPlayerMmrChanges)
+    public async Task<UpdateResult> UpdateReplayPlayerMmrChanges(List<ReplayPlayerMmrChange> replayPlayerMmrChanges)
     {
         var chunks = replayPlayerMmrChanges.OrderBy(o => o.ReplayPlayerId).Chunk(10000);
         UpdateResult updateResult = new() { Total = replayPlayerMmrChanges.Count };
@@ -77,17 +58,17 @@ public static class RavenService
         return updateResult;
     }
 
-    public static async Task<UpdateResult> UpdatePlayerRatings(List<PlayerRating> playerRatings)
+    public async Task<UpdateResult> UpdatePlayerRatings(List<PlayerRating> playerRatings)
     {
         var chunks = playerRatings.OrderBy(o => o.PlayerId).Chunk(10000);
 
         
         UpdateResult updateResult = new() { Total = playerRatings.Count };
-        List<PlayerRating> newRatings = new();
         foreach (var chunk in chunks)
         {
             using var session = DocumentStoreHolder.Store.OpenAsyncSession();
-            
+            using BulkInsertOperation bulkInsert = DocumentStoreHolder.Store.BulkInsert();
+
             int startId = chunk.First().PlayerId;
             int endId = chunk.Last().PlayerId;
 
@@ -107,21 +88,16 @@ public static class RavenService
                 }
                 else
                 {
-                    newRatings.Add(newRating);
+                    await bulkInsert.StoreAsync(newRating);
                     updateResult.New++;
                 }
             }
             await session.SaveChangesAsync();
         }
-
-        if (newRatings.Any())
-        {
-            await BulkInsert(newRatings);
-        }
         return updateResult;
     }
 
-    public static async Task<List<PlayerRating>> GetPlayerRatings(RatingsRequest request)
+    public async Task<List<PlayerRating>> GetPlayerRatings(RatingsRequest request)
     {
         using var session = DocumentStoreHolder.Store.OpenAsyncSession();
 
@@ -213,10 +189,4 @@ public static class RavenService
             .AsQueryable();
     }
 }
-
-public record UpdateResult
-{
-    public int Total { get; set; }
-    public int Update { get; set; }
-    public int New { get; set; }
-}
+#pragma warning restore CA1822
