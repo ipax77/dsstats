@@ -30,6 +30,7 @@ public partial class MmrService
 
         var weightedSum = playerRatingsCmdr.Sum(x => ((x.Value.Count - 1) * x.Value.Last().Uncertainty));
         var weightedUncertanity = weightedSum / playerRatingsCmdr.Sum(x => (x.Value.Count - 1));
+        var accuracy = 1 - weightedUncertanity;
 
         return playerRatingsCmdr;
     }
@@ -56,9 +57,9 @@ public partial class MmrService
             return;
         }
 
-        if (replay.ReplayPlayers.Any(a => (int)a.Race <= 3))
+        if (replay.ReplayPlayers.Any(a => (int)a.Race <= 3) && replay.ReplayPlayers.Min(x => x.Duration > 0))
         {
-            logger.LogDebug($"skipping wrong cmdr commanders");
+            logger.LogDebug($"skipping invalid commanders");
             return;
         }
 
@@ -118,7 +119,9 @@ public partial class MmrService
 
     private void SetCmdrMmrs(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData)
     {
-        teamData.CmdrComboMmr = GetCommandersComboMmr(teamData.Players);
+        if (useCommanderMmr) {
+            teamData.CmdrComboMmr = GetCommandersComboMmr(teamData.Players);
+        }
         teamData.PlayersMeanMmr = GetPlayersComboMmr(playerRatingsCmdr, teamData.Players);
     }
 
@@ -137,7 +140,7 @@ public partial class MmrService
             }
 
             double factor_playerToTeamMates = PlayerToTeamMates(teamData.PlayersMeanMmr, playerMmr, teamData.Players.Length);
-            double factor_consistency = GetCorrectedRevConsistency(1 - playerConsistency);
+            double factor_consistency = /*consistencyImpact * replayProcessData.Uncertainty; //*/GetCorrectedRevConsistency(1 - playerConsistency);
             double factor_uncertainty = (1 - replayProcessData.Uncertainty);
 
             double playerImpact = 1
@@ -203,9 +206,14 @@ public partial class MmrService
     {
         double commandersComboMMRSum = 0;
 
-        for (int playerIndex = 0; playerIndex < teamPlayers.Length; playerIndex++)
-        {
+        for (int playerIndex = 0; playerIndex < teamPlayers.Length; playerIndex++) {
             var playerCmdr = teamPlayers[playerIndex].ReplayPlayer.Race;
+
+            if ((int)playerCmdr <= 3) {
+                commandersComboMMRSum += startMmr;
+                continue;
+            }
+
 
             double synergySum = 0;
             double antiSynergySum = 0;
