@@ -373,8 +373,7 @@ public class MmrCalculationTests : TestWithSqlite
             var entAfter = dataAfterReRecalculate[entBefore.Key];
 
             Assert.Equal(entBefore.Value.Mmr, entAfter.Mmr);
-            Assert.Equal(entBefore.Value.ConsistencyUp, entAfter.ConsistencyUp);
-            Assert.Equal(entBefore.Value.ConsistencyDown, entAfter.ConsistencyDown);
+            Assert.Equal(entBefore.Value.Consistency, entAfter.Consistency);
             Assert.Equal(entBefore.Value.Uncertainty, entAfter.Uncertainty);
         }
     }
