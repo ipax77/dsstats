@@ -6,5 +6,8 @@ public interface IRatingRepository
     Task DeleteRatings();
     Task<UpdateResult> UpdateReplayPlayerMmrChanges(List<ReplayPlayerMmrChange> replayPlayerMmrChanges);
     Task<UpdateResult> UpdatePlayerRatings(List<PlayerRating> playerRatings);
-    Task<List<PlayerRating>> GetPlayerRatings(RatingsRequest request);
+    Task<List<PlayerRating>> GetRatings(RatingsRequest request, CancellationToken token);
+    Task<string?> GetPlayerRatings(int toonId, CancellationToken token = default);
+    Task<PlayerRating?> GetPlayerRating(int toonId, CancellationToken token = default);
+    Task<List<MmrDevDto>> GetRatingsDeviation();
 }

@@ -3,13 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33110.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.mmr", "dsstats.mmr.csproj", "{9E4DCC23-5C06-408A-AC73-2FF514F853D6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.mmrconsole", "dsstats.mmrconsole.csproj", "{9E4DCC23-5C06-408A-AC73-2FF514F853D6}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pax.dsstats.shared", "..\pax.dsstats.shared\pax.dsstats.shared.csproj", "{93C92103-9509-41F2-BDE4-6F96426B6236}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pax.dsstats.dbng", "..\pax.dsstats.dbng\pax.dsstats.dbng.csproj", "{15C1FDE0-9A18-4A47-AA56-E23C46CDD1D8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.raven", "..\dsstats.raven\dsstats.raven.csproj", "{63E62380-0A92-4BB9-AC61-A131BBABE0ED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.mmr", "..\dsstats.mmr\dsstats.mmr.csproj", "{A072F5F6-D446-42F9-8B49-DDD8BF2ED49F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{63E62380-0A92-4BB9-AC61-A131BBABE0ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{63E62380-0A92-4BB9-AC61-A131BBABE0ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{63E62380-0A92-4BB9-AC61-A131BBABE0ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A072F5F6-D446-42F9-8B49-DDD8BF2ED49F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A072F5F6-D446-42F9-8B49-DDD8BF2ED49F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A072F5F6-D446-42F9-8B49-DDD8BF2ED49F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A072F5F6-D446-42F9-8B49-DDD8BF2ED49F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

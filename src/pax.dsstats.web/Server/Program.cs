@@ -1,4 +1,5 @@
 using AutoMapper;
+using dsstats.raven;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
@@ -58,7 +59,9 @@ builder.Services.AddSingleton<MmrService>();
 
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
+builder.Services.AddSingleton<DocumentStoreHolder>();
 
+builder.Services.AddScoped<IRatingRepository, RatingRepository>();
 builder.Services.AddScoped<ImportService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
@@ -95,9 +98,9 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-    mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
-    mmrService.ReCalculateWithDictionary().GetAwaiter().GetResult();
+    //var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+    //mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
+    //mmrService.ReCalculateWithDictionary().GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.

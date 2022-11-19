@@ -97,7 +97,28 @@ public class RatingRepository : IRatingRepository
         return updateResult;
     }
 
-    public async Task<List<PlayerRating>> GetPlayerRatings(RatingsRequest request)
+    public async Task<string?> GetPlayerRatings(int toonId, CancellationToken token)
+    {
+        // todo: mmrId
+        using var session = DocumentStoreHolder.Store.OpenAsyncSession();
+
+        return await session.Query<PlayerRating, PlayerRating_ByToonId>()
+            .Where(x => x.ToonId == toonId)
+            .Select(s => s.MmrOverTime)
+            .FirstOrDefaultAsync(token);
+    }
+
+    public async Task<PlayerRating?> GetPlayerRating(int toonId, CancellationToken token)
+    {
+        // todo: mmrId
+        using var session = DocumentStoreHolder.Store.OpenAsyncSession();
+
+        return await session.Query<PlayerRating, PlayerRating_ByToonId>()
+            .Where(x => x.ToonId == toonId)
+            .FirstOrDefaultAsync(token);
+    }    
+
+    public async Task<List<PlayerRating>> GetRatings(RatingsRequest request, CancellationToken token)
     {
         using var session = DocumentStoreHolder.Store.OpenAsyncSession();
 
@@ -108,7 +129,7 @@ public class RatingRepository : IRatingRepository
         return await query
             .Skip(request.Skip)
             .Take(request.Take)
-            .ToListAsync();
+            .ToListAsync(token);
     }
 
     private static IQueryable<PlayerRating> SetOrder(IQueryable<PlayerRating> players, List<TableOrder> orders)
@@ -188,5 +209,20 @@ public class RatingRepository : IRatingRepository
             .Where(x => x.Games >= 20)
             .AsQueryable();
     }
+
+    public async Task<List<MmrDevDto>> GetRatingsDeviation()
+    {
+        using var session = DocumentStoreHolder.Store.OpenAsyncSession();
+
+        return await session.Query<PlayerRating>()
+            .GroupBy(g => Math.Round(g.Mmr, 0))
+            .Select(s => new MmrDevDto
+            {
+                Count = s.Count(),
+                Mmr = s.Average(a => Math.Round(a.Mmr, 0))
+            })
+            .OrderBy(o => o.Mmr)
+            .ToListAsync();
+    }    
 }
 #pragma warning restore CA1822

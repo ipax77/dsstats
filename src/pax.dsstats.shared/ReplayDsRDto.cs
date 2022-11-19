@@ -74,6 +74,7 @@ public record PlayerRating
 
     public int MmrGames { get; set; }
     public float Mmr { get; set; }
+    public string? MmrOverTime { get; set; }
     public float Consistency { get; set; }
     public float Uncertainty { get; set; }
 }

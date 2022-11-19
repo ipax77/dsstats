@@ -9,8 +9,11 @@ using pax.dsstats.shared;
 using Raven.Client.Documents.Session;
 using System.Text;
 using System.Globalization;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using dsstats.mmr;
 
-namespace dsstats.mmr;
+namespace dsstats.mmrconsole;
 
 internal class Program
 {
@@ -126,7 +129,7 @@ internal class Program
 
         //sw.Start();
 
-        var data = MmrService.GetCmdrReplayDsRDtos(serviceProvider, DateTime.MinValue, DateTime.MinValue)
+        var data = GetCmdrReplayDsRDtos(serviceProvider, DateTime.MinValue, DateTime.MinValue)
             .GetAwaiter().GetResult();
         sw.Stop();
         Console.WriteLine($"got data in {sw.ElapsedMilliseconds} ms");
@@ -213,6 +216,39 @@ internal class Program
         }
     }
 
+    public static async Task<List<ReplayDsRDto>> GetCmdrReplayDsRDtos(IServiceProvider serviceProvider, DateTime startTime, DateTime endTime)
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+
+        var replays = context.Replays
+            .Include(r => r.ReplayPlayers)
+                .ThenInclude(rp => rp.Player)
+            .Where(r => r.Playercount == 6
+                && r.Duration >= 300
+                && r.WinnerTeam > 0
+                && (r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic))
+            .AsNoTracking();
+
+        if (startTime != DateTime.MinValue)
+        {
+            replays = replays.Where(x => x.GameTime >= startTime);
+        }
+
+        if (endTime != DateTime.MinValue && endTime < DateTime.Today)
+        {
+            replays = replays.Where(x => x.GameTime < endTime);
+        }
+
+        return await replays
+            .OrderBy(o => o.GameTime)
+                .ThenBy(o => o.ReplayId)
+            .Take(10)
+            .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
+            .ToListAsync();
+    }
 }
 
 

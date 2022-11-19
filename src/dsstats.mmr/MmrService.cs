@@ -1,9 +1,4 @@
-
-using AutoMapper;
-using AutoMapper.QueryableExtensions;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using pax.dsstats.dbng;
+﻿
 using pax.dsstats.shared;
 
 namespace dsstats.mmr;
@@ -67,40 +62,6 @@ public static class MmrService
     private static int GetMmrId(PlayerDsRDto player)
     {
         return player.PlayerId;
-    }
-
-    public static async Task<List<ReplayDsRDto>> GetCmdrReplayDsRDtos(IServiceProvider serviceProvider, DateTime startTime, DateTime endTime)
-    {
-        using var scope = serviceProvider.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
-
-        var replays = context.Replays
-            .Include(r => r.ReplayPlayers)
-                .ThenInclude(rp => rp.Player)
-            .Where(r => r.Playercount == 6
-                && r.Duration >= 300
-                && r.WinnerTeam > 0
-                && (r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic))
-            .AsNoTracking();
-
-        if (startTime != DateTime.MinValue)
-        {
-            replays = replays.Where(x => x.GameTime >= startTime);
-        }
-
-        if (endTime != DateTime.MinValue && endTime < DateTime.Today)
-        {
-            replays = replays.Where(x => x.GameTime < endTime);
-        }
-
-        return await replays
-            .OrderBy(o => o.GameTime)
-                .ThenBy(o => o.ReplayId)
-            .Take(10)
-            .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
-            .ToListAsync();
     }
 
 }
