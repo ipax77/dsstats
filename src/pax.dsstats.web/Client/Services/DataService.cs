@@ -9,6 +9,7 @@ public class DataService : IDataService
     private readonly ILogger<DataService> logger;
     private readonly string statsController = "api/Stats/";
     private readonly string buildsController = "api/Builds/";
+    private readonly string ratingsController = "api/Ratings/";
 
     public DataService(HttpClient httpClient, ILogger<DataService> logger)
     {
@@ -132,39 +133,15 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default)
+    public async Task<PlayerRatingsResult?> GetRatings(RatingsRequest request, CancellationToken token = default)
     {
         try
         {
-            var response = await httpClient.PostAsJsonAsync($"{statsController}GetRatingsCount", request, token);
+            var response = await httpClient.PostAsJsonAsync($"{ratingsController}GetRatings", request, token);
 
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<int>(cancellationToken: token);
-            }
-            else
-            {
-                logger.LogError($"failed getting ratings count: {response.StatusCode}");
-            }
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception e)
-        {
-            logger.LogError($"failed getting ratings count: {e.Message}");
-        }
-        return 0;
-
-    }
-
-    public async Task<List<PlayerRatingDto>> GetRatings(RatingsRequest request, CancellationToken token = default)
-    {
-        try
-        {
-            var response = await httpClient.PostAsJsonAsync($"{statsController}GetRatings", request, token);
-
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<List<PlayerRatingDto>>(cancellationToken: token) ?? new();
+                return await response.Content.ReadFromJsonAsync<PlayerRatingsResult>(cancellationToken: token) ?? new();
             }
             else
             {
@@ -176,14 +153,14 @@ public class DataService : IDataService
         {
             logger.LogError($"failed getting ratings: {e.Message}");
         }
-        return new();
+        return null;
     }
 
     public async Task<string?> GetPlayerRatings(int toonId)
     {
         try
         {
-            var response = await httpClient.GetAsync($"{statsController}GetPlayerRatings/{toonId}");
+            var response = await httpClient.GetAsync($"{ratingsController}GetPlayerRatings/{toonId}");
             if (response.IsSuccessStatusCode)
             {
                 return await response.Content.ReadAsStringAsync();
@@ -200,7 +177,7 @@ public class DataService : IDataService
     {
         try
         {
-            return await httpClient.GetFromJsonAsync<List<MmrDevDto>>($"{statsController}GetRatingsDeviation") ?? new();
+            return await httpClient.GetFromJsonAsync<List<MmrDevDto>>($"{ratingsController}GetRatingsDeviation") ?? new();
         }
         catch (Exception e)
         {
@@ -244,14 +221,14 @@ public class DataService : IDataService
         return new List<PlayerMatchupInfo>();
     }
 
-    public async Task<PlayerRatingDto?> GetPlayerRating(int toonId)
+    public async Task<PlayerRating?> GetPlayerRating(int toonId)
     {
         try
         {
-            var response = await httpClient.GetAsync($"{statsController}PlayerRating/{toonId}");
+            var response = await httpClient.GetAsync($"{ratingsController}PlayerRating/{toonId}");
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<PlayerRatingDto?>();
+                return await response.Content.ReadFromJsonAsync<PlayerRating?>();
             }
             else
             {

@@ -10,13 +10,12 @@ public interface IDataService
     Task<BuildResponse> GetBuild(BuildRequest request, CancellationToken token = default);
 
     // ratings
-    Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default);
-    Task<List<PlayerRatingDto>> GetRatings(RatingsRequest request, CancellationToken token = default);
+    Task<PlayerRatingsResult?> GetRatings(RatingsRequest request, CancellationToken token = default);
     Task<string?> GetPlayerRatings(int toonId);
     Task<List<MmrDevDto>> GetRatingsDeviation();
     Task<List<MmrDevDto>> GetRatingsDeviationStd();
     Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId);
-    Task<PlayerRatingDto?> GetPlayerRating(int toonId);
+    Task<PlayerRating?> GetPlayerRating(int toonId);
     Task<List<RequestNames>> GetTopPlayers(bool std);
     Task<CmdrResult> GetCmdrInfo(CmdrRequest request, CancellationToken token = default);
 }

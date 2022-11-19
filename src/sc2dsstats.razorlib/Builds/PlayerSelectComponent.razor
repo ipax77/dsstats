@@ -124,12 +124,12 @@
                                     <button type="button" class="btn btn-sm btn-primary" @onclick="e => OnPlayersSelected.InvokeAsync(rating)">Select</button>
                                 </td>
                                 <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Name</span></td>
-                                <td class="border-start">@rating.CmdrRatingStats.Games</td>
-                                <td class="text-warning">@Math.Round(rating.CmdrRatingStats.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
-                                <td>@HelperService.GetPercentageString(rating.CmdrRatingStats.Wins, rating.CmdrRatingStats.Games)</td>
-                                <td class="border-start">@rating.StdRatingStats.Games</td>
+                                <td class="border-start">@rating.Games</td>
+                                <td class="text-warning">@Math.Round(rating.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
+                                <td>@HelperService.GetPercentageString(rating.Wins, rating.Games)</td>
+@*                                <td class="border-start">@rating.StdRatingStats.Games</td>
                                 <td class="text-warning">@Math.Round(rating.StdRatingStats.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
-                                <td>@HelperService.GetPercentageString(rating.StdRatingStats.Wins, rating.StdRatingStats.Games)</td>
+                                <td>@HelperService.GetPercentageString(rating.StdRatingStats.Wins, rating.StdRatingStats.Games)</td>*@
                             </tr>
                         </ItemContent>
                         <Placeholder>
@@ -151,7 +151,7 @@
 
 @code {
     [Parameter]
-    public EventCallback<PlayerRatingDto> OnPlayersSelected { get; set; }
+    public EventCallback<PlayerRating> OnPlayersSelected { get; set; }
 
     private RatingsRequest ratingsRequest = new()
         {
@@ -168,14 +168,13 @@
         };
 
     private EditContext editContext = null!;
-    private int ratingsCount;
-    private Virtualize<PlayerRatingDto>? virtualize;
+    private int ratingsCount = 20;
+    private Virtualize<PlayerRating>? virtualize;
 
     protected override void OnInitialized()
     {
         editContext = new EditContext(ratingsRequest);
         editContext.OnFieldChanged += FieldChanged;
-        _ = SetCount();
         base.OnInitialized();
     }
 
@@ -186,7 +185,6 @@
 
     public async Task Reload()
     {
-        await SetCount();
         await InvokeAsync(() => StateHasChanged());
         if (virtualize != null)
         {
@@ -195,20 +193,22 @@
         await InvokeAsync(() => StateHasChanged());
     }
 
-    private async Task SetCount()
-    {
-        ratingsCount = await dataService.GetRatingsCount(ratingsRequest);
-        await InvokeAsync(() => StateHasChanged());
-    }
-
-    private async ValueTask<ItemsProviderResult<PlayerRatingDto>> LoadRatings(ItemsProviderRequest request)
+    private async ValueTask<ItemsProviderResult<PlayerRating>> LoadRatings(ItemsProviderRequest request)
     {
         var numRatings = Math.Min(request.Count, ratingsCount - request.StartIndex);
         ratingsRequest.Skip = request.StartIndex;
         ratingsRequest.Take = numRatings;
-        var ratings = await dataService.GetRatings(ratingsRequest, request.CancellationToken);
+        var ratingResult = await dataService.GetRatings(ratingsRequest, request.CancellationToken);
 
-        return new ItemsProviderResult<PlayerRatingDto>(ratings, ratingsCount);
+        if (ratingResult != null)
+        {
+            ratingsCount = ratingResult.Count;
+            return new ItemsProviderResult<PlayerRating>(ratingResult.PlayerRatings, ratingsCount);
+        }
+        else
+        {
+            return new ItemsProviderResult<PlayerRating>(new List<PlayerRating>(), ratingsCount);
+        }
     }
 
     private async Task SortList(MouseEventArgs e, string property)

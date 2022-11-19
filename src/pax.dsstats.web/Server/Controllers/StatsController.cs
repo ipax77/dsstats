@@ -35,12 +35,17 @@ namespace pax.dsstats.web.Server.Controllers
         [Route("GetReplay/{replayHash}")]
         public async Task<ActionResult<ReplayDto?>> GetReplay(string replayHash, CancellationToken token = default)
         {
-            var replayDto = await replayRepository.GetReplay(replayHash, false, token);
-            if (replayDto == null)
+            try
             {
-                return NotFound();
+                var replayDto = await replayRepository.GetReplay(replayHash, false, token);
+                if (replayDto == null)
+                {
+                    return NotFound();
+                }
+                return replayDto;
             }
-            return replayDto;
+            catch (OperationCanceledException) { }
+            return Ok();
         }
 
         [HttpPost]

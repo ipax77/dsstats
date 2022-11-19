@@ -3,6 +3,7 @@ using dsstats.raven.Extensions;
 using pax.dsstats.shared;
 using Raven.Client.Documents;
 using Raven.Client.Documents.BulkInsert;
+using Raven.Client.Documents.Linq;
 using Raven.Client.Documents.Operations;
 using Raven.Client.Documents.Session;
 
@@ -27,11 +28,11 @@ public class RatingRepository : IRatingRepository
         var chunks = replayPlayerMmrChanges.OrderBy(o => o.ReplayPlayerId).Chunk(10000);
         UpdateResult updateResult = new() { Total = replayPlayerMmrChanges.Count };
 
-        foreach(var chunk in chunks)
+        foreach (var chunk in chunks)
         {
             int startId = chunk.First().ReplayPlayerId;
             int endId = chunk.Last().ReplayPlayerId;
-            
+
             using var session = DocumentStoreHolder.Store.OpenAsyncSession();
             using BulkInsertOperation bulkInsert = DocumentStoreHolder.Store.BulkInsert();
 
@@ -62,7 +63,7 @@ public class RatingRepository : IRatingRepository
     {
         var chunks = playerRatings.OrderBy(o => o.PlayerId).Chunk(10000);
 
-        
+
         UpdateResult updateResult = new() { Total = playerRatings.Count };
         foreach (var chunk in chunks)
         {
@@ -116,9 +117,19 @@ public class RatingRepository : IRatingRepository
         return await session.Query<PlayerRating, PlayerRating_ByToonId>()
             .Where(x => x.ToonId == toonId)
             .FirstOrDefaultAsync(token);
-    }    
+    }
 
-    public async Task<List<PlayerRating>> GetRatings(RatingsRequest request, CancellationToken token)
+    public async Task<List<ReplayPlayerMmrChange>> GetReplayPlayerMmrChanges(List<int> replayPlayerIds, CancellationToken token)
+    {
+        using var session = DocumentStoreHolder.Store.OpenAsyncSession();
+
+        return await session.Query<ReplayPlayerMmrChange, ReplayPlayerMmrChange_ByReplayPlayerId>()
+            // .Where(x => replayPlayerIds.Contains(x.ReplayPlayerId))
+            .Where(x => x.ReplayPlayerId.In(replayPlayerIds))
+            .ToListAsync(token);
+    }
+
+    public async Task<PlayerRatingsResult> GetRatings(RatingsRequest request, CancellationToken token)
     {
         using var session = DocumentStoreHolder.Store.OpenAsyncSession();
 
@@ -126,65 +137,150 @@ public class RatingRepository : IRatingRepository
         query = FilterRatingPlayers(query, request.Search);
         query = SetOrder(query, request.Orders);
 
-        return await query
+        //var bab = query.ToAsyncDocumentQuery();
+
+        var playerRatigns = await query
+            //.OrderByDescending(o => o.Mmr)
+            .Statistics(out QueryStatistics stats)
             .Skip(request.Skip)
             .Take(request.Take)
             .ToListAsync(token);
+
+        return new()
+        {
+            Count = stats.TotalResults,
+            PlayerRatings = playerRatigns
+        };
     }
 
-    private static IQueryable<PlayerRating> SetOrder(IQueryable<PlayerRating> players, List<TableOrder> orders)
+    private static IRavenQueryable<PlayerRating> SetOrder(IRavenQueryable<PlayerRating> players, List<TableOrder> orders)
     {
-        foreach (var order in orders)
+        //foreach (var order in orders)
+        //{
+        //    if (order.Ascending)
+        //    {
+        //        players = players.AppendOrderBy(order.Property);
+        //    }
+        //    else
+        //    {
+        //        players = players.AppendOrderByDescending(order.Property);
+        //    }
+        //}
+
+        //var order = orders.LastOrDefault();
+        //if (order != null)
+        //{
+        //    var prop = typeof(PlayerRating).GetProperty(order.Property);
+        //    if (prop != null)
+        //    {
+        //        if (order.Ascending)
+        //        {
+        //            players = players.OrderBy(prop);
+        //        }
+        //        else
+        //        {
+        //            players = players.OrderByDescending(prop.Name);
+        //        }
+        //    }
+        //}
+
+        var order = orders.LastOrDefault();
+        if (order != null)
         {
-            if (order.Property == "Winrate")
+            if (order.Property == nameof(PlayerRating.Mmr))
             {
                 if (order.Ascending)
                 {
-                    players = players.OrderBy(o => o.Games > 0 ? o.Wins * 100.0 / o.Games : o.Wins);
+                    players = players.OrderBy(o => o.Mmr);
                 }
                 else
                 {
-                    players = players.OrderByDescending(o => o.Games > 0 ? o.Wins * 100.0 / o.Games : o.Wins);
+                    players = players.OrderByDescending(o => o.Mmr);
                 }
             }
-            else if (order.Property == "Mvprate")
+            else if (order.Property == nameof(PlayerRating.Name))
             {
                 if (order.Ascending)
                 {
-                    players = players.OrderBy(o => o.Games > 0 ? o.Mvp * 100.0 / o.Games : o.Mvp);
+                    players = players.OrderBy(o => o.Name);
                 }
                 else
                 {
-                    players = players.OrderByDescending(o => o.Games > 0 ? o.Mvp * 100.0 / o.Games : o.Mvp);
+                    players = players.OrderByDescending(o => o.Name);
                 }
             }
-            else if (order.Property == "Teamgames")
+            else if (order.Property == nameof(PlayerRating.Games))
             {
                 if (order.Ascending)
                 {
-                    players = players.OrderBy(o => o.Games > 0 ? o.TeamGames * 100.0 / o.Games : o.Games);
+                    players = players.OrderBy(o => o.Games);
                 }
                 else
                 {
-                    players = players.OrderByDescending(o => o.Games > 0 ? o.TeamGames * 100.0 / o.Games : o.Games);
+                    players = players.OrderByDescending(o => o.Games);
                 }
             }
-            else
+            else if (order.Property == nameof(PlayerRating.Mvp))
             {
                 if (order.Ascending)
                 {
-                    players = players.AppendOrderBy(order.Property);
+                    players = players.OrderBy(o => o.Mvp);
                 }
                 else
                 {
-                    players = players.AppendOrderByDescending(order.Property);
+                    players = players.OrderByDescending(o => o.Mvp);
+                }
+            }
+            else if (order.Property == nameof(PlayerRating.Mvprate))
+            {
+                if (order.Ascending)
+                {
+                    players = players.OrderBy(o => o.Mvprate);
+                }
+                else
+                {
+                    players = players.OrderByDescending(o => o.Mvprate);
+                }
+            }
+            else if (order.Property == nameof(PlayerRating.Mvprate))
+            {
+                if (order.Ascending)
+                {
+                    players = players.OrderBy(o => o.Mvprate);
+                }
+                else
+                {
+                    players = players.OrderByDescending(o => o.Mvprate);
+                }
+            }
+            else if (order.Property == nameof(PlayerRating.Winrate))
+            {
+                if (order.Ascending)
+                {
+                    players = players.OrderBy(o => o.Winrate);
+                }
+                else
+                {
+                    players = players.OrderByDescending(o => o.Winrate);
+                }
+            }
+            else if (order.Property == nameof(PlayerRating.RegionId))
+            {
+                if (order.Ascending)
+                {
+                    players = players.OrderBy(o => o.RegionId);
+                }
+                else
+                {
+                    players = players.OrderByDescending(o => o.RegionId);
                 }
             }
         }
+
         return players;
     }
 
-    private static IQueryable<PlayerRating> FilterRatingPlayers(IQueryable<PlayerRating> players, string? searchString)
+    private static IRavenQueryable<PlayerRating> FilterRatingPlayers(IRavenQueryable<PlayerRating> players, string? searchString)
     {
         if (string.IsNullOrEmpty(searchString))
         {
@@ -202,12 +298,10 @@ public class RatingRepository : IRatingRepository
 
     }
 
-    private static IQueryable<PlayerRating> GetQueriablePlayers(IAsyncDocumentSession session)
+    private static IRavenQueryable<PlayerRating> GetQueriablePlayers(IAsyncDocumentSession session)
     {
         return session.Query<PlayerRating>()
-            .OrderBy(o => o.PlayerId)
-            .Where(x => x.Games >= 20)
-            .AsQueryable();
+            .Where(x => x.Games >= 20);
     }
 
     public async Task<List<MmrDevDto>> GetRatingsDeviation()
@@ -223,6 +317,6 @@ public class RatingRepository : IRatingRepository
             })
             .OrderBy(o => o.Mmr)
             .ToListAsync();
-    }    
+    }
 }
 #pragma warning restore CA1822

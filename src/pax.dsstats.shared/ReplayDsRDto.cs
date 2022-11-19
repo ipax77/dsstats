@@ -59,7 +59,7 @@ public record RatingStatsDto
     public double Uncertainty { get; set; }
 }
 
-public record PlayerRating
+public class PlayerRating
 {
     public int PlayerId { get; init; }
     public string Name { get; init; } = null!;
@@ -77,10 +77,18 @@ public record PlayerRating
     public string? MmrOverTime { get; set; }
     public float Consistency { get; set; }
     public float Uncertainty { get; set; }
+    public float Winrate => Games == 0 ? 0 : MathF.Round(Wins * 100.0f / Games, 2);
+    public float Mvprate => Games == 0 ? 0 : MathF.Round(Mvp * 100.0f / Games, 2);
 }
 
-public record ReplayPlayerMmrChange
+public class ReplayPlayerMmrChange
 {
     public int ReplayPlayerId { get; set; }
     public float MmrChange { get; set; }
+}
+
+public record PlayerRatingsResult
+{
+    public int Count { get; set; }
+    public List<PlayerRating> PlayerRatings { get; set; } = new();
 }

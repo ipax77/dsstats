@@ -121,7 +121,7 @@
 
 @if (Interest != null)
 {
-    <PlayerDetailsComponent PlayerRatingDto="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
+    <PlayerDetailsComponent PlayerRating="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
 }
 
 @if (showBuilds.Where(x => x).Any())
@@ -172,7 +172,7 @@
 
     private bool showMiddleChart;
 
-    private PlayerRatingDto? Interest = null;
+    private PlayerRating? Interest = null;
 
     protected override void OnInitialized()
     {

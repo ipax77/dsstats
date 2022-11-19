@@ -26,7 +26,7 @@
 
 @code {
     [Parameter]
-    public EventCallback<PlayerRatingDto> OnPlayerSelected { get; set; }
+    public EventCallback<PlayerRating> OnPlayerSelected { get; set; }
 
     private bool isShowing;
 
@@ -44,9 +44,9 @@
         StateHasChanged();
     }
 
-    public void PlayerSelected(PlayerRatingDto playerRatingDto)
+    public void PlayerSelected(PlayerRating playerRating)
     {
-        OnPlayerSelected.InvokeAsync(playerRatingDto);
+        OnPlayerSelected.InvokeAsync(playerRating);
         Hide();
     }
 }

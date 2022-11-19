@@ -23,7 +23,7 @@ public class RatingsController
 
     [HttpPost]
     [Route("GetRatings")]
-    public async Task<ActionResult<List<PlayerRating>>> GetRatings(RatingsRequest request, CancellationToken token = default)
+    public async Task<ActionResult<PlayerRatingsResult>> GetRatings(RatingsRequest request, CancellationToken token = default)
     {
         try
         {

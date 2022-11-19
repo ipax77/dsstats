@@ -13,14 +13,14 @@ public class ReplayRepository : IReplayRepository
     private readonly ILogger<ReplayRepository> logger;
     private readonly ReplayContext context;
     private readonly IMapper mapper;
-    private readonly MmrService mmrService;
+    private readonly IRatingRepository ratingRepository;
 
-    public ReplayRepository(ILogger<ReplayRepository> logger, ReplayContext context, IMapper mapper, MmrService mmrService)
+    public ReplayRepository(ILogger<ReplayRepository> logger, ReplayContext context, IMapper mapper, IRatingRepository ratingRepository)
     {
         this.logger = logger;
         this.context = context;
         this.mapper = mapper;
-        this.mmrService = mmrService;
+        this.ratingRepository = ratingRepository;
     }
 
     public async Task<ReplayDto?> GetReplay(string replayHash, bool dry = false, CancellationToken token = default)
@@ -42,15 +42,16 @@ public class ReplayRepository : IReplayRepository
             return null;
         }
 
-        foreach (var rp in replay.ReplayPlayers)
+        var mmrChanges = await ratingRepository.GetReplayPlayerMmrChanges(replay.ReplayPlayers.Select(s => s.ReplayPlayerId).ToList(), token);
+
+        foreach (var mmrChange in mmrChanges)
         {
-            if (mmrService.ReplayPlayerMmrChanges.ContainsKey(rp.ReplayPlayerId))
+            var replayPlayer = replay.ReplayPlayers.FirstOrDefault(f => f.ReplayPlayerId == mmrChange.ReplayPlayerId);
+            if (replayPlayer == null)
             {
-                rp.MmrChange = mmrService.ReplayPlayerMmrChanges[rp.ReplayPlayerId];
-            } else
-            {
-                rp.MmrChange = 0;
+                continue;
             }
+            replayPlayer.MmrChange = mmrChange.MmrChange;
         }
 
         if (!dry)
@@ -378,7 +379,8 @@ public class ReplayRepository : IReplayRepository
                     logger.LogError($"failed saving replay: {ex.Message}");
                     throw;
                 }
-            } else
+            }
+            else
             {
                 dbPlayer.RegionId = player.Player.RegionId;
                 dbPlayer.Name = player.Player.Name;
