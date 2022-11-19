@@ -155,128 +155,17 @@ public class RatingRepository : IRatingRepository
 
     private static IRavenQueryable<PlayerRating> SetOrder(IRavenQueryable<PlayerRating> players, List<TableOrder> orders)
     {
-        //foreach (var order in orders)
-        //{
-        //    if (order.Ascending)
-        //    {
-        //        players = players.AppendOrderBy(order.Property);
-        //    }
-        //    else
-        //    {
-        //        players = players.AppendOrderByDescending(order.Property);
-        //    }
-        //}
-
-        //var order = orders.LastOrDefault();
-        //if (order != null)
-        //{
-        //    var prop = typeof(PlayerRating).GetProperty(order.Property);
-        //    if (prop != null)
-        //    {
-        //        if (order.Ascending)
-        //        {
-        //            players = players.OrderBy(prop);
-        //        }
-        //        else
-        //        {
-        //            players = players.OrderByDescending(prop.Name);
-        //        }
-        //    }
-        //}
-
-        var order = orders.LastOrDefault();
-        if (order != null)
+        foreach (var order in orders)
         {
-            if (order.Property == nameof(PlayerRating.Mmr))
+            if (order.Ascending)
             {
-                if (order.Ascending)
-                {
-                    players = players.OrderBy(o => o.Mmr);
-                }
-                else
-                {
-                    players = players.OrderByDescending(o => o.Mmr);
-                }
+                players = players.AppendOrderBy(order.Property);
             }
-            else if (order.Property == nameof(PlayerRating.Name))
+            else
             {
-                if (order.Ascending)
-                {
-                    players = players.OrderBy(o => o.Name);
-                }
-                else
-                {
-                    players = players.OrderByDescending(o => o.Name);
-                }
-            }
-            else if (order.Property == nameof(PlayerRating.Games))
-            {
-                if (order.Ascending)
-                {
-                    players = players.OrderBy(o => o.Games);
-                }
-                else
-                {
-                    players = players.OrderByDescending(o => o.Games);
-                }
-            }
-            else if (order.Property == nameof(PlayerRating.Mvp))
-            {
-                if (order.Ascending)
-                {
-                    players = players.OrderBy(o => o.Mvp);
-                }
-                else
-                {
-                    players = players.OrderByDescending(o => o.Mvp);
-                }
-            }
-            else if (order.Property == nameof(PlayerRating.Mvprate))
-            {
-                if (order.Ascending)
-                {
-                    players = players.OrderBy(o => o.Mvprate);
-                }
-                else
-                {
-                    players = players.OrderByDescending(o => o.Mvprate);
-                }
-            }
-            else if (order.Property == nameof(PlayerRating.Mvprate))
-            {
-                if (order.Ascending)
-                {
-                    players = players.OrderBy(o => o.Mvprate);
-                }
-                else
-                {
-                    players = players.OrderByDescending(o => o.Mvprate);
-                }
-            }
-            else if (order.Property == nameof(PlayerRating.Winrate))
-            {
-                if (order.Ascending)
-                {
-                    players = players.OrderBy(o => o.Winrate);
-                }
-                else
-                {
-                    players = players.OrderByDescending(o => o.Winrate);
-                }
-            }
-            else if (order.Property == nameof(PlayerRating.RegionId))
-            {
-                if (order.Ascending)
-                {
-                    players = players.OrderBy(o => o.RegionId);
-                }
-                else
-                {
-                    players = players.OrderByDescending(o => o.RegionId);
-                }
+                players = players.AppendOrderByDescending(order.Property);
             }
         }
-
         return players;
     }
 
