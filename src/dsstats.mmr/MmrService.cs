@@ -98,6 +98,7 @@ public static class MmrService
         return await replays
             .OrderBy(o => o.GameTime)
                 .ThenBy(o => o.ReplayId)
+            .Take(10)
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
             .ToListAsync();
     }

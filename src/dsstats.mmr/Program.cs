@@ -7,6 +7,8 @@ using pax.dsstats.dbng;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
 using Raven.Client.Documents.Session;
+using System.Text;
+using System.Globalization;
 
 namespace dsstats.mmr;
 
@@ -32,7 +34,7 @@ internal class Program
                     options.IncludeScopes = true;
                     options.SingleLine = true;
                     options.TimestampFormat = "yyyy-MM-dd hh:mm:ss ";
-                }).SetMinimumLevel(LogLevel.Information);
+                }).SetMinimumLevel(LogLevel.Warning);
             });
         services.AddDbContext<ReplayContext>(options =>
         {
@@ -52,7 +54,7 @@ internal class Program
 
         Stopwatch sw = Stopwatch.StartNew();
 
-        Produce(serviceProvider);
+        Produce(serviceProvider, false);
 
         sw.Stop();
         Console.WriteLine($"jobs done in {sw.ElapsedMilliseconds} ms");
@@ -109,15 +111,16 @@ internal class Program
         Console.WriteLine($"got data ({ratings.Count}) in {sw.ElapsedMilliseconds} ms");
     }
 
-    internal static void Produce(IServiceProvider serviceProvider)
+    internal static void Produce(IServiceProvider serviceProvider, bool mysql = false)
     {
         Stopwatch sw = Stopwatch.StartNew();
 
-        RavenService.DeleteRatings().GetAwaiter().GetResult();
-        sw.Stop();
-        Console.WriteLine($"cleared data in {sw.ElapsedMilliseconds} ms");
+        // RavenService.DeleteRatings().GetAwaiter().GetResult();
+        // sw.Stop();
+        // Console.WriteLine($"cleared data in {sw.ElapsedMilliseconds} ms");
 
-        sw.Start();
+        //sw.Start();
+
         var data = MmrService.GetCmdrReplayDsRDtos(serviceProvider, DateTime.MinValue, DateTime.MinValue)
             .GetAwaiter().GetResult();
         sw.Stop();
@@ -130,12 +133,79 @@ internal class Program
         Console.WriteLine($"calculated data in {sw.ElapsedMilliseconds} ms");
 
         sw.Restart();
-        RavenService.BulkInsert(ratingResult.Values.ToList()).GetAwaiter().GetResult();
-        RavenService.BulkInsert(changeResult).GetAwaiter().GetResult();
+        if (mysql)
+        {
+            SaveReplayPlayersData(serviceProvider, changeResult).GetAwaiter().GetResult();
+            SavePlayersData(serviceProvider, ratingResult.Values.ToList()).GetAwaiter().GetResult();
+        }
+        else
+        {
+            // RavenService.BulkInsert(ratingResult.Values.ToList()).GetAwaiter().GetResult();
+            // RavenService.BulkInsert(changeResult).GetAwaiter().GetResult();
+            var result = RavenService.UpdatePlayerRatings(ratingResult.Values.ToList()).GetAwaiter().GetResult();
+            var updateResult = RavenService.UpdateReplayPlayermmrChanges(changeResult).GetAwaiter().GetResult();
+            Console.WriteLine(result);
+            Console.WriteLine(updateResult);
+        }
         sw.Stop();
 
         Console.WriteLine($"data stored in {sw.ElapsedMilliseconds} ms");
     }
+
+    private static async Task SaveReplayPlayersData(IServiceProvider serviceProvider, List<ReplayPlayerMmrChange> replayPlayerMmrChanges)
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        StringBuilder sb = new();
+        int i = 0;
+        foreach (var replayPlayerMmrChange in replayPlayerMmrChanges)
+        {
+            sb.Append($"UPDATE {nameof(ReplayContext.ReplayPlayers)}" +
+                $" SET {nameof(ReplayPlayer.MmrChange)} = {replayPlayerMmrChange.MmrChange.ToString(CultureInfo.InvariantCulture)}" +
+                $" WHERE {nameof(ReplayPlayer.ReplayPlayerId)} = {replayPlayerMmrChange.ReplayPlayerId}; ");
+            i++;
+            if (i % 1000 == 0)
+            {
+                await context.Database.ExecuteSqlRawAsync(sb.ToString());
+                sb.Clear();
+            }
+        }
+
+        if (sb.Length > 0)
+        {
+            await context.Database.ExecuteSqlRawAsync(sb.ToString());
+        }
+    }
+
+    private static async Task SavePlayersData(IServiceProvider serviceProvider, List<PlayerRating> playerRatings)
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        StringBuilder sb = new();
+        int i = 0;
+        foreach (var playerRating in playerRatings)
+        {
+            sb.Append($"UPDATE {nameof(ReplayContext.Players)}" +
+                $" SET {nameof(Player.Mmr)} = {playerRating.Mmr.ToString(CultureInfo.InvariantCulture)}, {nameof(Player.MmrOverTime)} = ''" +
+                $" WHERE {nameof(Player.PlayerId)} = {playerRating.PlayerId}; ");
+
+            i++;
+            if (i % 500 == 0)
+            {
+                await context.Database.ExecuteSqlRawAsync(sb.ToString());
+                sb.Clear();
+            }
+        }
+
+
+        if (sb.Length > 0)
+        {
+            await context.Database.ExecuteSqlRawAsync(sb.ToString());
+        }
+    }
+
 }
 
 

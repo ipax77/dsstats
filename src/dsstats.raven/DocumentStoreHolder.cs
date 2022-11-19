@@ -1,4 +1,6 @@
-﻿using Raven.Client.Documents;
+﻿using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
+using Raven.Client.Documents;
 
 namespace dsstats.raven;
 public class DocumentStoreHolder
@@ -7,13 +9,22 @@ public class DocumentStoreHolder
 
     private static IDocumentStore CreateDocumentStore()
     {
-        string serverURL = "http://localhost:9102";
+        var json = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText("/data/localserverconfig.json"));
+        var config = json.GetProperty("ServerConfig");
+        var ravenCertPassword = config.GetProperty("RavenCertPassword").GetString();
+        var ravenServerUrl = config.GetProperty("RavenServerUrl").GetString();
+
+        X509Certificate2 clientCertificate = new X509Certificate2("/data/ravenClientCert.pfx", ravenCertPassword);
+
+        // string serverURL = "http://localhost:9102";
+        string serverURL = ravenServerUrl ?? "http://localhost:9102";
         string databaseName = "mmrdb";
 
         IDocumentStore documentStore = new DocumentStore
         {
-            Urls = new[] {serverURL},
-            Database = databaseName
+            Urls = new[] { serverURL },
+            Database = databaseName,
+            Certificate = clientCertificate
         };
 
         documentStore.Initialize();
