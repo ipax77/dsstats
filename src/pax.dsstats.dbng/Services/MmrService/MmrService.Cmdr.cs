@@ -119,7 +119,9 @@ public partial class MmrService
 
     private void SetCmdrMmrs(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, TeamData teamData)
     {
-        teamData.CmdrComboMmr = GetCommandersComboMmr(teamData.Players);
+        if (useCommanderMmr) {
+            teamData.CmdrComboMmr = GetCommandersComboMmr(teamData.Players);
+        }
         teamData.PlayersMeanMmr = GetPlayersComboMmr(playerRatingsCmdr, teamData.Players);
     }
 
@@ -204,9 +206,14 @@ public partial class MmrService
     {
         double commandersComboMMRSum = 0;
 
-        for (int playerIndex = 0; playerIndex < teamPlayers.Length; playerIndex++)
-        {
+        for (int playerIndex = 0; playerIndex < teamPlayers.Length; playerIndex++) {
             var playerCmdr = teamPlayers[playerIndex].ReplayPlayer.Race;
+
+            if ((int)playerCmdr <= 3) {
+                commandersComboMMRSum += startMmr;
+                continue;
+            }
+
 
             double synergySum = 0;
             double antiSynergySum = 0;
