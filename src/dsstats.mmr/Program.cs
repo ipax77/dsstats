@@ -1,7 +1,12 @@
 ﻿using System.Diagnostics;
-using Raven.Client.Documents;
-using Raven.Client.Documents.BulkInsert;
-using Raven.Client.Documents.Indexes;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System.Text.Json;
+using dsstats.raven;
+using pax.dsstats.dbng;
+using Microsoft.EntityFrameworkCore;
+using pax.dsstats.shared;
+using Raven.Client.Documents.Session;
 
 namespace dsstats.mmr;
 
@@ -9,86 +14,128 @@ internal class Program
 {
     static void Main(string[] args)
     {
-        Console.WriteLine("Hello World!");
+        var json = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText("/data/localserverconfig.json"));
+        var config = json.GetProperty("ServerConfig");
+        var connectionString = config.GetProperty("DsstatsConnectionString").GetString();
+        var serverVersion = new MySqlServerVersion(new System.Version(5, 0, 40));
 
-        using (var store = new DocumentStore
-        {
-            Urls = new string[] { "http://localhost:9102" },
-            Database = "mmrdb"
-        })
-        {
-            store.Initialize();
+        var services = new ServiceCollection();
 
-            // using (var session = store.OpenSession())
-            // {
-            //     var data = GetRandomData();
-            //     session.Store(data);
-            //     session.SaveChanges();
-            // }
-
-
-            // BULK INSERT
-            // var data = GetRandomData();
-
-
-            // using (BulkInsertOperation bulkInsert = store.BulkInsert())
-            // {
-            //     foreach (var d in data)
-            //     {
-            //         bulkInsert.Store(d);
-            //     }
-            // };
-
-
-            // GETDATA
-            using var session = store.OpenSession();
-
-            Stopwatch sw = Stopwatch.StartNew();
-
-            var mmr = session
-                .Query<ToonIdMmr, Auto_ToonIdMmrs_ByToonId>()
-                .Where(x => x.ToonId == 5555)
-                .Select(s => s.Mmr)
-                .FirstOrDefault();
-
-
-            sw.Stop();
-            Console.WriteLine($"elapsed {sw.ElapsedMilliseconds} ms");
-
-            Console.WriteLine($"mmr: {mmr}");
-        }
-    }
-
-    private static List<ToonIdMmr> GetRandomData()
-    {
-        Random random = new();
-        List<ToonIdMmr> toonIdMmrs = new List<ToonIdMmr>();
-        for (int i = 0; i < 100000; i++)
-        {
-            toonIdMmrs.Add(new ToonIdMmr()
+        services.AddAutoMapper(typeof(AutoMapperProfile));
+        services.AddSingleton<DocumentStoreHolder>();
+        services.AddLogging(builder =>
             {
-                ToonId = i + 1,
-                Mmr = random.Next(500, 2000)
+                builder.ClearProviders();
+                // Clear Microsoft's default providers (like eventlogs and others)
+                builder.AddSimpleConsole(options =>
+                {
+                    options.IncludeScopes = true;
+                    options.SingleLine = true;
+                    options.TimestampFormat = "yyyy-MM-dd hh:mm:ss ";
+                }).SetMinimumLevel(LogLevel.Information);
             });
-        }
-        return toonIdMmrs;
+        services.AddDbContext<ReplayContext>(options =>
+        {
+            options.UseMySql(connectionString, serverVersion, p =>
+            {
+                p.EnableRetryOnFailure();
+                p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
+            })
+            // .EnableDetailedErrors()
+            // .EnableSensitiveDataLogging()
+            ;
+        });
+
+        var serviceProvider = services.BuildServiceProvider();
+
+        // END SERVICE CONFIG
+
+        Stopwatch sw = Stopwatch.StartNew();
+
+        Produce(serviceProvider);
+
+        sw.Stop();
+        Console.WriteLine($"jobs done in {sw.ElapsedMilliseconds} ms");
     }
-}
 
-public class ToonIdMmr
-{
-    public int ToonId { get; set; }
-    public float Mmr { get; set; }
-}
-
-public class Auto_ToonIdMmrs_ByToonId : AbstractIndexCreationTask<ToonIdMmr>
-{
-    public Auto_ToonIdMmrs_ByToonId()
+    internal static void Request()
     {
-        Map = toonIdMmrs => from toonIdMmr in toonIdMmrs
-                           select new
-                           {
-                                ToonId = toonIdMmr.ToonId
-                           };
+        RatingsRequest ratingsRequest = new()
+        {
+            Skip = 20,
+            Take = 40,
+            // Search = "Feralan",
+            Orders = new()
+            {
+                new()
+                {
+                    Property = "Games",
+                    Ascending = true
+                },
+
+            }
+        };
+
+        var ratings = RavenService.GetPlayerRatings(ratingsRequest).GetAwaiter().GetResult();
+    }
+
+    internal static void CollectInital(int take)
+    {
+        using var session = DocumentStoreHolder.Store.OpenSession();
+
+        var ratings = session.Query<PlayerRating>()
+            .Statistics(out QueryStatistics stats)
+            .OrderByDescending(o => o.Mmr)
+            .Take(take)
+            .ToList();
+
+        Console.WriteLine($"got init data ({ratings.Count}|{stats.TotalResults}) in {stats.DurationInMs} ms");
+    }
+
+    internal static void Collect(int skip, int take)
+    {
+        using var session = DocumentStoreHolder.Store.OpenSession();
+
+        Stopwatch sw = Stopwatch.StartNew();
+
+        var ratings = session.Query<PlayerRating>()
+            .OrderByDescending(o => o.Mmr)
+            .Skip(skip)
+            .Take(take)
+            .ToList();
+
+        sw.Stop();
+
+        Console.WriteLine($"got data ({ratings.Count}) in {sw.ElapsedMilliseconds} ms");
+    }
+
+    internal static void Produce(IServiceProvider serviceProvider)
+    {
+        Stopwatch sw = Stopwatch.StartNew();
+
+        RavenService.DeleteRatings().GetAwaiter().GetResult();
+        sw.Stop();
+        Console.WriteLine($"cleared data in {sw.ElapsedMilliseconds} ms");
+
+        sw.Start();
+        var data = MmrService.GetCmdrReplayDsRDtos(serviceProvider, DateTime.MinValue, DateTime.MinValue)
+            .GetAwaiter().GetResult();
+        sw.Stop();
+        Console.WriteLine($"got data in {sw.ElapsedMilliseconds} ms");
+
+        sw.Restart();
+        (var ratingResult, var changeResult) = MmrService.GeneratePlayerRatings(data);
+        sw.Stop();
+
+        Console.WriteLine($"calculated data in {sw.ElapsedMilliseconds} ms");
+
+        sw.Restart();
+        RavenService.BulkInsert(ratingResult.Values.ToList()).GetAwaiter().GetResult();
+        RavenService.BulkInsert(changeResult).GetAwaiter().GetResult();
+        sw.Stop();
+
+        Console.WriteLine($"data stored in {sw.ElapsedMilliseconds} ms");
     }
 }
+
+

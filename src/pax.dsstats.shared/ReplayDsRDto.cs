@@ -29,6 +29,7 @@ public record PlayerDsRDto
     public int PlayerId { get; init; }
     public string Name { get; init; } = null!;
     public int ToonId { get; init; }
+    public int RegionId { get; init; }
     public int NotUploadCount { get; init; }
     public int LeaverCount { get; init; }
 }
@@ -56,4 +57,29 @@ public record RatingStatsDto
     public double Mmr { get; set; }
     public double Consistency { get; set; }
     public double Uncertainty { get; set; }
+}
+
+public record PlayerRating
+{
+    public int PlayerId { get; init; }
+    public string Name { get; init; } = null!;
+    public int ToonId { get; init; }
+    public int RegionId { get; init; }
+    public Commander Main { get; set; }
+    public float MainPercentage { get; set; }
+    public int Games { get; set; }
+    public int Wins { get; set; }
+    public int Mvp { get; set; }
+    public int TeamGames { get; set; }
+
+    public int MmrGames { get; set; }
+    public float Mmr { get; set; }
+    public float Consistency { get; set; }
+    public float Uncertainty { get; set; }
+}
+
+public record ReplayPlayerMmrChange
+{
+    public int ReplayPlayerId { get; set; }
+    public float MmrChange { get; set; }
 }
