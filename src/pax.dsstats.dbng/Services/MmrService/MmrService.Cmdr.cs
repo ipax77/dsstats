@@ -57,9 +57,9 @@ public partial class MmrService
             return;
         }
 
-        if (replay.ReplayPlayers.Any(a => (int)a.Race <= 3))
+        if (replay.ReplayPlayers.Any(a => (int)a.Race <= 3) && replay.ReplayPlayers.Min(x => x.Duration > 0))
         {
-            logger.LogDebug($"skipping wrong cmdr commanders");
+            logger.LogDebug($"skipping invalid commanders");
             return;
         }
 
