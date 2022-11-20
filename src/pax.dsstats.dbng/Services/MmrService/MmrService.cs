@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
 using System.Diagnostics;
 using System.Globalization;
+using System.Numerics;
 using System.Text;
 
 namespace pax.dsstats.dbng.Services;
@@ -36,18 +37,22 @@ public partial class MmrService
         handler?.Invoke(this, e);
     }
 
-    private static readonly double eloK = 64; // default 32
+    private static readonly double eloK = 64;//64; // default 32
     private static readonly double eloK_mult = 12.5;
     private static readonly double clip = eloK * eloK_mult; //shouldn't be bigger than startMmr!
     public static readonly double startMmr = 1000.0;
+
     private static readonly double consistencyImpact = 0.50;
     private static readonly double consistencyDeltaMult = 0.15;
+    private static readonly double confidenceImpact = 0.90;
+    private static readonly double confidenceDeltaMult = 1.00;
+
     private Dictionary<CmdrMmmrKey, CommanderMmr> cmdrMmrDic = new();
     private DateTime LatestReplayGameTime = DateTime.MinValue;
 
     private readonly bool useCommanderMmr = false;
     private readonly bool useConsistency = true;
-    private readonly bool useUncertanity = true;
+    private readonly bool useConfidence = true;
     private readonly bool useFactorToTeamMates = false;
     SemaphoreSlim ss = new(1, 1);
 
@@ -148,7 +153,7 @@ public partial class MmrService
                     Mvp = playerInfo.MvpCmdr,
                     TeamGames = playerInfo.TeamGamesCmdr,
                     Consistency = mmrInfoCmdr?.Consistency ?? 0,
-                    Uncertainty = mmrInfoCmdr?.Uncertainty ?? 0.5
+                    Confidence = mmrInfoCmdr?.Confidence ?? 0
                 },
                 StdRatingStats = new()
                 {
@@ -159,7 +164,7 @@ public partial class MmrService
                     Mvp = playerInfo.MvpStd,
                     TeamGames = playerInfo.TeamGamesStd,
                     Consistency = mmrInfoStd?.Consistency ?? 0,
-                    Uncertainty = mmrInfoStd?.Uncertainty ?? 0.5
+                    Confidence = mmrInfoStd?.Confidence ?? 0
                 }
             };
         }
@@ -177,7 +182,7 @@ public partial class MmrService
                 Mmr = lastPlRat?.Mmr ?? startMmr,
                 MmrGames = lastPlRat?.Index ?? 0,
                 Consistency = lastPlRat?.Consistency ?? 0,
-                Uncertainty = lastPlRat?.Uncertainty ?? 0.5
+                Confidence = lastPlRat?.Confidence ?? 0
             };
 
             toonIdRatingOverTime[toonId] = GetOverTimeRating(plRat) ?? "";
@@ -317,10 +322,6 @@ public partial class MmrService
 
     private void AddPlayersRankings(Dictionary<int, List<DsRCheckpoint>> playerRatings, TeamData teamData, DateTime gameTime)
     {
-        if (gameTime.ToString() == new DateTime(2022, 11, 10, 21, 33, 38).ToString())
-        {
-        }
-
         foreach (var player in teamData.Players)
         {
             var plRatings = playerRatings[GetMmrId(player.ReplayPlayer.Player)];
@@ -329,26 +330,22 @@ public partial class MmrService
 
             double mmrBefore = currentPlayerRating.Mmr;
             double consistencyBefore = currentPlayerRating.Consistency;
-            double uncertaintyBeforeSummed = currentPlayerRating.Uncertainty * gamesCountBefore;
+            double confidenceBefore = currentPlayerRating.Confidence;
 
             double mmrAfter = mmrBefore + player.PlayerMmrDelta;
             double consistencyAfter = consistencyBefore + player.PlayerConsistencyDelta;
-            double uncertaintyAfter = (uncertaintyBeforeSummed + teamData.UncertaintyDelta) / (gamesCountBefore + 1);
+            double confidenceAfter = confidenceBefore + player.PlayerConfidenceDelta;
 
             consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
+            confidenceAfter = Math.Clamp(confidenceAfter, 0, 1);
             mmrAfter = Math.Max(1, mmrAfter);
-
-            if (uncertaintyAfter != Math.Clamp(uncertaintyAfter, 0, 1))
-            {
-                throw new InvalidProgramException("ERROR: Uncertainty always has to be between 0 and 1!");
-            }
 
             ReplayPlayerMmrChanges[player.ReplayPlayer.ReplayPlayerId] = (float)(mmrAfter - mmrBefore);
             plRatings.Add(new DsRCheckpoint()
             {
                 Mmr = mmrAfter,
                 Consistency = consistencyAfter,
-                Uncertainty = uncertaintyAfter,
+                Confidence = confidenceAfter,
                 Index = gamesCountBefore + 1,
                 Time = gameTime
             });
@@ -395,20 +392,26 @@ public partial class MmrService
         return sb.ToString();
     }
 
-    private static void SetExpectationsToWin(Dictionary<int, List<DsRCheckpoint>> playerRatings, ReplayProcessData replayProcessData)
+    private static void SetExpectationsToWin(Dictionary<int, List<DsRCheckpoint>> playerRatings, ReplayData replayData)
     {
-        replayProcessData.WinnerPlayersExpectationToWin = EloExpectationToWin(replayProcessData.WinnerTeamData.PlayersMeanMmr, replayProcessData.LoserTeamData.PlayersMeanMmr);
-        replayProcessData.WinnerCmdrExpectationToWin = EloExpectationToWin(replayProcessData.WinnerTeamData.CmdrComboMmr, replayProcessData.LoserTeamData.CmdrComboMmr);
+        replayData.WinnerPlayersExpectationToWin = EloExpectationToWin(replayData.WinnerTeamData.PlayersAvgMmr, replayData.LoserTeamData.PlayersAvgMmr);
+        replayData.WinnerCmdrExpectationToWin = EloExpectationToWin(replayData.WinnerTeamData.CmdrComboMmr, replayData.LoserTeamData.CmdrComboMmr);
+    }
 
-        double winnerTotalExpectationToWin = replayProcessData.WinnerPlayersExpectationToWin/* * replayProcessData.WinnerCmdrExpectationToWin*/;
-        replayProcessData.WinnerTeamData.UncertaintyDelta = 1 - winnerTotalExpectationToWin;
-        replayProcessData.LoserTeamData.UncertaintyDelta = 1 - winnerTotalExpectationToWin;
+    private static void SetConfidence(Dictionary<int, List<DsRCheckpoint>> playerRatings, ReplayData replayData)
+    {
+        SetConfidence(playerRatings, replayData.WinnerTeamData);
+        SetConfidence(playerRatings, replayData.LoserTeamData);
 
-        double uncertaintyWinnerTeam = replayProcessData.WinnerTeamData.Players.Sum(x => playerRatings[GetMmrId(x.ReplayPlayer.Player)].Last().Uncertainty)
-            / replayProcessData.WinnerTeamData.Players.Length;
-        double uncertaintyLoserTeam = replayProcessData.LoserTeamData.Players.Sum(x => playerRatings[GetMmrId(x.ReplayPlayer.Player)].Last().Uncertainty)
-            / replayProcessData.LoserTeamData.Players.Length;
-        replayProcessData.Uncertainty = (uncertaintyWinnerTeam + uncertaintyLoserTeam) / 2;
+        replayData.Confidence = (replayData.WinnerTeamData.Confidence + replayData.LoserTeamData.Confidence) / 2;
+    }
+    private static void SetConfidence(Dictionary<int, List<DsRCheckpoint>> playerRatings, TeamData teamData)
+    {
+        foreach (var playerData in teamData.Players) {
+            playerData.Confidence = playerRatings[GetMmrId(playerData.ReplayPlayer.Player)].Last().Confidence;
+        }
+
+        teamData.Confidence = teamData.Players.Sum(p => p.Confidence) / teamData.Players.Length;
     }
 
     private static double EloExpectationToWin(double ratingOne, double ratingTwo)
@@ -434,8 +437,30 @@ public partial class MmrService
     private static double GetCorrectedRevConsistency(double raw_revConsistency)
     {
         return 1 + consistencyImpact * (raw_revConsistency - 1);
-        //return ((1 - consistencyImpact) + (consistencyImpact * raw_revConsistency)); //Equal to above
     }
+
+    static readonly double distributionMult = 1.0 / (1/*2*/);
+    private static double GetConfidenceFactor(double confidence)
+    {
+        double variance = ((distributionMult * 0.4) + (1 - confidence));
+
+        return distributionMult * (1 / (Math.Sqrt(2 * Math.PI) * Math.Abs(variance)));
+    }
+
+    private static double GetCorrectedConfidenceFactor(double playerConfidence, double replayConfidence)
+    {
+        double totalConfidenceFactor = (1 - GetConfidenceFactor(playerConfidence)) * GetConfidenceFactor(replayConfidence);
+        return 1 + confidenceImpact * (totalConfidenceFactor - 1);
+    }
+
+    //private static double GetNormalDistribution(double mean, double variance, double value)
+    //{
+    //    double potence = -Math.Pow(((value - mean) / (Math.Abs(variance) * Math.Sqrt(2))), 2);
+    //    double top = Math.Pow(Math.E, potence);
+    //    double bottom = Math.Sqrt(2 * Math.PI) * Math.Abs(variance);
+
+    //    return top / bottom;
+    //}
 
     private static double GetPlayersComboMmr(Dictionary<int, List<DsRCheckpoint>> playerRatings, PlayerData[] playerDatas)
     {
@@ -448,7 +473,7 @@ public partial class MmrService
                 playerRatings[GetMmrId(playerData.ReplayPlayer.Player)] = new List<DsRCheckpoint>() { new() {
                     Mmr = startMmr,
                     Consistency = 0,
-                    Uncertainty = 0.5,
+                    Confidence = 0,
                     Index = 0,
                     Time = DateTime.MinValue
                 } };
@@ -462,7 +487,7 @@ public partial class MmrService
         return teamMmr / playerDatas.Length;
     }
 
-    private static int GetMmrId(PlayerDsRDto player)
+    public static int GetMmrId(PlayerDsRDto player)
     {
         //todo
         return player.PlayerId;
@@ -530,5 +555,5 @@ public record MmrInfo
     public int MmrGames { get; set; }
     public double Mmr { get; set; }
     public double Consistency { get; set; }
-    public double Uncertainty { get; set; }
+    public double Confidence { get; set; }
 }
