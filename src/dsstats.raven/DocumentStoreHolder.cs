@@ -34,6 +34,10 @@ public class DocumentStoreHolder
         new PlayerRating_ByToonId().Execute(documentStore);
         new PlayerRating_ByPlayerId().Execute(documentStore);
         new ReplayPlayerMmrChange_ByReplayPlayerId().Execute(documentStore);
+        
+        new PlayerInfo_ByPlayerId().Execute(documentStore);
+        new PlayerInfo_ByPlayerIdAndRatingTypeCmdr().Execute(documentStore);
+        new PlayerInfo_ByPlayerIdAndRatingTypeStd().Execute(documentStore);
 
         return documentStore;
     }

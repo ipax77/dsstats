@@ -11,4 +11,5 @@ public interface IRatingRepository
     Task<PlayerRating?> GetPlayerRating(int toonId, CancellationToken token = default);
     Task<List<MmrDevDto>> GetRatingsDeviation();
     Task<List<ReplayPlayerMmrChange>> GetReplayPlayerMmrChanges(List<int> replayPlayerIds, CancellationToken token = default);
+    Task<UpdateResult> UpdatePlayerInfos(List<PlayerInfo> playerInfos, RatingType ratingType);
 }

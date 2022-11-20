@@ -39,3 +39,49 @@ public class ReplayPlayerMmrChange_ByReplayPlayerId : AbstractIndexCreationTask<
                             };
     }
 }
+
+public class PlayerInfo_ByPlayerId : AbstractIndexCreationTask<PlayerInfo>
+{
+    public PlayerInfo_ByPlayerId()
+    {
+        Map = infos => from info in infos
+                            select new
+                            {
+                                PlayerId = info.PlayerId
+                            };
+    }
+}
+
+public class PlayerInfo_ByPlayerIdAndRatingTypeCmdr : AbstractIndexCreationTask<PlayerInfo>
+{
+    public class Result
+    {
+        public Rating? Rating { get; set; }
+    }
+
+    public PlayerInfo_ByPlayerIdAndRatingTypeCmdr()
+    {
+        Map = playerInfos => from playerInfo in playerInfos
+                             select new Result
+                             {
+                                Rating = playerInfo.Ratings.Where(x => x.Type == RatingType.Cmdr).FirstOrDefault()
+                             };
+    }
+}
+
+public class PlayerInfo_ByPlayerIdAndRatingTypeStd : AbstractIndexCreationTask<PlayerInfo>
+{
+    public class Result
+    {
+        public Rating? Rating { get; set; }
+    }
+
+    public PlayerInfo_ByPlayerIdAndRatingTypeStd()
+    {
+        Map = playerInfos => from playerInfo in playerInfos
+                             select new Result
+                             {
+                                Rating = playerInfo.Ratings.Where(x => x.Type == RatingType.Std).FirstOrDefault()
+                             };
+    }
+}

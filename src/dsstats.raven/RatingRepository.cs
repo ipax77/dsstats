@@ -98,6 +98,65 @@ public class RatingRepository : IRatingRepository
         return updateResult;
     }
 
+    public async Task<UpdateResult> UpdatePlayerInfos(List<PlayerInfo> playerInfos, RatingType ratingType)
+    {
+        var chunks = playerInfos.OrderBy(o => o.PlayerId).Chunk(10000);
+
+
+        UpdateResult updateResult = new() { Total = playerInfos.Count };
+        foreach (var chunk in chunks)
+        {
+            using var session = DocumentStoreHolder.Store.OpenAsyncSession();
+            using BulkInsertOperation bulkInsert = DocumentStoreHolder.Store.BulkInsert();
+
+            int startId = chunk.First().PlayerId;
+            int endId = chunk.Last().PlayerId;
+
+            var infos = (await session.Query<PlayerInfo, PlayerInfo_ByPlayerId>()
+                .Where(x => x.PlayerId >= startId && x.PlayerId <= endId)
+                .ToListAsync()).ToDictionary(k => k.PlayerId, v => v);
+
+            for (int i = 0; i < chunk.Length; i++)
+            {
+                var info = chunk[i];
+                var newRating = info.Ratings.FirstOrDefault(f => f.Type == ratingType);
+                if (newRating == null)
+                {
+                    continue;
+                }
+
+                if (infos.ContainsKey(newRating.PlayerId))
+                {
+                    var dbInfo = infos[newRating.PlayerId];
+                    var dbRating = dbInfo.Ratings.FirstOrDefault(f => f.Type == ratingType);
+                    if (dbRating == null)
+                    {
+                        dbInfo.Ratings.Add(newRating);
+                    }
+                    else
+                    {
+                        dbRating.Games = newRating.Games;
+                        dbRating.Wins = newRating.Wins;
+                        dbRating.Mvp = newRating.Mvp;
+                        dbRating.Mmr = newRating.Mmr;
+                        dbRating.MmrOverTime = newRating.MmrOverTime;
+                        dbRating.Consistency = newRating.Consistency;
+                        dbRating.Uncertainty = newRating.Uncertainty;
+                    }
+                    updateResult.Update++;
+                }
+                else
+                {
+                    await bulkInsert.StoreAsync(info);
+                    updateResult.New++;
+                }
+            }
+            await session.SaveChangesAsync();
+        }
+        return updateResult;
+    }
+
+
     public async Task<string?> GetPlayerRatings(int toonId, CancellationToken token)
     {
         // todo: mmrId

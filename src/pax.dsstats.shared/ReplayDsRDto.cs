@@ -6,6 +6,7 @@ public record ReplayDsRDto
     public DateTime GameTime { get; init; }
     public byte Playercount { get; init; }
     public int Maxleaver { get; init; }
+    public int Maxkillsum { get; set; }
     public int WinnerTeam { get; set; }
     public int Duration { get; init; }
     public List<ReplayPlayerDsRDto> ReplayPlayers { get; init; } = new();
@@ -20,6 +21,7 @@ public record ReplayPlayerDsRDto
     public Commander Race { get; init; }
     public Commander OppRace { get; init; }
     public int Duration { get; init; }
+    public int Kills { get; set; }
     public bool IsUploader { get; init; }
     public float? MmrChange { get; set; } = null;
 }
@@ -57,28 +59,6 @@ public record RatingStatsDto
     public double Mmr { get; set; }
     public double Consistency { get; set; }
     public double Uncertainty { get; set; }
-}
-
-public class PlayerRating
-{
-    public int PlayerId { get; init; }
-    public string Name { get; init; } = null!;
-    public int ToonId { get; init; }
-    public int RegionId { get; init; }
-    public Commander Main { get; set; }
-    public float MainPercentage { get; set; }
-    public int Games { get; set; }
-    public int Wins { get; set; }
-    public int Mvp { get; set; }
-    public int TeamGames { get; set; }
-
-    public int MmrGames { get; set; }
-    public float Mmr { get; set; }
-    public string? MmrOverTime { get; set; }
-    public float Consistency { get; set; }
-    public float Uncertainty { get; set; }
-    public float Winrate => Games == 0 ? 0 : MathF.Round(Wins * 100.0f / Games, 2);
-    public float Mvprate => Games == 0 ? 0 : MathF.Round(Mvp * 100.0f / Games, 2);
 }
 
 public class ReplayPlayerMmrChange

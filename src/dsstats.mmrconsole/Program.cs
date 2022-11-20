@@ -61,7 +61,10 @@ internal class Program
 
         Stopwatch sw = Stopwatch.StartNew();
 
-        Produce(serviceProvider, false);
+        // Produce(serviceProvider);
+        // ProduceStd(serviceProvider);
+
+        Collect(0, 50);
 
         sw.Stop();
         Console.WriteLine($"jobs done in {sw.ElapsedMilliseconds} ms");
@@ -107,8 +110,9 @@ internal class Program
 
         Stopwatch sw = Stopwatch.StartNew();
 
-        var ratings = session.Query<PlayerRating>()
-            .OrderByDescending(o => o.Mmr)
+        var ratings = session.Query<PlayerInfo_ByPlayerIdAndRatingTypeCmdr.Result>()
+            .Where(x => x.Rating != null && x.Rating.Games > 10)
+            .OfType<Rating>()
             .Skip(skip)
             .Take(take)
             .ToList();
@@ -118,7 +122,7 @@ internal class Program
         Console.WriteLine($"got data ({ratings.Count}) in {sw.ElapsedMilliseconds} ms");
     }
 
-    internal static void Produce(IServiceProvider serviceProvider, bool mysql = false)
+    internal static void Produce(IServiceProvider serviceProvider)
     {
 
         Stopwatch sw = Stopwatch.StartNew();
@@ -129,38 +133,90 @@ internal class Program
 
         //sw.Start();
 
-        var data = GetCmdrReplayDsRDtos(serviceProvider, DateTime.MinValue, DateTime.MinValue)
+        var replays = GetCmdrReplayDsRDtos(serviceProvider, DateTime.MinValue, DateTime.MinValue)
             .GetAwaiter().GetResult();
         sw.Stop();
         Console.WriteLine($"got data in {sw.ElapsedMilliseconds} ms");
 
         sw.Restart();
-        (var ratingResult, var changeResult) = MmrService.GeneratePlayerRatings(data);
+
+        using var scope = serviceProvider.CreateScope();
+        var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
+
+        var cmdrMmrs = GetCommanderMmrs(serviceProvider).GetAwaiter().GetResult();
+        var cmdrMmrDic = cmdrMmrs.ToDictionary(k => new CmdrMmmrKey(k.Race, k.OppRace), v => new CmdrMmmrValue()
+        {
+            SynergyMmr = v.SynergyMmr,
+            AntiSynergyMmr = v.AntiSynergyMmr
+        });
+        Dictionary<int, CalcRating> mmrIdRatigns = new();
+
+        (mmrIdRatigns, var maxMmr) = MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatigns, MmrService.startMmr, ratingRepository, new())
+            .GetAwaiter().GetResult();
+
         sw.Stop();
 
         Console.WriteLine($"calculated data in {sw.ElapsedMilliseconds} ms");
 
         sw.Restart();
-        if (mysql)
-        {
-            SaveReplayPlayersData(serviceProvider, changeResult).GetAwaiter().GetResult();
-            SavePlayersData(serviceProvider, ratingResult.Values.ToList()).GetAwaiter().GetResult();
-        }
-        else
-        {
-            using var scope = serviceProvider.CreateScope();
-            var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
-            // RavenService.BulkInsert(ratingResult.Values.ToList()).GetAwaiter().GetResult();
-            // RavenService.BulkInsert(changeResult).GetAwaiter().GetResult();
-            var result = ratingRepository.UpdatePlayerRatings(ratingResult.Values.ToList()).GetAwaiter().GetResult();
-            var updateResult = ratingRepository.UpdateReplayPlayerMmrChanges(changeResult).GetAwaiter().GetResult();
-            Console.WriteLine(result);
-            Console.WriteLine(updateResult);
-        }
+
+        //var result = ratingRepository.UpdatePlayerRatings(ratingResult.Values.ToList()).GetAwaiter().GetResult();
+        var result = ratingRepository.UpdatePlayerInfos(MmrService.GeneratePlayerInfos(replays, mmrIdRatigns, RatingType.Cmdr), RatingType.Cmdr)
+            .GetAwaiter().GetResult();
+
+        Console.WriteLine(result);
         sw.Stop();
 
         Console.WriteLine($"data stored in {sw.ElapsedMilliseconds} ms");
     }
+
+    internal static void ProduceStd(IServiceProvider serviceProvider)
+    {
+
+        Stopwatch sw = Stopwatch.StartNew();
+
+        // RavenService.DeleteRatings().GetAwaiter().GetResult();
+        // sw.Stop();
+        // Console.WriteLine($"cleared data in {sw.ElapsedMilliseconds} ms");
+
+        //sw.Start();
+
+        var replays = GetStdReplayDsRDtos(serviceProvider, DateTime.MinValue, DateTime.MinValue)
+            .GetAwaiter().GetResult();
+        sw.Stop();
+        Console.WriteLine($"got data in {sw.ElapsedMilliseconds} ms");
+
+        sw.Restart();
+
+        using var scope = serviceProvider.CreateScope();
+        var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
+
+        var cmdrMmrs = GetCommanderMmrs(serviceProvider).GetAwaiter().GetResult();
+        var cmdrMmrDic = cmdrMmrs.ToDictionary(k => new CmdrMmmrKey(k.Race, k.OppRace), v => new CmdrMmmrValue()
+        {
+            SynergyMmr = v.SynergyMmr,
+            AntiSynergyMmr = v.AntiSynergyMmr
+        });
+        Dictionary<int, CalcRating> mmrIdRatigns = new();
+
+        (mmrIdRatigns, var maxMmr) = MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatigns, MmrService.startMmr, ratingRepository, new())
+            .GetAwaiter().GetResult();
+
+        sw.Stop();
+
+        Console.WriteLine($"calculated data in {sw.ElapsedMilliseconds} ms");
+
+        sw.Restart();
+
+        //var result = ratingRepository.UpdatePlayerRatings(ratingResult.Values.ToList()).GetAwaiter().GetResult();
+        var result = ratingRepository.UpdatePlayerInfos(MmrService.GeneratePlayerInfos(replays, mmrIdRatigns, RatingType.Std), RatingType.Std)
+            .GetAwaiter().GetResult();
+
+        Console.WriteLine(result);
+        sw.Stop();
+
+        Console.WriteLine($"data stored in {sw.ElapsedMilliseconds} ms");
+    }    
 
     private static async Task SaveReplayPlayersData(IServiceProvider serviceProvider, List<ReplayPlayerMmrChange> replayPlayerMmrChanges)
     {
@@ -247,6 +303,75 @@ internal class Program
                 .ThenBy(o => o.ReplayId)
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
             .ToListAsync();
+    }
+
+    public static async Task<List<ReplayDsRDto>> GetStdReplayDsRDtos(IServiceProvider serviceProvider, DateTime startTime, DateTime endTime)
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+
+        var replays = context.Replays
+            .Include(r => r.ReplayPlayers)
+                .ThenInclude(rp => rp.Player)
+            .Where(r => r.Playercount == 6
+                && r.Duration >= 300
+                && r.WinnerTeam > 0
+                && r.GameMode == GameMode.Standard)
+            .AsNoTracking();
+
+        if (startTime != DateTime.MinValue)
+        {
+            replays = replays.Where(x => x.GameTime >= startTime);
+        }
+
+        if (endTime != DateTime.MinValue && endTime < DateTime.Today)
+        {
+            replays = replays.Where(x => x.GameTime < endTime);
+        }
+
+        return await replays
+            .OrderBy(o => o.GameTime)
+                .ThenBy(o => o.ReplayId)
+            .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
+            .ToListAsync();
+    }    
+
+    public static async Task<List<CommanderMmr>> GetCommanderMmrs(IServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var cmdrMmrs = await context.CommanderMmrs
+            .AsNoTracking()
+            .ToListAsync()
+        ;
+
+        if (!cmdrMmrs.Any())
+        {
+            var commanderMmrs = await context.CommanderMmrs.ToListAsync();
+            var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
+
+            foreach (var race in allCommanders)
+            {
+                foreach (var oppRace in allCommanders)
+                {
+                    CommanderMmr cmdrMmr = new()
+                    {
+                        Race = race,
+                        OppRace = oppRace,
+
+                        SynergyMmr = MmrService.startMmr,
+                        AntiSynergyMmr = MmrService.startMmr
+                    };
+                    cmdrMmrs.Add(cmdrMmr);
+                }
+            }
+            context.CommanderMmrs.AddRange(cmdrMmrs);
+            await context.SaveChangesAsync();
+        }
+        return cmdrMmrs;
     }
 }
 
