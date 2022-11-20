@@ -8,7 +8,7 @@ public static partial class MmrService
     private const double eloK = 64; // default 32
     private const double eloK_mult = 12.5;
     private const double clip = eloK * eloK_mult; //shouldn't be bigger than startMmr!
-    public const float startMmr = 1000.0f;
+    public const double startMmr = 1000.0;
     private const double consistencyImpact = 0.50;
     private const double consistencyDeltaMult = 0.15;
     private const double AntiSynergyPercentage = 0.50;
