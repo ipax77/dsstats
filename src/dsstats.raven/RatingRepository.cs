@@ -224,7 +224,7 @@ public class RatingRepository : IRatingRepository
 
     private static IRavenQueryable<PlayerRatingCmdr> GetQueriablePlayers(IAsyncDocumentSession session)
     {
-        return session.Query<PlayerRatingCmdr>()
+        return session.Query<PlayerRatingCmdr, PlayerRatingCmdr_ByGamesAndMainAndMainPercentageAndMmrAndMvprateAndRegionIdAndWinrateAndSearchName>()
             .Where(x => x.Games >= 20);
     }
 

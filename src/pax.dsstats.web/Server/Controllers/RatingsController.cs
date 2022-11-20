@@ -61,7 +61,7 @@ public class RatingsController
 
     [HttpGet]
     [Route("PlayerRating/{toonId}")]
-    public async Task<PlayerRating?> GetPlayerRating(int toonId)
+    public async Task<PlayerRatingBase?> GetPlayerRating(int toonId)
     {
         return await ratingRepository.GetPlayerRating(toonId);
     }

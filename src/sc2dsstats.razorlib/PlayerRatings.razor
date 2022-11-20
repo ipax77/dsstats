@@ -186,12 +186,12 @@
 
     private int ratingsCount = 100;
     private PlayerRatingsDeviation? playerRatingsDeviation;
-    private Virtualize<PlayerRating>? virtualize;
+    private Virtualize<PlayerRatingBase>? virtualize;
     private DistributionRequestEnum DistributionRequest = DistributionRequestEnum.None;
 
     private EditContext editContext = null!;
 
-    private PlayerRating? Interest;
+    private PlayerRatingBase? Interest;
 
     protected override void OnInitialized()
     {
@@ -250,7 +250,7 @@
         await Reload();
     }
 
-    private async ValueTask<ItemsProviderResult<PlayerRating>> LoadRatings(ItemsProviderRequest request)
+    private async ValueTask<ItemsProviderResult<PlayerRatingBase>> LoadRatings(ItemsProviderRequest request)
     {
         var numRatings = Math.Min(request.Count, ratingsCount - request.StartIndex);
         RatingsRequest.Skip = request.StartIndex;
@@ -259,11 +259,11 @@
         if (ratingResult != null)
         {
             ratingsCount = ratingResult.Count;
-            return new ItemsProviderResult<PlayerRating>(ratingResult.PlayerRatings, ratingsCount);
+            return new ItemsProviderResult<PlayerRatingBase>(ratingResult.PlayerRatings, ratingsCount);
         }
         else
         {
-            return new ItemsProviderResult<PlayerRating>(new List<PlayerRating>(), ratingsCount);
+            return new ItemsProviderResult<PlayerRatingBase>(new List<PlayerRatingBase>(), ratingsCount);
         }
     }
 
@@ -279,12 +279,12 @@
     {
         if (RatingsRequest.ToonId != null && RatingsRequest.ToonId > 0)
         {
-            Interest = await dataService.GetPlayerRating(RatingsRequest.ToonId.Value);
+            //Interest = await dataService.GetPlayerRating(RatingsRequest.ToonId.Value);
             await InvokeAsync(() => StateHasChanged());
         }
     }
 
-    private void LoadPlayerChart(PlayerRating playerRating)
+    private void LoadPlayerChart(PlayerRatingBase playerRating)
     {
         Interest = playerRating;
         RatingsRequest.ToonId = playerRating.ToonId;

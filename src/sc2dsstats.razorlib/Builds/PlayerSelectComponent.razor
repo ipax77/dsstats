@@ -151,7 +151,7 @@
 
 @code {
     [Parameter]
-    public EventCallback<PlayerRating> OnPlayersSelected { get; set; }
+    public EventCallback<PlayerRatingBase> OnPlayersSelected { get; set; }
 
     private RatingsRequest ratingsRequest = new()
         {
@@ -169,7 +169,7 @@
 
     private EditContext editContext = null!;
     private int ratingsCount = 20;
-    private Virtualize<PlayerRating>? virtualize;
+    private Virtualize<PlayerRatingBase>? virtualize;
 
     protected override void OnInitialized()
     {
@@ -193,7 +193,7 @@
         await InvokeAsync(() => StateHasChanged());
     }
 
-    private async ValueTask<ItemsProviderResult<PlayerRating>> LoadRatings(ItemsProviderRequest request)
+    private async ValueTask<ItemsProviderResult<PlayerRatingBase>> LoadRatings(ItemsProviderRequest request)
     {
         var numRatings = Math.Min(request.Count, ratingsCount - request.StartIndex);
         ratingsRequest.Skip = request.StartIndex;
@@ -203,11 +203,11 @@
         if (ratingResult != null)
         {
             ratingsCount = ratingResult.Count;
-            return new ItemsProviderResult<PlayerRating>(ratingResult.PlayerRatings, ratingsCount);
+            return new ItemsProviderResult<PlayerRatingBase>(ratingResult.PlayerRatings, ratingsCount);
         }
         else
         {
-            return new ItemsProviderResult<PlayerRating>(new List<PlayerRating>(), ratingsCount);
+            return new ItemsProviderResult<PlayerRatingBase>(new List<PlayerRatingBase>(), ratingsCount);
         }
     }
 

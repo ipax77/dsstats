@@ -172,7 +172,7 @@
 
     private bool showMiddleChart;
 
-    private PlayerRating? Interest = null;
+    private PlayerRatingBase? Interest = null;
 
     protected override void OnInitialized()
     {
@@ -257,7 +257,7 @@
 
     private async Task ShowPlayerDetails(int toonId)
     {
-        Interest = await dataService.GetPlayerRating(toonId);
+        //Interest = await dataService.GetPlayerRating(toonId);
         await InvokeAsync(() => StateHasChanged());
     }
 

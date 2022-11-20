@@ -67,7 +67,8 @@ public static partial class MmrService
                     Mmr = rating.Mmr,
                     MmrOverTime = rating.MmrOverTime,
                     Consistency = rating.Consistency,
-                    Uncertainty = rating.Uncertainty
+                    Uncertainty = rating.Uncertainty,
+                    IsUploader = rating.IsUploader
                 });
             }
         }

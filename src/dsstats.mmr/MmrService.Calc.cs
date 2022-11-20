@@ -78,6 +78,10 @@ public static partial class MmrService
             {
                 currentPlayerRating.Mvp++;
             }
+            if (player.ReplayPlayer.IsUploader)
+            {
+                currentPlayerRating.IsUploader = true;
+            }
             currentPlayerRating.SetMmr((float)mmrAfter, gameTime);
         }
         return mmrChanges;
@@ -272,7 +276,7 @@ public static partial class MmrService
                     Uncertainty = 0.5f,
                     MmrOverTime = new()
                     {
-                        new() { Date = DateOnly.FromDateTime(gametime), Mmr = startMmr }
+                        new() { Date = gametime.ToString(@"yyyyMMdd"), Mmr = startMmr }
                     }
                 };
                 teamMmr += startMmr;

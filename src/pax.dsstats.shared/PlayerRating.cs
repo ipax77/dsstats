@@ -37,6 +37,7 @@ public record PlayerRatingBase
     public int Wins { get; set; }
     public int Mvp { get; set; }
     public int TeamGames { get; set; }
+    public bool IsUploader { get; set; }
 
     public double Mmr { get; set; }
     public List<TimeRating> MmrOverTime { get; set; } = new();
@@ -69,6 +70,7 @@ public class CalcRating
     public List<TimeRating> MmrOverTime { get; set; } = new();
     public float Consistency { get; set; }
     public float Uncertainty { get; set; }
+    public bool IsUploader { get; set; }
 }
 
 public record PlayerInfo
@@ -98,7 +100,7 @@ public record Rating
 
 public record TimeRating
 {
-    public DateOnly Date { get; set; }
+    public string Date { get; set; } = "";
     public float Mmr { get; set; }
 }
 
@@ -124,7 +126,7 @@ public static class PlayerRatingExtensions
         calcRating.Mmr = mmr;
         calcRating.MmrOverTime.Add(new()
         {
-            Date = DateOnly.FromDateTime(gametime),
+            Date = gametime.ToString(@"yyyyMMdd"),
             Mmr = mmr
         });
     }

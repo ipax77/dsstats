@@ -26,7 +26,7 @@
 
 @code {
     [Parameter]
-    public EventCallback<PlayerRating> OnPlayerSelected { get; set; }
+    public EventCallback<PlayerRatingBase> OnPlayerSelected { get; set; }
 
     private bool isShowing;
 
@@ -44,7 +44,7 @@
         StateHasChanged();
     }
 
-    public void PlayerSelected(PlayerRating playerRating)
+    public void PlayerSelected(PlayerRatingBase playerRating)
     {
         OnPlayerSelected.InvokeAsync(playerRating);
         Hide();
