@@ -55,5 +55,5 @@ public record RatingStatsDto
     public int MmrGames { get; set; }
     public double Mmr { get; set; }
     public double Consistency { get; set; }
-    public double Uncertainty { get; set; }
+    public double Confidence { get; set; }
 }

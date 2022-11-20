@@ -70,7 +70,7 @@ public static partial class Parse
 
         if (!playerIds.SequenceEqual(playerPos))
         {
-            if (replay.Players.Any() && (replay.Players.First().Pos != replay.Players.First().WorkingsetSlot))
+            if (replay.Players.Any(a => a.Pos != a.WorkingsetSlot))
             {
                 foreach (var player in replay.Players)
                 {

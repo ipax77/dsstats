@@ -10,7 +10,7 @@ public partial class MmrService
     public bool IsProgressActive;
 
 
-    private void SetProgress(ReplayProcessData processData, bool std)
+    private void SetProgress(ReplayData processData, bool std)
     {
         foreach (var playerData in processData.WinnerTeamData.Players)
         {
