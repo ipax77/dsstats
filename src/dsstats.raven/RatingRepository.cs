@@ -14,10 +14,6 @@ public class RatingRepository : IRatingRepository
 {
     public async Task DeleteRatings()
     {
-        var ratingOperation = await DocumentStoreHolder.Store
-            .Operations
-            .SendAsync(new DeleteByQueryOperation<PlayerRating, PlayerRating_ByPlayerId>(x => x.PlayerId > 0));
-
         var changeOperation = await DocumentStoreHolder.Store
             .Operations
             .SendAsync(new DeleteByQueryOperation<ReplayPlayerMmrChange, ReplayPlayerMmrChange_ByReplayPlayerId>(x => x.ReplayPlayerId > 0));
@@ -59,10 +55,9 @@ public class RatingRepository : IRatingRepository
         return updateResult;
     }
 
-    public async Task<UpdateResult> UpdatePlayerRatings(List<PlayerRating> playerRatings)
+    public async Task<UpdateResult> UpdatePlayerRatings<T>(List<PlayerRatingBase> playerRatings) where T : PlayerRatingBase, new()
     {
         var chunks = playerRatings.OrderBy(o => o.PlayerId).Chunk(10000);
-
 
         UpdateResult updateResult = new() { Total = playerRatings.Count };
         foreach (var chunk in chunks)
@@ -73,18 +68,58 @@ public class RatingRepository : IRatingRepository
             int startId = chunk.First().PlayerId;
             int endId = chunk.Last().PlayerId;
 
-            var ratings = (await session.Query<PlayerRating, PlayerRating_ByPlayerId>()
-                .Where(x => x.PlayerId >= startId && x.PlayerId <= endId)
-                .ToListAsync()).ToDictionary(k => k.PlayerId, v => v);
+            Dictionary<int, T> playerIdRatings;
+
+            if (typeof(T) == typeof(PlayerRatingCmdr))
+            {
+                playerIdRatings = (await session.Query<PlayerRatingCmdr, PlayerRatingCmdr_ByPlayerId>()
+                    .Where(x => x.PlayerId >= startId && x.PlayerId <= endId)
+                    .ToListAsync()).ToDictionary(k => k.PlayerId, v => v as T ?? throw new ArgumentException(nameof(T)));
+
+            }
+            else if (typeof(T) == typeof(PlayerRatingStd))
+            {
+                playerIdRatings = (await session.Query<PlayerRatingStd, PlayerRatingStd_ByPlayerId>()
+                    .Where(x => x.PlayerId >= startId && x.PlayerId <= endId)
+                    .ToListAsync()).ToDictionary(k => k.PlayerId, v => v as T ?? throw new ArgumentException(nameof(T)));
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
 
             for (int i = 0; i < chunk.Length; i++)
             {
-                var newRating = chunk[i];
-                if (ratings.ContainsKey(newRating.PlayerId))
+                T? newRating;
+
+                if (typeof(T) == typeof(PlayerRatingCmdr))
                 {
-                    var dbRating = ratings[newRating.PlayerId];
+                    newRating = new PlayerRatingCmdr(chunk[i]) as T;
+                }
+                else if (typeof(T) == typeof(PlayerRatingStd))
+                {
+                    newRating = new PlayerRatingStd(chunk[i]) as T;
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+
+                if (newRating == null)
+                {
+                    continue;
+                }
+
+                if (playerIdRatings.ContainsKey(newRating.PlayerId))
+                {
+                    var dbRating = playerIdRatings[newRating.PlayerId];
+                    dbRating.Games = newRating.Games;
+                    dbRating.Wins = newRating.Wins;
+                    dbRating.Mvp = newRating.Mvp;
                     dbRating.Mmr = newRating.Mmr;
-                    // ...
+                    dbRating.MmrOverTime = newRating.MmrOverTime;
+                    dbRating.Consistency = newRating.Consistency;
+                    dbRating.Uncertainty = newRating.Uncertainty;
                     updateResult.Update++;
                 }
                 else
@@ -98,82 +133,24 @@ public class RatingRepository : IRatingRepository
         return updateResult;
     }
 
-    public async Task<UpdateResult> UpdatePlayerInfos(List<PlayerInfo> playerInfos, RatingType ratingType)
-    {
-        var chunks = playerInfos.OrderBy(o => o.PlayerId).Chunk(10000);
-
-
-        UpdateResult updateResult = new() { Total = playerInfos.Count };
-        foreach (var chunk in chunks)
-        {
-            using var session = DocumentStoreHolder.Store.OpenAsyncSession();
-            using BulkInsertOperation bulkInsert = DocumentStoreHolder.Store.BulkInsert();
-
-            int startId = chunk.First().PlayerId;
-            int endId = chunk.Last().PlayerId;
-
-            var infos = (await session.Query<PlayerInfo, PlayerInfo_ByPlayerId>()
-                .Where(x => x.PlayerId >= startId && x.PlayerId <= endId)
-                .ToListAsync()).ToDictionary(k => k.PlayerId, v => v);
-
-            for (int i = 0; i < chunk.Length; i++)
-            {
-                var info = chunk[i];
-                var newRating = info.Ratings.FirstOrDefault(f => f.Type == ratingType);
-                if (newRating == null)
-                {
-                    continue;
-                }
-
-                if (infos.ContainsKey(newRating.PlayerId))
-                {
-                    var dbInfo = infos[newRating.PlayerId];
-                    var dbRating = dbInfo.Ratings.FirstOrDefault(f => f.Type == ratingType);
-                    if (dbRating == null)
-                    {
-                        dbInfo.Ratings.Add(newRating);
-                    }
-                    else
-                    {
-                        dbRating.Games = newRating.Games;
-                        dbRating.Wins = newRating.Wins;
-                        dbRating.Mvp = newRating.Mvp;
-                        dbRating.Mmr = newRating.Mmr;
-                        dbRating.MmrOverTime = newRating.MmrOverTime;
-                        dbRating.Consistency = newRating.Consistency;
-                        dbRating.Uncertainty = newRating.Uncertainty;
-                    }
-                    updateResult.Update++;
-                }
-                else
-                {
-                    await bulkInsert.StoreAsync(info);
-                    updateResult.New++;
-                }
-            }
-            await session.SaveChangesAsync();
-        }
-        return updateResult;
-    }
-
-
     public async Task<string?> GetPlayerRatings(int toonId, CancellationToken token)
     {
         // todo: mmrId
         using var session = DocumentStoreHolder.Store.OpenAsyncSession();
 
-        return await session.Query<PlayerRating, PlayerRating_ByToonId>()
+        return (await session.Query<PlayerRatingCmdr, PlayerRatingCmdr_ByToonId>()
             .Where(x => x.ToonId == toonId)
             .Select(s => s.MmrOverTime)
-            .FirstOrDefaultAsync(token);
+            .FirstOrDefaultAsync(token))
+            .ToString(); // todo
     }
 
-    public async Task<PlayerRating?> GetPlayerRating(int toonId, CancellationToken token)
+    public async Task<PlayerRatingBase?> GetPlayerRating(int toonId, CancellationToken token)
     {
         // todo: mmrId
         using var session = DocumentStoreHolder.Store.OpenAsyncSession();
 
-        return await session.Query<PlayerRating, PlayerRating_ByToonId>()
+        return await session.Query<PlayerRatingCmdr, PlayerRatingCmdr_ByToonId>()
             .Where(x => x.ToonId == toonId)
             .FirstOrDefaultAsync(token);
     }
@@ -183,7 +160,6 @@ public class RatingRepository : IRatingRepository
         using var session = DocumentStoreHolder.Store.OpenAsyncSession();
 
         return await session.Query<ReplayPlayerMmrChange, ReplayPlayerMmrChange_ByReplayPlayerId>()
-            // .Where(x => replayPlayerIds.Contains(x.ReplayPlayerId))
             .Where(x => x.ReplayPlayerId.In(replayPlayerIds))
             .ToListAsync(token);
     }
@@ -208,11 +184,11 @@ public class RatingRepository : IRatingRepository
         return new()
         {
             Count = stats.TotalResults,
-            PlayerRatings = playerRatigns
+            PlayerRatings = playerRatigns.Cast<PlayerRatingBase>().ToList()
         };
     }
 
-    private static IRavenQueryable<PlayerRating> SetOrder(IRavenQueryable<PlayerRating> players, List<TableOrder> orders)
+    private static IRavenQueryable<PlayerRatingCmdr> SetOrder(IRavenQueryable<PlayerRatingCmdr> players, List<TableOrder> orders)
     {
         foreach (var order in orders)
         {
@@ -228,7 +204,7 @@ public class RatingRepository : IRatingRepository
         return players;
     }
 
-    private static IRavenQueryable<PlayerRating> FilterRatingPlayers(IRavenQueryable<PlayerRating> players, string? searchString)
+    private static IRavenQueryable<PlayerRatingCmdr> FilterRatingPlayers(IRavenQueryable<PlayerRatingCmdr> players, string? searchString)
     {
         if (string.IsNullOrEmpty(searchString))
         {
@@ -246,9 +222,9 @@ public class RatingRepository : IRatingRepository
 
     }
 
-    private static IRavenQueryable<PlayerRating> GetQueriablePlayers(IAsyncDocumentSession session)
+    private static IRavenQueryable<PlayerRatingCmdr> GetQueriablePlayers(IAsyncDocumentSession session)
     {
-        return session.Query<PlayerRating>()
+        return session.Query<PlayerRatingCmdr>()
             .Where(x => x.Games >= 20);
     }
 
@@ -256,7 +232,7 @@ public class RatingRepository : IRatingRepository
     {
         using var session = DocumentStoreHolder.Store.OpenAsyncSession();
 
-        return await session.Query<PlayerRating>()
+        return await session.Query<PlayerRatingCmdr>()
             .GroupBy(g => Math.Round(g.Mmr, 0))
             .Select(s => new MmrDevDto
             {

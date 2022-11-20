@@ -31,13 +31,13 @@ public class DocumentStoreHolder
         documentStore.Initialize();
 
         // indices
-        new PlayerRating_ByToonId().Execute(documentStore);
-        new PlayerRating_ByPlayerId().Execute(documentStore);
+        new PlayerRatingCmdr_ByPlayerId().Execute(documentStore);
+        new PlayerRatingCmdr_ByToonId().Execute(documentStore);
+
+        new PlayerRatingStd_ByPlayerId().Execute(documentStore);
+        new PlayerRatingStd_ByToonId().Execute(documentStore);
+
         new ReplayPlayerMmrChange_ByReplayPlayerId().Execute(documentStore);
-        
-        new PlayerInfo_ByPlayerId().Execute(documentStore);
-        new PlayerInfo_ByPlayerIdAndRatingTypeCmdr().Execute(documentStore);
-        new PlayerInfo_ByPlayerIdAndRatingTypeStd().Execute(documentStore);
 
         return documentStore;
     }

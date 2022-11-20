@@ -64,11 +64,11 @@ public record RatingStatsDto
 public class ReplayPlayerMmrChange
 {
     public int ReplayPlayerId { get; set; }
-    public float MmrChange { get; set; }
+    public double MmrChange { get; set; }
 }
 
 public record PlayerRatingsResult
 {
     public int Count { get; set; }
-    public List<PlayerRating> PlayerRatings { get; set; } = new();
+    public List<PlayerRatingBase> PlayerRatings { get; set; } = new();
 }

@@ -61,10 +61,8 @@ internal class Program
 
         Stopwatch sw = Stopwatch.StartNew();
 
-        // Produce(serviceProvider);
-        // ProduceStd(serviceProvider);
-
-        Collect(0, 50);
+        Produce(serviceProvider);
+        ProduceStd(serviceProvider);
 
         sw.Stop();
         Console.WriteLine($"jobs done in {sw.ElapsedMilliseconds} ms");
@@ -110,28 +108,22 @@ internal class Program
 
         Stopwatch sw = Stopwatch.StartNew();
 
-        var ratings = session.Query<PlayerInfo_ByPlayerIdAndRatingTypeCmdr.Result>()
-            .Where(x => x.Rating != null && x.Rating.Games > 10)
-            .OfType<Rating>()
-            .Skip(skip)
-            .Take(take)
-            .ToList();
+        // var ratings = session.Query<PlayerInfo_ByPlayerIdAndRatingTypeCmdr.Result>()
+        //     .Where(x => x.Rating != null && x.Rating.Games > 10)
+        //     .OfType<Rating>()
+        //     .Skip(skip)
+        //     .Take(take)
+        //     .ToList();
 
         sw.Stop();
 
-        Console.WriteLine($"got data ({ratings.Count}) in {sw.ElapsedMilliseconds} ms");
+        //Console.WriteLine($"got data ({ratings.Count}) in {sw.ElapsedMilliseconds} ms");
     }
 
     internal static void Produce(IServiceProvider serviceProvider)
     {
 
         Stopwatch sw = Stopwatch.StartNew();
-
-        // RavenService.DeleteRatings().GetAwaiter().GetResult();
-        // sw.Stop();
-        // Console.WriteLine($"cleared data in {sw.ElapsedMilliseconds} ms");
-
-        //sw.Start();
 
         var replays = GetCmdrReplayDsRDtos(serviceProvider, DateTime.MinValue, DateTime.MinValue)
             .GetAwaiter().GetResult();
@@ -160,8 +152,7 @@ internal class Program
 
         sw.Restart();
 
-        //var result = ratingRepository.UpdatePlayerRatings(ratingResult.Values.ToList()).GetAwaiter().GetResult();
-        var result = ratingRepository.UpdatePlayerInfos(MmrService.GeneratePlayerInfos(replays, mmrIdRatigns, RatingType.Cmdr), RatingType.Cmdr)
+        var result = ratingRepository.UpdatePlayerRatings<PlayerRatingCmdr>(MmrService.GeneratePlayerRatings(replays, mmrIdRatigns))
             .GetAwaiter().GetResult();
 
         Console.WriteLine(result);
@@ -174,12 +165,6 @@ internal class Program
     {
 
         Stopwatch sw = Stopwatch.StartNew();
-
-        // RavenService.DeleteRatings().GetAwaiter().GetResult();
-        // sw.Stop();
-        // Console.WriteLine($"cleared data in {sw.ElapsedMilliseconds} ms");
-
-        //sw.Start();
 
         var replays = GetStdReplayDsRDtos(serviceProvider, DateTime.MinValue, DateTime.MinValue)
             .GetAwaiter().GetResult();
@@ -209,7 +194,7 @@ internal class Program
         sw.Restart();
 
         //var result = ratingRepository.UpdatePlayerRatings(ratingResult.Values.ToList()).GetAwaiter().GetResult();
-        var result = ratingRepository.UpdatePlayerInfos(MmrService.GeneratePlayerInfos(replays, mmrIdRatigns, RatingType.Std), RatingType.Std)
+        var result = ratingRepository.UpdatePlayerRatings<PlayerRatingStd>(MmrService.GeneratePlayerRatings(replays, mmrIdRatigns))
             .GetAwaiter().GetResult();
 
         Console.WriteLine(result);

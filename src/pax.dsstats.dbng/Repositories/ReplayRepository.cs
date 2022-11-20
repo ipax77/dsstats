@@ -3,7 +3,6 @@ using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng.Extensions;
-using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng.Repositories;
@@ -51,7 +50,7 @@ public class ReplayRepository : IReplayRepository
             {
                 continue;
             }
-            replayPlayer.MmrChange = mmrChange.MmrChange;
+            replayPlayer.MmrChange = (float)mmrChange.MmrChange;
         }
 
         if (!dry)

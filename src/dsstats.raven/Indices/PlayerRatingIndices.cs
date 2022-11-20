@@ -4,84 +4,50 @@ using Raven.Client.Documents.Indexes;
 
 namespace dsstats.raven;
 
-public class PlayerRating_ByToonId : AbstractIndexCreationTask<PlayerRating>
+public class PlayerRatingCmdr_ByPlayerId : AbstractIndexCreationTask<PlayerRatingCmdr>
 {
-    public PlayerRating_ByToonId()
+    public PlayerRatingCmdr_ByPlayerId()
     {
         Map = toonIdPlayerRatings => from toonIdPlayerRating in toonIdPlayerRatings
-                            select new
-                            {
-                                ToonId = toonIdPlayerRating.ToonId
-                            };
+                                     select new
+                                     {
+                                         PlayerId = toonIdPlayerRating.PlayerId
+                                     };
     }
 }
 
-public class PlayerRating_ByPlayerId : AbstractIndexCreationTask<PlayerRating>
+public class PlayerRatingCmdr_ByToonId : AbstractIndexCreationTask<PlayerRatingCmdr>
 {
-    public PlayerRating_ByPlayerId()
+    public PlayerRatingCmdr_ByToonId()
     {
         Map = toonIdPlayerRatings => from toonIdPlayerRating in toonIdPlayerRatings
-                            select new
-                            {
-                                PlayerId = toonIdPlayerRating.PlayerId
-                            };
+                                     select new
+                                     {
+                                         ToonId = toonIdPlayerRating.ToonId
+                                     };
     }
 }
 
-public class ReplayPlayerMmrChange_ByReplayPlayerId : AbstractIndexCreationTask<ReplayPlayerMmrChange>
+public class PlayerRatingStd_ByPlayerId : AbstractIndexCreationTask<PlayerRatingStd>
 {
-    public ReplayPlayerMmrChange_ByReplayPlayerId()
+    public PlayerRatingStd_ByPlayerId()
     {
-        Map = replayPlayerMmrChanges => from replayPlayerMmrChange in replayPlayerMmrChanges
-                            select new
-                            {
-                                ReplayPlayerId = replayPlayerMmrChange.ReplayPlayerId
-                            };
+        Map = toonIdPlayerRatings => from toonIdPlayerRating in toonIdPlayerRatings
+                                     select new
+                                     {
+                                         PlayerId = toonIdPlayerRating.PlayerId
+                                     };
     }
 }
 
-public class PlayerInfo_ByPlayerId : AbstractIndexCreationTask<PlayerInfo>
+public class PlayerRatingStd_ByToonId : AbstractIndexCreationTask<PlayerRatingStd>
 {
-    public PlayerInfo_ByPlayerId()
+    public PlayerRatingStd_ByToonId()
     {
-        Map = infos => from info in infos
-                            select new
-                            {
-                                PlayerId = info.PlayerId
-                            };
-    }
-}
-
-public class PlayerInfo_ByPlayerIdAndRatingTypeCmdr : AbstractIndexCreationTask<PlayerInfo>
-{
-    public class Result
-    {
-        public Rating? Rating { get; set; }
-    }
-
-    public PlayerInfo_ByPlayerIdAndRatingTypeCmdr()
-    {
-        Map = playerInfos => from playerInfo in playerInfos
-                             select new Result
-                             {
-                                Rating = playerInfo.Ratings.Where(x => x.Type == RatingType.Cmdr).FirstOrDefault()
-                             };
-    }
-}
-
-public class PlayerInfo_ByPlayerIdAndRatingTypeStd : AbstractIndexCreationTask<PlayerInfo>
-{
-    public class Result
-    {
-        public Rating? Rating { get; set; }
-    }
-
-    public PlayerInfo_ByPlayerIdAndRatingTypeStd()
-    {
-        Map = playerInfos => from playerInfo in playerInfos
-                             select new Result
-                             {
-                                Rating = playerInfo.Ratings.Where(x => x.Type == RatingType.Std).FirstOrDefault()
-                             };
+        Map = toonIdPlayerRatings => from toonIdPlayerRating in toonIdPlayerRatings
+                                     select new
+                                     {
+                                         ToonId = toonIdPlayerRating.ToonId
+                                     };
     }
 }

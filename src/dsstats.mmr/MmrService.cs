@@ -45,9 +45,9 @@ public static partial class MmrService
         return (mmrIdRatings, maxMmr);
     }
 
-    public static List<PlayerInfo> GeneratePlayerInfos(List<ReplayDsRDto> replays, Dictionary<int, CalcRating> mmrIdRatings, RatingType ratingType)
+    public static List<PlayerRatingBase> GeneratePlayerRatings(List<ReplayDsRDto> replays, Dictionary<int, CalcRating> mmrIdRatings)
     {
-        List<PlayerInfo> ratings = new();
+        List<PlayerRatingBase> ratings = new();
 
         foreach (var player in replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct())
         {
@@ -61,21 +61,13 @@ public static partial class MmrService
                     Name = player.Name,
                     ToonId = player.ToonId,
                     RegionId = player.RegionId,
-                    Ratings = new()
-                    {
-                        new() 
-                        {
-                            PlayerId = player.PlayerId,
-                            Type = ratingType,
-                            Games = rating.Games,
-                            Wins = rating.Wins,
-                            Mvp = rating.Mvp,
-                            Mmr = rating.Mmr,
-                            MmrOverTime = rating.MmrOverTime,
-                            Consistency = rating.Consistency,
-                            Uncertainty = rating.Uncertainty
-                        }
-                    }
+                    Games = rating.Games,
+                    Wins = rating.Wins,
+                    Mvp = rating.Mvp,
+                    Mmr = rating.Mmr,
+                    MmrOverTime = rating.MmrOverTime,
+                    Consistency = rating.Consistency,
+                    Uncertainty = rating.Uncertainty
                 });
             }
         }

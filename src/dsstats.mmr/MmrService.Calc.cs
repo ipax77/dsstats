@@ -64,7 +64,7 @@ public static partial class MmrService
             mmrChanges.Add(new ReplayPlayerMmrChange()
             {
                 ReplayPlayerId = player.ReplayPlayer.ReplayPlayerId,
-                MmrChange = (float)(mmrAfter - mmrBefore)
+                MmrChange = Math.Round((mmrAfter - mmrBefore), 1, MidpointRounding.AwayFromZero)
             });
            
             currentPlayerRating.Consistency = (float)consistencyAfter;
