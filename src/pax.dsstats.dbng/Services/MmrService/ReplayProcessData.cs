@@ -2,9 +2,9 @@
 
 namespace pax.dsstats.dbng.Services;
 
-internal record ReplayProcessData
+internal record ReplayData
 {
-    public ReplayProcessData(ReplayDsRDto replay)
+    public ReplayData(ReplayDsRDto replay)
     {
         ReplayGameTime = replay.GameTime;
         Duration = replay.Duration;
@@ -19,7 +19,7 @@ internal record ReplayProcessData
     public double WinnerPlayersExpectationToWin { get; set; }
     public double WinnerCmdrExpectationToWin { get; set; }
 
-    public double Uncertainty { get; set; }
+    public double Confidence { get; set; }
 
     public int Duration { get; set; }
     public DateTime ReplayGameTime { get; init; }
@@ -29,17 +29,16 @@ internal record TeamData
 {
     public TeamData(ReplayDsRDto replay, IEnumerable<ReplayPlayerDsRDto> replayPlayers, bool isWinner)
     {
-        Players = replayPlayers.Select(x => new PlayerData(replay, x)).ToArray();
-        this.IsWinner = isWinner;
+        Players = replayPlayers.Select(p => new PlayerData(replay, p)).ToArray();
+        IsWinner = isWinner;
     }
 
     public PlayerData[] Players { get; init; }
     
-    public double PlayersMeanMmr { get; set; }
+    public double PlayersAvgMmr { get; set; }
     public double CmdrComboMmr { get; set; }
-
-    public double UncertaintyDelta { get; set; }
-
+    public double Confidence { get; set; }
+    
     public bool IsWinner { get; init; }
 }
 
@@ -57,8 +56,10 @@ internal record PlayerData
     public int Duration => ReplayPlayer.Duration;
     public Commander Commander { get; init; }
     public bool IsLeaver { get; init; }
+    public double Confidence { get; set; }
 
     public double PlayerMmrDelta { get; set; }
     public double PlayerConsistencyDelta { get; set; }
+    public double PlayerConfidenceDelta { get; set; }
     public double CommanderMmrDelta { get; set; }
 }

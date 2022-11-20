@@ -374,7 +374,7 @@ public class MmrCalculationTests : TestWithSqlite
 
             Assert.Equal(entBefore.Value.Mmr, entAfter.Mmr);
             Assert.Equal(entBefore.Value.Consistency, entAfter.Consistency);
-            Assert.Equal(entBefore.Value.Uncertainty, entAfter.Uncertainty);
+            Assert.Equal(entBefore.Value.Confidence, entAfter.Confidence);
         }
     }
 
