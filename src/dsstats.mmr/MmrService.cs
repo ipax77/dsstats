@@ -16,10 +16,10 @@ public static partial class MmrService
     private const double OwnMatchupPercentage = 1.0 / 3;
     private const double MatesMatchupsPercentage = (1 - OwnMatchupPercentage) / 2;
 
-    public static async Task<(Dictionary<int, CalcRating>, float maxMmr)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
+    public static async Task<(Dictionary<int, CalcRating>, double maxMmr)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
                                                                     Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                                                     Dictionary<int, CalcRating> mmrIdRatings,
-                                                                    float maxMmr,
+                                                                    double maxMmr,
                                                                     IRatingRepository ratingRepository,
                                                                     MmrOptions mmrOptions,
                                                                     bool dry = false)
@@ -45,16 +45,18 @@ public static partial class MmrService
         return (mmrIdRatings, maxMmr);
     }
 
-    public static List<PlayerRatingBase> GeneratePlayerRatings(List<ReplayDsRDto> replays, Dictionary<int, CalcRating> mmrIdRatings)
+    public static List<PlayerRatingBase> GetPlayerRatings(List<PlayerDsRDto> players, Dictionary<int, CalcRating> mmrIdRatings)
     {
         List<PlayerRatingBase> ratings = new();
 
-        foreach (var player in replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct())
+        foreach (var player in players)
         {
             var mmrId = GetMmrId(player);
+
             if (mmrIdRatings.ContainsKey(mmrId))
             {
                 var rating = mmrIdRatings[mmrId];
+                (var main, var mainper) = rating.GetMain();
                 ratings.Add(new()
                 {
                     PlayerId = player.PlayerId,
@@ -64,6 +66,8 @@ public static partial class MmrService
                     Games = rating.Games,
                     Wins = rating.Wins,
                     Mvp = rating.Mvp,
+                    Main = main,
+                    MainPercentage = mainper,
                     Mmr = rating.Mmr,
                     MmrOverTime = rating.MmrOverTime,
                     Consistency = rating.Consistency,
@@ -75,11 +79,11 @@ public static partial class MmrService
         return ratings;
     }
 
-    private static (float, List<ReplayPlayerMmrChange>) ProcessReplay(ReplayDsRDto replay,
+    private static (double, List<ReplayPlayerMmrChange>) ProcessReplay(ReplayDsRDto replay,
                                       Dictionary<int, CalcRating> mmrIdRatings,
                                       Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                       MmrOptions mmrOptions,
-                                      float maxMmr)
+                                      double maxMmr)
     {
         if (replay.WinnerTeam == 0)
         {

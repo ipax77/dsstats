@@ -16,8 +16,8 @@ public class DocumentStoreHolder
 
         X509Certificate2 clientCertificate = new X509Certificate2("/data/ravenClientCert.pfx", ravenCertPassword);
 
-        string serverURL = "http://localhost:9102";
-        // string serverURL = ravenServerUrl ?? "http://localhost:9102";
+        // string serverURL = "http://localhost:9102";
+        string serverURL = ravenServerUrl ?? "http://localhost:9102";
         string databaseName = "mmrdb";
 
 
@@ -40,6 +40,9 @@ public class DocumentStoreHolder
         new PlayerRatingStd_ByToonId().Execute(documentStore);
 
         new ReplayPlayerMmrChange_ByReplayPlayerId().Execute(documentStore);
+        
+        new PlayerRatingCmdr_Average_ByMmr().Execute(documentStore);
+        new PlayerRatingStd_Average_ByMmr().Execute(documentStore);
 
         return documentStore;
     }

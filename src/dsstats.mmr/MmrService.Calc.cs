@@ -82,6 +82,7 @@ public static partial class MmrService
             {
                 currentPlayerRating.IsUploader = true;
             }
+            currentPlayerRating.SetCmdr(player.ReplayPlayer.Race);
             currentPlayerRating.SetMmr((float)mmrAfter, gameTime);
         }
         return mmrChanges;
@@ -126,11 +127,11 @@ public static partial class MmrService
         }
     }
 
-    private static float CalculateRatingsDeltas(Dictionary<int, CalcRating> mmrIdRatings,
+    private static double CalculateRatingsDeltas(Dictionary<int, CalcRating> mmrIdRatings,
                                                ReplayProcessData replayProcessData,
                                                TeamData teamData,
                                                MmrOptions mmrOptions,
-                                               float maxMmr)
+                                               double maxMmr)
     {
         foreach (var player in teamData.Players)
         {
@@ -140,7 +141,7 @@ public static partial class MmrService
             double playerMmr = lastPlRating.Mmr;
             if (playerMmr > maxMmr)
             {
-                maxMmr = (float)playerMmr;
+                maxMmr = playerMmr;
             }
 
             double factor_playerToTeamMates = PlayerToTeamMates(teamData.PlayersMeanMmr, playerMmr, teamData.Players.Length);

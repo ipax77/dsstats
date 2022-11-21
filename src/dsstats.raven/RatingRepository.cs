@@ -9,9 +9,12 @@ using Raven.Client.Documents.Session;
 
 namespace dsstats.raven;
 
-#pragma warning disable CA1822 // insterface and static are not best friends
-public class RatingRepository : IRatingRepository
+public partial class RatingRepository : IRatingRepository
 {
+    public static Dictionary<int, PlayerRatingBase> ToonIdCmdrRatings { get; private set; } = new();
+    public static Dictionary<int, PlayerRatingBase> ToonIdStdRatings { get; private set; } = new();
+
+
     public async Task DeleteRatings()
     {
         var changeOperation = await DocumentStoreHolder.Store
@@ -116,6 +119,8 @@ public class RatingRepository : IRatingRepository
                     dbRating.Games = newRating.Games;
                     dbRating.Wins = newRating.Wins;
                     dbRating.Mvp = newRating.Mvp;
+                    dbRating.Main = newRating.Main;
+                    dbRating.MainPercentage = newRating.MainPercentage;
                     dbRating.Mmr = newRating.Mmr;
                     dbRating.MmrOverTime = newRating.MmrOverTime;
                     dbRating.Consistency = newRating.Consistency;
@@ -126,6 +131,18 @@ public class RatingRepository : IRatingRepository
                 {
                     await bulkInsert.StoreAsync(newRating);
                     updateResult.New++;
+                }
+
+                if (newRating.IsUploader)
+                {
+                    if (newRating is PlayerRatingCmdr)
+                    {
+                        ToonIdCmdrRatings[newRating.ToonId] = newRating;
+                    }
+                    else if (newRating is PlayerRatingStd)
+                    {
+                        ToonIdStdRatings[newRating.ToonId] = newRating;
+                    }
                 }
             }
             await session.SaveChangesAsync();
@@ -164,83 +181,44 @@ public class RatingRepository : IRatingRepository
             .ToListAsync(token);
     }
 
-    public async Task<PlayerRatingsResult> GetRatings(RatingsRequest request, CancellationToken token)
-    {
-        using var session = DocumentStoreHolder.Store.OpenAsyncSession();
-
-        var query = GetQueriablePlayers(session);
-        query = FilterRatingPlayers(query, request.Search);
-        query = SetOrder(query, request.Orders);
-
-        //var bab = query.ToAsyncDocumentQuery();
-
-        var playerRatigns = await query
-            //.OrderByDescending(o => o.Mmr)
-            .Statistics(out QueryStatistics stats)
-            .Skip(request.Skip)
-            .Take(request.Take)
-            .ToListAsync(token);
-
-        return new()
-        {
-            Count = stats.TotalResults,
-            PlayerRatings = playerRatigns.Cast<PlayerRatingBase>().ToList()
-        };
-    }
-
-    private static IRavenQueryable<PlayerRatingCmdr> SetOrder(IRavenQueryable<PlayerRatingCmdr> players, List<TableOrder> orders)
-    {
-        foreach (var order in orders)
-        {
-            if (order.Ascending)
-            {
-                players = players.AppendOrderBy(order.Property);
-            }
-            else
-            {
-                players = players.AppendOrderByDescending(order.Property);
-            }
-        }
-        return players;
-    }
-
-    private static IRavenQueryable<PlayerRatingCmdr> FilterRatingPlayers(IRavenQueryable<PlayerRatingCmdr> players, string? searchString)
-    {
-        if (string.IsNullOrEmpty(searchString))
-        {
-            return players;
-        }
-
-        if (int.TryParse(searchString, out int toonId))
-        {
-            return players.Where(x => x.ToonId == toonId);
-        }
-
-        // return players.Where(x => x.Name.ToUpper().Contains(searchString.ToUpper()));
-
-        return players.Search(s => s.Name, searchString);
-
-    }
-
-    private static IRavenQueryable<PlayerRatingCmdr> GetQueriablePlayers(IAsyncDocumentSession session)
-    {
-        return session.Query<PlayerRatingCmdr, PlayerRatingCmdr_ByGamesAndMainAndMainPercentageAndMmrAndMvprateAndRegionIdAndWinrateAndSearchName>()
-            .Where(x => x.Games >= 20);
-    }
 
     public async Task<List<MmrDevDto>> GetRatingsDeviation()
     {
         using var session = DocumentStoreHolder.Store.OpenAsyncSession();
 
-        return await session.Query<PlayerRatingCmdr>()
-            .GroupBy(g => Math.Round(g.Mmr, 0))
-            .Select(s => new MmrDevDto
-            {
-                Count = s.Count(),
-                Mmr = s.Average(a => Math.Round(a.Mmr, 0))
-            })
+        var results = await session.Query<PlayerRatingCmdr_Average_ByMmr.Result, PlayerRatingCmdr_Average_ByMmr>()
             .OrderBy(o => o.Mmr)
             .ToListAsync();
+
+        return results.Select(s => new MmrDevDto()
+        {
+            Mmr = s.Mmr,
+            Count = s.Count
+        }).ToList();
+
+        //return await session.Query<PlayerRatingCmdr>()
+        //    .GroupBy(g => Math.Round(g.Mmr, 0))
+        //    .Select(s => new MmrDevDto
+        //    {
+        //        Count = s.Count(),
+        //        Mmr = s.Average(a => Math.Round(a.Mmr, 0))
+        //    })
+        //    .OrderBy(o => o.Mmr)
+        //    .ToListAsync();
+    }
+
+    public async Task<List<MmrDevDto>> GetRatingsDeviationStd()
+    {
+        using var session = DocumentStoreHolder.Store.OpenAsyncSession();
+
+        var results = await session.Query<PlayerRatingStd_Average_ByMmr.Result, PlayerRatingStd_Average_ByMmr>()
+            .OrderBy(o => o.Mmr)
+            .ToListAsync();
+
+        return results.Select(s => new MmrDevDto()
+        {
+            Mmr = s.Mmr,
+            Count = s.Count
+        }).ToList();
     }
 }
-#pragma warning restore CA1822

@@ -3,6 +3,7 @@ namespace pax.dsstats.shared;
 
 public record RatingsRequest
 {
+    public RatingType Type { get; set; } = RatingType.Cmdr;
     public int Skip { get; set; }
     public int Take { get; set; }
     public List<TableOrder> Orders { get; set; } = new();

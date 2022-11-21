@@ -61,8 +61,9 @@ internal class Program
 
         Stopwatch sw = Stopwatch.StartNew();
 
-        Produce(serviceProvider);
-        ProduceStd(serviceProvider);
+        //Produce(serviceProvider);
+        // ProduceStd(serviceProvider);
+        ChunkProduce(serviceProvider);
 
         sw.Stop();
         Console.WriteLine($"jobs done in {sw.ElapsedMilliseconds} ms");
@@ -148,11 +149,70 @@ internal class Program
 
         sw.Stop();
 
-        Console.WriteLine($"calculated data in {sw.ElapsedMilliseconds} ms");
+        Console.WriteLine($"calculated data ({replays.Count}) in {sw.ElapsedMilliseconds} ms");
 
         sw.Restart();
 
-        var result = ratingRepository.UpdatePlayerRatings<PlayerRatingCmdr>(MmrService.GeneratePlayerRatings(replays, mmrIdRatigns))
+        var result = ratingRepository.UpdatePlayerRatings<PlayerRatingCmdr>(MmrService.GetPlayerRatings(replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct().ToList(), mmrIdRatigns))
+            .GetAwaiter().GetResult();
+
+        Console.WriteLine(result);
+        sw.Stop();
+
+        Console.WriteLine($"data stored in {sw.ElapsedMilliseconds} ms");
+    }
+
+    internal static void ChunkProduce(IServiceProvider serviceProvider)
+    {
+
+        Stopwatch sw = Stopwatch.StartNew();
+
+        DateTime startTime = new DateTime(2018, 1, 1);
+        
+        Dictionary<int, CalcRating> mmrIdRatigns = new();
+        var cmdrMmrs = GetCommanderMmrs(serviceProvider).GetAwaiter().GetResult();
+        var cmdrMmrDic = cmdrMmrs.ToDictionary(k => new CmdrMmmrKey(k.Race, k.OppRace), v => new CmdrMmmrValue()
+        {
+            SynergyMmr = v.SynergyMmr,
+            AntiSynergyMmr = v.AntiSynergyMmr
+        });
+
+        using var scope = serviceProvider.CreateScope();
+        var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
+
+        HashSet<PlayerDsRDto> players = new();
+        
+        int replayCount = 0;
+
+        while (startTime < DateTime.Today)
+        {
+            var replays = GetCmdrReplayDsRDtos(serviceProvider, startTime, startTime.AddYears(1))
+                .GetAwaiter().GetResult();
+            
+            startTime = startTime.AddYears(1);
+            
+            if (!replays.Any())
+            {
+                continue;
+            }
+            
+            replayCount += replays.Count;
+            players.UnionWith(replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct());
+            
+            sw.Stop();
+            Console.WriteLine($"got data in {sw.ElapsedMilliseconds} ms");
+            (mmrIdRatigns, var maxMmr) = MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatigns, MmrService.startMmr, ratingRepository, new())
+                .GetAwaiter().GetResult();
+            sw.Restart();
+        }
+
+        sw.Stop();
+
+        Console.WriteLine($"calculated data ({replayCount}) in {sw.ElapsedMilliseconds} ms");
+
+        sw.Restart();
+
+        var result = ratingRepository.UpdatePlayerRatings<PlayerRatingCmdr>(MmrService.GetPlayerRatings(players.ToList(), mmrIdRatigns))
             .GetAwaiter().GetResult();
 
         Console.WriteLine(result);
@@ -194,14 +254,14 @@ internal class Program
         sw.Restart();
 
         //var result = ratingRepository.UpdatePlayerRatings(ratingResult.Values.ToList()).GetAwaiter().GetResult();
-        var result = ratingRepository.UpdatePlayerRatings<PlayerRatingStd>(MmrService.GeneratePlayerRatings(replays, mmrIdRatigns))
+        var result = ratingRepository.UpdatePlayerRatings<PlayerRatingStd>(MmrService.GetPlayerRatings(replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct().ToList(), mmrIdRatigns))
             .GetAwaiter().GetResult();
 
         Console.WriteLine(result);
         sw.Stop();
 
         Console.WriteLine($"data stored in {sw.ElapsedMilliseconds} ms");
-    }    
+    }
 
     private static async Task SaveReplayPlayersData(IServiceProvider serviceProvider, List<ReplayPlayerMmrChange> replayPlayerMmrChanges)
     {
@@ -321,7 +381,7 @@ internal class Program
                 .ThenBy(o => o.ReplayId)
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
             .ToListAsync();
-    }    
+    }
 
     public static async Task<List<CommanderMmr>> GetCommanderMmrs(IServiceProvider serviceProvider)
     {

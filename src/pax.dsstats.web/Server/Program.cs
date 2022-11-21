@@ -55,14 +55,16 @@ builder.Services.AddRazorPages();
 builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
-builder.Services.AddSingleton<MmrService>();
 
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddSingleton<DocumentStoreHolder>();
 
+//builder.Services.AddSingleton<MmrService>();
+
 builder.Services.AddScoped<IRatingRepository, RatingRepository>();
 builder.Services.AddScoped<ImportService>();
+builder.Services.AddScoped<MmrProduceService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -87,9 +89,8 @@ context.Database.Migrate();
 // SEED
 if (app.Environment.IsProduction())
 {
-    var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-    mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
-    await mmrService.ReCalculateWithDictionary();
+    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    mmrProduceService.ProduceRatings().GetAwaiter().GetResult();
 
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
@@ -101,6 +102,9 @@ if (app.Environment.IsDevelopment())
     //var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
     //mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
     //mmrService.ReCalculateWithDictionary().GetAwaiter().GetResult();
+
+    //var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    //mmrProduceService.ProduceRatings().GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.

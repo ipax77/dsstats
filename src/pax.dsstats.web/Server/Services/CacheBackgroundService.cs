@@ -48,8 +48,8 @@ public class CacheBackgroundService : IHostedService, IDisposable
                 statsService.ResetStatsCache();
                 await statsService.GetRequestStats(new shared.StatsRequest() { Uploaders = false });
 
-                var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-                await mmrService.ReCalculateWithDictionary(DateTime.MinValue, DateTime.Today.AddDays(1));
+                var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+                await mmrProduceService.ProduceRatings();
             }
 
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();

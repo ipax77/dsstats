@@ -12,14 +12,14 @@ public partial class BuildService
     private readonly ReplayContext context;
     private readonly IMemoryCache memoryCache;
     private readonly ILogger<BuildService> logger;
-    private readonly MmrService mmrService;
+    private readonly IRatingRepository ratingRepository;
 
-    public BuildService(ReplayContext context, IMemoryCache memoryCache, ILogger<BuildService> logger, MmrService mmrService)
+    public BuildService(ReplayContext context, IMemoryCache memoryCache, ILogger<BuildService> logger, IRatingRepository ratingRepository)
     {
         this.context = context;
         this.memoryCache = memoryCache;
         this.logger = logger;
-        this.mmrService = mmrService;
+        this.ratingRepository = ratingRepository;
     }
 
     public async Task<BuildResponse> GetBuild(BuildRequest buildRequest, CancellationToken token = default, Dictionary<int, string>? units = null)

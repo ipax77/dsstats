@@ -48,6 +48,16 @@
                         <InputText class="form-control" @bind-Value="RatingsRequest.Search"></InputText>
                     </label>
                 </div>
+                <div class="col-auto">
+                    <label class="form-label">
+                        Mode
+                        <InputSelect class="form-select" @bind-Value="RatingsRequest.Type">
+                            <option value="@RatingType.Cmdr" selected>Cmdr</option>
+                            <option value="@RatingType.Std">Std</option>
+                        </InputSelect>
+                    </label>
+
+                </div>
             </div>
         </EditForm>
         <div class="align-self-center ms-2">
@@ -209,6 +219,7 @@
 
     public async Task Reload()
     {
+        ratingsCount = 100;
         await InvokeAsync(() => StateHasChanged());
         if (virtualize != null)
         {

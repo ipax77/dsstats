@@ -190,7 +190,7 @@ public class DataService : IDataService
     {
         try
         {
-            return await httpClient.GetFromJsonAsync<List<MmrDevDto>>($"{statsController}GetRatingsDeviationStd") ?? new();
+            return await httpClient.GetFromJsonAsync<List<MmrDevDto>>($"{ratingsController}GetRatingsDeviationStd") ?? new();
         }
         catch (Exception e)
         {

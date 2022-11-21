@@ -34,17 +34,44 @@ public class PlayerRatingCmdr_ByGamesAndMainAndMainPercentageAndMmrAndMvprateAnd
     {
         Map = ratings => from rating in ratings
                          where rating.IsUploader
-                                     select new
-                                     {
-                                         rating.Games,
-                                         rating.Main,
-                                         rating.MainPercentage,
-                                         rating.Mmr,
-                                         rating.Mvprate,
-                                         rating.RegionId,
-                                         rating.Winrate,
-                                         rating.Name    
-                                     };
+                         select new
+                         {
+                             rating.Games,
+                             rating.Main,
+                             rating.MainPercentage,
+                             rating.Mmr,
+                             rating.Mvprate,
+                             rating.RegionId,
+                             rating.Winrate,
+                             rating.Name
+                         };
+    }
+}
+
+public class PlayerRatingCmdr_Average_ByMmr : AbstractIndexCreationTask<PlayerRatingCmdr, PlayerRatingCmdr_Average_ByMmr.Result>
+{
+    public class Result
+    {
+        public int Mmr { get; set; }
+        public int Count { get; set; }
+    }
+
+    public PlayerRatingCmdr_Average_ByMmr()
+    {
+        Map = ratings => from rating in ratings
+                         select new
+                         {
+                             Mmr = (int)rating.Mmr,
+                             Count = 1
+                         };
+
+        Reduce = results => from result in results
+                            group result by result.Mmr into g
+                            select new
+                            {
+                                Mmr = g.Key,
+                                Count = g.Sum(s => s.Count)
+                            };
     }
 }
 
@@ -69,5 +96,32 @@ public class PlayerRatingStd_ByToonId : AbstractIndexCreationTask<PlayerRatingSt
                                      {
                                          ToonId = toonIdPlayerRating.ToonId
                                      };
+    }
+}
+
+public class PlayerRatingStd_Average_ByMmr : AbstractIndexCreationTask<PlayerRatingStd, PlayerRatingStd_Average_ByMmr.Result>
+{
+    public class Result
+    {
+        public int Mmr { get; set; }
+        public int Count { get; set; }
+    }
+
+    public PlayerRatingStd_Average_ByMmr()
+    {
+        Map = ratings => from rating in ratings
+                         select new
+                         {
+                             Mmr = (int)rating.Mmr,
+                             Count = 1
+                         };
+
+        Reduce = results => from result in results
+                            group result by result.Mmr into g
+                            select new
+                            {
+                                Mmr = g.Key,
+                                Count = g.Sum(s => s.Count)
+                            };
     }
 }

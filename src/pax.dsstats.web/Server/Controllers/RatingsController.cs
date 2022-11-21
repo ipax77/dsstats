@@ -56,7 +56,7 @@ public class RatingsController
     [Route("GetRatingsDeviationStd")]
     public async Task<List<MmrDevDto>> GetRatingsDeviationStd()
     {
-        return await ratingRepository.GetRatingsDeviation();
+        return await ratingRepository.GetRatingsDeviationStd();
     }
 
     [HttpGet]

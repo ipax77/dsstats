@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\dsstats.mmr\dsstats.mmr.csproj" />
     <ProjectReference Include="..\..\dsstats.raven\dsstats.raven.csproj" />
     <ProjectReference Include="..\..\MysqlMigrations\MysqlMigrations.csproj" />
     <ProjectReference Include="..\..\pax.dsstats.dbng\pax.dsstats.dbng.csproj" />

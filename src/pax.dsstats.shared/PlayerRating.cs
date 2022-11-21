@@ -66,11 +66,12 @@ public class CalcRating
     public int Mvp { get; set; }
     public int TeamGames { get; set; }
 
-    public float Mmr { get; set; }
+    public double Mmr { get; set; }
     public List<TimeRating> MmrOverTime { get; set; } = new();
-    public float Consistency { get; set; }
-    public float Uncertainty { get; set; }
+    public double Consistency { get; set; }
+    public double Uncertainty { get; set; }
     public bool IsUploader { get; set; }
+    public Dictionary<Commander, int> CmdrCounts { get; set; } = new();
 }
 
 public record PlayerInfo
@@ -101,7 +102,7 @@ public record Rating
 public record TimeRating
 {
     public string Date { get; set; } = "";
-    public float Mmr { get; set; }
+    public double Mmr { get; set; }
 }
 
 public enum RatingType
@@ -129,6 +130,29 @@ public static class PlayerRatingExtensions
             Date = gametime.ToString(@"yyyyMMdd"),
             Mmr = mmr
         });
+    }
+
+    public static void SetCmdr(this CalcRating calcRating, Commander cmdr)
+    {
+        if (calcRating.CmdrCounts.ContainsKey(cmdr))
+        {
+            calcRating.CmdrCounts[cmdr]++;
+        }
+        else
+        {
+            calcRating.CmdrCounts[cmdr] = 1;
+        }
+    }
+
+    public static (Commander cmdr, double) GetMain(this CalcRating calcRating)
+    {
+        if (!calcRating.CmdrCounts.Any())
+        {
+            return (Commander.None, 0);
+        }
+        var main = calcRating.CmdrCounts.OrderByDescending(o => o.Value).FirstOrDefault();
+        
+        return (main.Key, Math.Round(main.Value * 100.0 / calcRating.CmdrCounts.Sum(s => s.Value), 2));
     }
 }
 
