@@ -77,7 +77,6 @@ public partial class MmrService
                 winnerPlayer.CommanderMmrDelta = 0;
 
                 winnerPlayer.PlayerConsistencyDelta *= -1;
-                winnerPlayer.PlayerConfidenceDelta *= -1;
             }
         }
         FixMmrEquality(replayData.WinnerTeamData, replayData.LoserTeamData);
@@ -136,7 +135,7 @@ public partial class MmrService
             var player = teamData.Players[i];
             player.PlayerMmrDelta = CalculateMmrDelta(replayData.WinnerPlayersExpectationToWin, playerImpact, 1);
             player.PlayerConsistencyDelta = consistencyDeltaMult * 2 * (replayData.WinnerPlayersExpectationToWin - 0.50);
-            player.PlayerConfidenceDelta = confidenceDeltaMult * 2 * (replayData.WinnerPlayersExpectationToWin - 0.50);
+            player.PlayerConfidenceDelta = Math.Abs(/*confidenceDeltaMult * */(player.PlayerMmrDelta / eloK));
 
             if (player.PlayerMmrDelta > eloK)
             {

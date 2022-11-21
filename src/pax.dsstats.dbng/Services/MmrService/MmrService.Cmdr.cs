@@ -86,7 +86,6 @@ public partial class MmrService
                 winnerPlayer.CommanderMmrDelta = 0;
 
                 winnerPlayer.PlayerConsistencyDelta *= -1;
-                winnerPlayer.PlayerConfidenceDelta *= -1;
             }
         }
         if (replayData.WinnerTeamData.Players.Count(x => x.IsLeaver) > 0)
@@ -160,7 +159,7 @@ public partial class MmrService
 
             player.PlayerMmrDelta = CalculateMmrDelta(replayData.WinnerPlayersExpectationToWin, playerImpact, (useCommanderMmr ? (1 - replayData.WinnerCmdrExpectationToWin) : 1));
             player.PlayerConsistencyDelta = consistencyDeltaMult * 2 * (replayData.WinnerPlayersExpectationToWin - 0.50);
-            player.PlayerConfidenceDelta = Math.Abs(confidenceDeltaMult * (player.PlayerMmrDelta / eloK));
+            player.PlayerConfidenceDelta = Math.Abs(/*confidenceDeltaMult * */(player.PlayerMmrDelta / eloK));
 
             if (double.IsNaN(player.PlayerMmrDelta) || double.IsInfinity(player.PlayerMmrDelta))
             {

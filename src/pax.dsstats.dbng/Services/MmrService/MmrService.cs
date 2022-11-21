@@ -45,7 +45,7 @@ public partial class MmrService
     private static readonly double consistencyImpact = 0.50;
     private static readonly double consistencyDeltaMult = 0.15;
     private static readonly double confidenceImpact = 0.90;
-    private static readonly double confidenceDeltaMult = 1.00;
+    //private static readonly double confidenceDeltaMult = 1.00;
 
     private Dictionary<CmdrMmmrKey, CommanderMmr> cmdrMmrDic = new();
     private DateTime LatestReplayGameTime = DateTime.MinValue;
@@ -326,15 +326,20 @@ public partial class MmrService
         {
             var plRatings = playerRatings[GetMmrId(player.ReplayPlayer.Player)];
             var currentPlayerRating = plRatings.Last();
-            int gamesCountBefore = currentPlayerRating.Index;
 
+            int gamesCountBefore = currentPlayerRating.Index;
             double mmrBefore = currentPlayerRating.Mmr;
             double consistencyBefore = currentPlayerRating.Consistency;
-            double confidenceBefore = currentPlayerRating.Confidence;
+            double confidenceBeforeSummed = currentPlayerRating.Confidence * gamesCountBefore;
 
+            int gamesCountAfter = gamesCountBefore + 1;
             double mmrAfter = mmrBefore + player.PlayerMmrDelta;
             double consistencyAfter = consistencyBefore + player.PlayerConsistencyDelta;
-            double confidenceAfter = confidenceBefore + player.PlayerConfidenceDelta;
+            double confidenceAfter = (confidenceBeforeSummed + player.PlayerConfidenceDelta) / gamesCountAfter;
+
+            //if (confidenceAfter != Math.Clamp(confidenceAfter, 0, 1)) {
+
+            //}
 
             consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
             confidenceAfter = Math.Clamp(confidenceAfter, 0, 1);
@@ -346,7 +351,7 @@ public partial class MmrService
                 Mmr = mmrAfter,
                 Consistency = consistencyAfter,
                 Confidence = confidenceAfter,
-                Index = gamesCountBefore + 1,
+                Index = gamesCountAfter,
                 Time = gameTime
             });
         }
