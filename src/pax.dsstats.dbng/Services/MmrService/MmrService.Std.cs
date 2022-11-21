@@ -109,19 +109,18 @@ public partial class MmrService
 
     private void CalculateRatingsDeltasStd(Dictionary<int, List<DsRCheckpoint>> playerRatingsStd, ReplayData replayData, TeamData teamData)
     {
-        for (int i = 0; i < teamData.Players.Length; i++)
-        {
-            var plRatings = playerRatingsStd[GetMmrId(teamData.Players[i].ReplayPlayer.Player)];
+        foreach (var playerData in teamData.Players) {
+            var plRatings = playerRatingsStd[GetMmrId(playerData.ReplayPlayer.Player)];
             var lastPlRating = plRatings.Last();
 
             double playerConsistency = lastPlRating.Consistency;
             double playerConfidence = lastPlRating.Confidence;
             double playerMmr = lastPlRating.Mmr;
 
-            if (playerMmr > maxMmrStd)
-            {
-                maxMmrStd = playerMmr;
-            }
+            //if (playerMmr > maxMmrStd)
+            //{
+            //    maxMmrStd = playerMmr;
+            //}
 
             double factor_playerToTeamMates = PlayerToTeamMates(teamData.PlayersAvgMmr, playerMmr, teamData.Players.Length);
             double factor_consistency = GetCorrectedRevConsistency(1 - playerConsistency);
@@ -132,13 +131,11 @@ public partial class MmrService
                 * (useConsistency ? factor_consistency : 1.0)
                 * (useConfidence ? factor_confidence : 1.0);
 
-            var player = teamData.Players[i];
-            player.PlayerMmrDelta = CalculateMmrDelta(replayData.WinnerPlayersExpectationToWin, playerImpact, 1);
-            player.PlayerConsistencyDelta = consistencyDeltaMult * 2 * (replayData.WinnerPlayersExpectationToWin - 0.50);
-            player.PlayerConfidenceDelta = Math.Abs(/*confidenceDeltaMult * */(player.PlayerMmrDelta / eloK));
+            playerData.PlayerMmrDelta = CalculateMmrDelta(replayData.WinnerPlayersExpectationToWin, playerImpact, 1);
+            playerData.PlayerConsistencyDelta = consistencyDeltaMult * 2 * (replayData.WinnerPlayersExpectationToWin - 0.50);
+            playerData.PlayerConfidenceDelta = 1 - Math.Abs(teamData.ExpectedResult - teamData.ActualResult);
 
-            if (player.PlayerMmrDelta > eloK)
-            {
+            if (playerData.PlayerMmrDelta > eloK) {
                 throw new Exception("MmrDelta is bigger than eloK");
             }
         }

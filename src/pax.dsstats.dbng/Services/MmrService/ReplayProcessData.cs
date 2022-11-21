@@ -31,15 +31,21 @@ internal record TeamData
     {
         Players = replayPlayers.Select(p => new PlayerData(replay, p)).ToArray();
         IsWinner = isWinner;
+
+        ActualResult = isWinner ? 1 : 0;
     }
 
     public PlayerData[] Players { get; init; }
-    
+
+    public bool IsWinner { get; init; }
+    public int ActualResult { get; init; }
+
+    public double ExpectedResult { get; set; }
+
     public double PlayersAvgMmr { get; set; }
     public double CmdrComboMmr { get; set; }
     public double Confidence { get; set; }
     
-    public bool IsWinner { get; init; }
 }
 
 internal record PlayerData
