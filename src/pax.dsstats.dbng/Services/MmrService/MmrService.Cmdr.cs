@@ -27,6 +27,7 @@ public partial class MmrService
         }
 
         var orderedByGames = playerRatingsCmdr.OrderByDescending(x => x.Value.Count);
+        var totalConfidence = orderedByGames.Sum(x => x.Value.Last().Confidence) / orderedByGames.Count();
 
         return playerRatingsCmdr;
     }
@@ -130,19 +131,19 @@ public partial class MmrService
 
     private void CalculateRatingsDeltas(Dictionary<int, List<DsRCheckpoint>> playerRatingsCmdr, ReplayData replayData, TeamData teamData)
     {
-        foreach (var player in teamData.Players)
+        foreach (var playerData in teamData.Players)
         {
-            var plRatings = playerRatingsCmdr[GetMmrId(player.ReplayPlayer.Player)];
+            var plRatings = playerRatingsCmdr[GetMmrId(playerData.ReplayPlayer.Player)];
             var lastPlRating = plRatings.Last();
 
             double playerConsistency = lastPlRating.Consistency;
             double playerConfidence = lastPlRating.Confidence;
             double playerMmr = lastPlRating.Mmr;
 
-            if (playerMmr > maxMmrCmdr)
-            {
-                maxMmrCmdr = playerMmr;
-            }
+            //if (playerMmr > maxMmrCmdr)
+            //{
+            //    maxMmrCmdr = playerMmr;
+            //}
 
             double factor_playerToTeamMates = PlayerToTeamMates(teamData.PlayersAvgMmr, playerMmr, teamData.Players.Length);
             double factor_consistency = GetCorrectedRevConsistency(1 - playerConsistency);
@@ -153,25 +154,14 @@ public partial class MmrService
                 * (useConsistency ? factor_consistency : 1.0)
                 * (useConfidence ? factor_confidence : 1.0);
 
-            if (playerImpact > teamData.Players.Length || playerImpact < 0)
-            {
-            }
-
-            player.PlayerMmrDelta = CalculateMmrDelta(replayData.WinnerPlayersExpectationToWin, playerImpact, (useCommanderMmr ? (1 - replayData.WinnerCmdrExpectationToWin) : 1));
-            player.PlayerConsistencyDelta = consistencyDeltaMult * 2 * (replayData.WinnerPlayersExpectationToWin - 0.50);
-            player.PlayerConfidenceDelta = Math.Abs(/*confidenceDeltaMult * */(player.PlayerMmrDelta / eloK));
-
-            if (double.IsNaN(player.PlayerMmrDelta) || double.IsInfinity(player.PlayerMmrDelta))
-            {
-            }
+            playerData.PlayerMmrDelta = CalculateMmrDelta(replayData.WinnerPlayersExpectationToWin, playerImpact, (useCommanderMmr ? (1 - replayData.WinnerCmdrExpectationToWin) : 1));
+            playerData.PlayerConsistencyDelta = consistencyDeltaMult * 2 * (replayData.WinnerPlayersExpectationToWin - 0.50);
+            playerData.PlayerConfidenceDelta = 1 - Math.Abs(teamData.ExpectedResult - teamData.ActualResult);
 
             double commandersMmrImpact = Math.Pow(startMmr, (playerMmr / maxMmrCmdr)) / startMmr;
-            player.CommanderMmrDelta = CalculateMmrDelta(replayData.WinnerCmdrExpectationToWin, 1, commandersMmrImpact);
-            if (double.IsNaN(player.CommanderMmrDelta) || double.IsInfinity(player.CommanderMmrDelta))
-            {
-            }
+            playerData.CommanderMmrDelta = CalculateMmrDelta(replayData.WinnerCmdrExpectationToWin, 1, commandersMmrImpact);
 
-            if (player.PlayerMmrDelta > eloK * teamData.Players.Length)
+            if (playerData.PlayerMmrDelta > eloK * teamData.Players.Length)
             {
                 throw new Exception("MmrDelta is bigger than eloK");
             }

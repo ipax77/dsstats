@@ -50,10 +50,10 @@ public partial class MmrService
     private Dictionary<CmdrMmmrKey, CommanderMmr> cmdrMmrDic = new();
     private DateTime LatestReplayGameTime = DateTime.MinValue;
 
-    private readonly bool useCommanderMmr = false;
-    private readonly bool useConsistency = true;
-    private readonly bool useConfidence = true;
-    private readonly bool useFactorToTeamMates = false;
+    private static readonly bool useCommanderMmr = false;
+    private static readonly bool useConsistency = true;
+    private static readonly bool useConfidence = true;
+    private static readonly bool useFactorToTeamMates = false;
     SemaphoreSlim ss = new(1, 1);
 
     public async Task ReCalculateWithDictionary(DateTime startTime = new(), DateTime endTime = new())
@@ -330,16 +330,14 @@ public partial class MmrService
             int gamesCountBefore = currentPlayerRating.Index;
             double mmrBefore = currentPlayerRating.Mmr;
             double consistencyBefore = currentPlayerRating.Consistency;
-            double confidenceBeforeSummed = currentPlayerRating.Confidence * gamesCountBefore;
+            //double confidenceBeforeSummed = currentPlayerRating.Confidence * gamesCountBefore;
+            double confidenceBefore = currentPlayerRating.Confidence;
 
             int gamesCountAfter = gamesCountBefore + 1;
             double mmrAfter = mmrBefore + player.PlayerMmrDelta;
             double consistencyAfter = consistencyBefore + player.PlayerConsistencyDelta;
-            double confidenceAfter = (confidenceBeforeSummed + player.PlayerConfidenceDelta) / gamesCountAfter;
-
-            //if (confidenceAfter != Math.Clamp(confidenceAfter, 0, 1)) {
-
-            //}
+            //double confidenceAfter = (confidenceBeforeSummed + player.PlayerConfidenceDelta) / gamesCountAfter;
+            double confidenceAfter = ((confidenceBefore * 0.50) + (player.PlayerConfidenceDelta * 0.50));
 
             consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
             confidenceAfter = Math.Clamp(confidenceAfter, 0, 1);
@@ -400,7 +398,15 @@ public partial class MmrService
     private static void SetExpectationsToWin(Dictionary<int, List<DsRCheckpoint>> playerRatings, ReplayData replayData)
     {
         replayData.WinnerPlayersExpectationToWin = EloExpectationToWin(replayData.WinnerTeamData.PlayersAvgMmr, replayData.LoserTeamData.PlayersAvgMmr);
-        replayData.WinnerCmdrExpectationToWin = EloExpectationToWin(replayData.WinnerTeamData.CmdrComboMmr, replayData.LoserTeamData.CmdrComboMmr);
+        replayData.WinnerCmdrExpectationToWin = (useCommanderMmr ? EloExpectationToWin(replayData.WinnerTeamData.CmdrComboMmr, replayData.LoserTeamData.CmdrComboMmr) : 0.5);
+
+        if (useCommanderMmr) {
+            replayData.WinnerTeamData.ExpectedResult = (replayData.WinnerPlayersExpectationToWin + replayData.WinnerCmdrExpectationToWin) / 2;
+        } else {
+            replayData.WinnerTeamData.ExpectedResult = replayData.WinnerPlayersExpectationToWin;
+        }
+
+        replayData.LoserTeamData.ExpectedResult = (1 - replayData.WinnerTeamData.ExpectedResult);
     }
 
     private static void SetConfidence(Dictionary<int, List<DsRCheckpoint>> playerRatings, ReplayData replayData)
