@@ -15,13 +15,6 @@ public class RatingsController
     }
 
     [HttpPost]
-    [Route("GetRatingsCount")]
-    public async Task<ActionResult<int>> GetRatingsCount(RatingsRequest request, CancellationToken token = default)
-    {
-        return await Task.FromResult(100);
-    }
-
-    [HttpPost]
     [Route("GetRatings")]
     public async Task<ActionResult<PlayerRatingsResult>> GetRatings(RatingsRequest request, CancellationToken token = default)
     {

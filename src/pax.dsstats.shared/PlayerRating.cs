@@ -8,7 +8,7 @@ public record PlayerRating
     public int ToonId { get; init; }
     public int RegionId { get; init; }
     public Commander Main { get; set; }
-    public float MainPercentage { get; set; }
+    public double MainPercentage { get; set; }
 
     public int Games { get; set; }
     public int Wins { get; set; }
@@ -16,12 +16,12 @@ public record PlayerRating
     public int TeamGames { get; set; }
 
     public int MmrGames { get; set; }
-    public float Mmr { get; set; }
+    public double Mmr { get; set; }
     public string? MmrOverTime { get; set; }
-    public float Consistency { get; set; }
-    public float Uncertainty { get; set; }
-    public float Winrate => Games == 0 ? 0 : MathF.Round(Wins * 100.0f / Games, 2);
-    public float Mvprate => Games == 0 ? 0 : MathF.Round(Mvp * 100.0f / Games, 2);
+    public double Consistency { get; set; }
+    public double Uncertainty { get; set; }
+    public double Winrate => Games == 0 ? 0 : Math.Round(Wins * 100.0 / Games, 2);
+    public double Mvprate => Games == 0 ? 0 : Math.Round(Mvp * 100.0 / Games, 2);
 }
 
 public record PlayerRatingBase
@@ -43,8 +43,8 @@ public record PlayerRatingBase
     public List<TimeRating> MmrOverTime { get; set; } = new();
     public double Consistency { get; set; }
     public double Uncertainty { get; set; }
-    public double Winrate => Games == 0 ? 0 : MathF.Round(Wins * 100.0f / Games, 2);
-    public double Mvprate => Games == 0 ? 0 : MathF.Round(Mvp * 100.0f / Games, 2);
+    public double Winrate => Games == 0 ? 0 : Math.Round(Wins * 100.0 / Games, 2);
+    public double Mvprate => Games == 0 ? 0 : Math.Round(Mvp * 100.0 / Games, 2);
 }
 
 public record PlayerRatingCmdr : PlayerRatingBase

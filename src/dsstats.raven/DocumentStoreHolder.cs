@@ -33,11 +33,13 @@ public class DocumentStoreHolder
         // indices
         new PlayerRatingCmdr_ByPlayerId().Execute(documentStore);
         new PlayerRatingCmdr_ByToonId().Execute(documentStore);
-        new PlayerRatingCmdr_ByGamesAndMainAndMainPercentageAndMmrAndMvprateAndRegionIdAndWinrateAndSearchName()
+        new PlayerRatingCmdr_ForTable()
             .Execute(documentStore);
 
         new PlayerRatingStd_ByPlayerId().Execute(documentStore);
         new PlayerRatingStd_ByToonId().Execute(documentStore);
+        new PlayerRatingStd_ForTable()
+            .Execute(documentStore);
 
         new ReplayPlayerMmrChange_ByReplayPlayerId().Execute(documentStore);
         

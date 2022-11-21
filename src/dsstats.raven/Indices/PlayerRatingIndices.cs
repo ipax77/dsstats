@@ -28,22 +28,40 @@ public class PlayerRatingCmdr_ByToonId : AbstractIndexCreationTask<PlayerRatingC
     }
 }
 
-public class PlayerRatingCmdr_ByGamesAndMainAndMainPercentageAndMmrAndMvprateAndRegionIdAndWinrateAndSearchName : AbstractIndexCreationTask<PlayerRatingCmdr>
+public class PlayerRatingCmdr_ForTable : AbstractIndexCreationTask<PlayerRatingCmdr>
 {
-    public PlayerRatingCmdr_ByGamesAndMainAndMainPercentageAndMmrAndMvprateAndRegionIdAndWinrateAndSearchName()
+    public class Result
+    {
+        public int Games { get; set; }
+        public Commander Main { get; set; }
+        public double MainPercentage { get; set; }
+        public double Mmr { get; set; }
+        public int Wins { get; set; }
+        public int Mvp { get; set; }
+        public int RegionId { get; set; }
+        public int ToonId { get; set; }
+        public string Name { get; set; } = "";
+        public double Winrate { get; set; }
+        public double Mvprate { get; set; }
+    }
+
+    public PlayerRatingCmdr_ForTable()
     {
         Map = ratings => from rating in ratings
                          where rating.IsUploader
-                         select new
+                         select new Result
                          {
-                             rating.Games,
-                             rating.Main,
-                             rating.MainPercentage,
-                             rating.Mmr,
-                             rating.Mvprate,
-                             rating.RegionId,
-                             rating.Winrate,
-                             rating.Name
+                             Games = rating.Games,
+                             Main = rating.Main,
+                             MainPercentage = rating.MainPercentage,
+                             Mmr = rating.Mmr,
+                             Wins = rating.Wins,
+                             RegionId = rating.RegionId,
+                             ToonId = rating.ToonId,
+                             Mvp = rating.Mvp,
+                             Name = rating.Name,
+                             Winrate = rating.Winrate,
+                             Mvprate = rating.Mvprate
                          };
     }
 }
@@ -96,6 +114,44 @@ public class PlayerRatingStd_ByToonId : AbstractIndexCreationTask<PlayerRatingSt
                                      {
                                          ToonId = toonIdPlayerRating.ToonId
                                      };
+    }
+}
+
+public class PlayerRatingStd_ForTable : AbstractIndexCreationTask<PlayerRatingStd>
+{
+    public class Result
+    {
+        public int Games { get; set; }
+        public Commander Main { get; set; }
+        public double MainPercentage { get; set; }
+        public double Mmr { get; set; }
+        public int Wins { get; set; }
+        public int Mvp { get; set; }
+        public int RegionId { get; set; }
+        public int ToonId { get; set; }
+        public string Name { get; set; } = "";
+        public double Winrate { get; set; }
+        public double Mvprate { get; set; }
+    }
+
+    public PlayerRatingStd_ForTable()
+    {
+        Map = ratings => from rating in ratings
+                         where rating.IsUploader
+                         select new Result
+                         {
+                             Games = rating.Games,
+                             Main = rating.Main,
+                             MainPercentage = rating.MainPercentage,
+                             Mmr = rating.Mmr,
+                             Wins = rating.Wins,
+                             RegionId = rating.RegionId,
+                             ToonId = rating.ToonId,
+                             Mvp = rating.Mvp,
+                             Name = rating.Name,
+                             Winrate = rating.Winrate,
+                             Mvprate = rating.Mvprate
+                         };
     }
 }
 
