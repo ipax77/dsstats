@@ -49,6 +49,16 @@
                         <InputText class="form-control" @bind-Value="RatingsRequest.Search"></InputText>
                     </label>
                 </div>
+                <div class="col-auto">
+                    <label class="form-label">
+                        Mode
+                        <InputSelect class="form-select" @bind-Value="RatingsRequest.Type">
+                            <option value="@RatingType.Cmdr" selected>Cmdr</option>
+                            <option value="@RatingType.Std">Std</option>
+                        </InputSelect>
+                    </label>
+
+                </div>
             </div>
         </EditForm>
         <div class="align-self-center ms-2">
@@ -182,7 +192,7 @@
     [Parameter]
     public EventCallback OnRatingsChanged { get; set; }
 
-    private int ratingsCount = 0;
+    private int ratingsCount = 100;
     private PlayerRatingsDeviation? playerRatingsDeviation;
     private Virtualize<RavenPlayerDto>? virtualize;
     private DistributionRequestEnum DistributionRequest = DistributionRequestEnum.None;
@@ -207,6 +217,7 @@
 
     public async Task Reload()
     {
+        ratingsCount = 100;
         await InvokeAsync(() => StateHasChanged());
         if (virtualize != null)
         {

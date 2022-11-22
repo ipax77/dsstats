@@ -74,18 +74,18 @@
                                 Name
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "CmdrRatingStats.Games"))">
-                            <SortArrow Property="GamesCmdr">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Rating.Games"))">
+                            <SortArrow Property="Rating.Games">
                                 Games
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "CmdrRatingStats.Mmr"))">
-                            <SortArrow Property="Mmr">
+                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "Rating.Mmr"))">
+                            <SortArrow Property="Rating.Mmr">
                                 Rating
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "WinrateCmdr"))">
-                            <SortArrow Property="WinrateCmdr">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Rating.Wins"))">
+                            <SortArrow Property="Rating.Wins">
                                 Winrate
                             </SortArrow>
                         </th>
@@ -123,20 +123,21 @@
 
     private RatingsRequest ratingsRequest = new()
         {
+            Type = RatingType.Cmdr,
             Skip = 0,
             Take = 20,
             Orders = new()
         {
             new()
             {
-                Property = "CmdrRatingStats.Mmr",
+                Property = "Rating.Mmr",
                 Ascending = false
             },
         }
         };
 
     private EditContext editContext = null!;
-    private int ratingsCount;
+    private int ratingsCount = 100;
     private Virtualize<RavenPlayerDto>? virtualize;
 
     protected override void OnInitialized()
@@ -153,6 +154,7 @@
 
     public async Task Reload()
     {
+        ratingsCount = 100;
         await InvokeAsync(() => StateHasChanged());
         if (virtualize != null)
         {
