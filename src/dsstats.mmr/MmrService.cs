@@ -32,7 +32,7 @@ public static partial class MmrService
         for (int i = 0; i < replays.Count; i++)
         {
             (maxMmr, var changes) = ProcessReplay(replays[i], mmrIdRatings, cmdrMmrDic, mmrOptions, maxMmr);
-            mmrChanges.AddRange(changes);
+            mmrChanges.Add(changes);
 
             if (!dry && mmrChanges.Count > 100000)
             {
@@ -88,7 +88,7 @@ public static partial class MmrService
         return ravenPlayerRatings;
     }
 
-    private static (double, List<MmrChange>) ProcessReplay(ReplayDsRDto replay,
+    private static (double, MmrChange) ProcessReplay(ReplayDsRDto replay,
                                       Dictionary<int, CalcRating> mmrIdRatings,
                                       Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                       MmrOptions mmrOptions,
@@ -141,7 +141,7 @@ public static partial class MmrService
         SetCommandersComboMmr(replayProcessData.WinnerTeamData, cmdrMmrDic);
         SetCommandersComboMmr(replayProcessData.LoserTeamData, cmdrMmrDic);
 
-        return (Math.Max(max1, max2), mmrChanges1);
+        return (Math.Max(max1, max2), new MmrChange() { Hash = replay.ReplayHash, Changes = mmrChanges1 });
     }
 
     private static int GetMmrId(PlayerDsRDto player)

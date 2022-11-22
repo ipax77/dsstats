@@ -42,12 +42,12 @@ public static partial class MmrService
         }
     }
 
-    private static List<MmrChange> AddPlayersRankings(Dictionary<int, CalcRating> mmrIdRatings,
+    private static List<PlChange> AddPlayersRankings(Dictionary<int, CalcRating> mmrIdRatings,
                                                                   TeamData teamData,
                                                                   DateTime gameTime,
                                                                   int maxKills)
     {
-        List<MmrChange> mmrChanges = new();
+        List<PlChange> changes = new();
         foreach (var player in teamData.Players)
         {
             var currentPlayerRating = mmrIdRatings[GetMmrId(player.ReplayPlayer.Player)];
@@ -63,12 +63,8 @@ public static partial class MmrService
             consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
             mmrAfter = Math.Max(1, mmrAfter);
 
-            mmrChanges.Add(new MmrChange()
-            {
-                Id = player.ReplayPlayer.ReplayPlayerId,
-                Change = Math.Round((mmrAfter - mmrBefore), 1, MidpointRounding.AwayFromZero)
-            });
-           
+            changes.Add(new PlChange() { Pos = player.ReplayPlayer.GamePos, Change = mmrAfter - mmrBefore });
+
             currentPlayerRating.Consistency = (float)consistencyAfter;
             currentPlayerRating.Uncertainty = (float)uncertaintyAfter;
             currentPlayerRating.Games++;
@@ -87,7 +83,7 @@ public static partial class MmrService
             currentPlayerRating.SetCmdr(player.ReplayPlayer.Race);
             currentPlayerRating.SetMmr((float)mmrAfter, gameTime);
         }
-        return mmrChanges;
+        return changes;
     }
 
     private static void FixMmrEquality(TeamData teamData, TeamData oppTeamData)

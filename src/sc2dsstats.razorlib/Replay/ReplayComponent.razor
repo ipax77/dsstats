@@ -2,6 +2,7 @@
 @using System.Globalization;
 @using pax.BlazorChartJs
 @using pax.dsstats.shared
+@using pax.dsstats.shared.Raven;
 @using sc2dsstats.razorlib.Services
 @inject IJSRuntime JSRuntime
 @inject IDataService dataService
@@ -121,7 +122,7 @@
 
 @if (Interest != null)
 {
-    <PlayerDetailsComponent PlayerRatingDto="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
+    <PlayerDetailsComponent RavenPlayerDto="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
 }
 
 @if (showBuilds.Where(x => x).Any())
@@ -172,7 +173,7 @@
 
     private bool showMiddleChart;
 
-    private PlayerRatingDto? Interest = null;
+    private RavenPlayerDto? Interest = null;
 
     protected override void OnInitialized()
     {
@@ -257,7 +258,7 @@
 
     private async Task ShowPlayerDetails(int toonId)
     {
-        Interest = await dataService.GetPlayerRating(toonId);
+        Interest = (await dataService.GetPlayerRatings(toonId)).FirstOrDefault();
         await InvokeAsync(() => StateHasChanged());
     }
 

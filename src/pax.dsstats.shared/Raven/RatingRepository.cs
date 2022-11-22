@@ -1,25 +1,57 @@
 ﻿
 namespace pax.dsstats.shared.Raven;
 
-
-public class MmrChange
+public record RavenPlayerDto
 {
-    public int Id { get; set; }
+    public string Name { get; init; } = null!;
+    public int ToonId { get; init; }
+    public int RegionId { get; init; }
+    public RavenRatingDto Rating { get; init; } = new();
+}
+
+public record RavenRatingDto
+{
+    public int Games { get; set; }
+    public int Wins { get; set; }
+    public int Mvp { get; set; }
+    public int TeamGames { get; set; }
+    public Commander Main { get; set; }
+    public double MainPercentage { get; set; }
+    public double Mmr { get; set; }
+}
+
+public record MmrChange
+{
+    public string Hash { get; set; } = null!;
+    public List<PlChange> Changes { get; set; } = new();
+}
+
+public record RavenMmrChange
+{
+    public string Id { get; set; } = null!;
+    public List<PlChange> Changes { get; set; } = new();
+}
+
+public record PlChange
+{
+    public int Pos { get; set; }
     public double Change { get; set; }
 }
 
 public record RavenPlayer
 {
+    public string Id { get; set; } = null!;
+    public int ToonId { get; set; }
     public int PlayerId { get; set; }
     public string Name { get; set; } = null!;
-    public int ToonId { get; set; }
     public int RegionId { get; set; }
     public bool IsUploader { get; set; }
-    public List<RavenRating> Ratings { get; set; } = new();
 }
 
 public record RavenRating
 {
+    public string Id { get; set; } = null!;
+    public int ToonId { get; set; }
     public RatingType Type { get; set; }
     public int Games { get; set; }
     public int Wins { get; set; }

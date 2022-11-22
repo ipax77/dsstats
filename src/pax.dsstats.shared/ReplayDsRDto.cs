@@ -3,6 +3,7 @@ namespace pax.dsstats.shared;
 
 public record ReplayDsRDto
 {
+    public string ReplayHash { get; init; } = null!;
     public DateTime GameTime { get; init; }
     public byte Playercount { get; init; }
     public int Maxleaver { get; init; }
@@ -14,7 +15,7 @@ public record ReplayDsRDto
 
 public record ReplayPlayerDsRDto
 {
-    public int ReplayPlayerId { get; set; }
+    public int GamePos { get; init; }
     public int Team { get; init; }
     public PlayerResult PlayerResult { get; init; }
     public PlayerDsRDto Player { get; init; } = null!;

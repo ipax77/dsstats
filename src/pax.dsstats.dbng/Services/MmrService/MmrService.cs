@@ -343,7 +343,7 @@ public partial class MmrService
             confidenceAfter = Math.Clamp(confidenceAfter, 0, 1);
             mmrAfter = Math.Max(1, mmrAfter);
 
-            ReplayPlayerMmrChanges[player.ReplayPlayer.ReplayPlayerId] = (float)(mmrAfter - mmrBefore);
+            //ReplayPlayerMmrChanges[player.ReplayPlayer.ReplayPlayerId] = (float)(mmrAfter - mmrBefore);
             plRatings.Add(new DsRCheckpoint()
             {
                 Mmr = mmrAfter,

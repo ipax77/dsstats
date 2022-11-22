@@ -38,7 +38,6 @@ public record ReplayDto
 
 public record ReplayPlayerDto
 {
-    public int ReplayPlayerId { get; set; }
     public string Name { get; init; } = null!;
     public string? Clan { get; init; }
     public int GamePos { get; init; }
