@@ -9,3 +9,8 @@ public record RatingsRequest
     public string? Search { get; set; }
     public int? ToonId { get; set; }
 }
+
+public record RatingsResult
+{
+
+}
