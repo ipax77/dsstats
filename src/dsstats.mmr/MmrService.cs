@@ -136,7 +136,7 @@ public static partial class MmrService
 
     private static int GetMmrId(PlayerDsRDto player)
     {
-        return player.PlayerId;
+        return player.PlayerId; //ToDo
     }
 
     public static string? GetDbMmrOverTime(List<TimeRating> timeRatings)
