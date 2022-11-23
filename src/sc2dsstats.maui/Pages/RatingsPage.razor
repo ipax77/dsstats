@@ -99,16 +99,6 @@
         return false;
     }
 
-    private async void MmrService_Recalculated(object? sender, MmrRecalculatedEvent e)
-    {
-        if (playerRatings != null)
-        {
-            await playerRatings.Reload();
-        }
-        calculationDuration = e.Duration;
-        isLoading = false;
-        await InvokeAsync(() => StateHasChanged());
-    }
 
     public void Dispose()
     {

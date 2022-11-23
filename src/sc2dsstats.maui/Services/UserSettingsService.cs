@@ -166,21 +166,21 @@ internal class UserSettingsService
     public List<RequestNames> GetDefaultPlayers()
     {
         using var scope = serviceProvider.CreateScope();
-        var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+        var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
 
         List<RequestNames> requestNames = new();
 
         foreach (var name in UserSettingsService.UserSettings.PlayerNames)
         {
-            var toonIdRatings = mmrService.ToonIdRatings.Values.Where(x => x.Name == name);
-            if (toonIdRatings.Any())
+            var toonIds = ratingRepository.GetNameToonIds(name);
+            if (toonIds.Any())
             {
-                foreach (var toonIdRating in toonIdRatings)
+                foreach (var toonId in toonIds)
                 {
                     requestNames.Add(new()
                     {
                         Name = name,
-                        ToonId = toonIdRating.ToonId
+                        ToonId = toonId
                     });
                 }
             }
