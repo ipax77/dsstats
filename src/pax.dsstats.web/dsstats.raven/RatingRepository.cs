@@ -1,4 +1,5 @@
-﻿using pax.dsstats.shared;
+﻿using Newtonsoft.Json.Linq;
+using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
 using Raven.Client.Documents;
 using Raven.Client.Documents.BulkInsert;
@@ -178,6 +179,25 @@ public partial class RatingRepository : IRatingRepository
             }
         }
         return new UpdateResult() { Total = ravenPlayerRatings.Count };
+    }
+
+    public async Task<List<CalcRating>> GetCalcRatings(RatingType ratingType, List<ReplayDsRDto> replays)
+    {
+        throw new NotImplementedException();
+
+        //using var session = DocumentStoreHolder.Store.OpenAsyncSession();
+
+        //var cmdrRating = await session.Query<RavenRating>()
+        //    .Where(x => x.Id == $"RavenRating/{RatingType.Cmdr}/{toonId}")
+        //    .FirstOrDefaultAsync();
+
+        //        var stdRating = await session.Query<RavenRating>()
+        //            .Where(x => x.Id == $"RavenRating/{RatingType.Std}/{toonId}")
+        //            .FirstOrDefaultAsync();
+
+        //        List<string> ravenIds = replays.SelectMany(s => s.ReplayPlayers)
+        //            .Select(s => $"")
+        //            .ToList();
     }
 
     public List<int> GetNameToonIds(string name)

@@ -2,12 +2,13 @@
 using AutoMapper.QueryableExtensions;
 using dsstats.mmr;
 using Microsoft.EntityFrameworkCore;
-using pax.dsstats.dbng;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
 using System.Diagnostics;
 
-namespace pax.dsstats.web.Server.Services;
+namespace pax.dsstats.dbng.Services;
 
 public partial class MmrProduceService
 {
@@ -25,14 +26,13 @@ public partial class MmrProduceService
     public async Task ProduceRatings(DateTime startTime = default, DateTime endTime = default)
     {
         Stopwatch sw = Stopwatch.StartNew();
-        var cmdrMmrDic = await GetCommanderMmrsDic();
+        var cmdrMmrDic = await GetCommanderMmrsDic(true);
         double maxMmr = MmrService.startMmr;
 
         await ProduceStdRatings(cmdrMmrDic, maxMmr, startTime, endTime);
         await ProduceCmdrRatings(cmdrMmrDic, maxMmr, startTime, endTime);
 
-        // todo: save cmdrMmrDic
-
+        await SaveCommanderMmrsDic(cmdrMmrDic);
         sw.Stop();
         logger.LogWarning($"ratings produced in {sw.ElapsedMilliseconds} ms");
     }
@@ -190,8 +190,42 @@ public partial class MmrProduceService
             .ToListAsync();
     }
 
-    private async Task<Dictionary<CmdrMmmrKey, CmdrMmmrValue>> GetCommanderMmrsDic()
+    private async Task SaveCommanderMmrsDic(Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic)
     {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var dbMmrs = await context.CommanderMmrs
+            .ToListAsync();
+
+        foreach (var ent in cmdrMmrDic)
+        {
+            var dbMmr = dbMmrs.FirstOrDefault(f => f.Race == ent.Key.Race && f.OppRace == ent.Key.OppRace);
+            if (dbMmr != null)
+            {
+                dbMmr.SynergyMmr = ent.Value.SynergyMmr;
+                dbMmr.AntiSynergyMmr = ent.Value.AntiSynergyMmr;
+            } else
+            {
+                context.CommanderMmrs.Add(new CommanderMmr()
+                {
+                    Race = ent.Key.Race,
+                    OppRace = ent.Key.OppRace,
+                    SynergyMmr = ent.Value.SynergyMmr,
+                    AntiSynergyMmr = ent.Value.AntiSynergyMmr
+                });
+            }
+        }
+        await context.SaveChangesAsync();
+    }
+
+    private async Task<Dictionary<CmdrMmmrKey, CmdrMmmrValue>> GetCommanderMmrsDic(bool clean)
+    {
+        if (clean)
+        {
+            return GetCleanCommnaderMmrsDic();
+        }
+
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
@@ -227,6 +261,35 @@ public partial class MmrProduceService
         {
             SynergyMmr = v.SynergyMmr,
             AntiSynergyMmr = v.AntiSynergyMmr
-        }); ;
+        });
+    }
+
+    private Dictionary<CmdrMmmrKey, CmdrMmmrValue> GetCleanCommnaderMmrsDic()
+    {
+        List<CommanderMmr> cmdrMmrs = new();
+
+        var allCommanders = Data.GetCommanders(Data.CmdrGet.NoStd);
+
+        foreach (var race in allCommanders)
+        {
+            foreach (var oppRace in allCommanders)
+            {
+                CommanderMmr cmdrMmr = new()
+                {
+                    Race = race,
+                    OppRace = oppRace,
+
+                    SynergyMmr = MmrService.startMmr,
+                    AntiSynergyMmr = MmrService.startMmr
+                };
+                cmdrMmrs.Add(cmdrMmr);
+            }
+        }
+
+        return cmdrMmrs.ToDictionary(k => new CmdrMmmrKey(k.Race, k.OppRace), v => new CmdrMmmrValue()
+        {
+            SynergyMmr = v.SynergyMmr,
+            AntiSynergyMmr = v.AntiSynergyMmr
+        });
     }
 }
