@@ -4,8 +4,6 @@ using System.Diagnostics;
 
 namespace pax.dsstats.web.Server.Services;
 
-
-
 public class CacheBackgroundService : IHostedService, IDisposable
 {
     private readonly IServiceProvider serviceProvider;
@@ -47,6 +45,9 @@ public class CacheBackgroundService : IHostedService, IDisposable
                 var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
                 statsService.ResetStatsCache();
                 await statsService.GetRequestStats(new shared.StatsRequest() { Uploaders = false });
+
+                var mmrProduceServer = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+                await mmrProduceServer.ProduceRatings();
             }
 
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
