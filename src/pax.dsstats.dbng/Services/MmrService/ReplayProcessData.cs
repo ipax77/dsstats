@@ -16,12 +16,9 @@ internal record ReplayData
     public TeamData WinnerTeamData { get; init; }
     public TeamData LoserTeamData { get; init; }
 
-    public double WinnerPlayersExpectationToWin { get; set; }
-    public double WinnerCmdrExpectationToWin { get; set; }
-
     public double Confidence { get; set; }
 
-    public int Duration { get; set; }
+    public int Duration { get; init; }
     public DateTime ReplayGameTime { get; init; }
 }
 
@@ -29,10 +26,10 @@ internal record TeamData
 {
     public TeamData(ReplayDsRDto replay, IEnumerable<ReplayPlayerDsRDto> replayPlayers, bool isWinner)
     {
-        Players = replayPlayers.Select(p => new PlayerData(replay, p)).ToArray();
         IsWinner = isWinner;
-
         ActualResult = isWinner ? 1 : 0;
+
+        Players = replayPlayers.Select(p => new PlayerData(replay, p)).ToArray();
     }
 
     public PlayerData[] Players { get; init; }
@@ -40,12 +37,11 @@ internal record TeamData
     public bool IsWinner { get; init; }
     public int ActualResult { get; init; }
 
-    public double ExpectedResult { get; set; }
-
-    public double PlayersAvgMmr { get; set; }
-    public double CmdrComboMmr { get; set; }
+    public double Mmr { get; set; }
     public double Confidence { get; set; }
-    
+    public double CmdrComboMmr { get; set; }
+
+    public double ExpectedResult { get; set; }
 }
 
 internal record PlayerData
@@ -53,19 +49,23 @@ internal record PlayerData
     public PlayerData(ReplayDsRDto replay, ReplayPlayerDsRDto replayPlayer)
     {
         ReplayPlayer = replayPlayer;
-        Commander = ReplayPlayer.Race;
+        Commander = replayPlayer.Race;
+        Duration = replayPlayer.Duration;
 
-        IsLeaver = Duration < replay.Duration - 90;
+        IsLeaver = replayPlayer.Duration < replay.Duration - 90;
     }
 
     public ReplayPlayerDsRDto ReplayPlayer { get; init; }
-    public int Duration => ReplayPlayer.Duration;
     public Commander Commander { get; init; }
+    public int Duration { get; init; }
     public bool IsLeaver { get; init; }
+
+    public double Mmr { get; set; }
+    public double Consistency { get; set; }
     public double Confidence { get; set; }
 
-    public double PlayerMmrDelta { get; set; }
-    public double PlayerConsistencyDelta { get; set; }
-    public double PlayerConfidenceDelta { get; set; }
-    public double CommanderMmrDelta { get; set; }
+    public double DeltaPlayerMmr { get; set; }
+    public double DeltaPlayerConsistency { get; set; }
+    public double DeltaPlayerConfidence { get; set; }
+    public double DeltaCommanderMmr { get; set; }
 }
