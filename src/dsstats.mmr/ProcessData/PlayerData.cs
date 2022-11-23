@@ -1,12 +1,13 @@
-
 using pax.dsstats.shared;
 
-namespace dsstats.mmr;
+namespace dsstats.mmr.ProcessData;
 
 internal record PlayerData
 {
     public PlayerData(ReplayDsRDto replay, ReplayPlayerDsRDto replayPlayer)
     {
+        Deltas = new();
+
         ReplayPlayer = replayPlayer;
         Commander = replayPlayer.Race;
         Duration = replayPlayer.Duration;
@@ -23,8 +24,13 @@ internal record PlayerData
     public double Consistency { get; set; }
     public double Confidence { get; set; }
 
-    public double DeltaPlayerMmr { get; set; }
-    public double DeltaPlayerConsistency { get; set; }
-    public double DeltaPlayerConfidence { get; set; }
-    public double DeltaCommanderMmr { get; set; }
+    public PlayerDeltas Deltas { get; init; }
+}
+
+internal record PlayerDeltas
+{
+    public double Mmr { get; set; }
+    public double Consistency { get; set; }
+    public double Confidence { get; set; }
+    public double CommanderMmr { get; set; }
 }

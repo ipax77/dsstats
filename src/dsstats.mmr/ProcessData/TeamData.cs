@@ -1,7 +1,6 @@
-
 using pax.dsstats.shared;
 
-namespace dsstats.mmr;
+namespace dsstats.mmr.ProcessData;
 
 internal record TeamData
 {
@@ -11,9 +10,10 @@ internal record TeamData
         ActualResult = isWinner ? 1 : 0;
 
         Players = replayPlayers.Select(p => new PlayerData(replay, p)).ToArray();
-        Std = replayPlayers.Any(a => (int)a.Race <= 3);
+        HasStd = replayPlayers.All(a => (int)a.Race <= 3);
     }
-    public bool Std { get; init; }
+
+    public bool HasStd { get; init; }
     public PlayerData[] Players { get; init; }
 
     public bool IsWinner { get; init; }
