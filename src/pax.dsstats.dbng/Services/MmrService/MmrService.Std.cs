@@ -57,30 +57,12 @@ public partial class MmrService
             return;
         }
 
-        SetReplayDataStd(playerRatingsStd, replayData);
+        SetReplayData(playerRatingsStd, replayData);
 
         CalculateRatingsDeltasStd(playerRatingsStd, replayData, replayData.WinnerTeamData);
         CalculateRatingsDeltasStd(playerRatingsStd, replayData, replayData.LoserTeamData);
 
-        // Adjust Loser delta
-        foreach (var loserPlayer in replayData.LoserTeamData.Players)
-        {
-            loserPlayer.PlayerMmrDelta *= -1;
-            loserPlayer.CommanderMmrDelta *= -1;
-        }
-        // Adjust Leaver delta
-        foreach (var winnerPlayer in replayData.WinnerTeamData.Players)
-        {
-            if (winnerPlayer.IsLeaver)
-            {
-                winnerPlayer.PlayerMmrDelta *= -1;
-                winnerPlayer.CommanderMmrDelta = 0;
-
-                winnerPlayer.PlayerConsistencyDelta *= -1;
-            }
-        }
         FixMmrEquality(replayData.WinnerTeamData, replayData.LoserTeamData);
-
 
         AddPlayersRankings(playerRatingsStd, replayData.WinnerTeamData, replayData.ReplayGameTime);
         AddPlayersRankings(playerRatingsStd, replayData.LoserTeamData, replayData.ReplayGameTime);
@@ -91,26 +73,10 @@ public partial class MmrService
         }
     }
 
-    private void SetReplayDataStd(Dictionary<int, List<DsRCheckpoint>> playerRatingsStd, ReplayData replayData)
-    {
-        SetMmrsStd(playerRatingsStd, replayData.WinnerTeamData);
-        SetMmrsStd(playerRatingsStd, replayData.LoserTeamData);
-
-        SetExpectationsToWin(playerRatingsStd, replayData);
-
-        SetConfidence(playerRatingsStd, replayData);
-    }
-
-    private void SetMmrsStd(Dictionary<int, List<DsRCheckpoint>> playerRatingsStd, TeamData teamData)
-    {
-        teamData.CmdrComboMmr = startMmr;
-        teamData.PlayersAvgMmr = GetPlayersComboMmr(playerRatingsStd, teamData.Players);
-    }
-
     private void CalculateRatingsDeltasStd(Dictionary<int, List<DsRCheckpoint>> playerRatingsStd, ReplayData replayData, TeamData teamData)
     {
         foreach (var playerData in teamData.Players) {
-            var plRatings = playerRatingsStd[GetMmrId(playerData.ReplayPlayer.Player)];
+            var plRatings = playerRatingsStd[GetRatingId(playerData.ReplayPlayer.Player)];
             var lastPlRating = plRatings.Last();
 
             double playerConsistency = lastPlRating.Consistency;
@@ -122,7 +88,7 @@ public partial class MmrService
             //    maxMmrStd = playerMmr;
             //}
 
-            double factor_playerToTeamMates = PlayerToTeamMates(teamData.PlayersAvgMmr, playerMmr, teamData.Players.Length);
+            double factor_playerToTeamMates = PlayerToTeamMates(teamData.Mmr, playerMmr, teamData.Players.Length);
             double factor_consistency = GetCorrectedRevConsistency(1 - playerConsistency);
             double factor_confidence = GetCorrectedConfidenceFactor(playerConfidence, replayData.Confidence);
 
@@ -131,11 +97,22 @@ public partial class MmrService
                 * (useConsistency ? factor_consistency : 1.0)
                 * (useConfidence ? factor_confidence : 1.0);
 
-            playerData.PlayerMmrDelta = CalculateMmrDelta(replayData.WinnerPlayersExpectationToWin, playerImpact, 1);
-            playerData.PlayerConsistencyDelta = consistencyDeltaMult * 2 * (replayData.WinnerPlayersExpectationToWin - 0.50);
-            playerData.PlayerConfidenceDelta = 1 - Math.Abs(teamData.ExpectedResult - teamData.ActualResult);
+            playerData.DeltaPlayerMmr = CalculateMmrDelta(replayData.WinnerTeamData.ExpectedResult, playerImpact);
+            playerData.DeltaPlayerConsistency = consistencyDeltaMult * 2 * (replayData.WinnerTeamData.ExpectedResult - 0.50);
+            playerData.DeltaPlayerConfidence = 1 - Math.Abs(teamData.ExpectedResult - teamData.ActualResult);
 
-            if (playerData.PlayerMmrDelta > eloK) {
+            if (playerData.IsLeaver) {
+                playerData.DeltaPlayerConsistency *= -1;
+
+                playerData.DeltaPlayerMmr *= -1;
+                playerData.DeltaCommanderMmr = 0;
+            }
+            else if (!teamData.IsWinner) {
+                playerData.DeltaPlayerMmr *= -1;
+                playerData.DeltaCommanderMmr *= -1;
+            }
+
+            if (playerData.DeltaPlayerMmr > eloK) {
                 throw new Exception("MmrDelta is bigger than eloK");
             }
         }
