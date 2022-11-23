@@ -3,6 +3,7 @@ using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
 using Raven.Client.Documents;
 using Raven.Client.Documents.BulkInsert;
+using Raven.Client.Documents.Linq;
 
 namespace dsstats.raven;
 
@@ -181,23 +182,91 @@ public partial class RatingRepository : IRatingRepository
         return new UpdateResult() { Total = ravenPlayerRatings.Count };
     }
 
-    public async Task<List<CalcRating>> GetCalcRatings(RatingType ratingType, List<ReplayDsRDto> replays)
+    public async Task<Dictionary<int, CalcRating>> GetCalcRatings(RatingType ratingType, List<ReplayDsRDto> replays, List<int> toonIds)
     {
-        throw new NotImplementedException();
+        List<string> ravenIds = replays
+            .SelectMany(s => s.ReplayPlayers)
+            .Select(s => s.Player)
+            .Distinct()
+            .Where(x => !toonIds.Contains(x.ToonId))
+            .Select(s => $"RavenRating/{ratingType}/{s.ToonId}")
+            .ToList();
 
-        //using var session = DocumentStoreHolder.Store.OpenAsyncSession();
+        using var session = DocumentStoreHolder.Store.OpenAsyncSession();
 
-        //var cmdrRating = await session.Query<RavenRating>()
-        //    .Where(x => x.Id == $"RavenRating/{RatingType.Cmdr}/{toonId}")
-        //    .FirstOrDefaultAsync();
+        var ratings = await session.Query<RavenRating>()
+            .Where(x => x.Id.In(ravenIds))
+            .ToListAsync();
 
-        //        var stdRating = await session.Query<RavenRating>()
-        //            .Where(x => x.Id == $"RavenRating/{RatingType.Std}/{toonId}")
-        //            .FirstOrDefaultAsync();
+        return ratings.ToDictionary(k => k.ToonId, v => new CalcRating()
+        {
+            Games = v.Games,
+            Wins = v.Wins,
+            Mvp = v.Mvp,
+            TeamGames = v.TeamGames,
+            Mmr = v.Mmr,
+            Consistency = v.Consistency,
+            Confidence = v.Confidence,
+            MmrOverTime = GetTimeRatings(v.MmrOverTime),
+            CmdrCounts = GetFakeCmdrDic(v.Main, v.MainPercentage, v.Games)
+        });
+    }
 
-        //        List<string> ravenIds = replays.SelectMany(s => s.ReplayPlayers)
-        //            .Select(s => $"")
-        //            .ToList();
+    private List<TimeRating> GetTimeRatings(string? mmrOverTime)
+    {
+        if (string.IsNullOrEmpty(mmrOverTime))
+        {
+            return new();
+        }
+
+        List<TimeRating> timeRatings = new();
+
+        foreach (var ent in mmrOverTime.Split('|', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var timeMmr = ent.Split(',');
+            if (timeMmr.Length == 2)
+            {
+                if (double.TryParse(timeMmr[0], out double mmr))
+                {
+                    timeRatings.Add(new TimeRating()
+                    {
+                        Mmr = mmr,
+                        Date = timeMmr[1]
+                    });
+                }
+            }
+        }
+        return timeRatings;
+    }
+
+    private Dictionary<Commander, int> GetFakeCmdrDic(Commander main, double mainPercentage, int games)
+    {
+        Dictionary<Commander, int> cmdrDic = new();
+
+        if (mainPercentage > 99)
+        {
+            cmdrDic.Add(main, games);
+            return cmdrDic;
+        }
+
+        if ((int)main <= 3)
+        {
+            foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.Std).Where(x => x != main))
+            {
+                cmdrDic[cmdr] = games / 3;
+            }
+        }
+        else 
+        {
+            int total = Data.GetCommanders(Data.CmdrGet.NoStd).Count;
+            foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.NoStd).Where(x => x != main))
+            {
+                cmdrDic[cmdr] = games / total;
+            }
+        }
+
+        cmdrDic[main] = (int)((cmdrDic.Sum(s => s.Value) * mainPercentage) /(100 - mainPercentage));
+        return cmdrDic;
     }
 
     public List<int> GetNameToonIds(string name)
