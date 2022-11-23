@@ -179,4 +179,9 @@ public partial class RatingRepository : IRatingRepository
         }
         return new UpdateResult() { Total = ravenPlayerRatings.Count };
     }
+
+    public List<int> GetNameToonIds(string name)
+    {
+        return new();
+    }
 }

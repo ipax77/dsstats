@@ -68,13 +68,13 @@ public class RatingRepository : IRatingRepository
         if (request.Type == RatingType.Cmdr)
         {
             ratingMemories = RatingMemory.Values
-                .Where(x => x.CmdrRavenRating != null)
+                .Where(x => x.CmdrRavenRating != null && x.CmdrRavenRating.Games >= 20)
                 .AsQueryable();
         }
         else if (request.Type == RatingType.Std)
         {
             ratingMemories = RatingMemory.Values
-                .Where(x => x.StdRavenRating != null)
+                .Where(x => x.StdRavenRating != null && x.StdRavenRating.Games >= 20)
                 .AsQueryable();
         }
         else
@@ -90,13 +90,68 @@ public class RatingRepository : IRatingRepository
         var orderPre = request.Type == RatingType.Cmdr ? "CmdrRavenRating" : "StdRavenRating";
         foreach (var order in request.Orders)
         {
-            if (order.Ascending)
+            if (order.Property.EndsWith("Mvp"))
             {
-                ratingMemories = ratingMemories.AppendOrderBy($"{orderPre}.{order.Property}");
+                if (order.Ascending)
+                {
+                    if (request.Type == RatingType.Cmdr)
+                    {
+                        ratingMemories = ratingMemories.OrderBy(o => o.CmdrRavenRating == null ? 0 : o.CmdrRavenRating.Mvp * 100.0 / o.CmdrRavenRating.Games);
+                    }
+                    else
+                    {
+                        ratingMemories = ratingMemories.OrderBy(o => o.StdRavenRating == null ? 0 : o.StdRavenRating.Mvp * 100.0 / o.StdRavenRating.Games);
+                    }
+                }
+                else
+                {
+                    if (request.Type == RatingType.Cmdr)
+                    {
+                        ratingMemories = ratingMemories.OrderByDescending(o => o.CmdrRavenRating == null ? 0 : o.CmdrRavenRating.Mvp * 100.0 / o.CmdrRavenRating.Games);
+                    }
+                    else
+                    {
+                        ratingMemories = ratingMemories.OrderByDescending(o => o.StdRavenRating == null ? 0 : o.StdRavenRating.Mvp * 100.0 / o.StdRavenRating.Games);
+                    }
+                }
+            }
+            else if (order.Property.EndsWith("Wins"))
+            {
+                if (order.Ascending)
+                {
+                    if (request.Type == RatingType.Cmdr)
+                    {
+                        ratingMemories = ratingMemories.OrderBy(o => o.CmdrRavenRating == null ? 0 : o.CmdrRavenRating.Wins * 100.0 / o.CmdrRavenRating.Games);
+                    }
+                    else
+                    {
+                        ratingMemories = ratingMemories.OrderBy(o => o.StdRavenRating == null ? 0 : o.StdRavenRating.Wins * 100.0 / o.StdRavenRating.Games);
+                    }
+                }
+                else
+                {
+                    if (request.Type == RatingType.Cmdr)
+                    {
+                        ratingMemories = ratingMemories.OrderByDescending(o => o.CmdrRavenRating == null ? 0 : o.CmdrRavenRating.Wins * 100.0 / o.CmdrRavenRating.Games);
+                    }
+                    else
+                    {
+                        ratingMemories = ratingMemories.OrderByDescending(o => o.StdRavenRating == null ? 0 : o.StdRavenRating.Wins * 100.0 / o.StdRavenRating.Games);
+                    }
+                }
             }
             else
             {
-                ratingMemories = ratingMemories.AppendOrderByDescending($"{orderPre}.{order.Property}");
+
+                var property = order.Property.StartsWith("Rating.") ? order.Property[7..] : order.Property;
+                if (order.Ascending)
+                {
+                    ratingMemories = ratingMemories.AppendOrderBy($"{orderPre}.{property}");
+                }
+                else
+                {
+                    ratingMemories = ratingMemories.AppendOrderByDescending($"{orderPre}.{property}");
+                }
             }
         }
 #pragma warning disable CS8602
@@ -220,11 +275,13 @@ public class RatingRepository : IRatingRepository
     {
         foreach (var ent in ravenPlayerRatings)
         {
+            ent.Value.Type = ratingType;
             if (RatingMemory.ContainsKey(ent.Key.ToonId))
             {
                 var ratingMemory = RatingMemory[ent.Key.ToonId];
                 if (ratingType == RatingType.Cmdr)
                 {
+
                     ratingMemory.CmdrRavenRating = ent.Value;
                 }
                 else if (ratingType == RatingType.Std)
