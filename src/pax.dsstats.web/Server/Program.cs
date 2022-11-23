@@ -87,9 +87,8 @@ context.Database.Migrate();
 // SEED
 if (app.Environment.IsProduction())
 {
-    //var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-    //mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
-    //await mmrService.ReCalculateWithDictionary();
+    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    mmrProduceService.ProduceRatings().GetAwaiter().GetResult();
 
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
@@ -98,10 +97,6 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    //var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-    //mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
-    //mmrService.ReCalculateWithDictionary().GetAwaiter().GetResult();
-
     var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
     mmrProduceService.ProduceRatings().GetAwaiter().GetResult();
 }

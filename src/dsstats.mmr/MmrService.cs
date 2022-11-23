@@ -15,6 +15,8 @@ public static partial class MmrService
     public const double startMmr = 1000.0;
     private const double consistencyImpact = 0.50;
     private const double consistencyDeltaMult = 0.15;
+    private const double confidenceImpact = 0.90;
+    private const double distributionMult = 1.0 / (1/*2*/);
     private const double AntiSynergyPercentage = 0.50;
     private const double SynergyPercentage = 1 - AntiSynergyPercentage;
     private const double OwnMatchupPercentage = 1.0 / 3;
@@ -85,7 +87,7 @@ public static partial class MmrService
                     Mmr = rating.Mmr,
                     MmrOverTime = GetDbMmrOverTime(rating.MmrOverTime),
                     Consistency = rating.Consistency,
-                    Uncertainty = rating.Uncertainty,
+                    Confidence = rating.Confidence,
                 };
             }
         }
@@ -103,47 +105,30 @@ public static partial class MmrService
             return (maxMmr, null);
         }
 
-        ReplayProcessData replayProcessData = new(replay);
-        if (replayProcessData.WinnerTeamData.Players.Length != 3 || replayProcessData.LoserTeamData.Players.Length != 3)
+        ReplayData replayData = new(replay);
+        if (replayData.WinnerTeamData.Players.Length != 3 || replayData.LoserTeamData.Players.Length != 3)
         {
             return (maxMmr, null);
         }
 
-        SetMmrs(mmrIdRatings, cmdrMmrDic, replayProcessData.WinnerTeamData, replay.GameTime);
-        SetMmrs(mmrIdRatings, cmdrMmrDic, replayProcessData.LoserTeamData, replay.GameTime);
+        SetReplayData(mmrIdRatings, replayData, cmdrMmrDic, mmrOptions);
 
-        SetExpectationsToWin(mmrIdRatings, replayProcessData);
-
-        var max1 = CalculateRatingsDeltas(mmrIdRatings, replayProcessData, replayProcessData.WinnerTeamData, mmrOptions, maxMmr);
-        var max2 = CalculateRatingsDeltas(mmrIdRatings, replayProcessData, replayProcessData.LoserTeamData, mmrOptions, maxMmr);
-
-        // Adjust Loser delta
-        foreach (var loserPlayer in replayProcessData.LoserTeamData.Players)
-        {
-            loserPlayer.PlayerMmrDelta *= -1;
-            loserPlayer.PlayerConsistencyDelta *= -1;
-            loserPlayer.CommanderMmrDelta *= -1;
-        }
-        // Adjust Leaver delta
-        foreach (var winnerPlayer in replayProcessData.WinnerTeamData.Players)
-        {
-            if (winnerPlayer.IsLeaver)
-            {
-                winnerPlayer.PlayerMmrDelta *= -1;
-                winnerPlayer.PlayerConsistencyDelta *= -1;
-                winnerPlayer.CommanderMmrDelta = 0;
-            }
-        }
-
-        FixMmrEquality(replayProcessData.WinnerTeamData, replayProcessData.LoserTeamData);
+        var max1 = CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.WinnerTeamData, mmrOptions, maxMmr);
+        var max2 = CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.LoserTeamData, mmrOptions, maxMmr);
 
 
-        var mmrChanges1 = AddPlayersRankings(mmrIdRatings, replayProcessData.WinnerTeamData, replay.GameTime, replay.Maxkillsum);
-        var mmrChanges2 = AddPlayersRankings(mmrIdRatings, replayProcessData.LoserTeamData, replay.GameTime, replay.Maxkillsum);
+        FixMmrEquality(replayData.WinnerTeamData, replayData.LoserTeamData);
+
+
+        var mmrChanges1 = AddPlayersRankings(mmrIdRatings, replayData.WinnerTeamData, replay.GameTime, replay.Maxkillsum);
+        var mmrChanges2 = AddPlayersRankings(mmrIdRatings, replayData.LoserTeamData, replay.GameTime, replay.Maxkillsum);
         mmrChanges1.AddRange(mmrChanges2);
 
-        SetCommandersComboMmr(replayProcessData.WinnerTeamData, cmdrMmrDic);
-        SetCommandersComboMmr(replayProcessData.LoserTeamData, cmdrMmrDic);
+        if (replay.Maxleaver < 90)
+        {
+            SetCommandersComboMmr(replayData.WinnerTeamData, cmdrMmrDic);
+            SetCommandersComboMmr(replayData.LoserTeamData, cmdrMmrDic);
+        }
 
         return (Math.Max(max1, max2), new MmrChange() { Hash = replay.ReplayHash, Changes = mmrChanges1 });
     }

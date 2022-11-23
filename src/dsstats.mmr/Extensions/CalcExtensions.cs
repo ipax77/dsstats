@@ -5,7 +5,7 @@ namespace dsstats.mmr.Extensions;
 
 internal static class CalcExtensions
 {
-    public static void SetMmr(this CalcRating calcRating, float mmr, DateTime gametime)
+    public static void SetMmr(this CalcRating calcRating, double mmr, DateTime gametime)
     {
         calcRating.Mmr = mmr;
         calcRating.MmrOverTime.Add(new()

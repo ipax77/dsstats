@@ -84,7 +84,7 @@ public record RavenRating
     public double Mmr { get; set; }
     public string? MmrOverTime { get; set; }
     public double Consistency { get; set; }
-    public double Uncertainty { get; set; }
+    public double Confidence { get; set; }
 }
 
 public record CalcRating
@@ -97,7 +97,7 @@ public record CalcRating
     public double Mmr { get; set; }
     public List<TimeRating> MmrOverTime { get; set; } = new();
     public double Consistency { get; set; }
-    public double Uncertainty { get; set; }
+    public double Confidence { get; set; }
     public bool IsUploader { get; set; }
     public Dictionary<Commander, int> CmdrCounts { get; set; } = new();
 }
