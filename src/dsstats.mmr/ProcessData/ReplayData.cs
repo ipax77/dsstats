@@ -1,7 +1,6 @@
-
 using pax.dsstats.shared;
 
-namespace dsstats.mmr;
+namespace dsstats.mmr.ProcessData;
 
 internal record ReplayData
 {
@@ -16,7 +15,8 @@ internal record ReplayData
 
     public TeamData WinnerTeamData { get; init; }
     public TeamData LoserTeamData { get; init; }
-    public double Confidence { get; set; }
-    public int Duration { get; set; }
+    public int Duration { get; init; }
     public DateTime ReplayGameTime { get; init; }
+
+    public double Confidence { get; set; }
 }
