@@ -1,7 +1,6 @@
 using Blazored.Toast.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Scripting.Runtime;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
@@ -140,12 +139,12 @@ public class DecodeService : IDisposable
         _ = Notify();
 
         using var scope = serviceScopeFactory.CreateScope();
-        var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
+        var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
 
-        if (mmrService.ToonIdRatings.Any() && total <= 10)
-        {
-            continueMmrCalc = true;
-        }
+        //if (mmrService.ToonIdRatings.Any() && total <= 10)
+        //{
+        //    continueMmrCalc = true;
+        //}
 
         Stopwatch sw = Stopwatch.StartNew();
 
@@ -234,17 +233,19 @@ public class DecodeService : IDisposable
             var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
             statsService.ResetStatsCache();
 
-            if (continueMmrCalc && newReplays.Any())
-            {
-                var userSettingsService = scope.ServiceProvider.GetRequiredService<UserSettingsService>();
-                var mauiPlayers = userSettingsService.GetDefaultPlayers();
+            //if (continueMmrCalc && newReplays.Any())
+            //{
+            //    var userSettingsService = scope.ServiceProvider.GetRequiredService<UserSettingsService>();
+            //    var mauiPlayers = userSettingsService.GetDefaultPlayers();
 
-                await mmrService.ContinueCalculateWithDictionary(newReplays, mauiPlayers);
-            }
-            else
-            {
-                await mmrService.ReCalculateWithDictionary();
-            }
+            //    await mmrService.ContinueCalculateWithDictionary(newReplays, mauiPlayers);
+            //}
+            //else
+            //{
+            //    await mmrService.ReCalculateWithDictionary();
+            //}
+
+            await mmrProduceService.ProduceRatings();
 
             notifyCts.Cancel();
 

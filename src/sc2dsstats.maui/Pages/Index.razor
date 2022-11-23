@@ -9,7 +9,6 @@
 @inject IReplayRepository ReplayRepository
 @inject DecodeService DecodeService
 @inject UploadService UploadService
-@inject MmrService mmrService
 @inject IStatsService StatsService
 @inject IToastService toastSerivce
 @implements IDisposable
@@ -40,7 +39,6 @@
     @if (DEBUG)
     {
         <button type="button" class="btn btn-danger" @onclick="e => DecodeService.DEBUGDeleteLatestReplay()">D</button>
-        <button type="button" class="btn btn-warning" @onclick="e => mmrService.DEBUG_SeedProgress()">S</button>
     }
 </div>
 
@@ -54,10 +52,10 @@
             }
         </div>
         <div class="col-auto">
-            @if (mmrService.MauiMmrProgress.Any())
+@*            @if (mmrService.MauiMmrProgress.Any())
             {
                 <MmrProgressComponent MauiMmrProgress="mmrService.MauiMmrProgress"></MmrProgressComponent>
-            }
+            }*@
         </div>
     </div>
 </div>

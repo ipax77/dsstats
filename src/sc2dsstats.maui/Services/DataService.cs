@@ -1,28 +1,26 @@
 ﻿using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Raven;
 
 namespace sc2dsstats.maui.Services;
 
 public class DataService : IDataService
 {
     private readonly IReplayRepository replayRepository;
-    private readonly IStatsRepository statsRepository;
     private readonly BuildService buildService;
     private readonly IStatsService statsService;
-    private readonly MmrService mmrService;
+    private readonly IRatingRepository ratingRepository;
 
     public DataService(IReplayRepository replayRepository,
-                       IStatsRepository statsRepository,
                        BuildService buildService,
                        IStatsService statsService,
-                       MmrService mmrService)
+                       IRatingRepository ratingRepository)
     {
         this.replayRepository = replayRepository;
-        this.statsRepository = statsRepository;
         this.buildService = buildService;
         this.statsService = statsService;
-        this.mmrService = mmrService;
+        this.ratingRepository = ratingRepository;
     }
 
     public async Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default)
@@ -65,56 +63,33 @@ public class DataService : IDataService
         return await buildService.GetBuild(request, token);
     }
 
-    public async Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default)
+    public async Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token = default)
     {
-        return await mmrService.GetRatingsCount(request, token);
-    }
-
-    public async Task<List<PlayerRatingDto>> GetRatings(RatingsRequest request, CancellationToken token = default)
-    {
-        return await mmrService.GetRatings(request, token);
-    }
-
-    public async Task<string?> GetPlayerRatings(int toonId)
-    {
-        return await mmrService.GetPlayerRatings(toonId);
+        return await ratingRepository.GetRatings(request, token);
     }
 
     public async Task<List<MmrDevDto>> GetRatingsDeviation()
     {
-        return await mmrService.GetRatingsDeviation();
+        return await ratingRepository.GetRatingsDeviation();
     }
 
-    public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId)
+    public async Task<PlayerDetailDto> GetPlayerDetails(int toonId, CancellationToken token)
     {
-        return await statsService.GetPlayerDetailInfo(toonId);
+        return await statsService.GetPlayerDetails(toonId, token);
     }
 
     public async Task<List<MmrDevDto>> GetRatingsDeviationStd()
     {
-        return await mmrService.GetRatingsDeviationStd();
-    }
-
-    public async Task<PlayerRatingDto?> GetPlayerRating(int toonId)
-    {
-        return await mmrService.GetPlayerRating(toonId);
+        return await ratingRepository.GetRatingsDeviationStd();
     }
 
     public async Task<List<RequestNames>> GetTopPlayers(bool std)
     {
-        if (std)
-        {
-            return await Task.FromResult(buildService.GetTopPlayersStd(100));
-        }
-        else
-        {
-            return await Task.FromResult(buildService.GetTopPlayersCmdr(100));
-        }
+        return await Task.FromResult(buildService.GetTopPlayers(std, 100));
     }
 
     public async Task<CmdrResult> GetCmdrInfo(CmdrRequest request, CancellationToken token = default)
     {
         return await Task.FromResult(new CmdrResult());
     }
-
 }

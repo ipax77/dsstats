@@ -114,7 +114,6 @@ public class UploadService
             replays.SelectMany(s => s.ReplayPlayers).ToList().ForEach(f =>
             {
                 f.MmrChange = 0;
-                f.ReplayPlayerId = 0;
             });
 
             var base64string = GetBase64String(replays);
@@ -287,7 +286,6 @@ public class UploadService
             .ToList();
 
         replays.ForEach(f => f.FileName = string.Empty);
-        replays.SelectMany(s => s.ReplayPlayers).ToList().ForEach(f => f.ReplayPlayerId = 0);
 
         var json1 = JsonSerializer.Serialize(replays.Take(30));
         var json2 = JsonSerializer.Serialize(replays.Skip(30));

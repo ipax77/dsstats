@@ -50,7 +50,7 @@ public record MmrChange
 
 public record RavenMmrChange
 {
-    public string Id { get; set; } = null!;
+    public string Id { get; set; } = "";
     public List<PlChange> Changes { get; set; } = new();
 }
 
@@ -62,7 +62,7 @@ public record PlChange
 
 public record RavenPlayer
 {
-    public string Id { get; set; } = null!;
+    public string Id { get; set; } = "";
     public int ToonId { get; set; }
     public int PlayerId { get; set; }
     public string Name { get; set; } = null!;
@@ -72,7 +72,7 @@ public record RavenPlayer
 
 public record RavenRating
 {
-    public string Id { get; set; } = null!;
+    public string Id { get; set; } = "";
     public int ToonId { get; set; }
     public RatingType Type { get; set; }
     public int Games { get; set; }

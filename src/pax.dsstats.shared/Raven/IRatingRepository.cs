@@ -15,4 +15,5 @@ public interface IRatingRepository
     Task<List<PlChange>> GetReplayPlayerMmrChanges(string replayHash, CancellationToken token = default);
     List<RequestNames> GetTopPlayers(RatingType ratingType, int minGames);
     Task<string?> GetToonIdName(int toonId);
+    List<int> GetNameToonIds(string name);
 }

@@ -1,7 +1,7 @@
 ﻿@page "/stats"
 @inject DecodeService DecodeService
-@inject MmrService mmrService
 @inject IToastService toastService
+@inject IRatingRepository ratingRepository
 @implements IDisposable
 
 @using pax.dsstats.dbng.Services;
@@ -51,15 +51,15 @@
 
         foreach (var name in UserSettingsService.UserSettings.PlayerNames)
         {
-            var toonIdRatings = mmrService.ToonIdRatings.Values.Where(x => x.Name == name);
-            if (toonIdRatings.Any())
+            var toonIds = ratingRepository.GetNameToonIds(name);
+            if (toonIds.Any())
             {
-                foreach (var toonIdRating in toonIdRatings)
+                foreach (var toonId in toonIds)
                 {
                     requestNames.Add(new()
                         {
                             Name = name,
-                            ToonId = toonIdRating.ToonId
+                            ToonId = toonId
                         });
                 }
             }

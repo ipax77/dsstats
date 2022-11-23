@@ -2,10 +2,10 @@
 @using pax.dsstats.dbng.Services
 @using pax.dsstats.shared;
 @using sc2dsstats.maui.Services;
-@inject MmrService MmrService
 @inject IToastService ToastService
 @inject DecodeService DecodeService
 @inject IStatsService statsService
+@inject MmrProduceService mmrProduceService
 @implements IDisposable
 
 <div class="d-flex mb-2">
@@ -54,7 +54,7 @@
 
     protected override void OnInitialized()
     {
-        MmrService.Recalculated += MmrService_Recalculated;
+        //MmrService.Recalculated += MmrService_Recalculated;
         base.OnInitialized();
     }
 
@@ -75,8 +75,7 @@
 
         await Task.Run(async () =>
         {
-            await statsService.SeedPlayerInfos().ConfigureAwait(false);
-            await MmrService.ReCalculateWithDictionary().ConfigureAwait(false);
+            await mmrProduceService.ProduceRatings().ConfigureAwait(false);
         });
 
         isLoading = false;
@@ -112,6 +111,6 @@
 
     public void Dispose()
     {
-        MmrService.Recalculated -= MmrService_Recalculated;
+        //MmrService.Recalculated -= MmrService_Recalculated;
     }
 }

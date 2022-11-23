@@ -10,19 +10,16 @@ namespace pax.dsstats.web.Server.Controllers
     public class StatsController : ControllerBase
     {
         private readonly IReplayRepository replayRepository;
-        private readonly IStatsRepository statsRepository;
         private readonly BuildService buildService;
         private readonly IStatsService statsService;
         private readonly CmdrsService cmdrService;
 
         public StatsController(IReplayRepository replayRepository,
-                               IStatsRepository statsRepository,
                                BuildService buildService,
                                IStatsService statsService,
                                CmdrsService cmdrService)
         {
             this.replayRepository = replayRepository;
-            this.statsRepository = statsRepository;
             this.buildService = buildService;
             this.statsService = statsService;
             this.cmdrService = cmdrService;
