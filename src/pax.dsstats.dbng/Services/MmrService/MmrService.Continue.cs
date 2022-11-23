@@ -84,7 +84,7 @@ public partial class MmrService
 
                 var rpCp = ToonIdRatings[rp.Player.ToonId];
 
-                playerRatingsCmdr[GetMmrId(rp.Player)] = new List<DsRCheckpoint>() {
+                playerRatingsCmdr[GetRatingId(rp.Player)] = new List<DsRCheckpoint>() {
                     new DsRCheckpoint() {
                         Consistency = rpCp.CmdrRatingStats.Consistency,
                         Confidence = rpCp.CmdrRatingStats.Confidence,
@@ -116,7 +116,7 @@ public partial class MmrService
 
                 var rpCp = ToonIdRatings[rp.Player.ToonId];
 
-                playerRatingsStd[GetMmrId(rp.Player)] = new List<DsRCheckpoint>() {
+                playerRatingsStd[GetRatingId(rp.Player)] = new List<DsRCheckpoint>() {
                     new DsRCheckpoint() {
                         Consistency = rpCp.StdRatingStats.Consistency,
                         Confidence = rpCp.StdRatingStats.Confidence,
