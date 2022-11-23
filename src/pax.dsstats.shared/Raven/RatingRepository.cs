@@ -1,6 +1,28 @@
 ﻿
 namespace pax.dsstats.shared.Raven;
 
+public record RavenPlayerDetailsDto
+{
+    public int ToonId { get; init; }
+    public string Name { get; init; } = null!;
+    public int RegionId { get; init; }
+    public bool IsUploader { get; init; }
+    public List<RavenRatingDetailsDto> Ratings { get; init; } = new();
+}
+
+public record RavenRatingDetailsDto
+{
+    public RatingType Type { get; init; }
+    public int Games { get; init; }
+    public int Wins { get; init; }
+    public int Mvp { get; init; }
+    public int TeamGames { get; init; }
+    public Commander Main { get; init; }
+    public double MainPercentage { get; init; }
+    public double Mmr { get; init; }
+    public string? MmrOverTime { get; init; }
+}
+
 public record RavenPlayerDto
 {
     public string Name { get; init; } = null!;
@@ -60,7 +82,7 @@ public record RavenRating
     public Commander Main { get; set; }
     public double MainPercentage { get; set; }
     public double Mmr { get; set; }
-    public string? MmrOverTime { get; set; } = null!;
+    public string? MmrOverTime { get; set; }
     public double Consistency { get; set; }
     public double Uncertainty { get; set; }
 }

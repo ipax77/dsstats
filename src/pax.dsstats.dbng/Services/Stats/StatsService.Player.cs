@@ -5,12 +5,24 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class StatsService
 {
-    public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId)
+    public async Task<PlayerDetailDto> GetPlayerDetails(int toonId, CancellationToken token = default)
+    {
+        var matchups = await GetPlayerDetailInfo(toonId, token);
+        var playerDetails = await ratingRepository.GetPlayerDetails(toonId, token);
+
+        return new()
+        {
+            MatchupInfos = matchups.ToList(),
+            PlayerDetails = playerDetails
+        };
+    }
+
+    public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId, CancellationToken token = default)
     {
         return await GetPlayerDetailInfo(new List<int>() { toonId });
     }
 
-    public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(List<int> toonIds)
+    public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(List<int> toonIds, CancellationToken token = default)
     {
         return await GetPlayerMatchups(toonIds);
 
@@ -20,7 +32,7 @@ public partial class StatsService
         //};
     }
 
-    private async Task<List<PlayerMatchupInfo>> GetPlayerMatchups(List<int> toonIds)
+    private async Task<List<PlayerMatchupInfo>> GetPlayerMatchups(List<int> toonIds, CancellationToken token = default)
     {
         var countGroup = from p in context.Players
                          from rp in p.ReplayPlayers
@@ -34,7 +46,7 @@ public partial class StatsService
                              Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
                          };
 
-        var matchups = await countGroup.ToListAsync();
+        var matchups = await countGroup.ToListAsync(token);
         return matchups
             .Where(x => x.Commander > 0 && x.Versus > 0)
             .ToList();

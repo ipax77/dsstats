@@ -15,7 +15,7 @@ public interface IDataService
     Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token = default);
     Task<List<MmrDevDto>> GetRatingsDeviation();
     Task<List<MmrDevDto>> GetRatingsDeviationStd();
-    Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId);
+    Task<PlayerDetailDto> GetPlayerDetails(int toonId, CancellationToken token = default);
     Task<List<RavenPlayerDto>> GetPlayerRatings(int toonId);
     Task<List<RequestNames>> GetTopPlayers(bool std);
 

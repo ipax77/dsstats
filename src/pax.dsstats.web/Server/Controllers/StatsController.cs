@@ -82,9 +82,9 @@ namespace pax.dsstats.web.Server.Controllers
 
         [HttpGet]
         [Route("GetPlayerDetails/{toonId}")]
-        public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId)
+        public async Task<PlayerDetailDto> GetPlayerDetails(int toonId)
         {
-            return await statsService.GetPlayerDetailInfo(toonId);
+            return await statsService.GetPlayerDetails(toonId);
         }
 
         [HttpPost]

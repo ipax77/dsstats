@@ -12,71 +12,69 @@ public partial class RatingRepository : IRatingRepository
 
     }
 
-    public async Task<List<RavenPlayerDto>> GetPlayerRating(int toonId, CancellationToken token = default)
+    public async Task<RavenPlayerDetailsDto> GetPlayerDetails(int toonId, CancellationToken token = default)
     {
-        var players = GetPlayerRatingFromMemory(toonId);
+        //var players = GetPlayerRatingFromMemory(toonId);
 
-        if (players.Any())
-        {
-            return players;
-        }
-        
+        //if (players.Any())
+        //{
+        //    return players;
+        //}
+
         using var session = DocumentStoreHolder.Store.OpenAsyncSession();
 
         var player = await session.Query<RavenPlayer>()
             .Where(x => x.Id == $"RavenPlayer/{toonId}")
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(token);
 
         var cmdrRating = await session.Query<RavenRating>()
             .Where(x => x.Id == $"RavenRating/{RatingType.Cmdr}/{toonId}")
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(token);
 
         var stdRating = await session.Query<RavenRating>()
             .Where(x => x.Id == $"RavenRating/{RatingType.Std}/{toonId}")
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(token);
 
-        List<RavenPlayerDto> dtos = new();
+        RavenPlayerDetailsDto dto = new()
+        {
+            Name = player.Name,
+            ToonId = player.ToonId,
+            RegionId = player.RegionId,
+            IsUploader = player.IsUploader,
+        };
 
         if (cmdrRating != null)
         {
-            dtos.Add(new()
+            dto.Ratings.Add(new()
             {
-                Name = player.Name,
-                ToonId = player.ToonId,
-                RegionId = player.RegionId,
-                Rating = new()
-                {
-                    Games = cmdrRating.Games,
-                    Wins = cmdrRating.Wins,
-                    Mvp = cmdrRating.Mvp,
-                    TeamGames = cmdrRating.TeamGames,
-                    Main = cmdrRating.Main,
-                    MainPercentage = cmdrRating.MainPercentage,
-                    Mmr = cmdrRating.Mmr,
-                }
+                Type = cmdrRating.Type,
+                Games = cmdrRating.Games,
+                Wins = cmdrRating.Wins,
+                Mvp = cmdrRating.Mvp,
+                TeamGames = cmdrRating.TeamGames,
+                Main = cmdrRating.Main,
+                MainPercentage = cmdrRating.MainPercentage,
+                Mmr = cmdrRating.Mmr,
+                MmrOverTime = cmdrRating.MmrOverTime,
             });
         }
 
         if (stdRating != null)
         {
-            dtos.Add(new()
+            dto.Ratings.Add(new()
             {
-                Name = player.Name,
-                ToonId = player.ToonId,
-                RegionId = player.RegionId,
-                Rating = new()
-                {
-                    Games = stdRating.Games,
-                    Wins = stdRating.Wins,
-                    Mvp = stdRating.Mvp,
-                    TeamGames = stdRating.TeamGames,
-                    Main = stdRating.Main,
-                    MainPercentage = stdRating.MainPercentage,
-                    Mmr = stdRating.Mmr,
-                }
+                Type = stdRating.Type,
+                Games = stdRating.Games,
+                Wins = stdRating.Wins,
+                Mvp = stdRating.Mvp,
+                TeamGames = stdRating.TeamGames,
+                Main = stdRating.Main,
+                MainPercentage = stdRating.MainPercentage,
+                Mmr = stdRating.Mmr,
+                MmrOverTime = stdRating.MmrOverTime,
             });
         }
-        return dtos;
+        return dto;
     }
 
     public async Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token)

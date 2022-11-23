@@ -200,26 +200,27 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId)
+    public async Task<PlayerDetailDto> GetPlayerDetails(int toonId, CancellationToken token)
     {
         try
         {
-            var response = await httpClient.GetAsync($"{statsController}GetPlayerDetails/{toonId}");
+            var response = await httpClient.GetAsync($"{statsController}GetPlayerDetails/{toonId}", token);
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<ICollection<PlayerMatchupInfo>>();
-                return result ?? new List<PlayerMatchupInfo>();
+                var result = await response.Content.ReadFromJsonAsync<PlayerDetailDto>();
+                return result ?? new();
             }
             else
             {
                 logger.LogError($"failed getting playerDetails: {response.StatusCode}");
             }
         }
+        catch(OperationCanceledException) { }
         catch (Exception ex)
         {
             logger.LogError($"failed getting playerDetails: {ex.Message}");
         }
-        return new List<PlayerMatchupInfo>();
+        return new();
     }
 
     public async Task<List<RequestNames>> GetTopPlayers(bool std)

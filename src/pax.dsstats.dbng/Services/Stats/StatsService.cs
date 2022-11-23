@@ -13,12 +13,14 @@ public partial class StatsService : IStatsService
     private readonly IMemoryCache memoryCache;
     private readonly ReplayContext context;
     private readonly IMapper mapper;
+    private readonly IRatingRepository ratingRepository;
 
-    public StatsService(IMemoryCache memoryCache, ReplayContext context, IMapper mapper)
+    public StatsService(IMemoryCache memoryCache, ReplayContext context, IMapper mapper, IRatingRepository ratingRepository)
     {
         this.memoryCache = memoryCache;
         this.context = context;
         this.mapper = mapper;
+        this.ratingRepository = ratingRepository;
     }
 
     public async Task<StatsResponse> GetStatsResponse(StatsRequest request)

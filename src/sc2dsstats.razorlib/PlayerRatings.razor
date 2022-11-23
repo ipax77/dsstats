@@ -180,7 +180,7 @@
 
 @if (Interest != null)
 {
-    <PlayerDetailsComponent RavenPlayerDto="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
+    <PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
 }
 
 
@@ -199,7 +199,7 @@
 
     private EditContext editContext = null!;
 
-    private RavenPlayerDto? Interest;
+    private RequestNames? Interest;
 
     protected override void OnInitialized()
     {
@@ -283,14 +283,14 @@
     {
         if (RatingsRequest.ToonId != null && RatingsRequest.ToonId > 0)
         {
-            Interest = (await dataService.GetPlayerRatings(RatingsRequest.ToonId.Value)).FirstOrDefault();
+            Interest = new() { Name = "", ToonId = RatingsRequest.ToonId.Value };
             await InvokeAsync(() => StateHasChanged());
         }
     }
 
     private void LoadPlayerChart(RavenPlayerDto playerRatingDto)
     {
-        Interest = playerRatingDto;
+        Interest = new() { Name = playerRatingDto.Name, ToonId = playerRatingDto.ToonId };
         RatingsRequest.ToonId = playerRatingDto.ToonId;
         StateHasChanged();
         OnRatingsChanged.InvokeAsync();

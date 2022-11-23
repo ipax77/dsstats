@@ -8,7 +8,7 @@
 @inject IDataService dataService
 @implements IDisposable
 
-<div  class="row @(Interest == null ? "" : "visually-hidden")">
+<div class="row @(Interest == null ? "" : "visually-hidden")">
     <div class="col-auto">
         <div class="card" style="max-width: 1200px;">
             <div class="card-header">
@@ -81,7 +81,7 @@
                                                     </td>
                                                 }
                                                 <td>
-                                                    <span @onclick:stopPropagation @onclick="e => ShowPlayerDetails(player.Player.ToonId)" class="d-inline-block text-truncate" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
+                                                    <span @onclick:stopPropagation @onclick="e => ShowPlayerDetails(player.Player)" class="d-inline-block text-truncate" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
                                                         @player.Name
                                                     </span>
                                                 </td>
@@ -122,7 +122,7 @@
 
 @if (Interest != null)
 {
-    <PlayerDetailsComponent RavenPlayerDto="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
+    <PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
 }
 
 @if (showBuilds.Where(x => x).Any())
@@ -173,7 +173,7 @@
 
     private bool showMiddleChart;
 
-    private RavenPlayerDto? Interest = null;
+    private RequestNames? Interest = null;
 
     protected override void OnInitialized()
     {
@@ -256,10 +256,10 @@
         return "";
     }
 
-    private async Task ShowPlayerDetails(int toonId)
+    private void ShowPlayerDetails(PlayerDto player)
     {
-        Interest = (await dataService.GetPlayerRatings(toonId)).FirstOrDefault();
-        await InvokeAsync(() => StateHasChanged());
+        Interest = new() { Name = player.Name, ToonId = player.ToonId };
+        InvokeAsync(() => StateHasChanged());
     }
 
     private void DetailsClose()

@@ -43,8 +43,8 @@ public class RatingsController
 
     [HttpGet]
     [Route("PlayerRating/{toonId}")]
-    public async Task<List<RavenPlayerDto>> GetPlayerRating(int toonId)
+    public async Task<RavenPlayerDetailsDto> GetPlayerRating(int toonId)
     {
-        return await ratingRepository.GetPlayerRating(toonId);
+        return await ratingRepository.GetPlayerDetails(toonId);
     }
 }

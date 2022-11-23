@@ -13,8 +13,9 @@ namespace pax.dsstats.dbng.Services
         Task<List<MmrDevDto>> GetRatingsDeviationStd();
         Task<StatsResponse> GetStatsResponse(StatsRequest request);
         void ResetStatsCache();
-        Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(List<int> toonIds);
-        Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId);
+        Task<PlayerDetailDto> GetPlayerDetails(int toonId, CancellationToken token = default);
+        Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(List<int> toonIds, CancellationToken token = default);
+        Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId, CancellationToken token = default);
         Task<PlayerRatingDto?> GetPlayerRating(int toonId);
         Task SeedPlayerInfos();
         Task<List<CmdrStats>> GetRequestStats(StatsRequest request);
