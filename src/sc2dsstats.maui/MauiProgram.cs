@@ -90,7 +90,7 @@ public static class MauiProgram
         var userSettingsService = build.Services.GetRequiredService<UserSettingsService>();
 
         var mmrProduceService = build.Services.GetRequiredService<MmrProduceService>();
-        mmrProduceService.ProduceRatings().Wait();
+        mmrProduceService.ProduceRatings(new()).Wait();
         
         return build;
     }

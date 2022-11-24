@@ -156,16 +156,6 @@
         }
     }
 
-    private async Task UpdateStats()
-    {
-        Stopwatch sw = new();
-        sw.Start();
-        await StatsService.SeedPlayerInfos();
-        sw.Stop();
-        elapsed = sw.Elapsed;
-        await InvokeAsync(() => StateHasChanged());
-    }
-
     public void Dispose()
     {
         DecodeService.DecodeStateChanged -= DecodeService_DecodeStateChanged;
