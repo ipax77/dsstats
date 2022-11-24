@@ -2,10 +2,10 @@
 @using pax.dsstats.dbng.Services
 @using pax.dsstats.shared;
 @using sc2dsstats.maui.Services;
-@inject MmrService MmrService
 @inject IToastService ToastService
 @inject DecodeService DecodeService
 @inject IStatsService statsService
+@inject MmrProduceService mmrProduceService
 @implements IDisposable
 
 <div class="d-flex mb-2">
@@ -39,13 +39,14 @@
 
     private RatingsRequest ratingsRequest = new()
         {
+            Type = pax.dsstats.shared.Raven.RatingType.Cmdr,
             Skip = 0,
             Take = 20,
             Orders = new()
         {
             new()
             {
-                Property = "CmdrRatingStats.Mmr",
+                Property = "Rating.Mmr",
                 Ascending = false
             },
 
@@ -54,7 +55,7 @@
 
     protected override void OnInitialized()
     {
-        MmrService.Recalculated += MmrService_Recalculated;
+        //MmrService.Recalculated += MmrService_Recalculated;
         base.OnInitialized();
     }
 
@@ -75,8 +76,7 @@
 
         await Task.Run(async () =>
         {
-            await statsService.SeedPlayerInfos().ConfigureAwait(false);
-            await MmrService.ReCalculateWithDictionary().ConfigureAwait(false);
+            await mmrProduceService.ProduceRatings(new()).ConfigureAwait(false);
         });
 
         isLoading = false;
@@ -99,19 +99,9 @@
         return false;
     }
 
-    private async void MmrService_Recalculated(object? sender, MmrRecalculatedEvent e)
-    {
-        if (playerRatings != null)
-        {
-            await playerRatings.Reload();
-        }
-        calculationDuration = e.Duration;
-        isLoading = false;
-        await InvokeAsync(() => StateHasChanged());
-    }
 
     public void Dispose()
     {
-        MmrService.Recalculated -= MmrService_Recalculated;
+        //MmrService.Recalculated -= MmrService_Recalculated;
     }
 }

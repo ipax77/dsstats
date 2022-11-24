@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Components.Forms;
 @using Microsoft.JSInterop
 @using pax.dsstats.shared
+@using pax.dsstats.shared.Raven;
 @inject IToastService toastService
 @inject IDataService dataService
 @inject IJSRuntime JSRuntime
@@ -96,7 +97,7 @@
 
     private EditContext editContext = null!;
     private List<RequestNames> requestNames = new();
-    private List<PlayerRatingDto> addRequestPlayers = new();
+    private List<RavenPlayerDto> addRequestPlayers = new();
 
     private PlayerSelectModal? playerSelectModal;
     private PlayerDeselectModal? playerDeselectModal;
@@ -141,7 +142,7 @@
         OnRequestChanged.InvokeAsync();
     }
 
-    private void AddPlayer(PlayerRatingDto player)
+    private void AddPlayer(RavenPlayerDto player)
     {
         if (requestNames.Count >= 10)
         {

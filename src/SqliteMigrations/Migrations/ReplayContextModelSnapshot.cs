@@ -105,39 +105,7 @@ namespace SqliteMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("GamesCmdr")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("GamesStd")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("LeaverCount")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("MainCommander")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("MainCount")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<double>("Mmr")
-                        .HasColumnType("REAL");
-
-                    b.Property<string>("MmrOverTime")
-                        .HasMaxLength(2000)
-                        .HasColumnType("TEXT");
-
-                    b.Property<double>("MmrStd")
-                        .HasColumnType("REAL");
-
-                    b.Property<string>("MmrStdOverTime")
-                        .HasMaxLength(2000)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("MvpCmdr")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("MvpStd")
+                    b.Property<int>("DisconnectCount")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
@@ -148,25 +116,16 @@ namespace SqliteMigrations.Migrations
                     b.Property<int>("NotUploadCount")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("RageQuitCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("RegionId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("TeamGamesCmdr")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("TeamGamesStd")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("ToonId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("UploaderId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("WinsCmdr")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("WinsStd")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("PlayerId");
@@ -281,6 +240,9 @@ namespace SqliteMigrations.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("TEXT")
                         .IsFixedLength();
+
+                    b.Property<bool>("ResultCorrected")
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("TournamentEdition")
                         .HasColumnType("INTEGER");
@@ -595,6 +557,9 @@ namespace SqliteMigrations.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("UnitId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.ToTable("Units");
                 });

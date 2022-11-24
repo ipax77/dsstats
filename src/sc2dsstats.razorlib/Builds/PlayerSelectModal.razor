@@ -1,5 +1,6 @@
 ﻿@using Microsoft.JSInterop
 @using pax.dsstats.shared
+@using pax.dsstats.shared.Raven;
 @inject IJSRuntime jsRuntime
 
 <div id="playerselectmodal" class="modal" tabindex="-1">
@@ -26,7 +27,7 @@
 
 @code {
     [Parameter]
-    public EventCallback<PlayerRatingDto> OnPlayerSelected { get; set; }
+    public EventCallback<RavenPlayerDto> OnPlayerSelected { get; set; }
 
     private bool isShowing;
 
@@ -44,7 +45,7 @@
         StateHasChanged();
     }
 
-    public void PlayerSelected(PlayerRatingDto playerRatingDto)
+    public void PlayerSelected(RavenPlayerDto playerRatingDto)
     {
         OnPlayerSelected.InvokeAsync(playerRatingDto);
         Hide();

@@ -13,13 +13,14 @@
 
     private RatingsRequest ratingsRequest = new()
     {
+        Type = shared.Raven.RatingType.Cmdr,
         Skip = 0,
         Take = 20,
         Orders = new()
         {
             new()
             {
-                Property = "CmdrRatingStats.Mmr",
+                Property = "Rating.Mmr",
                 Ascending = false
             },
 

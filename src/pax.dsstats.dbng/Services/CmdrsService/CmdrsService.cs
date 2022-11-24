@@ -9,14 +9,14 @@ public partial class CmdrsService
 {
     private readonly ReplayContext context;
     private readonly IStatsService statsService;
-    private readonly MmrService mmrService;
+    private readonly IRatingRepository ratingRepository;
     private readonly IMemoryCache memoryCache;
 
-    public CmdrsService(ReplayContext context, IStatsService statsService, MmrService mmrService, IMemoryCache memoryCache)
+    public CmdrsService(ReplayContext context, IStatsService statsService, IRatingRepository ratingRepository, IMemoryCache memoryCache)
     {
         this.context = context;
         this.statsService = statsService;
-        this.mmrService = mmrService;
+        this.ratingRepository = ratingRepository;
         this.memoryCache = memoryCache;
     }
 
@@ -213,10 +213,7 @@ public partial class CmdrsService
 
         foreach (var bestPlayer in bestPlayers)
         {
-            if (mmrService.ToonIdRatings.ContainsKey(bestPlayer.ToonId))
-            {
-                bestPlayer.Name = mmrService.ToonIdRatings[bestPlayer.ToonId].Name;
-            }
+            bestPlayer.Name = await ratingRepository.GetToonIdName(bestPlayer.ToonId) ?? "Anonymous";
         }
 
         return bestPlayers;

@@ -12,6 +12,6 @@ public record BuildRequest
 
 public record RequestNames
 {
-    public string Name { get; init; } = "";
+    public string Name { get; set; } = "";
     public int ToonId { get; init; }
 }

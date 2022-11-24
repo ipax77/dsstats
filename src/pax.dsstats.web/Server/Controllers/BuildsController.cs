@@ -18,14 +18,7 @@ public class BuildsController : Controller
     [HttpGet("topplayers/{std}/{min}")]
     public List<RequestNames> GetTopPlayers(bool std, int min)
     {
-        if (std)
-        {
-            return buildService.GetTopPlayersStd(min);
-        }
-        else
-        {
-            return buildService.GetTopPlayersCmdr(min);
-        }
+        return buildService.GetTopPlayers(std, min);
     }
 
     [HttpPost]

@@ -1,4 +1,6 @@
-﻿namespace pax.dsstats.shared;
+﻿using pax.dsstats.shared.Raven;
+
+namespace pax.dsstats.shared;
 public interface IDataService
 {
     Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default);
@@ -10,13 +12,12 @@ public interface IDataService
     Task<BuildResponse> GetBuild(BuildRequest request, CancellationToken token = default);
 
     // ratings
-    Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default);
-    Task<List<PlayerRatingDto>> GetRatings(RatingsRequest request, CancellationToken token = default);
-    Task<string?> GetPlayerRatings(int toonId);
+    Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token = default);
     Task<List<MmrDevDto>> GetRatingsDeviation();
     Task<List<MmrDevDto>> GetRatingsDeviationStd();
-    Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId);
-    Task<PlayerRatingDto?> GetPlayerRating(int toonId);
+    Task<PlayerDetailDto> GetPlayerDetails(int toonId, CancellationToken token = default);
+    //Task<List<RavenPlayerDto>> GetPlayerRatings(int toonId);
     Task<List<RequestNames>> GetTopPlayers(bool std);
+
     Task<CmdrResult> GetCmdrInfo(CmdrRequest request, CancellationToken token = default);
 }

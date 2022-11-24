@@ -2,12 +2,13 @@
 @using System.Globalization;
 @using pax.BlazorChartJs
 @using pax.dsstats.shared
+@using pax.dsstats.shared.Raven;
 @using sc2dsstats.razorlib.Services
 @inject IJSRuntime JSRuntime
 @inject IDataService dataService
 @implements IDisposable
 
-<div  class="row @(Interest == null ? "" : "visually-hidden")">
+<div class="row @(Interest == null ? "" : "visually-hidden")">
     <div class="col-auto">
         <div class="card" style="max-width: 1200px;">
             <div class="card-header">
@@ -41,7 +42,13 @@
                             <div class="d-flex">
                                 @if (isWinner)
                                 {
-                                    <button class="btn btn-sm btn-success"><b>@(replayDto.ReplayEvent != null ? replayDto.ReplayEvent.WinnerTeam : $"Team {i}") - Winner</b></button>
+                                    @if (replayDto.ResultCorrected)
+                                    {
+                                        <button class="btn btn-sm" style="background-color: #BF40BF;"><b>@(replayDto.ReplayEvent != null ? replayDto.ReplayEvent.WinnerTeam : $"Team {i}") - Winner</b></button>
+                                    } else
+                                    {
+                                        <button class="btn btn-sm btn-success"><b>@(replayDto.ReplayEvent != null ? replayDto.ReplayEvent.WinnerTeam : $"Team {i}") - Winner</b></button>
+                                    }
                                 }
                                 else
                                 {
@@ -80,7 +87,7 @@
                                                     </td>
                                                 }
                                                 <td>
-                                                    <span @onclick:stopPropagation @onclick="e => ShowPlayerDetails(player.Player.ToonId)" class="d-inline-block text-truncate" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
+                                                    <span @onclick:stopPropagation @onclick="e => ShowPlayerDetails(player.Player)" class="d-inline-block text-truncate" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
                                                         @player.Name
                                                     </span>
                                                 </td>
@@ -121,7 +128,7 @@
 
 @if (Interest != null)
 {
-    <PlayerDetailsComponent PlayerRatingDto="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
+    <PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
 }
 
 @if (showBuilds.Where(x => x).Any())
@@ -172,7 +179,7 @@
 
     private bool showMiddleChart;
 
-    private PlayerRatingDto? Interest = null;
+    private RequestNames? Interest = null;
 
     protected override void OnInitialized()
     {
@@ -255,10 +262,10 @@
         return "";
     }
 
-    private async Task ShowPlayerDetails(int toonId)
+    private void ShowPlayerDetails(PlayerDto player)
     {
-        Interest = await dataService.GetPlayerRating(toonId);
-        await InvokeAsync(() => StateHasChanged());
+        Interest = new() { Name = player.Name, ToonId = player.ToonId };
+        InvokeAsync(() => StateHasChanged());
     }
 
     private void DetailsClose()

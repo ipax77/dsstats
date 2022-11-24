@@ -14,6 +14,7 @@ public record ReplayDto
     public int Duration { get; init; }
     public int WinnerTeam { get; init; }
     public PlayerResult PlayerResult { get; set; }
+    public bool ResultCorrected { get; set; }
     public GameMode GameMode { get; init; }
     public int Objective { get; init; }
     public int Bunker { get; init; }
@@ -38,7 +39,6 @@ public record ReplayDto
 
 public record ReplayPlayerDto
 {
-    public int ReplayPlayerId { get; set; }
     public string Name { get; init; } = null!;
     public string? Clan { get; init; }
     public int GamePos { get; init; }

@@ -180,7 +180,7 @@ public static class Data
             };
     }
 
-    public static string GetRegionString(int regionId)
+    public static string GetRegionString(int? regionId)
     {
         return regionId switch
         {

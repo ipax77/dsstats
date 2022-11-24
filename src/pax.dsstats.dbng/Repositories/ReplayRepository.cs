@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
+using System.Net.NetworkInformation;
 
 namespace pax.dsstats.dbng.Repositories;
 
@@ -13,14 +14,14 @@ public class ReplayRepository : IReplayRepository
     private readonly ILogger<ReplayRepository> logger;
     private readonly ReplayContext context;
     private readonly IMapper mapper;
-    private readonly MmrService mmrService;
+    private readonly IRatingRepository ratingRepository;
 
-    public ReplayRepository(ILogger<ReplayRepository> logger, ReplayContext context, IMapper mapper, MmrService mmrService)
+    public ReplayRepository(ILogger<ReplayRepository> logger, ReplayContext context, IMapper mapper, IRatingRepository ratingRepository)
     {
         this.logger = logger;
         this.context = context;
         this.mapper = mapper;
-        this.mmrService = mmrService;
+        this.ratingRepository = ratingRepository;
     }
 
     public async Task<ReplayDto?> GetReplay(string replayHash, bool dry = false, CancellationToken token = default)
@@ -42,14 +43,13 @@ public class ReplayRepository : IReplayRepository
             return null;
         }
 
-        foreach (var rp in replay.ReplayPlayers)
+        var changes = await ratingRepository.GetReplayPlayerMmrChanges(replayHash, token);
+        foreach (var change in changes)
         {
-            if (mmrService.ReplayPlayerMmrChanges.ContainsKey(rp.ReplayPlayerId))
+            var player = replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == change.Pos);
+            if (player != null)
             {
-                rp.MmrChange = mmrService.ReplayPlayerMmrChanges[rp.ReplayPlayerId];
-            } else
-            {
-                rp.MmrChange = 0;
+                player.MmrChange = MathF.Round((float)change.Change, 1, MidpointRounding.AwayFromZero);
             }
         }
 
@@ -192,6 +192,11 @@ public class ReplayRepository : IReplayRepository
         if (request.GameModes.Any())
         {
             replays = replays.Where(x => request.GameModes.Contains(x.GameMode));
+        }
+
+        if (request.ResultAdjusted)
+        {
+            replays = replays.Where(x => x.ResultCorrected);
         }
 
         replays = SearchReplays(replays, request);

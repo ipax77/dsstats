@@ -2,30 +2,35 @@
 @using Microsoft.JSInterop;
 @using pax.dsstats.shared
 @using pax.BlazorChartJs
+@using pax.dsstats.shared.Raven;
 @using sc2dsstats.razorlib.Services
 @inject NavigationManager NavigationManager
 @inject IDataService dataService
+@implements IDisposable
 
 <div>
     <div class="d-flex bg-secondary p-2">
         <div class="align-self-center me-2 border p-1">
-            <span>@Data.GetRegionString(PlayerRatingDto.RegionId)</span>
+            <span>@Data.GetRegionString(playerDetailsDto?.RegionId)</span>
         </div>
         <div class="align-self-center">
-            <h3 class="text-warning fw-bold">@PlayerRatingDto.Name Details</h3>
+            <h3 class="text-warning fw-bold">@RequestNames.Name Details</h3>
         </div>
-        <div class="align-self-center">
-            @if (PlayerRatingDto.CmdrRatingStats.Mmr > 0)
+        @if (playerDetailsDto == null)
+        {
+            <div class="spinner-border spinner-border-sm text-light ms-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        }
+        else
+        {
+            @foreach (var rating in playerDetailsDto.Ratings)
             {
-                <span class="badge bg-primary ms-3" style="font-size: 1.2rem;"><span class="small">Cmdr Rating</span><br/><span class="text-warning">@PlayerRatingDto.CmdrRatingStats.Mmr.ToString("N2", CultureInfo.InvariantCulture)</span></span>
+                <div class="align-self-center">
+                    <span class="badge bg-primary ms-3" style="font-size: 1.2rem;"><span class="small">@rating.Type Rating</span><br /><span class="text-warning">@rating.Mmr.ToString("N2", CultureInfo.InvariantCulture)</span></span>
+                </div>
             }
-        </div>
-        <div class="align-self-center">
-            @if (PlayerRatingDto.StdRatingStats.Mmr > 0)
-            {
-                <span class="badge bg-primary ms-3" style="font-size: 1.2rem;"><span class="small">Std Rating</span><br/><span class="text-warning">@PlayerRatingDto.StdRatingStats.Mmr.ToString("N2", CultureInfo.InvariantCulture)</span></span>
-            }
-        </div>
+        }
         <div class="align-self-center ms-3">
             <button type="button" class="btn btn-outline-light" @onclick="ShowReplays">Replays</button>
         </div>
@@ -46,18 +51,12 @@
     {
         <PlayerDetailsSubComponent PlayerDetailInfo="playerDetailInfo"></PlayerDetailsSubComponent>
     }
-    else
-    {
-        <div class="spinner-border text-danger" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-    }
 </div>
 
 @code {
     [Parameter]
     [EditorRequired]
-    public PlayerRatingDto PlayerRatingDto { get; set; } = default!;
+    public RequestNames RequestNames { get; set; } = default!;
 
     [Parameter]
     public EventCallback OnCloseRequested { get; set; }
@@ -71,11 +70,14 @@
     ChartJsConfig chartJsConfig = null!;
     ChartJsConfig chartJsConfigStd = null!;
     PlayerDetailInfo? playerDetailInfo;
+    RavenPlayerDetailsDto? playerDetailsDto;
     private string? ratingOtInfo;
 
     private int chartSetups;
     private bool chartsSetup;
     private bool chartDataUp;
+
+    private CancellationTokenSource cts = new();
 
     protected override void OnInitialized()
     {
@@ -89,7 +91,6 @@
     {
         if (firstRender)
         {
-            _ = LoadChartData();
             _ = LoadPlayerDetails();
         }
         base.OnAfterRender(firstRender);
@@ -113,22 +114,26 @@
 
     public async Task LoadPlayerDetails()
     {
-        var matchupInfos = await dataService.GetPlayerDetailInfo(PlayerRatingDto.ToonId);
+        var playerDetails = await dataService.GetPlayerDetails(RequestNames.ToonId, cts.Token);
         playerDetailInfo = new PlayerDetailInfo()
             {
-                MatchupInfos = matchupInfos.ToList()
+                MatchupInfos = playerDetails.MatchupInfos
             };
-        await InvokeAsync(() => StateHasChanged());
-    }
+        playerDetailsDto = playerDetails.PlayerDetails;
 
-    public async Task LoadChartData()
-    {
-        ratingOtInfo = await dataService.GetPlayerRatings(PlayerRatingDto.ToonId);
+        ratingOtInfo = $"{playerDetailsDto.Ratings.FirstOrDefault(f => f.Type == RatingType.Cmdr)?.MmrOverTime}X{playerDetailsDto.Ratings.FirstOrDefault(f => f.Type == RatingType.Std)?.MmrOverTime}";
         chartDataUp = true;
+
+        if (String.IsNullOrEmpty(RequestNames.Name))
+        {
+            RequestNames.Name = playerDetailsDto.Name;
+        }
+
         if (chartsSetup && chartDataUp)
         {
             SetupCharts();
         }
+        await InvokeAsync(() => StateHasChanged());
     }
 
     private void Close()
@@ -141,7 +146,7 @@
     {
         NavigationManager.NavigateTo(
             NavigationManager.GetUriWithQueryParameters("replays",
-                new Dictionary<string, object?>() { { "Players", PlayerRatingDto.Name } }
+                new Dictionary<string, object?>() { { "Players", RequestNames.Name } }
             )
         );
     }
@@ -181,7 +186,7 @@
                     }
                 }
                 chartJsConfig.SetLabels(labels);
-                chartJsConfig.AddDataset(GetLineDataset(ratings, PlayerRatingDto.Name));
+                chartJsConfig.AddDataset(GetLineDataset(ratings, RequestNames.Name));
             }
             else if (j == 1)
             {
@@ -193,7 +198,7 @@
                     }
                 }
                 chartJsConfigStd.SetLabels(labels);
-                chartJsConfigStd.AddDataset(GetLineDataset(ratings, PlayerRatingDto.Name, true));
+                chartJsConfigStd.AddDataset(GetLineDataset(ratings, RequestNames.Name, true));
             }
         }
     }
@@ -302,5 +307,11 @@
                     }
                 }
             };
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
     }
 }

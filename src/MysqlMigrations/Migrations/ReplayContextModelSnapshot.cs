@@ -122,39 +122,7 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("GamesCmdr")
-                        .HasColumnType("int");
-
-                    b.Property<int>("GamesStd")
-                        .HasColumnType("int");
-
-                    b.Property<int>("LeaverCount")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MainCommander")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MainCount")
-                        .HasColumnType("int");
-
-                    b.Property<double>("Mmr")
-                        .HasColumnType("double");
-
-                    b.Property<string>("MmrOverTime")
-                        .HasMaxLength(2000)
-                        .HasColumnType("varchar(2000)");
-
-                    b.Property<double>("MmrStd")
-                        .HasColumnType("double");
-
-                    b.Property<string>("MmrStdOverTime")
-                        .HasMaxLength(2000)
-                        .HasColumnType("varchar(2000)");
-
-                    b.Property<int>("MvpCmdr")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MvpStd")
+                    b.Property<int>("DisconnectCount")
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
@@ -165,25 +133,16 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("NotUploadCount")
                         .HasColumnType("int");
 
+                    b.Property<int>("RageQuitCount")
+                        .HasColumnType("int");
+
                     b.Property<int>("RegionId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TeamGamesCmdr")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TeamGamesStd")
                         .HasColumnType("int");
 
                     b.Property<int>("ToonId")
                         .HasColumnType("int");
 
                     b.Property<int?>("UploaderId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("WinsCmdr")
-                        .HasColumnType("int");
-
-                    b.Property<int>("WinsStd")
                         .HasColumnType("int");
 
                     b.HasKey("PlayerId");
@@ -298,6 +257,9 @@ namespace MysqlMigrations.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("char(64)")
                         .IsFixedLength();
+
+                    b.Property<bool>("ResultCorrected")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<bool>("TournamentEdition")
                         .HasColumnType("tinyint(1)");
@@ -612,6 +574,9 @@ namespace MysqlMigrations.Migrations
                         .HasColumnType("varchar(50)");
 
                     b.HasKey("UnitId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.ToTable("Units");
                 });

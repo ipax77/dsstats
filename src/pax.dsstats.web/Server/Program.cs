@@ -1,4 +1,5 @@
 using AutoMapper;
+using dsstats.raven;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
@@ -54,12 +55,15 @@ builder.Services.AddRazorPages();
 builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
-builder.Services.AddSingleton<MmrService>();
+//builder.Services.AddSingleton<MmrService>();
 
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 
+builder.Services.AddScoped<IRatingRepository, RatingRepository>();
 builder.Services.AddScoped<ImportService>();
+builder.Services.AddScoped<MmrProduceService>();
+builder.Services.AddScoped<CheatDetectService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -68,7 +72,7 @@ builder.Services.AddTransient<BuildService>();
 builder.Services.AddTransient<CmdrsService>();
 
 builder.Services.AddHostedService<CacheBackgroundService>();
-// builder.Services.AddHostedService<RatingsBackgroundService>();
+builder.Services.AddHostedService<RatingsBackgroundService>();
 
 var app = builder.Build();
 
@@ -84,9 +88,11 @@ context.Database.Migrate();
 // SEED
 if (app.Environment.IsProduction())
 {
-    var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-    mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
-    await mmrService.ReCalculateWithDictionary();
+    var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
+    var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
+
+    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
 
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
@@ -95,9 +101,12 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var mmrService = scope.ServiceProvider.GetRequiredService<MmrService>();
-    mmrService.SeedCommanderMmrs().GetAwaiter().GetResult();
-    mmrService.ReCalculateWithDictionary().GetAwaiter().GetResult();
+    // var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
+    // var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
+    // cheatDetectService.DetectNoUpload().Wait();
+
+    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.

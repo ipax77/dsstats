@@ -5,12 +5,24 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class StatsService
 {
-    public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId)
+    public async Task<PlayerDetailDto> GetPlayerDetails(int toonId, CancellationToken token = default)
+    {
+        var matchups = await GetPlayerDetailInfo(toonId, token);
+        var playerDetails = await ratingRepository.GetPlayerDetails(toonId, token);
+
+        return new()
+        {
+            MatchupInfos = matchups.ToList(),
+            PlayerDetails = playerDetails
+        };
+    }
+
+    public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId, CancellationToken token = default)
     {
         return await GetPlayerDetailInfo(new List<int>() { toonId });
     }
 
-    public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(List<int> toonIds)
+    public async Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(List<int> toonIds, CancellationToken token = default)
     {
         return await GetPlayerMatchups(toonIds);
 
@@ -20,7 +32,7 @@ public partial class StatsService
         //};
     }
 
-    private async Task<List<PlayerMatchupInfo>> GetPlayerMatchups(List<int> toonIds)
+    private async Task<List<PlayerMatchupInfo>> GetPlayerMatchups(List<int> toonIds, CancellationToken token = default)
     {
         var countGroup = from p in context.Players
                          from rp in p.ReplayPlayers
@@ -34,7 +46,7 @@ public partial class StatsService
                              Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
                          };
 
-        var matchups = await countGroup.ToListAsync();
+        var matchups = await countGroup.ToListAsync(token);
         return matchups
             .Where(x => x.Commander > 0 && x.Versus > 0)
             .ToList();
@@ -51,74 +63,6 @@ public partial class StatsService
                             Wins = g.Sum(s => s.Wins),
                         };
         return cmdrInfos.ToList();
-    }
-
-    public async Task SeedPlayerInfos()
-    {
-        var playerInfosStd = await GetPlayerInfos(std: true);
-        var teamGamesStd = await GetPlayerTeamGames(std: true);
-
-        var playerInfosCmdr = await GetPlayerInfos(std: false);
-        var teamGamesCmdr = await GetPlayerTeamGames(std: false);
-
-
-        var infos = playerInfosCmdr.ToDictionary(k => k.ToonId, v => new PlayerInfoDto()
-        {
-            GamesCmdr = v.Games,
-            WinsCmdr = v.Wins,
-            MvpCmdr = v.Mvp,
-            TeamGamesCmdr = teamGamesCmdr.ContainsKey(v.ToonId) ? teamGamesCmdr[v.ToonId] : 0
-        });
-
-        foreach (var stdInfo in playerInfosStd)
-        {
-            if (infos.ContainsKey(stdInfo.ToonId))
-            {
-                infos[stdInfo.ToonId].GamesStd = stdInfo.Games;
-                infos[stdInfo.ToonId].WinsStd = stdInfo.Wins;
-                infos[stdInfo.ToonId].MvpStd = stdInfo.Mvp;
-                infos[stdInfo.ToonId].TeamGamesStd = teamGamesStd.ContainsKey(stdInfo.ToonId) ? teamGamesStd[stdInfo.ToonId] : 0;
-
-            }
-            else
-            {
-                infos[stdInfo.ToonId] = new PlayerInfoDto()
-                {
-                    GamesStd = stdInfo.Games,
-                    WinsStd = stdInfo.Wins,
-                    MvpStd = stdInfo.Mvp,
-                    TeamGamesStd = teamGamesStd.ContainsKey(stdInfo.ToonId) ? teamGamesStd[stdInfo.ToonId] : 0
-                };
-            }
-        }
-
-        int i = 0;
-        foreach (var info in infos)
-        {
-            var player = await context.Players.FirstOrDefaultAsync(f => f.ToonId == info.Key);
-            if (player == null)
-            {
-                continue;
-            }
-            else
-            {
-                player.GamesStd = info.Value.GamesStd;
-                player.WinsStd = info.Value.WinsStd;
-                player.MvpStd = info.Value.MvpStd;
-                player.TeamGamesStd = info.Value.TeamGamesStd;
-
-                player.GamesCmdr = info.Value.GamesCmdr;
-                player.WinsCmdr = info.Value.WinsCmdr;
-                player.MvpCmdr = info.Value.MvpCmdr;
-                player.TeamGamesCmdr = info.Value.TeamGamesCmdr;
-            }
-            i++;
-            if (i % 1000 == 0)
-            {
-                await context.SaveChangesAsync();
-            }
-        }
-        await context.SaveChangesAsync();
     }
 
     private async Task<List<PlayerInfo>> GetPlayerInfos(bool std)

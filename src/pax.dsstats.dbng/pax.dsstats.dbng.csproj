@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\dsstats.mmr\dsstats.mmr.csproj" />
     <ProjectReference Include="..\pax.dsstats.shared\pax.dsstats.shared.csproj" />
   </ItemGroup>
 

@@ -5,56 +5,6 @@ public partial class BuildService
 {
     public List<RequestNames> GetTopPlayers(bool std = false, int minGames = 100)
     {
-        var topPlayersCmdr = mmrService.ToonIdRatings.Values
-            .Where(x => x.CmdrRatingStats.Games >= minGames)
-            .OrderByDescending(o => o.CmdrRatingStats.Wins * 100.0 / o.CmdrRatingStats.Games)
-            .Take(5)
-            .ToList();
-
-        var topPlayersStd = mmrService.ToonIdRatings.Values
-            .Where(x => x.StdRatingStats.Games >= minGames)
-            .OrderByDescending(o => o.StdRatingStats.Wins * 100.0 / o.StdRatingStats.Games)
-            .Take(5)
-            .ToList();
-
-        List<RequestNames> topNames = new() {
-            new() { Name = "PAX", ToonId = 226401 },
-            new() { Name = "PAX", ToonId = 10188255 },
-            new() { Name = "Feralan", ToonId = 8497675 },
-            new() { Name = "Feralan", ToonId = 1488340 }
-        };
-
-        var topPlayers = topPlayersCmdr.Union(topPlayersStd).Select(s => new RequestNames() { Name = s.Name, ToonId = s.ToonId });
-        return topNames.Union(topPlayers).Distinct().ToList();
-    }
-
-    public  List<RequestNames> GetTopPlayersStd(int minGames)
-    {
-        var topPlayersStd = mmrService.ToonIdRatings.Values
-            .Where(x => x.StdRatingStats.Games >= minGames)
-            .OrderByDescending(o => o.StdRatingStats.Wins * 100.0 / o.StdRatingStats.Games)
-            .Take(5)
-            .ToList();
-
-        return topPlayersStd.Select(s => new RequestNames()
-        {
-            Name = s.Name,
-            ToonId = s.ToonId
-        }).ToList();
-    }
-
-    public List<RequestNames> GetTopPlayersCmdr(int minGames)
-    {
-        var topPlayersCmdr = mmrService.ToonIdRatings.Values
-            .Where(x => x.CmdrRatingStats.Games >= minGames)
-            .OrderByDescending(o => o.CmdrRatingStats.Wins * 100.0 / o.CmdrRatingStats.Games)
-            .Take(5)
-            .ToList();
-
-        return topPlayersCmdr.Select(s => new RequestNames()
-        {
-            Name = s.Name,
-            ToonId = s.ToonId
-        }).ToList();
+        return ratingRepository.GetTopPlayers(std ? shared.Raven.RatingType.Std : shared.Raven.RatingType.Cmdr, minGames);   
     }
 }

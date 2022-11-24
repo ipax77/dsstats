@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using System.Globalization;
 @using pax.dsstats.shared
+@using pax.dsstats.shared.Raven;
 @using sc2dsstats.razorlib.Services
 @inject IDataService dataService
 @implements IDisposable
@@ -48,6 +49,16 @@
                         <InputText class="form-control" @bind-Value="RatingsRequest.Search"></InputText>
                     </label>
                 </div>
+                <div class="col-auto">
+                    <label class="form-label">
+                        Mode
+                        <InputSelect class="form-select" @bind-Value="RatingsRequest.Type">
+                            <option value="@RatingType.Cmdr" selected>Cmdr</option>
+                            <option value="@RatingType.Std">Std</option>
+                        </InputSelect>
+                    </label>
+
+                </div>
             </div>
         </EditForm>
         <div class="align-self-center ms-2">
@@ -68,18 +79,9 @@
                 <col class="col">
                 <col class="col">
                 <col class="col">
-                <col class="col">
-                <col class="col">
-                <col class="col">
-                <col class="col">
             </colgroup>
             <thead style="user-select: none;">
                 <CascadingValue Value="RatingsRequest.Orders">
-                    <tr>
-                        <th colspan="4"></th>
-                        <th colspan="4" class="text-center text-warning">Commanders</th>
-                        <th colspan="4" class="text-center text-warning">Standard</th>
-                    </tr>
                     <tr>
                         <th scope="col" class="pointer" @onclick="@(e => SortList(e, "RegionId"))">
                             <SortArrow Property="RegionId">
@@ -93,80 +95,55 @@
                                 Name
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Main"))">
-                            <SortArrow Property="Main">
+                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Rating.Main"))">
+                            <SortArrow Property="Rating.Main">
                                 Main
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "MainPercentage"))">
-                            <SortArrow Property="MainPercentage">
+                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Rating.MainPercentage"))">
+                            <SortArrow Property="Rating.MainPercentage">
                                 Main %
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "CmdrRatingStats.Games"))">
-                            <SortArrow Property="CmdrRatingStats.Games">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Rating.Games"))">
+                            <SortArrow Property="Rating.Games">
                                 Games
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "CmdrRatingStats.Mmr"))">
-                            <SortArrow Property="CmdrRatingStats.Mmr">
+                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "Rating.Mmr"))">
+                            <SortArrow Property="Rating.Mmr">
                                 Rating
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "WinrateCmdr"))">
-                            <SortArrow Property="WinrateCmdr">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Rating.Wins"))">
+                            <SortArrow Property="Rating.Wins">
                                 Winrate
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "MvprateCmdr"))">
-                            <SortArrow Property="MvprateCmdr">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Rating.Mvp"))">
+                            <SortArrow Property="Rating.Mvp">
                                 Mvp
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "StdRatingStats.Games"))">
-                            <SortArrow Property="StdRatingStats.Games">
-                                Games
-                            </SortArrow>
-                        </th>
-                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "StdRatingStats.Mmr"))">
-                            <SortArrow Property="StdRatingStats.Mmr">
-                                Rating
-                            </SortArrow>
-                        </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "WinrateStd"))">
-                            <SortArrow Property="WinrateStd">
-                                Winrate
-                            </SortArrow>
-                        </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "MvprateStd"))">
-                            <SortArrow Property="MvprateStd">
-                                Mvp
-                            </SortArrow>
-                        </th>
-
                     </tr>
                 </CascadingValue>
             </thead>
             <tbody>
                 @if (ratingsCount > 0)
                 {
-                    <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings" OverscanCount="10" ItemSize="41">
+                    <Virtualize @ref="virtualize" Context="player" ItemsProvider="LoadRatings" OverscanCount="10" ItemSize="41">
                         <ItemContent>
-                            <tr height="41px;" class="pointer" @onclick="e => LoadPlayerChart(rating)">
+                            <tr height="41px;" class="pointer" @onclick="e => LoadPlayerChart(player)">
                                 <td>
-                                    <span>@Data.GetRegionString(rating.RegionId)</span>
+                                    <span>@Data.GetRegionString(player.RegionId)</span>
                                 </td>
-                                <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Name</span></td>
-                                <td>@(rating.MainPercentage < 9 ? "Random" : rating.Main.ToString())</td>
-                                <td>@rating.MainPercentage.ToString("N2", CultureInfo.InvariantCulture)</td>
-                                <td class="border-start">@rating.CmdrRatingStats.Games</td>
-                                <td class="text-warning">@Math.Round(rating.CmdrRatingStats.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
-                                <td>@HelperService.GetPercentageString(rating.CmdrRatingStats.Wins, rating.CmdrRatingStats.Games)</td>
-                                <td>@HelperService.GetPercentageString(rating.CmdrRatingStats.Mvp, rating.CmdrRatingStats.Games)</td>
-                                <td class="border-start">@rating.StdRatingStats.Games</td>
-                                <td class="text-warning">@Math.Round(rating.StdRatingStats.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
-                                <td>@HelperService.GetPercentageString(rating.StdRatingStats.Wins, rating.StdRatingStats.Games)</td>
-                                <td>@HelperService.GetPercentageString(rating.StdRatingStats.Mvp, rating.StdRatingStats.Games)</td>
+                                <td><span class="text-truncate text-info" style="display: block; width: 150px;">@player.Name</span></td>
+                                <td>@(player.Rating.MainPercentage < 9 ? "Random" : player.Rating.Main.ToString())</td>
+                                <td>@player.Rating.MainPercentage.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                <td class="border-start">@player.Rating.Games</td>
+                                <td class="text-warning">@Math.Round(player.Rating.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
+                                <td>@HelperService.GetPercentageString(player.Rating.Wins, player.Rating.Games)</td>
+                                <td>@HelperService.GetPercentageString(player.Rating.Mvp, player.Rating.Games)</td>
                             </tr>
                         </ItemContent>
                         <Placeholder>
@@ -175,13 +152,6 @@
                     </Virtualize>
                 }
             </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="4"></td>
-                    <td colspan="4" class="text-center">Commanders</td>
-                    <td colspan="4" class="text-center">Standard</td>
-                </tr>
-            </tfoot>
         </table>
     </div>
     <div class="">
@@ -210,7 +180,7 @@
 
 @if (Interest != null)
 {
-    <PlayerDetailsComponent PlayerRatingDto="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
+    <PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
 }
 
 
@@ -222,20 +192,19 @@
     [Parameter]
     public EventCallback OnRatingsChanged { get; set; }
 
-    private int ratingsCount = 0;
+    private int ratingsCount = 100;
     private PlayerRatingsDeviation? playerRatingsDeviation;
-    private Virtualize<PlayerRatingDto>? virtualize;
+    private Virtualize<RavenPlayerDto>? virtualize;
     private DistributionRequestEnum DistributionRequest = DistributionRequestEnum.None;
 
     private EditContext editContext = null!;
 
-    private PlayerRatingDto? Interest;
+    private RequestNames? Interest;
 
     protected override void OnInitialized()
     {
         editContext = new EditContext(RatingsRequest);
         editContext.OnFieldChanged += FieldChanged;
-        _ = SetCount();
         _ = LoadInitialPlayerInfo();
 
         base.OnInitialized();
@@ -248,7 +217,7 @@
 
     public async Task Reload()
     {
-        await SetCount();
+        ratingsCount = 100;
         await InvokeAsync(() => StateHasChanged());
         if (virtualize != null)
         {
@@ -259,12 +228,6 @@
         {
             await playerRatingsDeviation.LoadData();
         }
-    }
-
-    private async Task SetCount()
-    {
-        ratingsCount = await dataService.GetRatingsCount(RatingsRequest);
-        await InvokeAsync(() => StateHasChanged());
     }
 
     private async Task SortList(MouseEventArgs e, string property)
@@ -296,14 +259,16 @@
         await Reload();
     }
 
-    private async ValueTask<ItemsProviderResult<PlayerRatingDto>> LoadRatings(ItemsProviderRequest request)
+    private async ValueTask<ItemsProviderResult<RavenPlayerDto>> LoadRatings(ItemsProviderRequest request)
     {
         var numRatings = Math.Min(request.Count, ratingsCount - request.StartIndex);
         RatingsRequest.Skip = request.StartIndex;
         RatingsRequest.Take = numRatings;
-        var ratings = await dataService.GetRatings(RatingsRequest, request.CancellationToken);
+        var result = await dataService.GetRatings(RatingsRequest, request.CancellationToken);
+        ratingsCount = result.Count;
 
-        return new ItemsProviderResult<PlayerRatingDto>(ratings, ratingsCount);
+
+        return new ItemsProviderResult<RavenPlayerDto>(result.Players, ratingsCount);
     }
 
     private void DetailsClose()
@@ -318,14 +283,14 @@
     {
         if (RatingsRequest.ToonId != null && RatingsRequest.ToonId > 0)
         {
-            Interest = await dataService.GetPlayerRating(RatingsRequest.ToonId.Value);
+            Interest = new() { Name = "", ToonId = RatingsRequest.ToonId.Value };
             await InvokeAsync(() => StateHasChanged());
         }
     }
 
-    private void LoadPlayerChart(PlayerRatingDto playerRatingDto)
+    private void LoadPlayerChart(RavenPlayerDto playerRatingDto)
     {
-        Interest = playerRatingDto;
+        Interest = new() { Name = playerRatingDto.Name, ToonId = playerRatingDto.ToonId };
         RatingsRequest.ToonId = playerRatingDto.ToonId;
         StateHasChanged();
         OnRatingsChanged.InvokeAsync();

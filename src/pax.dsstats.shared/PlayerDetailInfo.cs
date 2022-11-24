@@ -1,6 +1,14 @@
-﻿using System.Text.Json.Serialization;
+﻿using pax.dsstats.shared.Raven;
+using System.Text.Json.Serialization;
 
 namespace pax.dsstats.shared;
+
+
+public record PlayerDetailDto
+{
+    public List<PlayerMatchupInfo> MatchupInfos { get; init; } = new();
+    public RavenPlayerDetailsDto PlayerDetails { get; init; } = new();
+}
 
 public record PlayerDetailInfo
 {
