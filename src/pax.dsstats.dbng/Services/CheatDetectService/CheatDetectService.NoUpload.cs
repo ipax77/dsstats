@@ -15,8 +15,6 @@ public partial class CheatDetectService
 
         Dictionary<int, int> playerIdNoUploads = new();
 
-        double maxRatio = 0;
-
         foreach (var playerId in uploaderPlayerIds)
         {
             var results = await context.ReplayPlayers
@@ -41,18 +39,11 @@ public partial class CheatDetectService
             int total = results.Sum(s => s.Count);
             var ratio = los * 100.0 / total;
 
-            if (ratio > maxRatio)
-            {
-                maxRatio = ratio;
-            }
-
             if (ratio > 50.0)
             {
                 playerIdNoUploads[playerId] = los;
             }
         }
-        logger.LogWarning($"maxNoLosUploadRatio: {maxRatio.ToString("N2")}");
-
         if (!dry)
         {
             await SetNoUploads(playerIdNoUploads);
