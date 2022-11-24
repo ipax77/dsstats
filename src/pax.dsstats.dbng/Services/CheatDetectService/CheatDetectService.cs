@@ -21,6 +21,8 @@ public partial class CheatDetectService
 
     public async Task<CheatResult> Detect(bool dry = false)
     {
+        await DetectNoUpload(dry);
+
         var replays = await context.Replays
             .Include(i => i.ReplayPlayers)
             .Where(x => x.WinnerTeam == 0
