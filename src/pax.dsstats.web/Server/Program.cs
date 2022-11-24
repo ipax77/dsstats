@@ -88,7 +88,7 @@ context.Database.Migrate();
 if (app.Environment.IsProduction())
 {
     var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings().GetAwaiter().GetResult();
+    mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
 
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
@@ -98,7 +98,7 @@ if (app.Environment.IsProduction())
 if (app.Environment.IsDevelopment())
 {
     var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings().GetAwaiter().GetResult();
+    mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.

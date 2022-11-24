@@ -112,4 +112,6 @@ public class RatingStd_Average_ByMmr : AbstractIndexCreationTask<RavenRating, Ra
                                 Count = g.Sum(s => s.Count)
                             };
     }
+
+
 }
