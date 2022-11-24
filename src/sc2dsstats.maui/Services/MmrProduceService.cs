@@ -43,10 +43,10 @@ public partial class MmrProduceService
                                          DateTime startTime = default,
                                          DateTime endTime = default)
     {
-        DateTime _startTime = startTime == DateTime.MinValue ? new DateTime(2018, 1, 1) : startTime;
-        DateTime _endTime = endTime == DateTime.MinValue ? DateTime.Today.AddDays(2) : endTime;
+        DateTime _startTime = (startTime == DateTime.MinValue) ? new DateTime(2018, 1, 1) : startTime;
+        DateTime _endTime = (endTime == DateTime.MinValue) ? DateTime.Today.AddDays(2) : endTime;
 
-        Dictionary<int, CalcRating> mmrIdRatigns = new();
+        Dictionary<int, CalcRating> mmrIdRatings = new();
         HashSet<PlayerDsRDto> players = new();
 
         using var scope = serviceProvider.CreateScope();
@@ -72,23 +72,23 @@ public partial class MmrProduceService
 
             players.UnionWith(replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct());
 
-            (mmrIdRatigns, maxMmr) = await MmrService.GeneratePlayerRatings(replays,
+            (mmrIdRatings, maxMmr) = await MmrService.GeneratePlayerRatings(replays,
                                                                             cmdrMmrDic,
-                                                                            mmrIdRatigns,
+                                                                            mmrIdRatings,
                                                                             MmrService.startMmr,
                                                                             ratingRepository,
                                                                             new());
 
-            var result = await ratingRepository.UpdateRavenPlayers(MmrService.GetRavenPlayers(players.ToList(), mmrIdRatigns), RatingType.Cmdr);
+            var result = await ratingRepository.UpdateRavenPlayers(MmrService.GetRavenPlayers(players.ToList(), mmrIdRatings), RatingType.Cmdr);
         }
     }
 
     public async Task ProduceStdRatings(Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic, double maxMmr, DateTime startTime = default, DateTime endTime = default)
     {
-        DateTime _startTime = startTime == DateTime.MinValue ? new DateTime(2018, 1, 1) : startTime;
-        DateTime _endTime = endTime == DateTime.MinValue ? DateTime.Today.AddDays(2) : endTime;
+        DateTime _startTime = (startTime == DateTime.MinValue) ? new DateTime(2018, 1, 1) : startTime;
+        DateTime _endTime = (endTime == DateTime.MinValue) ? DateTime.Today.AddDays(2) : endTime;
 
-        Dictionary<int, CalcRating> mmrIdRatigns = new();
+        Dictionary<int, CalcRating> mmrIdRatings = new();
         HashSet<PlayerDsRDto> players = new();
 
         using var scope = serviceProvider.CreateScope();
@@ -114,14 +114,14 @@ public partial class MmrProduceService
 
             players.UnionWith(replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct());
 
-            (mmrIdRatigns, maxMmr) = await MmrService.GeneratePlayerRatings(replays,
+            (mmrIdRatings, maxMmr) = await MmrService.GeneratePlayerRatings(replays,
                                                                             cmdrMmrDic,
-                                                                            mmrIdRatigns,
+                                                                            mmrIdRatings,
                                                                             MmrService.startMmr,
                                                                             ratingRepository,
                                                                             new());
 
-            var result = await ratingRepository.UpdateRavenPlayers(MmrService.GetRavenPlayers(players.ToList(), mmrIdRatigns), RatingType.Std);
+            var result = await ratingRepository.UpdateRavenPlayers(MmrService.GetRavenPlayers(players.ToList(), mmrIdRatings), RatingType.Std);
         }
     }
 
@@ -198,8 +198,7 @@ public partial class MmrProduceService
 
         var cmdrMmrs = await context.CommanderMmrs
             .AsNoTracking()
-            .ToListAsync()
-        ;
+            .ToListAsync();
 
         if (!cmdrMmrs.Any())
         {
@@ -228,6 +227,6 @@ public partial class MmrProduceService
         {
             SynergyMmr = v.SynergyMmr,
             AntiSynergyMmr = v.AntiSynergyMmr
-        }); ;
+        });
     }
 }
