@@ -6,18 +6,11 @@ namespace pax.dsstats.dbng.Services
     {
         Task<StatsResponse> GetCustomTimeline(StatsRequest request);
         Task<StatsResponse> GetCustomWinrate(StatsRequest request);
-        Task<string?> GetPlayerRatings(int toonId);
-        Task<List<PlayerRatingDto>> GetRatings(RatingsRequest request, CancellationToken token = default);
-        Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default);
-        Task<List<MmrDevDto>> GetRatingsDeviation();
-        Task<List<MmrDevDto>> GetRatingsDeviationStd();
         Task<StatsResponse> GetStatsResponse(StatsRequest request);
         void ResetStatsCache();
         Task<PlayerDetailDto> GetPlayerDetails(int toonId, CancellationToken token = default);
         Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(List<int> toonIds, CancellationToken token = default);
         Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId, CancellationToken token = default);
-        Task<PlayerRatingDto?> GetPlayerRating(int toonId);
-        Task SeedPlayerInfos();
         Task<List<CmdrStats>> GetRequestStats(StatsRequest request);
     }
 }

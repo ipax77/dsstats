@@ -11,6 +11,7 @@ public record ReplaysRequest
     public string? SearchString { get; set; }
     public string? SearchPlayers { get; set; }
     public bool LinkSearch { get; set; }
+    public bool ResultAdjusted { get; set; }
     public string? ReplayHash { get; set; }
     public bool DefaultFilter { get; set; }
     public int PlayerCount { get; set; }
