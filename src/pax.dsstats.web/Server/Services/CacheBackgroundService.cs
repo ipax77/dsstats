@@ -47,7 +47,7 @@ public class CacheBackgroundService : IHostedService, IDisposable
                 await statsService.GetRequestStats(new shared.StatsRequest() { Uploaders = false });
 
                 var mmrProduceServer = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-                await mmrProduceServer.ProduceRatings();
+                await mmrProduceServer.ProduceRatings(new());
             }
 
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
