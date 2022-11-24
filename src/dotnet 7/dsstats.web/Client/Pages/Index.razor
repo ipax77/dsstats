@@ -1,0 +1,92 @@
+﻿@page "/"
+@using MediaFilesAPI;
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using NeoSmart.PrettySize
+@using System.Reflection;
+@inject MediaFiles MediaFiles
+
+<PageTitle>ReplayDecoder</PageTitle>
+
+<div class="btn-group">
+    <button type="button" class="btn btn-primary" @onclick="OpenDir">Open Dir</button>
+    <button type="button" class="btn btn-primary" @onclick="DoPythonThings">Python</button>
+    <button type="button" class="btn btn-primary" @onclick="DoAssemblyStuff">Assembly</button>
+</div>
+<section class="grid-area">
+    @if (files is not null)
+    {
+        <QuickGrid Items="@FilteredFiles" Class="files-grid" Virtualize="true" ItemSize="64">
+            <PropertyColumn Property="@(f => f.Name)" Sortable="true">
+                <ColumnOptions>
+                    <div class="search-box">
+                        <input type="search" @bind="searchName" @bind:event="oninput"
+                           autofocus placeholder="Name..." />
+                    </div>
+                </ColumnOptions>
+            </PropertyColumn>
+            <PropertyColumn Title="Size" Property="@(f => new PrettySize(f.Size))" Sortable="true" />
+            <PropertyColumn Title="Modified" Property="@(f => f.LastModified)" Sortable="true" />
+            <TemplateColumn Title="Preview">
+                @context.Name
+            </TemplateColumn>
+        </QuickGrid>
+    }
+</section>
+
+@code {
+    string? name;
+    IQueryable<MediaFiles.JSFile>? files;
+    string? searchName;
+
+    IQueryable<MediaFiles.JSFile>? FilteredFiles => string.IsNullOrWhiteSpace(searchName)
+    ? files
+    : files?.Where(f => f.Name.Contains(searchName, StringComparison.CurrentCultureIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var dir = await MediaFiles.ReopenLastDirectory();
+        if (dir is not null)
+        {
+            name = dir.Name;
+            files = (await MediaFiles.GetFilesAsync(dir)).AsQueryable();
+        }
+    }
+
+    async Task OpenDir()
+    {
+        try
+        {
+            await using var dir = await MediaFiles.ShowDirectoryPicker();
+            name = dir.Name;
+            files = (await MediaFiles.GetFilesAsync(dir)).AsQueryable();
+        }
+        catch
+        {
+            // User cancelled
+        }
+    }
+
+    void DoAssemblyStuff()
+    {
+        string[] resourceNames = Assembly.GetExecutingAssembly().GetManifestResourceNames();
+
+        for (int i = 0; i < resourceNames.Length; i++)
+        {
+            Console.WriteLine($"resourece Name {i}: {resourceNames[i]}");
+        }
+
+        // Stream? stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("com.stackoverflow.plugin.example.Foo.pdf");
+    }
+
+    void DoPythonThings()
+    {
+        var eng = IronPython.Hosting.Python.CreateEngine();
+        var scope = eng.CreateScope();
+        eng.Execute(@"
+def greetings(name):
+    return 'Hello ' + name.title() + '!'
+", scope);
+        dynamic greetings = scope.GetVariable("greetings");
+        System.Console.WriteLine(greetings("world"));
+    }
+}
