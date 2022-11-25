@@ -95,6 +95,18 @@ namespace pax.dsstats.web.Server.Controllers
             catch (OperationCanceledException) { }
             return NoContent();
         }
+
+        [HttpPost]
+        [Route("GetCrosstable")]
+        public async Task<ActionResult<CrossTableResponse>> GetCrosstable(CrossTableRequest request, CancellationToken token = default)
+        {
+            try
+            {
+                return await statsService.GetCrossTable(request, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
+        }
     }
 
 }

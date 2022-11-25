@@ -88,8 +88,8 @@ context.Database.Migrate();
 // SEED
 if (app.Environment.IsProduction())
 {
-    var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
-    var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
+    // var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
+    // var result = cheatDetectService.Detect().GetAwaiter().GetResult();
 
     var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
     mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
@@ -105,8 +105,11 @@ if (app.Environment.IsDevelopment())
     // var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
     // cheatDetectService.DetectNoUpload().Wait();
 
-    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
+    //var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    //mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
+
+    var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+    var result = statsService.GetCrossTable(new());
 }
 
 // Configure the HTTP request pipeline.

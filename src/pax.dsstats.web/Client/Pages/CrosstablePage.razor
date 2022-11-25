@@ -1,0 +1,10 @@
+﻿@page "/teams"
+@using pax.dsstats.shared;
+
+<PageTitle>Teams</PageTitle>
+
+<sc2dsstats.razorlib.Crosstable.CrosstableComponent CrossTableRequest="crossTableRequest"></sc2dsstats.razorlib.Crosstable.CrosstableComponent>
+
+@code {
+    private CrossTableRequest crossTableRequest = new();
+}

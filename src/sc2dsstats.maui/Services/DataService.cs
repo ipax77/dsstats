@@ -92,4 +92,9 @@ public class DataService : IDataService
     {
         return await Task.FromResult(new CmdrResult());
     }
+
+    public async Task<CrossTableResponse> GetCrossTable(CrossTableRequest request, CancellationToken token = default)
+    {
+        return await Task.FromResult(new CrossTableResponse());
+    }
 }
