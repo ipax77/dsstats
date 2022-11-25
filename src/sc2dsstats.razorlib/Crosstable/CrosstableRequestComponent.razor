@@ -1,0 +1,56 @@
+﻿@using Microsoft.AspNetCore.Components.Forms;
+@using pax.dsstats.shared;
+@implements IDisposable
+
+<EditForm EditContext="editContext">
+    <div class="row">
+        <div class="col-auto">
+            <label class="form-label">
+                StatsMode
+                <InputSelect class="form-select" @bind-Value="CrossTableRequest.Mode">
+                    <option value="Standard" selected>Standard</option>
+                    <option value="Standard">Commanders</option>
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Time Period
+                <InputSelect class="form-select" @bind-Value="CrossTableRequest.TimePeriod">
+                    @foreach (string time in Data.TimePeriods)
+                    {
+                        <option value="@time">@time</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+    </div>
+</EditForm>
+
+
+@code {
+    [CascadingParameter, EditorRequired]
+    public CrossTableRequest CrossTableRequest { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    private EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(CrossTableRequest);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        OnRequestChanged.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}

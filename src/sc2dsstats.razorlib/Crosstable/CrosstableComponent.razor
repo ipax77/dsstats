@@ -1,0 +1,65 @@
+﻿@using pax.dsstats.shared;
+@inject IDataService dataService
+@implements IDisposable
+
+<div>
+    <CascadingValue Value="CrossTableRequest">
+        <CrosstableRequestComponent OnRequestChanged="LoadData"></CrosstableRequestComponent>
+    </CascadingValue>
+</div>
+
+@if (crossTableResponse == null)
+{
+    <div class="spinner-border text-danger" role="status">
+        <span class="visually-hidden" style="font-size: 1rem;">Loading...</span>
+    </div>
+}
+else
+{
+    @foreach (var team in crossTableResponse.TeamCrossTables)
+    {
+        <div class="bg-warning p-1 w-25 mt-1">
+            <p>
+                @team.Comp.Cmdrs[0]
+            </p>
+            <p>
+                @team.Comp.Cmdrs[1]
+            </p>
+            <p>
+                @team.Comp.Cmdrs[2]
+            </p>
+        </div>
+    }
+}
+
+
+@code {
+    [Parameter, EditorRequired]
+    public CrossTableRequest CrossTableRequest { get; set; } = default!;
+
+    private CancellationTokenSource cts = new();
+    private CrossTableResponse? crossTableResponse;
+
+    private bool isLoading;
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        crossTableResponse = await dataService.GetCrossTable(CrossTableRequest, cts.Token);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

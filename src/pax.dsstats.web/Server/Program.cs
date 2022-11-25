@@ -107,6 +107,9 @@ if (app.Environment.IsDevelopment())
 
     //var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
     //mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
+
+    var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+    var result = statsService.GetCrossTable(new());
 }
 
 // Configure the HTTP request pipeline.

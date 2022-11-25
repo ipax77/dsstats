@@ -1,0 +1,10 @@
+﻿@page "/crosstable"
+@using pax.dsstats.shared;
+
+<PageTitle>CrossTable</PageTitle>
+
+<sc2dsstats.razorlib.Crosstable.CrosstableComponent CrossTableRequest="crossTableRequest"></sc2dsstats.razorlib.Crosstable.CrosstableComponent>
+
+@code {
+    private CrossTableRequest crossTableRequest = new();
+}
