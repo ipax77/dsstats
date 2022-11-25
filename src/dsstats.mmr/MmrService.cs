@@ -125,7 +125,7 @@ public static partial class MmrService
         var mmrChanges2 = AddPlayersRankings(mmrIdRatings, replayData.LoserTeamData, replay.GameTime, replay.Maxkillsum);
         mmrChanges1.AddRange(mmrChanges2);
 
-        if (replay.Maxleaver < 90)
+        if (mmrOptions.UseCommanderMmr && replay.Maxleaver < 90)
         {
             SetCommandersComboMmr(replayData.WinnerTeamData, cmdrMmrDic);
             SetCommandersComboMmr(replayData.LoserTeamData, cmdrMmrDic);

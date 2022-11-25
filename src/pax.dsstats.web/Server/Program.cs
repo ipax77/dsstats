@@ -98,7 +98,7 @@ if (app.Environment.IsProduction())
 if (app.Environment.IsDevelopment())
 {
     var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
+    mmrProduceService.ProduceRatings(new()/*, startTime: new DateTime(2022, 1, 1)*/).GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.

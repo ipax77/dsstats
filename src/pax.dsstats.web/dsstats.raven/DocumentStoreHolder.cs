@@ -13,10 +13,10 @@ public class DocumentStoreHolder
     {
         var json = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText("/data/localserverconfig.json"));
         var config = json.GetProperty("ServerConfig");
-        var ravenCertPassword = config.GetProperty("RavenCertPassword").GetString();
+        //var ravenCertPassword = config.GetProperty("RavenCertPassword").GetString();
         var ravenServerUrl = config.GetProperty("RavenServerUrl").GetString();
 
-        X509Certificate2 clientCertificate = new X509Certificate2("/data/ravenClientCert.pfx", ravenCertPassword);
+        //X509Certificate2 clientCertificate = new X509Certificate2("/data/ravenClientCert.pfx");
 
         // string serverURL = "http://localhost:9102";
         string serverURL = ravenServerUrl ?? "http://localhost:9102";
