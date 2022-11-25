@@ -126,6 +126,15 @@ public static class ReplayExtensions
         return sb.ToString();
     }
 
+    public static string GenMemKey(this CrossTableRequest crossTableRequest)
+    {
+        var sb = new StringBuilder();
+        sb.Append("TeamTable");
+        sb.Append(crossTableRequest.TimePeriod);
+        sb.Append(crossTableRequest.Mode);
+        return sb.ToString();
+    }
+
     public static string GetMd5Hash(MD5 md5Hash, string input)
     {
         byte[] data = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(input));

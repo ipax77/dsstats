@@ -1,6 +1,207 @@
-﻿@using pax.dsstats.shared;
+﻿@using Microsoft.JSInterop;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Extensions;
 @inject IDataService dataService
+@inject IJSRuntime jsRuntime
 @implements IDisposable
+
+
+<style>
+    .tableFixHead {
+        overflow-y: auto;
+        height: 750px;
+    }
+
+        .tableFixHead thead th {
+            position: sticky;
+            top: 0;
+        }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+
+    .tablebackground {
+        position: absolute;
+        z-index: -1;
+        opacity: 0.15;
+    }
+
+    .preload-terran {
+        background-image: url("/_content/sc2dsstats.razorlib/images/terran-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-protoss {
+        background-image: url("/_content/sc2dsstats.razorlib/images/protoss-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-zerg {
+        background-image: url("/_content/sc2dsstats.razorlib/images/zerg-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-abathur {
+        background-image: url("/_content/sc2dsstats.razorlib/images/abathur-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-alarak {
+        background-image: url("/_content/sc2dsstats.razorlib/images/alarak-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-artanis {
+        background-image: url("/_content/sc2dsstats.razorlib/images/artanis-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-dehaka {
+        background-image: url("/_content/sc2dsstats.razorlib/images/dehaka-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-fenix {
+        background-image: url("/_content/sc2dsstats.razorlib/images/fenix-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-horner {
+        background-image: url("/_content/sc2dsstats.razorlib/images/horner-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-karax {
+        background-image: url("/_content/sc2dsstats.razorlib/images/karax-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-kerrigan {
+        background-image: url("/_content/sc2dsstats.razorlib/images/kerrigan-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-mengsk {
+        background-image: url("/_content/sc2dsstats.razorlib/images/mengsk-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-nova {
+        background-image: url("/_content/sc2dsstats.razorlib/images/nova-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-raynor {
+        background-image: url("/_content/sc2dsstats.razorlib/images/raynor-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-stetmann {
+        background-image: url("/_content/sc2dsstats.razorlib/images/stetmann-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-stukov {
+        background-image: url("/_content/sc2dsstats.razorlib/images/stukov-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-swann {
+        background-image: url("/_content/sc2dsstats.razorlib/images/swann-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-tychus {
+        background-image: url("/_content/sc2dsstats.razorlib/images/tychus-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-vorazun {
+        background-image: url("/_content/sc2dsstats.razorlib/images/vorazun-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-zagara {
+        background-image: url("/_content/sc2dsstats.razorlib/images/zagara-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-zeratul {
+        background-image: url("/_content/sc2dsstats.razorlib/images/zeratul-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+</style>
 
 <div>
     <CascadingValue Value="CrossTableRequest">
@@ -16,22 +217,88 @@
 }
 else
 {
-    @foreach (var team in crossTableResponse.TeamCrossTables)
-    {
-        <div class="bg-warning p-1 w-25 mt-1">
-            <p>
-                @team.Comp.Cmdrs[0]
+    <div class="mt-2">
+        <h4 class="bg-warning border rounded p-2 text-primary" style="max-width: 500px;">Commander Team Results for 3v3</h4>
+        @if (CrossTableRequest.Mode == "Commanders")
+        {
+            <p class="fw-bold">
+                The team commanders can be at any position
             </p>
-            <p>
-                @team.Comp.Cmdrs[1]
-            </p>
-            <p>
-                @team.Comp.Cmdrs[2]
-            </p>
+        }
+    </div>
+    <div class="row">
+        <div class="col-auto mb-3">
+            <div class="table-responsive tableFixHead">
+                <table class="table table-dark table-hover w-auto">
+                    <colgroup>
+                        <col class="col">
+                        <col class="col">
+                        <col class="col">
+                        <col class="col">
+                    </colgroup>
+                    <thead>
+                        <CascadingValue Value="Orders">
+                            <tr>
+                                <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(TeamCrossTable.Comp))">
+                                    <SortArrow Property="@nameof(TeamCrossTable.Comp)">
+                                        Team
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(TeamCrossTable.Count))">
+                                    <SortArrow Property="@nameof(TeamCrossTable.Count)">
+                                        Replays
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(TeamCrossTable.Wins))">
+                                    <SortArrow Property="@nameof(TeamCrossTable.Wins)">
+                                        Wins
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(TeamCrossTable.Winrate))">
+                                    <SortArrow Property="@nameof(TeamCrossTable.Winrate)">
+                                        Winrate %
+                                    </SortArrow>
+                                </th>
+                            </tr>
+                        </CascadingValue>
+                    </thead>
+                    <tbody>
+                        @foreach (var team in GetSortedList())
+                        {
+                            <tr class="pointer @(Interest == team ? "table-primary" : "")" @onclick="e => ShowCompTable(team)">
+                                <td>
+                                    <div class="d-flex">
+                                        @foreach (var cmdr in team.Comp.Cmdrs)
+                                        {
+                                            <div class="preload-@(cmdr.ToString().ToLower())" style="width: 30px; height: 30px;"></div>
+                                        }
+                                    </div>
+                                </td>
+                                <td>@team.Count</td>
+                                <td>@team.Wins</td>
+                                <td>@team.Winrate.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
-    }
+        @if (isLoading)
+        {
+            <div class="col-auto">
+                <div class="spinner-border text-danger" role="status">
+                    <span class="visually-hidden" style="font-size: 1rem;">Loading...</span>
+                </div>
+            </div>
+        }
+        @if (Interest != null)
+        {
+            <div id="interesttable" class="col-auto">
+                <CrosstableDetails TeamCrossTables="Interest" OnCloseRequested="CloseCompTable"></CrosstableDetails>
+            </div>
+        }
+    </div>
 }
-
 
 @code {
     [Parameter, EditorRequired]
@@ -40,7 +307,13 @@ else
     private CancellationTokenSource cts = new();
     private CrossTableResponse? crossTableResponse;
 
+    private List<TableOrder> Orders = new List<TableOrder>()
+    {
+        new TableOrder() { Property = nameof(TeamCrossTable.Winrate), Ascending = false }
+    };
+
     private bool isLoading;
+    private TeamCrossTable? Interest;
 
     protected override void OnInitialized()
     {
@@ -51,10 +324,94 @@ else
     private async Task LoadData()
     {
         isLoading = true;
+        Interest = null;
         await InvokeAsync(() => StateHasChanged());
         crossTableResponse = await dataService.GetCrossTable(CrossTableRequest, cts.Token);
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async void ShowCompTable(TeamCrossTable interest)
+    {
+        Interest = interest;
+        StateHasChanged();
+        await Task.Delay(25);
+        await jsRuntime.InvokeVoidAsync("scrollToId", "interesttable");
+    }
+
+    private void CloseCompTable()
+    {
+        Interest = null;
+        StateHasChanged();
+    }
+
+    private void SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = Orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                Orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            Orders.Clear();
+            Orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+        StateHasChanged();
+    }
+
+    private List<TeamCrossTable> GetSortedList()
+    {
+        List<TeamCrossTable> items = new();
+
+        if (crossTableResponse?.TeamCrossTables.Any() ?? false)
+        {
+            var itemsQ = crossTableResponse.TeamCrossTables.AsQueryable();
+
+            foreach (var order in Orders)
+            {
+                if (order.Property == nameof(TeamCrossTable.Comp))
+                {
+                    if (order.Ascending)
+                    {
+                        itemsQ = itemsQ.OrderBy(o => String.Concat(o.Comp.Cmdrs));
+                    }
+                    else
+                    {
+                        itemsQ = itemsQ.OrderByDescending(o => String.Concat(o.Comp.Cmdrs));
+                    }
+                }
+                else
+                {
+                    if (order.Ascending)
+                    {
+                        itemsQ = itemsQ.AppendOrderBy(order.Property);
+                    }
+                    else
+                    {
+                        itemsQ = itemsQ.AppendOrderByDescending(order.Property);
+                    }
+                }
+            }
+
+            items = itemsQ.ToList();
+        }
+
+        return items;
     }
 
     public void Dispose()
