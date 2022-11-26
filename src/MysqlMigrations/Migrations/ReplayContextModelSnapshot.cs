@@ -243,6 +243,9 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("Objective")
                         .HasColumnType("int");
 
+                    b.Property<int>("PlayerPos")
+                        .HasColumnType("int");
+
                     b.Property<int>("PlayerResult")
                         .HasColumnType("int");
 

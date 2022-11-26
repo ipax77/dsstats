@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Components.Web.Virtualization
 @using Microsoft.Extensions.Logging
 @using Microsoft.JSInterop
+@using System.Globalization;
 @using pax.dsstats.shared
 @using sc2dsstats.razorlib.Services
 @inject IDataService dataService
@@ -10,7 +11,7 @@
 
 <div class="@(replayDto == null ? "" : "visually-hidden")">
     <CascadingValue Value="replaysRequest">
-        <ReplaysRequestComponent OnFieldChanged="Reload"></ReplaysRequestComponent>
+        <ReplaysRequestComponent OnFieldChanged="Reload" WithMmrChange="withMmrChange"></ReplaysRequestComponent>
     </CascadingValue>
     <div class="d-flex" style="max-width: 850px;">
         <p class="ms-auto">#@ReplaysCount</p>
@@ -31,10 +32,18 @@
                 <col class="col">
                 <col class="col">
                 <col class="col">
+                @if (replaysRequest.WithMmrChange)
+                {
+                    <col class="col">
+                }
             </colgroup>
             <thead class="user-select-none">
                 <CascadingValue Value="replaysRequest.Orders">
                     <tr>
+                        @if (replaysRequest.WithMmrChange)
+                        {
+                            <th scope="col" style="z-index: 1;">Mmr</th>
+                        }
                         <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GameTime"))">
                             <SortArrow Property="GameTime">
                                 GameTime
@@ -60,6 +69,7 @@
                                 Winner
                             </SortArrow>
                         </th>
+
                         <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GameMode"))">
                             <SortArrow Property="GameMode">
                                 GameMode
@@ -74,6 +84,12 @@
                     <Virtualize @ref="virtualizeComponent" Context="replay" ItemsProvider="LoadReplays" ItemSize="47">
                         <ItemContent>
                             <tr height="47px" class="pointer @GetRowCssColorClass(replay)" @onclick="e => ShowReplay(replay.ReplayHash)">
+                                @if (replaysRequest.WithMmrChange)
+                                {
+                                    <td>
+                                        <span class="oi @(replay.MmrChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success") d-block">@replay.MmrChange.ToString("N1", CultureInfo.InvariantCulture)</span>
+                                    </td>
+                                }
                                 <td>@replay.GameTime.ToString(@"yyyy-MM-dd")</td>
                                 <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
                                 <td>
@@ -137,10 +153,13 @@
     private bool replayLoading;
     private string? lastVisitHash;
 
+    private bool withMmrChange;
+
     protected override async Task OnInitializedAsync()
     {
         await SetCount(replaysRequest);
 
+        withMmrChange = replaysRequest.WithMmrChange;
         if (replaysRequest.ReplayHash != null)
         {
             await ShowReplay(replaysRequest.ReplayHash);

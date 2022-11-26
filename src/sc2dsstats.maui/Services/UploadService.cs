@@ -110,6 +110,7 @@ public class UploadService
                 {
                     f.FileName = string.Empty;
                     f.PlayerResult = PlayerResult.None;
+                    f.PlayerPos = 0;
                 });
             replays.SelectMany(s => s.ReplayPlayers).ToList().ForEach(f =>
             {

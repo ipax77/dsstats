@@ -15,9 +15,9 @@
             </div>
             <div class="col-auto align-self-center p-0">
                 <span class="oi @(replaysRequest.LinkSearch ? "oi-link-intact" : "oi-link-broken") text-light"
-                    style="font-size: 1rem;"
-                    data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Link cmdr and player"
-                    @onclick="SetLink">
+                      style="font-size: 1rem;"
+                      data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Link cmdr and player"
+                      @onclick="SetLink">
                 </span>
             </div>
             <div class="col-auto">
@@ -58,19 +58,31 @@
                         </InputCheckbox>
                     </label>
                 </div>
-                <div class="d-flex">
+                @if (WithMmrChange)
+                {
                     <div class="form-check form-switch">
-                    
                         <label class="form-check-label">
-                            Adjusted
-                            <InputCheckbox class="form-check-input" @bind-Value="replaysRequest.ResultAdjusted">
+                            MmrChange
+                            <InputCheckbox class="form-check-input" @bind-Value="replaysRequest.WithMmrChange">
                             </InputCheckbox>
                         </label>
-                    </div>                
-                    <div class="ms-2">
-                        <span class="oi oi-info pointer" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/CheatDetection'"></span>
                     </div>
-                </div>
+                }
+                else
+                {
+                    <div class="d-flex">
+                        <div class="form-check form-switch">
+                            <label class="form-check-label">
+                                Adjusted
+                                <InputCheckbox class="form-check-input" @bind-Value="replaysRequest.ResultAdjusted">
+                                </InputCheckbox>
+                            </label>
+                        </div>
+                        <div class="ms-2">
+                            <span class="oi oi-info pointer" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/CheatDetection'"></span>
+                        </div>
+                    </div>
+                }
                 <div style="max-width: 150px;">
                     <label for="playercountrange" class="form-label">PlayerCount @(replaysRequest.PlayerCount == 0 ? "All" : replaysRequest.PlayerCount)</label>
                     <input type="range" class="form-range" min="0" max="6" step="2" value="0" id="playercountrange" @onchange="PlayerCountChange">
@@ -90,6 +102,9 @@
 
     [Parameter]
     public EventCallback OnFieldChanged { get; set; }
+
+    [Parameter]
+    public bool WithMmrChange { get; set; }
 
     private List<string> tournaments = new();
     private EditContext editContext = null!;

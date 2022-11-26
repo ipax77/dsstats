@@ -117,6 +117,7 @@ public class Replay
     public int Duration { get; set; }
     public int WinnerTeam { get; set; }
     public PlayerResult PlayerResult { get; set; }
+    public int PlayerPos { get; set; }
     public bool ResultCorrected { get; set; }
     public GameMode GameMode { get; set; }
     public int Objective { get; set; }
