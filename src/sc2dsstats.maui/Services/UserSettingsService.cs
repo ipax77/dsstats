@@ -263,6 +263,7 @@ public record UserSettings
     public string ReplayStartName { get; set; } = "Direct Strike";
     public List<string> PlayerNames { get; set; } = new();
     public List<string> ReplayPaths { get; set; } = new();
+    public DateTime UploadAskTime { get; set; }
 }
 
 public record BattleNetInfo
