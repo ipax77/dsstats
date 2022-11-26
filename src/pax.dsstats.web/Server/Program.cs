@@ -106,10 +106,10 @@ if (app.Environment.IsDevelopment())
     // cheatDetectService.DetectNoUpload().Wait();
 
     var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings(new()/*, startTime: new DateTime(2022, 1, 1)*/).GetAwaiter().GetResult();
+    mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
 
-    var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-    var result = statsService.GetCrossTable(new());
+    //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+    //var result = statsService.GetCrossTable(new());
 }
 
 // Configure the HTTP request pipeline.
