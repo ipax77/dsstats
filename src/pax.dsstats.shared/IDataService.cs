@@ -22,3 +22,15 @@ public interface IDataService
     Task<CmdrResult> GetCmdrInfo(CmdrRequest request, CancellationToken token = default);
     Task<CrossTableResponse> GetCrossTable(CrossTableRequest request, CancellationToken token = default);
 }
+
+public interface IDataServiceFactory
+{
+    IDataService GetInstance(ConnectionType dataType);
+}
+
+public enum ConnectionType
+{
+    None = 0,
+    Maui = 1,
+    Server = 2
+}

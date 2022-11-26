@@ -1,19 +1,29 @@
 ﻿using Microsoft.Extensions.Logging;
-using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
+using pax.dsstats.shared;
 using System.Net.Http.Json;
-
 
 namespace sc2dsstats.maui.Services;
 
-public partial class DataService
+public class ServerDataService : IDataService
 {
     private readonly string statsController = "api/Stats/";
     private readonly string buildsController = "api/Builds/";
     private readonly string ratingController = "api/Ratings/";
+    private readonly HttpClient httpClient;
+    private readonly ILogger<ServerDataService> logger;
+
+    public ServerDataService(ILogger<ServerDataService> logger)
+    {
+        httpClient = new HttpClient();
+        httpClient.BaseAddress = new Uri("https://localhost:7174");
+        // httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
+        httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+        this.logger = logger;
+    }
 
 
-    public async Task<ReplayDto?> GetReplayFromServer(string replayHash, CancellationToken token = default)
+    public async Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default)
     {
         try
         {
@@ -36,7 +46,7 @@ public partial class DataService
         return null;
     }
 
-    public async Task<int> GetReplaysCountFromServer(ReplaysRequest request, CancellationToken token = default)
+    public async Task<int> GetReplaysCount(ReplaysRequest request, CancellationToken token = default)
     {
         try
         {
@@ -59,7 +69,7 @@ public partial class DataService
         return 0;
     }
 
-    public async Task<ICollection<ReplayListDto>> GetReplaysFromServer(ReplaysRequest request, CancellationToken token = default)
+    public async Task<ICollection<ReplayListDto>> GetReplays(ReplaysRequest request, CancellationToken token = default)
     {
         try
         {
@@ -83,7 +93,7 @@ public partial class DataService
     }
 
 
-    public async Task<StatsResponse> GetStatsFromServer(StatsRequest request, CancellationToken token = default)
+    public async Task<StatsResponse> GetStats(StatsRequest request, CancellationToken token = default)
     {
         try
         {
@@ -106,7 +116,7 @@ public partial class DataService
         return new();
     }
 
-    public async Task<BuildResponse> GetBuildFromServer(BuildRequest request, CancellationToken token = default)
+    public async Task<BuildResponse> GetBuild(BuildRequest request, CancellationToken token = default)
     {
         try
         {
@@ -129,7 +139,7 @@ public partial class DataService
         return new();
     }
 
-    public async Task<RatingsResult> GetRatingsFromServer(RatingsRequest request, CancellationToken token = default)
+    public async Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token = default)
     {
         try
         {
@@ -152,7 +162,7 @@ public partial class DataService
         return new();
     }
 
-    public async Task<List<RavenPlayerDto>> GetPlayerRatingsFromServer(int toonId)
+    public async Task<List<RavenPlayerDto>> GetPlayerRatings(int toonId)
     {
         try
         {
@@ -169,7 +179,7 @@ public partial class DataService
         return new();
     }
 
-    public async Task<List<MmrDevDto>> GetRatingsDeviationFromServer()
+    public async Task<List<MmrDevDto>> GetRatingsDeviation()
     {
         try
         {
@@ -182,7 +192,7 @@ public partial class DataService
         return new();
     }
 
-    public async Task<List<MmrDevDto>> GetRatingsDeviationStdFromServer()
+    public async Task<List<MmrDevDto>> GetRatingsDeviationStd()
     {
         try
         {
@@ -195,7 +205,7 @@ public partial class DataService
         return new();
     }
 
-    public async Task<PlayerDetailDto> GetPlayerDetailsFromServer(int toonId, CancellationToken token)
+    public async Task<PlayerDetailDto> GetPlayerDetails(int toonId, CancellationToken token)
     {
         try
         {
@@ -218,7 +228,7 @@ public partial class DataService
         return new();
     }
 
-    public async Task<List<RequestNames>> GetTopPlayersFromServer(bool std)
+    public async Task<List<RequestNames>> GetTopPlayers(bool std)
     {
         try
         {
@@ -235,7 +245,7 @@ public partial class DataService
         return Data.GetDefaultRequestNames();
     }
 
-    public async Task<CmdrResult> GetCmdrInfoFromServer(CmdrRequest request, CancellationToken token = default)
+    public async Task<CmdrResult> GetCmdrInfo(CmdrRequest request, CancellationToken token = default)
     {
         try
         {
@@ -257,7 +267,7 @@ public partial class DataService
         return new();
     }
 
-    public async Task<CrossTableResponse> GetCrossTableFromServer(CrossTableRequest request, CancellationToken token = default)
+    public async Task<CrossTableResponse> GetCrossTable(CrossTableRequest request, CancellationToken token = default)
     {
         try
         {
@@ -286,5 +296,15 @@ public partial class DataService
         // httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         return httpClient;
+    }
+
+    public async Task<ICollection<string>> GetReplayPaths()
+    {
+        return await Task.FromResult(new List<string>());
+    }
+
+    public async Task<List<string>> GetTournaments()
+    {
+        return await Task.FromResult(new List<string>());
     }
 }

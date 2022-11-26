@@ -1,4 +1,5 @@
 ﻿using Blazored.Toast;
+using MathNet.Numerics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using pax.BlazorChartJs;
@@ -58,7 +59,10 @@ public static class MauiProgram
         builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
         builder.Services.AddTransient<IStatsRepository, StatsRepository>();
         builder.Services.AddTransient<BuildService>();
+
         builder.Services.AddTransient<IDataService, DataService>();
+        builder.Services.AddTransient<IDataService, ServerDataService>();
+        builder.Services.AddTransient<IDataServiceFactory, DataServiceFactory>();
 
         // init services
         using var scope = builder.Services.BuildServiceProvider().CreateScope();

@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using pax.dsstats.dbng.Repositories;
+﻿using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 
@@ -11,55 +10,32 @@ public partial class DataService : IDataService
     private readonly BuildService buildService;
     private readonly IStatsService statsService;
     private readonly IRatingRepository ratingRepository;
-    private readonly ILogger<DataService> logger;
-    private readonly HttpClient httpClient;
 
     public DataService(IReplayRepository replayRepository,
                        BuildService buildService,
                        IStatsService statsService,
-                       IRatingRepository ratingRepository,
-                       ILogger<DataService> logger)
+                       IRatingRepository ratingRepository)
     {
         this.replayRepository = replayRepository;
         this.buildService = buildService;
         this.statsService = statsService;
         this.ratingRepository = ratingRepository;
-        this.logger = logger;
-        httpClient = GetHttpClient();
     }
 
     public async Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default)
     {
         var replayDto = await replayRepository.GetReplay(replayHash, true, token);
-        if (replayDto == null)
-        {
-            return await GetReplayFromServer(replayHash, token);            
-        }
         return replayDto;
     }
 
     public async Task<int> GetReplaysCount(ReplaysRequest request, CancellationToken token = default)
     {
-        if (request.FromServer)
-        {
-            return await GetReplaysCountFromServer(request, token);
-        }
-        else
-        {
-            return await replayRepository.GetReplaysCount(request, token);
-        }
+        return await replayRepository.GetReplaysCount(request, token);
     }
 
     public async Task<ICollection<ReplayListDto>> GetReplays(ReplaysRequest request, CancellationToken token = default)
     {
-        if (request.FromServer)
-        {
-            return await GetReplaysFromServer(request, token);
-        }
-        else
-        {
-            return await replayRepository.GetReplays(request, token);
-        }
+        return await replayRepository.GetReplays(request, token);
     }
 
     public async Task<ICollection<string>> GetReplayPaths()
@@ -95,10 +71,6 @@ public partial class DataService : IDataService
     public async Task<PlayerDetailDto> GetPlayerDetails(int toonId, CancellationToken token)
     {
         var details = await statsService.GetPlayerDetails(toonId, token);
-        if (details.PlayerDetails.ToonId == 0)
-        {
-            return await GetPlayerDetailsFromServer(toonId, token);
-        }
         return details;
     }
 

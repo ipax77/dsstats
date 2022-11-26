@@ -4,7 +4,7 @@
 @using System.Globalization;
 @using pax.dsstats.shared
 @using sc2dsstats.razorlib.Services
-@inject IDataService dataService
+@inject IDataServiceFactory dataServiceFactory
 @inject IJSRuntime JSRuntime
 @inject ILogger<ReplaysComponent> logger
 @implements IDisposable
@@ -199,6 +199,15 @@
 
     private async Task SetCount(ReplaysRequest request)
     {
+        IDataService dataService;
+        if (request.FromServer)
+        {
+            dataService = dataServiceFactory.GetInstance(ConnectionType.Server);
+        } else
+        {
+            dataService = dataServiceFactory.GetInstance(ConnectionType.Maui);
+        }
+
         ReplaysCount = await dataService.GetReplaysCount(request, cts.Token);
         await InvokeAsync(() => StateHasChanged());
     }
@@ -208,6 +217,15 @@
         replaysRequest.Skip = prRequest.StartIndex;
         replaysRequest.Take = Math.Min(prRequest.Count, ReplaysCount - prRequest.StartIndex);
 
+        IDataService dataService;
+        if (replaysRequest.FromServer)
+        {
+            dataService = dataServiceFactory.GetInstance(ConnectionType.Server);
+        }
+        else
+        {
+            dataService = dataServiceFactory.GetInstance(ConnectionType.Maui);
+        }
         var replays = await dataService.GetReplays(replaysRequest, prRequest.CancellationToken);
 
         return new ItemsProviderResult<ReplayListDto>(replays ?? new List<ReplayListDto>(), ReplaysCount);
@@ -249,6 +267,15 @@
         replaysRequest.ReplayHash = replayHash;
         await OnRequestChanged.InvokeAsync(replaysRequest);
 
+        IDataService dataService;
+        if (replaysRequest.FromServer)
+        {
+            dataService = dataServiceFactory.GetInstance(ConnectionType.Server);
+        }
+        else
+        {
+            dataService = dataServiceFactory.GetInstance(ConnectionType.Maui);
+        }
         replayDto = await dataService.GetReplay(replayHash);
         lastVisitHash = replayDto?.ReplayHash;
         if (replayDto != null)
