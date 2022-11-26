@@ -112,6 +112,10 @@ public partial class TopRow : ComponentBase, IDisposable
     {
         if (init)
         {
+            if (!UserSettingsService.UserSettings.CheckForUpdates)
+            {
+                return;
+            }
             await Task.Delay(5000);
         }
         await UpdateService.CheckUpdate(init);

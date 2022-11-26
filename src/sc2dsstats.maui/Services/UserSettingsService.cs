@@ -264,6 +264,7 @@ public record UserSettings
     public List<string> PlayerNames { get; set; } = new();
     public List<string> ReplayPaths { get; set; } = new();
     public DateTime UploadAskTime { get; set; }
+    public bool CheckForUpdates { get; set; } = true;
 }
 
 public record BattleNetInfo
