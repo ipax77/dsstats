@@ -1,0 +1,290 @@
+﻿using Microsoft.Extensions.Logging;
+using pax.dsstats.shared;
+using pax.dsstats.shared.Raven;
+using System.Net.Http.Json;
+
+
+namespace sc2dsstats.maui.Services;
+
+public partial class DataService
+{
+    private readonly string statsController = "api/Stats/";
+    private readonly string buildsController = "api/Builds/";
+    private readonly string ratingController = "api/Ratings/";
+
+
+    public async Task<ReplayDto?> GetReplayFromServer(string replayHash, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"{statsController}GetReplay/{replayHash}", token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ReplayDto>();
+            }
+            else
+            {
+                logger.LogError($"failed getting replay: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting replay: {e.Message}");
+        }
+        return null;
+    }
+
+    public async Task<int> GetReplaysCountFromServer(ReplaysRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetReplaysCount", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<int>();
+            }
+            else
+            {
+                logger.LogError($"failed getting replay count: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting replay count: {e.Message}");
+        }
+        return 0;
+    }
+
+    public async Task<ICollection<ReplayListDto>> GetReplaysFromServer(ReplaysRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetReplays", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ICollection<ReplayListDto>>() ?? new List<ReplayListDto>();
+            }
+            else
+            {
+                logger.LogError($"failed getting replays: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting replays: {e.Message}");
+        }
+        return new List<ReplayListDto>();
+    }
+
+
+    public async Task<StatsResponse> GetStatsFromServer(StatsRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetStats", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<StatsResponse>() ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting stats: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting stats: {e.Message}");
+        }
+        return new();
+    }
+
+    public async Task<BuildResponse> GetBuildFromServer(BuildRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{buildsController}GetBuild", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<BuildResponse>() ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting build: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting build: {e.Message}");
+        }
+        return new();
+    }
+
+    public async Task<RatingsResult> GetRatingsFromServer(RatingsRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{ratingController}GetRatings", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<RatingsResult>(cancellationToken: token) ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting ratings: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting ratings: {e.Message}");
+        }
+        return new();
+    }
+
+    public async Task<List<RavenPlayerDto>> GetPlayerRatingsFromServer(int toonId)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"{ratingController}GetPlayerRatings/{toonId}");
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<List<RavenPlayerDto>>() ?? new();
+            }
+        }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting player ratings: {e.Message}");
+        }
+        return new();
+    }
+
+    public async Task<List<MmrDevDto>> GetRatingsDeviationFromServer()
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<List<MmrDevDto>>($"{ratingController}GetRatingsDeviation") ?? new();
+        }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting rating deviation: {e.Message}");
+        }
+        return new();
+    }
+
+    public async Task<List<MmrDevDto>> GetRatingsDeviationStdFromServer()
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<List<MmrDevDto>>($"{ratingController}GetRatingsDeviationStd") ?? new();
+        }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting rating deviationstd: {e.Message}");
+        }
+        return new();
+    }
+
+    public async Task<PlayerDetailDto> GetPlayerDetailsFromServer(int toonId, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"{statsController}GetPlayerDetails/{toonId}", token);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<PlayerDetailDto>();
+                return result ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting playerDetails: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting playerDetails: {ex.Message}");
+        }
+        return new();
+    }
+
+    public async Task<List<RequestNames>> GetTopPlayersFromServer(bool std)
+    {
+        try
+        {
+            var topPlayers = await httpClient.GetFromJsonAsync<List<RequestNames>>($"{buildsController}topplayers/{std}/1000");
+            if (topPlayers != null)
+            {
+                return topPlayers;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting topPlayers: {ex.Message}");
+        }
+        return Data.GetDefaultRequestNames();
+    }
+
+    public async Task<CmdrResult> GetCmdrInfoFromServer(CmdrRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var result = await httpClient.PostAsJsonAsync($"{statsController}GetCmdrInfo", request);
+            if (result.IsSuccessStatusCode)
+            {
+                var cmdrResult = await result.Content.ReadFromJsonAsync<CmdrResult>();
+                if (cmdrResult != null)
+                {
+                    return cmdrResult;
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting cmdrInfo: {ex.Message}");
+        }
+        return new();
+    }
+
+    public async Task<CrossTableResponse> GetCrossTableFromServer(CrossTableRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var result = await httpClient.PostAsJsonAsync($"{statsController}GetCrosstable", request);
+            if (result.IsSuccessStatusCode)
+            {
+                var cmdrResult = await result.Content.ReadFromJsonAsync<CrossTableResponse>();
+                if (cmdrResult != null)
+                {
+                    return cmdrResult;
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting crosstable: {ex.Message}");
+        }
+        return new();
+    }
+
+    private HttpClient GetHttpClient()
+    {
+        var httpClient = new HttpClient();
+        httpClient.BaseAddress = new Uri("https://localhost:7174");
+        // httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
+        httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+        return httpClient;
+    }
+}

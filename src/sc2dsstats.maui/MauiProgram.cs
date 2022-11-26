@@ -53,6 +53,7 @@ public static class MauiProgram
 
         builder.Services.AddScoped<IRatingRepository, RatingRepository>();
         builder.Services.AddScoped<MmrProduceService>();
+        builder.Services.AddScoped<HubService>();
 
         builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
         builder.Services.AddTransient<IStatsRepository, StatsRepository>();

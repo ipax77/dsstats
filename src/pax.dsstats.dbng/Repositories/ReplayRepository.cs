@@ -87,6 +87,11 @@ public class ReplayRepository : IReplayRepository
 
     public async Task<ICollection<ReplayListDto>> GetReplays(ReplaysRequest request, CancellationToken token = default)
     {
+        if (request.Skip < 0 || request.Take <= 0)
+        {
+            return new List<ReplayListDto>();
+        }
+
         var replays = GetRequestReplays(request);
 
         replays = SortReplays(request, replays);

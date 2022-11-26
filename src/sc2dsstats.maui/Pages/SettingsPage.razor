@@ -79,6 +79,22 @@ else
                 Automatically check for Updates when the App starts
             </div>
         </div>
+        @if (UserSettingsService.UserSettings.AllowUploads)
+        {
+            <div class="row">
+                <div class="col-2">
+                    <div class="form-check">
+                        <label class="form-check-label">
+                            <InputCheckbox class="form-check-input bg-warning" @bind-Value="UserSettingsService.UserSettings.UseHubConnection"></InputCheckbox>
+                            Use live data
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-8 fs-4">
+                    Automatically send and receive Mmr and Replay changes from the Server
+                </div>
+            </div>
+        }
         <div class="row">
             <div class="col-2">
                 <label class="col-form-label">

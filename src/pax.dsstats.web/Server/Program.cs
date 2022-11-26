@@ -6,6 +6,7 @@ using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using pax.dsstats.web.Server.Attributes;
+using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
 using sc2dsstats.db;
 
@@ -52,6 +53,7 @@ builder.Services.AddDbContext<sc2dsstatsContext>(options =>
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
+builder.Services.AddSignalR();
 builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
@@ -134,6 +136,7 @@ app.UseRouting();
 
 app.MapRazorPages();
 app.MapControllers();
+app.MapHub<MauiHub>("/hubs/maui");
 app.MapFallbackToFile("index.html");
 
 app.Run();

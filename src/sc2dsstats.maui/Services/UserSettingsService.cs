@@ -265,6 +265,7 @@ public record UserSettings
     public List<string> ReplayPaths { get; set; } = new();
     public DateTime UploadAskTime { get; set; }
     public bool CheckForUpdates { get; set; } = true;
+    public bool UseHubConnection { get; set; } = true;
 }
 
 public record BattleNetInfo
