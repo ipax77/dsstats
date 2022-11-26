@@ -42,7 +42,13 @@
                             <div class="d-flex">
                                 @if (isWinner)
                                 {
-                                    <button class="btn btn-sm btn-success"><b>@(replayDto.ReplayEvent != null ? replayDto.ReplayEvent.WinnerTeam : $"Team {i}") - Winner</b></button>
+                                    @if (replayDto.ResultCorrected)
+                                    {
+                                        <button class="btn btn-sm" style="background-color: #BF40BF;"><b>@(replayDto.ReplayEvent != null ? replayDto.ReplayEvent.WinnerTeam : $"Team {i}") - Winner</b></button>
+                                    } else
+                                    {
+                                        <button class="btn btn-sm btn-success"><b>@(replayDto.ReplayEvent != null ? replayDto.ReplayEvent.WinnerTeam : $"Team {i}") - Winner</b></button>
+                                    }
                                 }
                                 else
                                 {

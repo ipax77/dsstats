@@ -245,7 +245,7 @@ public class DecodeService : IDisposable
             //    await mmrService.ReCalculateWithDictionary();
             //}
 
-            await mmrProduceService.ProduceRatings();
+            await mmrProduceService.ProduceRatings(new());
 
             notifyCts.Cancel();
 

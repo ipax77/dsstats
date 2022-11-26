@@ -194,6 +194,11 @@ public class ReplayRepository : IReplayRepository
             replays = replays.Where(x => request.GameModes.Contains(x.GameMode));
         }
 
+        if (request.ResultAdjusted)
+        {
+            replays = replays.Where(x => x.ResultCorrected);
+        }
+
         replays = SearchReplays(replays, request);
 
         return replays;

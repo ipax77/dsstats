@@ -7,18 +7,6 @@
 <div>
     <EditForm EditContext="editContext">
         <div class="row">
-            @*            <div class="col-auto">
-            <label class="form-label">
-            Tournament:
-            <InputSelect class="form-select" @bind-Value="replaysRequest.Tournament">
-            <option value="">All</option>
-            @foreach (var tournament in tournaments)
-            {
-            <option value="@tournament">@tournament</option>
-            }
-            </InputSelect>
-            </label>
-            </div>*@
             <div class="col-auto">
                 <label class="form-label">
                     Search:
@@ -69,6 +57,19 @@
                         <InputCheckbox class="form-check-input" @bind-Value="replaysRequest.DefaultFilter">
                         </InputCheckbox>
                     </label>
+                </div>
+                <div class="d-flex">
+                    <div class="form-check form-switch">
+                    
+                        <label class="form-check-label">
+                            Adjusted
+                            <InputCheckbox class="form-check-input" @bind-Value="replaysRequest.ResultAdjusted">
+                            </InputCheckbox>
+                        </label>
+                    </div>                
+                    <div class="ms-2">
+                        <span class="oi oi-info pointer" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/CheatDetection'"></span>
+                    </div>
                 </div>
                 <div style="max-width: 150px;">
                     <label for="playercountrange" class="form-label">PlayerCount @(replaysRequest.PlayerCount == 0 ? "All" : replaysRequest.PlayerCount)</label>

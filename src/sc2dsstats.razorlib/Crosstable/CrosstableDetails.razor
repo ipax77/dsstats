@@ -1,0 +1,140 @@
+﻿@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Extensions;
+
+<div class="d-flex">
+    <div>
+        <h3>Results vs</h3>
+    </div>
+    <div class="d-flex ms-3">
+        @foreach (var cmdr in TeamCrossTables.Comp.Cmdrs)
+        {
+            <div class="preload-@(cmdr.ToString().ToLower())" style="width: 30px; height: 30px;"></div>
+        }
+    </div>
+    <div class="ms-3">
+        <span class="oi oi-x text-danger pointer" @onclick="e => OnCloseRequested.InvokeAsync()"></span>
+    </div>
+</div>
+
+<div class="table-responsive tableFixHead">
+    <table class="table table-dark table-hover w-auto">
+        <colgroup>
+            <col class="col">
+            <col class="col">
+            <col class="col">
+            <col class="col">
+        </colgroup>
+        <thead>
+            <CascadingValue Value="Orders">
+                <tr>
+                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(TeamCrossTable.Comp))">
+                        <SortArrow Property="@nameof(TeamCrossTable.Comp)">
+                            Team
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(TeamCrossTable.Count))">
+                        <SortArrow Property="@nameof(TeamCrossTable.Count)">
+                            Replays
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(TeamCrossTable.Wins))">
+                        <SortArrow Property="@nameof(TeamCrossTable.Wins)">
+                            Wins
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(TeamCrossTable.Winrate))">
+                        <SortArrow Property="@nameof(TeamCrossTable.Winrate)">
+                            Winrate %
+                        </SortArrow>
+                    </th>
+                </tr>
+            </CascadingValue>
+        </thead>
+        <tbody>
+            @foreach (var team in GetSortedList())
+            {
+                <tr>
+                    <td>
+                        <div class="d-flex">
+                            @foreach (var cmdr in team.Comp.Cmdrs)
+                            {
+                                <div class="preload-@(cmdr.ToString().ToLower())" style="width: 30px; height: 30px;"></div>
+                            }
+                        </div>
+                    </td>
+                    <td>@team.Count</td>
+                    <td>@team.Wins</td>
+                    <td>@team.Winrate.ToString("N2")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public TeamCrossTable TeamCrossTables { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnCloseRequested { get; set; }
+
+    private List<TableOrder> Orders = new List<TableOrder>()
+    {
+        new TableOrder() { Property = nameof(TeamCrossTable.Winrate), Ascending = false }
+    };
+
+    private void SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = Orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                Orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            Orders.Clear();
+            Orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+        StateHasChanged();
+    }
+
+    private List<TeamResult> GetSortedList()
+    {
+        List<TeamResult> items = new();
+
+        if (TeamCrossTables.TeamResults.Any())
+        {
+            var itemsQ = TeamCrossTables.TeamResults.AsQueryable();
+
+            foreach (var order in Orders)
+            {
+                if (order.Ascending)
+                {
+                    itemsQ = itemsQ.AppendOrderBy(order.Property);
+                }
+                else
+                {
+                    itemsQ = itemsQ.AppendOrderByDescending(order.Property);
+                }
+            }
+
+            items = itemsQ.ToList();
+        }
+
+        return items;
+    }
+}

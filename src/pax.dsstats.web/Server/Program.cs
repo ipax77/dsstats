@@ -63,6 +63,7 @@ builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddScoped<IRatingRepository, RatingRepository>();
 builder.Services.AddScoped<ImportService>();
 builder.Services.AddScoped<MmrProduceService>();
+builder.Services.AddScoped<CheatDetectService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -71,7 +72,7 @@ builder.Services.AddTransient<BuildService>();
 builder.Services.AddTransient<CmdrsService>();
 
 builder.Services.AddHostedService<CacheBackgroundService>();
-// builder.Services.AddHostedService<RatingsBackgroundService>();
+builder.Services.AddHostedService<RatingsBackgroundService>();
 
 var app = builder.Build();
 
@@ -87,6 +88,9 @@ context.Database.Migrate();
 // SEED
 if (app.Environment.IsProduction())
 {
+    // var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
+    // var result = cheatDetectService.Detect().GetAwaiter().GetResult();
+
     var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
     mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
 
@@ -97,8 +101,15 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
+    // var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
+    // var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
+    // cheatDetectService.DetectNoUpload().Wait();
+
     var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
     mmrProduceService.ProduceRatings(new()/*, startTime: new DateTime(2022, 1, 1)*/).GetAwaiter().GetResult();
+
+    //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+    //var result = statsService.GetCrossTable(new());
 }
 
 // Configure the HTTP request pipeline.

@@ -262,6 +262,28 @@ public class DataService : IDataService
         return new();
     }
 
+    public async Task<CrossTableResponse> GetCrossTable(CrossTableRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var result = await httpClient.PostAsJsonAsync($"{statsController}GetCrosstable", request);
+            if (result.IsSuccessStatusCode)
+            {
+                var cmdrResult = await result.Content.ReadFromJsonAsync<CrossTableResponse>();
+                if (cmdrResult != null)
+                {
+                    return cmdrResult;
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting crosstable: {ex.Message}");
+        }
+        return new();
+    }
+
     public async Task<ICollection<string>> GetReplayPaths()
     {
         return await Task.FromResult(new List<string>());

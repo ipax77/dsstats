@@ -56,24 +56,9 @@ public class Player
     public string Name { get; set; } = null!;
     public int ToonId { get; set; }
     public int RegionId { get; set; }
-    public double Mmr { get; set; }
-    public double MmrStd { get; set; }
-    [MaxLength(2000)]
-    public string? MmrOverTime { get; set; }
-    [MaxLength(2000)]
-    public string? MmrStdOverTime { get; set; }
-    public int GamesCmdr { get; set; }
-    public int WinsCmdr { get; set; }
-    public int MvpCmdr { get; set; }
-    public int TeamGamesCmdr { get; set; }
-    public int GamesStd { get; set; }
-    public int WinsStd { get; set; }
-    public int MvpStd { get; set; }
-    public int TeamGamesStd { get; set; }
-    public Commander MainCommander { get; set; }
-    public int MainCount { get; set; }
     public int NotUploadCount { get; set; }
-    public int LeaverCount { get; set; }
+    public int DisconnectCount { get; set; }
+    public int RageQuitCount { get; set; }
     public int? UploaderId { get; set; }
     public virtual Uploader? Uploader { get; set; }
     public virtual ICollection<ReplayPlayer> ReplayPlayers { get; set; }
@@ -132,6 +117,7 @@ public class Replay
     public int Duration { get; set; }
     public int WinnerTeam { get; set; }
     public PlayerResult PlayerResult { get; set; }
+    public bool ResultCorrected { get; set; }
     public GameMode GameMode { get; set; }
     public int Objective { get; set; }
     public int Bunker { get; set; }
