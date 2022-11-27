@@ -9,18 +9,20 @@ public record ReplayListDto
     public int Duration { get; set; }
     public int WinnerTeam { get; set; }
     public PlayerResult PlayerResult { get; set; }
+    public int PlayerPos { get; set; }
     public GameMode GameMode { get; set; }
     public string ReplayHash { get; set; } = null!;
     public bool DefaultFilter { get; set; }
     public string CommandersTeam1 { get; set; } = null!;
     public string CommandersTeam2 { get; set; } = null!;
-
+    [NotMapped]
+    public double MmrChange { get; set; }
     [NotMapped]
     [JsonIgnore]
-    public Commander[] Cmdrs1 => CommandersTeam1.Split("|").Where(x => !String.IsNullOrEmpty(x)).Select(s => int.Parse(s)).Cast<Commander>().ToArray();
+    public Commander[] Cmdrs1 => CommandersTeam1.Split('|', StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s)).Cast<Commander>().ToArray();
     [NotMapped]
     [JsonIgnore]
-    public Commander[] Cmdrs2 => CommandersTeam2.Split("|").Where(x => !String.IsNullOrEmpty(x)).Select(s => int.Parse(s)).Cast<Commander>().ToArray();
+    public Commander[] Cmdrs2 => CommandersTeam2.Split('|', StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s)).Cast<Commander>().ToArray();
 }
 
 public record ReplayEventListDto

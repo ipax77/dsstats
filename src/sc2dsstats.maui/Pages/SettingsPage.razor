@@ -53,20 +53,6 @@ else
                 </div>
             </div>
         </div>
-@*        <div class="row">
-            <div class="col-2">
-                <div class="form-check">
-                    <label class="form-check-label">
-                        <InputCheckbox class="form-check-input bg-warning" @bind-Value="UserSettingsService.UserSettings.AllowUploads" disabled="@(UserSettingsService.UserSettings.AllowCleanUploads)"></InputCheckbox>
-                        Allow Uploads
-                    </label>
-                </div>
-            </div>
-            <div class="col-md-8 fs-4">
-                To improve this application it would be very nice if the statistics were uploaded from time to time.
-                All player names (including yours) will be anonymized before sending. By checking you agree that your anonymized DS-replay data will be used at <a class="text-warning" href="https://dsstats.pax77.org">https://dsstats.pax77.org</a> to generate global charts.
-            </div>
-        </div>*@
         <div class="row">
             <div class="col-2">
                 <div class="form-check">
@@ -82,6 +68,19 @@ else
         </div>
         <div class="row">
             <div class="col-2">
+                <div class="form-check">
+                    <label class="form-check-label">
+                        <InputCheckbox class="form-check-input bg-warning" @bind-Value="UserSettingsService.UserSettings.CheckForUpdates"></InputCheckbox>
+                        Check for updates
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-8 fs-4">
+                Automatically check for Updates when the App starts
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-2">
                 <label class="col-form-label">
                     <InputNumber @bind-Value="UserSettingsService.UserSettings.CpuCoresUsedForDecoding" style="max-width: 150px;"></InputNumber>
                     CPU Cores
@@ -91,6 +90,7 @@ else
                 CPU Cores used for decoding new replays (available CPU-Cores: @Environment.ProcessorCount)
             </div>
         </div>
+
     </div>
 
     <div class="container-fluid py-5 bg-primary mt-3">

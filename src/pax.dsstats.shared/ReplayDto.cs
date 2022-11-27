@@ -14,6 +14,7 @@ public record ReplayDto
     public int Duration { get; init; }
     public int WinnerTeam { get; init; }
     public PlayerResult PlayerResult { get; set; }
+    public int PlayerPos { get; set; }
     public bool ResultCorrected { get; set; }
     public GameMode GameMode { get; init; }
     public int Objective { get; init; }

@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using pax.dsstats.shared.Raven;
 using Raven.Client.Documents;

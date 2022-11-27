@@ -67,6 +67,16 @@ public static class MauiProgram
 
         // DEBUG
 
+        //foreach (var replay in context.Replays.Include(i => i.ReplayPlayers))
+        //{
+        //    int playerPos = replay.ReplayPlayers.FirstOrDefault(f => f.IsUploader)?.GamePos ?? 0;
+        //    if (playerPos > 0)
+        //    {
+        //        replay.PlayerPos = playerPos;
+        //    }
+        //}
+        //context.SaveChanges();
+
         //var uploadService = scope.ServiceProvider.GetRequiredService<UploadService>();
         //uploadService.ProduceMauiTestData();
 
