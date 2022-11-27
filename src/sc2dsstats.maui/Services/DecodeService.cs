@@ -245,7 +245,7 @@ public class DecodeService : IDisposable
             //    await mmrService.ReCalculateWithDictionary();
             //}
 
-            await mmrProduceService.ProduceRatings();
+            await mmrProduceService.ProduceRatings(new());
 
             notifyCts.Cancel();
 
@@ -362,6 +362,7 @@ public class DecodeService : IDisposable
                 {
                     replayPlayer.IsUploader = true;
                     replayDto.PlayerResult = replayPlayer.PlayerResult;
+                    replayDto.PlayerPos = replayPlayer.GamePos;
                 }
             }
         }
@@ -374,6 +375,7 @@ public class DecodeService : IDisposable
                 {
                     player.IsUploader = true;
                     replayDto.PlayerResult = player.PlayerResult;
+                    replayDto.PlayerPos = player.GamePos;
                 }
             }
         }

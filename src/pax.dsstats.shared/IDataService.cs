@@ -20,4 +20,5 @@ public interface IDataService
     Task<List<RequestNames>> GetTopPlayers(bool std);
 
     Task<CmdrResult> GetCmdrInfo(CmdrRequest request, CancellationToken token = default);
+    Task<CrossTableResponse> GetCrossTable(CrossTableRequest request, CancellationToken token = default);
 }

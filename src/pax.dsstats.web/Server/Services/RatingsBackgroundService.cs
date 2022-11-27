@@ -34,9 +34,11 @@ public class RatingsBackgroundService : IHostedService, IDisposable
     {
         Stopwatch sw = Stopwatch.StartNew();
 
+        using var scope = serviceProvider.CreateScope();
+        var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
+        await cheatDetectService.Detect();
 
         sw.Stop();
-
         logger.LogWarning($"{DateTime.UtcNow.ToString(@"yyyy-MM-dd HH:mm:ss")} - Work done in {sw.ElapsedMilliseconds} ms");
     }
 

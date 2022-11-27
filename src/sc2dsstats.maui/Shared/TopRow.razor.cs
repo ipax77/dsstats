@@ -12,6 +12,8 @@ public partial class TopRow : ComponentBase, IDisposable
     [Inject]
     protected UploadService uploadService { get; set; } = null!;
 
+    [Inject]
+    internal UserSettingsService userSettingsService { get; set; } = null!;
 
     [Inject]
     protected NavigationManager navigationManager { get; set; } = null!;
@@ -89,6 +91,7 @@ public partial class TopRow : ComponentBase, IDisposable
         {
             ToastService.ShowSuccess("Decoding finished");
             eta = TimeSpan.Zero;
+            CheckUpload();
         }
 
         InvokeAsync(() => StateHasChanged());
@@ -109,10 +112,32 @@ public partial class TopRow : ComponentBase, IDisposable
     {
         if (init)
         {
+            if (!UserSettingsService.UserSettings.CheckForUpdates)
+            {
+                return;
+            }
             await Task.Delay(5000);
         }
         await UpdateService.CheckUpdate(init);
         await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async void CheckUpload()
+    {
+        if (UserSettingsService.UserSettings.AllowUploads)
+        {
+            return;
+        }
+        else
+        {
+            if ((DateTime.Today - UserSettingsService.UserSettings.UploadAskTime).TotalDays > 30)
+            {
+                UserSettingsService.UserSettings.UploadAskTime = DateTime.Today;
+                await userSettingsService.Save();
+                uploadQuestionModal?.Show();
+            }
+        }
+        
     }
 
     public void Dispose()

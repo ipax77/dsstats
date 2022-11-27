@@ -12,10 +12,10 @@
             </div>
             <div class="modal-body">
                 <p>
-                    Would you like to allow the application to upload your replays to the <a href="https://dsstats.pax77.org">dsstats website</a> with all the names?
+                    Would you like to allow the application to upload your Direct Strike replay data to the <a href="https://dsstats.pax77.org">dsstats website</a>?
                 </p>
                 <div class="btn-group">
-                    <button class="btn btn-warning" @onclick="AllowUploads">Allow Clean Uploads</button>
+                    <button class="btn btn-warning" @onclick="AllowUploads">Allow Uploads</button>
                 </div>
             </div>
             <div class="modal-footer">
@@ -29,11 +29,6 @@
     protected override void OnInitialized()
     {
         base.OnInitialized();
-    }
-
-    private void DecodeService_ErrorRaised(object? sender, EventArgs e)
-    {
-        InvokeAsync(() => StateHasChanged());
     }
 
     public void Show()

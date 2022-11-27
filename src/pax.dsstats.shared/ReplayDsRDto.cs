@@ -34,7 +34,6 @@ public record PlayerDsRDto
     public int ToonId { get; init; }
     public int RegionId { get; init; }
     public int NotUploadCount { get; init; }
-    public int LeaverCount { get; init; }
 }
 
 public record PlayerRatingDto

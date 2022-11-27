@@ -107,7 +107,7 @@ public partial class MmrProduceService
         DateTime _startTime = startTime == DateTime.MinValue ? new DateTime(2018, 1, 1) : startTime;
         DateTime _endTime = endTime == DateTime.MinValue ? DateTime.Today.AddDays(2) : endTime;
 
-        Dictionary<int, CalcRating> mmrIdRatigns = new();
+        Dictionary<int, CalcRating> mmrIdRatings = new();
         HashSet<PlayerDsRDto> players = new();
 
         using var scope = serviceProvider.CreateScope();
@@ -146,14 +146,14 @@ public partial class MmrProduceService
 
             players.UnionWith(replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct());
 
-            (mmrIdRatigns, maxMmr) = await MmrService.GeneratePlayerRatings(replays,
+            (mmrIdRatings, maxMmr) = await MmrService.GeneratePlayerRatings(replays,
                                                                             cmdrMmrDic,
-                                                                            mmrIdRatigns,
+                                                                            mmrIdRatings,
                                                                             MmrService.startMmr,
                                                                             ratingRepository,
                                                                             mmrOptions);
 
-            var result = await ratingRepository.UpdateRavenPlayers(MmrService.GetRavenPlayers(players.ToList(), mmrIdRatigns), RatingType.Std);
+            var result = await ratingRepository.UpdateRavenPlayers(MmrService.GetRavenPlayers(players.ToList(), mmrIdRatings), RatingType.Std);
         }
         return latestReplay;
     }

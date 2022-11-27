@@ -142,3 +142,10 @@ function getPieIconPos(elem) {
         y: elem.y + Math.sin(halfAngle) * halfRadius
     };
 }
+
+function scrollToId(id) {
+    const ele = document.getElementById(id);
+    if (ele != undefined) {
+        ele.scrollIntoView({ behavior: 'smooth' });
+    }
+}

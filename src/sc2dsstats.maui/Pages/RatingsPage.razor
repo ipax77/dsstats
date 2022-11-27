@@ -76,7 +76,7 @@
 
         await Task.Run(async () =>
         {
-            await mmrProduceService.ProduceRatings().ConfigureAwait(false);
+            await mmrProduceService.ProduceRatings(new()).ConfigureAwait(false);
         });
 
         isLoading = false;

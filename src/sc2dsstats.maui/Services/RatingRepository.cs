@@ -316,6 +316,11 @@ public class RatingRepository : IRatingRepository
             .Select(s => s.RavenPlayer.ToonId)
             .ToList();
     }
+
+    public Task<Dictionary<int, CalcRating>> GetCalcRatings(RatingType ratingType, List<ReplayDsRDto> replays, List<int> toonIds)
+    {
+        throw new NotImplementedException();
+    }
 }
 
 internal record RatingMemory

@@ -96,12 +96,23 @@ public class ReplayRepository : IReplayRepository
             return new List<ReplayListDto>();
         }
 
-        return await replays
+        var list = await replays
             .Skip(request.Skip)
             .Take(request.Take)
             .AsNoTracking()
             .ProjectTo<ReplayListDto>(mapper.ConfigurationProvider)
             .ToListAsync(token);
+
+        if (request.WithMmrChange)
+        {
+            list.ForEach(async f =>
+            {
+                var mmrChange = await ratingRepository.GetReplayPlayerMmrChanges(f.ReplayHash);
+                f.MmrChange = Math.Round(mmrChange?.FirstOrDefault(g => g.Pos == f.PlayerPos)?.Change ?? 0, 2);
+            });
+        }
+
+        return list;
     }
 
     private IQueryable<Replay> SortReplays(ReplaysRequest request, IQueryable<Replay> replays)
@@ -192,6 +203,11 @@ public class ReplayRepository : IReplayRepository
         if (request.GameModes.Any())
         {
             replays = replays.Where(x => request.GameModes.Contains(x.GameMode));
+        }
+
+        if (request.ResultAdjusted)
+        {
+            replays = replays.Where(x => x.ResultCorrected);
         }
 
         replays = SearchReplays(replays, request);
@@ -378,7 +394,8 @@ public class ReplayRepository : IReplayRepository
                     logger.LogError($"failed saving replay: {ex.Message}");
                     throw;
                 }
-            } else
+            }
+            else
             {
                 dbPlayer.RegionId = player.Player.RegionId;
                 dbPlayer.Name = player.Player.Name;
