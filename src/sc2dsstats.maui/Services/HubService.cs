@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.SignalR.Client;
+﻿using Blazored.Toast.Services;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Logging;
 
 namespace sc2dsstats.maui.Services;
 
 internal class HubService : IDisposable
 {
+    private readonly IToastService toastService;
+    private readonly ILogger<HubService> logger;
     private static readonly Uri hubUrl = new Uri("https://localhost:7174/hubs/maui");
-
     private HubConnection hubConnection = null!;
 
     public double CurrentMmr { get; private set; } = 1000.0;
@@ -17,7 +20,7 @@ internal class HubService : IDisposable
         handler?.Invoke(this, e);
     }
 
-    public HubService()
+    public HubService(IToastService toastService, ILogger<HubService> logger)
     {
         hubConnection = new HubConnectionBuilder()
             .WithUrl(hubUrl)
@@ -27,7 +30,9 @@ internal class HubService : IDisposable
         {
             CurrentMmr = mmr;
             OnMmrChanged(EventArgs.Empty);
-        }); 
+        });
+        this.toastService = toastService;
+        this.logger = logger;
     }
 
     public async Task StartHubConnection()
@@ -41,8 +46,16 @@ internal class HubService : IDisposable
         {
             return;
         }
-        await hubConnection.StartAsync();
-        await hubConnection.SendAsync("Subscribe", UserSettingsService.UserSettings.AppGuid);
+
+        try
+        {
+            await hubConnection.StartAsync();
+            await hubConnection.SendAsync("Subscribe", UserSettingsService.UserSettings.AppGuid);
+        } catch (Exception ex)
+        {
+            toastService.ShowError($"Failed connection to server");
+            logger.LogError($"failed opening hub connection: {ex.Message}");        
+        }
     }
 
     public async Task CloseHubConnection()

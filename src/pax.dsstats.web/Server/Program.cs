@@ -1,5 +1,6 @@
 using AutoMapper;
 using dsstats.raven;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
@@ -76,6 +77,12 @@ builder.Services.AddTransient<CmdrsService>();
 builder.Services.AddHostedService<CacheBackgroundService>();
 builder.Services.AddHostedService<RatingsBackgroundService>();
 
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "application/octet-stream" });
+});
+
 var app = builder.Build();
 
 using var scope = app.Services.CreateScope();
@@ -86,6 +93,8 @@ mapper.ConfigurationProvider.AssertConfigurationIsValid();
 using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 // context.Database.EnsureDeleted();
 context.Database.Migrate();
+
+app.UseResponseCompression();
 
 // SEED
 if (app.Environment.IsProduction())

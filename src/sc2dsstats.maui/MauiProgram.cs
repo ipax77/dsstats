@@ -60,8 +60,8 @@ public static class MauiProgram
         builder.Services.AddTransient<IStatsRepository, StatsRepository>();
         builder.Services.AddTransient<BuildService>();
 
-        builder.Services.AddTransient<IDataService, DataService>();
         builder.Services.AddTransient<IDataService, ServerDataService>();
+        builder.Services.AddTransient<IDataService, DataService>();
         builder.Services.AddTransient<IDataServiceFactory, DataServiceFactory>();
 
         // init services
