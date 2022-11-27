@@ -1,13 +1,12 @@
 ﻿
-using Microsoft.Extensions.DependencyInjection;
-using pax.dsstats.dbng.Services;
-using pax.dsstats.dbng;
-using Microsoft.EntityFrameworkCore;
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
-using System.Text.Json;
 using pax.dsstats.shared;
 using System.Reflection;
+using System.Text.Json;
 
 namespace dsstats.maui.tests;
 
@@ -74,7 +73,7 @@ public class MmrProgressTests : TestWithSqlite
         var interest = new RequestNames() { Name = "PAX", ToonId = interestToonId };
 
         var mmrBefore = mmrService.ToonIdRatings[interestToonId].CmdrRatingStats.Mmr;
-        
+
         await mmrService.ContinueCalculateWithDictionary(newReplays, new() { interest });
 
         var mmrAfter = mmrService.ToonIdRatings[interestToonId].CmdrRatingStats.Mmr;

@@ -1,13 +1,12 @@
 ﻿
-using Microsoft.Extensions.DependencyInjection;
-using pax.dsstats.dbng.Services;
-using pax.dsstats.dbng;
-using Microsoft.EntityFrameworkCore;
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
-using System.Text.Json;
 using pax.dsstats.shared;
 using System.Reflection;
+using System.Text.Json;
 
 namespace dsstats.maui.tests;
 
@@ -123,7 +122,7 @@ public class MmrContinueTests : TestWithSqlite
             return;
         }
 
-        var replaysBefore= testReplays1.OrderBy(o => o.GameTime).Take(25).ToList();
+        var replaysBefore = testReplays1.OrderBy(o => o.GameTime).Take(25).ToList();
         var replaysAfter = testReplays1.OrderBy(o => o.GameTime).Skip(25).Take(4).ToList();
 
         var units = (await context.Units.AsNoTracking().ToListAsync()).ToHashSet();

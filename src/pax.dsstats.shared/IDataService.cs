@@ -1,6 +1,4 @@
-﻿using pax.dsstats.shared.Raven;
-
-namespace pax.dsstats.shared;
+﻿namespace pax.dsstats.shared;
 public interface IDataService
 {
     Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default);

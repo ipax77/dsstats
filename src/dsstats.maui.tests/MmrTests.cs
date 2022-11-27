@@ -1,13 +1,12 @@
 ﻿
-using Microsoft.Extensions.DependencyInjection;
-using pax.dsstats.dbng.Services;
-using pax.dsstats.dbng;
-using Microsoft.EntityFrameworkCore;
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
-using System.Text.Json;
 using pax.dsstats.shared;
 using System.Reflection;
+using System.Text.Json;
 
 namespace dsstats.maui.tests;
 
@@ -52,7 +51,7 @@ public class MmrTests : TestWithSqlite
 
         foreach (var replayDto in testReplays1)
         {
-            (units, upgrades, var replay) = await replayRepository.SaveReplay(replayDto,units, upgrades, null);
+            (units, upgrades, var replay) = await replayRepository.SaveReplay(replayDto, units, upgrades, null);
         }
 
         await mmrService.ReCalculateWithDictionary();

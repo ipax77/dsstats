@@ -84,7 +84,7 @@ public partial class ImportService
         importReport.MappingDuration = Convert.ToInt32(sw.Elapsed.TotalSeconds);
 
         sw.Restart();
-        
+
         replays.ForEach(f => AdjustImportValues(f));
 
         int countBefore = replays.Count;

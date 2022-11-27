@@ -7,7 +7,6 @@ using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Services;
-using sc2dsstats.db;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,8 +23,6 @@ var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionStri
 // var connectionString = builder.Configuration["ServerConfig:DsstatsProdConnectionString"];
 // var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
 
-//var oldConnectionString = builder.Configuration["ServerConfig:DBConnectionString2"];
-
 builder.Services.AddDbContext<ReplayContext>(options =>
 {
     options.UseMySql(connectionString, serverVersion, p =>
@@ -39,15 +36,6 @@ builder.Services.AddDbContext<ReplayContext>(options =>
     //.EnableSensitiveDataLogging()
     ;
 });
-
-//builder.Services.AddDbContext<sc2dsstatsContext>(options =>
-//{
-//    options.UseMySql(oldConnectionString, serverVersion, p =>
-//    {
-//        p.EnableRetryOnFailure();
-//        p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
-//    });
-//});
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();

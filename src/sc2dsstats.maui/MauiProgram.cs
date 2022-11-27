@@ -46,7 +46,7 @@ public static class MauiProgram
         builder.Services.AddChartJs();
 
         builder.Services.AddTransient<IStatsService, StatsService>();
-        
+
         builder.Services.AddSingleton<UserSettingsService>();
         builder.Services.AddSingleton<DecodeService>();
         builder.Services.AddSingleton<UploadService>();
@@ -61,7 +61,7 @@ public static class MauiProgram
 
         // init services
         using var scope = builder.Services.BuildServiceProvider().CreateScope();
-        
+
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         context.Database.Migrate();
 
@@ -95,13 +95,13 @@ public static class MauiProgram
 
         // END DEBUG
 
-        var build =  builder.Build();
+        var build = builder.Build();
 
         var userSettingsService = build.Services.GetRequiredService<UserSettingsService>();
 
         var mmrProduceService = build.Services.GetRequiredService<MmrProduceService>();
         mmrProduceService.ProduceRatings(new()).Wait();
-        
+
         return build;
     }
 }

@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace pax.dsstats.shared;
+﻿namespace pax.dsstats.shared;
 
 public record CrossTableResponse
 {
@@ -24,7 +22,7 @@ public record TeamResult
     public double Winrate { get; set; }
 }
 
-public record TeamCmdrs 
+public record TeamCmdrs
 {
     public Commander[] Cmdrs { get; set; } = new Commander[3] { Commander.None, Commander.None, Commander.None };
 

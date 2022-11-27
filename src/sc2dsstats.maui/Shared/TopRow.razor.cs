@@ -137,7 +137,7 @@ public partial class TopRow : ComponentBase, IDisposable
                 uploadQuestionModal?.Show();
             }
         }
-        
+
     }
 
     public void Dispose()

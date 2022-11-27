@@ -1,7 +1,6 @@
 using pax.dsstats.parser;
 using s2protocol.NET;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 
 namespace dsstats.maui.tests;
 
