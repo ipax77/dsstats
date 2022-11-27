@@ -21,3 +21,7 @@ The app can be used offline to analyze your stats locally. If you want to upload
 ![stats](/images/stats.png)
 ![details](/images/pldetails.png)
 ![replay](/images/replay.png)
+
+# Contributing
+
+We really like people helping us with the project. Nevertheless, take your time to read our contributing guidelines [here](./CONTRIBUTING.md).
