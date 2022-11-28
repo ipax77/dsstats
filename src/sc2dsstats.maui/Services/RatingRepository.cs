@@ -1,4 +1,5 @@
 ﻿
+using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
@@ -335,6 +336,53 @@ public class RatingRepository : IRatingRepository
     public Task<Dictionary<int, CalcRating>> GetCalcRatings(RatingType ratingType, List<ReplayDsRDto> replays, List<int> toonIds)
     {
         throw new NotImplementedException();
+    }
+
+    public async Task<ToonIdsRatingsResponse> GetToonIdsRatings(List<int> toonIds)
+    {
+        ToonIdsRatingsResponse response = new();
+
+        List<int> toonIdsFomrDb = new();
+
+        for (int i = 0; i < Math.Min(15, toonIds.Count); i++)
+        {
+            if (RatingMemory.TryGetValue(toonIds[i], out var toonIdRating))
+            {
+                ToonIdRatingInfo ratingInfo = new()
+                {
+                    ToonId = toonIds[i],
+
+                };
+
+                if (toonIdRating.CmdrRavenRating != null)
+                {
+                    ratingInfo.Name = toonIdRating.RavenPlayer.Name;
+                    ratingInfo.Ratings.Add(new()
+                    {
+                        RatingType = RatingType.Cmdr,
+                        RegionId = toonIdRating.RavenPlayer.RegionId,
+                        Mmr = Math.Round(toonIdRating.CmdrRavenRating.Mmr, 2)
+                    }); 
+                }
+                if (toonIdRating.StdRavenRating != null)
+                {
+                    ratingInfo.Name = toonIdRating.RavenPlayer.Name;
+                    ratingInfo.Ratings.Add(new()
+                    {
+                        RatingType = RatingType.Std,
+                        RegionId = toonIdRating.RavenPlayer.RegionId,
+                        Mmr = Math.Round(toonIdRating.StdRavenRating.Mmr, 2)
+                    });
+                }
+                response.RatingInfos.Add(ratingInfo);
+            }
+            else
+            {
+                toonIdsFomrDb.Add(toonIds[i]);
+            }
+        }
+
+        return await Task.FromResult(response);
     }
 }
 

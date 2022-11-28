@@ -47,4 +47,11 @@ public class RatingsController
     {
         return await ratingRepository.GetPlayerDetails(toonId);
     }
+
+    [HttpPost]
+    [Route("ToonIdsRatings")]
+    public async Task<ToonIdsRatingsResponse> GetToonIdsRatings([FromBody] List<int> toonIds)
+    {
+        return await ratingRepository.GetToonIdsRatings(toonIds);
+    }
 }

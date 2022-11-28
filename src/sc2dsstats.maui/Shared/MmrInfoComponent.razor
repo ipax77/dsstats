@@ -1,0 +1,105 @@
+﻿@using System.Globalization;
+@using pax.dsstats.shared;
+@using pax.dsstats.shared.Raven;
+@using sc2dsstats.maui.Services;
+@inject IDataServiceFactory dataServiceFactory
+
+<div class="d-flex ms-3">
+    @foreach (var info in mmrInfos)
+    {
+        @if (name != info.Name)
+        {
+            name = info.Name;
+            <div class="align-self-center">
+                <span class="badge text-warning ms-1" style="font-size: 1.0rem;">
+                    @info.Name
+                </span>
+            </div>
+        }
+        var myregion = Data.GetRegionString(info.RegionId);
+        @if (region != myregion)
+        {
+            region = myregion;
+            <div class="align-self-center">
+                <span class="border rounded p-1" style="font-size: 1.0rem;">
+                    @myregion
+                </span>
+            </div>
+        }
+        <div class="align-self-center">
+            <span class="badge bg-primary" style="font-size: 1.0rem;">
+                <span class="small">
+                    @info.RatingType Rating
+                </span>
+                <br />
+                <span class="text-warning">@info.Mmr.ToString("N2", CultureInfo.InvariantCulture)</span>
+            </span>
+        </div>
+    }
+</div>
+
+@code {
+    ToonIdsRatingsResponse? toonIdsRatingsResponse;
+
+    private List<MmrInfo> mmrInfos = new();
+    private string name = "";
+    private string region = "";
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ = LoadData();
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    private async Task LoadData()
+    {
+        var dataService = dataServiceFactory
+            .GetInstance(UserSettingsService.UserSettings.AllowUploads ? ConnectionType.Server : ConnectionType.Maui);
+
+        var toonIds = UserSettingsService.UserSettings.BattleNetInfos
+            .SelectMany(s => s.ToonIds).Select(s => s.ToonId).ToList();
+
+        if (!toonIds.Any())
+        {
+            return;
+        }
+
+        toonIdsRatingsResponse = await dataService.GetToonIdsRatings(toonIds);
+
+        List<MmrInfo> infos = new();
+        foreach (var rating in toonIdsRatingsResponse.RatingInfos)
+        {
+            foreach (var ratingType in rating.Ratings)
+            {
+                infos.Add(new()
+                {
+                    Name = rating.Name,
+                    RatingType = ratingType.RatingType,
+                    RegionId = ratingType.RegionId,
+                    Mmr = ratingType.Mmr
+                });
+            }
+        }
+
+        mmrInfos = infos.OrderByDescending(o => o.Mmr).ToList();
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    internal record MmrInfo
+    {
+        public string Name { get; set; } = "Anonymous";
+        public int RegionId { get; set; }
+        public RatingType RatingType { get; set; }
+        public double Mmr { get; set; }
+        public double MmrChange { get; set; }
+    }
+
+}

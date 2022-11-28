@@ -1,6 +1,8 @@
-﻿using pax.dsstats.dbng.Repositories;
+﻿using Microsoft.Extensions.Logging;
+using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Raven;
 
 namespace sc2dsstats.maui.Services;
 
@@ -92,5 +94,10 @@ public partial class DataService : IDataService
     public async Task<CrossTableResponse> GetCrossTable(CrossTableRequest request, CancellationToken token = default)
     {
         return await Task.FromResult(new CrossTableResponse());
+    }
+
+    public async Task<ToonIdsRatingsResponse> GetToonIdsRatings(List<int> toonIds)
+    {
+        return await ratingRepository.GetToonIdsRatings(toonIds);
     }
 }

@@ -115,6 +115,25 @@ public record UpdateResult
     public int New { get; set; }
 }
 
+public record ToonIdsRatingsResponse
+{
+    public List<ToonIdRatingInfo> RatingInfos { get; set; } = new();
+}
+
+public record ToonIdRatingInfo
+{
+    public int ToonId { get; set; }
+    public string Name { get; set; } = "Anonymous";
+    public List<ToonIdRating> Ratings { get; set; } = new();
+}
+
+public record ToonIdRating
+{
+    public RatingType RatingType { get; set; }
+    public int RegionId { get; set; }
+    public double Mmr { get; set; }
+}
+
 public enum RatingType
 {
     None = 0,

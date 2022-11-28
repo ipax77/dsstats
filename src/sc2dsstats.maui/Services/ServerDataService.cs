@@ -298,6 +298,23 @@ public class ServerDataService : IDataService
         return httpClient;
     }
 
+    public async Task<ToonIdsRatingsResponse> GetToonIdsRatings(List<int> toonIds)
+    {
+        try
+        {
+            var result = await httpClient.PostAsJsonAsync($"{ratingController}ToonIdsRatings", toonIds);
+            if (result.IsSuccessStatusCode)
+            {
+                return await result.Content.ReadFromJsonAsync<ToonIdsRatingsResponse>() ?? new();
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting toonIdsRatings: {ex.Message}");
+        }
+        return new();
+    }
+
     public async Task<ICollection<string>> GetReplayPaths()
     {
         return await Task.FromResult(new List<string>());
