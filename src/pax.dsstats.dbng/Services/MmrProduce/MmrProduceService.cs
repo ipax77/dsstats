@@ -86,10 +86,9 @@ public partial class MmrProduceService
 
             players.UnionWith(replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct());
 
-            (mmrIdRatings, maxMmr) = await MmrService.GeneratePlayerRatings(replays,
+            mmrIdRatings = await MmrService.GeneratePlayerRatings(replays,
                                                                             cmdrMmrDic,
                                                                             mmrIdRatings,
-                                                                            MmrService.startMmr,
                                                                             ratingRepository,
                                                                             mmrOptions);
 
@@ -146,10 +145,9 @@ public partial class MmrProduceService
 
             players.UnionWith(replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct());
 
-            (mmrIdRatings, maxMmr) = await MmrService.GeneratePlayerRatings(replays,
+            mmrIdRatings = await MmrService.GeneratePlayerRatings(replays,
                                                                             cmdrMmrDic,
                                                                             mmrIdRatings,
-                                                                            MmrService.startMmr,
                                                                             ratingRepository,
                                                                             mmrOptions);
 

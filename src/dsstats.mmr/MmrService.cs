@@ -1,4 +1,5 @@
 ﻿
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Text;
 using dsstats.mmr.Extensions;
@@ -14,19 +15,21 @@ public static partial class MmrService
     private const double eloK_mult = 12.5;
     private const double clip = eloK * eloK_mult; //shouldn't be bigger than startMmr!
     public const double startMmr = 1000.0;
+
     private const double consistencyImpact = 0.50;
     private const double consistencyDeltaMult = 0.15;
+
     private const double confidenceImpact = 0.90;
     private const double distributionMult = 1.0 / (1/*2*/);
-    private const double AntiSynergyPercentage = 0.50;
-    private const double SynergyPercentage = 1 - AntiSynergyPercentage;
-    private const double OwnMatchupPercentage = 1.0 / 3;
-    private const double MatesMatchupsPercentage = (1 - OwnMatchupPercentage) / 2;
 
-    public static async Task<(Dictionary<int, CalcRating>, double maxMmr)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
+    private const double antiSynergyPercentage = 0.50;
+    private const double synergyPercentage = 1 - antiSynergyPercentage;
+    private const double ownMatchupPercentage = 1.0 / 3;
+    private const double matesMatchupsPercentage = (1 - ownMatchupPercentage) / 2;
+
+    public static async Task<Dictionary<int, CalcRating>> GeneratePlayerRatings(List<ReplayDsRDto> replays,
                                                                     Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                                                     Dictionary<int, CalcRating> mmrIdRatings,
-                                                                    double maxMmr,
                                                                     IRatingRepository ratingRepository,
                                                                     MmrOptions mmrOptions,
                                                                     bool dry = false)
@@ -34,7 +37,7 @@ public static partial class MmrService
         List<MmrChange> mmrChanges = new();
         for (int i = 0; i < replays.Count; i++)
         {
-            (maxMmr, var changes) = ProcessReplay(replays[i], mmrIdRatings, cmdrMmrDic, mmrOptions, maxMmr);
+            var changes = ProcessReplay(replays[i], mmrIdRatings, cmdrMmrDic, mmrOptions);
 
             if (changes != null)
             {
@@ -53,7 +56,7 @@ public static partial class MmrService
         {
             await ratingRepository.UpdateMmrChanges(mmrChanges);
         }
-        return (mmrIdRatings, maxMmr);
+        return mmrIdRatings;
     }
 
     public static Dictionary<RavenPlayer, RavenRating> GetRavenPlayers(List<PlayerDsRDto> players, Dictionary<int, CalcRating> mmrIdRatings)
@@ -95,27 +98,26 @@ public static partial class MmrService
         return ravenPlayerRatings;
     }
 
-    private static (double, MmrChange?) ProcessReplay(ReplayDsRDto replay,
+    private static MmrChange? ProcessReplay(ReplayDsRDto replay,
                                       Dictionary<int, CalcRating> mmrIdRatings,
                                       Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
-                                      MmrOptions mmrOptions,
-                                      double maxMmr)
+                                      MmrOptions mmrOptions)
     {
         if (replay.WinnerTeam == 0)
         {
-            return (maxMmr, null);
+            return null;
         }
 
         ReplayData replayData = new(replay);
         if (replayData.WinnerTeamData.Players.Length != 3 || replayData.LoserTeamData.Players.Length != 3)
         {
-            return (maxMmr, null);
+            return null;
         }
 
         SetReplayData(mmrIdRatings, replayData, cmdrMmrDic, mmrOptions);
 
-        var max1 = CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.WinnerTeamData, mmrOptions, maxMmr);
-        var max2 = CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.LoserTeamData, mmrOptions, maxMmr);
+        CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.WinnerTeamData, mmrOptions);
+        CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.LoserTeamData, mmrOptions);
 
 
         FixMmrEquality(replayData.WinnerTeamData, replayData.LoserTeamData);
@@ -123,7 +125,7 @@ public static partial class MmrService
 
         var mmrChanges1 = AddPlayersRankings(mmrIdRatings, replayData.WinnerTeamData, replay.GameTime, replay.Maxkillsum);
         var mmrChanges2 = AddPlayersRankings(mmrIdRatings, replayData.LoserTeamData, replay.GameTime, replay.Maxkillsum);
-        mmrChanges1.AddRange(mmrChanges2);
+        var mmrChanges = mmrChanges1.Concat(mmrChanges2).ToList();
 
         if (mmrOptions.UseCommanderMmr && replay.Maxleaver < 90)
         {
@@ -131,7 +133,7 @@ public static partial class MmrService
             SetCommandersComboMmr(replayData.LoserTeamData, cmdrMmrDic);
         }
 
-        return (Math.Max(max1, max2), new MmrChange() { Hash = replay.ReplayHash, Changes = mmrChanges1 });
+        return new MmrChange() { Hash = replay.ReplayHash, Changes = mmrChanges };
     }
 
     private static int GetMmrId(PlayerDsRDto player)
