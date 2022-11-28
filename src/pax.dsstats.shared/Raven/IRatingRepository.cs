@@ -13,6 +13,7 @@ public interface IRatingRepository
     Task<List<MmrDevDto>> GetRatingsDeviation();
     Task<List<MmrDevDto>> GetRatingsDeviationStd();
     Task<List<PlChange>> GetReplayPlayerMmrChanges(string replayHash, CancellationToken token = default);
+    Task SetReplayListMmrChanges(List<ReplayListDto> replays, CancellationToken token = default);
     List<RequestNames> GetTopPlayers(RatingType ratingType, int minGames);
     Task<string?> GetToonIdName(int toonId);
     List<int> GetNameToonIds(string name);
