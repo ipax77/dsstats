@@ -230,6 +230,21 @@ public class RatingRepository : IRatingRepository
         return await Task.FromResult(new List<PlChange>());
     }
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+    public async Task SetReplayListMmrChanges(List<ReplayListDto> replays, CancellationToken token = default)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+    {
+        for (int i = 0; i < replays.Count; i++)
+        {
+            var replay = replays[i];
+            if (MmrChanges.TryGetValue(replay.ReplayHash, out var mmrChanges))
+            {
+                replay.MmrChange = mmrChanges.Changes
+                    .FirstOrDefault(f => f.Pos == replay.PlayerPos)?.Change ?? 0;
+            }
+        }
+    }
+
     public async Task<string?> GetToonIdName(int toonId)
     {
         if (RatingMemory.ContainsKey(toonId))

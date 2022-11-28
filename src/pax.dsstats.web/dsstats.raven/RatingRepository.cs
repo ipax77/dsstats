@@ -114,21 +114,7 @@ public partial class RatingRepository : IRatingRepository
         }).ToList();
     }
 
-    public async Task<List<PlChange>> GetReplayPlayerMmrChanges(string replayHash, CancellationToken token = default)
-    {
-        using var session = DocumentStoreHolder.Store.OpenAsyncSession();
 
-        var result = await session.Query<RavenMmrChange>()
-            .Where(x => x.Id == $"RavenMmrChange/{replayHash}")
-            .FirstOrDefaultAsync(token);
-
-        if (result == null)
-        {
-            return new();
-        }
-
-        return result.Changes;
-    }
 
     public async Task<string?> GetToonIdName(int toonId)
     {

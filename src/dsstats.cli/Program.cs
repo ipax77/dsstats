@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+﻿using System.IO.Compression;
+using System.Reflection;
+using System.Text;
 using System.Text.Json;
 using pax.dsstats.parser;
 using pax.dsstats.shared;
@@ -26,6 +28,15 @@ class Program
             }
             await Decode(args[1], args[2]);
         }
+        else if (args[0] == "unzip")
+        {
+            if (args.Length != 3)
+            {
+                WriteHowToUse();
+                return;
+            }
+            await Unzip(args[1], args[2]);
+        }
         else
         {
             WriteHowToUse();
@@ -44,6 +55,37 @@ class Program
         Console.WriteLine("-------------");
         Console.WriteLine("\nUsage:");
         Console.WriteLine("  decode <replayPath> <outputPath>");
+        Console.WriteLine("  unzip <base64Zipfile> <outputPath>");
+    }
+
+    private static async Task Unzip(string base64Zipfile, string outputPath)
+    {
+        if (!File.Exists(base64Zipfile))
+        {
+            Console.WriteLine($"file not found: {base64Zipfile}");
+            return;
+        }
+
+        if (!Directory.Exists(outputPath))
+        {
+            Console.WriteLine($"directory not found: {outputPath}");
+            return;
+        }
+
+        var bytes = Convert.FromBase64String(await File.ReadAllTextAsync(base64Zipfile, Encoding.UTF8));
+        using var msi = new MemoryStream(bytes);
+        var mso = new MemoryStream();
+        using (var gs = new GZipStream(msi, CompressionMode.Decompress))
+        {
+            await gs.CopyToAsync(mso);
+        }
+        mso.Position = 0;
+
+        var replays = await JsonSerializer
+            .DeserializeAsync<List<ReplayDto>>(mso);
+
+        var outputFile = Path.Combine(outputPath, $"{Path.GetFileNameWithoutExtension(base64Zipfile)}.json");
+        await File.WriteAllTextAsync(outputFile, JsonSerializer.Serialize(replays, new JsonSerializerOptions { WriteIndented = true }));
     }
 
     private static async Task Decode(string replaysPath, string outputPath)

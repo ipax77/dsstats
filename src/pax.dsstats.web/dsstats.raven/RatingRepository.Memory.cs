@@ -72,7 +72,7 @@ public partial class RatingRepository
             .ToList();
     }
 
-    private RatingsResult GetRatingsFromMemory(RatingsRequest request)
+    private static RatingsResult GetRatingsFromMemory(RatingsRequest request)
     {
         IQueryable<RavenPlayerDto> ratings;
 
@@ -100,13 +100,38 @@ public partial class RatingRepository
 
         foreach (var order in request.Orders)
         {
-            if (order.Ascending)
+            if (order.Property == "Rating.Wins")
             {
-                ratings = ratings.AppendOrderBy(order.Property);
+                if (order.Ascending)
+                {
+                    ratings = ratings.OrderBy(o => o.Rating.Games == 0 ? 0 : o.Rating.Wins * 100.0 / o.Rating.Games);
+                }
+                else
+                {
+                    ratings = ratings.OrderByDescending(o => o.Rating.Games == 0 ? 0 : o.Rating.Wins * 100.0 / o.Rating.Games);
+                }
+            }
+            else if (order.Property == "Rating.Mvp")
+            {
+                if (order.Ascending)
+                {
+                    ratings = ratings.OrderBy(o => o.Rating.Games == 0 ? 0 : o.Rating.Mvp * 100.0 / o.Rating.Games);
+                }
+                else
+                {
+                    ratings = ratings.OrderByDescending(o => o.Rating.Games == 0 ? 0 : o.Rating.Mvp * 100.0 / o.Rating.Games);
+                }
             }
             else
             {
-                ratings = ratings.AppendOrderByDescending(order.Property);
+                if (order.Ascending)
+                {
+                    ratings = ratings.AppendOrderBy(order.Property);
+                }
+                else
+                {
+                    ratings = ratings.AppendOrderByDescending(order.Property);
+                }
             }
         }
 
@@ -153,7 +178,7 @@ public partial class RatingRepository
             {
                 RatingMemory rm = new()
                 {
-                    CmdrPlayer= dto
+                    CmdrPlayer = dto
                 };
                 RatingMemory[player.ToonId] = rm;
             }

@@ -15,7 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.ConfigureAppConfiguration((context, config) =>
 {
-    config.AddJsonFile("/data/localserverconfig.json", optional: false, reloadOnChange: false);
+    config.AddJsonFile("/data/localserverconfig.json", optional: true, reloadOnChange: false);
 });
 
 
@@ -26,7 +26,7 @@ var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionStri
 // var connectionString = builder.Configuration["ServerConfig:DsstatsProdConnectionString"];
 // var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
 
-var oldConnectionString = builder.Configuration["ServerConfig:DBConnectionString2"];
+//var oldConnectionString = builder.Configuration["ServerConfig:DBConnectionString2"];
 
 builder.Services.AddDbContext<ReplayContext>(options =>
 {
@@ -42,14 +42,14 @@ builder.Services.AddDbContext<ReplayContext>(options =>
     ;
 });
 
-builder.Services.AddDbContext<sc2dsstatsContext>(options =>
-{
-    options.UseMySql(oldConnectionString, serverVersion, p =>
-    {
-        p.EnableRetryOnFailure();
-        p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
-    });
-});
+//builder.Services.AddDbContext<sc2dsstatsContext>(options =>
+//{
+//    options.UseMySql(oldConnectionString, serverVersion, p =>
+//    {
+//        p.EnableRetryOnFailure();
+//        p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
+//    });
+//});
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
