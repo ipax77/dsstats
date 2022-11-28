@@ -72,7 +72,7 @@ public partial class RatingRepository
                     ratingInfo.Name = toonIdRating.StdPlayer.Name;
                     ratingInfo.Ratings.Add(new()
                     {
-                        RatingType = RatingType.Cmdr,
+                        RatingType = RatingType.Std,
                         RegionId = toonIdRating.StdPlayer.RegionId,
                         Mmr = Math.Round(toonIdRating.StdPlayer.Rating.Mmr, 2)
                     });

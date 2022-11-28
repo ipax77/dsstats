@@ -1,8 +1,12 @@
-﻿@using System.Globalization;
-@using pax.dsstats.shared;
-@using pax.dsstats.shared.Raven;
-@using sc2dsstats.maui.Services;
+﻿@using System.Globalization
+@using pax.dsstats.shared
+@using pax.dsstats.shared.Raven
+@using sc2dsstats.maui.Services
 @inject IDataServiceFactory dataServiceFactory
+@inject HubService hubService
+@inject IToastService toastService
+@implements IDisposable
+@implements IAsyncDisposable
 
 <div class="d-flex ms-3">
     @foreach (var info in mmrInfos)
@@ -35,6 +39,18 @@
                 <span class="text-warning">@info.Mmr.ToString("N2", CultureInfo.InvariantCulture)</span>
             </span>
         </div>
+        @if (info.MmrChange != 0)
+        {
+            <div class="align-self-center bg-secondary border rounded p-1 me-2">
+                <span class="oi @(info.MmrChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">@info.MmrChange.ToString("N1", CultureInfo.InvariantCulture)</span>
+            </div>
+        }
+    }
+    @if (debug)
+    {
+        <div class="btn-group">
+            <button type="button" class="btn btn-primary" @onclick="hubService.DEBUGMmrChange">Debug MmrChange</button>
+        </div>
     }
 </div>
 
@@ -45,8 +61,11 @@
     private string name = "";
     private string region = "";
 
+    private bool debug = true;
+
     protected override void OnInitialized()
     {
+        hubService.MmrChanged += MmrChanged;
         base.OnInitialized();
     }
 
@@ -57,6 +76,44 @@
             _ = LoadData();
         }
         base.OnAfterRender(firstRender);
+    }
+
+    private void MmrChanged(object? sender, MmrChangedEvent e)
+    {
+        if (!mmrInfos.Any())
+        {
+            return;
+        }
+
+        int i = 0;
+        foreach (var mmrInfo in mmrInfos)
+        {
+            var newInfo = e.Response.RatingInfos
+                .FirstOrDefault(f => f.ToonId == mmrInfo.ToonId);
+            if (newInfo == null)
+            {
+                continue;
+            }
+
+            var newRating = newInfo.Ratings
+                .FirstOrDefault(f => f.RatingType == mmrInfo.RatingType && f.RegionId == mmrInfo.RegionId);
+            if (newRating == null)
+            {
+                continue;
+            }
+
+            mmrInfo.MmrChange += newRating.Mmr - mmrInfo.Mmr;
+            mmrInfo.Mmr = newRating.Mmr;
+            i++;
+        }
+
+        if (i > 0)
+        {
+            toastService.ShowSuccess($"Mmr updated");
+        }
+        name = "";
+        region = "";
+        InvokeAsync(() => StateHasChanged());
     }
 
     private async Task LoadData()
@@ -80,26 +137,61 @@
             foreach (var ratingType in rating.Ratings)
             {
                 infos.Add(new()
-                {
-                    Name = rating.Name,
-                    RatingType = ratingType.RatingType,
-                    RegionId = ratingType.RegionId,
-                    Mmr = ratingType.Mmr
-                });
+                    {
+                        Name = rating.Name,
+                        RatingType = ratingType.RatingType,
+                        RegionId = ratingType.RegionId,
+                        ToonId = rating.ToonId,
+                        Mmr = ratingType.Mmr
+                    });
             }
         }
 
         mmrInfos = infos.OrderByDescending(o => o.Mmr).ToList();
         await InvokeAsync(() => StateHasChanged());
+
+        if (debug)
+        {
+            await hubService.StartHubConnection();
+        }
     }
 
     internal record MmrInfo
     {
         public string Name { get; set; } = "Anonymous";
         public int RegionId { get; set; }
+        public int ToonId { get; set; }
         public RatingType RatingType { get; set; }
         public double Mmr { get; set; }
         public double MmrChange { get; set; }
     }
 
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore();
+
+        Dispose(false);
+
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            hubService.MmrChanged -= MmrChanged;
+            hubService.Dispose();
+        }
+    }
+
+    protected virtual async ValueTask DisposeAsyncCore()
+    {
+        await hubService.CloseHubConnection();
+    }
 }

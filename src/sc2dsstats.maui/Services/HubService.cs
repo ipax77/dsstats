@@ -1,6 +1,7 @@
 ﻿using Blazored.Toast.Services;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Logging;
+using pax.dsstats.shared.Raven;
 
 namespace sc2dsstats.maui.Services;
 
@@ -8,15 +9,14 @@ internal class HubService : IDisposable
 {
     private readonly IToastService toastService;
     private readonly ILogger<HubService> logger;
+    // private static readonly Uri hubUrl = new Uri("https://dsstats.pax77.org/hubs/maui");
     private static readonly Uri hubUrl = new Uri("https://localhost:7174/hubs/maui");
     private HubConnection hubConnection = null!;
 
-    public double CurrentMmr { get; private set; } = 1000.0;
-
-    public event EventHandler<EventArgs>? MmrChanged;
-    protected virtual void OnMmrChanged(EventArgs e)
+    public event EventHandler<MmrChangedEvent>? MmrChanged;
+    protected virtual void OnMmrChanged(MmrChangedEvent e)
     {
-        EventHandler<EventArgs>? handler = MmrChanged;
+        EventHandler<MmrChangedEvent>? handler = MmrChanged;
         handler?.Invoke(this, e);
     }
 
@@ -24,12 +24,12 @@ internal class HubService : IDisposable
     {
         hubConnection = new HubConnectionBuilder()
             .WithUrl(hubUrl)
+            //.WithAutomaticReconnect()
             .Build();
 
-        hubConnection.On<double>("CurrentMmr", mmr =>
+        hubConnection.On<ToonIdsRatingsResponse>("mmrchanged", mmrChange =>
         {
-            CurrentMmr = mmr;
-            OnMmrChanged(EventArgs.Empty);
+            OnMmrChanged(new() { Response = mmrChange });
         });
         this.toastService = toastService;
         this.logger = logger;
@@ -64,11 +64,25 @@ internal class HubService : IDisposable
         {
             return;
         }
+        await hubConnection.SendAsync("UnSubscribe", UserSettingsService.UserSettings.AppGuid);
         await hubConnection.StopAsync();
+    }
+
+    public async Task DEBUGMmrChange()
+    {
+        if (hubConnection.State == HubConnectionState.Connected)
+        {
+            await hubConnection.SendAsync("DEBUGMmrChange", UserSettingsService.UserSettings.AppGuid);
+        }
     }
 
     public void Dispose()
     {
         hubConnection.DisposeAsync();
     }
+}
+
+public class MmrChangedEvent : EventArgs
+{
+    public ToonIdsRatingsResponse Response { get; init; } = null!;
 }
