@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using pax.dsstats.shared;
+﻿using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
 using Raven.Client.Documents;
 using Raven.Client.Documents.BulkInsert;
@@ -113,8 +112,6 @@ public partial class RatingRepository : IRatingRepository
             Count = s.Count
         }).ToList();
     }
-
-
 
     public async Task<string?> GetToonIdName(int toonId)
     {

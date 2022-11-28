@@ -21,6 +21,7 @@ public record StatsRequest
     public List<GameMode> GameModes { get; set; } = new();
     public string? Tournament { get; set; }
     public string? Round { get; set; }
+    public bool FromServer { get; set; }
 }
 
 public enum StatsMode

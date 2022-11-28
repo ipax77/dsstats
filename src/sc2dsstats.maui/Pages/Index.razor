@@ -11,7 +11,6 @@
 @inject UploadService UploadService
 @inject IStatsService StatsService
 @inject IToastService toastSerivce
-@inject HubService hubService
 @implements IDisposable
 
 <div class="btn-group border border-3 rounded-2 border-light p-2">
@@ -41,15 +40,9 @@
     {
         <div class="btn-group">
             <button type="button" class="btn btn-danger" @onclick="e => DecodeService.DEBUGDeleteLatestReplay()">D</button>
-            <button type="button" class="btn btn-primary" @onclick="hubService.StartHubConnection">Connect</button>
+            @*<button type="button" class="btn btn-primary" @onclick="hubService.StartHubConnection">Connect</button>*@
         </div>
     }
-</div>
-
-<div>
-    <p>
-        @hubService.CurrentMmr
-    </p>
 </div>
 
 <div class="mt-2">
@@ -90,12 +83,12 @@
     TimeSpan elapsed = TimeSpan.Zero;
     ReplayComponent? replayComponent;
 
-    private bool DEBUG = true;
+    private bool DEBUG = false;
 
     protected override void OnInitialized()
     {
         DecodeService.DecodeStateChanged += DecodeService_DecodeStateChanged;
-        hubService.MmrChanged += HubService_MmrChanged;
+        //hubService.MmrChanged += HubService_MmrChanged;
         base.OnInitialized();
     }
 

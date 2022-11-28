@@ -2,20 +2,33 @@
 @using pax.dsstats.shared
 @using sc2dsstats.razorlib.Services
 
-<ChartComponent ChartJsConfig="chartConfig"></ChartComponent>
+<ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig"></ChartComponent>
 
 @code {
     [Parameter]
     [EditorRequired]
     public List<PlayerCmdrInfo> PlayerCmdrInfos { get; set; } = default!;
 
-
+    ChartComponent? chartComponent;
     ChartJsConfig chartConfig = null!;
 
     protected override void OnInitialized()
     {
         chartConfig = GetPieChartConfig();
         base.OnInitialized();
+    }
+
+    public void Update(List<PlayerCmdrInfo> playerCmdrInfos)
+    {
+        PlayerCmdrInfos = playerCmdrInfos;
+        var newConfig = GetPieChartConfig();
+
+        if (newConfig.Data.Datasets.Any())
+        {
+            chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
+            chartConfig.SetLabels(newConfig.Data.Labels);
+            chartConfig.AddDataset(newConfig.Data.Datasets.First());
+        }
     }
 
     private ChartJsConfig GetPieChartConfig()

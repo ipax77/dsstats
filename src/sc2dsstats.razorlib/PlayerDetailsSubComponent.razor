@@ -66,7 +66,7 @@
             </div>
             <div class="col-auto ms-3" style="width: 600px;">
                 <div class="w-100">
-                    <PlayerCmdrDistribution PlayerCmdrInfos="PlayerDetailInfo.CmdrInfos.Where(x => x.Count > 0).OrderByDescending(o => o.Count).ToList()"></PlayerCmdrDistribution>
+                        <PlayerCmdrDistribution @ref="playerCmdrDistribution" PlayerCmdrInfos="PlayerDetailInfo.CmdrInfos.Where(x => x.Count > 0).OrderByDescending(o => o.Count).ToList()"></PlayerCmdrDistribution>
                 </div>
             </div>
         </div>
@@ -83,4 +83,13 @@
     [Parameter]
     [EditorRequired]
     public PlayerDetailInfo PlayerDetailInfo { get; set; } = default!;
+
+    PlayerCmdrDistribution? playerCmdrDistribution;
+
+    public void Update()
+    {
+        playerCmdrDistribution?.Update(PlayerDetailInfo.CmdrInfos.Where(x => x.Count > 0).OrderByDescending(o => o.Count).ToList());
+        InvokeAsync(() => StateHasChanged());
+        
+    }
 }

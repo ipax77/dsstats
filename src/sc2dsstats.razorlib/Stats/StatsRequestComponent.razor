@@ -105,6 +105,16 @@
                     </InputCheckbox>
                 </label>
             </div>
+            @if (Data.IsMaui)
+            {
+                <div class="form-check form-switch">
+                    <label class="form-check-label">
+                    Server
+                    <InputCheckbox class="form-check-input" @bind-Value="StatsRequest.FromServer">
+                    </InputCheckbox>
+                </label>
+                </div>
+            }
         </div>
         @if (withPlayers)
         {

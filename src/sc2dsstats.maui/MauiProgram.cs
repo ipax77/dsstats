@@ -102,6 +102,7 @@ public static class MauiProgram
 
         var build =  builder.Build();
 
+        Data.IsMaui = true;
         var userSettingsService = build.Services.GetRequiredService<UserSettingsService>();
 
         var mmrProduceService = build.Services.GetRequiredService<MmrProduceService>();

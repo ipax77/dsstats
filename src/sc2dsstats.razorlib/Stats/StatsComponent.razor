@@ -1,7 +1,7 @@
 ﻿@using Microsoft.Extensions.Logging
 @using pax.dsstats.shared;
 @using sc2dsstats.razorlib.Services;
-@inject IDataService dataService
+@inject IDataServiceFactory dataServiceFactory
 @inject ILogger<StatsComponent> logger
 @implements IDisposable
 
@@ -124,6 +124,10 @@
             statsChartComponent?.PrepareChart(StatsRequest, false);
 
             await InvokeAsync(() => StateHasChanged());
+
+            var dataService = dataServiceFactory
+                .GetInstance(StatsRequest.FromServer ? ConnectionType.Server : ConnectionType.Maui);
+
             statsResponse = await dataService.GetStats(StatsRequest);
 
             isLoading = false;
@@ -207,6 +211,10 @@
         {
             return;
         }
+
+        var dataService = dataServiceFactory
+            .GetInstance(StatsRequest.FromServer ? ConnectionType.Server : ConnectionType.Maui);
+
         var response = await dataService.GetStats(request);
         await statsChartComponent.SetupChart(response);
         lock (lockobject)

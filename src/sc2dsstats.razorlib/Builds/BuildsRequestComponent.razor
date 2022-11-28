@@ -4,7 +4,7 @@
 @using pax.dsstats.shared
 @using pax.dsstats.shared.Raven;
 @inject IToastService toastService
-@inject IDataService dataService
+@inject IDataServiceFactory dataServiceFactory
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
@@ -64,6 +64,16 @@
             <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => playerSelectModal?.Show()">Add Player</button>
             <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => playerDeselectModal?.Show()">Remove Player</button>
         </div>
+        @if (Data.IsMaui)
+        {
+            <div class="col-auto form-check form-switch">
+                <label class="form-check-label">
+                Server
+                <InputCheckbox class="form-check-input" @bind-Value="BuildRequest.FromServer">
+                </InputCheckbox>
+            </label>
+            </div>
+        }
     </div>
 </EditForm>
 
@@ -121,6 +131,9 @@
 
     private async Task TopPlayers(bool std)
     {
+        var dataService = dataServiceFactory
+            .GetInstance(BuildRequest.FromServer ? ConnectionType.Server : ConnectionType.Maui);
+
         BuildRequest.PlayerNames = await dataService.GetTopPlayers(std);
         requestNames = new(BuildRequest.PlayerNames);
         StateHasChanged();

@@ -5,7 +5,7 @@
 @using pax.dsstats.shared.Raven;
 @using sc2dsstats.razorlib.Services
 @inject NavigationManager NavigationManager
-@inject IDataService dataService
+@inject IDataServiceFactory dataServiceFactory
 @implements IDisposable
 
 <div>
@@ -34,6 +34,18 @@
         <div class="align-self-center ms-3">
             <button type="button" class="btn btn-outline-light" @onclick="ShowReplays">Replays</button>
         </div>
+        @if (Data.IsMaui)
+        {
+            <div class="ms-auto">
+                <div class="form-check form-switch">
+                    <label class="form-check-label">
+                        Server
+                    <input type="checkbox" class="form-check-input" checked="true" @onchange="ChangeFromServer">
+                    </input>
+                </label>
+                </div>
+            </div>
+        }
     </div>
     <div class="row">
         <div class="col-auto" style="width: 600px;">
@@ -49,7 +61,7 @@
 
     @if (playerDetailInfo != null)
     {
-        <PlayerDetailsSubComponent PlayerDetailInfo="playerDetailInfo"></PlayerDetailsSubComponent>
+        <PlayerDetailsSubComponent @ref="playerDetailsSubComponent" PlayerDetailInfo="playerDetailInfo"></PlayerDetailsSubComponent>
     }
 </div>
 
@@ -71,11 +83,14 @@
     ChartJsConfig chartJsConfigStd = null!;
     PlayerDetailInfo? playerDetailInfo;
     RavenPlayerDetailsDto? playerDetailsDto;
+    PlayerDetailsSubComponent? playerDetailsSubComponent;
     private string? ratingOtInfo;
 
     private int chartSetups;
     private bool chartsSetup;
     private bool chartDataUp;
+
+    private bool fromServer = true;
 
     private CancellationTokenSource cts = new();
 
@@ -114,6 +129,8 @@
 
     public async Task LoadPlayerDetails()
     {
+        var dataService = dataServiceFactory.GetInstance(fromServer ? ConnectionType.Server : ConnectionType.Maui);
+
         var playerDetails = await dataService.GetPlayerDetails(RequestNames.ToonId, cts.Token);
         playerDetailInfo = new PlayerDetailInfo()
             {
@@ -133,6 +150,9 @@
         {
             SetupCharts();
         }
+
+        playerDetailsSubComponent?.Update();
+
         await InvokeAsync(() => StateHasChanged());
     }
 
@@ -220,6 +240,15 @@
                 PointHitRadius = new IndexableOption<double>(1),
                 Tension = 0.4
             };
+    }
+
+    private void ChangeFromServer(ChangeEventArgs e)
+    {
+        if (e.Value is bool server)
+        {
+            fromServer = server;
+            _ = LoadPlayerDetails();
+        }
     }
 
     private ChartJsConfig GetLineChartConfig()

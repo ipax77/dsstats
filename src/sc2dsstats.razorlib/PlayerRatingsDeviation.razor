@@ -1,6 +1,6 @@
 ﻿@using pax.dsstats.shared
 @using pax.BlazorChartJs
-@inject IDataService dataService
+@inject IDataServiceFactory dataServiceFactory
 @implements IDisposable
 
 <div style="width: 800px;">
@@ -10,6 +10,9 @@
 @code {
     [Parameter]
     public bool Std { get; set; }
+
+    [Parameter]
+    public bool FromServer { get; set; }
 
     ChartComponent? chartComponent;
     ChartJsConfig chartJsConfig = null!;
@@ -33,6 +36,9 @@
 
     public async Task LoadData()
     {
+        var dataService = dataServiceFactory
+            .GetInstance(FromServer ? ConnectionType.Server : ConnectionType.Maui);
+
         var devs = Std ? await dataService.GetRatingsDeviationStd() : await dataService.GetRatingsDeviation();
 
         if (devs.Any())

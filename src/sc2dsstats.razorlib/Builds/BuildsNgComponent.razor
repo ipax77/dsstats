@@ -1,8 +1,8 @@
 ﻿@using pax.dsstats.shared
 @using sc2dsstats.razorlib.Options
-@using sc2dsstats.razorlib.Replay;
-@using sc2dsstats.razorlib.Services;
-@inject IDataService dataService
+@using sc2dsstats.razorlib.Replay
+@using sc2dsstats.razorlib.Services
+@inject IDataServiceFactory dataServiceFactory
 @implements IDisposable
 
 <div>
@@ -179,6 +179,10 @@
             return;
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
+
+        var dataService = dataServiceFactory
+            .GetInstance(BuildRequest.FromServer ? ConnectionType.Server : ConnectionType.Maui);
+
         buildResponse = await dataService.GetBuild(BuildRequest, cts.Token);
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
@@ -219,6 +223,10 @@
             return;
         isReplayLoading = true;
         replayHash = hash;
+
+        var dataService = dataServiceFactory
+            .GetInstance(BuildRequest.FromServer ? ConnectionType.Server : ConnectionType.Maui);
+
         replayDto = await dataService.GetReplay(hash);
         if (replayDto != null)
         {

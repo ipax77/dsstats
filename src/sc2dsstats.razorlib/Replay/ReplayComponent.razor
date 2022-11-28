@@ -5,8 +5,6 @@
 @using pax.dsstats.shared.Raven;
 @using sc2dsstats.razorlib.Services
 @inject IJSRuntime JSRuntime
-@inject IDataService dataService
-@implements IDisposable
 
 <div class="row @(Interest == null ? "" : "visually-hidden")">
     <div class="col-auto">
@@ -417,9 +415,5 @@
                     }
                 }
             };
-    }
-
-    public void Dispose()
-    {
     }
 }

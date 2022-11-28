@@ -137,6 +137,10 @@
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
+        if (e.FieldIdentifier.FieldName == nameof(ReplaysRequest.FromServer))
+        {
+            replaysRequest.WithMmrChange = !replaysRequest.FromServer;
+        }
         OnFieldChanged.InvokeAsync();
     }
 

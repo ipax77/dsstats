@@ -4,7 +4,7 @@
 @using pax.dsstats.shared
 @using pax.dsstats.shared.Raven;
 @using sc2dsstats.razorlib.Services
-@inject IDataService dataService
+@inject IDataServiceFactory dataServiceFactory
 @implements IDisposable
 
 <style>
@@ -57,11 +57,20 @@
                             <option value="@RatingType.Std">Std</option>
                         </InputSelect>
                     </label>
-
                 </div>
+                @if (Data.IsMaui)
+                {
+                    <div class="col-auto form-check form-switch align-self-center">
+                        <label class="form-check-label">
+                            Server
+                            <InputCheckbox class="form-check-input" @bind-Value="RatingsRequest.FromServer">
+                            </InputCheckbox>
+                        </label>
+                    </div>
+                }
             </div>
         </EditForm>
-        <div class="align-self-center ms-2">
+        <div class="align-self-center ms-3">
             <span class="oi oi-x text-danger pointer" @onclick="ResetSearch"></span>
         </div>
         <div class="ms-3 align-self-center">
@@ -166,13 +175,13 @@
         @if (DistributionRequest == DistributionRequestEnum.Std)
         {
             <div>
-                <PlayerRatingsDeviation @ref="playerRatingsDeviation" Std="true"></PlayerRatingsDeviation>
+                <PlayerRatingsDeviation @ref="playerRatingsDeviation" Std="true" FromServer="RatingsRequest.FromServer"></PlayerRatingsDeviation>
             </div>
         }
         else if (DistributionRequest == DistributionRequestEnum.Cmdr)
         {
             <div>
-                <PlayerRatingsDeviation @ref="playerRatingsDeviation" Std="false"></PlayerRatingsDeviation>
+                <PlayerRatingsDeviation @ref="playerRatingsDeviation" Std="false" FromServer="RatingsRequest.FromServer"></PlayerRatingsDeviation>
             </div>
         }
     </div>
@@ -264,6 +273,10 @@
         var numRatings = Math.Min(request.Count, ratingsCount - request.StartIndex);
         RatingsRequest.Skip = request.StartIndex;
         RatingsRequest.Take = numRatings;
+
+        var dataService = dataServiceFactory
+            .GetInstance(RatingsRequest.FromServer ? ConnectionType.Server : ConnectionType.Maui);
+
         var result = await dataService.GetRatings(RatingsRequest, request.CancellationToken);
         ratingsCount = result.Count;
 
