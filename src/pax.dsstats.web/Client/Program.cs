@@ -15,5 +15,6 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddBlazoredToast();
 builder.Services.AddChartJs();
 builder.Services.AddTransient<IDataService, DataService>();
+builder.Services.AddTransient<IDataServiceFactory, DataServiceFactory>();
 
 await builder.Build().RunAsync();
