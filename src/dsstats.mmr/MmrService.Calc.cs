@@ -105,7 +105,6 @@ public static partial class MmrService
         foreach (var player in teamData.Players) {
             var currentPlayerRating = mmrIdRatings[GetMmrId(player.ReplayPlayer.Player)];
 
-            int gamesCountBefore = currentPlayerRating.Games;
             double mmrBefore = currentPlayerRating.Mmr;
             double consistencyBefore = currentPlayerRating.Consistency;
             //double confidenceBeforeSummed = currentPlayerRating.Confidence * gamesCountBefore;
@@ -115,7 +114,8 @@ public static partial class MmrService
             double mmrAfter = mmrBefore + player.Deltas.Mmr;
             double consistencyAfter = consistencyBefore + player.Deltas.Consistency;
             //double confidenceAfter = (confidenceBeforeSummed + player.PlayerConfidenceDelta) / gamesCountAfter;
-            double confidenceAfter = ((confidenceBefore * 0.50) + (player.Deltas.Confidence * 0.50));
+            const double confidenceBeforePercentage = 0.90;
+            double confidenceAfter = ((confidenceBefore * confidenceBeforePercentage) + (player.Deltas.Confidence * (1 - confidenceBeforePercentage)));
 
             consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
             confidenceAfter = Math.Clamp(confidenceAfter, 0, 1);

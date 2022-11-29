@@ -2,9 +2,14 @@
 
 public record MmrOptions
 {
-    public bool Continue { get; set; }
-    public bool UseCommanderMmr { get; set; } = false;
-    public bool UseConsistency { get; set; } = true;
-    public bool UseFactorToTeamMates { get; set; } = false;
-    public bool UseConfidence { get; set; } = true;
+    public MmrOptions(bool reCalc)
+    {
+        this.ReCalc = reCalc;
+    }
+
+    public bool ReCalc { get; init; }
+    public bool UseCommanderMmr { get; init; } = false;
+    public bool UseConsistency { get; init; } = true;
+    public bool UseFactorToTeamMates { get; init; } = false;
+    public bool UseConfidence { get; init; } = true;
 }

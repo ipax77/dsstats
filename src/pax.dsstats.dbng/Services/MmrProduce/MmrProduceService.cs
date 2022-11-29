@@ -26,13 +26,12 @@ public partial class MmrProduceService
 
     public async Task ProduceRatings(MmrOptions mmrOptions,
                                         DateTime startTime = default,
-                                        DateTime endTime = default,
-                                        bool reCalc = true)
+                                        DateTime endTime = default)
     {
         Stopwatch sw = Stopwatch.StartNew();
         var cmdrMmrDic = await GetCommanderMmrsDic(true);
 
-        if ((latestReplay.Count == 0) || reCalc) {
+        if ((latestReplay.Count == 0) || mmrOptions.ReCalc) {
             latestReplay[RatingType.Cmdr] = startTime;
             latestReplay[RatingType.Std] = startTime;
         }
@@ -79,9 +78,9 @@ public partial class MmrProduceService
                 continue;
             }
 
-            if (mmrOptions.Continue)
+            if (!mmrOptions.ReCalc && mmrIdRatings.Count == 0)
             {
-                var calcRatings = await ratingRepository.GetCalcRatings(RatingType.Cmdr, replays, mmrIdRatings.Keys.ToList());
+                var calcRatings = ratingRepository.GetCalcRatings(RatingType.Cmdr, replays);
                 foreach (var calcRating in calcRatings)
                 {
                     mmrIdRatings[calcRating.Key] = calcRating.Value;
@@ -137,9 +136,9 @@ public partial class MmrProduceService
                 continue;
             }
 
-            if (mmrOptions.Continue)
+            if (!mmrOptions.ReCalc && mmrIdRatings.Count == 0)
             {
-                var calcRatings = await ratingRepository.GetCalcRatings(RatingType.Std, replays, mmrIdRatings.Keys.ToList());
+                var calcRatings = ratingRepository.GetCalcRatings(RatingType.Std, replays);
                 foreach (var calcRating in calcRatings)
                 {
                     mmrIdRatings[calcRating.Key] = calcRating.Value;

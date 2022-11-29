@@ -1,4 +1,5 @@
 ﻿
+using dsstats.mmr;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
@@ -332,9 +333,62 @@ public class RatingRepository : IRatingRepository
             .ToList();
     }
 
-    public Task<Dictionary<int, CalcRating>> GetCalcRatings(RatingType ratingType, List<ReplayDsRDto> replays, List<int> toonIds)
+    public Dictionary<int, CalcRating> GetCalcRatings(RatingType ratingType, List<ReplayDsRDto> replays)
     {
-        throw new NotImplementedException();
+        Dictionary<int, CalcRating> calcRatings = new();
+
+        foreach (var replay in replays) {
+            foreach (var toonId in replay.ReplayPlayers.Select(x => x.Player.ToonId)) {
+                var ratingMemory = RatingMemory[toonId];
+
+                bool check = true;
+
+                if (ratingType == RatingType.Cmdr && ratingMemory.CmdrRavenRating != null) {
+                    calcRatings.Add(toonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.CmdrRavenRating));
+                } else if (ratingType == RatingType.Std && ratingMemory.StdRavenRating != null) {
+                    calcRatings.Add(toonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.StdRavenRating));
+                }
+
+
+                //switch (ratingType) {
+                //    case RatingType.Cmdr:
+                //        if (ratingMemory.CmdrRavenRating != null) {
+                //            calcRatings.Add(toonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.CmdrRavenRating));
+                //        }
+                //        break;
+                //    case RatingType.Std:
+                //        if (ratingMemory.StdRavenRating != null) {
+                //            calcRatings.Add(toonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.StdRavenRating));
+                //        }
+                //        break;
+                //    case RatingType.None:
+                //        break;
+                //    default:
+                //        break;
+                //}
+            }
+
+        }
+
+        return calcRatings;
+    }
+
+    private static CalcRating GetCalcRating(RavenPlayer ravenPlayer, RavenRating ravenRating)
+    {
+        return new CalcRating() {
+            IsUploader = ravenPlayer.IsUploader,
+            Confidence = ravenRating?.Confidence ?? 0,
+            Consistency = ravenRating?.Consistency ?? 0,
+            Games = ravenRating?.Games ?? 0,
+            TeamGames = ravenRating?.TeamGames ?? 0,
+            Wins = ravenRating?.Wins ?? 0,
+            Mvp = ravenRating?.Mvp ?? 0,
+
+            Mmr = ravenRating?.Mmr ?? MmrService.startMmr,
+            MmrOverTime = ravenRating?.MmrOverTime?.Split('|').Select(x => new TimeRating() { Mmr = double.Parse(x.Split(',').First()), Date = x.Split(',').Last() }).ToList() ?? new(),
+
+            CmdrCounts = new(), // ToDo ???
+        };
     }
 }
 
