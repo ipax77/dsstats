@@ -24,14 +24,21 @@ public partial class MmrProduceService
         this.logger = logger;
     }
 
-    public async Task ProduceRatings(MmrOptions mmrOptions, DateTime startTime = default, DateTime endTime = default)
+    public async Task ProduceRatings(MmrOptions mmrOptions,
+                                        DateTime startTime = default,
+                                        DateTime endTime = default,
+                                        bool reCalc = true)
     {
         Stopwatch sw = Stopwatch.StartNew();
         var cmdrMmrDic = await GetCommanderMmrsDic(true);
-        double maxMmr = MmrService.startMmr;
 
-        latestReplay[RatingType.Cmdr] = await ProduceStdRatings(mmrOptions, cmdrMmrDic, maxMmr, startTime, endTime);
-        latestReplay[RatingType.Std] = await ProduceCmdrRatings(mmrOptions, cmdrMmrDic, maxMmr, startTime, endTime);
+        if ((latestReplay.Count == 0) || reCalc) {
+            latestReplay[RatingType.Cmdr] = startTime;
+            latestReplay[RatingType.Std] = startTime;
+        }
+
+        latestReplay[RatingType.Cmdr] = await ProduceCmdrRatings(mmrOptions, cmdrMmrDic, latestReplay[RatingType.Cmdr], endTime);
+        latestReplay[RatingType.Std] = await ProduceStdRatings(mmrOptions, cmdrMmrDic, latestReplay[RatingType.Std], endTime);
 
         await SaveCommanderMmrsDic(cmdrMmrDic);
         sw.Stop();
@@ -40,7 +47,6 @@ public partial class MmrProduceService
 
     public async Task<DateTime> ProduceCmdrRatings(MmrOptions mmrOptions,
                                          Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
-                                         double maxMmr,
                                          DateTime startTime = default,
                                          DateTime endTime = default)
     {
@@ -99,7 +105,6 @@ public partial class MmrProduceService
 
     public async Task<DateTime> ProduceStdRatings(MmrOptions mmrOptions,
                                         Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
-                                        double maxMmr,
                                         DateTime startTime = default,
                                         DateTime endTime = default)
     {
@@ -134,7 +139,7 @@ public partial class MmrProduceService
 
             if (mmrOptions.Continue)
             {
-                var calcRatings = await ratingRepository.GetCalcRatings(RatingType.Cmdr, replays, mmrIdRatings.Keys.ToList());
+                var calcRatings = await ratingRepository.GetCalcRatings(RatingType.Std, replays, mmrIdRatings.Keys.ToList());
                 foreach (var calcRating in calcRatings)
                 {
                     mmrIdRatings[calcRating.Key] = calcRating.Value;
