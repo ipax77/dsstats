@@ -265,6 +265,24 @@
                 }
             }
             StatsRequest.GameModes = gameModes;
+
+            if (IsMultiselect(StatsRequest.StatsMode))
+            {
+                if (StatsRequest.Interest == Commander.None)
+                {
+                    StatsRequest.Interest = Commander.Abathur;
+                    SetMultiSelect(Commander.Abathur);
+                }
+                else
+                {
+                    SetMultiSelect(StatsRequest.Interest);
+                }
+            }
+            else
+            {
+                ClearMultiSelect();
+            }
+
             OnRequestChanged.InvokeAsync();
         }
     }
@@ -310,6 +328,24 @@
                 }
                 StatsRequest.PlayerNames = newNames;
             }
+
+            if (IsMultiselect(StatsRequest.StatsMode))
+            {
+                if (StatsRequest.Interest == Commander.None)
+                {
+                    StatsRequest.Interest = Commander.Abathur;
+                    SetMultiSelect(Commander.Abathur);
+                }
+                else
+                {
+                    SetMultiSelect(StatsRequest.Interest);
+                }
+            }
+            else
+            {
+                ClearMultiSelect();
+            }
+
             OnRequestChanged.InvokeAsync();
         }
     }

@@ -11,6 +11,14 @@ public partial class StatsService
             return await GetCustomTimeline(request);
         }
 
+        var firstNotSecond = request.GameModes.Except(defaultGameModes).ToList();
+        var secondNotFirst = defaultGameModes.Except(request.GameModes).ToList();
+
+        if (firstNotSecond.Any() || secondNotFirst.Any())
+        {
+            return await GetCustomTimeline(request);
+        }
+
         // DateTime endTime = request.EndTime == DateTime.MinValue ? DateTime.Today.AddDays(1) : request.EndTime;
         DateTime endTime = GetAdjustedEndTime(request);
 
