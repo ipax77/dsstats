@@ -179,7 +179,7 @@ public partial class MmrProduceService
 
         if (startTime != DateTime.MinValue)
         {
-            replays = replays.Where(x => x.GameTime >= startTime);
+            replays = replays.Where(x => x.GameTime > startTime);
         }
 
         if (endTime != DateTime.MinValue && endTime < DateTime.Today)
@@ -212,7 +212,7 @@ public partial class MmrProduceService
 
         if (startTime != DateTime.MinValue)
         {
-            replays = replays.Where(x => x.GameTime >= startTime);
+            replays = replays.Where(x => x.GameTime > startTime);
         }
 
         if (endTime != DateTime.MinValue && endTime < DateTime.Today)
