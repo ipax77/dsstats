@@ -3,9 +3,7 @@ using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng.Extensions;
-using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
-using System.Net.NetworkInformation;
 
 namespace pax.dsstats.dbng.Repositories;
 
@@ -27,11 +25,11 @@ public class ReplayRepository : IReplayRepository
     public async Task<ReplayDto?> GetReplay(string replayHash, bool dry = false, CancellationToken token = default)
     {
         var replay = await context.Replays
-            .Include(i => i.ReplayPlayers)
-                .ThenInclude(t => t.Spawns)
-                    .ThenInclude(t => t.Units)
-                        .ThenInclude(t => t.Unit)
-            .Include(i => i.ReplayPlayers)
+            //.Include(i => i.ReplayPlayers)
+            //    .ThenInclude(t => t.Spawns)
+            //        .ThenInclude(t => t.Units)
+            //            .ThenInclude(t => t.Unit)
+            //.Include(i => i.ReplayPlayers)
             //  .ThenInclude(t => t.Player)
             .AsNoTracking()
             .AsSplitQuery()
@@ -105,11 +103,7 @@ public class ReplayRepository : IReplayRepository
 
         if (request.WithMmrChange)
         {
-            list.ForEach(async f =>
-            {
-                var mmrChange = await ratingRepository.GetReplayPlayerMmrChanges(f.ReplayHash);
-                f.MmrChange = Math.Round(mmrChange?.FirstOrDefault(g => g.Pos == f.PlayerPos)?.Change ?? 0, 2);
-            });
+            await ratingRepository.SetReplayListMmrChanges(list, token);
         }
 
         return list;
@@ -430,31 +424,6 @@ public class ReplayRepository : IReplayRepository
 
         return (units, upgrades, dbReplay);
     }
-
-    //private async Task AddDbCommanderMmr(string commanders)
-    //{
-    //    var commandersEnums = commanders.Split('|').Select(c => Enum.Parse<Commander>(c));
-
-    //    foreach (var commander in commandersEnums) {
-    //        foreach (var synCommander in commandersEnums) {
-    //            var dbCommanderMmr = await context.CommanderMmrs.FirstOrDefaultAsync(f => (f.Commander == commander) && (f.SynCommander == synCommander));
-    //            if (dbCommanderMmr == null) {
-    //                dbCommanderMmr = new() {
-    //                    Commander = commander,
-    //                    SynCommander = synCommander
-    //                };
-    //                context.CommanderMmrs.Add(dbCommanderMmr);
-
-    //                try {
-    //                    await context.SaveChangesAsync();
-    //                } catch (Exception ex) {
-    //                    logger.LogError($"failed saving replay: {ex.Message}");
-    //                    throw;
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
 
     private async Task<(ICollection<SpawnUnit>, HashSet<Unit>)> GetMapedSpawnUnits(Spawn spawn, Commander commander, HashSet<Unit> units)
     {
