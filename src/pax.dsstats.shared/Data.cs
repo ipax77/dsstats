@@ -190,4 +190,6 @@ public static class Data
             _ => ""
         };
     }
+
+    public static bool IsMaui { get; set; }
 }

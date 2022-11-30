@@ -33,7 +33,7 @@ namespace SqliteMigrations.Migrations
 
                     b.HasIndex("UploaderId");
 
-                    b.ToTable("BattleNetInfos");
+                    b.ToTable("BattleNetInfos", (string)null);
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.CommanderMmr", b =>
@@ -58,7 +58,7 @@ namespace SqliteMigrations.Migrations
 
                     b.HasIndex("Race", "OppRace");
 
-                    b.ToTable("CommanderMmrs");
+                    b.ToTable("CommanderMmrs", (string)null);
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Event", b =>
@@ -84,7 +84,7 @@ namespace SqliteMigrations.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Events");
+                    b.ToTable("Events", (string)null);
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.GroupByHelper", b =>
@@ -135,7 +135,7 @@ namespace SqliteMigrations.Migrations
 
                     b.HasIndex("UploaderId");
 
-                    b.ToTable("Players");
+                    b.ToTable("Players", (string)null);
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.PlayerUpgrade", b =>
@@ -159,7 +159,7 @@ namespace SqliteMigrations.Migrations
 
                     b.HasIndex("UpgradeId");
 
-                    b.ToTable("PlayerUpgrades");
+                    b.ToTable("PlayerUpgrades", (string)null);
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Replay", b =>
@@ -275,7 +275,7 @@ namespace SqliteMigrations.Migrations
 
                     b.HasIndex("GameTime", "GameMode", "WinnerTeam");
 
-                    b.ToTable("Replays");
+                    b.ToTable("Replays", (string)null);
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.ReplayDownloadCount", b =>
@@ -291,7 +291,7 @@ namespace SqliteMigrations.Migrations
 
                     b.HasKey("ReplayDownloadCountId");
 
-                    b.ToTable("ReplayDownloadCounts");
+                    b.ToTable("ReplayDownloadCounts", (string)null);
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.ReplayEvent", b =>
@@ -335,7 +335,7 @@ namespace SqliteMigrations.Migrations
 
                     b.HasIndex("EventId");
 
-                    b.ToTable("ReplayEvents");
+                    b.ToTable("ReplayEvents", (string)null);
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.ReplayPlayer", b =>
@@ -447,7 +447,7 @@ namespace SqliteMigrations.Migrations
 
                     b.HasIndex("Race", "OppRace");
 
-                    b.ToTable("ReplayPlayers");
+                    b.ToTable("ReplayPlayers", (string)null);
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.ReplayViewCount", b =>
@@ -463,7 +463,7 @@ namespace SqliteMigrations.Migrations
 
                     b.HasKey("ReplayViewCountId");
 
-                    b.ToTable("ReplayViewCounts");
+                    b.ToTable("ReplayViewCounts", (string)null);
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.SkipReplay", b =>
@@ -479,7 +479,7 @@ namespace SqliteMigrations.Migrations
 
                     b.HasKey("SkipReplayId");
 
-                    b.ToTable("SkipReplays");
+                    b.ToTable("SkipReplays", (string)null);
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Spawn", b =>
@@ -516,7 +516,7 @@ namespace SqliteMigrations.Migrations
 
                     b.HasIndex("ReplayPlayerId");
 
-                    b.ToTable("Spawns");
+                    b.ToTable("Spawns", (string)null);
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.SpawnUnit", b =>
@@ -545,7 +545,7 @@ namespace SqliteMigrations.Migrations
 
                     b.HasIndex("UnitId");
 
-                    b.ToTable("SpawnUnits");
+                    b.ToTable("SpawnUnits", (string)null);
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Unit", b =>
@@ -564,7 +564,7 @@ namespace SqliteMigrations.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Units");
+                    b.ToTable("Units", (string)null);
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Upgrade", b =>
@@ -586,7 +586,7 @@ namespace SqliteMigrations.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Upgrades");
+                    b.ToTable("Upgrades", (string)null);
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Uploader", b =>
@@ -650,7 +650,7 @@ namespace SqliteMigrations.Migrations
                     b.HasIndex("AppGuid")
                         .IsUnique();
 
-                    b.ToTable("Uploaders");
+                    b.ToTable("Uploaders", (string)null);
                 });
 
             modelBuilder.Entity("ReplayUploader", b =>
