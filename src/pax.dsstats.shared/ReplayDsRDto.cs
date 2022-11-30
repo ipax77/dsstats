@@ -25,7 +25,6 @@ public record ReplayPlayerDsRDto
     public int Duration { get; init; }
     public bool IsUploader { get; init; }
     public int Kills { get; init; }
-    public float? MmrChange { get; set; } = null;
 }
 
 public record PlayerDsRDto
