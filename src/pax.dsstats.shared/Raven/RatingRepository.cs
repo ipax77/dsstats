@@ -89,6 +89,7 @@ public record RavenRating
 
 public record CalcRating
 {
+    public int PlayerId { get; set; }
     public int Games { get; set; }
     public int Wins { get; set; }
     public int Mvp { get; set; }

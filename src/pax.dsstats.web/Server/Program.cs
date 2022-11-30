@@ -102,11 +102,18 @@ if (app.Environment.IsDevelopment())
     // var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
     // cheatDetectService.DetectNoUpload().Wait();
 
-    //var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    //mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
+    // var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    // mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
 
     //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
     //var result = statsService.GetCrossTable(new());
+
+    var rating = context.PlayerRatings
+        //.Include(i => i.Player)
+        .Where(x => x.PLayer.Name == "PAX")
+        .FirstOrDefault();
+    
+    Console.WriteLine($"rating: {rating?.Rating}");
 }
 
 // Configure the HTTP request pipeline.

@@ -64,6 +64,20 @@ public class Player
     public virtual ICollection<ReplayPlayer> ReplayPlayers { get; set; }
 }
 
+public class PlayerRating
+{
+    public int PlayerRatingId { get; set; }
+    public double Rating { get; set; }
+    public int Games { get; set; }
+    public int Wins { get; set; }
+    public int Mvp { get; set; }
+    public int TeamGames { get; set; }
+    public int MainCount { get; set; }
+    public Commander Main { get; set; }
+    public int PlayerId { get; set; }
+    public Player PLayer { get; set; } = null!;
+}
+
 public class Event
 {
     public Event()
