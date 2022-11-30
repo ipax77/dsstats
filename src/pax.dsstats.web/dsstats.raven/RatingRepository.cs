@@ -149,25 +149,42 @@ public partial class RatingRepository : IRatingRepository
         return new UpdateResult() { Total = mmrChanges.Count };
     }
 
-    public async Task<UpdateResult> UpdateRavenPlayers(Dictionary<RavenPlayer, RavenRating> ravenPlayerRatings, RatingType ratingType)
+    public async Task<UpdateResult> UpdateRavenPlayers(HashSet<PlayerDsRDto> players, Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
     {
-        using BulkInsertOperation bulkInsert = DocumentStoreHolder.Store.BulkInsert();
+        //using BulkInsertOperation bulkInsert = DocumentStoreHolder.Store.BulkInsert();
 
-        foreach (var ent in ravenPlayerRatings)
-        {
-            await bulkInsert.StoreAsync(ent.Key, $"RavenPlayer/{ent.Key.ToonId}");
-            ent.Value.Type = ratingType;
-            ent.Value.ToonId = ent.Key.ToonId;
-            await bulkInsert.StoreAsync(ent.Value, $"RavenRating/{ratingType}/{ent.Key.ToonId}");
+        //foreach (var ent in ravenPlayerRatings)
+        //{
+        //    await bulkInsert.StoreAsync(ent.Key, $"RavenPlayer/{ent.Key.ToonId}");
+        //    ent.Value.Type = ratingType;
+        //    ent.Value.ToonId = ent.Key.ToonId;
+        //    await bulkInsert.StoreAsync(ent.Value, $"RavenRating/{ratingType}/{ent.Key.ToonId}");
 
-            if (ent.Key.IsUploader)
-            {
-                StoreRating(ent.Key, ent.Value);
-            }
-        }
-        return new UpdateResult() { Total = ravenPlayerRatings.Count };
+        //    if (ent.Key.IsUploader)
+        //    {
+        //        StoreRating(ent.Key, ent.Value);
+        //    }
+        //}
+        //return new UpdateResult() { Total = ravenPlayerRatings.Count };
+        return new UpdateResult();
     }
 
+    public async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetCalcRatings(List<ReplayDsRDto> replayDsRDtos)
+    {
+        List<int> cmdrToonIds = replayDsRDtos
+            .Where(x => x.GameMode == GameMode.Commanders || x.GameMode == GameMode.CommandersHeroic)
+            .SelectMany(x => x.ReplayPlayers.Select(y => y.Player.ToonId)).ToList();
+
+        List<int> stdToonIds = replayDsRDtos
+            .Where(x => x.GameMode == GameMode.Standard)
+            .SelectMany(x => x.ReplayPlayers.Select(y => y.Player.ToonId)).ToList();
+
+        return new Dictionary<RatingType, Dictionary<int, CalcRating>>()
+        {
+            { RatingType.Cmdr, await GetCalcRatings(RatingType.Cmdr, cmdrToonIds) },
+            { RatingType.Std, await GetCalcRatings(RatingType.Std, stdToonIds) }
+        };
+    }
     public async Task<Dictionary<int, CalcRating>> GetCalcRatings(RatingType ratingType, List<int> toonIds)
     {
         List<string> ravenIds = toonIds

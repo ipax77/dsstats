@@ -36,7 +36,7 @@ public partial class MmrProduceService
 
         var cmdrMmrDic = await GetCommanderMmrsDic(true);
 
-        Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings = await GetMmrIdRatings(mmrOptions, ratingRepository, dependentReplays);
+        Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings = await GetMmrIdRatings(mmrOptions, ratingRepository, await GetReplayDsRDtos(startTime, endTime)/*dependentReplays*/);
 
         if (mmrOptions.ReCalc)
         {
