@@ -37,7 +37,7 @@ public static partial class MmrService
         List<MmrChange> mmrChanges = new();
         for (int i = 0; i < replays.Count; i++)
         {
-            RatingType ratingType = GetRatingType(replays[i]);
+            RatingType ratingType = RatingRepository.GetRatingType(replays[i]);
             if (ratingType == RatingType.None)
             {
                 continue;
@@ -63,22 +63,6 @@ public static partial class MmrService
             await ratingRepository.UpdateMmrChanges(mmrChanges);
         }
         return mmrIdRatings;
-    }
-
-    public static RatingType GetRatingType(ReplayDsRDto replayDsRDto)
-    {
-        if (replayDsRDto.GameMode == GameMode.Commanders || replayDsRDto.GameMode == GameMode.CommandersHeroic)
-        {
-            return RatingType.Cmdr;
-        }
-        else if (replayDsRDto.GameMode == GameMode.Standard)
-        {
-            return RatingType.Std;
-        }
-        else
-        {
-            return RatingType.None;
-        }
     }
 
     private static MmrChange? ProcessReplay(ReplayDsRDto replay,
@@ -160,6 +144,21 @@ public static partial class MmrService
         return sb.ToString();
     }
 
+    public static RatingType GetRatingType(ReplayDsRDto replayDsRDto)
+    {
+        if (replayDsRDto.GameMode == GameMode.Commanders || replayDsRDto.GameMode == GameMode.CommandersHeroic)
+        {
+            return RatingType.Cmdr;
+        }
+        else if (replayDsRDto.GameMode == GameMode.Standard)
+        {
+            return RatingType.Std;
+        }
+        else
+        {
+            return RatingType.None;
+        }
+    }
 }
 
 public struct CmdrMmmrKey

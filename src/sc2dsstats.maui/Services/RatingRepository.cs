@@ -1,5 +1,6 @@
 ﻿
 using dsstats.mmr;
+using pax.dsstats.dbng;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
@@ -363,28 +364,55 @@ public class RatingRepository : IRatingRepository
 
 
     // To Test
-    public async Task<Dictionary<int, CalcRating>> GetCalcRatings(RatingType ratingType, List<ReplayPlayerDsRDto> replayPlayerDsRDtos)
+    public async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetCalcRatings(List<ReplayDsRDto> replayDsRDtos)
     {
-        Dictionary<int, CalcRating> calcRatings = new();
+        Dictionary<RatingType, Dictionary<int, CalcRating>> calcRatings = new()
+        {
+            { RatingType.Cmdr, new() },
+            { RatingType.Std, new() },
+        };
 
-        foreach (var replayPlayerDsRDto in replayPlayerDsRDtos) {
+        foreach (var replayDsrDto in replayDsRDtos)
+        {
+            foreach (var replayPlayerDsRDto in replayDsrDto.ReplayPlayers)
+            {
+                if (!RatingMemory.TryGetValue(replayPlayerDsRDto.Player.ToonId, out var ratingMemory))
+                {
+                    ratingMemory = RatingMemory[replayPlayerDsRDto.Player.ToonId] = new RatingMemory()
+                    {
+                        RavenPlayer = new RavenPlayer()
+                        {
+                            RegionId = replayPlayerDsRDto.Player.RegionId,
+                            PlayerId = replayPlayerDsRDto.Player.PlayerId,
+                            IsUploader = replayPlayerDsRDto.IsUploader,
+                            Name = replayPlayerDsRDto.Player.Name,
+                            ToonId = replayPlayerDsRDto.Player.ToonId
+                        }
+                    };
+                }
 
-            if (!RatingMemory.TryGetValue(replayPlayerDsRDto.Player.ToonId, out var ratingMemory)) {
-                ratingMemory = RatingMemory[replayPlayerDsRDto.Player.ToonId] = new RatingMemory() {
-                    RavenPlayer = new RavenPlayer() {
-                        RegionId = replayPlayerDsRDto.Player.RegionId,
-                        PlayerId = replayPlayerDsRDto.Player.PlayerId,
-                        IsUploader = replayPlayerDsRDto.IsUploader,
-                        Name = replayPlayerDsRDto.Player.Name,
-                        ToonId = replayPlayerDsRDto.Player.ToonId
+                RatingType ratingType = MmrService.GetRatingType(replayDsrDto);
+
+                if (ratingType == RatingType.Cmdr)
+                {
+                    if (ratingMemory.CmdrRavenRating == null)
+                    {
+                        //ToDo
+                        ratingMemory.CmdrRavenRating = new RavenRating();
                     }
-                };
-            }
 
-            if (ratingType == RatingType.Cmdr && ratingMemory.CmdrRavenRating != null) {
-                calcRatings.Add(ratingMemory.RavenPlayer.ToonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.CmdrRavenRating));
-            } else if (ratingType == RatingType.Std && ratingMemory.StdRavenRating != null) {
-                calcRatings.Add(ratingMemory.RavenPlayer.ToonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.StdRavenRating));
+                    calcRatings[ratingType].Add(ratingMemory.RavenPlayer.ToonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.CmdrRavenRating));
+                }
+                else if (ratingType == RatingType.Std)
+                {
+                    if (ratingMemory.StdRavenRating == null)
+                    {
+                        //ToDo
+                        ratingMemory.StdRavenRating = new RavenRating();
+                    }
+
+                    calcRatings[ratingType].Add(ratingMemory.RavenPlayer.ToonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.StdRavenRating));
+                }
             }
         }
 
@@ -393,7 +421,8 @@ public class RatingRepository : IRatingRepository
 
     private static CalcRating GetCalcRating(RavenPlayer ravenPlayer, RavenRating ravenRating)
     {
-        return new CalcRating() {
+        return new CalcRating()
+        {
             IsUploader = ravenPlayer.IsUploader,
             Confidence = ravenRating?.Confidence ?? 0,
             Consistency = ravenRating?.Consistency ?? 0,
@@ -411,17 +440,22 @@ public class RatingRepository : IRatingRepository
 
     private static List<TimeRating> GetTimeRatings(string? mmrOverTime)
     {
-        if (string.IsNullOrEmpty(mmrOverTime)) {
+        if (string.IsNullOrEmpty(mmrOverTime))
+        {
             return new();
         }
 
         List<TimeRating> timeRatings = new();
 
-        foreach (var ent in mmrOverTime.Split('|', StringSplitOptions.RemoveEmptyEntries)) {
+        foreach (var ent in mmrOverTime.Split('|', StringSplitOptions.RemoveEmptyEntries))
+        {
             var timeMmr = ent.Split(',');
-            if (timeMmr.Length == 2) {
-                if (double.TryParse(timeMmr[0], out double mmr)) {
-                    timeRatings.Add(new TimeRating() {
+            if (timeMmr.Length == 2)
+            {
+                if (double.TryParse(timeMmr[0], out double mmr))
+                {
+                    timeRatings.Add(new TimeRating()
+                    {
                         Mmr = mmr,
                         Date = timeMmr[1]
                     });

@@ -29,16 +29,20 @@ public partial class MmrProduceService
                                         DateTime endTime = default)
     {
         Stopwatch sw = Stopwatch.StartNew();
+
+        using var scope = serviceProvider.CreateScope();
+        var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
+
         var cmdrMmrDic = await GetCommanderMmrsDic(true);
 
-        Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings = GetMmrIdRatings(mmrOptions);
+        Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings = await GetMmrIdRatings(mmrOptions, ratingRepository);
 
         if (mmrOptions.ReCalc)
         {
             latestReplay = startTime;
         }
 
-        latestReplay = await ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, latestReplay, endTime);
+        latestReplay = await ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, latestReplay, endTime);
 
         await SaveCommanderMmrsDic(cmdrMmrDic);
         sw.Stop();
@@ -48,6 +52,7 @@ public partial class MmrProduceService
     public async Task<DateTime> ProduceRatings(MmrOptions mmrOptions,
                                          Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                          Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
+                                         IRatingRepository ratingRepository,
                                          DateTime startTime = default,
                                          DateTime endTime = default)
     {
@@ -55,9 +60,6 @@ public partial class MmrProduceService
         DateTime _endTime = endTime == DateTime.MinValue ? DateTime.Today.AddDays(2) : endTime;
 
         HashSet<PlayerDsRDto> players = new();
-
-        using var scope = serviceProvider.CreateScope();
-        var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
 
         DateTime latestReplay = DateTime.MinValue;
 
@@ -91,7 +93,7 @@ public partial class MmrProduceService
         return latestReplay;
     }
 
-    private Dictionary<RatingType, Dictionary<int, CalcRating>> GetMmrIdRatings(MmrOptions mmrOptions)
+    private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetMmrIdRatings(MmrOptions mmrOptions, IRatingRepository ratingRepository)
     {
         if (mmrOptions.ReCalc)
         {
@@ -105,12 +107,7 @@ public partial class MmrProduceService
         {
             throw new NotImplementedException();
 
-            //if (!mmrOptions.ReCalc && mmrIdRatings.Count == 0) {
-            //    var calcRatings = await ratingRepository.GetCalcRatings(RatingType.Cmdr, newReplays);
-            //    foreach (var calcRating in calcRatings) {
-            //        mmrIdRatings[calcRating.Key] = calcRating.Value;
-            //    }
-            //}
+            //return await ratingRepository.GetCalcRatings();
         }
     }
 
