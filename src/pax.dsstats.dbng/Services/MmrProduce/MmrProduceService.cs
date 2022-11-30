@@ -95,7 +95,7 @@ public partial class MmrProduceService
 
             var result = await ratingRepository.UpdateRavenPlayers(MmrService.GetRavenPlayers(players.ToList(), mmrIdRatings), RatingType.Cmdr);
         }
-        CreateCsv(mmrIdRatings, RatingType.Cmdr);
+        CreatePlayerRatingCsv(mmrIdRatings, RatingType.Cmdr);
         return latestReplay;
     }
 
@@ -156,7 +156,7 @@ public partial class MmrProduceService
 
             var result = await ratingRepository.UpdateRavenPlayers(MmrService.GetRavenPlayers(players.ToList(), mmrIdRatings), RatingType.Std);
         }
-        CreateCsv(mmrIdRatings, RatingType.Std);
+        CreatePlayerRatingCsv(mmrIdRatings, RatingType.Std);
         return latestReplay;
     }
 
