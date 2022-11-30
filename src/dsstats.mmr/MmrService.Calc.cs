@@ -121,7 +121,7 @@ public static partial class MmrService
             confidenceAfter = Math.Clamp(confidenceAfter, 0, 1);
             mmrAfter = Math.Max(1, mmrAfter);
 
-            changes.Add(new PlChange() { Pos = player.ReplayPlayer.GamePos, Change = mmrAfter - mmrBefore });
+            changes.Add(new PlChange() { Pos = player.ReplayPlayer.GamePos, ReplayPlayerId = player.ReplayPlayer.ReplayPlayerId, Change = mmrAfter - mmrBefore });
 
             currentPlayerRating.Consistency = consistencyAfter;
             currentPlayerRating.Confidence = confidenceAfter;
@@ -293,6 +293,7 @@ public static partial class MmrService
         {
             plRating = mmrIdRatings[GetMmrId(playerData.ReplayPlayer.Player)] = new CalcRating()
             {
+                PlayerId = playerData.ReplayPlayer.Player.PlayerId,
                 Mmr = startMmr,
                 Consistency = 0,
                 Confidence = 0,

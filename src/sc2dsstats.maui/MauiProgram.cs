@@ -51,7 +51,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<DecodeService>();
         builder.Services.AddSingleton<UploadService>();
 
-        builder.Services.AddScoped<IRatingRepository, RatingRepository>();
+        builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRepository>();
         builder.Services.AddScoped<MmrProduceService>();
 
         builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -97,6 +97,7 @@ public static class MauiProgram
 
         var build =  builder.Build();
 
+        Data.IsMaui = true;
         var userSettingsService = build.Services.GetRequiredService<UserSettingsService>();
 
         var mmrProduceService = build.Services.GetRequiredService<MmrProduceService>();

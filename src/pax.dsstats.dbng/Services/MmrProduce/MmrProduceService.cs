@@ -36,24 +36,44 @@ public partial class MmrProduceService
 
         var cmdrMmrDic = await GetCommanderMmrsDic(true);
 
-        Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings = await GetMmrIdRatings(mmrOptions, ratingRepository, await GetReplayDsRDtos(startTime, endTime)/*dependentReplays*/);
+        Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings = await GetMmrIdRatings(mmrOptions, ratingRepository, dependentReplays);
+        int mmrChangesAppendId = await GetMmrChangesAppendId(mmrOptions);
 
         if (mmrOptions.ReCalc)
         {
             latestReplay = startTime;
         }
 
-        latestReplay = await ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, latestReplay, endTime);
+        latestReplay = await ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrChangesAppendId, latestReplay, endTime);
 
         await SaveCommanderMmrsDic(cmdrMmrDic);
         sw.Stop();
         logger.LogWarning($"ratings produced in {sw.ElapsedMilliseconds} ms");
     }
 
+    private async Task<int> GetMmrChangesAppendId(MmrOptions mmrOptions)
+    {
+        if (mmrOptions.ReCalc)
+        {
+            return 0;
+        }
+        else
+        {
+            using var scope = serviceProvider.CreateScope();
+            using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+            return await context.ReplayPlayerRatings
+                .OrderByDescending(o => o.ReplayPlayerRatingId)
+                .Select(s => s.ReplayPlayerRatingId)
+                .FirstOrDefaultAsync();
+        }
+    }
+
     public async Task<DateTime> ProduceRatings(MmrOptions mmrOptions,
                                          Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                          Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
                                          IRatingRepository ratingRepository,
+                                         int mmrChangesAppendId,
                                          DateTime startTime = default,
                                          DateTime endTime = default)
     {
@@ -86,10 +106,9 @@ public partial class MmrProduceService
 
             players.UnionWith(replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct());
 
-            mmrIdRatings = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrOptions);
-
-            //var result = await ratingRepository.UpdateRavenPlayers(players, mmrIdRatings);
+            mmrIdRatings = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrOptions, mmrChangesAppendId);
         }
+        var result = await ratingRepository.UpdateRavenPlayers(players, mmrIdRatings);
         return latestReplay;
     }
 

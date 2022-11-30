@@ -103,7 +103,7 @@ if (app.Environment.IsDevelopment())
     // cheatDetectService.DetectNoUpload().Wait();
 
     var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings(new(false)).GetAwaiter().GetResult();
+    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
 
     //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
     //var result = statsService.GetCrossTable(new());
