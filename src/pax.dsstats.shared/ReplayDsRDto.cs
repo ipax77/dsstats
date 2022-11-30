@@ -10,6 +10,7 @@ public record ReplayDsRDto
     public int WinnerTeam { get; set; }
     public int Duration { get; init; }
     public int Maxkillsum { get; init; }
+    public GameMode GameMode { get; init; }
     public List<ReplayPlayerDsRDto> ReplayPlayers { get; init; } = new();
 }
 

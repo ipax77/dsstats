@@ -27,9 +27,9 @@ public static partial class MmrService
     private const double ownMatchupPercentage = 1.0 / 3;
     private const double matesMatchupsPercentage = (1 - ownMatchupPercentage) / 2;
 
-    public static async Task<Dictionary<int, CalcRating>> GeneratePlayerRatings(List<ReplayDsRDto> replays,
+    public static async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GeneratePlayerRatings(List<ReplayDsRDto> replays,
                                                                     Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
-                                                                    Dictionary<int, CalcRating> mmrIdRatings,
+                                                                    Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
                                                                     IRatingRepository ratingRepository,
                                                                     MmrOptions mmrOptions,
                                                                     bool dry = false)
@@ -37,7 +37,12 @@ public static partial class MmrService
         List<MmrChange> mmrChanges = new();
         for (int i = 0; i < replays.Count; i++)
         {
-            var changes = ProcessReplay(replays[i], mmrIdRatings, cmdrMmrDic, mmrOptions);
+            RatingType ratingType = GetRatingType(replays[i]);
+            if (ratingType == RatingType.None) {
+                continue;
+            }
+
+            var changes = ProcessReplay(replays[i], mmrIdRatings[ratingType], cmdrMmrDic, mmrOptions);
 
             if (changes != null)
             {
@@ -59,43 +64,15 @@ public static partial class MmrService
         return mmrIdRatings;
     }
 
-    public static Dictionary<RavenPlayer, RavenRating> GetRavenPlayers(List<PlayerDsRDto> players, Dictionary<int, CalcRating> mmrIdRatings)
+    public static RatingType GetRatingType(ReplayDsRDto replayDsRDto)
     {
-        Dictionary<RavenPlayer, RavenRating> ravenPlayerRatings = new();
-
-        foreach (var player in players)
-        {
-            var mmrId = GetMmrId(player);
-
-            if (mmrIdRatings.ContainsKey(mmrId))
-            {
-                var rating = mmrIdRatings[mmrId];
-                (var main, var mainper) = rating.GetMain();
-                RavenPlayer ravenPlayer = new()
-                {
-                    PlayerId = player.PlayerId,
-                    Name = player.Name,
-                    ToonId = player.ToonId,
-                    RegionId = player.RegionId,
-                    IsUploader = rating.IsUploader
-
-                };
-
-                ravenPlayerRatings[ravenPlayer] = new()
-                {
-                    Games = rating.Games,
-                    Wins = rating.Wins,
-                    Mvp = rating.Mvp,
-                    Main = main,
-                    MainPercentage = mainper,
-                    Mmr = rating.Mmr,
-                    MmrOverTime = GetDbMmrOverTime(rating.MmrOverTime),
-                    Consistency = rating.Consistency,
-                    Confidence = rating.Confidence,
-                };
-            }
+        if (replayDsRDto.GameMode == GameMode.Commanders || replayDsRDto.GameMode == GameMode.CommandersHeroic) {
+            return RatingType.Cmdr;
+        } else if (replayDsRDto.GameMode == GameMode.Standard) {
+            return RatingType.Std;
+        } else {
+            return RatingType.None;
         }
-        return ravenPlayerRatings;
     }
 
     private static MmrChange? ProcessReplay(ReplayDsRDto replay,

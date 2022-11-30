@@ -168,14 +168,10 @@ public partial class RatingRepository : IRatingRepository
         return new UpdateResult() { Total = ravenPlayerRatings.Count };
     }
 
-    public async Task<Dictionary<int, CalcRating>> GetCalcRatings(RatingType ratingType, List<ReplayDsRDto> replays, List<int> toonIds)
+    public async Task<Dictionary<int, CalcRating>> GetCalcRatings(RatingType ratingType, List<int> toonIds)
     {
-        List<string> ravenIds = replays
-            .SelectMany(s => s.ReplayPlayers)
-            .Select(s => s.Player)
-            .Distinct()
-            .Where(x => !toonIds.Contains(x.ToonId))
-            .Select(s => $"RavenRating/{ratingType}/{s.ToonId}")
+        List<string> ravenIds = toonIds
+            .Select(s => $"RavenRating/{ratingType}/{s}")
             .ToList();
 
         using var session = DocumentStoreHolder.Store.OpenAsyncSession();

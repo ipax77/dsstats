@@ -80,18 +80,18 @@ public static class MauiProgram
         //var uploadService = scope.ServiceProvider.GetRequiredService<UploadService>();
         //uploadService.ProduceMauiTestData();
 
-        var replays = context.Replays
-            .Include(i => i.ReplayPlayers)
-                .ThenInclude(i => i.Spawns)
-                    .ThenInclude(i => i.Units)
-            .Include(i => i.ReplayPlayers)
-                .ThenInclude(i => i.Upgrades)
-            .OrderByDescending(o => o.GameTime)
-            .Take(2)
-            .ToList();
+        //var replays = context.Replays
+        //    .Include(i => i.ReplayPlayers)
+        //        .ThenInclude(i => i.Spawns)
+        //            .ThenInclude(i => i.Units)
+        //    .Include(i => i.ReplayPlayers)
+        //        .ThenInclude(i => i.Upgrades)
+        //    .OrderByDescending(o => o.GameTime)
+        //    .Take(2)
+        //    .ToList();
 
-        context.Replays.RemoveRange(replays);
-        context.SaveChanges();
+        //context.Replays.RemoveRange(replays);
+        //context.SaveChanges();
 
         // END DEBUG
 

@@ -287,43 +287,71 @@ public class RatingRepository : IRatingRepository
         return await Task.FromResult(new UpdateResult() { Total = replayPlayerMmrChanges.Count });
     }
 
-    public async Task<UpdateResult> UpdateRavenPlayers(Dictionary<RavenPlayer, RavenRating> ravenPlayerRatings, RatingType ratingType)
+    public async Task<UpdateResult> UpdateRavenPlayers(HashSet<PlayerDsRDto> players, Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
     {
-        foreach (var ent in ravenPlayerRatings)
-        {
-            ent.Value.Type = ratingType;
-            if (RatingMemory.ContainsKey(ent.Key.ToonId))
-            {
-                var ratingMemory = RatingMemory[ent.Key.ToonId];
-                if (ratingType == RatingType.Cmdr)
-                {
+        //Dictionary<RavenPlayer, RavenRating> ravenPlayerRatings = GetRavenPlayers(players, mmrIdRatings);
 
-                    ratingMemory.CmdrRavenRating = ent.Value;
-                }
-                else if (ratingType == RatingType.Std)
-                {
-                    ratingMemory.StdRavenRating = ent.Value;
-                }
-            }
-            else
-            {
-                RatingMemory ratingMemory = new()
-                {
-                    RavenPlayer = ent.Key
-                };
-                if (ratingType == RatingType.Cmdr)
-                {
-                    ratingMemory.CmdrRavenRating = ent.Value;
-                }
-                else if (ratingType == RatingType.Std)
-                {
-                    ratingMemory.StdRavenRating = ent.Value;
-                }
-                RatingMemory[ent.Key.ToonId] = ratingMemory;
-            }
-        }
-        return await Task.FromResult(new UpdateResult() { Total = ravenPlayerRatings.Count });
+        //foreach (var ent in ravenPlayerRatings) {
+        //    ent.Value.Type = ratingType;
+        //    if (RatingMemory.ContainsKey(ent.Key.ToonId)) {
+        //        var ratingMemory = RatingMemory[ent.Key.ToonId];
+        //        if (ratingType == RatingType.Cmdr) {
+
+        //            ratingMemory.CmdrRavenRating = ent.Value;
+        //        } else if (ratingType == RatingType.Std) {
+        //            ratingMemory.StdRavenRating = ent.Value;
+        //        }
+        //    } else {
+        //        RatingMemory ratingMemory = new() {
+        //            RavenPlayer = ent.Key
+        //        };
+        //        if (ratingType == RatingType.Cmdr) {
+        //            ratingMemory.CmdrRavenRating = ent.Value;
+        //        } else if (ratingType == RatingType.Std) {
+        //            ratingMemory.StdRavenRating = ent.Value;
+        //        }
+        //        RatingMemory[ent.Key.ToonId] = ratingMemory;
+        //    }
+        //}
+        //return await Task.FromResult(new UpdateResult() { Total = ravenPlayerRatings.Count });
+        return null;
     }
+
+
+    //public static Dictionary<RavenPlayer, RavenRating> GetRavenPlayers(List<PlayerDsRDto> players, Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
+    //{
+    //    Dictionary<RavenPlayer, RavenRating> ravenPlayerRatings = new();
+
+    //    foreach (var player in players) {
+    //        var mmrId = GetMmrId(player);
+
+    //        if (mmrIdRatings.ContainsKey(mmrId)) {
+    //            var rating = mmrIdRatings[mmrId];
+    //            (var main, var mainper) = rating.GetMain();
+    //            RavenPlayer ravenPlayer = new() {
+    //                PlayerId = player.PlayerId,
+    //                Name = player.Name,
+    //                ToonId = player.ToonId,
+    //                RegionId = player.RegionId,
+    //                IsUploader = rating.IsUploader
+
+    //            };
+
+    //            ravenPlayerRatings[ravenPlayer] = new() {
+    //                Games = rating.Games,
+    //                Wins = rating.Wins,
+    //                Mvp = rating.Mvp,
+    //                Main = main,
+    //                MainPercentage = mainper,
+    //                Mmr = rating.Mmr,
+    //                MmrOverTime = GetDbMmrOverTime(rating.MmrOverTime),
+    //                Consistency = rating.Consistency,
+    //                Confidence = rating.Confidence,
+    //            };
+    //        }
+    //    }
+    //    return ravenPlayerRatings;
+    //}
 
     public List<int> GetNameToonIds(string name)
     {
@@ -333,41 +361,31 @@ public class RatingRepository : IRatingRepository
             .ToList();
     }
 
-    public Dictionary<int, CalcRating> GetCalcRatings(RatingType ratingType, List<ReplayDsRDto> replays)
+
+    // To Test
+    public async Task<Dictionary<int, CalcRating>> GetCalcRatings(RatingType ratingType, List<ReplayPlayerDsRDto> replayPlayerDsRDtos)
     {
         Dictionary<int, CalcRating> calcRatings = new();
 
-        foreach (var replay in replays) {
-            foreach (var toonId in replay.ReplayPlayers.Select(x => x.Player.ToonId)) {
-                var ratingMemory = RatingMemory[toonId];
+        foreach (var replayPlayerDsRDto in replayPlayerDsRDtos) {
 
-                bool check = true;
-
-                if (ratingType == RatingType.Cmdr && ratingMemory.CmdrRavenRating != null) {
-                    calcRatings.Add(toonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.CmdrRavenRating));
-                } else if (ratingType == RatingType.Std && ratingMemory.StdRavenRating != null) {
-                    calcRatings.Add(toonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.StdRavenRating));
-                }
-
-
-                //switch (ratingType) {
-                //    case RatingType.Cmdr:
-                //        if (ratingMemory.CmdrRavenRating != null) {
-                //            calcRatings.Add(toonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.CmdrRavenRating));
-                //        }
-                //        break;
-                //    case RatingType.Std:
-                //        if (ratingMemory.StdRavenRating != null) {
-                //            calcRatings.Add(toonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.StdRavenRating));
-                //        }
-                //        break;
-                //    case RatingType.None:
-                //        break;
-                //    default:
-                //        break;
-                //}
+            if (!RatingMemory.TryGetValue(replayPlayerDsRDto.Player.ToonId, out var ratingMemory)) {
+                ratingMemory = RatingMemory[replayPlayerDsRDto.Player.ToonId] = new RatingMemory() {
+                    RavenPlayer = new RavenPlayer() {
+                        RegionId = replayPlayerDsRDto.Player.RegionId,
+                        PlayerId = replayPlayerDsRDto.Player.PlayerId,
+                        IsUploader = replayPlayerDsRDto.IsUploader,
+                        Name = replayPlayerDsRDto.Player.Name,
+                        ToonId = replayPlayerDsRDto.Player.ToonId
+                    }
+                };
             }
 
+            if (ratingType == RatingType.Cmdr && ratingMemory.CmdrRavenRating != null) {
+                calcRatings.Add(ratingMemory.RavenPlayer.ToonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.CmdrRavenRating));
+            } else if (ratingType == RatingType.Std && ratingMemory.StdRavenRating != null) {
+                calcRatings.Add(ratingMemory.RavenPlayer.ToonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.StdRavenRating));
+            }
         }
 
         return calcRatings;
@@ -385,10 +403,32 @@ public class RatingRepository : IRatingRepository
             Mvp = ravenRating?.Mvp ?? 0,
 
             Mmr = ravenRating?.Mmr ?? MmrService.startMmr,
-            MmrOverTime = ravenRating?.MmrOverTime?.Split('|').Select(x => new TimeRating() { Mmr = double.Parse(x.Split(',').First()), Date = x.Split(',').Last() }).ToList() ?? new(),
+            MmrOverTime = GetTimeRatings(ravenRating?.MmrOverTime),
 
             CmdrCounts = new(), // ToDo ???
         };
+    }
+
+    private static List<TimeRating> GetTimeRatings(string? mmrOverTime)
+    {
+        if (string.IsNullOrEmpty(mmrOverTime)) {
+            return new();
+        }
+
+        List<TimeRating> timeRatings = new();
+
+        foreach (var ent in mmrOverTime.Split('|', StringSplitOptions.RemoveEmptyEntries)) {
+            var timeMmr = ent.Split(',');
+            if (timeMmr.Length == 2) {
+                if (double.TryParse(timeMmr[0], out double mmr)) {
+                    timeRatings.Add(new TimeRating() {
+                        Mmr = mmr,
+                        Date = timeMmr[1]
+                    });
+                }
+            }
+        }
+        return timeRatings;
     }
 }
 

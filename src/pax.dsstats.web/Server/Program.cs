@@ -89,7 +89,7 @@ context.Database.Migrate();
 if (app.Environment.IsProduction())
 {
     var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
+    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
 
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
