@@ -40,11 +40,17 @@ public static partial class MmrService
                 continue;
             }
 
-            var changes = ProcessReplay(replays[i], mmrIdRatings[ratingType], cmdrMmrDic, mmrOptions);
-
-            if (changes != null)
+            try
             {
-                mmrChanges.Add(changes);
+                var changes = ProcessReplay(replays[i], mmrIdRatings[ratingType], cmdrMmrDic, mmrOptions);
+                if (changes != null)
+                {
+                    mmrChanges.Add(changes);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
             }
 
             if (!dry && mmrChanges.Count > 100000)

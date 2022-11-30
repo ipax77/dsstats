@@ -46,7 +46,7 @@ public partial class RatingRepository
             sb.Append($"{ent.Value.PlayerId}");
             sb.Append(Environment.NewLine);
         }
-        await File.WriteAllTextAsync($"/data/ds/{ratingType}Rating.csv", sb.ToString());
+        File.WriteAllText($"/data/ds/{ratingType}Rating.csv", sb.ToString());
     }
 
     public async Task<int> WriteMmrChangeCsv(List<MmrChange> replayPlayerMmrChanges, int appendId)

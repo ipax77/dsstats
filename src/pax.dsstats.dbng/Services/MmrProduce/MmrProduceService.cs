@@ -107,10 +107,8 @@ public partial class MmrProduceService
             players.UnionWith(replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct());
 
             mmrIdRatings = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrOptions, mmrChangesAppendId);
-
-            bool b = true;
-            //var result = await ratingRepository.UpdateRavenPlayers(players, mmrIdRatings);
         }
+        var result = await ratingRepository.UpdateRavenPlayers(players, mmrIdRatings);
         return latestReplay;
     }
 
