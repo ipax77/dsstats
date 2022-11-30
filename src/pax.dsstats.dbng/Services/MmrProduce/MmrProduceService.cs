@@ -33,7 +33,8 @@ public partial class MmrProduceService
 
         Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings = GetMmrIdRatings(mmrOptions);
 
-        if (mmrOptions.ReCalc) {
+        if (mmrOptions.ReCalc)
+        {
             latestReplay = startTime;
         }
 
@@ -60,10 +61,12 @@ public partial class MmrProduceService
 
         DateTime latestReplay = DateTime.MinValue;
 
-        while (_startTime < _endTime) {
+        while (_startTime < _endTime)
+        {
             var chunkEndTime = _startTime.AddYears(1);
 
-            if (chunkEndTime > _endTime) {
+            if (chunkEndTime > _endTime)
+            {
                 chunkEndTime = _endTime;
             }
 
@@ -71,7 +74,8 @@ public partial class MmrProduceService
 
             _startTime = _startTime.AddYears(1);
 
-            if (!replays.Any()) {
+            if (!replays.Any())
+            {
                 continue;
             }
 
@@ -89,13 +93,16 @@ public partial class MmrProduceService
 
     private Dictionary<RatingType, Dictionary<int, CalcRating>> GetMmrIdRatings(MmrOptions mmrOptions)
     {
-        if (mmrOptions.ReCalc) {
+        if (mmrOptions.ReCalc)
+        {
             return new Dictionary<RatingType, Dictionary<int, CalcRating>>()
             {
                 { RatingType.Cmdr, new() },
                 { RatingType.Std, new() },
             };
-        } else {
+        }
+        else
+        {
             throw new NotImplementedException();
 
             //if (!mmrOptions.ReCalc && mmrIdRatings.Count == 0) {
@@ -122,11 +129,13 @@ public partial class MmrProduceService
                 && r.WinnerTeam > 0)
             .AsNoTracking();
 
-        if (startTime != DateTime.MinValue) {
+        if (startTime != DateTime.MinValue)
+        {
             replays = replays.Where(x => x.GameTime > startTime);
         }
 
-        if (endTime != DateTime.MinValue && endTime < DateTime.Today) {
+        if (endTime != DateTime.MinValue && endTime < DateTime.Today)
+        {
             replays = replays.Where(x => x.GameTime < endTime);
         }
 

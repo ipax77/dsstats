@@ -38,7 +38,8 @@ public static partial class MmrService
         for (int i = 0; i < replays.Count; i++)
         {
             RatingType ratingType = GetRatingType(replays[i]);
-            if (ratingType == RatingType.None) {
+            if (ratingType == RatingType.None)
+            {
                 continue;
             }
 
@@ -66,11 +67,16 @@ public static partial class MmrService
 
     public static RatingType GetRatingType(ReplayDsRDto replayDsRDto)
     {
-        if (replayDsRDto.GameMode == GameMode.Commanders || replayDsRDto.GameMode == GameMode.CommandersHeroic) {
+        if (replayDsRDto.GameMode == GameMode.Commanders || replayDsRDto.GameMode == GameMode.CommandersHeroic)
+        {
             return RatingType.Cmdr;
-        } else if (replayDsRDto.GameMode == GameMode.Standard) {
+        }
+        else if (replayDsRDto.GameMode == GameMode.Standard)
+        {
             return RatingType.Std;
-        } else {
+        }
+        else
+        {
             return RatingType.None;
         }
     }
