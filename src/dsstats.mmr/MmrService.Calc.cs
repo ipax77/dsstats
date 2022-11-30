@@ -301,6 +301,7 @@ public static partial class MmrService
         {
             plRating = mmrIdRatings[GetMmrId(playerData.ReplayPlayer.Player)] = new CalcRating()
             {
+                PlayerId = playerData.ReplayPlayer.Player.PlayerId,
                 Mmr = startMmr,
                 Consistency = 0,
                 Confidence = 0,
