@@ -200,8 +200,7 @@ public partial class MmrProduceService
 
         var cmdrMmrs = await context.CommanderMmrs
             .AsNoTracking()
-            .ToListAsync()
-        ;
+            .ToListAsync();
 
         if (!cmdrMmrs.Any())
         {

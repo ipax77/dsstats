@@ -69,6 +69,25 @@ public partial class RatingRepository : IRatingRepository
         return await Task.FromResult(calcRatings);
     }
 
+    private static CalcRating GetCalcRating(RavenPlayer ravenPlayer, RavenRating ravenRating)
+    {
+        return new CalcRating()
+        {
+            IsUploader = ravenPlayer.IsUploader,
+            Confidence = ravenRating?.Confidence ?? 0,
+            Consistency = ravenRating?.Consistency ?? 0,
+            Games = ravenRating?.Games ?? 0,
+            TeamGames = ravenRating?.TeamGames ?? 0,
+            Wins = ravenRating?.Wins ?? 0,
+            Mvp = ravenRating?.Mvp ?? 0,
+
+            Mmr = ravenRating?.Mmr ?? MmrService.startMmr,
+            MmrOverTime = GetTimeRatings(ravenRating?.MmrOverTime),
+
+            CmdrCounts = new(), // ToDo ???
+        };
+    }
+
     public List<int> GetNameToonIds(string name)
     {
         return RatingMemory.Values
@@ -341,24 +360,6 @@ public partial class RatingRepository : IRatingRepository
         return new();
     }
 
-    private static CalcRating GetCalcRating(RavenPlayer ravenPlayer, RavenRating ravenRating)
-    {
-        return new CalcRating()
-        {
-            IsUploader = ravenPlayer.IsUploader,
-            Confidence = ravenRating?.Confidence ?? 0,
-            Consistency = ravenRating?.Consistency ?? 0,
-            Games = ravenRating?.Games ?? 0,
-            TeamGames = ravenRating?.TeamGames ?? 0,
-            Wins = ravenRating?.Wins ?? 0,
-            Mvp = ravenRating?.Mvp ?? 0,
-
-            Mmr = ravenRating?.Mmr ?? MmrService.startMmr,
-            MmrOverTime = GetTimeRatings(ravenRating?.MmrOverTime),
-
-            CmdrCounts = new(), // ToDo ???
-        };
-    }
 
     private static List<TimeRating> GetTimeRatings(string? mmrOverTime)
     {
