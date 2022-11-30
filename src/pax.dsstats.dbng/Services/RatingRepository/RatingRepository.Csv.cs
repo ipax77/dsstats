@@ -9,6 +9,7 @@ public partial class RatingRepository
     {
         StringBuilder sb = new();
         sb.Append($"{nameof(PlayerRating.PlayerRatingId)},");
+        sb.Append($"{nameof(PlayerRating.RatingType)},");
         sb.Append($"{nameof(PlayerRating.Rating)},");
         sb.Append($"{nameof(PlayerRating.Games)},");
         sb.Append($"{nameof(PlayerRating.Wins)},");
@@ -30,6 +31,7 @@ public partial class RatingRepository
             i++;
             var main = ent.Value.CmdrCounts.OrderByDescending(o => o.Value).FirstOrDefault();
             sb.Append($"{i},");
+            sb.Append($"{(int)ratingType},");
             sb.Append($"{ent.Value.Mmr.ToString(CultureInfo.InvariantCulture)},");
             sb.Append($"{ent.Value.Games},");
             sb.Append($"{ent.Value.Wins},");
@@ -38,9 +40,9 @@ public partial class RatingRepository
             sb.Append($"{main.Value},");
             sb.Append($"{(int)main.Key},");
 
-            sb.Append($"\"{GetDbMmrOverTime(ent.Value.MmrOverTime)}\"");
-            sb.Append($"{ent.Value.Consistency},");
-            sb.Append($"{ent.Value.Confidence},");
+            sb.Append($"\"{GetDbMmrOverTime(ent.Value.MmrOverTime)}\",");
+            sb.Append($"{ent.Value.Consistency.ToString(CultureInfo.InvariantCulture)},");
+            sb.Append($"{ent.Value.Confidence.ToString(CultureInfo.InvariantCulture)},");
             sb.Append($"{(ent.Value.IsUploader ? 1 : 0)}");
 
             sb.Append($"{ent.Value.PlayerId}");

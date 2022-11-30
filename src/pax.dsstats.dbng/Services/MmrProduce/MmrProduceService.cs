@@ -136,8 +136,6 @@ public partial class MmrProduceService
         var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
 
         var replays = context.Replays
-            .Include(r => r.ReplayPlayers)
-                .ThenInclude(rp => rp.Player)
             .Where(r => r.Playercount == 6
                 && r.Duration >= 300
                 && r.WinnerTeam > 0)
