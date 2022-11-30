@@ -49,12 +49,37 @@ public partial class MmrProduceService
         logger.LogWarning($"ratings produced in {sw.ElapsedMilliseconds} ms");
     }
 
-    public async Task<DateTime> ProduceRatings(MmrOptions mmrOptions,
-                                         Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
-                                         Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
-                                         IRatingRepository ratingRepository,
-                                         DateTime startTime = default,
-                                         DateTime endTime = default)
+            if (mmrOptions.Continue)
+            {
+                var calcRatings = await ratingRepository.GetCalcRatings(RatingType.Cmdr, replays, mmrIdRatings.Keys.ToList());
+                foreach (var calcRating in calcRatings)
+                {
+                    mmrIdRatings[calcRating.Key] = calcRating.Value;
+                }
+            }
+
+            latestReplay = replays.Last().GameTime;
+
+            players.UnionWith(replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct());
+
+            (mmrIdRatings, maxMmr) = await MmrService.GeneratePlayerRatings(replays,
+                                                                            cmdrMmrDic,
+                                                                            mmrIdRatings,
+                                                                            MmrService.startMmr,
+                                                                            ratingRepository,
+                                                                            mmrOptions);
+
+            var result = await ratingRepository.UpdateRavenPlayers(MmrService.GetRavenPlayers(players.ToList(), mmrIdRatings), RatingType.Cmdr);
+        }
+        CreateCsv(mmrIdRatings, RatingType.Cmdr);
+        return latestReplay;
+    }
+
+    public async Task<DateTime> ProduceStdRatings(MmrOptions mmrOptions,
+                                        Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
+                                        double maxMmr,
+                                        DateTime startTime = default,
+                                        DateTime endTime = default)
     {
         DateTime _startTime = startTime == DateTime.MinValue ? new DateTime(2018, 1, 1) : startTime;
         DateTime _endTime = endTime == DateTime.MinValue ? DateTime.Today.AddDays(2) : endTime;
@@ -90,6 +115,7 @@ public partial class MmrProduceService
             bool b = true;
             //var result = await ratingRepository.UpdateRavenPlayers(players, mmrIdRatings);
         }
+        CreateCsv(mmrIdRatings, RatingType.Std);
         return latestReplay;
     }
 
