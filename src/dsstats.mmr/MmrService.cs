@@ -37,7 +37,7 @@ public static partial class MmrService
         List<MmrChange> mmrChanges = new();
         for (int i = 0; i < replays.Count; i++)
         {
-            RatingType ratingType = RatingRepository.GetRatingType(replays[i]);
+            RatingType ratingType = GetRatingType(replays[i]);
             if (ratingType == RatingType.None)
             {
                 continue;
