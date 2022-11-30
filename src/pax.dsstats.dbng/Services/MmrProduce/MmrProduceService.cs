@@ -25,6 +25,7 @@ public partial class MmrProduceService
     }
 
     public async Task ProduceRatings(MmrOptions mmrOptions,
+                                        List<ReplayDsRDto>? dependentReplays = null,
                                         DateTime startTime = default,
                                         DateTime endTime = default)
     {
@@ -107,12 +108,13 @@ public partial class MmrProduceService
 
             mmrIdRatings = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrOptions, mmrChangesAppendId);
 
-            var result = await ratingRepository.UpdateRavenPlayers(players, mmrIdRatings);
+            bool b = true;
+            //var result = await ratingRepository.UpdateRavenPlayers(players, mmrIdRatings);
         }
         return latestReplay;
     }
 
-    private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetMmrIdRatings(MmrOptions mmrOptions, IRatingRepository ratingRepository)
+    private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetMmrIdRatings(MmrOptions mmrOptions, IRatingRepository ratingRepository, List<ReplayDsRDto>? dependentReplays)
     {
         if (mmrOptions.ReCalc)
         {
@@ -124,9 +126,7 @@ public partial class MmrProduceService
         }
         else
         {
-            throw new NotImplementedException();
-
-            //return await ratingRepository.GetCalcRatings();
+            return await ratingRepository.GetCalcRatings(dependentReplays!);
         }
     }
 
