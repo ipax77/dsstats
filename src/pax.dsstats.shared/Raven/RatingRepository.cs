@@ -45,6 +45,7 @@ public record RavenRatingDto
 public record MmrChange
 {
     public string Hash { get; set; } = null!;
+    public int ReplayId { get; set; }
     public List<PlChange> Changes { get; set; } = new();
 }
 
@@ -57,6 +58,7 @@ public record RavenMmrChange
 public record PlChange
 {
     public int Pos { get; set; }
+    public int ReplayPlayerId { get; set; }
     public double Change { get; set; }
 }
 

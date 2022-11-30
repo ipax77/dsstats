@@ -1,8 +1,4 @@
 ﻿
-using System.ComponentModel.DataAnnotations;
-using System.Globalization;
-using System.Text;
-using dsstats.mmr.Extensions;
 using dsstats.mmr.ProcessData;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
@@ -32,6 +28,7 @@ public static partial class MmrService
                                                                     Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
                                                                     IRatingRepository ratingRepository,
                                                                     MmrOptions mmrOptions,
+                                                                    int mmrChangesAppendId,
                                                                     bool dry = false)
     {
         List<MmrChange> mmrChanges = new();
@@ -52,7 +49,7 @@ public static partial class MmrService
 
             if (!dry && mmrChanges.Count > 100000)
             {
-                await ratingRepository.UpdateMmrChanges(mmrChanges);
+                mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
                 mmrChanges.Clear();
                 mmrChanges = new List<MmrChange>();
             }
@@ -60,7 +57,7 @@ public static partial class MmrService
 
         if (!dry && mmrChanges.Any())
         {
-            await ratingRepository.UpdateMmrChanges(mmrChanges);
+            mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
         }
         return mmrIdRatings;
     }
@@ -100,48 +97,12 @@ public static partial class MmrService
             SetCommandersComboMmr(replayData.LoserTeamData, cmdrMmrDic);
         }
 
-        return new MmrChange() { Hash = replay.ReplayHash, Changes = mmrChanges };
+        return new MmrChange() { Hash = replay.ReplayHash, ReplayId = replay.ReplayId, Changes = mmrChanges };
     }
 
     private static int GetMmrId(PlayerDsRDto player)
     {
         return player.PlayerId; //ToDo
-    }
-
-    public static string? GetDbMmrOverTime(List<TimeRating> timeRatings)
-    {
-        if (!timeRatings.Any())
-        {
-            return null;
-        }
-
-        if (timeRatings.Count == 1)
-        {
-            return $"{Math.Round(timeRatings[0].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{timeRatings[0].Date[2..6]}";
-        }
-
-        StringBuilder sb = new();
-        sb.Append($"{Math.Round(timeRatings[0].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{timeRatings[0].Date[2..6]}");
-
-        if (timeRatings.Count > 2)
-        {
-            string timeStr = timeRatings[0].Date[2..6];
-            for (int i = 1; i < timeRatings.Count - 1; i++)
-            {
-                string currentTimeStr = timeRatings[i].Date[2..6];
-                if (currentTimeStr != timeStr)
-                {
-                    sb.Append('|');
-                    sb.Append($"{Math.Round(timeRatings[i].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{timeRatings[i].Date[2..6]}");
-                }
-                timeStr = currentTimeStr;
-            }
-        }
-
-        sb.Append('|');
-        sb.Append($"{Math.Round(timeRatings.Last().Mmr, 1).ToString(CultureInfo.InvariantCulture)},{timeRatings.Last().Date[2..6]}");
-
-        return sb.ToString();
     }
 
     public static RatingType GetRatingType(ReplayDsRDto replayDsRDto)

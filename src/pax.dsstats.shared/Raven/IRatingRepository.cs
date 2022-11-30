@@ -5,7 +5,7 @@ namespace pax.dsstats.shared;
 
 public interface IRatingRepository
 {
-    Task<UpdateResult> UpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges);
+    Task<int> UpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId);
     Task<UpdateResult> UpdateRavenPlayers(HashSet<PlayerDsRDto> players, Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings);
 
     Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token);
