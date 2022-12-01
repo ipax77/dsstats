@@ -23,8 +23,6 @@ var importConnectionString = builder.Configuration["ServerConfig:ImportConnectio
 // var connectionString = builder.Configuration["ServerConfig:DsstatsProdConnectionString"];
 // var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
 
-//var oldConnectionString = builder.Configuration["ServerConfig:DBConnectionString2"];
-
 builder.Services.AddDbContext<ReplayContext>(options =>
 {
     options.UseMySql(connectionString, serverVersion, p =>
@@ -38,15 +36,6 @@ builder.Services.AddDbContext<ReplayContext>(options =>
     //.EnableSensitiveDataLogging()
     ;
 });
-
-//builder.Services.AddDbContext<sc2dsstatsContext>(options =>
-//{
-//    options.UseMySql(oldConnectionString, serverVersion, p =>
-//    {
-//        p.EnableRetryOnFailure();
-//        p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
-//    });
-//});
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
