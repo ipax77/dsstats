@@ -144,8 +144,49 @@ public partial class RatingRepository : IRatingRepository
                 });
             }
             return dto;
+        } else
+        {
+            using var scope = scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+            var ratings = await context.PlayerRatings
+                .Include(i => i.Player)
+                .Where(x => x.Player != null && x.Player.ToonId == toonId)
+                .ToListAsync(token);
+
+            if (!ratings.Any())
+            {
+                return new RavenPlayerDetailsDto();
+            }
+
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+            RavenPlayerDetailsDto dto = new()
+            {
+                Name = ratings.First().Player.Name,
+                ToonId = ratings.First().Player.ToonId,
+                RegionId = ratings.First().Player.RegionId,
+                IsUploader = ratings.First().IsUploader,
+            };
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+
+            foreach (var rating in ratings)
+            {
+                dto.Ratings.Add(new()
+                {
+                    Type = rating.RatingType,
+                    Games = rating.Games,
+                    Wins = rating.Wins,
+                    Mvp = rating.Mvp,
+                    TeamGames = rating.TeamGames,
+                    Main = rating.Main,
+                    MainPercentage = rating.Games == 0 ? 0 : Math.Round(rating.MainCount * 100.0 / rating.Games, 2),
+                    Mmr = rating.Rating,
+                    MmrOverTime = rating.MmrOverTime,
+                });
+            }
+            return dto;
+
         }
-        return await Task.FromResult(new RavenPlayerDetailsDto());
     }
 
     public async Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token)
