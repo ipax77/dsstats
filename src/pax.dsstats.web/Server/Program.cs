@@ -19,6 +19,7 @@ builder.Host.ConfigureAppConfiguration((context, config) =>
 
 var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 40));
 var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
+var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"];
 // var connectionString = builder.Configuration["ServerConfig:DsstatsProdConnectionString"];
 // var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
 
@@ -74,7 +75,7 @@ builder.Services.AddHostedService<RatingsBackgroundService>();
 
 var app = builder.Build();
 
-Data.MysqlConnectionString = connectionString;
+Data.MysqlConnectionString = importConnectionString;
 using var scope = app.Services.CreateScope();
 
 var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();

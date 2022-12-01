@@ -2,6 +2,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MySqlConnector;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
@@ -13,10 +14,12 @@ public partial class RatingRepository : IRatingRepository
 {
     private static Dictionary<int, RatingMemory> RatingMemory = new();
     private readonly IServiceScopeFactory scopeFactory;
+    private readonly ILogger<RatingRepository> logger;
 
-    public RatingRepository(IServiceScopeFactory scopeFactory)
+    public RatingRepository(IServiceScopeFactory scopeFactory, ILogger<RatingRepository> logger)
     {
         this.scopeFactory = scopeFactory;
+        this.logger = logger;
     }
 
     public async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetCalcRatings(List<ReplayDsRDto> replayDsRDtos)
@@ -146,7 +149,8 @@ public partial class RatingRepository : IRatingRepository
                 });
             }
             return dto;
-        } else
+        }
+        else
         {
             using var scope = scopeFactory.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -193,9 +197,18 @@ public partial class RatingRepository : IRatingRepository
 
     public async Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token)
     {
-        if (Data.IsMaui)
+        if (Data.IsMaui || !RatingMemory.Any())
         {
-            return await GetMauiRatings(request, token);
+            try
+            {
+                return await GetMauiRatings(request, token);
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                logger.LogWarning($"failed getting ratings: {ex.Message}");
+            }
+            return new();
         }
 
         IQueryable<RatingMemory> ratingMemories;
@@ -440,8 +453,8 @@ public partial class RatingRepository : IRatingRepository
         }
         else
         {
-            return await MysqlUpdateMmrChanges(replayPlayerMmrChanges, appendId);
-
+            return WriteMmrChangeCsv(replayPlayerMmrChanges, appendId);
+            // return await MysqlUpdateMmrChanges(replayPlayerMmrChanges, appendId);
         }
     }
 
@@ -453,8 +466,14 @@ public partial class RatingRepository : IRatingRepository
         }
         else
         {
-            return await MyqlUpdateRavenPlayers(players, mmrIdRatings);
+            // ReCalc
+            CreatePlayerRatingCsv(mmrIdRatings);
+            await Csv2MySql();
+
+            // Continue
+            //return await MysqlUpdateRavenPlayers(players, mmrIdRatings);
         }
+        return new();
     }
 
 

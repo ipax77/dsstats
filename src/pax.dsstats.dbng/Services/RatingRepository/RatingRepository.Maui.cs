@@ -11,6 +11,11 @@ public partial class RatingRepository
 {
     private async Task<RatingsResult> GetMauiRatings(RatingsRequest request, CancellationToken token)
     {
+        if (token.IsCancellationRequested || request.Skip < 0 || request.Take < 0)
+        {
+            return new();
+        }
+
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
@@ -35,33 +40,33 @@ public partial class RatingRepository
             {
                 if (order.Ascending)
                 {
-                    playerRatings = playerRatings.OrderBy(o => o.Mvp * 100.0 / o.Games);
+                    playerRatings = playerRatings.OrderBy(o => o.Games == 0 ? 0 : o.Mvp * 100.0 / o.Games);
                 }
                 else
                 {
-                    playerRatings = playerRatings.OrderByDescending(o => o.Mvp * 100.0 / o.Games);
+                    playerRatings = playerRatings.OrderByDescending(o => o.Games == 0 ? 0 : o.Mvp * 100.0 / o.Games);
                 }
             }
             else if (order.Property.EndsWith("Wins"))
             {
                 if (order.Ascending)
                 {
-                    playerRatings = playerRatings.OrderBy(o => o.Wins * 100.0 / o.Games);
+                    playerRatings = playerRatings.OrderBy(o => o.Games == 0 ? 0 : o.Wins * 100.0 / o.Games);
                 }
                 else
                 {
-                    playerRatings = playerRatings.OrderByDescending(o => o.Wins * 100.0 / o.Games);
+                    playerRatings = playerRatings.OrderByDescending(o => o.Games == 0 ? 0 : o.Wins * 100.0 / o.Games);
                 }
             }
             else if (order.Property.EndsWith("MainPercentage"))
             {
                 if (order.Ascending)
                 {
-                    playerRatings = playerRatings.OrderBy(o => o.MainCount * 100.0 / o.Games);
+                    playerRatings = playerRatings.OrderBy(o => o.Games == 0 ? 0 : o.MainCount * 100.0 / o.Games);
                 }
                 else
                 {
-                    playerRatings = playerRatings.OrderByDescending(o => o.MainCount * 100.0 / o.Games);
+                    playerRatings = playerRatings.OrderByDescending(o => o.Games == 0 ? 0 : o.MainCount * 100.0 / o.Games);
                 }
             }
             else if (order.Property.EndsWith("Name"))
@@ -104,9 +109,10 @@ public partial class RatingRepository
             }
         }
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
         return new RatingsResult
         {
-            Count = playerRatings.Count(),
+            Count = await playerRatings.CountAsync(token),
             Players = await playerRatings.Skip(request.Skip).Take(request.Take)
                 .Select(s => new RavenPlayerDto()
                 {
@@ -126,6 +132,7 @@ public partial class RatingRepository
                 })
                 .ToListAsync(token)
         };
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
     }
 
     private async Task<UpdateResult> MauiUpdateRavenPlayers(HashSet<PlayerDsRDto> players, Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)

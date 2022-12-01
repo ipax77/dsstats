@@ -1,11 +1,14 @@
-﻿using pax.dsstats.shared.Raven;
+﻿using MySqlConnector;
+using pax.dsstats.shared;
+using pax.dsstats.shared.Raven;
 using System.Globalization;
 using System.Text;
 
 namespace pax.dsstats.dbng.Services;
 public partial class RatingRepository
 {
-    public static async Task CreatePlayerRatingCsv(Dictionary<int, CalcRating> mmrIdRatings, RatingType ratingType)
+    private static readonly string csvBasePath = "/data/mysqlfiles";
+    public static void CreatePlayerRatingCsv(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
     {
         StringBuilder sb = new();
         sb.Append($"{nameof(PlayerRating.PlayerRatingId)},");
@@ -17,41 +20,45 @@ public partial class RatingRepository
         sb.Append($"{nameof(PlayerRating.TeamGames)},");
         sb.Append($"{nameof(PlayerRating.MainCount)},");
         sb.Append($"{nameof(PlayerRating.Main)},");
-
-        sb.Append($"{nameof(PlayerRating.MmrOverTime)}");
-        sb.Append($"{nameof(PlayerRating.Consistency)}");
-        sb.Append($"{nameof(PlayerRating.Confidence)}");
-        sb.Append($"{nameof(PlayerRating.IsUploader)}");
-
+        sb.Append($"{nameof(PlayerRating.MmrOverTime)},");
+        sb.Append($"{nameof(PlayerRating.Consistency)},");
+        sb.Append($"{nameof(PlayerRating.Confidence)},");
+        sb.Append($"{nameof(PlayerRating.IsUploader)},");
         sb.Append($"{nameof(PlayerRating.PlayerId)}");
         sb.Append(Environment.NewLine);
         int i = 0;
+
+        
+
         foreach (var ent in mmrIdRatings)
         {
-            i++;
-            var main = ent.Value.CmdrCounts.OrderByDescending(o => o.Value).FirstOrDefault();
-            sb.Append($"{i},");
-            sb.Append($"{(int)ratingType},");
-            sb.Append($"{ent.Value.Mmr.ToString(CultureInfo.InvariantCulture)},");
-            sb.Append($"{ent.Value.Games},");
-            sb.Append($"{ent.Value.Wins},");
-            sb.Append($"{ent.Value.Mvp},");
-            sb.Append("0,");
-            sb.Append($"{main.Value},");
-            sb.Append($"{(int)main.Key},");
+            foreach (var entCalc in ent.Value.Values)
+            {
+                i++;
+                var main = entCalc.CmdrCounts.OrderByDescending(o => o.Value).FirstOrDefault();
+                sb.Append($"{i},");
+                sb.Append($"{(int)ent.Key},");
+                sb.Append($"{entCalc.Mmr.ToString(CultureInfo.InvariantCulture)},");
+                sb.Append($"{entCalc.Games},");
+                sb.Append($"{entCalc.Wins},");
+                sb.Append($"{entCalc.Mvp},");
+                sb.Append("0,");
+                sb.Append($"{main.Value},");
+                sb.Append($"{(int)main.Key},");
 
-            sb.Append($"\"{GetDbMmrOverTime(ent.Value.MmrOverTime)}\",");
-            sb.Append($"{ent.Value.Consistency.ToString(CultureInfo.InvariantCulture)},");
-            sb.Append($"{ent.Value.Confidence.ToString(CultureInfo.InvariantCulture)},");
-            sb.Append($"{(ent.Value.IsUploader ? 1 : 0)}");
+                sb.Append($"\"{GetDbMmrOverTime(entCalc.MmrOverTime)}\",");
+                sb.Append($"{entCalc.Consistency.ToString(CultureInfo.InvariantCulture)},");
+                sb.Append($"{entCalc.Confidence.ToString(CultureInfo.InvariantCulture)},");
+                sb.Append($"{(entCalc.IsUploader ? 1 : 0)},");
 
-            sb.Append($"{ent.Value.PlayerId}");
-            sb.Append(Environment.NewLine);
+                sb.Append($"{entCalc.PlayerId}");
+                sb.Append(Environment.NewLine);
+            }
         }
-        File.WriteAllText($"/data/ds/{ratingType}Rating.csv", sb.ToString());
+        File.WriteAllText($"{csvBasePath}/PlayerRatings.csv", sb.ToString());
     }
 
-    public async Task<int> WriteMmrChangeCsv(List<MmrChange> replayPlayerMmrChanges, int appendId)
+    public int WriteMmrChangeCsv(List<MmrChange> replayPlayerMmrChanges, int appendId)
     {
         bool append = appendId > 0;
 
@@ -60,6 +67,7 @@ public partial class RatingRepository
         {
             sb.Append($"{nameof(ReplayPlayerRating.ReplayPlayerRatingId)},");
             sb.Append($"{nameof(ReplayPlayerRating.MmrChange)},");
+            sb.Append($"{nameof(ReplayPlayerRating.Pos)},");
             sb.Append($"{nameof(ReplayPlayerRating.ReplayPlayerId)},");
             sb.Append($"{nameof(ReplayPlayerRating.ReplayId)}");
             sb.Append(Environment.NewLine);
@@ -74,6 +82,7 @@ public partial class RatingRepository
                 i++;
                 sb.Append($"{i},");
                 sb.Append($"{plChange.Change.ToString(CultureInfo.InvariantCulture)},");
+                sb.Append($"{plChange.Pos},");
                 sb.Append($"{plChange.ReplayPlayerId},");
                 sb.Append($"{change.ReplayId}");
                 sb.Append(Environment.NewLine);
@@ -82,11 +91,11 @@ public partial class RatingRepository
 
         if (!append)
         {
-            File.WriteAllText($"/data/ds/MmrChanges.csv", sb.ToString());
+            File.WriteAllText($"{csvBasePath}/ReplayPlayerRatings.csv", sb.ToString());
         }
         else
         {
-            File.AppendAllText($"/data/ds/MmrChanges.csv", sb.ToString());
+            File.AppendAllText($"{csvBasePath}/ReplayPlayerRatings.csv", sb.ToString());
         }
         return i;
     }
@@ -125,5 +134,69 @@ public partial class RatingRepository
         sb.Append($"{Math.Round(timeRatings.Last().Mmr, 1).ToString(CultureInfo.InvariantCulture)},{timeRatings.Last().Date[2..6]}");
 
         return sb.ToString();
+    }
+
+    public async Task Csv2MySql()
+    {
+        await PlayerRatingsFromCsv2MySql();
+        await ReplayPlayerRatingsFromCsv2MySql();
+    }
+
+    private async Task PlayerRatingsFromCsv2MySql()
+    {
+        var csvFile = $"{csvBasePath}/PlayerRatings.csv";
+        if (!File.Exists(csvFile))
+        {
+            return;
+        }
+
+        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        await connection.OpenAsync();
+
+        using var transaction = connection.BeginTransaction();
+        var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+        $@"
+            TRUNCATE TABLE {nameof(ReplayContext.PlayerRatings)};
+            LOAD DATA INFILE '{csvFile}'
+            INTO TABLE {nameof(ReplayContext.PlayerRatings)}
+            COLUMNS TERMINATED BY ','
+            OPTIONALLY ENCLOSED BY '""'
+            ESCAPED BY '""'
+            LINES TERMINATED BY '\n'
+            IGNORE 1 LINES;
+        ";
+        await command.ExecuteNonQueryAsync();
+        await transaction.CommitAsync();
+    }
+
+    private async Task ReplayPlayerRatingsFromCsv2MySql()
+    {
+        var csvFile = $"{csvBasePath}/ReplayPlayerRatings.csv";
+        if (!File.Exists(csvFile))
+        {
+            return;
+        }
+
+        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        await connection.OpenAsync();
+
+        using var transaction = connection.BeginTransaction();
+        var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+        $@"
+            TRUNCATE TABLE {nameof(ReplayContext.ReplayPlayerRatings)};
+            LOAD DATA INFILE '{csvFile}'
+            INTO TABLE {nameof(ReplayContext.ReplayPlayerRatings)}
+            COLUMNS TERMINATED BY ','
+            OPTIONALLY ENCLOSED BY '""'
+            ESCAPED BY '""'
+            LINES TERMINATED BY '\n'
+            IGNORE 1 LINES;
+        ";
+        await command.ExecuteNonQueryAsync();
+        await transaction.CommitAsync();
     }
 }
