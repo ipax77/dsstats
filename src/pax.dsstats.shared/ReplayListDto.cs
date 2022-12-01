@@ -5,6 +5,7 @@ namespace pax.dsstats.shared;
 
 public record ReplayListDto
 {
+    public int ReplayId { get; set; }
     public DateTime GameTime { get; set; }
     public int Duration { get; set; }
     public int WinnerTeam { get; set; }

@@ -84,7 +84,7 @@ public class PlayerRating
     public double Confidence { get; set; }
     public bool IsUploader { get; set; }
     public int PlayerId { get; set; }
-    public virtual Player? PLayer { get; set; }
+    public virtual Player? Player { get; set; }
 }
 
 public class Event
@@ -172,6 +172,7 @@ public class ReplayPlayerRating
 {
     public int ReplayPlayerRatingId { get; set; }
     public double MmrChange { get; set; }
+    public int Pos { get; set; }
     public int ReplayPlayerId { get; set; }
     public virtual ReplayPlayer? ReplayPlayer { get; set; }
     public int ReplayId { get; set; }

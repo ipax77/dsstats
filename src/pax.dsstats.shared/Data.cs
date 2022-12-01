@@ -192,4 +192,5 @@ public static class Data
     }
 
     public static bool IsMaui { get; set; }
+    public static string SqliteConnectionString { get; set; } = string.Empty;
 }

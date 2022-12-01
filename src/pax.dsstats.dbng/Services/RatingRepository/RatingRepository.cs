@@ -1,4 +1,6 @@
 ﻿using dsstats.mmr;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
@@ -8,10 +10,11 @@ namespace pax.dsstats.dbng.Services;
 public partial class RatingRepository : IRatingRepository
 {
     private static Dictionary<int, RatingMemory> RatingMemory = new();
+    private readonly IServiceScopeFactory scopeFactory;
 
-    public RatingRepository()
+    public RatingRepository(IServiceScopeFactory scopeFactory)
     {
-
+        this.scopeFactory = scopeFactory;
     }
 
     public async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetCalcRatings(List<ReplayDsRDto> replayDsRDtos)
@@ -147,6 +150,11 @@ public partial class RatingRepository : IRatingRepository
 
     public async Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token)
     {
+        if (Data.IsMaui)
+        {
+            return await GetMauiRatings(request, token);
+        }
+
         IQueryable<RatingMemory> ratingMemories;
 
         if (request.Type == RatingType.Cmdr)
@@ -304,9 +312,25 @@ public partial class RatingRepository : IRatingRepository
         return await Task.FromResult(dtos);
     }
 
-    public Task<List<PlChange>> GetReplayPlayerMmrChanges(string replayHash, CancellationToken token = default)
+    public async Task<List<PlChange>> GetReplayPlayerMmrChanges(string replayHash, CancellationToken token = default)
     {
-        throw new NotImplementedException();
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var replayId = await context.Replays
+            .Where(x => x.ReplayHash == replayHash)
+            .Select(s => s.ReplayId)
+            .FirstOrDefaultAsync();
+
+        return await context.ReplayPlayerRatings
+            .Where(x => x.ReplayId == replayId)
+            .Select(s => new PlChange()
+            {
+                Pos = s.Pos,
+                ReplayPlayerId = s.ReplayPlayerId,
+                Change = Math.Round(s.MmrChange, 1)
+            })
+            .ToListAsync();
     }
 
     public async Task<string?> GetToonIdName(int toonId)
@@ -341,21 +365,47 @@ public partial class RatingRepository : IRatingRepository
         return new();
     }
 
-    public Task SetReplayListMmrChanges(List<ReplayListDto> replays, CancellationToken token = default)
+    public async Task SetReplayListMmrChanges(List<ReplayListDto> replays, CancellationToken token = default)
     {
-        throw new NotImplementedException();
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        for (int i = 0; i < replays.Count; i++)
+        {
+            if (replays[i].PlayerPos == 0)
+            {
+                continue;
+            }
+
+            if (token.IsCancellationRequested)
+            {
+                return;
+            }
+            replays[i].MmrChange = await context.ReplayPlayerRatings
+                .Where(f => f.ReplayId == replays[i].ReplayId
+                    && f.Pos == replays[i].PlayerPos)
+                .Select(s => Math.Round(s.MmrChange, 1))
+                .FirstOrDefaultAsync(token);
+        }
     }
 
     public async Task<int> UpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId)
     {
-        return await WriteMmrChangeCsv(replayPlayerMmrChanges, appendId);
+        // return await WriteMmrChangeCsv(replayPlayerMmrChanges, appendId);
+
+        if (Data.IsMaui)
+        {
+            return await MauiUpdateMmrChanges(replayPlayerMmrChanges, appendId);
+        }
+
+        return 0;
     }
 
     public async Task<UpdateResult> UpdateRavenPlayers(HashSet<PlayerDsRDto> players, Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
     {
-        foreach (var ent in mmrIdRatings)
+        if (Data.IsMaui)
         {
-            await CreatePlayerRatingCsv(mmrIdRatings[ent.Key], ent.Key);
+            return await MauiUpdateRavenPlayers(players, mmrIdRatings);
         }
         return new();
     }

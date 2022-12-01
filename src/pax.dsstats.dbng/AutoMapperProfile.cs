@@ -20,7 +20,6 @@ namespace pax.dsstats.dbng
             CreateMap<ReplayPlayer, ReplayPlayerDto>(MemberList.Destination);
             CreateMap<ReplayPlayerDto, ReplayPlayer>(MemberList.Source);
 
-
             CreateMap<Spawn, SpawnDto>(MemberList.Destination);
             CreateMap<SpawnDto, Spawn>(MemberList.Source);
 

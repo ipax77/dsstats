@@ -30,8 +30,10 @@ public static class MauiProgram
         builder.Logging.AddDebug();
 #endif
 
+        var sqliteConnectionString = $"Data Source={Path.Combine(FileSystem.Current.AppDataDirectory, DbName)}";
+
         builder.Services.AddDbContext<ReplayContext>(options => options
-            .UseSqlite($"Data Source={Path.Combine(FileSystem.Current.AppDataDirectory, DbName)}", sqlOptions =>
+            .UseSqlite(sqliteConnectionString, sqlOptions =>
             {
                 sqlOptions.MigrationsAssembly("SqliteMigrations");
                 sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
@@ -98,6 +100,7 @@ public static class MauiProgram
         var build =  builder.Build();
 
         Data.IsMaui = true;
+        Data.SqliteConnectionString = sqliteConnectionString;
         var userSettingsService = build.Services.GetRequiredService<UserSettingsService>();
 
         var mmrProduceService = build.Services.GetRequiredService<MmrProduceService>();
