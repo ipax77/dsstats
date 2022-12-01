@@ -23,7 +23,7 @@ public static partial class MmrService
     private const double ownMatchupPercentage = 1.0 / 3;
     private const double matesMatchupsPercentage = (1 - ownMatchupPercentage) / 2;
 
-    public static async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GeneratePlayerRatings(List<ReplayDsRDto> replays,
+    public static async Task<(Dictionary<RatingType, Dictionary<int, CalcRating>>, int)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
                                                                     Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                                                     Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
                                                                     IRatingRepository ratingRepository,
@@ -65,7 +65,7 @@ public static partial class MmrService
         {
             mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
         }
-        return mmrIdRatings;
+        return (mmrIdRatings, mmrChangesAppendId);
     }
 
     private static MmrChange? ProcessReplay(ReplayDsRDto replay,

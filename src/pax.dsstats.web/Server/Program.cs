@@ -1,5 +1,4 @@
 using AutoMapper;
-using dsstats.raven;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
@@ -7,7 +6,6 @@ using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Services;
-using sc2dsstats.db;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,7 +58,7 @@ builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 
-builder.Services.AddScoped<IRatingRepository, dsstats.raven.RatingRepository>();
+builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRepository>();
 builder.Services.AddScoped<ImportService>();
 builder.Services.AddScoped<MmrProduceService>();
 builder.Services.AddScoped<CheatDetectService>();
@@ -76,6 +74,7 @@ builder.Services.AddHostedService<RatingsBackgroundService>();
 
 var app = builder.Build();
 
+Data.MysqlConnectionString = connectionString;
 using var scope = app.Services.CreateScope();
 
 var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
@@ -103,7 +102,7 @@ if (app.Environment.IsDevelopment())
     // cheatDetectService.DetectNoUpload().Wait();
 
     var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
+    mmrProduceService.ProduceRatings(new(reCalc: true)).GetAwaiter().GetResult();
 
     //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
     //var result = statsService.GetCrossTable(new());

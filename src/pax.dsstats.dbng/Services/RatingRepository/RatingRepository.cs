@@ -1,6 +1,8 @@
 ﻿using dsstats.mmr;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using MySqlConnector;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
@@ -432,14 +434,15 @@ public partial class RatingRepository : IRatingRepository
 
     public async Task<int> UpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId)
     {
-        // return await WriteMmrChangeCsv(replayPlayerMmrChanges, appendId);
-
         if (Data.IsMaui)
         {
             return await MauiUpdateMmrChanges(replayPlayerMmrChanges, appendId);
         }
+        else
+        {
+            return await MysqlUpdateMmrChanges(replayPlayerMmrChanges, appendId);
 
-        return 0;
+        }
     }
 
     public async Task<UpdateResult> UpdateRavenPlayers(HashSet<PlayerDsRDto> players, Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
@@ -448,7 +451,10 @@ public partial class RatingRepository : IRatingRepository
         {
             return await MauiUpdateRavenPlayers(players, mmrIdRatings);
         }
-        return new();
+        else
+        {
+            return await MyqlUpdateRavenPlayers(players, mmrIdRatings);
+        }
     }
 
 

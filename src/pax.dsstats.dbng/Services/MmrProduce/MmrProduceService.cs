@@ -106,7 +106,7 @@ public partial class MmrProduceService
 
             players.UnionWith(replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct());
 
-            mmrIdRatings = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrOptions, mmrChangesAppendId);
+            (mmrIdRatings, mmrChangesAppendId) = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrOptions, mmrChangesAppendId);
         }
         var result = await ratingRepository.UpdateRavenPlayers(players, mmrIdRatings);
         return latestReplay;
@@ -135,10 +135,13 @@ public partial class MmrProduceService
 
         var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
 
+        List<GameMode> gameModes = new() { GameMode.Commanders, GameMode.Standard, GameMode.CommandersHeroic };
+
         var replays = context.Replays
             .Where(r => r.Playercount == 6
                 && r.Duration >= 300
-                && r.WinnerTeam > 0)
+                && r.WinnerTeam > 0
+                && gameModes.Contains(r.GameMode))
             .AsNoTracking();
 
         if (startTime != DateTime.MinValue)

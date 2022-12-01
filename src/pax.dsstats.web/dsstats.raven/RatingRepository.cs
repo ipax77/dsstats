@@ -272,4 +272,9 @@ public partial class RatingRepository : IRatingRepository
     {
         return new();
     }
+
+    public Task<int> UpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId)
+    {
+        throw new NotImplementedException();
+    }
 }
