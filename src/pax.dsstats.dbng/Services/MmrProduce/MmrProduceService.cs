@@ -15,7 +15,7 @@ public partial class MmrProduceService
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
     private readonly ILogger<MmrProduceService> logger;
-    private static Dictionary<RatingType, DateTime> latestReplay = new();
+    private static DateTime latestReplay;
 
     public MmrProduceService(IServiceProvider serviceProvider, IMapper mapper, ILogger<MmrProduceService> logger)
     {
@@ -24,34 +24,63 @@ public partial class MmrProduceService
         this.logger = logger;
     }
 
-    public async Task ProduceRatings(MmrOptions mmrOptions, DateTime startTime = default, DateTime endTime = default)
+    public async Task ProduceRatings(MmrOptions mmrOptions,
+                                        List<ReplayDsRDto>? dependentReplays = null,
+                                        DateTime startTime = default,
+                                        DateTime endTime = default)
     {
         Stopwatch sw = Stopwatch.StartNew();
-        var cmdrMmrDic = await GetCommanderMmrsDic(true);
-        double maxMmr = MmrService.startMmr;
 
-        latestReplay[RatingType.Cmdr] = await ProduceStdRatings(mmrOptions, cmdrMmrDic, maxMmr, startTime, endTime);
-        latestReplay[RatingType.Std] = await ProduceCmdrRatings(mmrOptions, cmdrMmrDic, maxMmr, startTime, endTime);
+        using var scope = serviceProvider.CreateScope();
+        var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
+
+        var cmdrMmrDic = await GetCommanderMmrsDic(true);
+
+        Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings = await GetMmrIdRatings(mmrOptions, ratingRepository, dependentReplays);
+        int mmrChangesAppendId = await GetMmrChangesAppendId(mmrOptions);
+
+        if (mmrOptions.ReCalc)
+        {
+            latestReplay = startTime;
+        }
+
+        latestReplay = await ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrChangesAppendId, latestReplay, endTime);
 
         await SaveCommanderMmrsDic(cmdrMmrDic);
         sw.Stop();
         logger.LogWarning($"ratings produced in {sw.ElapsedMilliseconds} ms");
     }
 
-    public async Task<DateTime> ProduceCmdrRatings(MmrOptions mmrOptions,
+    private async Task<int> GetMmrChangesAppendId(MmrOptions mmrOptions)
+    {
+        if (mmrOptions.ReCalc)
+        {
+            return 0;
+        }
+        else
+        {
+            using var scope = serviceProvider.CreateScope();
+            using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+            return await context.ReplayPlayerRatings
+                .OrderByDescending(o => o.ReplayPlayerRatingId)
+                .Select(s => s.ReplayPlayerRatingId)
+                .FirstOrDefaultAsync();
+        }
+    }
+
+    public async Task<DateTime> ProduceRatings(MmrOptions mmrOptions,
                                          Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
-                                         double maxMmr,
+                                         Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
+                                         IRatingRepository ratingRepository,
+                                         int mmrChangesAppendId,
                                          DateTime startTime = default,
                                          DateTime endTime = default)
     {
         DateTime _startTime = startTime == DateTime.MinValue ? new DateTime(2018, 1, 1) : startTime;
         DateTime _endTime = endTime == DateTime.MinValue ? DateTime.Today.AddDays(2) : endTime;
 
-        Dictionary<int, CalcRating> mmrIdRatings = new();
         HashSet<PlayerDsRDto> players = new();
-
-        using var scope = serviceProvider.CreateScope();
-        var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
 
         DateTime latestReplay = DateTime.MinValue;
 
@@ -64,7 +93,7 @@ public partial class MmrProduceService
                 chunkEndTime = _endTime;
             }
 
-            var replays = await GetCmdrReplayDsRDtos(_startTime, chunkEndTime);
+            var replays = await GetReplayDsRDtos(_startTime, chunkEndTime);
 
             _startTime = _startTime.AddYears(1);
 
@@ -73,143 +102,52 @@ public partial class MmrProduceService
                 continue;
             }
 
-            if (mmrOptions.Continue)
-            {
-                var calcRatings = await ratingRepository.GetCalcRatings(RatingType.Cmdr, replays, mmrIdRatings.Keys.ToList());
-                foreach (var calcRating in calcRatings)
-                {
-                    mmrIdRatings[calcRating.Key] = calcRating.Value;
-                }
-            }
-
             latestReplay = replays.Last().GameTime;
 
             players.UnionWith(replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct());
 
-            (mmrIdRatings, maxMmr) = await MmrService.GeneratePlayerRatings(replays,
-                                                                            cmdrMmrDic,
-                                                                            mmrIdRatings,
-                                                                            MmrService.startMmr,
-                                                                            ratingRepository,
-                                                                            mmrOptions);
-
-            var result = await ratingRepository.UpdateRavenPlayers(MmrService.GetRavenPlayers(players.ToList(), mmrIdRatings), RatingType.Cmdr);
+            (mmrIdRatings, mmrChangesAppendId) = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrOptions, mmrChangesAppendId);
+            //break; // DEBUG
         }
+        var result = await ratingRepository.UpdateRavenPlayers(players, mmrIdRatings);
         return latestReplay;
     }
 
-    public async Task<DateTime> ProduceStdRatings(MmrOptions mmrOptions,
-                                        Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
-                                        double maxMmr,
-                                        DateTime startTime = default,
-                                        DateTime endTime = default)
+    private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetMmrIdRatings(MmrOptions mmrOptions, IRatingRepository ratingRepository, List<ReplayDsRDto>? dependentReplays)
     {
-        DateTime _startTime = startTime == DateTime.MinValue ? new DateTime(2018, 1, 1) : startTime;
-        DateTime _endTime = endTime == DateTime.MinValue ? DateTime.Today.AddDays(2) : endTime;
-
-        Dictionary<int, CalcRating> mmrIdRatings = new();
-        HashSet<PlayerDsRDto> players = new();
-
-        using var scope = serviceProvider.CreateScope();
-        var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
-
-        DateTime latestReplay = DateTime.MinValue;
-
-        while (_startTime < _endTime)
+        if (mmrOptions.ReCalc)
         {
-            var chunkEndTime = _startTime.AddYears(1);
-
-            if (chunkEndTime > _endTime)
+            return new Dictionary<RatingType, Dictionary<int, CalcRating>>()
             {
-                chunkEndTime = _endTime;
-            }
-
-            var replays = await GetStdReplayDsRDtos(_startTime, chunkEndTime);
-
-            _startTime = _startTime.AddYears(1);
-
-            if (!replays.Any())
-            {
-                continue;
-            }
-
-            if (mmrOptions.Continue)
-            {
-                var calcRatings = await ratingRepository.GetCalcRatings(RatingType.Cmdr, replays, mmrIdRatings.Keys.ToList());
-                foreach (var calcRating in calcRatings)
-                {
-                    mmrIdRatings[calcRating.Key] = calcRating.Value;
-                }
-            }
-
-            latestReplay = replays.Last().GameTime;
-
-            players.UnionWith(replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct());
-
-            (mmrIdRatings, maxMmr) = await MmrService.GeneratePlayerRatings(replays,
-                                                                            cmdrMmrDic,
-                                                                            mmrIdRatings,
-                                                                            MmrService.startMmr,
-                                                                            ratingRepository,
-                                                                            mmrOptions);
-
-            var result = await ratingRepository.UpdateRavenPlayers(MmrService.GetRavenPlayers(players.ToList(), mmrIdRatings), RatingType.Std);
+                { RatingType.Cmdr, new() },
+                { RatingType.Std, new() },
+            };
         }
-        return latestReplay;
+        else
+        {
+            return await ratingRepository.GetCalcRatings(dependentReplays!);
+        }
     }
 
-    private async Task<List<ReplayDsRDto>> GetStdReplayDsRDtos(DateTime startTime, DateTime endTime)
+    private async Task<List<ReplayDsRDto>> GetReplayDsRDtos(DateTime startTime, DateTime endTime)
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
 
+        List<GameMode> gameModes = new() { GameMode.Commanders, GameMode.Standard, GameMode.CommandersHeroic };
+
         var replays = context.Replays
-            .Include(r => r.ReplayPlayers)
-                .ThenInclude(rp => rp.Player)
             .Where(r => r.Playercount == 6
                 && r.Duration >= 300
                 && r.WinnerTeam > 0
-                && r.GameMode == GameMode.Standard)
+                && gameModes.Contains(r.GameMode))
             .AsNoTracking();
 
         if (startTime != DateTime.MinValue)
         {
-            replays = replays.Where(x => x.GameTime >= startTime);
-        }
-
-        if (endTime != DateTime.MinValue && endTime < DateTime.Today)
-        {
-            replays = replays.Where(x => x.GameTime < endTime);
-        }
-
-        return await replays
-            .OrderBy(o => o.GameTime)
-                .ThenBy(o => o.ReplayId)
-            .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
-            .ToListAsync();
-    }
-
-    private async Task<List<ReplayDsRDto>> GetCmdrReplayDsRDtos(DateTime startTime, DateTime endTime)
-    {
-        using var scope = serviceProvider.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
-
-        var replays = context.Replays
-            .Include(r => r.ReplayPlayers)
-                .ThenInclude(rp => rp.Player)
-            .Where(r => r.Playercount == 6
-                && r.Duration >= 300
-                && r.WinnerTeam > 0
-                && (r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic))
-            .AsNoTracking();
-
-        if (startTime != DateTime.MinValue)
-        {
-            replays = replays.Where(x => x.GameTime >= startTime);
+            replays = replays.Where(x => x.GameTime > startTime);
         }
 
         if (endTime != DateTime.MinValue && endTime < DateTime.Today)
@@ -266,8 +204,7 @@ public partial class MmrProduceService
 
         var cmdrMmrs = await context.CommanderMmrs
             .AsNoTracking()
-            .ToListAsync()
-        ;
+            .ToListAsync();
 
         if (!cmdrMmrs.Any())
         {

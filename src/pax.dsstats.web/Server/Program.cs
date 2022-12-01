@@ -1,5 +1,4 @@
 using AutoMapper;
-using dsstats.raven;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
@@ -7,7 +6,6 @@ using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Services;
-using sc2dsstats.db;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +19,7 @@ builder.Host.ConfigureAppConfiguration((context, config) =>
 
 var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 40));
 var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
+var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"];
 // var connectionString = builder.Configuration["ServerConfig:DsstatsProdConnectionString"];
 // var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
 
@@ -60,7 +59,7 @@ builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 
-builder.Services.AddScoped<IRatingRepository, RatingRepository>();
+builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRepository>();
 builder.Services.AddScoped<ImportService>();
 builder.Services.AddScoped<MmrProduceService>();
 builder.Services.AddScoped<CheatDetectService>();
@@ -76,6 +75,7 @@ builder.Services.AddHostedService<RatingsBackgroundService>();
 
 var app = builder.Build();
 
+Data.MysqlConnectionString = importConnectionString;
 using var scope = app.Services.CreateScope();
 
 var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
@@ -89,7 +89,7 @@ context.Database.Migrate();
 if (app.Environment.IsProduction())
 {
     var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
+    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
 
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
@@ -102,8 +102,8 @@ if (app.Environment.IsDevelopment())
     // var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
     // cheatDetectService.DetectNoUpload().Wait();
 
-    //var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    //mmrProduceService.ProduceRatings(new()).GetAwaiter().GetResult();
+    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    mmrProduceService.ProduceRatings(new(reCalc: true)).GetAwaiter().GetResult();
 
     //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
     //var result = statsService.GetCrossTable(new());

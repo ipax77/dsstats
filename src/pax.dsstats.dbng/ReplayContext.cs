@@ -7,8 +7,10 @@ public class ReplayContext : DbContext
     public virtual DbSet<Uploader> Uploaders { get; set; } = null!;
     public virtual DbSet<BattleNetInfo> BattleNetInfos { get; set; } = null!;
     public virtual DbSet<Player> Players { get; set; } = null!;
+    public virtual DbSet<PlayerRating> PlayerRatings { get; set; } = null!;
     public virtual DbSet<Replay> Replays { get; set; } = null!;
     public virtual DbSet<ReplayPlayer> ReplayPlayers { get; set; } = null!;
+    public virtual DbSet<ReplayPlayerRating> ReplayPlayerRatings { get; set; } = null!;
     public virtual DbSet<PlayerUpgrade> PlayerUpgrades { get; set; } = null!;
     public virtual DbSet<Spawn> Spawns { get; set; } = null!;
     public virtual DbSet<SpawnUnit> SpawnUnits { get; set; } = null!;

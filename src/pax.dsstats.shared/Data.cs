@@ -190,4 +190,8 @@ public static class Data
             _ => ""
         };
     }
+
+    public static bool IsMaui { get; set; }
+    public static string SqliteConnectionString { get; set; } = string.Empty;
+    public static string MysqlConnectionString { get; set; } = string.Empty;
 }

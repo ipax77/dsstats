@@ -5,8 +5,8 @@ namespace pax.dsstats.shared;
 
 public interface IRatingRepository
 {
-    Task<UpdateResult> UpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges);
-    Task<UpdateResult> UpdateRavenPlayers(Dictionary<RavenPlayer, RavenRating> ravenPlayerRatings, RatingType ratingType);
+    Task<int> UpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId);
+    Task<UpdateResult> UpdateRavenPlayers(HashSet<PlayerDsRDto> players, Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings);
 
     Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token);
     Task<RavenPlayerDetailsDto> GetPlayerDetails(int toonId, CancellationToken token = default);
@@ -17,5 +17,5 @@ public interface IRatingRepository
     List<RequestNames> GetTopPlayers(RatingType ratingType, int minGames);
     Task<string?> GetToonIdName(int toonId);
     List<int> GetNameToonIds(string name);
-    Task<Dictionary<int, CalcRating>> GetCalcRatings(RatingType ratingType, List<ReplayDsRDto> replays, List<int> toonIds);
+    Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetCalcRatings(List<ReplayDsRDto> replayDsRDtos);
 }

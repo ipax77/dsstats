@@ -1,3 +1,5 @@
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Blazored.Toast.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -15,8 +17,9 @@ namespace sc2dsstats.maui.Services;
 
 public class DecodeService : IDisposable
 {
-    public DecodeService(ILogger<DecodeService> logger, IServiceScopeFactory serviceScopeFactory)
+    public DecodeService(ILogger<DecodeService> logger, IMapper mapper, IServiceScopeFactory serviceScopeFactory)
     {
+        this.mapper = mapper;
         this.logger = logger;
         this.serviceScopeFactory = serviceScopeFactory;
 
@@ -50,9 +53,11 @@ public class DecodeService : IDisposable
     public int NewReplays { get; private set; }
     public int DbReplays { get; private set; }
 
+    private readonly IMapper mapper;
     private readonly ILogger<DecodeService> logger;
     private readonly IServiceScopeFactory serviceScopeFactory;
     private readonly ReplayDecoderOptions decoderOptions;
+
     private ReplayDecoder? decoder;
     public WatchService? WatchService { get; private set; }
 
@@ -62,7 +67,6 @@ public class DecodeService : IDisposable
     private HashSet<Unit> Units = new();
     private HashSet<Upgrade> Upgrades = new();
     private List<Replay> newReplays = new();
-    private bool continueMmrCalc;
 
     private int decodeCounter;
     private int dbCounter;
@@ -112,7 +116,6 @@ public class DecodeService : IDisposable
         errorReplays.Clear();
         errorCounter = 0;
         newReplays.Clear();
-        continueMmrCalc = false;
 
         var replays = await ScanForNewReplays(true);
 
@@ -245,7 +248,8 @@ public class DecodeService : IDisposable
             //    await mmrService.ReCalculateWithDictionary();
             //}
 
-            await mmrProduceService.ProduceRatings(new());
+            var newReplaysDsRDto = newReplays.AsQueryable().ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider).ToList();
+            await mmrProduceService.ProduceRatings(new MmrOptions(false), newReplaysDsRDto);
 
             notifyCts.Cancel();
 
@@ -404,10 +408,7 @@ public class DecodeService : IDisposable
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
             (Units, Upgrades, var replay) = await replayRepository.SaveReplay(replayDto, Units, Upgrades, null);
 
-            if (continueMmrCalc)
-            {
-                newReplays.Add(replay);
-            }
+            newReplays.Add(replay);
 
             Interlocked.Increment(ref dbCounter);
         }
