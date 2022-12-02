@@ -27,7 +27,7 @@
 
 @code {
     [Parameter]
-    public EventCallback<RavenPlayerDto> OnPlayerSelected { get; set; }
+    public EventCallback<PlayerRatingPlayerDto> OnPlayerSelected { get; set; }
 
     private bool isShowing;
 
@@ -45,7 +45,7 @@
         StateHasChanged();
     }
 
-    public void PlayerSelected(RavenPlayerDto playerRatingDto)
+    public void PlayerSelected(PlayerRatingPlayerDto playerRatingDto)
     {
         OnPlayerSelected.InvokeAsync(playerRatingDto);
         Hide();

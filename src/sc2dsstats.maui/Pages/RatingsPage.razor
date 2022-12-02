@@ -46,7 +46,7 @@
         {
             new()
             {
-                Property = "Rating.Mmr",
+                Property = "Rating",
                 Ascending = false
             },
 
@@ -76,7 +76,7 @@
 
         await Task.Run(async () =>
         {
-            await mmrProduceService.ProduceRatings(new()).ConfigureAwait(false);
+            await mmrProduceService.ProduceRatings(new(true)).ConfigureAwait(false);
         });
 
         isLoading = false;

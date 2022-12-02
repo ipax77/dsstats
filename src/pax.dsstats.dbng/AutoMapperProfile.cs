@@ -17,9 +17,10 @@ namespace pax.dsstats.dbng
             CreateMap<Replay, ReplayDto>(MemberList.Destination);
             CreateMap<ReplayDto, Replay>(MemberList.Source);
 
-            CreateMap<ReplayPlayer, ReplayPlayerDto>(MemberList.Destination);
-            CreateMap<ReplayPlayerDto, ReplayPlayer>(MemberList.Source);
-
+            CreateMap<ReplayPlayer, ReplayPlayerDto>(MemberList.Destination)
+                .ForMember(x => x.MmrChange, opt => opt.Ignore());
+            CreateMap<ReplayPlayerDto, ReplayPlayer>(MemberList.Source)
+                .ForSourceMember(x => x.MmrChange, opt => opt.DoNotValidate());
 
             CreateMap<Spawn, SpawnDto>(MemberList.Destination);
             CreateMap<SpawnDto, Spawn>(MemberList.Source);
@@ -43,6 +44,7 @@ namespace pax.dsstats.dbng
             CreateMap<Event, EventDto>(MemberList.Destination);
 
             CreateMap<Replay, ReplayListDto>(MemberList.Destination)
+                .ForMember(x => x.Commander, opt => opt.Ignore())
                 .ForMember(x => x.MmrChange, opt => opt.Ignore())
                 .ForMember(x => x.Cmdrs1, opt => opt.Ignore())
                 .ForMember(x => x.Cmdrs2, opt => opt.Ignore());
@@ -59,6 +61,9 @@ namespace pax.dsstats.dbng
             CreateMap<BattleNetInfoDto, BattleNetInfo>(MemberList.Source)
                 .ForSourceMember(x => x.PlayerUploadDtos, opt => opt.DoNotValidate());
             CreateMap<PlayerUploadDto, Player>(MemberList.Source);
+
+            CreateMap<PlayerRating, PlayerRatingDto>(MemberList.Destination);
+            CreateMap<Player, PlayerRatingPlayerDto>(MemberList.Destination);
         }
     }
 }

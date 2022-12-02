@@ -1,5 +1,8 @@
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Blazored.Toast.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
@@ -15,8 +18,9 @@ namespace sc2dsstats.maui.Services;
 
 public class DecodeService : IDisposable
 {
-    public DecodeService(ILogger<DecodeService> logger, IServiceScopeFactory serviceScopeFactory)
+    public DecodeService(ILogger<DecodeService> logger, IMapper mapper, IServiceScopeFactory serviceScopeFactory)
     {
+        this.mapper = mapper;
         this.logger = logger;
         this.serviceScopeFactory = serviceScopeFactory;
 
@@ -50,9 +54,11 @@ public class DecodeService : IDisposable
     public int NewReplays { get; private set; }
     public int DbReplays { get; private set; }
 
+    private readonly IMapper mapper;
     private readonly ILogger<DecodeService> logger;
     private readonly IServiceScopeFactory serviceScopeFactory;
     private readonly ReplayDecoderOptions decoderOptions;
+
     private ReplayDecoder? decoder;
     public WatchService? WatchService { get; private set; }
 
@@ -62,13 +68,13 @@ public class DecodeService : IDisposable
     private HashSet<Unit> Units = new();
     private HashSet<Upgrade> Upgrades = new();
     private List<Replay> newReplays = new();
-    private bool continueMmrCalc;
 
     private int decodeCounter;
     private int dbCounter;
     private int total;
     private int errorCounter;
     private DateTime startTime = DateTime.UtcNow;
+    private bool potentialMmrContinue;
 
     private object lockobject = new object();
 
@@ -112,7 +118,8 @@ public class DecodeService : IDisposable
         errorReplays.Clear();
         errorCounter = 0;
         newReplays.Clear();
-        continueMmrCalc = false;
+        potentialMmrContinue = false;
+        DateTime latestReplay = DateTime.MinValue;
 
         var replays = await ScanForNewReplays(true);
 
@@ -134,17 +141,15 @@ public class DecodeService : IDisposable
         total = replays.Count;
         startTime = DateTime.UtcNow;
 
+        if (total <= 100)
+        {
+            potentialMmrContinue = true;
+            latestReplay = await GetLatestReplayTime();
+        }
+
         decodeCts = new();
         notifyCts = new();
         _ = Notify();
-
-        using var scope = serviceScopeFactory.CreateScope();
-        var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-
-        //if (mmrService.ToonIdRatings.Any() && total <= 10)
-        //{
-        //    continueMmrCalc = true;
-        //}
 
         Stopwatch sw = Stopwatch.StartNew();
 
@@ -202,6 +207,7 @@ public class DecodeService : IDisposable
             // report missing replays
             if (dbCounter != replays.Count - errorCounter)
             {
+                using var scope = serviceScopeFactory.CreateScope();
                 var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
 
                 var dbPaths = await replayRepository.GetReplayPaths();
@@ -230,22 +236,22 @@ public class DecodeService : IDisposable
 
             await ScanForNewReplays();
 
+            using var scope = serviceScopeFactory.CreateScope();
+            var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+
             var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
             statsService.ResetStatsCache();
 
-            //if (continueMmrCalc && newReplays.Any())
+            //if (potentialMmrContinue && newReplays.Any())
             //{
-            //    var userSettingsService = scope.ServiceProvider.GetRequiredService<UserSettingsService>();
-            //    var mauiPlayers = userSettingsService.GetDefaultPlayers();
-
-            //    await mmrService.ContinueCalculateWithDictionary(newReplays, mauiPlayers);
+            //    var newReplaysDsRDto = newReplays.AsQueryable().ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider).ToList();
+            //    await mmrProduceService.ProduceRatings(new(reCalc: false), latestReplay, newReplaysDsRDto);
+            //    newReplays = new();
             //}
             //else
             //{
-            //    await mmrService.ReCalculateWithDictionary();
+                await mmrProduceService.ProduceRatings(new(reCalc: true));
             //}
-
-            await mmrProduceService.ProduceRatings(new());
 
             notifyCts.Cancel();
 
@@ -321,6 +327,17 @@ public class DecodeService : IDisposable
         OnScanStateChanged(new() { NewReplays = NewReplays, DbReplays = DbReplays });
 
         return newReplays;
+    }
+
+    private async Task<DateTime> GetLatestReplayTime()
+    {
+        using var scope = serviceScopeFactory.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return await context.Replays
+            .OrderByDescending(o => o.GameTime)
+            .Select(s => s.GameTime)
+            .FirstOrDefaultAsync();
     }
 
     private ICollection<string> GetHdReplayPaths(bool ordered)
@@ -404,7 +421,7 @@ public class DecodeService : IDisposable
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
             (Units, Upgrades, var replay) = await replayRepository.SaveReplay(replayDto, Units, Upgrades, null);
 
-            if (continueMmrCalc)
+            if (potentialMmrContinue)
             {
                 newReplays.Add(replay);
             }

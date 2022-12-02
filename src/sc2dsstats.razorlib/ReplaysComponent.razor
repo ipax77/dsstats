@@ -11,7 +11,7 @@
 
 <div class="@(replayDto == null ? "" : "visually-hidden")">
     <CascadingValue Value="replaysRequest">
-        <ReplaysRequestComponent OnFieldChanged="Reload" WithMmrChange="withMmrChange"></ReplaysRequestComponent>
+        <ReplaysRequestComponent OnFieldChanged="Reload" WithMmrChange="true"></ReplaysRequestComponent>
     </CascadingValue>
     <div class="d-flex" style="max-width: 850px;">
         <p class="ms-auto">#@ReplaysCount</p>
@@ -87,7 +87,10 @@
                                 @if (replaysRequest.WithMmrChange)
                                 {
                                     <td>
-                                        <span class="oi @(replay.MmrChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success") d-block">@replay.MmrChange.ToString("N1", CultureInfo.InvariantCulture)</span>
+                                        <div class="d-flex justify-content-between" style="width: 75px;">
+                                            <div><span class="oi @(replay.MmrChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success") d-block">@replay.MmrChange.ToString("N1", CultureInfo.InvariantCulture)</span></div>
+                                            <div class="preload-@(replay.Commander.ToString().ToLower())" style="width: 30px; height: 30px;"></div>
+                                        </div>
                                     </td>
                                 }
                                 <td>@replay.GameTime.ToString(@"yyyy-MM-dd")</td>
@@ -114,7 +117,7 @@
                             </tr>
                         </ItemContent>
                         <Placeholder>
-                            <tr height="47px"><td>Loading ...</td></tr>
+                            <tr height="47px"><td colspan="5">Loading ...</td></tr>
                         </Placeholder>
                     </Virtualize>
                 }

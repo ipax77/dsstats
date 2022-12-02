@@ -69,23 +69,23 @@
                 <CascadingValue Value="ratingsRequest.Orders">
                     <tr>
                         <th>Select</th>
-                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Name"))">
-                            <SortArrow Property="Name">
+                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Player.Name"))">
+                            <SortArrow Property="Player.Name">
                                 Name
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Rating.Games"))">
-                            <SortArrow Property="Rating.Games">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Games"))">
+                            <SortArrow Property="Games">
                                 Games
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "Rating.Mmr"))">
-                            <SortArrow Property="Rating.Mmr">
+                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "Rating"))">
+                            <SortArrow Property="Rating">
                                 Rating
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Rating.Wins"))">
-                            <SortArrow Property="Rating.Wins">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Wins"))">
+                            <SortArrow Property="Wins">
                                 Winrate
                             </SortArrow>
                         </th>
@@ -95,16 +95,16 @@
             <tbody>
                 @if (ratingsCount > 0)
                 {
-                    <Virtualize @ref="virtualize" Context="player" ItemsProvider="LoadRatings">
+                    <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings">
                         <ItemContent>
                             <tr>
                                 <td>
-                                    <button type="button" class="btn btn-sm btn-primary" @onclick="e => OnPlayersSelected.InvokeAsync(player)">Select</button>
+                                    <button type="button" class="btn btn-sm btn-primary" @onclick="e => OnPlayersSelected.InvokeAsync(rating.Player)">Select</button>
                                 </td>
-                                <td><span class="text-truncate text-info" style="display: block; width: 150px;">@player.Name</span></td>
-                                <td class="border-start">@player.Rating.Games</td>
-                                <td class="text-warning">@Math.Round(player.Rating.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
-                                <td>@HelperService.GetPercentageString(player.Rating.Wins, player.Rating.Games)</td>
+                                <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Player.Name</span></td>
+                                <td class="border-start">@rating.Games</td>
+                                <td class="text-warning">@Math.Round(rating.Rating, 2).ToString(CultureInfo.InvariantCulture)</td>
+                                <td>@HelperService.GetPercentageString(rating.Wins, rating.Games)</td>
                             </tr>
                         </ItemContent>
                         <Placeholder>
@@ -119,7 +119,7 @@
 
 @code {
     [Parameter]
-    public EventCallback<RavenPlayerDto> OnPlayersSelected { get; set; }
+    public EventCallback<PlayerRatingPlayerDto> OnPlayersSelected { get; set; }
 
     private RatingsRequest ratingsRequest = new()
         {
@@ -130,18 +130,20 @@
         {
             new()
             {
-                Property = "Rating.Mmr",
+                Property = "Rating",
                 Ascending = false
             },
         }
         };
 
     private EditContext editContext = null!;
-    private int ratingsCount = 100;
-    private Virtualize<RavenPlayerDto>? virtualize;
+    private int ratingsCount;
+    private Virtualize<PlayerRatingDto>? virtualize;
+    private CancellationTokenSource cts = new();
 
     protected override void OnInitialized()
     {
+        _ = SetRatingsCount();
         editContext = new EditContext(ratingsRequest);
         editContext.OnFieldChanged += FieldChanged;
         base.OnInitialized();
@@ -152,10 +154,15 @@
         _ = Reload();
     }
 
+    private async Task SetRatingsCount()
+    {
+        ratingsCount = await dataService.GetRatingsCount(ratingsRequest, cts.Token);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
     public async Task Reload()
     {
-        ratingsCount = 100;
-        await InvokeAsync(() => StateHasChanged());
+        await SetRatingsCount();
         if (virtualize != null)
         {
             await virtualize.RefreshDataAsync();
@@ -163,15 +170,19 @@
         await InvokeAsync(() => StateHasChanged());
     }
 
-    private async ValueTask<ItemsProviderResult<RavenPlayerDto>> LoadRatings(ItemsProviderRequest request)
+    private async ValueTask<ItemsProviderResult<PlayerRatingDto>> LoadRatings(ItemsProviderRequest request)
     {
         var numRatings = Math.Min(request.Count, ratingsCount - request.StartIndex);
         ratingsRequest.Skip = request.StartIndex;
         ratingsRequest.Take = numRatings;
-        var result = await dataService.GetRatings(ratingsRequest, request.CancellationToken);
-        ratingsCount = result.Count;
 
-        return new ItemsProviderResult<RavenPlayerDto>(result.Players, ratingsCount);
+        if (ratingsRequest.Skip < 0 || ratingsRequest.Take < 0)
+        {
+            return new ItemsProviderResult<PlayerRatingDto>();
+        }
+        var result = await dataService.GetRatings(ratingsRequest, request.CancellationToken);
+
+        return new ItemsProviderResult<PlayerRatingDto>(result.Players, ratingsCount);
     }
 
     private async Task SortList(MouseEventArgs e, string property)
@@ -211,6 +222,8 @@
 
     public void Dispose()
     {
+        cts.Cancel();
+        cts.Dispose();
         editContext.OnFieldChanged -= FieldChanged;
     }
 }

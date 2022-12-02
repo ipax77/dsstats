@@ -138,6 +138,60 @@ namespace SqliteMigrations.Migrations
                     b.ToTable("Players");
                 });
 
+            modelBuilder.Entity("pax.dsstats.dbng.PlayerRating", b =>
+                {
+                    b.Property<int>("PlayerRatingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("Confidence")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("Consistency")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("Games")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsUploader")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Main")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MainCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("MmrOverTime")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Mvp")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PlayerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("Rating")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("RatingType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TeamGames")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Wins")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("PlayerRatingId");
+
+                    b.HasIndex("PlayerId");
+
+                    b.ToTable("PlayerRatings");
+                });
+
             modelBuilder.Entity("pax.dsstats.dbng.PlayerUpgrade", b =>
                 {
                     b.Property<int>("PlayerUpgradeId")
@@ -383,9 +437,6 @@ namespace SqliteMigrations.Migrations
                         .HasColumnType("TEXT")
                         .IsFixedLength();
 
-                    b.Property<float?>("MmrChange")
-                        .HasColumnType("REAL");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -448,6 +499,33 @@ namespace SqliteMigrations.Migrations
                     b.HasIndex("Race", "OppRace");
 
                     b.ToTable("ReplayPlayers");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ReplayPlayerRating", b =>
+                {
+                    b.Property<int>("ReplayPlayerRatingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("MmrChange")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("Pos")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReplayId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReplayPlayerId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ReplayPlayerRatingId");
+
+                    b.HasIndex("ReplayId");
+
+                    b.HasIndex("ReplayPlayerId");
+
+                    b.ToTable("ReplayPlayerRatings");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.ReplayViewCount", b =>
@@ -688,6 +766,17 @@ namespace SqliteMigrations.Migrations
                     b.Navigation("Uploader");
                 });
 
+            modelBuilder.Entity("pax.dsstats.dbng.PlayerRating", b =>
+                {
+                    b.HasOne("pax.dsstats.dbng.Player", "Player")
+                        .WithMany("PlayerRatings")
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Player");
+                });
+
             modelBuilder.Entity("pax.dsstats.dbng.PlayerUpgrade", b =>
                 {
                     b.HasOne("pax.dsstats.dbng.ReplayPlayer", "ReplayPlayer")
@@ -750,6 +839,25 @@ namespace SqliteMigrations.Migrations
                     b.Navigation("Replay");
                 });
 
+            modelBuilder.Entity("pax.dsstats.dbng.ReplayPlayerRating", b =>
+                {
+                    b.HasOne("pax.dsstats.dbng.Replay", "Replay")
+                        .WithMany()
+                        .HasForeignKey("ReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("pax.dsstats.dbng.ReplayPlayer", "ReplayPlayer")
+                        .WithMany()
+                        .HasForeignKey("ReplayPlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Replay");
+
+                    b.Navigation("ReplayPlayer");
+                });
+
             modelBuilder.Entity("pax.dsstats.dbng.Spawn", b =>
                 {
                     b.HasOne("pax.dsstats.dbng.ReplayPlayer", "ReplayPlayer")
@@ -802,6 +910,8 @@ namespace SqliteMigrations.Migrations
 
             modelBuilder.Entity("pax.dsstats.dbng.Player", b =>
                 {
+                    b.Navigation("PlayerRatings");
+
                     b.Navigation("ReplayPlayers");
                 });
 

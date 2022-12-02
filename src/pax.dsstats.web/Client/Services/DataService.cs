@@ -134,6 +134,29 @@ public class DataService : IDataService
         return new();
     }
 
+    public async Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{ratingController}GetRatingsCount", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<int>(cancellationToken: token);
+            }
+            else
+            {
+                logger.LogError($"failed getting ratingscount: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting ratings count: {e.Message}");
+        }
+        return new();
+    }
+
     public async Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token = default)
     {
         try

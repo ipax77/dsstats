@@ -63,6 +63,11 @@ public class DataService : IDataService
         return await buildService.GetBuild(request, token);
     }
 
+    public async Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default)
+    {
+        return await ratingRepository.GetRatingsCount(request, token);
+    }
+
     public async Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token = default)
     {
         return await ratingRepository.GetRatings(request, token);
