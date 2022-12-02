@@ -165,9 +165,7 @@ public partial class RatingRepository
         using var connection = new MySqlConnection(Data.MysqlConnectionString);
         await connection.OpenAsync();
 
-        using var transaction = connection.BeginTransaction();
         var command = connection.CreateCommand();
-        command.Transaction = transaction;
         command.CommandText =
         $@"
             TRUNCATE TABLE {nameof(ReplayContext.PlayerRatings)};
@@ -180,7 +178,6 @@ public partial class RatingRepository
             IGNORE 1 LINES;
         ";
         await command.ExecuteNonQueryAsync();
-        await transaction.CommitAsync();
     }
 
     private async Task ReplayPlayerRatingsFromCsv2MySql()
@@ -194,9 +191,7 @@ public partial class RatingRepository
         using var connection = new MySqlConnection(Data.MysqlConnectionString);
         await connection.OpenAsync();
 
-        using var transaction = connection.BeginTransaction();
         var command = connection.CreateCommand();
-        command.Transaction = transaction;
         command.CommandText =
         $@"
             TRUNCATE TABLE {nameof(ReplayContext.ReplayPlayerRatings)};
@@ -209,6 +204,5 @@ public partial class RatingRepository
             IGNORE 1 LINES;
         ";
         await command.ExecuteNonQueryAsync();
-        await transaction.CommitAsync();
     }
 }
