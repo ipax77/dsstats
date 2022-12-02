@@ -1,0 +1,136 @@
+﻿@using System.Globalization;
+@using pax.dsstats.shared;
+@using pax.dsstats.shared.Raven;
+@using sc2dsstats.razorlib.Services;
+@inject IDataService dataService
+@implements IDisposable
+
+@if (ratingsResult != null)
+{
+    <div class="@(Interest == null ? "" : "visually-hidden")">
+        <div>
+            <h3 class="text-warning fw-bold"><a href="/ratings">Top Players</a> @(RatingType)</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-dark">
+                <colgroup>
+                    <col class="col">
+                    <col class="col">
+                    <col class="col">
+                    <col class="col">
+                    <col class="col">
+                    <col class="col">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>
+                            <div class="text-center">
+                                <span class="oi oi-globe rounded-circle bg-primary p-1"></span>
+                            </div>
+                        </th>
+                        <th>
+                            Name
+                        </th>
+                        <th>
+                            Rating
+                        </th>
+                        <th>
+                            Games
+                        </th>
+                        <th>
+                            Main
+                        </th>
+                        <th>
+                            Winrate
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var rating in ratingsResult.Players)
+                    {
+                        <tr height="41px;" class="pointer" @onclick="e => LoadPlayerChart(rating.Player)">
+                            <td>
+                                <span>@Data.GetRegionString(rating.Player.RegionId)</span>
+                            </td>
+                            <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Player.Name</span></td>
+                            <td class="text-warning">@Math.Round(rating.Rating, 2).ToString(CultureInfo.InvariantCulture)</td>
+                            <td>@rating.Games</td>
+                            <td>@(rating.Games == 0 || rating.MainCount * 100.0 / rating.Games < 10.5 ? "Random" : rating.Main.ToString())</td>
+                            <td>@HelperService.GetPercentageString(rating.Wins, rating.Games)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (Interest != null)
+{
+    <PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public RatingType RatingType { get; set; }
+
+    private RatingsResult? ratingsResult;
+    private CancellationTokenSource cts = new();
+    private RequestNames? Interest;
+
+    private RatingsRequest ratingsRequest = new()
+        {
+            Skip = 0,
+            Take = 7,
+            Orders = new()
+            {
+                new()
+                {
+                    Property = "Rating",
+                    Ascending = false
+                },
+
+            }
+        };
+
+    protected override void OnInitialized()
+    {
+        ratingsRequest.Type = RatingType;
+        base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ = LoadData();
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    private async Task LoadData()
+    {
+        ratingsResult = await dataService.GetRatings(ratingsRequest, cts.Token);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void LoadPlayerChart(PlayerRatingPlayerDto playerDto)
+    {
+        Interest = new() { Name = playerDto.Name, ToonId = playerDto.ToonId };
+        ratingsRequest.ToonId = playerDto.ToonId;
+        StateHasChanged();
+    }
+
+    private void DetailsClose()
+    {
+        Interest = null;
+        ratingsRequest.ToonId = null;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}
