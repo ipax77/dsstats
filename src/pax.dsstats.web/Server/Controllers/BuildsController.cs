@@ -16,9 +16,9 @@ public class BuildsController : Controller
     }
 
     [HttpGet("topplayers/{std}/{min}")]
-    public List<RequestNames> GetTopPlayers(bool std, int min)
+    public async Task<List<RequestNames>> GetTopPlayers(bool std, int min)
     {
-        return buildService.GetTopPlayers(std, min);
+        return await buildService.GetTopPlayers(std, min);
     }
 
     [HttpPost]

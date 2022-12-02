@@ -259,27 +259,22 @@ public partial class RatingRepository : IRatingRepository
         return await Task.FromResult("Anonymous");
     }
 
-    public List<RequestNames> GetTopPlayers(RatingType ratingType, int minGames)
+    public async Task<List<RequestNames>> GetTopPlayers(RatingType ratingType, int minGames)
     {
-        if (ratingType == RatingType.Cmdr)
-        {
-            return RatingMemory.Values
-                .Where(x => x.CmdrRavenRating != null && x.CmdrRavenRating.Games >= minGames)
-                .OrderByDescending(o => o.CmdrRavenRating?.Wins * 100.0 / o.CmdrRavenRating?.Games)
-                .Take(5)
-                .Select(s => new RequestNames() { Name = s.RavenPlayer.Name, ToonId = s.RavenPlayer.ToonId })
-                .ToList();
-        }
-        else if (ratingType == RatingType.Std)
-        {
-            return RatingMemory.Values
-                .Where(x => x.StdRavenRating != null && x.StdRavenRating.Games >= minGames)
-                .OrderByDescending(o => o.StdRavenRating?.Wins * 100.0 / o.StdRavenRating?.Games)
-                .Take(5)
-                .Select(s => new RequestNames() { Name = s.RavenPlayer.Name, ToonId = s.RavenPlayer.ToonId })
-                .ToList();
-        }
-        return new();
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return await context.PlayerRatings
+            .Where(x => x.RatingType == ratingType
+                && x.Games >= minGames)
+            .OrderByDescending(o => o.Rating)
+            .Take(5)
+            .Select(s => new RequestNames()
+            {
+                Name = s.Player.Name,
+                ToonId = s.Player.ToonId
+            })
+            .ToListAsync();
     }
 
     public async Task SetReplayListMmrChanges(List<ReplayListDto> replays, string? searchPlayer = null, CancellationToken token = default)
