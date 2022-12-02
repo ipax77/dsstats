@@ -27,7 +27,7 @@ builder.Services.AddDbContext<ReplayContext>(options =>
 {
     options.UseMySql(connectionString, serverVersion, p =>
     {
-        p.CommandTimeout(120);
+        p.CommandTimeout(240);
         p.EnableRetryOnFailure();
         p.MigrationsAssembly("MysqlMigrations");
         p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
