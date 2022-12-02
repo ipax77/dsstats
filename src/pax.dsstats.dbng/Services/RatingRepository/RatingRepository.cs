@@ -1,10 +1,8 @@
-﻿using dsstats.mmr;
-using Microsoft.Data.Sqlite;
+﻿using AutoMapper;
+using dsstats.mmr;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using MySqlConnector;
-using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
 
@@ -14,11 +12,13 @@ public partial class RatingRepository : IRatingRepository
 {
     private static Dictionary<int, RatingMemory> RatingMemory = new();
     private readonly IServiceScopeFactory scopeFactory;
+    private readonly IMapper mapper;
     private readonly ILogger<RatingRepository> logger;
 
-    public RatingRepository(IServiceScopeFactory scopeFactory, ILogger<RatingRepository> logger)
+    public RatingRepository(IServiceScopeFactory scopeFactory, IMapper mapper, ILogger<RatingRepository> logger)
     {
         this.scopeFactory = scopeFactory;
+        this.mapper = mapper;
         this.logger = logger;
     }
 
@@ -195,177 +195,38 @@ public partial class RatingRepository : IRatingRepository
         }
     }
 
-    public async Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token)
-    {
-        if (Data.IsMaui || !RatingMemory.Any())
-        {
-            try
-            {
-                return await GetMauiRatings(request, token);
-            }
-            catch (OperationCanceledException) { }
-            catch (Exception ex)
-            {
-                logger.LogWarning($"failed getting ratings: {ex.Message}");
-            }
-            return new();
-        }
-
-        IQueryable<RatingMemory> ratingMemories;
-
-        if (request.Type == RatingType.Cmdr)
-        {
-            ratingMemories = RatingMemory.Values
-                .Where(x => x.CmdrRavenRating != null && x.CmdrRavenRating.Games >= 20)
-                .AsQueryable();
-        }
-        else if (request.Type == RatingType.Std)
-        {
-            ratingMemories = RatingMemory.Values
-                .Where(x => x.StdRavenRating != null && x.StdRavenRating.Games >= 20)
-                .AsQueryable();
-        }
-        else
-        {
-            throw new NotImplementedException();
-        }
-
-        if (!String.IsNullOrEmpty(request.Search))
-        {
-            ratingMemories = ratingMemories.Where(x => x.RavenPlayer.Name.ToUpper().Contains(request.Search.ToUpper()));
-        }
-
-        var orderPre = request.Type == RatingType.Cmdr ? "CmdrRavenRating" : "StdRavenRating";
-        foreach (var order in request.Orders)
-        {
-            if (order.Property.EndsWith("Mvp"))
-            {
-                if (order.Ascending)
-                {
-                    if (request.Type == RatingType.Cmdr)
-                    {
-                        ratingMemories = ratingMemories.OrderBy(o => o.CmdrRavenRating == null ? 0 : o.CmdrRavenRating.Mvp * 100.0 / o.CmdrRavenRating.Games);
-                    }
-                    else
-                    {
-                        ratingMemories = ratingMemories.OrderBy(o => o.StdRavenRating == null ? 0 : o.StdRavenRating.Mvp * 100.0 / o.StdRavenRating.Games);
-                    }
-                }
-                else
-                {
-                    if (request.Type == RatingType.Cmdr)
-                    {
-                        ratingMemories = ratingMemories.OrderByDescending(o => o.CmdrRavenRating == null ? 0 : o.CmdrRavenRating.Mvp * 100.0 / o.CmdrRavenRating.Games);
-                    }
-                    else
-                    {
-                        ratingMemories = ratingMemories.OrderByDescending(o => o.StdRavenRating == null ? 0 : o.StdRavenRating.Mvp * 100.0 / o.StdRavenRating.Games);
-                    }
-                }
-            }
-            else if (order.Property.EndsWith("Wins"))
-            {
-                if (order.Ascending)
-                {
-                    if (request.Type == RatingType.Cmdr)
-                    {
-                        ratingMemories = ratingMemories.OrderBy(o => o.CmdrRavenRating == null ? 0 : o.CmdrRavenRating.Wins * 100.0 / o.CmdrRavenRating.Games);
-                    }
-                    else
-                    {
-                        ratingMemories = ratingMemories.OrderBy(o => o.StdRavenRating == null ? 0 : o.StdRavenRating.Wins * 100.0 / o.StdRavenRating.Games);
-                    }
-                }
-                else
-                {
-                    if (request.Type == RatingType.Cmdr)
-                    {
-                        ratingMemories = ratingMemories.OrderByDescending(o => o.CmdrRavenRating == null ? 0 : o.CmdrRavenRating.Wins * 100.0 / o.CmdrRavenRating.Games);
-                    }
-                    else
-                    {
-                        ratingMemories = ratingMemories.OrderByDescending(o => o.StdRavenRating == null ? 0 : o.StdRavenRating.Wins * 100.0 / o.StdRavenRating.Games);
-                    }
-                }
-            }
-            else
-            {
-
-                var property = order.Property.StartsWith("Rating.") ? order.Property[7..] : order.Property;
-                if (order.Ascending)
-                {
-                    ratingMemories = ratingMemories.AppendOrderBy($"{orderPre}.{property}");
-                }
-                else
-                {
-                    ratingMemories = ratingMemories.AppendOrderByDescending($"{orderPre}.{property}");
-                }
-            }
-        }
-#pragma warning disable CS8602
-        return new RatingsResult
-        {
-            Count = ratingMemories.Count(),
-            Players = ratingMemories.Skip(request.Skip).Take(request.Take)
-                .Select(s => new RavenPlayerDto()
-                {
-                    Name = s.RavenPlayer.Name,
-                    ToonId = s.RavenPlayer.ToonId,
-                    RegionId = s.RavenPlayer.RegionId,
-                    Rating = request.Type == RatingType.Cmdr ?
-                        new()
-                        {
-                            Games = s.CmdrRavenRating.Games,
-                            Wins = s.CmdrRavenRating.Wins,
-                            Mvp = s.CmdrRavenRating.Mvp,
-                            TeamGames = s.CmdrRavenRating.TeamGames,
-                            Main = s.CmdrRavenRating.Main,
-                            MainPercentage = s.CmdrRavenRating.MainPercentage,
-                            Mmr = s.CmdrRavenRating.Mmr
-                        }
-                        : new()
-                        {
-                            Games = s.StdRavenRating.Games,
-                            Wins = s.StdRavenRating.Wins,
-                            Mvp = s.StdRavenRating.Mvp,
-                            TeamGames = s.StdRavenRating.TeamGames,
-                            Main = s.StdRavenRating.Main,
-                            MainPercentage = s.StdRavenRating.MainPercentage,
-                            Mmr = s.StdRavenRating.Mmr
-                        }
-                })
-                .ToList()
-        };
-    }
-
     public async Task<List<MmrDevDto>> GetRatingsDeviation()
     {
-        var dtos = RatingMemory.Values
-                    .Where(x => x.CmdrRavenRating != null)
-                    .GroupBy(g => Math.Round(g.CmdrRavenRating?.Mmr ?? 0, 0))
-                    .Select(s => new MmrDevDto
-                    {
-                        Count = s.Count(),
-                        Mmr = s.Average(a => Math.Round(a.CmdrRavenRating?.Mmr ?? 0, 0))
-                    })
-                    .OrderBy(o => o.Mmr)
-                    .ToList();
-        return await Task.FromResult(dtos);
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return await context.PlayerRatings
+            .Where(x => x.RatingType == RatingType.Cmdr)
+            .GroupBy(g => Math.Round(g.Rating, 0))
+            .Select(s => new MmrDevDto
+            {
+                Count = s.Count(),
+                Mmr = s.Average(a => Math.Round(a.Rating, 0))
+            })
+            .OrderBy(o => o.Mmr)
+            .ToListAsync();
     }
 
     public async Task<List<MmrDevDto>> GetRatingsDeviationStd()
     {
-        var dtos = RatingMemory.Values
-            .Where(x => x.StdRavenRating != null)
-            .GroupBy(g => Math.Round(g.StdRavenRating?.Mmr ?? 0, 0))
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return await context.PlayerRatings
+            .Where(x => x.RatingType == RatingType.Std)
+            .GroupBy(g => Math.Round(g.Rating, 0))
             .Select(s => new MmrDevDto
             {
                 Count = s.Count(),
-                Mmr = s.Average(a => Math.Round(a.StdRavenRating?.Mmr ?? 0, 0))
+                Mmr = s.Average(a => Math.Round(a.Rating, 0))
             })
             .OrderBy(o => o.Mmr)
-            .ToList();
-        return await Task.FromResult(dtos);
+            .ToListAsync();
     }
 
     public async Task<List<PlChange>> GetReplayPlayerMmrChanges(string replayHash, CancellationToken token = default)

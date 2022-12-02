@@ -83,45 +83,45 @@
             <thead style="user-select: none;">
                 <CascadingValue Value="RatingsRequest.Orders">
                     <tr>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "RegionId"))">
-                            <SortArrow Property="RegionId">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Player.RegionId"))">
+                            <SortArrow Property="Player.RegionId">
                                 <div class="text-center">
                                     <span class="oi oi-globe rounded-circle bg-primary p-1"></span>
                                 </div>
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Name"))">
-                            <SortArrow Property="Name">
+                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Player.Name"))">
+                            <SortArrow Property="Player.Name">
                                 Name
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Rating.Main"))">
-                            <SortArrow Property="Rating.Main">
+                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Main"))">
+                            <SortArrow Property="Main">
                                 Main
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Rating.MainPercentage"))">
-                            <SortArrow Property="Rating.MainPercentage">
+                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "MainCount"))">
+                            <SortArrow Property="MainCount">
                                 Main %
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Rating.Games"))">
-                            <SortArrow Property="Rating.Games">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Games"))">
+                            <SortArrow Property="Games">
                                 Games
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "Rating.Mmr"))">
-                            <SortArrow Property="Rating.Mmr">
+                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "Rating"))">
+                            <SortArrow Property="Rating">
                                 Rating
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Rating.Wins"))">
-                            <SortArrow Property="Rating.Wins">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Wins"))">
+                            <SortArrow Property="Wins">
                                 Winrate
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Rating.Mvp"))">
-                            <SortArrow Property="Rating.Mvp">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Mvp"))">
+                            <SortArrow Property="Mvp">
                                 Mvp
                             </SortArrow>
                         </th>
@@ -131,19 +131,19 @@
             <tbody>
                 @if (ratingsCount > 0)
                 {
-                    <Virtualize @ref="virtualize" Context="player" ItemsProvider="LoadRatings" OverscanCount="10" ItemSize="41">
+                    <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings" OverscanCount="10" ItemSize="41">
                         <ItemContent>
-                            <tr height="41px;" class="pointer" @onclick="e => LoadPlayerChart(player)">
+                            <tr height="41px;" class="pointer" @onclick="e => LoadPlayerChart(rating.Player)">
                                 <td>
-                                    <span>@Data.GetRegionString(player.RegionId)</span>
+                                    <span>@Data.GetRegionString(rating.Player.RegionId)</span>
                                 </td>
-                                <td><span class="text-truncate text-info" style="display: block; width: 150px;">@player.Name</span></td>
-                                <td>@(player.Rating.MainPercentage < 9 ? "Random" : player.Rating.Main.ToString())</td>
-                                <td>@player.Rating.MainPercentage.ToString("N2", CultureInfo.InvariantCulture)</td>
-                                <td class="border-start">@player.Rating.Games</td>
-                                <td class="text-warning">@Math.Round(player.Rating.Mmr, 2).ToString(CultureInfo.InvariantCulture)</td>
-                                <td>@HelperService.GetPercentageString(player.Rating.Wins, player.Rating.Games)</td>
-                                <td>@HelperService.GetPercentageString(player.Rating.Mvp, player.Rating.Games)</td>
+                                <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Player.Name</span></td>
+                                <td>@(rating.Games == 0 || rating.MainCount * 100.0 / rating.Games < 10.5 ? "Random" : rating.Main.ToString())</td>
+                                <td>@HelperService.GetPercentageString(rating.MainCount, rating.Games)</td>
+                                <td class="border-start">@rating.Games</td>
+                                <td class="text-warning">@Math.Round(rating.Rating, 2).ToString(CultureInfo.InvariantCulture)</td>
+                                <td>@HelperService.GetPercentageString(rating.Wins, rating.Games)</td>
+                                <td>@HelperService.GetPercentageString(rating.Mvp, rating.Games)</td>
                             </tr>
                         </ItemContent>
                         <Placeholder>
@@ -192,10 +192,11 @@
     [Parameter]
     public EventCallback OnRatingsChanged { get; set; }
 
-    private int ratingsCount = 100;
+    private int ratingsCount;
     private PlayerRatingsDeviation? playerRatingsDeviation;
-    private Virtualize<RavenPlayerDto>? virtualize;
+    private Virtualize<PlayerRatingDto>? virtualize;
     private DistributionRequestEnum DistributionRequest = DistributionRequestEnum.None;
+    private CancellationTokenSource cts = new();
 
     private EditContext editContext = null!;
 
@@ -203,6 +204,7 @@
 
     protected override void OnInitialized()
     {
+        _ = SetRatingsCount();
         editContext = new EditContext(RatingsRequest);
         editContext.OnFieldChanged += FieldChanged;
         _ = LoadInitialPlayerInfo();
@@ -215,10 +217,15 @@
         _ = Reload();
     }
 
+    private async Task SetRatingsCount()
+    {
+        ratingsCount = await dataService.GetRatingsCount(RatingsRequest, cts.Token);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
     public async Task Reload()
     {
-        ratingsCount = 100;
-        await InvokeAsync(() => StateHasChanged());
+        await SetRatingsCount();
         if (virtualize != null)
         {
             await virtualize.RefreshDataAsync();
@@ -259,16 +266,18 @@
         await Reload();
     }
 
-    private async ValueTask<ItemsProviderResult<RavenPlayerDto>> LoadRatings(ItemsProviderRequest request)
+    private async ValueTask<ItemsProviderResult<PlayerRatingDto>> LoadRatings(ItemsProviderRequest request)
     {
         var numRatings = Math.Min(request.Count, ratingsCount - request.StartIndex);
         RatingsRequest.Skip = request.StartIndex;
         RatingsRequest.Take = numRatings;
+
+        if (RatingsRequest.Skip < 0 || RatingsRequest.Take < 0)
+        {
+            return new ItemsProviderResult<PlayerRatingDto>();
+        }
         var result = await dataService.GetRatings(RatingsRequest, request.CancellationToken);
-        ratingsCount = result.Count;
-
-
-        return new ItemsProviderResult<RavenPlayerDto>(result.Players, ratingsCount);
+        return new ItemsProviderResult<PlayerRatingDto>(result.Players, ratingsCount);
     }
 
     private void DetailsClose()
@@ -288,10 +297,10 @@
         }
     }
 
-    private void LoadPlayerChart(RavenPlayerDto playerRatingDto)
+    private void LoadPlayerChart(PlayerRatingPlayerDto playerDto)
     {
-        Interest = new() { Name = playerRatingDto.Name, ToonId = playerRatingDto.ToonId };
-        RatingsRequest.ToonId = playerRatingDto.ToonId;
+        Interest = new() { Name = playerDto.Name, ToonId = playerDto.ToonId };
+        RatingsRequest.ToonId = playerDto.ToonId;
         StateHasChanged();
         OnRatingsChanged.InvokeAsync();
     }
@@ -311,6 +320,8 @@
 
     public void Dispose()
     {
+        cts.Cancel();
+        cts.Dispose();
         editContext.OnFieldChanged -= FieldChanged;
     }
 }

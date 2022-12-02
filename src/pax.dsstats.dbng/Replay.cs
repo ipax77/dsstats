@@ -84,7 +84,7 @@ public class PlayerRating
     public double Confidence { get; set; }
     public bool IsUploader { get; set; }
     public int PlayerId { get; set; }
-    public virtual Player? Player { get; set; }
+    public virtual Player Player { get; set; } = null!;
 }
 
 public class Event

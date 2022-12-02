@@ -16,6 +16,18 @@ public class RatingsController
     }
 
     [HttpPost]
+    [Route("GetRatingsCount")]
+    public async Task<ActionResult<int>> GetRatingsCount(RatingsRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            return await ratingRepository.GetRatingsCount(request, token);
+        }
+        catch (OperationCanceledException) { }
+        return new NoContentResult();
+    }
+
+    [HttpPost]
     [Route("GetRatings")]
     public async Task<ActionResult<RatingsResult>> GetRatings(RatingsRequest request, CancellationToken token = default)
     {

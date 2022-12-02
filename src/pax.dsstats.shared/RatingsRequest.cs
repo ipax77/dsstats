@@ -15,6 +15,5 @@ public record RatingsRequest
 
 public record RatingsResult
 {
-    public int Count { get; set; }
-    public List<RavenPlayerDto> Players { get; set; } = new();
+    public List<PlayerRatingDto> Players { get; set; } = new();
 }

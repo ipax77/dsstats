@@ -12,6 +12,7 @@ public interface IDataService
     Task<BuildResponse> GetBuild(BuildRequest request, CancellationToken token = default);
 
     // ratings
+    Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token);
     Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token = default);
     Task<List<MmrDevDto>> GetRatingsDeviation();
     Task<List<MmrDevDto>> GetRatingsDeviationStd();

@@ -38,27 +38,3 @@ public record PlayerDsRDto
     public int NotUploadCount { get; init; }
 }
 
-public record PlayerRatingDto
-{
-    public int PlayerId { get; init; }
-    public string Name { get; init; } = null!;
-    public int ToonId { get; init; }
-    public int RegionId { get; init; }
-    public Commander Main { get; set; }
-    public float MainPercentage { get; set; }
-    public RatingStatsDto CmdrRatingStats { get; init; } = new();
-    public RatingStatsDto StdRatingStats { get; init; } = new();
-}
-
-public record RatingStatsDto
-{
-    public int Games { get; set; }
-    public int Wins { get; set; }
-    public int Mvp { get; set; }
-    public int TeamGames { get; set; }
-
-    public int MmrGames { get; set; }
-    public double Mmr { get; set; }
-    public double Consistency { get; set; }
-    public double Confidence { get; set; }
-}

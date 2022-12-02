@@ -17,7 +17,6 @@
     <ProjectReference Include="..\..\pax.dsstats.dbng\pax.dsstats.dbng.csproj" />
     <ProjectReference Include="..\..\pax.dsstats.shared\pax.dsstats.shared.csproj" />
     <ProjectReference Include="..\Client\pax.dsstats.web.Client.csproj" />
-    <ProjectReference Include="..\dsstats.raven\dsstats.raven.csproj" />
     <ProjectReference Include="..\Shared\pax.dsstats.web.Shared.csproj" />
   </ItemGroup>
 
