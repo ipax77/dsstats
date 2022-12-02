@@ -105,6 +105,16 @@ public static class MauiProgram
 
         if (!context.PlayerRatings.Any())
         {
+            foreach (var replay in context.Replays.Include(i => i.ReplayPlayers))
+            {
+                int playerPos = replay.ReplayPlayers.FirstOrDefault(f => f.IsUploader)?.GamePos ?? 0;
+                if (playerPos > 0)
+                {
+                    replay.PlayerPos = playerPos;
+                }
+            }
+            context.SaveChanges();
+
             var mmrProduceService = build.Services.GetRequiredService<MmrProduceService>();
             mmrProduceService.ProduceRatings(new(true)).Wait();
         }
