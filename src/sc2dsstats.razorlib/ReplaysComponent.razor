@@ -69,7 +69,11 @@
                                 Winner
                             </SortArrow>
                         </th>
-
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "MaxLeaver"))">
+                            <SortArrow Property="MaxLeaver">
+                                MaxLeaver
+                            </SortArrow>
+                        </th>
                         <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GameMode"))">
                             <SortArrow Property="GameMode">
                                 GameMode
@@ -113,6 +117,7 @@
                                     </div>
                                 </td>
                                 <td>@replay.WinnerTeam</td>
+                                <td>@TimeSpan.FromSeconds(replay.MaxLeaver).ToString(@"mm\:ss")</td>
                                 <td><span style="display:block; width: 200px;">@replay.GameMode</span></td>
                             </tr>
                         </ItemContent>
