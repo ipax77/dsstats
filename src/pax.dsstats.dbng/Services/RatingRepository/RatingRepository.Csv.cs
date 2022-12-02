@@ -109,31 +109,43 @@ public partial class RatingRepository
 
         if (timeRatings.Count == 1)
         {
-            return $"{Math.Round(timeRatings[0].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{timeRatings[0].Date[2..6]}";
+            return $"{Math.Round(timeRatings[0].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings[0].Date)}";
         }
 
         StringBuilder sb = new();
-        sb.Append($"{Math.Round(timeRatings[0].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{timeRatings[0].Date[2..6]}");
+        sb.Append($"{Math.Round(timeRatings[0].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings[0].Date)}");
 
         if (timeRatings.Count > 2)
         {
-            string timeStr = timeRatings[0].Date[2..6];
+            string timeStr = GetShortDateString(timeRatings[0].Date);
             for (int i = 1; i < timeRatings.Count - 1; i++)
             {
-                string currentTimeStr = timeRatings[i].Date[2..6];
+                string currentTimeStr = GetShortDateString(timeRatings[i].Date);
                 if (currentTimeStr != timeStr)
                 {
                     sb.Append('|');
-                    sb.Append($"{Math.Round(timeRatings[i].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{timeRatings[i].Date[2..6]}");
+                    sb.Append($"{Math.Round(timeRatings[i].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings[i].Date)}");
                 }
                 timeStr = currentTimeStr;
             }
         }
 
         sb.Append('|');
-        sb.Append($"{Math.Round(timeRatings.Last().Mmr, 1).ToString(CultureInfo.InvariantCulture)},{timeRatings.Last().Date[2..6]}");
+        sb.Append($"{Math.Round(timeRatings.Last().Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings.Last().Date)}");
 
         return sb.ToString();
+    }
+
+    private static string GetShortDateString(string date)
+    {
+        if (date.Length >= 6)
+        {
+            return date[2..6];
+        }
+        else
+        {
+            return date;
+        }
     }
 
     public async Task Csv2MySql()

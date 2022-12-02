@@ -6,7 +6,7 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class RatingRepository
 {
-    private async Task<UpdateResult> MauiUpdateRavenPlayers(HashSet<PlayerDsRDto> players, Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
+    private async Task<UpdateResult> MauiUpdateRavenPlayers(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
     {
         using var connection = new SqliteConnection(Data.SqliteConnectionString);
         await connection.OpenAsync();

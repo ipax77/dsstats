@@ -15,7 +15,7 @@ public partial class MmrProduceService
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
     private readonly ILogger<MmrProduceService> logger;
-    private static DateTime latestReplay;
+    //private static DateTime latestReplay = DateTime.MinValue;
 
     public MmrProduceService(IServiceProvider serviceProvider, IMapper mapper, ILogger<MmrProduceService> logger)
     {
@@ -25,6 +25,7 @@ public partial class MmrProduceService
     }
 
     public async Task ProduceRatings(MmrOptions mmrOptions,
+                                        DateTime latestReplay = default,
                                         List<ReplayDsRDto>? dependentReplays = null,
                                         DateTime startTime = default,
                                         DateTime endTime = default)
@@ -36,7 +37,7 @@ public partial class MmrProduceService
 
         var cmdrMmrDic = await GetCommanderMmrsDic(true);
 
-        Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings = await GetMmrIdRatings(mmrOptions, ratingRepository, dependentReplays);
+        var mmrIdRatings = await GetMmrIdRatings(mmrOptions, ratingRepository, dependentReplays);
         int mmrChangesAppendId = await GetMmrChangesAppendId(mmrOptions);
 
         if (mmrOptions.ReCalc)
@@ -50,6 +51,8 @@ public partial class MmrProduceService
         sw.Stop();
         logger.LogWarning($"ratings produced in {sw.ElapsedMilliseconds} ms");
     }
+
+
 
     private async Task<int> GetMmrChangesAppendId(MmrOptions mmrOptions)
     {
@@ -80,8 +83,6 @@ public partial class MmrProduceService
         DateTime _startTime = startTime == DateTime.MinValue ? new DateTime(2018, 1, 1) : startTime;
         DateTime _endTime = endTime == DateTime.MinValue ? DateTime.Today.AddDays(2) : endTime;
 
-        HashSet<PlayerDsRDto> players = new();
-
         DateTime latestReplay = DateTime.MinValue;
 
         while (_startTime < _endTime)
@@ -104,18 +105,16 @@ public partial class MmrProduceService
 
             latestReplay = replays.Last().GameTime;
 
-            players.UnionWith(replays.SelectMany(s => s.ReplayPlayers).Select(s => s.Player).Distinct());
-
             (mmrIdRatings, mmrChangesAppendId) = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrOptions, mmrChangesAppendId);
             //break; // DEBUG
         }
-        var result = await ratingRepository.UpdateRavenPlayers(players, mmrIdRatings);
+        var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings);
         return latestReplay;
     }
 
     private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetMmrIdRatings(MmrOptions mmrOptions, IRatingRepository ratingRepository, List<ReplayDsRDto>? dependentReplays)
     {
-        if (mmrOptions.ReCalc)
+        if (mmrOptions.ReCalc || dependentReplays == null)
         {
             return new Dictionary<RatingType, Dictionary<int, CalcRating>>()
             {
@@ -125,7 +124,8 @@ public partial class MmrProduceService
         }
         else
         {
-            return await ratingRepository.GetCalcRatings(dependentReplays!);
+            // return await ratingRepository.GetCalcRatings(dependentReplays!);
+            return await GetCalcRatings(dependentReplays);
         }
     }
 

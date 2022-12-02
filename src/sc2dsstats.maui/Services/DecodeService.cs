@@ -2,6 +2,7 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Blazored.Toast.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
@@ -73,6 +74,7 @@ public class DecodeService : IDisposable
     private int total;
     private int errorCounter;
     private DateTime startTime = DateTime.UtcNow;
+    private bool potentialMmrContinue;
 
     private object lockobject = new object();
 
@@ -116,6 +118,8 @@ public class DecodeService : IDisposable
         errorReplays.Clear();
         errorCounter = 0;
         newReplays.Clear();
+        potentialMmrContinue = false;
+        DateTime latestReplay = DateTime.MinValue;
 
         var replays = await ScanForNewReplays(true);
 
@@ -137,17 +141,15 @@ public class DecodeService : IDisposable
         total = replays.Count;
         startTime = DateTime.UtcNow;
 
+        if (total <= 100)
+        {
+            potentialMmrContinue = true;
+            latestReplay = await GetLatestReplayTime();
+        }
+
         decodeCts = new();
         notifyCts = new();
         _ = Notify();
-
-        using var scope = serviceScopeFactory.CreateScope();
-        var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-
-        //if (mmrService.ToonIdRatings.Any() && total <= 10)
-        //{
-        //    continueMmrCalc = true;
-        //}
 
         Stopwatch sw = Stopwatch.StartNew();
 
@@ -205,6 +207,7 @@ public class DecodeService : IDisposable
             // report missing replays
             if (dbCounter != replays.Count - errorCounter)
             {
+                using var scope = serviceScopeFactory.CreateScope();
                 var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
 
                 var dbPaths = await replayRepository.GetReplayPaths();
@@ -233,13 +236,22 @@ public class DecodeService : IDisposable
 
             await ScanForNewReplays();
 
+            using var scope = serviceScopeFactory.CreateScope();
+            var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+
             var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
             statsService.ResetStatsCache();
 
-            //var newReplaysDsRDto = newReplays.AsQueryable().ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider).ToList();
-            //await mmrProduceService.ProduceRatings(new MmrOptions(false), newReplaysDsRDto);
-
-            await mmrProduceService.ProduceRatings(new(reCalc: true));
+            if (potentialMmrContinue && newReplays.Any())
+            {
+                var newReplaysDsRDto = newReplays.AsQueryable().ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider).ToList();
+                await mmrProduceService.ProduceRatings(new(reCalc: false), latestReplay, newReplaysDsRDto);
+                newReplays = new();
+            }
+            else
+            {
+                await mmrProduceService.ProduceRatings(new(reCalc: true));
+            }
 
             notifyCts.Cancel();
 
@@ -315,6 +327,17 @@ public class DecodeService : IDisposable
         OnScanStateChanged(new() { NewReplays = NewReplays, DbReplays = DbReplays });
 
         return newReplays;
+    }
+
+    private async Task<DateTime> GetLatestReplayTime()
+    {
+        using var scope = serviceScopeFactory.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return await context.Replays
+            .OrderByDescending(o => o.GameTime)
+            .Select(s => s.GameTime)
+            .FirstOrDefaultAsync();
     }
 
     private ICollection<string> GetHdReplayPaths(bool ordered)
@@ -398,7 +421,10 @@ public class DecodeService : IDisposable
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
             (Units, Upgrades, var replay) = await replayRepository.SaveReplay(replayDto, Units, Upgrades, null);
 
-            newReplays.Add(replay);
+            if (potentialMmrContinue)
+            {
+                newReplays.Add(replay);
+            }
 
             Interlocked.Increment(ref dbCounter);
         }

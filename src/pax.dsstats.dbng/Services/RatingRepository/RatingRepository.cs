@@ -319,11 +319,16 @@ public partial class RatingRepository : IRatingRepository
         }
     }
 
-    public async Task<UpdateResult> UpdateRavenPlayers(HashSet<PlayerDsRDto> players, Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
+    public async Task<UpdateResult> UpdateRavenPlayers(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
     {
+        if (!mmrIdRatings.Any())
+        {
+            return new();
+        }
+
         if (Data.IsMaui)
         {
-            return await MauiUpdateRavenPlayers(players, mmrIdRatings);
+            return await MauiUpdateRavenPlayers(mmrIdRatings);
         }
         else
         {
@@ -332,7 +337,7 @@ public partial class RatingRepository : IRatingRepository
             await Csv2MySql();
 
             // Continue
-            //return await MysqlUpdateRavenPlayers(players, mmrIdRatings);
+            //return await MysqlUpdateRavenPlayers(mmrIdRatings);
         }
         return new();
     }

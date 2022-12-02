@@ -6,7 +6,7 @@ using pax.dsstats.shared.Raven;
 namespace pax.dsstats.dbng.Services;
 public partial class RatingRepository
 {
-    private async Task<UpdateResult> MysqlUpdateRavenPlayers(HashSet<PlayerDsRDto> players, Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
+    private async Task<UpdateResult> MysqlUpdateRavenPlayers(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
     {
         using var connection = new MySqlConnection(Data.MysqlConnectionString);
         await connection.OpenAsync();
