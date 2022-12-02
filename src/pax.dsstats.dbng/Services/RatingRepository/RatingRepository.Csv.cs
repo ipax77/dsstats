@@ -177,6 +177,7 @@ public partial class RatingRepository
             LINES TERMINATED BY '\n'
             IGNORE 1 LINES;
         ";
+        command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
     }
 
@@ -203,6 +204,7 @@ public partial class RatingRepository
             LINES TERMINATED BY '\n'
             IGNORE 1 LINES;
         ";
+        command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
     }
 }
