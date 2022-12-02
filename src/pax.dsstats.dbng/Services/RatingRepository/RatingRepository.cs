@@ -98,10 +98,18 @@ public partial class RatingRepository : IRatingRepository
 
     public List<int> GetNameToonIds(string name)
     {
-        return RatingMemory.Values
-            .Where(x => x.RavenPlayer.Name == name)
-            .Select(s => s.RavenPlayer.ToonId)
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return context.Players
+            .Where(x => x.Name == name)
+            .Select(s => s.ToonId)
             .ToList();
+
+        //return RatingMemory.Values
+        //    .Where(x => x.RavenPlayer.Name == name)
+        //    .Select(s => s.RavenPlayer.ToonId)
+        //    .ToList();
     }
 
     public async Task<RavenPlayerDetailsDto> GetPlayerDetails(int toonId, CancellationToken token = default)
@@ -252,11 +260,13 @@ public partial class RatingRepository : IRatingRepository
 
     public async Task<string?> GetToonIdName(int toonId)
     {
-        if (RatingMemory.ContainsKey(toonId))
-        {
-            return RatingMemory[toonId].RavenPlayer.Name;
-        }
-        return await Task.FromResult("Anonymous");
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return await context.Players
+            .Where(x => x.ToonId == toonId)
+            .Select(s => s.Name)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<List<RequestNames>> GetTopPlayers(RatingType ratingType, int minGames)
