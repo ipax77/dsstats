@@ -26,7 +26,7 @@
                     <InputText class="form-control" placeholder="PAX Feralan" @bind-Value="replaysRequest.SearchPlayers"></InputText>
                 </label>
             </div>
-            <div class="col-auto">
+@*            <div class="col-auto">
                 <label class="form-label">
                     Start:
                     <InputDate class="form-control" @bind-Value="replaysRequest.StartTime"></InputDate>
@@ -37,7 +37,7 @@
                     End:
                     <InputDate class="form-control" @bind-Value="replaysRequest.EndTime"></InputDate>
                 </label>
-            </div>
+            </div>*@
             <div class="col-auto">
                 <select id="gamemodeselect" class="form-select" multiple aria-label="multiple" @onchange="GameModeChange">
                     <option>All GameModes</option>
@@ -68,7 +68,7 @@
                         </label>
                     </div>
                 }
-                else
+                @if (!Data.IsMaui)
                 {
                     <div class="d-flex">
                         <div class="form-check form-switch">
@@ -83,6 +83,8 @@
                         </div>
                     </div>
                 }
+            </div>
+            <div class="col-auto">
                 <div style="max-width: 150px;">
                     <label for="playercountrange" class="form-label">PlayerCount @(replaysRequest.PlayerCount == 0 ? "All" : replaysRequest.PlayerCount)</label>
                     <input type="range" class="form-range" min="0" max="6" step="2" value="0" id="playercountrange" @onchange="PlayerCountChange">

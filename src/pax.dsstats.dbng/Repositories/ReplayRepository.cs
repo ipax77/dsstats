@@ -103,7 +103,10 @@ public class ReplayRepository : IReplayRepository
 
         if (request.WithMmrChange)
         {
-            await ratingRepository.SetReplayListMmrChanges(list, token);
+            string? interest = request.SearchPlayers?
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+
+            await ratingRepository.SetReplayListMmrChanges(list, interest, token);
         }
 
         return list;

@@ -282,28 +282,83 @@ public partial class RatingRepository : IRatingRepository
         return new();
     }
 
-    public async Task SetReplayListMmrChanges(List<ReplayListDto> replays, CancellationToken token = default)
+    public async Task SetReplayListMmrChanges(List<ReplayListDto> replays, string? searchPlayer = null, CancellationToken token = default)
     {
+        if (String.IsNullOrEmpty(searchPlayer) && !replays.Any(a => a.PlayerPos > 0))
+        {
+            return;
+        }
+
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
+        var replayIds = replays.Select(s => s.ReplayId).Distinct().ToList();
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+        var replayPlayerRatings = await context.ReplayPlayerRatings
+            .Where(x => replayIds.Contains(x.ReplayId))
+            .Select(s => new MmrChangesList()
+            {
+                ReplayId = s.ReplayId,
+                Name = s.ReplayPlayer.Name,
+                Commander = s.ReplayPlayer.Race,
+                Pos = s.Pos,
+                MmrChange = Math.Round(s.MmrChange, 1)
+            })
+            .ToListAsync(token);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+
+        string? interest = null;
+        if (!String.IsNullOrEmpty(searchPlayer))
+        {
+            interest = replayPlayerRatings
+                .Select(s => s.Name)
+                .FirstOrDefault(f => f.ToUpper().Contains(searchPlayer.ToUpper()));
+        }
+
         for (int i = 0; i < replays.Count; i++)
         {
-            if (replays[i].PlayerPos == 0)
+            var replay = replays[i];
+
+            MmrChangesList? mmrChange;
+            if (interest == null)
             {
-                continue;
+                if (replay.PlayerPos == 0)
+                {
+                    continue;
+                }
+                mmrChange = replayPlayerRatings
+                    .FirstOrDefault(f => f.ReplayId == replay.ReplayId && f.Pos == replay.PlayerPos);
+            }
+            else
+            {
+                mmrChange = replayPlayerRatings
+                    .FirstOrDefault(f => f.ReplayId == replay.ReplayId && f.Name == interest);
             }
 
-            if (token.IsCancellationRequested)
+            if (mmrChange != null)
             {
-                return;
+                replay.MmrChange = mmrChange.MmrChange;
+                replay.Commander= mmrChange.Commander;
             }
-            replays[i].MmrChange = await context.ReplayPlayerRatings
-                .Where(f => f.ReplayId == replays[i].ReplayId
-                    && f.Pos == replays[i].PlayerPos)
-                .Select(s => Math.Round(s.MmrChange, 1))
-                .FirstOrDefaultAsync(token);
         }
+
+        //for (int i = 0; i < replays.Count; i++)
+        //{
+        //    if (replays[i].PlayerPos == 0)
+        //    {
+        //        continue;
+        //    }
+
+        //    if (token.IsCancellationRequested)
+        //    {
+        //        return;
+        //    }
+        //    replays[i].MmrChange = await context.ReplayPlayerRatings
+        //        .Where(f => f.ReplayId == replays[i].ReplayId
+        //            && f.Pos == replays[i].PlayerPos)
+        //        .Select(s => Math.Round(s.MmrChange, 1))
+        //        .FirstOrDefaultAsync(token);
+        //}
     }
 
     public async Task<int> UpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId)
@@ -376,4 +431,13 @@ internal record RatingMemory
     public RavenPlayer RavenPlayer { get; set; } = null!;
     public RavenRating? CmdrRavenRating { get; set; }
     public RavenRating? StdRavenRating { get; set; }
+}
+
+internal record MmrChangesList
+{
+    public int ReplayId { get; init; }
+    public string Name { get; init; } = "Anonymous";
+    public Commander Commander { get; init; }
+    public int Pos { get; init; }
+    public double MmrChange { get; init; }
 }
