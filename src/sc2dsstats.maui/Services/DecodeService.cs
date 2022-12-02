@@ -236,20 +236,10 @@ public class DecodeService : IDisposable
             var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
             statsService.ResetStatsCache();
 
-            //if (continueMmrCalc && newReplays.Any())
-            //{
-            //    var userSettingsService = scope.ServiceProvider.GetRequiredService<UserSettingsService>();
-            //    var mauiPlayers = userSettingsService.GetDefaultPlayers();
+            //var newReplaysDsRDto = newReplays.AsQueryable().ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider).ToList();
+            //await mmrProduceService.ProduceRatings(new MmrOptions(false), newReplaysDsRDto);
 
-            //    await mmrService.ContinueCalculateWithDictionary(newReplays, mauiPlayers);
-            //}
-            //else
-            //{
-            //    await mmrService.ReCalculateWithDictionary();
-            //}
-
-            var newReplaysDsRDto = newReplays.AsQueryable().ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider).ToList();
-            await mmrProduceService.ProduceRatings(new MmrOptions(false), newReplaysDsRDto);
+            await mmrProduceService.ProduceRatings(new(reCalc: true));
 
             notifyCts.Cancel();
 

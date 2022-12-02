@@ -42,7 +42,7 @@ public partial class RatingRepository
                 sb.Append($"{entCalc.Games},");
                 sb.Append($"{entCalc.Wins},");
                 sb.Append($"{entCalc.Mvp},");
-                sb.Append("0,");
+                sb.Append($"{entCalc.TeamGames},");
                 sb.Append($"{main.Value},");
                 sb.Append($"{(int)main.Key},");
 

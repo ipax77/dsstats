@@ -103,8 +103,11 @@ public static class MauiProgram
         Data.SqliteConnectionString = sqliteConnectionString;
         var userSettingsService = build.Services.GetRequiredService<UserSettingsService>();
 
-        var mmrProduceService = build.Services.GetRequiredService<MmrProduceService>();
-        mmrProduceService.ProduceRatings(new(true)).Wait();
+        if (!context.PlayerRatings.Any())
+        {
+            var mmrProduceService = build.Services.GetRequiredService<MmrProduceService>();
+            mmrProduceService.ProduceRatings(new(true)).Wait();
+        }
         
         return build;
     }
