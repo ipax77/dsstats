@@ -3,13 +3,14 @@
 @using pax.dsstats.shared.Raven;
 @using sc2dsstats.razorlib.Services;
 @inject IDataService dataService
+@inject NavigationManager NavigationManager
 @implements IDisposable
 
 @if (ratingsResult != null)
 {
-    <div class="@(Interest == null ? "" : "visually-hidden")">
+    <div>
         <div>
-            <h3 class="text-warning fw-bold"><a href="/ratings">Top Players</a> @(RatingType)</h3>
+            <h3 class="text-warning fw-bold"><a href="/ratings?Mode=@RatingType">Top Players</a> @(RatingType)</h3>
         </div>
         <div class="table-responsive">
             <table class="table table-sm table-dark">
@@ -65,18 +66,12 @@
     </div>
 }
 
-@if (Interest != null)
-{
-    <PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
-}
-
 @code {
     [Parameter, EditorRequired]
     public RatingType RatingType { get; set; }
 
     private RatingsResult? ratingsResult;
     private CancellationTokenSource cts = new();
-    private RequestNames? Interest;
 
     private RatingsRequest ratingsRequest = new()
         {
@@ -116,16 +111,7 @@
 
     private void LoadPlayerChart(PlayerRatingPlayerDto playerDto)
     {
-        Interest = new() { Name = playerDto.Name, ToonId = playerDto.ToonId };
-        ratingsRequest.ToonId = playerDto.ToonId;
-        StateHasChanged();
-    }
-
-    private void DetailsClose()
-    {
-        Interest = null;
-        ratingsRequest.ToonId = null;
-        StateHasChanged();
+        NavigationManager.NavigateTo($"/ratings?ToonId={playerDto.ToonId}&Mode={RatingType}");
     }
 
     public void Dispose()

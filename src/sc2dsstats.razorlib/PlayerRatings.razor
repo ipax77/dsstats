@@ -215,6 +215,7 @@
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
         _ = Reload();
+        OnRatingsChanged.InvokeAsync();
     }
 
     private async Task SetRatingsCount()
