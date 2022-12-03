@@ -1,5 +1,6 @@
 ﻿using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
+using pax.dsstats.shared;
 using System.Diagnostics;
 
 namespace pax.dsstats.web.Server.Services;
@@ -47,7 +48,15 @@ public class CacheBackgroundService : IHostedService, IDisposable
                 await statsService.GetRequestStats(new shared.StatsRequest() { Uploaders = false });
 
                 var mmrProduceServer = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-                await mmrProduceServer.ProduceRatings(new(true)/*, startTime: new DateTime(2022, 1, 1)*/);
+
+                if (result.ContinueReplays.Any())
+                {
+                    await mmrProduceServer.ProduceRatings(new(false), result.LatestReplay, result.ContinueReplays);
+                }
+                else
+                {
+                    await mmrProduceServer.ProduceRatings(new(true));
+                }
             }
 
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();

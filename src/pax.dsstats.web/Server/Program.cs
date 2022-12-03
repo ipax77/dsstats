@@ -96,6 +96,9 @@ if (app.Environment.IsDevelopment())
 
     //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
     //var result = statsService.GetCrossTable(new());
+
+    //var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+    //importService.ImportReplayBlobs().Wait();
 }
 
 // Configure the HTTP request pipeline.
