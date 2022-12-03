@@ -2,6 +2,7 @@
 using pax.dsstats.shared;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using dsstats.mmr;
 
 namespace pax.dsstats.dbng.Services;
 
@@ -48,7 +49,7 @@ public partial class MmrProduceService
                 IsUploader = rating.IsUploader,
                 CmdrCounts = GetFakeCmdrDic(rating.Main, rating.MainCount, rating.Games)
             };
-            calcRatings[rating.RatingType].Add(rating.Player.ToonId, calcRating);
+            calcRatings[rating.RatingType].Add(MmrService.GetMmrId(rating.Player), calcRating);
         }
 
         return calcRatings;

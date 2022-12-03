@@ -1,5 +1,6 @@
 ﻿@page "/ratings"
 @using pax.dsstats.shared
+@using pax.dsstats.shared.Raven;
 @inject NavigationManager NavigationManager
 
 <PageTitle>Ratings</PageTitle>
@@ -10,6 +11,10 @@
     [Parameter]
     [SupplyParameterFromQuery]
     public int? ToonId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Mode { get; set; }
 
     private RatingsRequest ratingsRequest = new()
     {
@@ -36,6 +41,14 @@
     private void SetRequest()
     {
         ratingsRequest.ToonId = ToonId;
+        if (!String.IsNullOrEmpty(Mode) 
+            && Enum.TryParse(typeof(RatingType), Mode, out var ratingTypeObject))
+        {
+            if (ratingTypeObject is RatingType ratingType)
+            {
+                ratingsRequest.Type = ratingType;
+            }
+        }
     }
 
     private void SetUrl()
@@ -45,6 +58,19 @@
         if (ratingsRequest.ToonId != null && ratingsRequest.ToonId > 0)
         {
             queryDic.Add("ToonId", ratingsRequest.ToonId.Value);
+        }
+        else
+        {
+            queryDic.Add("ToonId", null);
+        }
+
+        if (ratingsRequest.Type != shared.Raven.RatingType.Cmdr)
+        {
+            queryDic.Add("Mode", ratingsRequest.Type.ToString());
+        }
+        else
+        {
+            queryDic.Add("Mode", null);
         }
 
         NavigationManager.NavigateTo(
