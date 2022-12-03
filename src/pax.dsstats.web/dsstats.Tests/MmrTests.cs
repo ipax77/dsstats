@@ -139,7 +139,9 @@ public class MmrTests
             Directory.CreateDirectory(testPath);
         }
         File.Copy(testFile, testFilePath);
-
+        
+        var replayPlayerRatingsCountBefore = context.ReplayPlayerRatings.Count();
+        
         var mmrBefore = context.PlayerRatings.Sum(s => s.Rating);
         var replays = context.Replays
             .Include(i => i.ReplayPlayers)
@@ -150,13 +152,25 @@ public class MmrTests
             .OrderByDescending(o => o.GameTime)
             .Take(5)
             .ToList();
+
+        var replayPlayerIds = replays
+            .SelectMany(s => s.ReplayPlayers)
+            .Select(s => s.ReplayPlayerId)
+            .Distinct()
+            .ToList();
+
+        var replayPlayerRatings = context.ReplayPlayerRatings
+            .Where(x => replayPlayerIds.Contains(x.ReplayPlayerId))
+            .ToList();
+
         context.Replays.RemoveRange(replays);
+        context.ReplayPlayerRatings.RemoveRange(replayPlayerRatings);
         context.SaveChanges();
 
         mmrProduceService.ProduceRatings(new(reCalc: true)).GetAwaiter().GetResult();
 
         var replayCountBefore = context.Replays.Count();
-        var replayPlayerRatingsCountBefore = context.ReplayPlayerRatings.Count();
+        
         
         // execute
         var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
@@ -167,6 +181,7 @@ public class MmrTests
         var replayCountAfter = context.Replays.Count();
         var replayPlayerRatingsCountAfter = context.ReplayPlayerRatings.Count();
         Assert.True(replayCountAfter > replayCountBefore);
+        Assert.Equal(replayPlayerRatingsCountBefore, replayPlayerRatingsCountAfter);
         // Assert.Equal(mmrBefore, context.PlayerRatings.Sum(s => s.Rating));
         Assert.Equal(Math.Round(mmrBefore, 4), Math.Round(context.PlayerRatings.Sum(s => s.Rating), 4));
 

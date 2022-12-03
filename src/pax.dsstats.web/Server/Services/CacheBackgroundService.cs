@@ -36,10 +36,6 @@ public class CacheBackgroundService : IHostedService, IDisposable
             Stopwatch sw = Stopwatch.StartNew();
 
             var result = await importService.ImportReplayBlobs();
-            if (result.BlobFiles > 0)
-            {
-                logger.LogWarning(result.ToString());
-            }
 
             if (result.SavedReplays > 0)
             {
@@ -57,6 +53,7 @@ public class CacheBackgroundService : IHostedService, IDisposable
                 {
                     await mmrProduceServer.ProduceRatings(new(true));
                 }
+                logger.LogWarning($"Replays saved: {result.SavedReplays} ({result.ContinueReplays.Count}) - {result.LatestReplay}");
             }
 
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();

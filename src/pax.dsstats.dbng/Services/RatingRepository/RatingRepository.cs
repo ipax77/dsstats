@@ -402,7 +402,7 @@ public partial class RatingRepository : IRatingRepository
             else
             {
                 // Continue
-                return await MysqlUpdateRavenPlayers(mmrIdRatings);
+                await MysqlUpdateRavenPlayers(mmrIdRatings);
             }
             await Csv2MySql(continueCalc, csvBasePath);
         }
