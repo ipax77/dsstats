@@ -1,219 +1,191 @@
-﻿using AutoMapper;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
-using dsstats.mmr;
-using pax.dsstats.web.Server.Services;
-using System;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.IO.Compression;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using AutoMapper.QueryableExtensions;
-using static System.Formats.Asn1.AsnWriter;
-using dsstats.raven;
-using pax.dsstats.shared.Raven;
-using Raven.Client.Documents.Operations.ConnectionStrings;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
-using pax.dsstats.web.Client;
+using Microsoft.Extensions.DependencyInjection;
+using pax.dsstats.dbng.Services;
+using AutoMapper;
+using Microsoft.Extensions.Logging;
 
-namespace dsstats.Tests
+namespace dsstats.Tests;
+
+public class MmrTests
 {
-    public class MmrTests : IDisposable
+    private readonly WebApplication app;
+
+    public MmrTests()
     {
-        private readonly IMapper mapper;
-        //private readonly IServiceProvider serviceProvider;
+        var builder = WebApplication.CreateBuilder(Array.Empty<string>());
 
-        private readonly WebApplication app;
-        private object allMmrIdRatings;
-
-        //private readonly DbConnection _connection;
-        //private readonly DbContextOptions<ReplayContext> _contextOptions;
-
-        public MmrTests(IMapper mapper)
-        {
-            //_connection = new SqliteConnection($"Data Source={Path.Combine(Environment.CurrentDirectory, "dsstats3.db")}"/*"Filename=:memory:"*/);
-            //_connection.Open();
-
-            //_contextOptions = new DbContextOptionsBuilder<ReplayContext>()
-            //    .UseSqlite(_connection)
-            //    .Options;
-
-            //using (var context = new ReplayContext(_contextOptions)) {
-            //    context.Database.EnsureCreated();
-            //}
-
-            var builder = WebApplication.CreateBuilder(Array.Empty<string>());
-
-            builder.Host.ConfigureAppConfiguration((context, config) =>
-            {
-                config.AddJsonFile("/data/localserverconfig.json", optional: false, reloadOnChange: false);
-            });
-
-            var serverVersion = new MySqlServerVersion(new Version(5, 7, 40));
-            var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
-
-            //var serviceCollection = new ServiceCollection();
-
-            //serviceCollection.AddDbContext<ReplayContext>(options =>
-            //{
-            //    options.UseSqlite(_connection, sqlOptions =>
-            //    {
-            //        sqlOptions.MigrationsAssembly("SqliteMigrations");
-            //        sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
-            //    })
-            //    //.EnableDetailedErrors()
-            //    //.EnableDetailedErrors()
-            //    ;
-            //});
-
-            builder.Services.AddDbContext<ReplayContext>(options =>
-            {
-                options.UseMySql(connectionString, serverVersion, p =>
+        builder.Host.ConfigureAppConfiguration((context, config) =>
                 {
-                    p.CommandTimeout(120);
-                    p.EnableRetryOnFailure();
-                    p.MigrationsAssembly("MysqlMigrations");
-                    p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
-                })
-                ;
-            });
+                    config.AddJsonFile("/data/localserverconfig.json", optional: false, reloadOnChange: false);
+                });
 
-            builder.Services.AddMemoryCache();
-            builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
-            builder.Services.AddLogging();
+        var serverVersion = new MySqlServerVersion(new Version(5, 7, 40));
+        var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
+        var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"];
 
-            builder.Services.AddScoped<IRatingRepository, RatingRepository>();
-            builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
+        builder.Services.AddDbContext<ReplayContext>(options =>
+                    {
+                        options.UseMySql(connectionString, serverVersion, p =>
+                        {
+                            p.CommandTimeout(120);
+                            p.EnableRetryOnFailure();
+                            p.MigrationsAssembly("MysqlMigrations");
+                            p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
+                        })
+                        ;
+                    });
 
-            //this.serviceProvider = serviceCollection.BuildServiceProvider();
+        builder.Services.AddMemoryCache();
+        builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+        builder.Services.AddLogging();
 
+        builder.Services.AddScoped<IRatingRepository, RatingRepository>();
+        builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
 
+        app = builder.Build();
 
-            app = builder.Build();
-            using var scope = app.Services.CreateScope();
+        Data.MysqlConnectionString = importConnectionString;
+    }
 
-            mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
-            mapper.ConfigurationProvider.AssertConfigurationIsValid();
+    [Fact]
+    public void A1ImportTest()
+    {
+        // prepare data
+        using var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        context.Database.EnsureDeleted();
+        context.Database.Migrate();
 
-            using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-            // context.Database.EnsureDeleted();
-            context.Database.Migrate();
+        var testDir = "/data/temp";
+        var testFile = Startup.GetTestFilePath("uploadtest.base64");
+        Guid testGuid = Guid.NewGuid();
 
-            this.mapper = mapper;
-        }
+        var testPath = Path.Combine(testDir, testGuid.ToString());
+        var testFileName = $"{DateTime.UtcNow.ToString(@"yyyyMMdd-HHmmss")}.base64";
+        var testFilePath = Path.Combine(testPath, testFileName);
 
-        public void Dispose() { GC.SuppressFinalize(this); }
-        public IServiceScope CreateScope() => app.Services.CreateScope();
-
-        [Fact]
-        public async Task Test()
+        if (!Directory.Exists(testPath))
         {
-            using var scope = CreateScope();
-            using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-            var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
-
-            var players = await GetPlayers();
-
-            var allReplays = await GetCmdrReplayDsRDtos(
-                allStartTime: DateTime.MinValue,
-                playerStartTime: default,
-                playerId: null
-            );
-            (var allMmrIdRatings, double maxMmr) = await MmrService.GeneratePlayerRatings(allReplays,
-                                                                            new(),
-                                                                            new(),
-                                                                            MmrService.startMmr,
-                                                                            ratingRepository,
-                                                                            new());
-
-            var seasonalReplays = await GetCmdrReplayDsRDtos(
-                allStartTime: new DateTime(2022, 1, 1),
-                playerStartTime: default,
-                playerId: null
-            );
-            (var seasonalMmrIdRatings, maxMmr) = await MmrService.GeneratePlayerRatings(seasonalReplays,
-                                                                            new(),
-                                                                            new(),
-                                                                            MmrService.startMmr,
-                                                                            ratingRepository,
-                                                                            new());
-
-            var seperatedSeasonalReplays = await GetCmdrReplayDsRDtos(
-                allStartTime: DateTime.MinValue,
-                playerStartTime: new DateTime(2022, 1, 1),
-                playerId: 10758
-            );
-            (var seperatedSeasonalMmrIdRatings, maxMmr) = await MmrService.GeneratePlayerRatings(seperatedSeasonalReplays,
-                                                                            new(),
-                                                                            new(),
-                                                                            MmrService.startMmr,
-                                                                            ratingRepository,
-                                                                            new());
-
-
-            Dictionary<int, double> diffs = new();
-
-            for (int i = 0; i < allMmrIdRatings.Count; i++) {
-                int key = allMmrIdRatings.ElementAt(i).Key;
-
-                if (!seasonalMmrIdRatings.ContainsKey(key)) {
-                    continue;
-                }
-
-                var allPlR = allMmrIdRatings[key];
-                var seasPlR = seasonalMmrIdRatings[key];
-
-                diffs.Add(key, Math.Abs(allPlR.Mmr - seasPlR.Mmr));
-            }
-
-            Assert.True(true);
+            Directory.CreateDirectory(testPath);
         }
+        File.Copy(testFile, testFilePath);
 
-        private async Task<List<ReplayDsRDto>> GetCmdrReplayDsRDtos(DateTime allStartTime, DateTime playerStartTime, int? playerId)
+        // prepare services
+        var serviceProvider = scope.ServiceProvider;
+        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<ImportService>>();
+        var importService = new ImportService(serviceProvider, mapper, logger, testDir);
+
+        // execute
+        var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
+
+        // assert
+        Assert.True(result.ContinueReplays.Any());
+
+        // cleanup
+        Directory.Delete(testPath, true);
+    }
+
+    [Fact]
+    public void A2RecalculateTest()
+    {
+        // prepare services
+        var scope = app.Services.CreateScope();
+        var serviceProvider = scope.ServiceProvider;
+        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<MmrProduceService>>();
+        var mmrProduceService = new MmrProduceService(serviceProvider, mapper, logger);
+
+        // execute
+        mmrProduceService.ProduceRatings(new(reCalc: true)).GetAwaiter().GetResult();
+
+        // assert
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        Assert.True(context.PlayerRatings.Any());
+        Assert.True(context.ReplayPlayerRatings.Any());
+    }
+
+    [Fact]
+    public void A3ContinuecalculateTest()
+    {
+        var testDir = "/data/temp";
+
+        // prepare services
+        var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<MmrProduceService>>();
+        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+        var serviceProvider = scope.ServiceProvider;
+        var mmrProduceService = new MmrProduceService(serviceProvider, mapper, logger);
+        var importLogger = scope.ServiceProvider.GetRequiredService<ILogger<ImportService>>();
+        var importService = new ImportService(serviceProvider, mapper, importLogger, testDir);
+
+
+        // prepare data
+        var testFile = Startup.GetTestFilePath("uploadtest.base64");
+        Guid testGuid = Guid.NewGuid();
+
+        var testPath = Path.Combine(testDir, testGuid.ToString());
+        var testFileName = $"{DateTime.UtcNow.ToString(@"yyyyMMdd-HHmmss")}.base64";
+        var testFilePath = Path.Combine(testPath, testFileName);
+
+        if (!Directory.Exists(testPath))
         {
-            using var scope = CreateScope();
-            using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-            var replays = context.Replays
-                .Include(r => r.ReplayPlayers)
-                    .ThenInclude(rp => rp.Player)
-                .Where(r => r.Playercount == 6
-                    && r.Duration >= 300
-                    && r.WinnerTeam > 0
-                    && (r.GameMode == GameMode.Commanders || r.GameMode == GameMode.CommandersHeroic))
-                .AsNoTracking();
-
-            replays = replays.Where(r => (r.GameTime >= allStartTime)
-                && (!playerId.HasValue || !r.ReplayPlayers.Any(p => p.PlayerId == playerId) || (r.GameTime >= playerStartTime)));
-
-            return await replays
-                .OrderBy(o => o.GameTime)
-                    .ThenBy(o => o.ReplayId)
-                .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
-                .ToListAsync();
+            Directory.CreateDirectory(testPath);
         }
+        File.Copy(testFile, testFilePath);
+        
+        var replayPlayerRatingsCountBefore = context.ReplayPlayerRatings.Count();
+        
+        var mmrBefore = context.PlayerRatings.Sum(s => s.Rating);
+        var replays = context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Spawns)
+                    .ThenInclude(i => i.Units)
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Upgrades)
+            .OrderByDescending(o => o.GameTime)
+            .Take(5)
+            .ToList();
 
-        private async Task<List<PlayerDsRDto>> GetPlayers()
-        {
-            using var scope = CreateScope();
-            using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var replayPlayerIds = replays
+            .SelectMany(s => s.ReplayPlayers)
+            .Select(s => s.ReplayPlayerId)
+            .Distinct()
+            .ToList();
 
-            var players = context.Players
-                .AsNoTracking();
+        var replayPlayerRatings = context.ReplayPlayerRatings
+            .Where(x => replayPlayerIds.Contains(x.ReplayPlayerId))
+            .ToList();
 
-            return await players
-                .OrderBy(o => o.PlayerId)
-                .ProjectTo<PlayerDsRDto>(mapper.ConfigurationProvider)
-                .ToListAsync();
-        }
+        context.Replays.RemoveRange(replays);
+        context.ReplayPlayerRatings.RemoveRange(replayPlayerRatings);
+        context.SaveChanges();
+
+        mmrProduceService.ProduceRatings(new(reCalc: true)).GetAwaiter().GetResult();
+
+        var replayCountBefore = context.Replays.Count();
+        
+        
+        // execute
+        var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
+        mmrProduceService.ProduceRatings(new(reCalc: false), result.LatestReplay, result.ContinueReplays).GetAwaiter().GetResult();
+
+        // assert
+
+        var replayCountAfter = context.Replays.Count();
+        var replayPlayerRatingsCountAfter = context.ReplayPlayerRatings.Count();
+        Assert.True(replayCountAfter > replayCountBefore);
+        Assert.Equal(replayPlayerRatingsCountBefore, replayPlayerRatingsCountAfter);
+        // Assert.Equal(mmrBefore, context.PlayerRatings.Sum(s => s.Rating));
+        Assert.Equal(Math.Round(mmrBefore, 4), Math.Round(context.PlayerRatings.Sum(s => s.Rating), 4));
+
+        // cleanup
+        Directory.Delete(testPath, true);
     }
 }

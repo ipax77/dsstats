@@ -7,8 +7,7 @@ using System.Text;
 namespace pax.dsstats.dbng.Services;
 public partial class RatingRepository
 {
-    private static readonly string csvBasePath = "/data/mysqlfiles";
-    public static void CreatePlayerRatingCsv(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
+    public static void CreatePlayerRatingCsv(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings, string csvBasePath)
     {
         StringBuilder sb = new();
         sb.Append($"{nameof(PlayerRating.PlayerRatingId)},");
@@ -58,20 +57,20 @@ public partial class RatingRepository
         File.WriteAllText($"{csvBasePath}/PlayerRatings.csv", sb.ToString());
     }
 
-    public int WriteMmrChangeCsv(List<MmrChange> replayPlayerMmrChanges, int appendId)
+    public int WriteMmrChangeCsv(List<MmrChange> replayPlayerMmrChanges, int appendId, string csvBasePath)
     {
         bool append = appendId > 0;
 
         StringBuilder sb = new();
-        if (!append)
-        {
-            sb.Append($"{nameof(ReplayPlayerRating.ReplayPlayerRatingId)},");
-            sb.Append($"{nameof(ReplayPlayerRating.MmrChange)},");
-            sb.Append($"{nameof(ReplayPlayerRating.Pos)},");
-            sb.Append($"{nameof(ReplayPlayerRating.ReplayPlayerId)},");
-            sb.Append($"{nameof(ReplayPlayerRating.ReplayId)}");
-            sb.Append(Environment.NewLine);
-        }
+        //if (!append)
+        //{
+        //    sb.Append($"{nameof(ReplayPlayerRating.ReplayPlayerRatingId)},");
+        //    sb.Append($"{nameof(ReplayPlayerRating.MmrChange)},");
+        //    sb.Append($"{nameof(ReplayPlayerRating.Pos)},");
+        //    sb.Append($"{nameof(ReplayPlayerRating.ReplayPlayerId)},");
+        //    sb.Append($"{nameof(ReplayPlayerRating.ReplayId)}");
+        //    sb.Append(Environment.NewLine);
+        //}
 
         int i = appendId;
 
@@ -148,13 +147,20 @@ public partial class RatingRepository
         }
     }
 
-    public async Task Csv2MySql()
+    public async Task Csv2MySql(bool continueCalc, string csvBasePath)
     {
-        await PlayerRatingsFromCsv2MySql();
-        await ReplayPlayerRatingsFromCsv2MySql();
+        if (continueCalc)
+        {
+            await ContinueReplayPlayerRatingsFromCsv2MySql(csvBasePath);
+        }
+        else
+        {
+            await PlayerRatingsFromCsv2MySql(csvBasePath);
+            await ReplayPlayerRatingsFromCsv2MySql(csvBasePath);
+        }
     }
 
-    private async Task PlayerRatingsFromCsv2MySql()
+    private async Task PlayerRatingsFromCsv2MySql(string csvBasePath)
     {
         var csvFile = $"{csvBasePath}/PlayerRatings.csv";
         if (!File.Exists(csvFile))
@@ -181,7 +187,7 @@ public partial class RatingRepository
         await command.ExecuteNonQueryAsync();
     }
 
-    private async Task ReplayPlayerRatingsFromCsv2MySql()
+    private async Task ReplayPlayerRatingsFromCsv2MySql(string csvBasePath)
     {
         var csvFile = $"{csvBasePath}/ReplayPlayerRatings.csv";
         if (!File.Exists(csvFile))
@@ -201,10 +207,36 @@ public partial class RatingRepository
             COLUMNS TERMINATED BY ','
             OPTIONALLY ENCLOSED BY '""'
             ESCAPED BY '""'
-            LINES TERMINATED BY '\n'
-            IGNORE 1 LINES;
+            LINES TERMINATED BY '\n';
         ";
         command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
+        File.Delete(csvFile);
+    }
+
+    private async Task ContinueReplayPlayerRatingsFromCsv2MySql(string csvBasePath)
+    {
+        var csvFile = $"{csvBasePath}/ReplayPlayerRatings.csv";
+        if (!File.Exists(csvFile))
+        {
+            return;
+        }
+
+        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        await connection.OpenAsync();
+
+        var command = connection.CreateCommand();
+        command.CommandText =
+        $@"
+            LOAD DATA INFILE '{csvFile}'
+            INTO TABLE {nameof(ReplayContext.ReplayPlayerRatings)}
+            COLUMNS TERMINATED BY ','
+            OPTIONALLY ENCLOSED BY '""'
+            ESCAPED BY '""'
+            LINES TERMINATED BY '\n';
+        ";
+        command.CommandTimeout = 120;
+        await command.ExecuteNonQueryAsync();
+        File.Delete(csvFile);
     }
 }

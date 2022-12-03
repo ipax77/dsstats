@@ -5,8 +5,10 @@ namespace pax.dsstats.shared;
 
 public interface IRatingRepository
 {
-    Task<int> UpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId);
-    Task<UpdateResult> UpdateRavenPlayers(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings);
+    private const string csvBasePath = "/data/mysqlfiles";
+
+    Task<int> UpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId, string csvBasePath = csvBasePath);
+    Task<UpdateResult> UpdateRavenPlayers(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings, bool continueCalc, string csvBasePath = csvBasePath);
     Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token);
     Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token);
     Task<RavenPlayerDetailsDto> GetPlayerDetails(int toonId, CancellationToken token = default);
