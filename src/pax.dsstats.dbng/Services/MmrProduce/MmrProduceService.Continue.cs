@@ -49,10 +49,15 @@ public partial class MmrProduceService
                 IsUploader = rating.IsUploader,
                 CmdrCounts = GetFakeCmdrDic(rating.Main, rating.MainCount, rating.Games)
             };
-            calcRatings[rating.RatingType].Add(MmrService.GetMmrId(rating.Player), calcRating);
+            calcRatings[rating.RatingType].Add(GetMmrId(rating.Player), calcRating);
         }
 
         return calcRatings;
+    }
+
+    public static int GetMmrId(Player player)
+    {
+        return player.PlayerId; // todo
     }
 
     private List<TimeRating> GetTimeRatings(string? mmrOverTime)
