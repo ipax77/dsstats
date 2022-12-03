@@ -106,7 +106,7 @@ public static partial class MmrService
         return new MmrChange() { Hash = replay.ReplayHash, ReplayId = replay.ReplayId, Changes = mmrChanges };
     }
 
-    private static int GetMmrId(PlayerDsRDto player)
+    public static int GetMmrId(PlayerDsRDto player)
     {
         return player.PlayerId; //ToDo
     }
