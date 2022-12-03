@@ -242,16 +242,16 @@ public class DecodeService : IDisposable
             var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
             statsService.ResetStatsCache();
 
-            //if (potentialMmrContinue && newReplays.Any())
-            //{
-            //    var newReplaysDsRDto = newReplays.AsQueryable().ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider).ToList();
-            //    await mmrProduceService.ProduceRatings(new(reCalc: false), latestReplay, newReplaysDsRDto);
-            //    newReplays = new();
-            //}
-            //else
-            //{
+            if (potentialMmrContinue && newReplays.Any())
+            {
+                var newReplaysDsRDto = newReplays.AsQueryable().ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider).ToList();
+                await mmrProduceService.ProduceRatings(new(reCalc: false), latestReplay, newReplaysDsRDto);
+                newReplays = new();
+            }
+            else
+            {
                 await mmrProduceService.ProduceRatings(new(reCalc: true));
-            //}
+            }
 
             notifyCts.Cancel();
 
