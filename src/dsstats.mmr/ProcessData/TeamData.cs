@@ -2,7 +2,7 @@ using pax.dsstats.shared;
 
 namespace dsstats.mmr.ProcessData;
 
-internal record TeamData
+public record TeamData
 {
     public TeamData(ReplayDsRDto replay, IEnumerable<ReplayPlayerDsRDto> replayPlayers, bool isWinner)
     {

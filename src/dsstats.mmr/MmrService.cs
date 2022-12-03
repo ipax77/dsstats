@@ -68,10 +68,10 @@ public static partial class MmrService
         return (mmrIdRatings, mmrChangesAppendId);
     }
 
-    private static MmrChange? ProcessReplay(ReplayDsRDto replay,
-                                      Dictionary<int, CalcRating> mmrIdRatings,
-                                      Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
-                                      MmrOptions mmrOptions)
+    public static MmrChange? ProcessReplay(ReplayDsRDto replay,
+                                            Dictionary<int, CalcRating> mmrIdRatings,
+                                            Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
+                                            MmrOptions mmrOptions)
     {
         if (replay.WinnerTeam == 0)
         {
@@ -86,24 +86,32 @@ public static partial class MmrService
 
         SetReplayData(mmrIdRatings, replayData, cmdrMmrDic, mmrOptions);
 
+        var mmrChanges = ProcessReplay(replayData, mmrIdRatings, cmdrMmrDic, mmrOptions);
+
+        return new MmrChange() { Hash = replay.ReplayHash, ReplayId = replay.ReplayId, Changes = mmrChanges };
+    }
+
+    public static List<PlChange> ProcessReplay(ReplayData replayData,
+                                                Dictionary<int, CalcRating> mmrIdRatings,
+                                                Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
+                                                MmrOptions mmrOptions)
+    {
         CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.WinnerTeamData, mmrOptions);
         CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.LoserTeamData, mmrOptions);
 
-
         FixMmrEquality(replayData.WinnerTeamData, replayData.LoserTeamData);
 
-
-        var mmrChanges1 = AddPlayersRankings(mmrIdRatings, replayData.WinnerTeamData, replay.GameTime, replay.Maxkillsum);
-        var mmrChanges2 = AddPlayersRankings(mmrIdRatings, replayData.LoserTeamData, replay.GameTime, replay.Maxkillsum);
+        var mmrChanges1 = AddPlayersRankings(mmrIdRatings, replayData.WinnerTeamData, replayData.GameTime, replayData.Maxkillsum);
+        var mmrChanges2 = AddPlayersRankings(mmrIdRatings, replayData.LoserTeamData, replayData.GameTime, replayData.Maxkillsum);
         var mmrChanges = mmrChanges1.Concat(mmrChanges2).ToList();
 
-        if (mmrOptions.UseCommanderMmr && replay.Maxleaver < 90)
+        if (mmrOptions.UseCommanderMmr && replayData.Maxleaver < 90)
         {
             SetCommandersComboMmr(replayData.WinnerTeamData, cmdrMmrDic);
             SetCommandersComboMmr(replayData.LoserTeamData, cmdrMmrDic);
         }
 
-        return new MmrChange() { Hash = replay.ReplayHash, ReplayId = replay.ReplayId, Changes = mmrChanges };
+        return mmrChanges;
     }
 
     public static int GetMmrId(PlayerDsRDto player)
