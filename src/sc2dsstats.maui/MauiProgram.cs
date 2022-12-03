@@ -30,8 +30,10 @@ public static class MauiProgram
         builder.Logging.AddDebug();
 #endif
 
+        var sqliteConnectionString = $"Data Source={Path.Combine(FileSystem.Current.AppDataDirectory, DbName)}";
+
         builder.Services.AddDbContext<ReplayContext>(options => options
-            .UseSqlite($"Data Source={Path.Combine(FileSystem.Current.AppDataDirectory, DbName)}", sqlOptions =>
+            .UseSqlite(sqliteConnectionString, sqlOptions =>
             {
                 sqlOptions.MigrationsAssembly("SqliteMigrations");
                 sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
@@ -51,7 +53,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<DecodeService>();
         builder.Services.AddSingleton<UploadService>();
 
-        builder.Services.AddScoped<IRatingRepository, RatingRepository>();
+        builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRepository>();
         builder.Services.AddScoped<MmrProduceService>();
 
         builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -87,7 +89,7 @@ public static class MauiProgram
         //    .Include(i => i.ReplayPlayers)
         //        .ThenInclude(i => i.Upgrades)
         //    .OrderByDescending(o => o.GameTime)
-        //    .Take(2)
+        //    .Take(4)
         //    .ToList();
 
         //context.Replays.RemoveRange(replays);
@@ -97,10 +99,25 @@ public static class MauiProgram
 
         var build =  builder.Build();
 
+        Data.IsMaui = true;
+        Data.SqliteConnectionString = sqliteConnectionString;
         var userSettingsService = build.Services.GetRequiredService<UserSettingsService>();
 
-        var mmrProduceService = build.Services.GetRequiredService<MmrProduceService>();
-        mmrProduceService.ProduceRatings(new(true)).Wait();
+        if (!context.PlayerRatings.Any())
+        {
+            foreach (var replay in context.Replays.Include(i => i.ReplayPlayers))
+            {
+                int playerPos = replay.ReplayPlayers.FirstOrDefault(f => f.IsUploader)?.GamePos ?? 0;
+                if (playerPos > 0)
+                {
+                    replay.PlayerPos = playerPos;
+                }
+            }
+            context.SaveChanges();
+
+            var mmrProduceService = build.Services.GetRequiredService<MmrProduceService>();
+            mmrProduceService.ProduceRatings(new(true)).Wait();
+        }
         
         return build;
     }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Raven;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -50,6 +51,7 @@ public class Player
     public Player()
     {
         ReplayPlayers = new HashSet<ReplayPlayer>();
+        PlayerRatings = new HashSet<PlayerRating>();
     }
     public int PlayerId { get; set; }
     [MaxLength(50)]
@@ -62,6 +64,27 @@ public class Player
     public int? UploaderId { get; set; }
     public virtual Uploader? Uploader { get; set; }
     public virtual ICollection<ReplayPlayer> ReplayPlayers { get; set; }
+    public virtual ICollection<PlayerRating> PlayerRatings { get; set; }
+}
+
+public class PlayerRating
+{
+    public int PlayerRatingId { get; set; }
+    public RatingType RatingType { get; set; }
+    public double Rating { get; set; }
+    public int Games { get; set; }
+    public int Wins { get; set; }
+    public int Mvp { get; set; }
+    public int TeamGames { get; set; }
+    public int MainCount { get; set; }
+    public Commander Main { get; set; }
+    [MaxLength(4000)]
+    public string MmrOverTime { get; set; } = string.Empty;
+    public double Consistency { get; set; }
+    public double Confidence { get; set; }
+    public bool IsUploader { get; set; }
+    public int PlayerId { get; set; }
+    public virtual Player Player { get; set; } = null!;
 }
 
 public class Event
@@ -145,6 +168,17 @@ public class Replay
     public int UploaderId { get; set; }
 }
 
+public class ReplayPlayerRating
+{
+    public int ReplayPlayerRatingId { get; set; }
+    public double MmrChange { get; set; }
+    public int Pos { get; set; }
+    public int ReplayPlayerId { get; set; }
+    public virtual ReplayPlayer? ReplayPlayer { get; set; }
+    public int ReplayId { get; set; }
+    public virtual Replay? Replay { get; set; }
+}
+
 public class ReplayPlayer
 {
     public ReplayPlayer()
@@ -161,7 +195,6 @@ public class ReplayPlayer
     public int GamePos { get; set; }
     public int Team { get; set; }
     public PlayerResult PlayerResult { get; set; }
-    public float? MmrChange { get; set; } = null;
     public int Duration { get; set; }
     public Commander Race { get; set; }
     public Commander OppRace { get; set; }

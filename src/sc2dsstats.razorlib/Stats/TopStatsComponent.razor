@@ -1,0 +1,76 @@
+﻿@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
+@inject IDataService dataService
+@implements IDisposable
+
+@if (statsResponse != null)
+{
+    <div>
+        <h3 class="text-warning fw-bold"><a href="/stats">Top Commanders</a> past 90 days</h3>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-dark">
+            <thead>
+                <tr>
+                    <th>Commander</th>
+                    <th>Winrate</th>
+                    <th>Matchups</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in statsResponse.Items.OrderByDescending(o => o.Winrate).Take(7))
+                {
+                    <tr>
+                        <td>
+                            <img src="@HelperService.GetImageSrc(item.Cmdr)"
+                                 alt="@item.Label"
+                                 title="@item.Label"
+                                 width="30"
+                                 height="30" />
+                            @item.Label
+                        </td>
+                        <td>@item.Winrate.ToString("N2") %</td>
+                        <td class="text-center">@item.Matchups</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private StatsRequest statsRequest = new()
+        {
+            StatsMode = StatsMode.Winrate,
+            StartTime = DateTime.Today.AddDays(-90),
+            EndTime = DateTime.Today,
+            TimePeriod = "Custom",
+            Uploaders = false,
+            DefaultFilter = true,
+            GameModes = new() { GameMode.Commanders, GameMode.CommandersHeroic }
+        };
+
+    private StatsResponse? statsResponse;
+    private CancellationTokenSource cts = new();
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ = LoadData();
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    private async Task LoadData()
+    {
+        statsResponse = await dataService.GetStats(statsRequest, cts.Token);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

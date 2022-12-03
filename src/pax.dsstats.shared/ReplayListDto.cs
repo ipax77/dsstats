@@ -1,10 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace pax.dsstats.shared;
 
 public record ReplayListDto
 {
+    public int ReplayId { get; set; }
     public DateTime GameTime { get; set; }
     public int Duration { get; set; }
     public int WinnerTeam { get; set; }
@@ -15,12 +15,11 @@ public record ReplayListDto
     public bool DefaultFilter { get; set; }
     public string CommandersTeam1 { get; set; } = null!;
     public string CommandersTeam2 { get; set; } = null!;
-    [NotMapped]
+    public int MaxLeaver { get; init; }
     public double MmrChange { get; set; }
-    [NotMapped]
+    public Commander Commander { get; set; }
     [JsonIgnore]
     public Commander[] Cmdrs1 => CommandersTeam1.Split('|', StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s)).Cast<Commander>().ToArray();
-    [NotMapped]
     [JsonIgnore]
     public Commander[] Cmdrs2 => CommandersTeam2.Split('|', StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s)).Cast<Commander>().ToArray();
 }

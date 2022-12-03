@@ -63,6 +63,11 @@ public class DataService : IDataService
         return await buildService.GetBuild(request, token);
     }
 
+    public async Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default)
+    {
+        return await ratingRepository.GetRatingsCount(request, token);
+    }
+
     public async Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token = default)
     {
         return await ratingRepository.GetRatings(request, token);
@@ -85,7 +90,7 @@ public class DataService : IDataService
 
     public async Task<List<RequestNames>> GetTopPlayers(bool std)
     {
-        return await Task.FromResult(buildService.GetTopPlayers(std, 100));
+        return await buildService.GetTopPlayers(std, 25);
     }
 
     public async Task<CmdrResult> GetCmdrInfo(CmdrRequest request, CancellationToken token = default)
