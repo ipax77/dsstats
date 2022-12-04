@@ -59,4 +59,11 @@ public class RatingsController
     {
         return await ratingRepository.GetPlayerDetails(toonId);
     }
+
+    [HttpPost]
+    [Route("GetToonIdRatings")]
+    public async Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token)
+    {
+        return await ratingRepository.GetToonIdRatings(request, token);
+    }
 }

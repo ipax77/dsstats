@@ -1,26 +1,34 @@
-﻿using pax.dsstats.dbng.Repositories;
+﻿using Microsoft.Extensions.Logging;
+using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
-using pax.dsstats.shared.Raven;
 
 namespace sc2dsstats.maui.Services;
 
-public class DataService : IDataService
+public partial class DataService : IDataService
 {
     private readonly IReplayRepository replayRepository;
     private readonly BuildService buildService;
     private readonly IStatsService statsService;
     private readonly IRatingRepository ratingRepository;
+    private readonly ILogger<DataService> logger;
+    private readonly HttpClient httpClient;
 
     public DataService(IReplayRepository replayRepository,
                        BuildService buildService,
                        IStatsService statsService,
-                       IRatingRepository ratingRepository)
+                       IRatingRepository ratingRepository,
+                       ILogger<DataService> logger)
     {
         this.replayRepository = replayRepository;
         this.buildService = buildService;
         this.statsService = statsService;
         this.ratingRepository = ratingRepository;
+        this.logger = logger;
+        httpClient = new HttpClient();
+        httpClient.BaseAddress = new Uri("https://localhost:7174");
+        // httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
+        httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
     }
 
     public async Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default)
@@ -101,5 +109,10 @@ public class DataService : IDataService
     public async Task<CrossTableResponse> GetCrossTable(CrossTableRequest request, CancellationToken token = default)
     {
         return await Task.FromResult(new CrossTableResponse());
+    }
+
+    public async Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token)
+    {
+        return await ServerGetToonIdRatings(request, token);
     }
 }
