@@ -93,48 +93,8 @@ public static partial class Parse
             });
         }
 
-        replay.Mutations = Modes.Where(x => x.StartsWith("Mutation")).ToList();
-
-        if (Modes.Contains("GameModeTutorial"))
-        {
-            replay.GameMode = "GameModeTutorial";
-        }
-        else if (Modes.Contains("GameModeBrawl"))
-        {
-            if (Modes.Contains("GameModeCommanders"))
-            {
-                replay.GameMode = "GameModeBrawlCommanders";
-            }
-            else
-            {
-                replay.GameMode = "GameModeBrawl";
-            }
-        }
-        else if (Modes.Contains("GameModeCommanders"))
-            replay.GameMode = "GameModeCommanders";
-        else if (Modes.Contains("GameModeStandard"))
-            replay.GameMode = "GameModeStandard";
-        else if (Modes.Contains("GameModeGear"))
-            replay.GameMode = "GameModeGear";
-        else if (Modes.Contains("GameModeHeroicCommanders"))
-            replay.GameMode = "GameModeHeroicCommanders";
-        else if (Modes.Contains("GameModeSabotage"))
-            replay.GameMode = "GameModeSabotage";
-        else if (Modes.Contains("GameModeSwitch"))
-            replay.GameMode = "GameModeSwitch";
-        else if (replay.Mutations.Contains("MutationCommanders"))
-        {
-            replay.GameMode = "GameModeCommanders"; // fail safe
-            if (replay.Mutations.Count == 3 && replay.Mutations.Contains("MutationExpansion") && replay.Mutations.Contains("MutationOvertime")) replay.GameMode = "GameModeCommandersHeroic";
-            else if (replay.Mutations.Count == 2 && replay.Mutations.Contains("MutationOvertime")) replay.GameMode = "GameModeCommanders";
-            else if (replay.Mutations.Count >= 3) replay.GameMode = "GameModeBrawlCommanders";
-            else if (replay.Mutations.Contains("MutationAura")) replay.GameMode = "GameModeBrawlCommanders";
-        }
-        else
-        {
-            if (replay.Mutations.Count == 0) replay.GameMode = "GameModeStandard";
-            else if (replay.Mutations.Count > 0) replay.GameMode = "GameModeBrawlStandard";
-        }
-
+        // replay.Mutations = Modes.Where(x => x.StartsWith("Mutation")).ToList();
+        replay.Mutations = new(Modes);
+        SetGameModeNg(replay);
     }
 }
