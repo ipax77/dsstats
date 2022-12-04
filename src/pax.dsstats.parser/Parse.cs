@@ -166,7 +166,6 @@ public static partial class Parse
 
         ParseDetails(replay, sc2Replay.Details);
         ParseMetadata(replay, sc2Replay.Metadata);
-        // ParseTrackerEvents(replay, sc2Replay.TrackerEvents);
         ParseTrackerEventsNg(replay, sc2Replay.TrackerEvents);
 
         if (replay.Duration == 0)

@@ -93,48 +93,81 @@ public static partial class Parse
             });
         }
 
-        replay.Mutations = Modes.Where(x => x.StartsWith("Mutation")).ToList();
+        // replay.Mutations = Modes.Where(x => x.StartsWith("Mutation")).ToList();
+        replay.Mutations = new(Modes);
+        SetGameModeNg(replay);
+    }
 
-        if (Modes.Contains("GameModeTutorial"))
+    private static void SetGameModeNg(DsReplay replay)
+    {
+        var gameModes = replay.Mutations.Where(x => x.StartsWith("GameMode")).ToList();
+        var mutations = replay.Mutations.Where(x => x.StartsWith("Mutation")).ToList();
+
+        if (gameModes.Count == 1)
         {
-            replay.GameMode = "GameModeTutorial";
+            replay.GameMode = gameModes.First();
+            return;
         }
-        else if (Modes.Contains("GameModeBrawl"))
+        else if (gameModes.Any())
         {
-            if (Modes.Contains("GameModeCommanders"))
+            if (replay.Mutations.Contains("GameModeBrawl"))
             {
-                replay.GameMode = "GameModeBrawlCommanders";
+                if (replay.Mutations.Contains("GameModeCommanders"))
+                {
+                    replay.GameMode = "GameModeBrawlCommanders";
+                    return;
+                }
+                else if (replay.Mutations.Contains("GameModeStandard"))
+                {
+                    replay.GameMode = "GameModeBrawlStandard";
+                    return;
+                }
+            }
+        }
+        else // time before GameMode existed
+        {
+            if (mutations.Contains("MutationSuperscan"))
+            {
+                mutations.Remove("MutationSuperscan"); // 1v1 only?
+            }
+
+            if (mutations.Contains("MutationCommanders"))
+            {
+                if (mutations.Count == 3
+                    && mutations.Contains("MutationExpansion")
+                    && mutations.Contains("MutationOvertime"))
+                {
+                    replay.GameMode = "GameModeHeroicCommanders";
+                }
+                else if (mutations.Count == 2
+                    && mutations.Contains("MutationOvertime"))
+                {
+                    replay.GameMode = "GameModeCommanders";
+                }
+                else if (mutations.Count >= 3)
+                {
+                    replay.GameMode = "GameModeBrawlCommanders";
+                }
+                else if (mutations.Contains("MutationAura"))
+                {
+                    replay.GameMode = "GameModeBrawlCommanders";
+                }
+                else
+                {
+                    replay.GameMode = "GameModeCommanders";
+                }
             }
             else
             {
-                replay.GameMode = "GameModeBrawl";
+                if (mutations.Count == 0)
+                {
+                    replay.GameMode = "GameModeStandard";
+                }
+                else
+                {
+                    replay.GameMode = "GameModeBrawlStandard";
+                }
             }
         }
-        else if (Modes.Contains("GameModeCommanders"))
-            replay.GameMode = "GameModeCommanders";
-        else if (Modes.Contains("GameModeStandard"))
-            replay.GameMode = "GameModeStandard";
-        else if (Modes.Contains("GameModeGear"))
-            replay.GameMode = "GameModeGear";
-        else if (Modes.Contains("GameModeHeroicCommanders"))
-            replay.GameMode = "GameModeHeroicCommanders";
-        else if (Modes.Contains("GameModeSabotage"))
-            replay.GameMode = "GameModeSabotage";
-        else if (Modes.Contains("GameModeSwitch"))
-            replay.GameMode = "GameModeSwitch";
-        else if (replay.Mutations.Contains("MutationCommanders"))
-        {
-            replay.GameMode = "GameModeCommanders"; // fail safe
-            if (replay.Mutations.Count == 3 && replay.Mutations.Contains("MutationExpansion") && replay.Mutations.Contains("MutationOvertime")) replay.GameMode = "GameModeCommandersHeroic";
-            else if (replay.Mutations.Count == 2 && replay.Mutations.Contains("MutationOvertime")) replay.GameMode = "GameModeCommanders";
-            else if (replay.Mutations.Count >= 3) replay.GameMode = "GameModeBrawlCommanders";
-            else if (replay.Mutations.Contains("MutationAura")) replay.GameMode = "GameModeBrawlCommanders";
-        }
-        else
-        {
-            if (replay.Mutations.Count == 0) replay.GameMode = "GameModeStandard";
-            else if (replay.Mutations.Count > 0) replay.GameMode = "GameModeBrawlStandard";
-        }
-
     }
 }
