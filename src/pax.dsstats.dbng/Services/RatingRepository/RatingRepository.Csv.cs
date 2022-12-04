@@ -99,11 +99,11 @@ public partial class RatingRepository
         return i;
     }
 
-    public static string? GetDbMmrOverTime(List<TimeRating> timeRatings)
+    public static string GetDbMmrOverTime(List<TimeRating> timeRatings)
     {
         if (!timeRatings.Any())
         {
-            return null;
+            return "";
         }
 
         if (timeRatings.Count == 1)
