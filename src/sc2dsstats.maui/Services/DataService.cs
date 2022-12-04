@@ -26,8 +26,8 @@ public partial class DataService : IDataService
         this.ratingRepository = ratingRepository;
         this.logger = logger;
         httpClient = new HttpClient();
-        httpClient.BaseAddress = new Uri("https://localhost:7174");
-        // httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
+        // httpClient.BaseAddress = new Uri("https://localhost:7174");
+        httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
     }
 
