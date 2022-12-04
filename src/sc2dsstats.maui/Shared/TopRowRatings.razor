@@ -1,0 +1,109 @@
+﻿@using System.Globalization;
+@using pax.dsstats.shared
+@using sc2dsstats.maui.Services
+@inject IDataService dataService
+@implements IDisposable
+
+@if (toonIdRatingResponse != null && toonIdRatingResponse.Ratings.Any())
+{
+    <div class="top-row bg-secondary px-2" style="overflow: hidden;">
+        <div class="row ms-1">
+            @foreach (var rating in toonIdRatingResponse.Ratings)
+            {
+                <div class="col-auto d-flex border rounded">
+                    <div class="align-self-center">
+                        <span class="badge text-warning ps-0" style="font-size: 1.0rem;">
+                            @rating.Player.Name
+                            <span class="border rounded p-1" style="font-size: 0.7rem;">
+                                @Data.GetRegionString(rating.Player.RegionId)
+                            </span>
+                        </span>
+                    </div>
+                    <div>
+                        <span class="badge bg-primary" style="font-size: 1.0rem;">
+                            <span class="small">
+                                @rating.RatingType
+                            </span>
+                            <br />
+                            <span class="text-warning">@rating.Rating.ToString("N2", CultureInfo.InvariantCulture)</span>
+                        </span>
+                    </div>
+                    @if (rating.MmrChange != 0)
+                    {
+                        <div class="align-self-center">
+                            <span class="oi @(rating.MmrChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">
+                                @rating.MmrChange.ToString("N1", CultureInfo.InvariantCulture)
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private ToonIdRatingResponse? toonIdRatingResponse;
+    private CancellationTokenSource cts = new();
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ = LoadData();
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    private async Task LoadData()
+    {
+        toonIdRatingResponse = await dataService.GetToonIdRatings(new ToonIdRatingRequest()
+            {
+                RatingType = pax.dsstats.shared.Raven.RatingType.None,
+                ToonIds = UserSettingsService.UserSettings.BattleNetInfos
+                                            .SelectMany(s => s.ToonIds)
+                                            .Select(s => s.ToonId)
+                                            .Distinct()
+                                            .ToList()
+            }, cts.Token);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public async Task UpdateData(int toonId)
+    {
+        var response = await dataService.GetToonIdRatings(new ToonIdRatingRequest()
+            {
+                RatingType = pax.dsstats.shared.Raven.RatingType.None,
+                ToonIds = new List<int>() { toonId }
+            }, cts.Token);
+
+        foreach (var rating in response.Ratings)
+        {
+            if (toonIdRatingResponse == null)
+            {
+                toonIdRatingResponse = new();
+            }
+
+            var currentRating = toonIdRatingResponse.Ratings
+                .FirstOrDefault(f => f.Player.ToonId == rating.Player.ToonId
+                    && f.RatingType == rating.RatingType);
+
+            if (currentRating == null)
+            {
+                toonIdRatingResponse.Ratings.Add(rating);
+            }
+            else
+            {
+                currentRating.MmrChange +=
+                    rating.Rating - currentRating.Rating + currentRating.MmrChange;
+            }
+        }
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

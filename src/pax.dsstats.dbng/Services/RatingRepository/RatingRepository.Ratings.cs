@@ -106,4 +106,27 @@ public partial class RatingRepository
 
         return ratings;
     }
+
+    public async Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var ratings = context.PlayerRatings
+            .Where(x => request.ToonIds.Contains(x.Player.ToonId));
+
+        if (request.RatingType != shared.Raven.RatingType.None)
+        {
+            ratings = ratings.Where(x => x.RatingType == request.RatingType);
+        }
+
+        return new ToonIdRatingResponse()
+        {
+            Ratings = await ratings
+                .OrderByDescending(o => o.Rating)
+                .Take(10)
+                .ProjectTo<PlayerRatingDetailDto>(mapper.ConfigurationProvider)
+                .ToListAsync(token)
+        };
+    }
 }

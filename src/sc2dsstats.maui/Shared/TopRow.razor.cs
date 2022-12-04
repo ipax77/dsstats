@@ -26,6 +26,7 @@ public partial class TopRow : ComponentBase, IDisposable
     private TimeSpan eta = TimeSpan.Zero;
     private UploadStatus uploadStatus;
     private uint updateProgress;
+    private bool showRatings = true;
 
     // private ReplaysFailedModal? replaysFailedModal;
 
