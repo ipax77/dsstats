@@ -18,6 +18,15 @@ public class DataService : IDataService
         this.logger = logger;
     }
 
+    public void SetFromServer(bool fromServer)
+    {
+    }
+
+    public bool GetFromServer()
+    {
+        return true;
+    }
+
     public async Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default)
     {
         try

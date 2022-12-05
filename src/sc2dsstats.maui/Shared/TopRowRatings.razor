@@ -2,6 +2,7 @@
 @using pax.dsstats.shared
 @using sc2dsstats.maui.Services
 @inject IDataService dataService
+@inject IRatingRepository ratingRepository
 @implements IDisposable
 
 @if (toonIdRatingResponse != null && toonIdRatingResponse.Ratings.Any())
@@ -25,7 +26,7 @@
                                 @rating.RatingType
                             </span>
                             <br />
-                            <span class="text-warning">@rating.Rating.ToString("N2", CultureInfo.InvariantCulture)</span>
+                            <span class="text-warning">@((rating.Rating + rating.MmrChange).ToString("N2", CultureInfo.InvariantCulture))</span>
                         </span>
                     </div>
                     @if (rating.MmrChange != 0)
@@ -57,24 +58,50 @@
 
     private async Task LoadData()
     {
+        var toonIds = UserSettingsService.UserSettings.BattleNetInfos
+            .SelectMany(s => s.ToonIds)
+            .Select(s => s.ToonId)
+            .Distinct()
+            .ToList();
+
         toonIdRatingResponse = await dataService.GetToonIdRatings(new ToonIdRatingRequest()
             {
                 RatingType = pax.dsstats.shared.Raven.RatingType.None,
-                ToonIds = UserSettingsService.UserSettings.BattleNetInfos
-                                            .SelectMany(s => s.ToonIds)
-                                            .Select(s => s.ToonId)
-                                            .Distinct()
-                                            .ToList()
+                ToonIds = toonIds
             }, cts.Token);
+
+        await SetFakeDiffs(toonIds);
+
         await InvokeAsync(() => StateHasChanged());
     }
 
-    public async Task UpdateData(int toonId)
+    private async Task SetFakeDiffs(List<int> toonIds)
     {
-        var response = await dataService.GetToonIdRatings(new ToonIdRatingRequest()
+        var localRatings = await ratingRepository.GetToonIdRatings(new ToonIdRatingRequest()
             {
                 RatingType = pax.dsstats.shared.Raven.RatingType.None,
-                ToonIds = new List<int>() { toonId }
+                ToonIds = toonIds
+            }, cts.Token);
+
+        foreach (var rating in localRatings.Ratings)
+        {
+            var serverRating = toonIdRatingResponse?.Ratings
+                .FirstOrDefault(f => f.RatingType == rating.RatingType 
+                    && f.Player.ToonId == rating.Player.ToonId);
+
+            if (serverRating != null)
+            {
+                serverRating.FakeDiff = rating.Rating - serverRating.Rating;
+            }
+        }
+    }
+
+    public async Task UpdateFakeData(List<int> toonIds)
+    {
+        var response = await ratingRepository.GetToonIdRatings(new ToonIdRatingRequest()
+            {
+                RatingType = pax.dsstats.shared.Raven.RatingType.None,
+                ToonIds = toonIds
             }, cts.Token);
 
         foreach (var rating in response.Ratings)
@@ -90,7 +117,40 @@
 
             if (currentRating == null)
             {
-                toonIdRatingResponse.Ratings.Add(rating);
+                continue;
+            }
+            else
+            {
+                var mmrChange = (rating.Rating + rating.MmrChange) - (currentRating.Rating + currentRating.FakeDiff);
+                currentRating.MmrChange += mmrChange;
+            }
+        }
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public async Task UpdateData(List<int> toonIds)
+    {
+        var response = await dataService.GetToonIdRatings(new ToonIdRatingRequest()
+            {
+                RatingType = pax.dsstats.shared.Raven.RatingType.None,
+                ToonIds = toonIds
+            }, cts.Token);
+
+        foreach (var rating in response.Ratings)
+        {
+            if (toonIdRatingResponse == null)
+            {
+                toonIdRatingResponse = new();
+            }
+
+            var currentRating = toonIdRatingResponse.Ratings
+                .FirstOrDefault(f => f.Player.ToonId == rating.Player.ToonId
+                    && f.RatingType == rating.RatingType);
+
+            if (currentRating == null)
+            {
+                // toonIdRatingResponse.Ratings.Add(rating);
+                continue;
             }
             else
             {

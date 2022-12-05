@@ -5,6 +5,7 @@
 @using pax.dsstats.shared;
 @using pax.dsstats.shared.Raven;
 @using sc2dsstats.razorlib.Builds;
+@inject IDataService dataService
 @inject IJSRuntime IJSRuntime
 @inject IToastService toastService
 @implements IDisposable
@@ -86,7 +87,7 @@
         <div class="col-auto">
             <div class="form-check form-switch">
                 <label class="form-check-label">
-                    @(IsMaui ? "Players" : "Uploaders")
+                    @(!Data.IsMaui || dataService.GetFromServer() ? "Uploaders" : "Players")
                     <InputCheckbox class="form-check-input" @bind-Value="StatsRequest.Uploaders">
                     </InputCheckbox>
                 </label>
@@ -118,6 +119,16 @@
                     <div class="ms-2">
                         <span class="oi oi-info pointer" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki#te-map'"></span>
                     </div>
+                </div>
+            }
+            @if (Data.IsMaui)
+            {
+                <div class="form-check form-switch align-self-center">
+                    <label class="form-check-label">
+                        Online Stats
+                        <input type="checkbox" class="form-check-input" @onchange="FromServerChange">
+                        </input>
+                    </label>
                 </div>
             }
         </div>
@@ -162,9 +173,6 @@
 
     [Parameter]
     public EventCallback<List<Commander>> OnAddRemoveCmdrsChanged { get; set; }
-
-    [Parameter]
-    public bool IsMaui { get; set; }
 
     [Parameter]
     public List<RequestNames> DefaultPlayers { get; set; } = new();
@@ -253,6 +261,16 @@
             StatsRequest.AddRemoveCommanders.Clear();
         }
         OnRequestChanged.InvokeAsync();
+    }
+
+    private void FromServerChange(ChangeEventArgs e)
+    {
+        if (e.Value is bool value)
+        {
+            dataService.SetFromServer(value);
+            StatsRequest.Uploaders = !value;
+            OnRequestChanged.InvokeAsync();
+        }
     }
 
     private bool IsMultiselect(StatsMode statsMode)

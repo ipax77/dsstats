@@ -217,7 +217,7 @@ public partial class DataService
         return new();
     }
 
-    public async Task<PlayerDetailDto> GetPlayerDetailsServer(int toonId, CancellationToken token)
+    public async Task<PlayerDetailDto> ServerGetPlayerDetails(int toonId, CancellationToken token)
     {
         try
         {

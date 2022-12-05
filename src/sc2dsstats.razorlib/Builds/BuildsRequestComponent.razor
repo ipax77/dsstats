@@ -64,6 +64,16 @@
             <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => playerSelectModal?.Show()">Add Player</button>
             <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => playerDeselectModal?.Show()">Remove Player</button>
         </div>
+        @if (Data.IsMaui)
+        {
+            <div class="col-auto form-check form-switch">
+                <label class="form-check-label">
+                    Online Builds
+                    <input type="checkbox" class="form-check-input" @onchange="FromServerChange">
+                    </input>
+                </label>
+            </div>
+        }
     </div>
 </EditForm>
 
@@ -119,6 +129,15 @@
         OnRequestChanged.InvokeAsync();
     }
 
+    private void FromServerChange(ChangeEventArgs e)
+    {
+        if (e.Value is bool value)
+        {
+            dataService.SetFromServer(value);
+            DefaultPlayers();
+        }
+    }
+
     private async Task TopPlayers(bool std)
     {
         BuildRequest.PlayerNames = await dataService.GetTopPlayers(std);
@@ -129,7 +148,7 @@
 
     private void DefaultPlayers()
     {
-        if (!MauiPlayers.Any())
+        if (!MauiPlayers.Any() || dataService.GetFromServer())
         {
             BuildRequest.PlayerNames = Data.GetDefaultRequestNames();
         }

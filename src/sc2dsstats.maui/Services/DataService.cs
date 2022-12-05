@@ -11,6 +11,7 @@ public partial class DataService : IDataService
     private readonly BuildService buildService;
     private readonly IStatsService statsService;
     private readonly IRatingRepository ratingRepository;
+    private readonly IFromServerSwitchService fromServerSwitchService;
     private readonly ILogger<DataService> logger;
     private readonly HttpClient httpClient;
 
@@ -18,12 +19,14 @@ public partial class DataService : IDataService
                        BuildService buildService,
                        IStatsService statsService,
                        IRatingRepository ratingRepository,
+                       IFromServerSwitchService fromServerSwitchService,
                        ILogger<DataService> logger)
     {
         this.replayRepository = replayRepository;
         this.buildService = buildService;
         this.statsService = statsService;
         this.ratingRepository = ratingRepository;
+        this.fromServerSwitchService = fromServerSwitchService;
         this.logger = logger;
         httpClient = new HttpClient();
         // httpClient.BaseAddress = new Uri("https://localhost:7174");
@@ -31,24 +34,55 @@ public partial class DataService : IDataService
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
     }
 
+    public void SetFromServer(bool fromServer)
+    {
+        fromServerSwitchService.SetFromServer(fromServer);
+    }
+
+    public bool GetFromServer()
+    {
+        return fromServerSwitchService.GetFromServer();
+    }
+
     public async Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default)
     {
-        var replayDto = await replayRepository.GetReplay(replayHash, true, token);
-        if (replayDto == null)
+        if (fromServerSwitchService.GetFromServer())
         {
-            return null;
+            return await ServerGetReplay(replayHash, token);
         }
-        return replayDto;
+        else
+        {
+            var replayDto = await replayRepository.GetReplay(replayHash, true, token);
+            if (replayDto == null)
+            {
+                return null;
+            }
+            return replayDto;
+        }
     }
 
     public async Task<int> GetReplaysCount(ReplaysRequest request, CancellationToken token = default)
     {
-        return await replayRepository.GetReplaysCount(request, token);
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await ServerGetReplaysCount(request, token);
+        }
+        else
+        {
+            return await replayRepository.GetReplaysCount(request, token);
+        }
     }
 
     public async Task<ICollection<ReplayListDto>> GetReplays(ReplaysRequest request, CancellationToken token = default)
     {
-        return await replayRepository.GetReplays(request, token);
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await ServerGetReplays(request, token);
+        }
+        else
+        {
+            return await replayRepository.GetReplays(request, token);
+        }
     }
 
     public async Task<ICollection<string>> GetReplayPaths()
@@ -63,22 +97,50 @@ public partial class DataService : IDataService
 
     public async Task<StatsResponse> GetStats(StatsRequest request, CancellationToken token = default)
     {
-        return await statsService.GetStatsResponse(request);
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await ServerGetStats(request, token);
+        }
+        else
+        {
+            return await statsService.GetStatsResponse(request);
+        }
     }
 
     public async Task<BuildResponse> GetBuild(BuildRequest request, CancellationToken token = default)
     {
-        return await buildService.GetBuild(request, token);
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await ServerGetBuild(request, token);
+        }
+        else
+        {
+            return await buildService.GetBuild(request, token);
+        }
     }
 
     public async Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default)
     {
-        return await ratingRepository.GetRatingsCount(request, token);
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await ServerGetRatingsCount(request, token);
+        }
+        else
+        {
+            return await ratingRepository.GetRatingsCount(request, token);
+        }
     }
 
     public async Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token = default)
     {
-        return await ratingRepository.GetRatings(request, token);
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await ServerGetRatings(request, token);
+        }
+        else
+        {
+            return await ratingRepository.GetRatings(request, token);
+        }
     }
 
     public async Task<List<MmrDevDto>> GetRatingsDeviation()
@@ -88,7 +150,14 @@ public partial class DataService : IDataService
 
     public async Task<PlayerDetailDto> GetPlayerDetails(int toonId, CancellationToken token)
     {
-        return await statsService.GetPlayerDetails(toonId, token);
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await ServerGetPlayerDetails(toonId, token);
+        }
+        else
+        {
+            return await statsService.GetPlayerDetails(toonId, token);
+        }
     }
 
     public async Task<List<MmrDevDto>> GetRatingsDeviationStd()
@@ -98,7 +167,14 @@ public partial class DataService : IDataService
 
     public async Task<List<RequestNames>> GetTopPlayers(bool std)
     {
-        return await buildService.GetTopPlayers(std, 25);
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await ServerGetTopPlayers(std);
+        }
+        else
+        {
+            return await buildService.GetTopPlayers(std, 25);
+        }
     }
 
     public async Task<CmdrResult> GetCmdrInfo(CmdrRequest request, CancellationToken token = default)

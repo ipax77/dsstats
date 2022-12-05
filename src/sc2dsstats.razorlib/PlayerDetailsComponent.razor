@@ -34,6 +34,18 @@
         <div class="align-self-center ms-3">
             <button type="button" class="btn btn-outline-light" @onclick="ShowReplays">Replays</button>
         </div>
+        @if (Data.IsMaui)
+        {
+            <div class="ms-auto">
+                <div class="form-check form-switch">
+                    <label class="form-check-label">
+                        Server Details
+                        <input type="checkbox" class="form-check-input" checked="@dataService.GetFromServer()" @onchange="FromServerChange">
+                        </input>
+                    </label>
+                </div>
+            </div>
+        }
     </div>
     <div class="row">
         <div class="col-auto" style="width: 600px;">
@@ -94,6 +106,15 @@
             _ = LoadPlayerDetails();
         }
         base.OnAfterRender(firstRender);
+    }
+
+    private void FromServerChange(ChangeEventArgs e)
+    {
+        if (e.Value is bool value)
+        {
+            dataService.SetFromServer(value);
+            _ = LoadPlayerDetails();
+        }
     }
 
     private void EventTriggered(ChartJsEvent e)

@@ -59,6 +59,16 @@
                     </label>
 
                 </div>
+                @if (Data.IsMaui)
+                {
+                    <div class="col-auto form-check form-switch align-self-center me-2">
+                        <label class="form-check-label">
+                            Online Ratings
+                            <input type="checkbox" class="form-check-input" @onchange="FromServerChange">
+                            </input>
+                        </label>
+                    </div>
+                }
             </div>
         </EditForm>
         <div class="align-self-center ms-2">
@@ -204,6 +214,7 @@
 
     protected override void OnInitialized()
     {
+        dataService.SetFromServer(false);
         _ = SetRatingsCount();
         editContext = new EditContext(RatingsRequest);
         editContext.OnFieldChanged += FieldChanged;
@@ -216,6 +227,15 @@
     {
         _ = Reload();
         OnRatingsChanged.InvokeAsync();
+    }
+
+    private void FromServerChange(ChangeEventArgs e)
+    {
+        if (e.Value is bool value)
+        {
+            dataService.SetFromServer(value);
+            _ = Reload();
+        }
     }
 
     private async Task SetRatingsCount()

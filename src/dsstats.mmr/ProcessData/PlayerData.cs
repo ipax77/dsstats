@@ -2,7 +2,7 @@ using pax.dsstats.shared;
 
 namespace dsstats.mmr.ProcessData;
 
-internal record PlayerData
+public record PlayerData
 {
     public PlayerData(ReplayDsRDto replay, ReplayPlayerDsRDto replayPlayer)
     {
@@ -27,7 +27,7 @@ internal record PlayerData
     public PlayerDeltas Deltas { get; init; }
 }
 
-internal record PlayerDeltas
+public record PlayerDeltas
 {
     public double Mmr { get; set; }
     public double Consistency { get; set; }

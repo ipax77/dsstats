@@ -17,14 +17,14 @@ public partial class StatsChartComponent : ComponentBase
     [Parameter]
     public EventCallback<Commander> OnLabelClicked { get; set; }
 
-    [Parameter]
-    public bool IsMaui { get; set; }
-
     [Inject]
     protected ILogger<StatsChartComponent> Logger { get; set; } = default!;
 
     [Inject]
     protected IJSRuntime IJSRuntime { get; set; } = default!;
+
+    [Inject]
+    protected IDataService dataService { get; set; } = default!;
 
     private IconsChartJsConfig chartConfig = null!;
     private ChartComponent? chartComponent;
@@ -213,7 +213,7 @@ public partial class StatsChartComponent : ComponentBase
         string title = $"{statsRequest.StatsMode} - {statsRequest.TimePeriod}";
         if (statsRequest.Uploaders)
         {
-            string append = IsMaui ? "Players" : "Uploaders";
+            string append = !Data.IsMaui || dataService.GetFromServer() ? "Uploaders" : "Players";
             title = title + " - " + append;
         }
         return new IndexableOption<string>(title);

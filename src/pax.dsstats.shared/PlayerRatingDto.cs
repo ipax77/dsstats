@@ -38,4 +38,6 @@ public record PlayerRatingDetailDto
     public PlayerRatingPlayerDto Player { get; init; } = null!;
     [NotMapped]
     public double MmrChange { get; set; }
+    [NotMapped]
+    public double FakeDiff { get; set; }
 }
