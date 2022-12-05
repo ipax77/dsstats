@@ -1,24 +1,18 @@
-﻿using pax.dsstats.shared;
+﻿
+using Microsoft.Extensions.Logging;
 using pax.dsstats.shared.Raven;
+using pax.dsstats.shared;
 using System.Net.Http.Json;
 
-namespace pax.dsstats.web.Client.Services;
+namespace sc2dsstats.maui.Services;
 
-public class DataService : IDataService
+public partial class DataService
 {
-    private readonly HttpClient httpClient;
-    private readonly ILogger<DataService> logger;
     private readonly string statsController = "api/Stats/";
     private readonly string buildsController = "api/Builds/";
     private readonly string ratingController = "api/Ratings/";
 
-    public DataService(HttpClient httpClient, ILogger<DataService> logger)
-    {
-        this.httpClient = httpClient;
-        this.logger = logger;
-    }
-
-    public async Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default)
+    public async Task<ReplayDto?> ServerGetReplay(string replayHash, CancellationToken token = default)
     {
         try
         {
@@ -41,7 +35,7 @@ public class DataService : IDataService
         return null;
     }
 
-    public async Task<int> GetReplaysCount(ReplaysRequest request, CancellationToken token = default)
+    public async Task<int> ServerGetReplaysCount(ReplaysRequest request, CancellationToken token = default)
     {
         try
         {
@@ -64,7 +58,7 @@ public class DataService : IDataService
         return 0;
     }
 
-    public async Task<ICollection<ReplayListDto>> GetReplays(ReplaysRequest request, CancellationToken token = default)
+    public async Task<ICollection<ReplayListDto>> ServerGetReplays(ReplaysRequest request, CancellationToken token = default)
     {
         try
         {
@@ -88,7 +82,7 @@ public class DataService : IDataService
     }
 
 
-    public async Task<StatsResponse> GetStats(StatsRequest request, CancellationToken token = default)
+    public async Task<StatsResponse> ServerGetStats(StatsRequest request, CancellationToken token = default)
     {
         try
         {
@@ -111,7 +105,7 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<BuildResponse> GetBuild(BuildRequest request, CancellationToken token = default)
+    public async Task<BuildResponse> ServerGetBuild(BuildRequest request, CancellationToken token = default)
     {
         try
         {
@@ -134,7 +128,7 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token = default)
+    public async Task<int> ServerGetRatingsCount(RatingsRequest request, CancellationToken token = default)
     {
         try
         {
@@ -157,7 +151,7 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token = default)
+    public async Task<RatingsResult> ServerGetRatings(RatingsRequest request, CancellationToken token = default)
     {
         try
         {
@@ -180,7 +174,7 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<List<RavenPlayerDto>> GetPlayerRatings(int toonId)
+    public async Task<List<RavenPlayerDto>> ServerGetPlayerRatings(int toonId)
     {
         try
         {
@@ -197,7 +191,7 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<List<MmrDevDto>> GetRatingsDeviation()
+    public async Task<List<MmrDevDto>> ServerGetRatingsDeviation()
     {
         try
         {
@@ -210,7 +204,7 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<List<MmrDevDto>> GetRatingsDeviationStd()
+    public async Task<List<MmrDevDto>> ServerGetRatingsDeviationStd()
     {
         try
         {
@@ -223,7 +217,7 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<PlayerDetailDto> GetPlayerDetails(int toonId, CancellationToken token)
+    public async Task<PlayerDetailDto> GetPlayerDetailsServer(int toonId, CancellationToken token)
     {
         try
         {
@@ -238,7 +232,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting playerDetails: {response.StatusCode}");
             }
         }
-        catch(OperationCanceledException) { }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             logger.LogError($"failed getting playerDetails: {ex.Message}");
@@ -246,7 +240,7 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<List<RequestNames>> GetTopPlayers(bool std)
+    public async Task<List<RequestNames>> ServerGetTopPlayers(bool std)
     {
         try
         {
@@ -263,7 +257,7 @@ public class DataService : IDataService
         return Data.GetDefaultRequestNames();
     }
 
-    public async Task<CmdrResult> GetCmdrInfo(CmdrRequest request, CancellationToken token = default)
+    public async Task<CmdrResult> ServerGetCmdrInfo(CmdrRequest request, CancellationToken token = default)
     {
         try
         {
@@ -285,7 +279,7 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<CrossTableResponse> GetCrossTable(CrossTableRequest request, CancellationToken token = default)
+    public async Task<CrossTableResponse> ServerGetCrossTable(CrossTableRequest request, CancellationToken token = default)
     {
         try
         {
@@ -307,7 +301,7 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token)
+    public async Task<ToonIdRatingResponse> ServerGetToonIdRatings(ToonIdRatingRequest request, CancellationToken token)
     {
         try
         {
@@ -327,15 +321,5 @@ public class DataService : IDataService
             logger.LogError($"failed getting toonIdRatings: {ex.Message}");
         }
         return new();
-    }
-
-    public async Task<ICollection<string>> GetReplayPaths()
-    {
-        return await Task.FromResult(new List<string>());
-    }
-
-    public async Task<List<string>> GetTournaments()
-    {
-        return await Task.FromResult(new List<string>());
     }
 }

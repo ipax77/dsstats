@@ -91,10 +91,13 @@
                                 @if (replaysRequest.WithMmrChange)
                                 {
                                     <td>
-                                        <div class="d-flex justify-content-between" style="width: 75px;">
-                                            <div><span class="oi @(replay.MmrChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success") d-block">@replay.MmrChange.ToString("N1", CultureInfo.InvariantCulture)</span></div>
-                                            <div class="preload-@(replay.Commander.ToString().ToLower())" style="width: 30px; height: 30px;"></div>
-                                        </div>
+                                        @if (replay.MmrChange != 0)
+                                        {
+                                            <div class="d-flex justify-content-between" style="width: 75px;">
+                                                <div><span class="oi @(replay.MmrChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success") d-block">@replay.MmrChange.ToString("N1", CultureInfo.InvariantCulture)</span></div>
+                                                <div class="preload-@(replay.Commander.ToString().ToLower())" style="width: 30px; height: 30px;"></div>
+                                            </div>
+                                        }
                                     </td>
                                 }
                                 <td>@replay.GameTime.ToString(@"yyyy-MM-dd")</td>

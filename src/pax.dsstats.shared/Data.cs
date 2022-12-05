@@ -43,6 +43,7 @@ public static class Data
             "GameModeBrawl" => GameMode.BrawlStandard,
             "GameModeCommanders" => GameMode.Commanders,
             "GameModeCommandersHeroic" => GameMode.CommandersHeroic,
+            "GameModeHeroicCommanders" => GameMode.CommandersHeroic,
             "GameModeGear" => GameMode.Gear,
             "GameModeSabotage" => GameMode.Sabotage,
             "GameModeStandard" => GameMode.Standard,

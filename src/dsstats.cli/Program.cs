@@ -103,9 +103,10 @@ class Program
             AttributeEvents = false
         };
 
-        var replayPaths = Directory.GetFiles(replaysPath, "*.SC2Replay", SearchOption.TopDirectoryOnly);
-
-        await foreach (var decodeResult in decoder.DecodeParallelWithErrorReport(replayPaths, 4, decoderOptions, cts.Token))
+        var replayPaths = Directory.GetFiles(replaysPath, "Direct Strike*.SC2Replay", SearchOption.TopDirectoryOnly);
+        
+        HashSet<string> mutations = new();
+        await foreach (var decodeResult in decoder.DecodeParallelWithErrorReport(replayPaths, 8, decoderOptions, cts.Token))
         {
             if (cts.IsCancellationRequested)
             {
@@ -123,6 +124,7 @@ class Program
                 var dsRep = Parse.GetDsReplay(decodeResult.Sc2Replay);
                 if (dsRep != null)
                 {
+                    mutations.UnionWith(dsRep.Mutations);
                     var dtoRep = Parse.GetReplayDto(dsRep);
                     SaveReplay(dtoRep, outputPath);
                 }
@@ -136,6 +138,7 @@ class Program
                 Console.WriteLine($"failed parsing sc2Replay: {ex.Message}");
             }
         }
+        File.WriteAllText("/data/ds/mutations.txt", String.Join(",", mutations));
     }
 
     private static void SaveReplay(ReplayDto? replayDto, string outputPath)

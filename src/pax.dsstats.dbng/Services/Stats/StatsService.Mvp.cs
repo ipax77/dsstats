@@ -7,7 +7,7 @@ public partial class StatsService
 {
     private async Task<StatsResponse> GetMvp(StatsRequest request)
     {
-        if (!request.DefaultFilter)
+        if (!request.DefaultFilter || request.TeMaps)
         {
             return await GetCustomMvp(request);
         }

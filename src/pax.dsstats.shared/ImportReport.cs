@@ -19,4 +19,6 @@ public record ImportReport
     public int NewUpgrades { get; set; }
     public bool Success { get; set; }
     public string? Error { get; set; }
+    public DateTime LatestReplay { get; set; }
+    public List<ReplayDsRDto> ContinueReplays { get; set; } = new();
 }

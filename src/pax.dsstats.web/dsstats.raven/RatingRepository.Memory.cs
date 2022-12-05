@@ -135,11 +135,12 @@ public partial class RatingRepository
             }
         }
 
-        return new RatingsResult
-        {
-            Count = ratings.Count(),
-            Players = ratings.Skip(request.Skip).Take(request.Take).ToList()
-        };
+        //return new RatingsResult
+        //{
+        //    Count = ratings.Count(),
+        //    Players = ratings.Skip(request.Skip).Take(request.Take).ToList()
+        //};
+        return new();
     }
 
     private void StoreRating(RavenPlayer player, RavenRating rating)
