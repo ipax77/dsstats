@@ -52,6 +52,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<UserSettingsService>();
         builder.Services.AddSingleton<DecodeService>();
         builder.Services.AddSingleton<UploadService>();
+        builder.Services.AddSingleton<IFromServerSwitchService, FromServerSwitchService>();
 
         builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRepository>();
         builder.Services.AddScoped<MmrProduceService>();

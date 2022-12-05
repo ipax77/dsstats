@@ -82,6 +82,15 @@
                             <span class="oi oi-info pointer" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/CheatDetection'"></span>
                         </div>
                     </div>
+                } else
+                {
+                    <div class="form-check form-switch">
+                        <label class="form-check-label">
+                            From Server
+                            <input type="checkbox" class="form-check-input" @onchange="FromServerChange">
+                            </input>
+                        </label>
+                    </div>
                 }
             </div>
             <div class="col-auto">
@@ -133,6 +142,15 @@
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
         OnFieldChanged.InvokeAsync();
+    }
+
+    private void FromServerChange(ChangeEventArgs e)
+    {
+        if (e.Value is bool value)
+        {
+            dataService.SetFromServer(value);
+            OnFieldChanged.InvokeAsync();
+        }
     }
 
     private void GameModeChange(ChangeEventArgs e)

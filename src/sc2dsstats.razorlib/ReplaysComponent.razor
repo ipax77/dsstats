@@ -163,11 +163,13 @@
 
     private bool replayLoading;
     private string? lastVisitHash;
+    private bool fromServer;
 
     private bool withMmrChange;
 
     protected override async Task OnInitializedAsync()
     {
+        dataService.SetFromServer(false);
         await SetCount(replaysRequest);
 
         withMmrChange = replaysRequest.WithMmrChange;
@@ -191,6 +193,7 @@
         await semaphoreSlim.WaitAsync();
         try
         {
+            fromServer = dataService.GetFromServer();
             await OnRequestChanged.InvokeAsync(replaysRequest);
             await SetCount(replaysRequest);
             if (virtualizeComponent != null)
@@ -272,6 +275,7 @@
 
     private async void OnReplayClose()
     {
+        dataService.SetFromServer(fromServer);
         replaysRequest.ReplayHash = null;
         await OnRequestChanged.InvokeAsync(replaysRequest);
 

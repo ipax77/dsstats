@@ -10,7 +10,6 @@
         <StatsRequestComponent OnRequestChanged="RequestChanged"
                                OnChartOptionsChanged="ChartOptionsChanged"
                                OnAddRemoveCmdrsChanged="AddRemoveCmdrs"
-                               IsMaui="IsMaui"
                                DefaultPlayers="DefaultPlayers">
         </StatsRequestComponent>
     </CascadingValue>
@@ -66,7 +65,7 @@
         </CascadingValue>
     </div>
     <div class="col-7">
-        <StatsChartComponent @ref="statsChartComponent" StatsRequest="StatsRequest" IsMaui="IsMaui" OnLabelClicked="CommanderClicked"></StatsChartComponent>
+        <StatsChartComponent @ref="statsChartComponent" StatsRequest="StatsRequest" OnLabelClicked="CommanderClicked"></StatsChartComponent>
     </div>
 </div>
 
@@ -77,9 +76,6 @@
 
     [Parameter]
     public EventCallback OnRequestChanged { get; set; }
-
-    [Parameter]
-    public bool IsMaui { get; set; }
 
     [Parameter]
     public List<RequestNames> DefaultPlayers { get; set; } = new();
@@ -93,6 +89,7 @@
 
     protected override void OnInitialized()
     {
+        dataService.SetFromServer(false);
         _ = LoadData(true);
         base.OnInitialized();
     }
