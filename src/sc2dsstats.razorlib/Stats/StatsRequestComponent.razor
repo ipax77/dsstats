@@ -105,6 +105,21 @@
                     </InputCheckbox>
                 </label>
             </div>
+            @if (StatsRequest.StatsMode == StatsMode.Winrate || StatsRequest.StatsMode == StatsMode.Mvp)
+            {
+                <div class="d-flex">
+                    <div class="form-check form-switch">
+                        <label class="form-check-label">
+                            TE Maps only
+                            <InputCheckbox class="form-check-input" @bind-Value="StatsRequest.TeMaps">
+                            </InputCheckbox>
+                        </label>
+                    </div>
+                    <div class="ms-2">
+                        <span class="oi oi-info pointer" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki#te-map'"></span>
+                    </div>
+                </div>
+            }
         </div>
         @if (withPlayers)
         {
@@ -210,6 +225,11 @@
         }
         else if (e.FieldIdentifier.FieldName == nameof(StatsRequest.StatsMode))
         {
+            if (!(StatsRequest.StatsMode == StatsMode.Winrate || StatsRequest.StatsMode == StatsMode.Mvp))
+            {
+                StatsRequest.TeMaps = false;
+            }
+
             if (IsMultiselect(StatsRequest.StatsMode))
             {
                 if (StatsRequest.Interest == Commander.None)

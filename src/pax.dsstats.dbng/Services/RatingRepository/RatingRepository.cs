@@ -366,7 +366,7 @@ public partial class RatingRepository : IRatingRepository
         //}
     }
 
-    public async Task<int> UpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId)
+    public async Task<int> UpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId, string csvBasePath)
     {
         if (Data.IsMaui)
         {
@@ -374,12 +374,14 @@ public partial class RatingRepository : IRatingRepository
         }
         else
         {
-            return WriteMmrChangeCsv(replayPlayerMmrChanges, appendId);
+            return WriteMmrChangeCsv(replayPlayerMmrChanges, appendId, csvBasePath);
             // return await MysqlUpdateMmrChanges(replayPlayerMmrChanges, appendId);
         }
     }
 
-    public async Task<UpdateResult> UpdateRavenPlayers(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
+    public async Task<UpdateResult> UpdateRavenPlayers(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
+                                                       bool continueCalc,
+                                                       string csvBasePath)
     {
         if (!mmrIdRatings.Any())
         {
@@ -392,12 +394,17 @@ public partial class RatingRepository : IRatingRepository
         }
         else
         {
-            // ReCalc
-            CreatePlayerRatingCsv(mmrIdRatings);
-            await Csv2MySql();
-
-            // Continue
-            //return await MysqlUpdateRavenPlayers(mmrIdRatings);
+            if (!continueCalc)
+            {
+                // ReCalc
+                CreatePlayerRatingCsv(mmrIdRatings, csvBasePath);
+            }
+            else
+            {
+                // Continue
+                await MysqlUpdateRavenPlayers(mmrIdRatings);
+            }
+            await Csv2MySql(continueCalc, csvBasePath);
         }
         return new();
     }

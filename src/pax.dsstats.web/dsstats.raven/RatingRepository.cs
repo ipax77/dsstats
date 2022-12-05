@@ -7,7 +7,7 @@ using Raven.Client.Documents.Linq;
 
 namespace dsstats.raven;
 
-public partial class RatingRepository : IRatingRepository
+public partial class RatingRepository
 {
     public RatingRepository()
     {
@@ -166,7 +166,7 @@ public partial class RatingRepository : IRatingRepository
         //    }
         //}
         //return new UpdateResult() { Total = ravenPlayerRatings.Count };
-        return new UpdateResult();
+        return await Task.FromResult(new UpdateResult());
     }
 
     public async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetCalcRatings(List<ReplayDsRDto> replayDsRDtos)

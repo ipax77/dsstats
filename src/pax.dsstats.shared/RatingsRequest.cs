@@ -17,3 +17,14 @@ public record RatingsResult
 {
     public List<PlayerRatingDto> Players { get; set; } = new();
 }
+
+public record ToonIdRatingRequest
+{
+    public RatingType RatingType { get; set; }
+    public List<int> ToonIds { get; set; } = new();
+}
+
+public record ToonIdRatingResponse
+{
+    public List<PlayerRatingDetailDto> Ratings { get; set; } = new();
+}

@@ -2,7 +2,6 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Blazored.Toast.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
@@ -75,6 +74,7 @@ public class DecodeService : IDisposable
     private int errorCounter;
     private DateTime startTime = DateTime.UtcNow;
     private bool potentialMmrContinue;
+    public List<int> LastReplayToonIds { get; private set; } = new();
 
     private object lockobject = new object();
 
@@ -119,6 +119,7 @@ public class DecodeService : IDisposable
         errorCounter = 0;
         newReplays.Clear();
         potentialMmrContinue = false;
+        LastReplayToonIds.Clear();
         DateTime latestReplay = DateTime.MinValue;
 
         var replays = await ScanForNewReplays(true);
@@ -242,16 +243,20 @@ public class DecodeService : IDisposable
             var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
             statsService.ResetStatsCache();
 
-            //if (potentialMmrContinue && newReplays.Any())
-            //{
-            //    var newReplaysDsRDto = newReplays.AsQueryable().ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider).ToList();
-            //    await mmrProduceService.ProduceRatings(new(reCalc: false), latestReplay, newReplaysDsRDto);
-            //    newReplays = new();
-            //}
-            //else
-            //{
+            if (potentialMmrContinue && newReplays.Any())
+            {
+                var newReplaysDsRDto = newReplays.AsQueryable().ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider).ToList();
+                await mmrProduceService.ProduceRatings(new(reCalc: false), latestReplay, newReplaysDsRDto);
+                if (newReplays.Count == 1)
+                {
+                    LastReplayToonIds = GetPlayerToonIds(newReplays.First());
+                }
+                newReplays = new();
+            }
+            else
+            {
                 await mmrProduceService.ProduceRatings(new(reCalc: true));
-            //}
+            }
 
             notifyCts.Cancel();
 
@@ -265,6 +270,11 @@ public class DecodeService : IDisposable
                 _ = uploadService.UploadReplays();
             }
         }
+    }
+
+    private List<int> GetPlayerToonIds(Replay replay)
+    {
+        return replay.ReplayPlayers.Select(s => s.Player.ToonId).ToList();
     }
 
     public void StopDecoding()
@@ -298,7 +308,8 @@ public class DecodeService : IDisposable
             Decoded = decodeCounter,
             Error = errorCounter,
             Saved = dbCounter,
-            Done = true
+            Done = true,
+            ToonIds = LastReplayToonIds
         });
 
         notifyCts?.Dispose();
@@ -544,4 +555,5 @@ public class DecodeEventArgs : EventArgs
     public int Error { get; set; }
     public int Saved { get; set; }
     public bool Done { get; set; }
+    public List<int> ToonIds { get; set; } = new();
 }

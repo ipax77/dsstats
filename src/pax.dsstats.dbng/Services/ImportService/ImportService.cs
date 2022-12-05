@@ -15,19 +15,22 @@ public partial class ImportService
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
     private readonly ILogger<ImportService> logger;
-    private const string blobBaseDir = "/data/ds/replayblobs";
+    private const string defaultBlobBaseDir = "/data/ds/replayblobs";
+    private const int continueMaxCount = 100;
+    private string baseDir = defaultBlobBaseDir;
 
-    public ImportService(IServiceProvider serviceProvider, IMapper mapper, ILogger<ImportService> logger)
+    public ImportService(IServiceProvider serviceProvider, IMapper mapper, ILogger<ImportService> logger, string baseDir = defaultBlobBaseDir)
     {
         this.serviceProvider = serviceProvider;
         this.mapper = mapper;
         this.logger = logger;
+        this.baseDir = baseDir;
     }
 
     public async Task<ImportReport> ImportReplayBlobs()
     {
         Stopwatch sw = Stopwatch.StartNew();
-        var blobs = GetReplayBlobsFileNames();
+        var blobs = GetReplayBlobsFileNames(baseDir);
 
         if (!blobs.Any())
         {
@@ -105,15 +108,31 @@ public partial class ImportService
         importReport.DbDupsDeleted = delIds;
         importReport.DbDupsDuration = Convert.ToInt32(sw.Elapsed.TotalSeconds);
 
+        if (replays.Count <= continueMaxCount)
+        {
+            importReport.LatestReplay = await GetLatestRepelayDate();
+        }
 
         sw.Restart();
-        int savedReplays = await SaveReplays(replays);
+        (int savedReplays, var continueReplays) = await SaveReplays(replays);
         sw.Stop();
 
         importReport.SaveDuration = Convert.ToInt32(sw.Elapsed.TotalSeconds);
         importReport.SavedReplays = savedReplays;
+        importReport.ContinueReplays = continueReplays.Select(s => mapper.Map<ReplayDsRDto>(s)).ToList();
 
         return importReport;
+    }
+
+    private async Task<DateTime> GetLatestRepelayDate()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return await context.Replays
+            .OrderByDescending(o => o.GameTime)
+            .Select(s => s.GameTime)
+            .FirstOrDefaultAsync();
     }
 
     private async Task<List<Replay>> GetReplaysFromBlobs(List<string> blobs, Dictionary<Guid, Uploader> fakeUploaderDic)
@@ -149,14 +168,16 @@ public partial class ImportService
         return replays;
     }
 
-    private async Task<int> SaveReplays(List<Replay> replays)
+    private async Task<(int, List<Replay>)> SaveReplays(List<Replay> replays)
     {
         if (!replays.Any())
         {
-            return 0;
+            return (0, new());
         }
 
         Dictionary<int, Uploader> attachedUploaders = new();
+        List<Replay> continueReplays = new();
+        bool potentialContinue = replays.Count <= continueMaxCount;
 
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -172,9 +193,26 @@ public partial class ImportService
             {
                 await context.SaveChangesAsync();
             }
+            if (potentialContinue)
+            {
+                continueReplays.Add(replay);
+            }
         }
         await context.SaveChangesAsync();
-        return i;
+
+        if (continueReplays.Any())
+        {
+            var playerIds = continueReplays
+                .SelectMany(s => s.ReplayPlayers)
+                .Select(s => s.PlayerId)
+                .Distinct().ToList();
+            
+            await context.Players
+                .Where(x => playerIds.Contains(x.PlayerId))
+                .LoadAsync();
+        }
+
+        return (i, continueReplays);
     }
 
     private static async Task AttachUploaders(ReplayContext context, Replay replay, Dictionary<int, Uploader> attachedUploaders)
@@ -217,9 +255,9 @@ public partial class ImportService
              ?? new();
     }
 
-    private static List<string> GetReplayBlobsFileNames()
+    private static List<string> GetReplayBlobsFileNames(string baseDir)
     {
-        DirectoryInfo info = new(blobBaseDir);
+        DirectoryInfo info = new(baseDir);
         return info.GetFiles("*.base64", SearchOption.AllDirectories)
                 .OrderBy(p => p.CreationTime)
                 .Select(s => s.FullName)
@@ -241,9 +279,9 @@ public partial class ImportService
 
     public void DEBUGSeedUploaders()
     {
-        var dirs = Directory.GetDirectories(blobBaseDir).ToList();
+        var dirs = Directory.GetDirectories(baseDir).ToList();
 
-        var files = Directory.GetFiles(blobBaseDir, "*.error", SearchOption.AllDirectories).ToList();
+        var files = Directory.GetFiles(baseDir, "*.error", SearchOption.AllDirectories).ToList();
 
         files.ForEach(f =>
         {
@@ -276,7 +314,7 @@ public partial class ImportService
 
     public void DEBUGResetBlobs()
     {
-        var files = Directory.GetFiles(blobBaseDir, "*.done", SearchOption.AllDirectories).ToList();
+        var files = Directory.GetFiles(baseDir, "*.done", SearchOption.AllDirectories).ToList();
 
         files.ForEach(f =>
         {
@@ -284,7 +322,7 @@ public partial class ImportService
             File.Move(f, newFile);
         });
 
-        var errorFiles = Directory.GetFiles(blobBaseDir, "*.error", SearchOption.AllDirectories).ToList();
+        var errorFiles = Directory.GetFiles(baseDir, "*.error", SearchOption.AllDirectories).ToList();
 
         errorFiles.ForEach(f =>
         {

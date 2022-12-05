@@ -15,7 +15,6 @@ public partial class MmrProduceService
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
     private readonly ILogger<MmrProduceService> logger;
-    //private static DateTime latestReplay = DateTime.MinValue;
 
     public MmrProduceService(IServiceProvider serviceProvider, IMapper mapper, ILogger<MmrProduceService> logger)
     {
@@ -36,6 +35,15 @@ public partial class MmrProduceService
         var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
 
         var cmdrMmrDic = await GetCommanderMmrsDic(true);
+
+        if (!mmrOptions.ReCalc
+            && dependentReplays != null
+            && dependentReplays.Any()
+            && dependentReplays.Any(a => a.GameTime < latestReplay))
+        {
+            mmrOptions.ReCalc = true;
+            dependentReplays = null;
+        }
 
         var mmrIdRatings = await GetMmrIdRatings(mmrOptions, ratingRepository, dependentReplays);
         int mmrChangesAppendId = await GetMmrChangesAppendId(mmrOptions);
@@ -108,7 +116,7 @@ public partial class MmrProduceService
             (mmrIdRatings, mmrChangesAppendId) = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrOptions, mmrChangesAppendId);
             //break; // DEBUG
         }
-        var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings);
+        var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings, !mmrOptions.ReCalc);
         return latestReplay;
     }
 

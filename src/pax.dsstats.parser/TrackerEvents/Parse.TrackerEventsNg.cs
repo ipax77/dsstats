@@ -31,36 +31,23 @@ public static partial class Parse
         SetMiddle(replay, trackerevents.SUnitOwnerChangeEvents);
 
         SetUpgradesNG(replay, trackerevents.SUpgradeEvents.ToList());
+    }
 
-        //foreach (var player in replay.Players)
-        //{
-        //    Console.WriteLine(player);
-        //}
-
-        //foreach (var unit in replay.Players[5].Units.Where(x => x.UnitType == UnitType.Spawn))
-        //{
-        //    Console.WriteLine($"{unit.Gameloop}: {unit.Name}");
-        //}
-
-        //foreach (var player in replay.Players)
-        //{
-        //    Console.WriteLine($"{player.GamePos} {player.Race} {player.Duration} {player.Army} {player.Kills}");
-        //    foreach (var stat in player.SpawnStats)
-        //    {
-        //        Console.WriteLine(stat);
-        //    }
-        //}
-
-        //Console.WriteLine($"{replay.GameTime} {replay.Duration} {replay.GameMode}");
-        //foreach (var player in replay.Players)
-        //{
-        //    Console.WriteLine($"{player.GamePos} {player.Race} {player.Duration} {player.Army} {player.Kills}");
-        //}
-
-        //foreach (var upgrade in replay.Players[1].Upgrades)
-        //{
-        //    Console.WriteLine(upgrade);
-        //}
+    private static void SetMiddle(DsReplay replay, ICollection<SUnitOwnerChangeEvent> sUnitOwnerChangeEvents)
+    {
+        foreach (var changeEvent in sUnitOwnerChangeEvents.Where(x => x.UnitTagIndex == 20))
+        {
+            int team = 0;
+            if (changeEvent.UpkeepPlayerId == 13)
+                team = 1;
+            else if (changeEvent.UpkeepPlayerId == 14)
+                team = 2;
+            replay.Middles.Add(new DsMiddle()
+            {
+                Gameloop = changeEvent.Gameloop,
+                Team = team,
+            });
+        }
     }
 
     private static void FixPlayerPos(DsReplay replay, ICollection<SPlayerSetupEvent> setupEvents)

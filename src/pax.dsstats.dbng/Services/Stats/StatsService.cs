@@ -176,6 +176,11 @@ public partial class StatsService : IStatsService
             replays = replays.Where(x => request.GameModes.Contains(x.GameMode));
         }
 
+        if (request.TeMaps)
+        {
+            replays = replays.Where(x => x.TournamentEdition);
+        }
+
         if (request.DefaultFilter)
         {
             replays = replays.Where(x => x.Duration > 300
@@ -232,6 +237,12 @@ public partial class StatsService : IStatsService
         {
             replays = replays.Where(x => x.Playercount == request.PlayerCount);
         }
+
+        if (request.TeMaps)
+        {
+            replays = replays.Where(x => x.TournamentEdition);
+        }
+
         var players = replays.SelectMany(s => s.ReplayPlayers);
 
         if (request.Uploaders)
