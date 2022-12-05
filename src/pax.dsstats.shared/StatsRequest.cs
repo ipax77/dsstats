@@ -16,6 +16,7 @@ public record StatsRequest
     public Commander Versus { get; set; }
     public bool Uploaders { get; set; }
     public bool DefaultFilter { get; set; } = true;
+    public bool TeMaps { get; set; }
     public int PlayerCount { get; set; }
     public List<RequestNames> PlayerNames { get; set; } = new();
     public List<GameMode> GameModes { get; set; } = new();
