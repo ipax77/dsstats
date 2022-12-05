@@ -23,7 +23,7 @@ public static partial class MmrService
     private const double ownMatchupPercentage = 1.0 / 3;
     private const double matesMatchupsPercentage = (1 - ownMatchupPercentage) / 2;
 
-    public static async Task<(Dictionary<RatingType, Dictionary<int, CalcRating>>, int)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
+    public static async Task<(Dictionary<RatingType, Dictionary<int, CalcRating>>, int/*, double*/)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
                                                                     Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                                                     Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
                                                                     IRatingRepository ratingRepository,
@@ -31,7 +31,9 @@ public static partial class MmrService
                                                                     int mmrChangesAppendId,
                                                                     bool dry = false)
     {
+        List<bool> accuracyList = new();
         List<MmrChange> mmrChanges = new();
+
         for (int i = 0; i < replays.Count; i++)
         {
             RatingType ratingType = GetRatingType(replays[i]);
@@ -42,10 +44,15 @@ public static partial class MmrService
 
             try
             {
-                var changes = ProcessReplay(replays[i], mmrIdRatings[ratingType], cmdrMmrDic, mmrOptions);
+                var (changes, correctPrediction) = ProcessReplay(replays[i], mmrIdRatings[ratingType], cmdrMmrDic, mmrOptions);
+                
                 if (changes != null)
                 {
                     mmrChanges.Add(changes);
+                }
+                if (correctPrediction != null)
+                {
+                    accuracyList.Add(correctPrediction.Value);
                 }
             }
             catch (Exception e)
@@ -61,34 +68,38 @@ public static partial class MmrService
             }
         }
 
+
+        double accuracy = accuracyList.Count(x => x == true) / (double)accuracyList.Count;
+
         if (!dry && mmrChanges.Any())
         {
             mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
         }
-        return (mmrIdRatings, mmrChangesAppendId);
+        return (mmrIdRatings, mmrChangesAppendId/*, accuracy*/);
     }
 
-    public static MmrChange? ProcessReplay(ReplayDsRDto replay,
+    public static (MmrChange?, bool?) ProcessReplay(ReplayDsRDto replay,
                                             Dictionary<int, CalcRating> mmrIdRatings,
                                             Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                             MmrOptions mmrOptions)
     {
         if (replay.WinnerTeam == 0)
         {
-            return null;
+            return (null, null);
         }
 
         ReplayData replayData = new(replay);
         if (replayData.WinnerTeamData.Players.Length != 3 || replayData.LoserTeamData.Players.Length != 3)
         {
-            return null;
+            return (null, null);
         }
 
         SetReplayData(mmrIdRatings, replayData, cmdrMmrDic, mmrOptions);
 
         var mmrChanges = ProcessReplay(replayData, mmrIdRatings, cmdrMmrDic, mmrOptions);
 
-        return new MmrChange() { Hash = replay.ReplayHash, ReplayId = replay.ReplayId, Changes = mmrChanges };
+        bool correctPrediction = (replayData.WinnerTeamData.ExpectedResult > 0.5);
+        return (new MmrChange() { Hash = replay.ReplayHash, ReplayId = replay.ReplayId, Changes = mmrChanges }, correctPrediction);
     }
 
     public static List<PlChange> ProcessReplay(ReplayData replayData,
