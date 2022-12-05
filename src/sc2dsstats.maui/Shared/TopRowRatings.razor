@@ -121,7 +121,7 @@
             }
             else
             {
-                var mmrChange = rating.Rating - (currentRating.Rating + currentRating.FakeDiff);
+                var mmrChange = (rating.Rating + rating.MmrChange) - (currentRating.Rating + currentRating.FakeDiff);
                 currentRating.MmrChange += mmrChange;
             }
         }
