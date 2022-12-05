@@ -127,7 +127,7 @@ public partial class ImportService
                 if (!DuplicateIsPlausible(replay, dupReplay))
                 {
                     logger.LogWarning($"duplicate not plausible: {replay.GameTime} <=> {dupReplay.GameTime} - {replay.ReplayHash}");
-                    continue;
+                    // continue;
                 }
 
                 if (dupReplay.Duration >= keepReplay.Duration)
@@ -249,7 +249,7 @@ public partial class ImportService
 
     private bool DuplicateIsPlausible(Replay replay, Replay dupReplay)
     {
-        if ((dupReplay.GameTime - replay.GameTime).Duration() > TimeSpan.FromDays(1))
+        if ((dupReplay.GameTime - replay.GameTime).Duration() > TimeSpan.FromDays(3))
         {
             logger.LogWarning($"false positive duplicate? {replay.GameTime} <=> {dupReplay.GameTime} : {dupReplay.ReplayHash}");
             return false;
