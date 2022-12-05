@@ -65,6 +65,7 @@ namespace pax.dsstats.dbng
             CreateMap<PlayerRating, PlayerRatingDto>(MemberList.Destination);
             CreateMap<Player, PlayerRatingPlayerDto>(MemberList.Destination);
             CreateMap<PlayerRating, PlayerRatingDetailDto>(MemberList.Destination)
+                .ForMember(x => x.FakeDiff, opt => opt.Ignore())
                 .ForMember(x => x.MmrChange, opt => opt.Ignore());
         }
     }
