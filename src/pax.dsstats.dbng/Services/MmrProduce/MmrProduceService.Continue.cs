@@ -3,6 +3,7 @@ using pax.dsstats.shared;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using dsstats.mmr;
+using System.Globalization;
 
 namespace pax.dsstats.dbng.Services;
 
@@ -74,7 +75,7 @@ public partial class MmrProduceService
             var timeMmr = ent.Split(',');
             if (timeMmr.Length == 2)
             {
-                if (double.TryParse(timeMmr[0], out double mmr))
+                if (double.TryParse(timeMmr[0], NumberStyles.Any, CultureInfo.InvariantCulture, out double mmr))
                 {
                     timeRatings.Add(new TimeRating()
                     {
