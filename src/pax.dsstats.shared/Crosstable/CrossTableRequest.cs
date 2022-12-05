@@ -4,4 +4,5 @@ public record CrossTableRequest
 {
     public string Mode { get; set; } = "Standard";
     public string TimePeriod { get; set; } = "This Year";
+    public bool TeMaps { get; set; }
 }

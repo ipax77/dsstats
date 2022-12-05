@@ -87,6 +87,11 @@ public partial class StatsService
             sb.Append($" AND r.GameTime < '{request.EndTime.ToString(@"yyyy-MM-dd")}'");
         }
 
+        if (request.TeMaps)
+        {
+            sb.Append($" AND r.{nameof(Replay.TournamentEdition)} = 1");
+        }
+
         if (request.GameModes.Any())
         {
             sb.Append($" AND r.GameMode IN ({string.Join(", ", request.GameModes.Select(s => (int)s))})");
@@ -179,6 +184,11 @@ public partial class StatsService
         if (request.EndTime < DateTime.UtcNow.Date.AddDays(-2))
         {
             replays = replays.Where(x => x.GameTime <= request.EndTime);
+        }
+
+        if (request.TeMaps)
+        {
+            replays = replays.Where(x => x.TournamentEdition);
         }
 
         if (request.GameModes.Any())

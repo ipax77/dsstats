@@ -264,6 +264,11 @@ public partial class StatsService
             replays = replays.Where(x => x.GameTime < end);
         }
 
+        if (request.TeMaps)
+        {
+            replays = replays.Where(x => x.TournamentEdition);
+        }
+
         replays = replays.Where(x => x.GameMode == GameMode.Standard
             && x.Duration >= 300
             && x.WinnerTeam > 0
@@ -284,6 +289,11 @@ public partial class StatsService
         if (end < DateTime.Today.AddDays(-2))
         {
             replays = replays.Where(x => x.GameTime < end);
+        }
+
+        if (request.TeMaps)
+        {
+            replays = replays.Where(x => x.TournamentEdition);
         }
 
         replays = replays.Where(x => gameModes.Contains(x.GameMode)

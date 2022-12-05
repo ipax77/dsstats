@@ -9,7 +9,7 @@ public partial class StatsService
 
     private async Task<StatsResponse> GetWinrate(StatsRequest request)
     {
-        if (!request.DefaultFilter)
+        if (!request.DefaultFilter || request.TeMaps)
         {
             return await GetCustomWinrate(request);
         }
