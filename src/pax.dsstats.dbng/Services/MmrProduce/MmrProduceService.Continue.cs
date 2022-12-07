@@ -110,13 +110,14 @@ public partial class MmrProduceService
         else
         {
             int total = Data.GetCommanders(Data.CmdrGet.NoStd).Count;
+            int avg = (games - mainCount) / (total - 1);
             foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.NoStd).Where(x => x != main))
             {
-                cmdrDic[cmdr] = games / total;
+                cmdrDic[cmdr] = avg;
             }
         }
 
-        cmdrDic[main] = (int)((cmdrDic.Sum(s => s.Value) * mainPercentage) / (100 - mainPercentage));
+        cmdrDic[main] = (int)(((games - mainCount) * mainPercentage) / (100.0 - mainPercentage));
         return cmdrDic;
     }
 }
