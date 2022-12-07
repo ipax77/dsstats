@@ -28,6 +28,16 @@ public partial class Parse
                     return;
                 }
             }
+            else if (replay.GameMode.Contains("GameModeHeroicCommanders"))
+            {
+                replay.GameMode = "GameModeHeroicCommanders";
+                return;
+            }
+            else
+            {
+                replay.GameMode = gameModes.Last();
+                return;
+            }
         }
         else // time before GameMode existed
         {
