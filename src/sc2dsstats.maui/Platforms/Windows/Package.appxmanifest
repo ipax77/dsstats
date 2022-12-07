@@ -5,12 +5,12 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap rescap">
 
-  <Identity Name="sc2dsstats.maui" Publisher="CN=pax77" Version="0.3.1.0" />
+  <Identity Name="sc2dsstats.maui" Publisher="CN=pax77" Version="0.3.2.0" />
 
   <Properties>
     <DisplayName>$placeholder$</DisplayName>
     <PublisherDisplayName>ipax77</PublisherDisplayName>
-    <Logo>$placeholder$.png</Logo>
+    <Logo>Assets\$placeholder$.png</Logo>
   </Properties>
 
   <Dependencies>
@@ -26,13 +26,18 @@
     <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
       <uap:VisualElements
         DisplayName="$placeholder$"
-        Description="$placeholder$"
-        Square150x150Logo="$placeholder$.png"
-        Square44x44Logo="$placeholder$.png"
+        Description="Fan Project for analyzing Starcraft II Direct Strike Replays"
+        Square150x150Logo="Assets\$placeholder$.png"
+        Square44x44Logo="Assets\$placeholder$.png"
         BackgroundColor="transparent">
-        <uap:DefaultTile Square71x71Logo="$placeholder$.png" Wide310x150Logo="$placeholder$.png" Square310x310Logo="$placeholder$.png" >
+        <uap:DefaultTile Square71x71Logo="Assets\$placeholder$.png" Wide310x150Logo="Assets\$placeholder$.png" Square310x310Logo="Assets\$placeholder$.png"  ShortName="dsstats">
+          <uap:ShowNameOnTiles>
+            <uap:ShowOn Tile="wide310x150Logo"/>
+            <uap:ShowOn Tile="square310x310Logo"/>
+            <uap:ShowOn Tile="square150x150Logo"/>
+          </uap:ShowNameOnTiles>
         </uap:DefaultTile >
-        <uap:SplashScreen Image="$placeholder$.png" />
+        <uap:SplashScreen Image="Assets\$placeholder$.png" />
       </uap:VisualElements>
     </Application>
   </Applications>
