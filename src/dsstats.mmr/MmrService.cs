@@ -7,22 +7,6 @@ namespace dsstats.mmr;
 
 public static partial class MmrService
 {
-    private const double eloK = 64; // default 32
-    private const double eloK_mult = 12.5;
-    private const double clip = eloK * eloK_mult; //shouldn't be bigger than startMmr!
-    public const double startMmr = 1000.0;
-
-    private const double consistencyImpact = 0.50;
-    private const double consistencyDeltaMult = 0.15;
-
-    private const double confidenceImpact = 0.90;
-    private const double distributionMult = 1.0 / (1/*2*/);
-
-    private const double antiSynergyPercentage = 0.50;
-    private const double synergyPercentage = 1 - antiSynergyPercentage;
-    private const double ownMatchupPercentage = 1.0 / 3;
-    private const double matesMatchupsPercentage = (1 - ownMatchupPercentage) / 2;
-
     public static async Task<(Dictionary<RatingType, Dictionary<int, CalcRating>>, int/*, double*/)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
                                                                     Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                                                     Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,

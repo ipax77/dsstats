@@ -34,7 +34,7 @@ public partial class MmrProduceService
         using var scope = serviceProvider.CreateScope();
         var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
 
-        var cmdrMmrDic = await GetCommanderMmrsDic(true);
+        var cmdrMmrDic = await GetCommanderMmrsDic(mmrOptions, true);
 
         if (!mmrOptions.ReCalc
             && dependentReplays != null
@@ -200,11 +200,11 @@ public partial class MmrProduceService
         await context.SaveChangesAsync();
     }
 
-    private async Task<Dictionary<CmdrMmmrKey, CmdrMmmrValue>> GetCommanderMmrsDic(bool clean)
+    private async Task<Dictionary<CmdrMmmrKey, CmdrMmmrValue>> GetCommanderMmrsDic(MmrOptions mmrOptions, bool clean)
     {
         if (clean)
         {
-            return GetCleanCommnaderMmrsDic();
+            return GetCleanCommnaderMmrsDic(mmrOptions);
         }
 
         using var scope = serviceProvider.CreateScope();
@@ -228,8 +228,8 @@ public partial class MmrProduceService
                         Race = race,
                         OppRace = oppRace,
 
-                        SynergyMmr = MmrService.startMmr,
-                        AntiSynergyMmr = MmrService.startMmr
+                        SynergyMmr = mmrOptions.StartMmr,
+                        AntiSynergyMmr = mmrOptions.StartMmr
                     };
                     cmdrMmrs.Add(cmdrMmr);
                 }
@@ -244,7 +244,7 @@ public partial class MmrProduceService
         });
     }
 
-    private Dictionary<CmdrMmmrKey, CmdrMmmrValue> GetCleanCommnaderMmrsDic()
+    private Dictionary<CmdrMmmrKey, CmdrMmmrValue> GetCleanCommnaderMmrsDic(MmrOptions mmrOptions)
     {
         List<CommanderMmr> cmdrMmrs = new();
 
@@ -259,8 +259,8 @@ public partial class MmrProduceService
                     Race = race,
                     OppRace = oppRace,
 
-                    SynergyMmr = MmrService.startMmr,
-                    AntiSynergyMmr = MmrService.startMmr
+                    SynergyMmr = mmrOptions.StartMmr,
+                    AntiSynergyMmr = mmrOptions.StartMmr
                 };
                 cmdrMmrs.Add(cmdrMmr);
             }
