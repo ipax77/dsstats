@@ -7,7 +7,7 @@ namespace dsstats.mmr;
 
 public static partial class MmrService
 {
-    public static async Task<(Dictionary<RatingType, Dictionary<int, CalcRating>>, int/*, double*/)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
+    public static async Task<(Dictionary<RatingType, Dictionary<int, CalcRating>>, int, double)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
                                                                     Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                                                     Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
                                                                     IRatingRepository ratingRepository,
@@ -59,7 +59,7 @@ public static partial class MmrService
         {
             mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
         }
-        return (mmrIdRatings, mmrChangesAppendId/*, accuracy*/);
+        return (mmrIdRatings, mmrChangesAppendId, accuracy);
     }
 
     public static (MmrChange?, bool?) ProcessReplay(ReplayDsRDto replay,
