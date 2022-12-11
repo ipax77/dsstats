@@ -27,8 +27,11 @@ public static class HelperService
     {
         return playerCount switch
         {
+            1 => "1",
             2 => "1vs1",
+            3 => "1vs2",
             4 => "2vs2",
+            5 => "2vs3",
             6 => "3vs3",
             _ => ""
         };

@@ -6,7 +6,8 @@
 <div>
     <div class="d-flex bg-secondary p-2">
         <div class="me-2">
-            <span class="oi oi-x text-danger pointer" style="font-size: 2rem; z-index: 1000;" @onclick="(() => OnCloseRequested.InvokeAsync())"></span>
+            <span class="oi oi-x text-danger pointer" style="font-size: 2rem; z-index: 1000;"
+                  @onclick="(() => OnCloseRequested.InvokeAsync())"></span>
         </div>
         <div class="align-self-center me-2 border p-1">
             <span>@Data.GetRegionString(playerDetailsResult?.Ratings.FirstOrDefault()?.Player.RegionId)</span>
@@ -42,116 +43,161 @@
                 <div class="form-check form-switch">
                     <label class="form-check-label">
                         Server Details
-                        <input type="checkbox" class="form-check-input" checked="@dataService.GetFromServer()" @onchange="FromServerChange">
+                        <input type="checkbox" class="form-check-input" checked="@dataService.GetFromServer()"
+                           @onchange="FromServerChange">
                         </input>
                     </label>
                 </div>
             </div>
         }
     </div>
+
     @if (playerDetailsResult != null)
     {
+        <PlayerDetailsRatingCharts PlayerRatings="playerDetailsResult.Ratings"></PlayerDetailsRatingCharts>
         <div class="row">
             @if (playerDetailsResult.GameModes.Any())
             {
-                <div class="col-auto table-responsive" style="max-height: 400px; overflow: auto;">
+                <div class="col-auto">
                     <h3>GameModes</h3>
-                    <table class="table table-sm table-striped table-dark">
-                        <thead>
-                            <tr>
-                                <th>GameMode</th>
-                                <th>Players</th>
-                                <th>Games</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var gameMode in playerDetailsResult.GameModes.OrderByDescending(o => o.Count))
-                            {
+                    <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+                        <table class="table table-sm table-striped table-dark">
+                            <thead>
                                 <tr>
-                                    <td>@gameMode.GameMode</td>
-                                    <td>@HelperService.GetPlayerCountString(gameMode.PlayerCount)</td>
-                                    <td>@gameMode.Count</td>
+                                    <th>GameMode</th>
+                                    <th>Players</th>
+                                    <th>Games</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach (var gameMode in playerDetailsResult.GameModes.OrderByDescending(o => o.Count))
+                                {
+                                    <tr>
+                                        <td>@gameMode.GameMode</td>
+                                        <td>@HelperService.GetPlayerCountString(gameMode.PlayerCount)</td>
+                                        <td>@gameMode.Count</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             }
-            @if (playerDetailsResult.Teammates.Any())
+            @if (playerGroupResult != null)
             {
-                <div class="col-auto table-responsive" style="max-height: 400px; overflow: auto;">
-                    <h3>Teammates</h3>
-                    <table class="table table-sm table-striped table-dark">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Games</th>
-                                <th>Winrate</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var player in playerDetailsResult.Teammates.OrderByDescending(o => o.Count))
-                            {
-                                <tr>
-                                    <td>@player.Name</td>
-                                    <td>@player.Count</td>
-                                    <td>@HelperService.GetPercentageString(player.Wins, player.Count)</td>
-                                </tr>
-                            }
-                        </tbody>
-                </table>
-            </div>
-            }
-            @if (playerDetailsResult.Opponents.Any())
-            {
-                <div class="col-auto table-responsive" style="max-height: 400px; overflow: auto;">
-                    <h3>Opponents</h3>
-                    <table class="table table-sm table-striped table-dark">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Games</th>
-                                <th>Winrate</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var player in playerDetailsResult.Opponents.OrderByDescending(o => o.Count))
-                            {
-                                <tr>
-                                    <td>@player.Name</td>
-                                    <td>@player.Count</td>
-                                    <td>@HelperService.GetPercentageString(player.Wins, player.Count)</td>
-                                </tr>
-                            }
-                        </tbody>
-                </table>
-            </div>
-            }
-            @if (playerDetailsResult.Matchups.Any())
-            {
-                <div class="col-auto table-responsive" style="max-height: 400px; overflow: auto;">
-                    <h3>Matchups</h3>
-                    <table class="table table-sm table-striped table-dark">
-                        <thead>
-                            <tr>
-                                <th>Matchup</th>
-                                <th>Games</th>
-                                <th>Winrate</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var matchup in playerDetailsResult.Matchups.OrderByDescending(o => o.Wins * 100.0 / o.Count))
-                            {
-                                <tr>
-                                    <td>@matchup.Commander vs @matchup.Versus</td>
-                                    <td>@matchup.Count</td>
-                                    <td>@HelperService.GetPercentageString(matchup.Wins, matchup.Count)</td>
-                                </tr>
-                            }
-                        </tbody>
-                </table>
-            </div>
+                <PlayerDetailsCmdrCount Matchups="playerGroupResult.Matchups"></PlayerDetailsCmdrCount>
             }
         </div>
+    }
+    @if (playerGroupResult != null)
+    {
+        <div class="row">
+            @if (playerGroupResult.Teammates.Any())
+            {
+                <div class="col-auto">
+                    <h3>Teammates</h3>
+                    <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+                        <table class="table table-sm table-striped table-dark">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Games</th>
+                                    <th>Winrate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var player in playerGroupResult.Teammates.OrderByDescending(o => o.Count))
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="text-truncate" style="display: block; width: 150px;">
+                                                @player.Name
+                                            </span>
+                                        </td>
+                                        <td>@player.Count</td>
+                                        <td>@HelperService.GetPercentageString(player.Wins, player.Count)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+            @if (playerGroupResult.Opponents.Any())
+            {
+                <div class="col-auto">
+                    <h3>Opponents</h3>
+                    <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+                        <table class="table table-sm table-striped table-dark">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Games</th>
+                                    <th>Winrate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var player in playerGroupResult.Opponents.OrderByDescending(o => o.Count))
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="text-truncate" style="display: block; width: 150px;">
+                                                @player.Name
+                                            </span>
+                                        </td>
+                                        <td>@player.Count</td>
+                                        <td>@HelperService.GetPercentageString(player.Wins, player.Count)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+            @if (playerGroupResult.Matchups.Any())
+            {
+                <div class="col-auto">
+                    <h3>Matchups</h3>
+                    <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+                        <table class="table table-sm table-striped table-dark">
+                            <thead>
+                                <tr>
+                                    <th>Matchup</th>
+                                    <th>Games</th>
+                                    <th>Winrate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var matchup in playerGroupResult.Matchups.Where(x => x.Count > 10).OrderByDescending(o
+                               =>
+                               o.Wins * 100.0 / o.Count))
+                                {
+                                    <tr>
+                                        <td>@matchup.Commander vs @matchup.Versus</td>
+                                        <td>@matchup.Count</td>
+                                        <td>@HelperService.GetPercentageString(matchup.Wins, matchup.Count)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        @if (groupDataLoading)
+        {
+            <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        }
+        else
+        {
+            <div class="btn-group mt-2">
+                <button type="button" class="btn btn-outline-warning" @onclick="LoadGroupData">More Details ..</button>
+            </div>
+        }
     }
 </div>

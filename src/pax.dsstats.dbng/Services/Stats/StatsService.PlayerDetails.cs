@@ -18,14 +18,25 @@ public partial class StatsService
         return new PlayerDetailsResult()
         {
             Ratings = await context.PlayerRatings
-                .Where(x => toonIds.Contains(x.Player.ToonId)
-                    && x.RatingType == ratingType)
+                .Where(x => toonIds.Contains(x.Player.ToonId))
                 .ProjectTo<PlayerRatingDetailDto>(mapper.ConfigurationProvider)
                 .ToListAsync(token),
+            GameModes = await GetGameModeCounts(toonIds, token)
+        };
+    }
+
+    public async Task<PlayerDetailsGroupResult> GetPlayerGroupDetails(int toonId, RatingType ratingType, CancellationToken token)
+    {
+        return await GetPlayerGroupDetails(new List<int>() { toonId }, ratingType, token);
+    }
+
+    public async Task<PlayerDetailsGroupResult> GetPlayerGroupDetails(List<int> toonIds, RatingType ratingType, CancellationToken token)
+    {
+        return new PlayerDetailsGroupResult()
+        {
             Teammates = await GetPlayerTeammates(toonIds, ratingType, true, token),
             Opponents = await GetPlayerTeammates(toonIds, ratingType, false, token),
             Matchups = await GetPlayerMatchups(toonIds, ratingType, token),
-            GameModes = await GetGameModeCounts(toonIds, token)
         };
     }
 
@@ -53,7 +64,6 @@ public partial class StatsService
                          from rp in r.ReplayPlayers
                          where toonIds.Contains(rp.Player.ToonId)
                          group rp by new { rp.Race, rp.OppRace } into g
-                         where g.Count() > 10
                          select new PlayerMatchupInfo
                          {
                              Commander = g.Key.Race,

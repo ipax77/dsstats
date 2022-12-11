@@ -22,6 +22,9 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
 
     private CancellationTokenSource cts = new();
     private PlayerDetailsResult? playerDetailsResult = null;
+    private PlayerDetailsGroupResult? playerGroupResult = null;
+
+    private bool groupDataLoading = false;
 
     protected override void OnInitialized()
     {
@@ -29,9 +32,31 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
         base.OnInitialized();
     }
 
+    //protected override void OnAfterRender(bool firstRender)
+    //{
+    //    if (firstRender)
+    //    {
+    //        _ = LoadGroupData();
+    //    }
+    //    base.OnAfterRender(firstRender);
+    //}
+
     private async Task LoadData()
     {
         playerDetailsResult = await dataService.GetPlayerDetailsNg(RequestNames.ToonId, (int)RatingType, cts.Token);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task LoadGroupData()
+    {
+        if (groupDataLoading)
+        {
+            return;
+        }
+        groupDataLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        playerGroupResult = await dataService.GetPlayerGroupDetails(RequestNames.ToonId, (int)RatingType, cts.Token);
+        groupDataLoading = false;
         await InvokeAsync(() => StateHasChanged());
     }
 

@@ -96,6 +96,18 @@ namespace pax.dsstats.web.Server.Controllers
             return NoContent();
         }
 
+        [HttpGet]
+        [Route("GetPlayerGroupDetails/{toonId}/{rating}")]
+        public async Task<ActionResult<PlayerDetailsGroupResult>> GetPlayerGroupDetails(int toonId, int rating, CancellationToken token)
+        {
+            try
+            {
+                return await statsService.GetPlayerGroupDetails(toonId, (RatingType)rating, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
+        }
+
         [HttpPost]
         [Route("GetCmdrInfo")]
         public async Task<ActionResult<CmdrResult>> GetCmdrInfo(CmdrRequest cmdrRequest, CancellationToken token = default)

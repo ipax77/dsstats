@@ -276,7 +276,29 @@ public class DataService : IDataService
             logger.LogError($"failed getting playerDetails: {ex.Message}");
         }
         return new();
+    }
 
+    public async Task<PlayerDetailsGroupResult> GetPlayerGroupDetails(int toonId, int rating, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"{statsController}GetPlayerGroupDetails/{toonId}/{rating}", token);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<PlayerDetailsGroupResult>();
+                return result ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting playerGroupDetails: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting playerGroupDetails: {ex.Message}");
+        }
+        return new();
     }
 
     public async Task<List<RequestNames>> GetTopPlayers(bool std)

@@ -35,6 +35,7 @@ public record PlayerRatingDetailDto
     public double Consistency { get; set; }
     public double Confidence { get; set; }
     public bool IsUploader { get; set; }
+    public string MmrOverTime { get; set; } = "";
     public PlayerRatingPlayerDto Player { get; init; } = null!;
     [NotMapped]
     public double MmrChange { get; set; }
