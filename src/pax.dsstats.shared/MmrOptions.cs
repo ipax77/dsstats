@@ -13,18 +13,18 @@ public record MmrOptions
     public const double ownMatchupPercentage = 1.0 / 3;
     public const double matesMatchupsPercentage = (1 - ownMatchupPercentage) / 2;
 
-    public MmrOptions(bool reCalc)
+    public MmrOptions(bool reCalc, double? eloK = null, double? clip = null)
     {
         ReCalc = reCalc;
 
         UseCommanderMmr = false;
         UseConsistency = false;
         UseFactorToTeamMates = false;
-        UseConfidence = true;
+        UseConfidence = false;
 
         StartMmr = 1000;
-        EloK = 64;
-        Clip = 400;
+        EloK = eloK ?? 64;
+        Clip = clip ?? 300;
     }
 
     public double StartMmr { get; init; } // default 1000
