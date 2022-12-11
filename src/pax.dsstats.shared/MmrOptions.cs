@@ -20,7 +20,7 @@ public record MmrOptions
         UseCommanderMmr = false;
         UseConsistency = false;
         UseFactorToTeamMates = false;
-        UseConfidence = false;
+        UseConfidence = true;
 
         StartMmr = 1000;
         EloK = eloK ?? 64;
