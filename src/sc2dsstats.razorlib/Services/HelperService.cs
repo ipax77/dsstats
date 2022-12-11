@@ -23,6 +23,17 @@ public static class HelperService
         return $"{Math.Round(wins.Value * 100.0 / games.Value, 2).ToString(CultureInfo.InvariantCulture)}%";
     }
 
+    public static string GetPlayerCountString(int playerCount)
+    {
+        return playerCount switch
+        {
+            2 => "1vs1",
+            4 => "2vs2",
+            6 => "3vs3",
+            _ => ""
+        };
+    }
+
     public static string TimeFromGameloop(int gameloop)
     {
         var duration = gameloop / 22.4;

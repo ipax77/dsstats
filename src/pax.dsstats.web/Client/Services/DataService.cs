@@ -255,6 +255,30 @@ public class DataService : IDataService
         return new();
     }
 
+    public async Task<PlayerDetailsResult> GetPlayerDetailsNg(int toonId, int rating, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"{statsController}GetPlayerDetailsNg/{toonId}/{rating}", token);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<PlayerDetailsResult>();
+                return result ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting playerDetails: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting playerDetails: {ex.Message}");
+        }
+        return new();
+
+    }
+
     public async Task<List<RequestNames>> GetTopPlayers(bool std)
     {
         try

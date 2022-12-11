@@ -128,7 +128,12 @@
 
 @if (Interest != null)
 {
-    <PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>
+    @*<PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>*@
+    <sc2dsstats.razorlib.PlayerDetails.PlayerDetailsNgComponent
+        RequestNames="Interest"
+        RatingType="RatingType.Cmdr"
+        OnCloseRequested="DetailsClose"
+    />
 }
 
 @if (showBuilds.Where(x => x).Any())
