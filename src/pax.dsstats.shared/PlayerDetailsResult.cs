@@ -5,13 +5,14 @@ public record PlayerDetailsResult
 {
     public List<PlayerRatingDetailDto> Ratings { get; init; } = new();
     public List<PlayerGameModeResult> GameModes { get; init; } = new();
+    public List<PlayerMatchupInfo> Matchups { get; set; } = new();
+
 }
 
 public record PlayerDetailsGroupResult
 {
     public List<PlayerTeamResult> Teammates { get; init; } = new();
     public List<PlayerTeamResult> Opponents { get; init; } = new();
-    public List<PlayerMatchupInfo> Matchups { get; init; } = new();
 }
 
 public record PlayerTeamResult

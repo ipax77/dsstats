@@ -301,6 +301,29 @@ public class DataService : IDataService
         return new();
     }
 
+    public async Task<List<PlayerMatchupInfo>> GetPlayerMatchups(int toonId, int rating, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"{statsController}GetPlayerMatchups/{toonId}/{rating}", token);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<PlayerMatchupInfo>>();
+                return result ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting GetPlayerMatchups: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting GetPlayerMatchups: {ex.Message}");
+        }
+        return new();
+    }
+
     public async Task<List<RequestNames>> GetTopPlayers(bool std)
     {
         try

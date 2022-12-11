@@ -17,5 +17,6 @@ namespace pax.dsstats.dbng.Services
         Task<CrossTableResponse> GetCrossTable(CrossTableRequest request, CancellationToken token = default);
         Task<PlayerDetailsResult> GetPlayerDetails(int toonId, RatingType ratingType, CancellationToken token);
         Task<PlayerDetailsGroupResult> GetPlayerGroupDetails(int toonId, RatingType ratingType, CancellationToken token);
+        Task<List<PlayerMatchupInfo>> GetPlayerMatchups(int toonId, RatingType ratingType, CancellationToken token);
     }
 }

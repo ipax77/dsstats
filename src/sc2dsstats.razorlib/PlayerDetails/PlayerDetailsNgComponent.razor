@@ -34,6 +34,12 @@
                 </div>
             }
         }
+        @if (isUploader)
+        {
+            <div class="align-self-center ms-2">
+                <span class="badge bg-success">Uploader</span>
+            </div>
+        }
         <div class="align-self-center ms-3">
             <button type="button" class="btn btn-outline-light" @onclick="ShowReplays">Replays</button>
         </div>
@@ -56,6 +62,49 @@
     {
         <PlayerDetailsRatingCharts PlayerRatings="playerDetailsResult.Ratings"></PlayerDetailsRatingCharts>
         <div class="row">
+            @if (interestRating != null)
+            {
+                <div class="col-auto">
+                    <div class="card">
+                        <div class="card-header">
+                            @interestRating.RatingType Info
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-dark table-striped">
+                                    <tbody>
+                                        <tr>
+                                            <td>Games</td>
+                                            <td colspan="2">@interestRating.Games</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Main</td>
+                                            <td>@(interestRating.Games == 0 || interestRating.MainCount * 100.0 / interestRating.Games < 10.5 ? "Random" : interestRating.Main.ToString())</td>
+                                            <td>@HelperService.GetPercentageString(interestRating.MainCount, interestRating.Games)</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Winrate</td>
+                                            <td colspan="2">@HelperService.GetPercentageString(interestRating.Wins, interestRating.Games)</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Mvp</td>
+                                            <td colspan="2">@HelperService.GetPercentageString(interestRating.Mvp, interestRating.Games)</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Consistency</td>
+                                            <td colspan="2">@Math.Round(interestRating.Consistency, 2)</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Confidence</td>
+                                            <td colspan="2">@Math.Round(interestRating.Confidence, 2)</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
             @if (playerDetailsResult.GameModes.Any())
             {
                 <div class="col-auto">
@@ -83,14 +132,46 @@
                     </div>
                 </div>
             }
-            @if (playerGroupResult != null)
-            {
-                <PlayerDetailsCmdrCount Matchups="playerGroupResult.Matchups"></PlayerDetailsCmdrCount>
-            }
+            <PlayerDetailsCmdrCount @ref="playerDetailsCmdrCount" Matchups="playerDetailsResult.Matchups"></PlayerDetailsCmdrCount>
+            <div class="col-auto">
+                <h3>Matchups</h3>
+                <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+                    <table class="table table-sm table-striped table-dark">
+                        <thead>
+                            <tr>
+                                <th>Matchup</th>
+                                <th>Games</th>
+                                <th>Winrate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var matchup in playerDetailsResult.Matchups.Where(x => x.Count > 10).OrderByDescending(o
+                           =>
+                           o.Wins * 100.0 / o.Count))
+                            {
+                                <tr>
+                                    <td>@matchup.Commander vs @matchup.Versus</td>
+                                    <td>@matchup.Count</td>
+                                    <td>@HelperService.GetPercentageString(matchup.Wins, matchup.Count)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     }
     @if (playerGroupResult != null)
     {
+        <div class="col-auto">
+            <label class="form-label">
+                Mode
+                <select class="form-select" @onchange="RatingTypeChange">
+                    <option selected="@(RatingType == RatingType.Std)" value="Standard">Standard</option>
+                    <option selected="@(RatingType == RatingType.Cmdr)" value="Commanders">Commanders</option>
+                </select>
+            </label>
+        </div>
         <div class="row">
             @if (playerGroupResult.Teammates.Any())
             {
@@ -147,35 +228,6 @@
                                         </td>
                                         <td>@player.Count</td>
                                         <td>@HelperService.GetPercentageString(player.Wins, player.Count)</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            }
-            @if (playerGroupResult.Matchups.Any())
-            {
-                <div class="col-auto">
-                    <h3>Matchups</h3>
-                    <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
-                        <table class="table table-sm table-striped table-dark">
-                            <thead>
-                                <tr>
-                                    <th>Matchup</th>
-                                    <th>Games</th>
-                                    <th>Winrate</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var matchup in playerGroupResult.Matchups.Where(x => x.Count > 10).OrderByDescending(o
-                               =>
-                               o.Wins * 100.0 / o.Count))
-                                {
-                                    <tr>
-                                        <td>@matchup.Commander vs @matchup.Versus</td>
-                                        <td>@matchup.Count</td>
-                                        <td>@HelperService.GetPercentageString(matchup.Wins, matchup.Count)</td>
                                     </tr>
                                 }
                             </tbody>

@@ -17,14 +17,36 @@
         base.OnInitialized();
     }
 
-    private ChartJsConfig GetPieChartConfig()
+    public void Update(List<PlayerMatchupInfo> matchupInfos)
+    {
+        chartJsConfig.RemoveDatasets(chartJsConfig.Data.Datasets);
+        Matchups = matchupInfos;
+        var sum = Matchups.Sum(s => s.Count);
+        var ents = GetDatasetData();
+        chartJsConfig.SetLabels(ents.Select(s => s.Key.ToString()).ToList());
+        chartJsConfig.AddDataset(new PieDataset()
+            {
+                Data = ents.Select(s => (object)Math.Round(s.Value * 100.0 / sum, 2)).ToList(),
+                BackgroundColor = new IndexableOption<string>(ents.Select(s => Data.GetBackgroundColor(s.Key)).ToList()),
+                BorderColor = new IndexableOption<string>(ents.Select(s => Data.CmdrColor[s.Key]).ToList()),
+                BorderWidth = new IndexableOption<double>(1)
+            });
+    }
+
+    private List<KeyValuePair<Commander, int>> GetDatasetData()
     {
         int sum = Matchups.Sum(s => s.Count);
         var cmdrs = Matchups.Select(s => s.Commander).Distinct().ToList();
         Dictionary<Commander, int> dic = cmdrs
             .ToDictionary(k => k, v => Matchups.Where(x => x.Commander == v).Sum(s => s.Count));
-        var ents = dic.OrderByDescending(o => o.Value).ToList();
+        return dic.OrderByDescending(o => o.Value).ToList();
 
+    }
+
+    private ChartJsConfig GetPieChartConfig()
+    {
+        var sum = Matchups.Sum(s => s.Count);
+        var ents = GetDatasetData();
         return new()
             {
                 Type = ChartType.pie,
