@@ -5,11 +5,11 @@
 @inject IRatingRepository ratingRepository
 @implements IDisposable
 
-@if (toonIdRatingResponse != null && toonIdRatingResponse.Ratings.Any())
+@if (serverRatings.Any())
 {
     <div class="top-row bg-secondary px-2" style="overflow: hidden;">
         <div class="row ms-1">
-            @foreach (var rating in toonIdRatingResponse.Ratings)
+            @foreach (var rating in serverRatings)
             {
                 <div class="col-auto d-flex border rounded">
                     <div class="align-self-center">
@@ -44,8 +44,10 @@
 }
 
 @code {
-    private ToonIdRatingResponse? toonIdRatingResponse;
     private CancellationTokenSource cts = new();
+
+    List<PlayerRatingDetailDto> serverRatings = new();
+    List<PlayerRatingDetailDto> localRatings = new();
 
     protected override void OnAfterRender(bool firstRender)
     {
@@ -64,36 +66,23 @@
             .Distinct()
             .ToList();
 
-        toonIdRatingResponse = await dataService.GetToonIdRatings(new ToonIdRatingRequest()
+        var toonIdRatingResponse = await dataService.GetToonIdRatings(new ToonIdRatingRequest()
             {
                 RatingType = pax.dsstats.shared.Raven.RatingType.None,
                 ToonIds = toonIds
             }, cts.Token);
 
-        await SetFakeDiffs(toonIds);
+        serverRatings = toonIdRatingResponse.Ratings;
+
+        var response = await ratingRepository.GetToonIdRatings(new ToonIdRatingRequest()
+            {
+                RatingType = pax.dsstats.shared.Raven.RatingType.None,
+                ToonIds = toonIds
+            }, cts.Token);
+
+        localRatings = response.Ratings;
 
         await InvokeAsync(() => StateHasChanged());
-    }
-
-    private async Task SetFakeDiffs(List<int> toonIds)
-    {
-        var localRatings = await ratingRepository.GetToonIdRatings(new ToonIdRatingRequest()
-            {
-                RatingType = pax.dsstats.shared.Raven.RatingType.None,
-                ToonIds = toonIds
-            }, cts.Token);
-
-        foreach (var rating in localRatings.Ratings)
-        {
-            var serverRating = toonIdRatingResponse?.Ratings
-                .FirstOrDefault(f => f.RatingType == rating.RatingType 
-                    && f.Player.ToonId == rating.Player.ToonId);
-
-            if (serverRating != null)
-            {
-                serverRating.FakeDiff = rating.Rating - serverRating.Rating;
-            }
-        }
     }
 
     public async Task UpdateFakeData(List<int> toonIds)
@@ -104,59 +93,27 @@
                 ToonIds = toonIds
             }, cts.Token);
 
-        foreach (var rating in response.Ratings)
+        foreach (var currentRating in response.Ratings)
         {
-            if (toonIdRatingResponse == null)
-            {
-                toonIdRatingResponse = new();
-            }
+            var serverRating = serverRatings
+                .FirstOrDefault(f => f.Player.ToonId == currentRating.Player.ToonId
+                    && f.RatingType == currentRating.RatingType);
 
-            var currentRating = toonIdRatingResponse.Ratings
-                .FirstOrDefault(f => f.Player.ToonId == rating.Player.ToonId
-                    && f.RatingType == rating.RatingType);
-
-            if (currentRating == null)
+            if (serverRating == null)
             {
                 continue;
             }
-            else
-            {
-                var mmrChange = (rating.Rating + rating.MmrChange) - (currentRating.Rating + currentRating.FakeDiff);
-                currentRating.MmrChange += mmrChange;
-            }
-        }
-        await InvokeAsync(() => StateHasChanged());
-    }
 
-    public async Task UpdateData(List<int> toonIds)
-    {
-        var response = await dataService.GetToonIdRatings(new ToonIdRatingRequest()
-            {
-                RatingType = pax.dsstats.shared.Raven.RatingType.None,
-                ToonIds = toonIds
-            }, cts.Token);
+            var localRating = localRatings
+                .FirstOrDefault(f => f.Player.ToonId == currentRating.Player.ToonId
+                    && f.RatingType == currentRating.RatingType);
 
-        foreach (var rating in response.Ratings)
-        {
-            if (toonIdRatingResponse == null)
+            if (localRating == null)
             {
-                toonIdRatingResponse = new();
-            }
-
-            var currentRating = toonIdRatingResponse.Ratings
-                .FirstOrDefault(f => f.Player.ToonId == rating.Player.ToonId
-                    && f.RatingType == rating.RatingType);
-
-            if (currentRating == null)
-            {
-                // toonIdRatingResponse.Ratings.Add(rating);
                 continue;
             }
-            else
-            {
-                currentRating.MmrChange +=
-                    rating.Rating - currentRating.Rating + currentRating.MmrChange;
-            }
+
+            serverRating.MmrChange = currentRating.Rating - localRating.Rating;
         }
         await InvokeAsync(() => StateHasChanged());
     }
