@@ -44,6 +44,5 @@
 
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
-    <rescap:Capability Name="packageManagement" />
   </Capabilities>
 </Package>
