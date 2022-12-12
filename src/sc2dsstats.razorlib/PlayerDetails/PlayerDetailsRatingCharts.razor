@@ -26,7 +26,7 @@
     protected override void OnInitialized()
     {
         PlayerRatings
-            .ForEach(f => chartJsConfigs.Add(GetLineChartConfig()));
+            .ForEach(f => chartJsConfigs.Add(GetLineChartConfig(f.RatingType)));
         chartDataUp = true;
         base.OnInitialized();
     }
@@ -110,7 +110,7 @@
     {
         return new()
             {
-                Label = $"{ratingType} {name} development",
+                Label = name,
                 Data = new List<object>(ratings.Cast<object>()),
                 BackgroundColor = "lightblue",
                 BorderColor = "lightblue",
@@ -125,7 +125,7 @@
             };
     }
 
-    private ChartJsConfig GetLineChartConfig()
+    private ChartJsConfig GetLineChartConfig(RatingType ratingType)
     {
         return new()
             {
@@ -144,7 +144,17 @@
                     Responsive = true,
                     Plugins = new Plugins()
                     {
-                        ArbitraryLines = new List<ArbitraryLineConfig>()
+                        ArbitraryLines = new List<ArbitraryLineConfig>(),
+                        Title = new Title()
+                        {
+                            Display = true,
+                            Text = new IndexableOption<string>($"{ratingType} development"),
+                            Color = "#0d6efd",
+                            Font = new Font()
+                            {
+                                Size = 16,
+                            }
+                        }
                     },
                     Scales = new ChartJsOptionsScales()
                     {

@@ -40,6 +40,15 @@
                 <span class="badge bg-success">Uploader</span>
             </div>
         }
+        <div class="align-self-center ms-2">
+            <label class="form-label">
+                Mode
+                <select class="form-select" @onchange="RatingTypeChange">
+                    <option selected="@(RatingType == RatingType.Std)" value="Standard">Standard</option>
+                    <option selected="@(RatingType == RatingType.Cmdr)" value="Commanders">Commanders</option>
+                </select>
+            </label>
+        </div>
         <div class="align-self-center ms-3">
             <button type="button" class="btn btn-outline-light" @onclick="ShowReplays">Replays</button>
         </div>
@@ -57,199 +66,150 @@
             </div>
         }
     </div>
+</div>
+@if (playerDetailsResult != null)
+{
+    <PlayerDetailsRatingCharts PlayerRatings="playerDetailsResult.Ratings"></PlayerDetailsRatingCharts>
+    <div class="row">
+        @if (playerDetailsResult.GameModes.Any())
+        {
+            <div class="col-auto mt-1">
+                <div class="card" style="min-width: 475px;">
+                    <div class="card-header">
+                        <h4>GameModes Played</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+                            <table class="table table-sm table-striped table-dark">
+                                <thead>
+                                    <tr>
+                                        <th>GameMode</th>
+                                        <th>Players</th>
+                                        <th>Games</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var gameMode in playerDetailsResult.GameModes.OrderByDescending(o => o.Count))
+                                    {
+                                        <tr>
+                                            <td>@gameMode.GameMode</td>
+                                            <td>@HelperService.GetPlayerCountString(gameMode.PlayerCount)</td>
+                                            <td>@gameMode.Count</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (interestRating != null)
+        {
+            <div class="col-auto mt-1">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>@interestRating.RatingType Rating Info</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-dark table-striped">
+                                <tbody>
+                                    <tr>
+                                        <td>Ratable Games</td>
+                                        <td colspan="2">@interestRating.Games</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Main</td>
+                                        <td>@(interestRating.Games == 0 || interestRating.MainCount * 100.0 / interestRating.Games < 10.5 ? "Random" : interestRating.Main.ToString())</td>
+                                        <td>@HelperService.GetPercentageString(interestRating.MainCount, interestRating.Games)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Winrate</td>
+                                        <td colspan="2">@HelperService.GetPercentageString(interestRating.Wins, interestRating.Games)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Mvp</td>
+                                        <td colspan="2">@HelperService.GetPercentageString(interestRating.Mvp, interestRating.Games)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Consistency</td>
+                                        <td colspan="2">@interestRating.Consistency.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Confidence</td>
+                                        <td colspan="2">@interestRating.Confidence.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        <PlayerDetailsCmdrCount @ref="playerDetailsCmdrCount" Matchups="playerDetailsResult.Matchups"></PlayerDetailsCmdrCount>
+        <div class="col-auto mt-1">
+            <div class="card" style="min-width: 475px;">
+                <div class="card-header">
+                    <h4>Matchups <small>Count > 10</small></h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+                        <MatchupsTable Matchups="playerDetailsResult.Matchups"></MatchupsTable>
+                    </div>
 
-    @if (playerDetailsResult != null)
-    {
-        <PlayerDetailsRatingCharts PlayerRatings="playerDetailsResult.Ratings"></PlayerDetailsRatingCharts>
-        <div class="row">
-            @if (interestRating != null)
+                </div>
+            </div>
+        </div>
+        @if (playerGroupResult != null)
+        {
+            @if (playerGroupResult.Teammates.Any())
             {
-                <div class="col-auto">
-                    <div class="card">
+                <div class="col-auto mt-1">
+                    <div class="card" style="min-width: 475px;">
                         <div class="card-header">
-                            @interestRating.RatingType Info
+                            <h4>Teammates <small>including the player</small></h4>
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-sm table-dark table-striped">
-                                    <tbody>
-                                        <tr>
-                                            <td>Games</td>
-                                            <td colspan="2">@interestRating.Games</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Main</td>
-                                            <td>@(interestRating.Games == 0 || interestRating.MainCount * 100.0 / interestRating.Games < 10.5 ? "Random" : interestRating.Main.ToString())</td>
-                                            <td>@HelperService.GetPercentageString(interestRating.MainCount, interestRating.Games)</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Winrate</td>
-                                            <td colspan="2">@HelperService.GetPercentageString(interestRating.Wins, interestRating.Games)</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Mvp</td>
-                                            <td colspan="2">@HelperService.GetPercentageString(interestRating.Mvp, interestRating.Games)</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Consistency</td>
-                                            <td colspan="2">@Math.Round(interestRating.Consistency, 2)</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Confidence</td>
-                                            <td colspan="2">@Math.Round(interestRating.Confidence, 2)</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+                                <TeamTable TeamResults="playerGroupResult.Teammates"></TeamTable>
                             </div>
                         </div>
                     </div>
                 </div>
             }
-            @if (playerDetailsResult.GameModes.Any())
-            {
-                <div class="col-auto">
-                    <h3>GameModes</h3>
-                    <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
-                        <table class="table table-sm table-striped table-dark">
-                            <thead>
-                                <tr>
-                                    <th>GameMode</th>
-                                    <th>Players</th>
-                                    <th>Games</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var gameMode in playerDetailsResult.GameModes.OrderByDescending(o => o.Count))
-                                {
-                                    <tr>
-                                        <td>@gameMode.GameMode</td>
-                                        <td>@HelperService.GetPlayerCountString(gameMode.PlayerCount)</td>
-                                        <td>@gameMode.Count</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            }
-            <PlayerDetailsCmdrCount @ref="playerDetailsCmdrCount" Matchups="playerDetailsResult.Matchups"></PlayerDetailsCmdrCount>
-            <div class="col-auto">
-                <h3>Matchups</h3>
-                <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
-                    <table class="table table-sm table-striped table-dark">
-                        <thead>
-                            <tr>
-                                <th>Matchup</th>
-                                <th>Games</th>
-                                <th>Winrate</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var matchup in playerDetailsResult.Matchups.Where(x => x.Count > 10).OrderByDescending(o
-                           =>
-                           o.Wins * 100.0 / o.Count))
-                            {
-                                <tr>
-                                    <td>@matchup.Commander vs @matchup.Versus</td>
-                                    <td>@matchup.Count</td>
-                                    <td>@HelperService.GetPercentageString(matchup.Wins, matchup.Count)</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    }
-    @if (playerGroupResult != null)
-    {
-        <div class="col-auto">
-            <label class="form-label">
-                Mode
-                <select class="form-select" @onchange="RatingTypeChange">
-                    <option selected="@(RatingType == RatingType.Std)" value="Standard">Standard</option>
-                    <option selected="@(RatingType == RatingType.Cmdr)" value="Commanders">Commanders</option>
-                </select>
-            </label>
-        </div>
-        <div class="row">
-            @if (playerGroupResult.Teammates.Any())
-            {
-                <div class="col-auto">
-                    <h3>Teammates</h3>
-                    <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
-                        <table class="table table-sm table-striped table-dark">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Games</th>
-                                    <th>Winrate</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var player in playerGroupResult.Teammates.OrderByDescending(o => o.Count))
-                                {
-                                    <tr>
-                                        <td>
-                                            <span class="text-truncate" style="display: block; width: 150px;">
-                                                @player.Name
-                                            </span>
-                                        </td>
-                                        <td>@player.Count</td>
-                                        <td>@HelperService.GetPercentageString(player.Wins, player.Count)</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            }
             @if (playerGroupResult.Opponents.Any())
             {
-                <div class="col-auto">
-                    <h3>Opponents</h3>
-                    <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
-                        <table class="table table-sm table-striped table-dark">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Games</th>
-                                    <th>Winrate</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var player in playerGroupResult.Opponents.OrderByDescending(o => o.Count))
-                                {
-                                    <tr>
-                                        <td>
-                                            <span class="text-truncate" style="display: block; width: 150px;">
-                                                @player.Name
-                                            </span>
-                                        </td>
-                                        <td>@player.Count</td>
-                                        <td>@HelperService.GetPercentageString(player.Wins, player.Count)</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                <div class="col-auto mt-1">
+                    <div class="card" style="min-width: 475px;">
+                        <div class="card-header">
+                            <h4>Opponents <small>and their winrate</small></h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+                                <TeamTable TeamResults="playerGroupResult.Opponents"></TeamTable>
+                            </div>
+                        </div>
                     </div>
                 </div>
             }
-        </div>
-    }
-    else
-    {
-        @if (groupDataLoading)
-        {
-            <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
         }
         else
         {
-            <div class="btn-group mt-2">
-                <button type="button" class="btn btn-outline-warning" @onclick="LoadGroupData">More Details ..</button>
+            <div class="col-auto">
+                @if (groupDataLoading)
+                {
+                    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="btn-group mt-2">
+                        <button type="button" class="btn btn-outline-warning" @onclick="LoadGroupData">More Details ..</button>
+                    </div>
+                }
             </div>
         }
-    }
-</div>
+    </div>
+}

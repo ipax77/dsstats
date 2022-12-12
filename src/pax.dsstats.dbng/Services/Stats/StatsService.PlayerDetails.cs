@@ -44,7 +44,7 @@ public partial class StatsService
     {
         var gameModeGroup = from r in context.Replays
                             from rp in r.ReplayPlayers
-                            where r.Duration >= 300 && r.WinnerTeam > 0
+                            //where r.Duration >= 300 && r.WinnerTeam > 0
                             where toonIds.Contains(rp.Player.ToonId)
                             group r by new { r.GameMode, r.Playercount } into g
                             select new PlayerGameModeResult()
