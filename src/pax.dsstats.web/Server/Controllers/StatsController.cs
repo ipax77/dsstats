@@ -2,6 +2,7 @@
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Raven;
 
 namespace pax.dsstats.web.Server.Controllers
 {
@@ -82,6 +83,41 @@ namespace pax.dsstats.web.Server.Controllers
         public async Task<PlayerDetailDto> GetPlayerDetails(int toonId)
         {
             return await statsService.GetPlayerDetails(toonId);
+        }
+
+        [HttpGet]
+        [Route("GetPlayerDetailsNg/{toonId}/{rating}")]
+        public async Task<ActionResult<PlayerDetailsResult>> GetPlayerDetailsNg(int toonId, int rating, CancellationToken token)
+        {
+            try
+            {
+                return await statsService.GetPlayerDetails(toonId, (RatingType)rating, token);
+            } catch (OperationCanceledException) { }
+            return NoContent();
+        }
+
+        [HttpGet]
+        [Route("GetPlayerGroupDetails/{toonId}/{rating}")]
+        public async Task<ActionResult<PlayerDetailsGroupResult>> GetPlayerGroupDetails(int toonId, int rating, CancellationToken token)
+        {
+            try
+            {
+                return await statsService.GetPlayerGroupDetails(toonId, (RatingType)rating, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
+        }
+
+        [HttpGet]
+        [Route("GetPlayerMatchups/{toonId}/{rating}")]
+        public async Task<ActionResult<List<PlayerMatchupInfo>>> GetPlayerMatchups(int toonId, int rating, CancellationToken token)
+        {
+            try
+            {
+                return await statsService.GetPlayerMatchups(toonId, (RatingType)rating, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
         }
 
         [HttpPost]
