@@ -131,7 +131,7 @@
     @*<PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>*@
     <sc2dsstats.razorlib.PlayerDetails.PlayerDetailsNgComponent
         RequestNames="Interest"
-        RatingType="RatingType.Cmdr"
+        RatingType="@(replayDto.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr)"
         OnCloseRequested="DetailsClose"
     />
 }
