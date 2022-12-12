@@ -18,7 +18,10 @@
                 <InputSelect class="form-select" @bind-Value="StatsRequest.StatsMode">
                     @foreach (StatsMode statsMode in Enum.GetValues(typeof(StatsMode)))
                     {
-                        <option value="@statsMode">@statsMode</option>
+                        @if ((int)statsMode > 0)
+                        {
+                            <option value="@statsMode">@statsMode</option>
+                        }
                     }
                 </InputSelect>
             </label>
