@@ -40,6 +40,17 @@
                 <span class="oi oi-wrench" aria-hidden="true"></span> Settings
             </NavLink>
         </div>
+        <div class="nav-item px-3">
+            <div>
+                <span class="text-warning">
+                    The app is now available in the Microsoft Store!
+                    Further updates will be available in the Store App, only.
+                </span>
+                <button type="button" class="btn btn-outline-danger" @onclick="BrowserOpenStore">
+                    How to switch to Microsoft Store App
+                </button>
+            </div>
+        </div>
         <div class="nav-item px-3 mt-5">
             <div class="row px-3">
                 <div class="pointer" @onclick="BrowserOpenIssues">
@@ -68,6 +79,19 @@
         try
         {
             Uri uri = new Uri("https://github.com/ipax77/dsstats/issues");
+            await Browser.Default.OpenAsync(uri, BrowserLaunchMode.SystemPreferred);
+        }
+        catch (Exception)
+        {
+            // An unexpected error occured. No browser may be installed on the device.
+        }
+    }
+
+    private async void BrowserOpenStore()
+    {
+        try
+        {
+            Uri uri = new Uri("https://github.com/ipax77/dsstats/wiki/UpdateToStoreApp");
             await Browser.Default.OpenAsync(uri, BrowserLaunchMode.SystemPreferred);
         }
         catch (Exception)
