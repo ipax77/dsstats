@@ -11,7 +11,8 @@ internal static class CalcExtensions
         calcRating.MmrOverTime.Add(new()
         {
             Date = gametime.ToString(@"yyyyMMdd"),
-            Mmr = mmr
+            Mmr = mmr,
+            Count = calcRating.Games
         });
     }
 

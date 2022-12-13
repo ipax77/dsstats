@@ -108,11 +108,11 @@ public partial class RatingRepository
 
         if (timeRatings.Count == 1)
         {
-            return $"{Math.Round(timeRatings[0].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings[0].Date)}";
+            return $"{Math.Round(timeRatings[0].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings[0].Date)},{timeRatings[0].Count}";
         }
 
         StringBuilder sb = new();
-        sb.Append($"{Math.Round(timeRatings[0].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings[0].Date)}");
+        sb.Append($"{Math.Round(timeRatings[0].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings[0].Date)},{timeRatings[0].Count}");
 
         if (timeRatings.Count > 2)
         {
@@ -123,16 +123,39 @@ public partial class RatingRepository
                 if (currentTimeStr != timeStr)
                 {
                     sb.Append('|');
-                    sb.Append($"{Math.Round(timeRatings[i].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings[i].Date)}");
+                    sb.Append($"{Math.Round(timeRatings[i].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings[i].Date)},{timeRatings[i].Count}");
                 }
                 timeStr = currentTimeStr;
             }
         }
 
         sb.Append('|');
-        sb.Append($"{Math.Round(timeRatings.Last().Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings.Last().Date)}");
+        sb.Append($"{Math.Round(timeRatings.Last().Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings.Last().Date)},{timeRatings.Last().Count}");
+
+        if (sb.Length > 3999)
+        {
+            return GetShortenedMmrOverTime(sb);
+        }
 
         return sb.ToString();
+    }
+
+    private static string GetShortenedMmrOverTime(StringBuilder sb)
+    {
+        var mmrString = sb.ToString();
+        while (mmrString.Length > 3999)
+        {
+            int index = mmrString.IndexOf('|');
+            if (index == -1)
+            {
+                return "";
+            }
+            else
+            {
+                mmrString = mmrString[(index+1)..];
+            }
+        }
+        return mmrString;
     }
 
     private static string GetShortDateString(string date)

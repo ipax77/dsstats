@@ -84,6 +84,19 @@ public partial class MmrProduceService
                     });
                 }
             }
+            else if (timeMmr.Length == 3)
+            {
+                if (double.TryParse(timeMmr[0], NumberStyles.Any, CultureInfo.InvariantCulture, out double mmr))
+                {
+                    timeRatings.Add(new TimeRating()
+                    {
+                        Mmr = mmr,
+                        Date = timeMmr[1],
+                        Count = int.Parse(timeMmr[2])
+                    });
+                }
+            }
+
         }
         return timeRatings;
     }
