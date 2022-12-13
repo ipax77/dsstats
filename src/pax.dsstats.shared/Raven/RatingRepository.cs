@@ -109,6 +109,7 @@ public record TimeRating
 {
     public string Date { get; set; } = "";
     public double Mmr { get; set; }
+    public int Count { get; set; }
 }
 
 public record UpdateResult
