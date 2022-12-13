@@ -2,6 +2,8 @@
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Raven;
+using System.Net.Http.Json;
 
 namespace sc2dsstats.maui.Services;
 
@@ -157,6 +159,41 @@ public partial class DataService : IDataService
         else
         {
             return await statsService.GetPlayerDetails(toonId, token);
+        }
+    }
+
+    public async Task<PlayerDetailsResult> GetPlayerDetailsNg(int toonId, int rating, CancellationToken token)
+    {
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await ServerGetPlayerDetailsNg(toonId, rating, token);
+        } else
+        {
+            return await statsService.GetPlayerDetails(toonId, (RatingType)rating, token);
+        }
+    }
+
+    public async Task<PlayerDetailsGroupResult> GetPlayerGroupDetails(int toonId, int rating, CancellationToken token)
+    {
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await ServerGetPlayerGroupDetails(toonId, rating, token);
+        }
+        else
+        {
+            return await statsService.GetPlayerGroupDetails(toonId, (RatingType)rating, token);
+        }
+    }
+
+    public async Task<List<PlayerMatchupInfo>> GetPlayerMatchups(int toonId, int rating, CancellationToken token)
+    {
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await ServerGetPlayerMatchups(toonId, rating, token);
+        }
+        else
+        {
+            return await statsService.GetPlayerMatchups(toonId, (RatingType)rating, token);
         }
     }
 

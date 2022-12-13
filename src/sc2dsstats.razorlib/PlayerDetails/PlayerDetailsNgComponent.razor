@@ -1,0 +1,215 @@
+﻿@using System.Globalization;
+@using pax.dsstats.shared.Raven;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
+
+<div>
+    <div class="d-flex bg-secondary p-2">
+        <div class="me-2">
+            <span class="oi oi-x text-danger pointer" style="font-size: 2rem; z-index: 1000;"
+                  @onclick="(() => OnCloseRequested.InvokeAsync())"></span>
+        </div>
+        <div class="align-self-center me-2 border p-1">
+            <span>@Data.GetRegionString(playerDetailsResult?.Ratings.FirstOrDefault()?.Player.RegionId)</span>
+        </div>
+        <div class="align-self-center">
+            <h3 class="text-warning fw-bold">@RequestNames.Name Details</h3>
+        </div>
+        @if (playerDetailsResult == null)
+        {
+            <div class="spinner-border spinner-border-sm text-light ms-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        }
+        else
+        {
+            @foreach (var rating in playerDetailsResult.Ratings)
+            {
+                <div class="align-self-center">
+                    <span class="badge bg-primary ms-3" style="font-size: 1.2rem;">
+                        <span class="small">@rating.RatingType Rating</span>
+                        <br />
+                        <span class="text-warning">@rating.Rating.ToString("N2", CultureInfo.InvariantCulture)</span>
+                    </span>
+                </div>
+            }
+        }
+        @if (isUploader)
+        {
+            <div class="align-self-center ms-2">
+                <span class="badge bg-success">Uploader</span>
+            </div>
+        }
+        <div class="align-self-center ms-2">
+            <label class="form-label">
+                Mode
+                <select class="form-select" @onchange="RatingTypeChange">
+                    <option selected="@(RatingType == RatingType.Std)" value="Standard">Standard</option>
+                    <option selected="@(RatingType == RatingType.Cmdr)" value="Commanders">Commanders</option>
+                </select>
+            </label>
+        </div>
+        <div class="align-self-center ms-3">
+            <button type="button" class="btn btn-outline-light" @onclick="ShowReplays">Replays</button>
+        </div>
+        @if (Data.IsMaui)
+        {
+            <div class="ms-auto">
+                <div class="form-check form-switch">
+                    <label class="form-check-label">
+                        Server Details
+                        <input type="checkbox" class="form-check-input" checked="@dataService.GetFromServer()"
+                           @onchange="FromServerChange">
+                        </input>
+                    </label>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+@if (playerDetailsResult != null)
+{
+    <PlayerDetailsRatingCharts PlayerRatings="playerDetailsResult.Ratings"></PlayerDetailsRatingCharts>
+    <div class="row">
+        @if (playerDetailsResult.GameModes.Any())
+        {
+            <div class="col-auto mt-1">
+                <div class="card" style="min-width: 475px;">
+                    <div class="card-header">
+                        <h4>GameModes Played</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+                            <table class="table table-sm table-striped table-dark">
+                                <thead>
+                                    <tr>
+                                        <th>GameMode</th>
+                                        <th>Players</th>
+                                        <th>Games</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var gameMode in playerDetailsResult.GameModes.OrderByDescending(o => o.Count))
+                                    {
+                                        <tr>
+                                            <td>@gameMode.GameMode</td>
+                                            <td>@HelperService.GetPlayerCountString(gameMode.PlayerCount)</td>
+                                            <td>@gameMode.Count</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (interestRating != null)
+        {
+            <div class="col-auto mt-1">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>@interestRating.RatingType Rating Info</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-dark table-striped">
+                                <tbody>
+                                    <tr>
+                                        <td>Rating games</td>
+                                        <td colspan="2">@interestRating.Games</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Main</td>
+                                        <td>@(interestRating.Games == 0 || interestRating.MainCount * 100.0 / interestRating.Games < 10.5 ? "Random" : interestRating.Main.ToString())</td>
+                                        <td>@HelperService.GetPercentageString(interestRating.MainCount, interestRating.Games)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Winrate</td>
+                                        <td colspan="2">@HelperService.GetPercentageString(interestRating.Wins, interestRating.Games)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Mvp</td>
+                                        <td colspan="2">@HelperService.GetPercentageString(interestRating.Mvp, interestRating.Games)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Consistency</td>
+                                        <td colspan="2">@interestRating.Consistency.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Confidence</td>
+                                        <td colspan="2">@interestRating.Confidence.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        <PlayerDetailsCmdrCount @ref="playerDetailsCmdrCount" Matchups="playerDetailsResult.Matchups"></PlayerDetailsCmdrCount>
+        <div class="col-auto mt-1">
+            <div class="card" style="min-width: 475px;">
+                <div class="card-header">
+                    <h4>Matchups <small>Count > 10</small></h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+                        <MatchupsTable Matchups="playerDetailsResult.Matchups"></MatchupsTable>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        @if (playerGroupResult != null)
+        {
+            @if (playerGroupResult.Teammates.Any())
+            {
+                <div class="col-auto mt-1">
+                    <div class="card" style="min-width: 475px;">
+                        <div class="card-header">
+                            <h4>Teammates <small>including the player</small></h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+                                <TeamTable TeamResults="playerGroupResult.Teammates"></TeamTable>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (playerGroupResult.Opponents.Any())
+            {
+                <div class="col-auto mt-1">
+                    <div class="card" style="min-width: 475px;">
+                        <div class="card-header">
+                            <h4>Opponents <small>and their winrate</small></h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+                                <TeamTable TeamResults="playerGroupResult.Opponents"></TeamTable>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-auto">
+                @if (groupDataLoading)
+                {
+                    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="btn-group mt-2">
+                        <button type="button" class="btn btn-outline-warning" @onclick="LoadGroupData">More Details ..</button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}

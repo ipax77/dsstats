@@ -1,4 +1,6 @@
 ﻿using pax.dsstats.shared;
+using pax.dsstats.shared.Raven;
+using static pax.dsstats.dbng.Services.StatsService;
 
 namespace pax.dsstats.dbng.Services
 {
@@ -13,5 +15,8 @@ namespace pax.dsstats.dbng.Services
         Task<ICollection<PlayerMatchupInfo>> GetPlayerDetailInfo(int toonId, CancellationToken token = default);
         Task<List<CmdrStats>> GetRequestStats(StatsRequest request);
         Task<CrossTableResponse> GetCrossTable(CrossTableRequest request, CancellationToken token = default);
+        Task<PlayerDetailsResult> GetPlayerDetails(int toonId, RatingType ratingType, CancellationToken token);
+        Task<PlayerDetailsGroupResult> GetPlayerGroupDetails(int toonId, RatingType ratingType, CancellationToken token);
+        Task<List<PlayerMatchupInfo>> GetPlayerMatchups(int toonId, RatingType ratingType, CancellationToken token);
     }
 }

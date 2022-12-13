@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Raven;
 
 namespace pax.dsstats.dbng.Services;
 
@@ -94,6 +95,9 @@ public partial class StatsService
         return await infos.ToListAsync();
     }
 
+
+
+
     private async Task<Dictionary<int, int>> GetPlayerTeamGames(bool std)
     {
         var teamGroup = std ?
@@ -127,7 +131,6 @@ public partial class StatsService
         var teamGames = await teamGroup.ToListAsync();
         return teamGames.ToDictionary(k => k.ToonId, v => v.Teamgames);
     }
-
 }
 
 public record PlayerInfo

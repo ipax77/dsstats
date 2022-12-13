@@ -240,6 +240,75 @@ public partial class DataService
         return new();
     }
 
+    public async Task<PlayerDetailsResult> ServerGetPlayerDetailsNg(int toonId, int rating, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"{statsController}GetPlayerDetailsNg/{toonId}/{rating}", token);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<PlayerDetailsResult>();
+                return result ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting playerDetails: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting playerDetails: {ex.Message}");
+        }
+        return new();
+    }
+
+    public async Task<PlayerDetailsGroupResult> ServerGetPlayerGroupDetails(int toonId, int rating, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"{statsController}GetPlayerGroupDetails/{toonId}/{rating}", token);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<PlayerDetailsGroupResult>();
+                return result ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting playerGroupDetails: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting playerGroupDetails: {ex.Message}");
+        }
+        return new();
+    }
+
+    public async Task<List<PlayerMatchupInfo>> ServerGetPlayerMatchups(int toonId, int rating, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"{statsController}GetPlayerMatchups/{toonId}/{rating}", token);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<List<PlayerMatchupInfo>>();
+                return result ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting GetPlayerMatchups: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting GetPlayerMatchups: {ex.Message}");
+        }
+        return new();
+    }
+
     public async Task<List<RequestNames>> ServerGetTopPlayers(bool std)
     {
         try
