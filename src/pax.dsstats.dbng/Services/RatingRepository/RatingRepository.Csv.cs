@@ -152,7 +152,7 @@ public partial class RatingRepository
             }
             else
             {
-                mmrString = mmrString[index..];
+                mmrString = mmrString[(index+1)..];
             }
         }
         return mmrString;
