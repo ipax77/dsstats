@@ -13,10 +13,10 @@
 		<EnableDefaultCssItems>false</EnableDefaultCssItems>
 
 		<!-- Display name -->
-		<ApplicationTitle>sc2dsstats.maui</ApplicationTitle>
+		<ApplicationTitle>sc2dsstats</ApplicationTitle>
 
 		<!-- App Identifier -->
-		<ApplicationId>com.companyname.sc2dsstats.maui</ApplicationId>
+		<ApplicationId>com.companyname.sc2dsstats</ApplicationId>
 		<ApplicationIdGuid>32172F77-64E0-4DED-AF1C-39125CA1088D</ApplicationIdGuid>
 
 		<!-- Versions -->
@@ -34,10 +34,6 @@
 
 		<GenerateAppInstallerFile>False</GenerateAppInstallerFile>
 
-		<AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
-
-		<PackageCertificateThumbprint>4CCF5C69DA656900B956B8F9D8D6C415382DE326</PackageCertificateThumbprint>
-
 		<AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
 
 		<AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
@@ -49,10 +45,11 @@
 		<HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows' and '$(Configuration)' == 'Release'">
+	<!--<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows' and '$(Configuration)' == 'Release'">
 		<AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
 		<PackageCertificateThumbprint>4CCF5C69DA656900B956B8F9D8D6C415382DE326</PackageCertificateThumbprint>
-	</PropertyGroup>
+	</PropertyGroup>-->
+	
 	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows' and '$(RuntimeIdentifierOverride)' != ''">
 		<RuntimeIdentifier>$(RuntimeIdentifierOverride)</RuntimeIdentifier>
 	</PropertyGroup>

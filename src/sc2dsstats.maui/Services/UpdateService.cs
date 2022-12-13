@@ -6,10 +6,11 @@ namespace sc2dsstats.maui.Services;
 internal static class UpdateService
 {
     private static readonly string packageUri = "https://github.com/ipax77/dsstats/releases/latest/download/";
-    public static Version NewVersion { get; private set; } = new Version(0, 3, 3, 0);
-    public static Version CurrentVersion { get; private set; } = new Version(0, 3, 3, 0);
+    public static Version NewVersion { get; private set; } = new Version(1, 0, 2, 0);
+    public static Version CurrentVersion { get; private set; } = new Version(1, 0, 2, 0);
 
     public static EventHandler<UpdateProgressEvent>? UpdateProgress;
+    private static bool isStore = true;
 
     public static void OnUpdateProgress(UpdateProgressEvent e)
     {
@@ -19,6 +20,10 @@ internal static class UpdateService
 
     public static async Task CheckUpdate(bool init = false)
     {
+        if (isStore)
+        {
+            return;
+        }
         await SetNewVersion();
         try
         {
@@ -59,6 +64,10 @@ internal static class UpdateService
 
     private static async Task SetNewVersion()
     {
+        if (isStore)
+        {
+            return;
+        }
         HttpClient httpClient = new HttpClient();
         httpClient.BaseAddress = new Uri(packageUri);
 
@@ -86,6 +95,10 @@ internal static class UpdateService
 
     private static async void Update()
     {
+        if (isStore)
+        {
+            return;
+        }
         try
         {
             PackageManager packagemanager = new PackageManager();
@@ -110,7 +123,7 @@ internal static class UpdateService
     }
 }
 
-internal class UpdateProgressEvent : EventArgs
+public class UpdateProgressEvent : EventArgs
 {
     public uint Progress { get; init; }
 }
