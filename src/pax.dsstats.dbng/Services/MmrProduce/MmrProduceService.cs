@@ -117,7 +117,7 @@ public partial class MmrProduceService
 
             latestReplay = replays.Last().GameTime;
 
-            (mmrIdRatings, mmrChangesAppendId, accuracy) = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrOptions, mmrChangesAppendId);
+            (mmrIdRatings, mmrChangesAppendId, accuracy) = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, mmrOptions, mmrChangesAppendId, ratingRepository);
             //break; // DEBUG
         }
         var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings, !mmrOptions.ReCalc);

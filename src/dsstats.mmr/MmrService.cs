@@ -10,9 +10,9 @@ public static partial class MmrService
     public static async Task<(Dictionary<RatingType, Dictionary<int, CalcRating>>, int, double)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
                                                                     Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                                                     Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
-                                                                    IRatingRepository ratingRepository,
                                                                     MmrOptions mmrOptions,
                                                                     int mmrChangesAppendId,
+                                                                    IRatingRepository ratingRepository,
                                                                     bool dry = false)
     {
         List<bool> accuracyList = new();
@@ -46,7 +46,7 @@ public static partial class MmrService
 
             if (!dry && mmrChanges.Count > 100000)
             {
-                mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
+                mmrChangesAppendId = await ratingRepository!.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
                 mmrChanges.Clear();
                 mmrChanges = new List<MmrChange>();
             }
@@ -57,7 +57,7 @@ public static partial class MmrService
 
         if (!dry && mmrChanges.Any())
         {
-            mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
+            mmrChangesAppendId = await ratingRepository!.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
         }
         return (mmrIdRatings, mmrChangesAppendId, accuracy);
     }
@@ -87,9 +87,9 @@ public static partial class MmrService
     }
 
     public static List<PlChange> ProcessReplay(ReplayData replayData,
-                                                Dictionary<int, CalcRating> mmrIdRatings,
-                                                Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
-                                                MmrOptions mmrOptions)
+                                               Dictionary<int, CalcRating> mmrIdRatings,
+                                               Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
+                                               MmrOptions mmrOptions)
     {
         CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.WinnerTeamData, mmrOptions);
         CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.LoserTeamData, mmrOptions);

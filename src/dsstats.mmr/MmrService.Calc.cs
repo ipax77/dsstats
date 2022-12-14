@@ -17,7 +17,7 @@ public static partial class MmrService
     {
         foreach (var playerData in teamData.Players)
         {
-            var lastPlRating = mmrIdRatings[GetMmrId(playerData.ReplayPlayer.Player)];
+            var lastPlRating = mmrIdRatings[playerData.MmrId];
 
             double playerConsistency = lastPlRating.Consistency;
             double playerConfidence = lastPlRating.Confidence;
@@ -103,7 +103,7 @@ public static partial class MmrService
     {
         List<PlChange> changes = new();
         foreach (var player in teamData.Players) {
-            var currentPlayerRating = mmrIdRatings[GetMmrId(player.ReplayPlayer.Player)];
+            var currentPlayerRating = mmrIdRatings[player.MmrId];
 
             double mmrBefore = currentPlayerRating.Mmr;
             double consistencyBefore = currentPlayerRating.Consistency;
@@ -121,23 +121,23 @@ public static partial class MmrService
             confidenceAfter = Math.Clamp(confidenceAfter, 0, 1);
             mmrAfter = Math.Max(1, mmrAfter);
 
-            changes.Add(new PlChange() { Pos = player.ReplayPlayer.GamePos, ReplayPlayerId = player.ReplayPlayer.ReplayPlayerId, Change = mmrAfter - mmrBefore });
+            changes.Add(new PlChange() { Pos = player.GamePos, ReplayPlayerId = player.ReplayPlayerId, Change = mmrAfter - mmrBefore });
 
             currentPlayerRating.Consistency = consistencyAfter;
             currentPlayerRating.Confidence = confidenceAfter;
             currentPlayerRating.Games++;
 
-            if (player.ReplayPlayer.PlayerResult == PlayerResult.Win) {
+            if (player.PlayerResult == PlayerResult.Win) {
                 currentPlayerRating.Wins++;
             }
-            if (player.ReplayPlayer.Kills == maxKills) {
+            if (player.Kills == maxKills) {
                 currentPlayerRating.Mvp++;
             }
-            if (player.ReplayPlayer.IsUploader) {
+            if (player.IsUploader) {
                 currentPlayerRating.IsUploader = true;
             }
 
-            currentPlayerRating.SetCmdr(player.ReplayPlayer.Race);
+            currentPlayerRating.SetCmdr(player.Race);
             currentPlayerRating.SetMmr(mmrAfter, gameTime);
         }
         return changes;
@@ -155,7 +155,7 @@ public static partial class MmrService
 
         for (int playerIndex = 0; playerIndex < teamData.Players.Length; playerIndex++)
         {
-            var playerCmdr = teamData.Players[playerIndex].ReplayPlayer.Race;
+            var playerCmdr = teamData.Players[playerIndex].Race;
             if ((int)playerCmdr <= 3) {
                 continue;
             }
@@ -170,7 +170,7 @@ public static partial class MmrService
                     continue;
                 }
 
-                var synergyPlayerCmdr = teamData.Players[synergyPlayerIndex].ReplayPlayer.Race;
+                var synergyPlayerCmdr = teamData.Players[synergyPlayerIndex].Race;
 
                 var synergy = cmdrMmrDic[new CmdrMmmrKey() { Race = playerCmdr, OppRace = synergyPlayerCmdr }];
 
@@ -179,7 +179,7 @@ public static partial class MmrService
 
             for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamData.Players.Length; antiSynergyPlayerIndex++)
             {
-                var antiSynergyPlayerCmdr = teamData.Players[antiSynergyPlayerIndex].ReplayPlayer.OppRace;
+                var antiSynergyPlayerCmdr = teamData.Players[antiSynergyPlayerIndex].OppRace;
 
                 var antiSynergy = cmdrMmrDic[new CmdrMmmrKey() { Race = playerCmdr, OppRace = antiSynergyPlayerCmdr }];
 
@@ -208,7 +208,7 @@ public static partial class MmrService
         }
 
         for (int playerIndex = 0; playerIndex < teamData.Players.Length; playerIndex++) {
-            var playerCmdr = teamData.Players[playerIndex].ReplayPlayer.Race;
+            var playerCmdr = teamData.Players[playerIndex].Race;
             if ((int)playerCmdr <= 3) {
                 continue;
             }
@@ -218,7 +218,7 @@ public static partial class MmrService
                     continue;
                 }
 
-                var synergyPlayerCmdr = teamData.Players[synergyPlayerIndex].ReplayPlayer.Race;
+                var synergyPlayerCmdr = teamData.Players[synergyPlayerIndex].Race;
                 if ((int)synergyPlayerCmdr <= 3) {
                     continue;
                 }
@@ -229,7 +229,7 @@ public static partial class MmrService
             }
 
             for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamData.Players.Length; antiSynergyPlayerIndex++) {
-                var antiSynergyPlayerCmdr = teamData.Players[antiSynergyPlayerIndex].ReplayPlayer.OppRace;
+                var antiSynergyPlayerCmdr = teamData.Players[antiSynergyPlayerIndex].OppRace;
                 if ((int)antiSynergyPlayerCmdr <= 3) {
                     continue;
                 }
@@ -289,11 +289,11 @@ public static partial class MmrService
 
     private static void SetPlayerData(Dictionary<int, CalcRating> mmrIdRatings, PlayerData playerData, MmrOptions mmrOptions)
     {
-        if (!mmrIdRatings.TryGetValue(GetMmrId(playerData.ReplayPlayer.Player), out var plRating))
+        if (!mmrIdRatings.TryGetValue(playerData.MmrId, out var plRating))
         {
-            plRating = mmrIdRatings[GetMmrId(playerData.ReplayPlayer.Player)] = new CalcRating()
+            plRating = mmrIdRatings[playerData.MmrId] = new CalcRating()
             {
-                PlayerId = playerData.ReplayPlayer.Player.PlayerId,
+                PlayerId = playerData.PlayerId,
                 Mmr = mmrOptions.StartMmr,
                 Consistency = 0,
                 Confidence = 0,
@@ -336,7 +336,7 @@ public static partial class MmrService
         return teamSize * (playerMmr / (teamMmrMean * teamSize));
     }
 
-    private static double EloExpectationToWin(double ratingOne, double ratingTwo, double clip = 400)
+    public static double EloExpectationToWin(double ratingOne, double ratingTwo, double clip = 400)
     {
         return 1.0 / (1.0 + Math.Pow(10.0, (2.0 / clip) * (ratingTwo - ratingOne)));
     }
