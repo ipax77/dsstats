@@ -83,7 +83,39 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
     {
         NavigationManager.NavigateTo(
             NavigationManager.GetUriWithQueryParameters("replays",
-                new Dictionary<string, object?>() { { "Players", RequestNames.Name } }
+                new Dictionary<string, object?>() 
+                {
+                    { "Players", RequestNames.Name },
+                    { "ToonId", RequestNames.ToonId }
+                }
+            )
+        );
+    }
+
+    private void ShowWithReplays(int toonId)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("replays",
+                new Dictionary<string, object?>()
+                {
+                    { "Players", RequestNames.Name },
+                    { "ToonId", RequestNames.ToonId },
+                    { "ToonIdWith", toonId },
+                }
+            )
+        );
+    }
+
+    private void ShowVsReplays(int toonId)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("replays",
+                new Dictionary<string, object?>()
+                {
+                    { "Players", RequestNames.Name },
+                    { "ToonId", RequestNames.ToonId },
+                    { "ToonIdVs", toonId },
+                }
             )
         );
     }

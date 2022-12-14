@@ -1,11 +1,13 @@
 ﻿@using pax.dsstats.shared;
 @using sc2dsstats.razorlib.Extensions;
 @using sc2dsstats.razorlib.Services;
+@inject NavigationManager NavigationManager;
 
 <table class="table table-sm table-striped table-dark">
     <thead>
         <CascadingValue Value="orders">
             <tr>
+                <th></th>
                 <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Name"))">
                     <SortArrow Property="Name">
                         Name
@@ -29,6 +31,9 @@
         {
             <tr>
                 <td>
+                    <span class="oi oi-list pointer" @onclick="e => ShowReplays.InvokeAsync(player.ToonId)"></span>
+                </td>
+                <td>
                     <span class="text-truncate" style="display: block; width: 150px;">
                         @player.Name
                     </span>
@@ -43,6 +48,9 @@
 @code {
     [Parameter, EditorRequired]
     public List<PlayerTeamResult> TeamResults { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<int> ShowReplays { get; set; }
 
     private List<TableOrder> orders = new()
     {
