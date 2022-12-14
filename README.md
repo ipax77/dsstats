@@ -1,19 +1,17 @@
 
 # Direct Strike Fan Project
 
-```!Beta Version!```
-
 Fan Project for analyzing [Starcarft II](https://starcraft2.com) [Direct Strike](https://www.patreon.com/Tya) Replays
 
-
 ## Install instructions
-To contribute with your own replays download and install the msix
- from the [latest release](https://github.com/ipax77/dsstats/releases/latest)
 
- Please follow the install instructions from Microsoft: [Installing the app](https://learn.microsoft.com/en-us/dotnet/maui/windows/deployment/publish-cli#installing-the-app)
+[<img src="images/store.png" alt="store" width="100"/>](https://www.microsoft.com/store/apps/9NNNMB503HN5)
 
+Go to the Microsoft Store and install the [sc2dsstats app](https://www.microsoft.com/store/apps/9NNNMB503HN5) for free.
 
 The app can be used offline to analyze your stats locally. If you want to upload your replays and contribute to this site, you must give your explicit consent.
+
+The app is distributed via the Microsoft Store to make installation as easy as possible. It is and always will be freely available.
 
 ## Website
 [dsstats.pax77.org](https://dsstats.pax77.org)

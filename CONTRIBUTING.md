@@ -24,7 +24,7 @@ There are two main projects in this repository:
 - Hosted Blazor WebAssembly
     * [pax.dsstats.web](./src/pax.dsstats.web)
 
-These projects share most of the other libraries. While the MAUI app should run out of the box you need a local mysql and raven-db set up for the Hosted Blazor WebAssembly project.
+These projects share most of the other libraries. While the MAUI app should run out of the box you need a local mysql db set up for the Hosted Blazor WebAssembly project.
 
 ## Pull requests (PR)
 
