@@ -28,7 +28,7 @@ public partial class Parse
                     return;
                 }
             }
-            else if (replay.GameMode.Contains("GameModeHeroicCommanders"))
+            else if (gameModes.Contains("GameModeHeroicCommanders"))
             {
                 replay.GameMode = "GameModeHeroicCommanders";
                 return;
