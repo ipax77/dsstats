@@ -139,7 +139,7 @@ public class GameModeTests
 
         var replayDto = Parse.GetReplayDto(dsReplay);
 
-        Assert.True(replayDto.GameMode == pax.dsstats.shared.GameMode.CommandersHeroic);
+        Assert.Equal(replayDto?.GameMode, pax.dsstats.shared.GameMode.CommandersHeroic);
     }
 
     [Theory]
