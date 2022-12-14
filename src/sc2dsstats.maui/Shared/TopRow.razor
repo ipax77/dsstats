@@ -93,11 +93,11 @@
         {
             @if (UpdateService.NewVersion > UpdateService.CurrentVersion)
             {
-                <button type="button" class="btn btn-outline-danger" @onclick="e => CheckForUpdates()">New Version Available!</button>
+                <button type="button" class="btn btn-outline-danger" @onclick="e => CheckForStoreUpdates()">New Version Available!</button>
             }
             else
             {
-                <button type="button" class="btn btn-outline-light" @onclick="e => CheckForUpdates()">Check for Updates</button>
+                <button type="button" class="btn btn-outline-light" @onclick="e => CheckForStoreUpdates()">Check for Updates</button>
             }
         }
         <span class="badge bg-light px-1" style="height: 50% !important; padding: 0.5rem 0; font-size: 1em;">

@@ -5,11 +5,11 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap rescap">
 
-  <Identity Name="sc2dsstats.maui" Publisher="CN=pax77" Version="0.3.3.0" />
+  <Identity Name="29898PhilippHetzner.141231D0ED353" Publisher="CN=592AF738-4E2A-4BF3-87A7-D07953D08DE9" Version="1.0.2.0" />
 
   <Properties>
     <DisplayName>$placeholder$</DisplayName>
-    <PublisherDisplayName>ipax77</PublisherDisplayName>
+    <PublisherDisplayName>Philipp Hetzner</PublisherDisplayName>
     <Logo>Assets\$placeholder$.png</Logo>
   </Properties>
 

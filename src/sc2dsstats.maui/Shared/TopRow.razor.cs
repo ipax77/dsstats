@@ -62,7 +62,8 @@ public partial class TopRow : ComponentBase, IDisposable
         {
             await decodeService.ScanForNewReplays();
             await InvokeAsync(() => StateHasChanged());
-            CheckForUpdates(true);
+            // CheckForUpdates(true);
+            CheckForStoreUpdates(true);
         }
         await base.OnAfterRenderAsync(firstRender);
     }
@@ -121,6 +122,27 @@ public partial class TopRow : ComponentBase, IDisposable
             await Task.Delay(5000);
         }
         await UpdateService.CheckUpdate(init);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public async void CheckForStoreUpdates(bool init = false)
+    {
+        if (init)
+        {
+            if (!UserSettingsService.UserSettings.CheckForUpdates)
+            {
+                return;
+            }
+            await Task.Delay(5000);
+        }
+        try
+        {
+            await StoreUpdateService.CheckForUpdates(init);
+        } catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message.ToString());
+            ToastService.ShowWarning("Update check failed");
+        }
         await InvokeAsync(() => StateHasChanged());
     }
 

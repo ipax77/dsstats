@@ -35,7 +35,7 @@ public partial class Parse
             }
             else
             {
-                replay.GameMode = gameModes.Last();
+                replay.GameMode = gameModes.First();
                 return;
             }
         }
