@@ -126,3 +126,12 @@ public static class HelperService
         return (Math.Round(sumTeam1 * 100.0 / (double)gameloops[^1], 2), Math.Round(sumTeam2 * 100.0 / (double)gameloops[^1], 2));
     }
 }
+
+public record ReplaysToonIdRequest
+{
+    public string Name { get; init; } = "";
+    public int ToonId { get; init; }
+    public int ToonIdWith { get; init; }
+    public int ToonIdVs { get; init; }
+    public string? ToonIdName { get; init; }
+}

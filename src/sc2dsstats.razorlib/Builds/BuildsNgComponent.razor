@@ -3,6 +3,7 @@
 @using sc2dsstats.razorlib.Replay;
 @using sc2dsstats.razorlib.Services;
 @inject IDataService dataService
+@inject NavigationManager NavigationManager
 @implements IDisposable
 
 <div>
@@ -140,10 +141,13 @@
 }
 
 <div class="mt-2">
-@if (replayDto != null)
-{
-    <sc2dsstats.razorlib.Replay.ReplayComponent @ref="replayComponent" replayDto="replayDto" OnCloseRequested="ReplayClose"></sc2dsstats.razorlib.Replay.ReplayComponent>
-}
+    @if (replayDto != null)
+    {
+        <sc2dsstats.razorlib.Replay.ReplayComponent @ref="replayComponent"
+                                                replayDto="replayDto"
+                                                OnCloseRequested="ReplayClose"
+                                                ReplaysRequest="ReplaysToonIdRequest" />
+    }
 </div>
 
 @code {
@@ -227,6 +231,23 @@
         isReplayLoading = false;
         await InvokeAsync(() => StateHasChanged());
     }
+
+    private void ReplaysToonIdRequest(ReplaysToonIdRequest request)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("replays",
+                new Dictionary<string, object?>()
+                {
+                    { "Players", request.Name },
+                    { "ToonId", request.ToonId },
+                    { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
+                    { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
+                    { "ToonIdName", request.ToonIdName },
+                }
+            )
+        );
+    }
+
 
     private void ReplayClose()
     {

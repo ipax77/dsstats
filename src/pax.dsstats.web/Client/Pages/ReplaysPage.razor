@@ -3,10 +3,11 @@
 @using pax.dsstats.shared
 @using sc2dsstats.razorlib
 @inject NavigationManager NavigationManager
+@inject ILogger<ReplaysPage> logger
 
 <PageTitle>Replays</PageTitle>
 
-<ReplaysComponent replaysRequest="replaysRequest"
+<ReplaysComponent @ref="replaysComponent" replaysRequest="replaysRequest"
                   OnRequestChanged="SetUrl">
 </ReplaysComponent>
 
@@ -35,12 +36,49 @@
     [SupplyParameterFromQuery]
     public string? ReplayHash { get; set; }
 
-    ReplaysRequest replaysRequest = new();
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? ToonId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? ToonIdWith { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? ToonIdVs { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? ToonIdName { get; set; }
+
+
+    private ReplaysRequest replaysRequest = new();
+    private ReplaysComponent? replaysComponent;
+    private object lockobject = new();
+    private bool jobDone = true;
 
     protected override void OnInitialized()
     {
         SetRequest();
         base.OnInitialized();
+    }
+
+    protected override void OnParametersSet()
+    {
+        lock (lockobject)
+        {
+            if (jobDone)
+            {
+                jobDone = false;
+            }
+            else
+            {
+                SetRequest();
+                replaysComponent?.ReInit(replaysRequest);
+            }
+        }
+        base.OnParametersSet();
     }
 
     private void SetRequest()
@@ -52,7 +90,11 @@
                 Tournament = Tournament,
                 SearchString = SearchString,
                 SearchPlayers = Players,
-                ReplayHash = ReplayHash
+                ReplayHash = ReplayHash,
+                ToonId = ToonId ?? 0,
+                ToonIdVs = ToonIdVs ?? 0,
+                ToonIdWith = ToonIdWith ?? 0,
+                ToonIdName = ToonIdName
             };
     }
 
@@ -109,10 +151,50 @@
             queryDic.Add("ReplayHash", null);
         }
 
-        NavigationManager.NavigateTo(
-            NavigationManager.GetUriWithQueryParameters(
-                new Dictionary<string, object?>(queryDic)
-            )
-        );
+        if (request.ToonId > 0)
+        {
+            queryDic.Add("ToonId", request.ToonId);
+        }
+        else
+        {
+            queryDic.Add("ToonId", null);
+        }
+
+        if (request.ToonIdVs > 0)
+        {
+            queryDic.Add("ToonIdVs", request.ToonIdVs);
+        }
+        else
+        {
+            queryDic.Add("ToonIdVs", null);
+        }
+
+        if (request.ToonIdWith > 0)
+        {
+            queryDic.Add("ToonIdWith", request.ToonIdWith);
+        }
+        else
+        {
+            queryDic.Add("ToonIdWith", null);
+        }
+
+        if (!String.IsNullOrEmpty(request.ToonIdName))
+        {
+            queryDic.Add("ToonIdName", request.ToonIdName);
+        }
+        else
+        {
+            queryDic.Add("ToonIdName", null);
+        }
+
+        lock (lockobject)
+        {
+            jobDone = true;
+            NavigationManager.NavigateTo(
+                NavigationManager.GetUriWithQueryParameters(
+                    new Dictionary<string, object?>(queryDic)
+                )
+            );
+        }
     }
 }
