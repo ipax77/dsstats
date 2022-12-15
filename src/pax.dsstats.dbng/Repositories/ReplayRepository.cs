@@ -248,7 +248,7 @@ public class ReplayRepository : IReplayRepository
                       from rp in r.ReplayPlayers
                       from w in r.ReplayPlayers
                       where rp.Player.ToonId == request.ToonId
-                      where w.Team != rp.Team && w.Player.ToonId == request.ToonIdWith
+                      where w.Team != rp.Team && w.Player.ToonId == request.ToonIdVs
                       select r;
         }
         else

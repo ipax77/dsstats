@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
+using sc2dsstats.razorlib.Services;
 
 namespace sc2dsstats.razorlib.PlayerDetails;
 
@@ -13,6 +14,8 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
     public RatingType RatingType { get; set; }
     [Parameter]
     public EventCallback OnCloseRequested { get; set; }
+    [Parameter]
+    public EventCallback<ReplaysToonIdRequest> ReplaysRequest { get; set; }
 
     [Inject]
     protected IDataService dataService { get; set; } = default!;
@@ -81,43 +84,32 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
 
     private void ShowReplays()
     {
-        NavigationManager.NavigateTo(
-            NavigationManager.GetUriWithQueryParameters("replays",
-                new Dictionary<string, object?>() 
-                {
-                    { "Players", RequestNames.Name },
-                    { "ToonId", RequestNames.ToonId }
-                }
-            )
-        );
+        ReplaysRequest.InvokeAsync(new()
+        {
+            Name = RequestNames.Name,
+            ToonId = RequestNames.ToonId,
+        });
     }
 
     private void ShowWithReplays(int toonId)
     {
-        NavigationManager.NavigateTo(
-            NavigationManager.GetUriWithQueryParameters("replays",
-                new Dictionary<string, object?>()
-                {
-                    { "Players", RequestNames.Name },
-                    { "ToonId", RequestNames.ToonId },
-                    { "ToonIdWith", toonId },
-                }
-            )
-        );
+        ReplaysRequest.InvokeAsync(new()
+        {
+            Name = RequestNames.Name,
+            ToonId = RequestNames.ToonId,
+            ToonIdWith = toonId
+        });
     }
 
     private void ShowVsReplays(int toonId)
     {
-        NavigationManager.NavigateTo(
-            NavigationManager.GetUriWithQueryParameters("replays",
-                new Dictionary<string, object?>()
-                {
-                    { "Players", RequestNames.Name },
-                    { "ToonId", RequestNames.ToonId },
-                    { "ToonIdVs", toonId },
-                }
-            )
-        );
+
+        ReplaysRequest.InvokeAsync(new()
+        {
+            Name = RequestNames.Name,
+            ToonId = RequestNames.ToonId,
+            ToonIdVs = toonId
+        });
     }
 
     private async void RatingTypeChange(ChangeEventArgs e)

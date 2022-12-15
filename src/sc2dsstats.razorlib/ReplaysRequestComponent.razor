@@ -200,6 +200,9 @@
         replaysRequest.GameModes = defaultRequest.GameModes;
         replaysRequest.DefaultFilter = defaultRequest.DefaultFilter;
         replaysRequest.PlayerCount = defaultRequest.PlayerCount;
+        replaysRequest.ToonId = 0;
+        replaysRequest.ToonIdWith = 0;
+        replaysRequest.ToonIdVs = 0;
         StateHasChanged();
         OnFieldChanged.InvokeAsync();
     }
