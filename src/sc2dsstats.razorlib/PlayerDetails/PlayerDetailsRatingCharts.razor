@@ -47,9 +47,14 @@
         }
     }
 
+    public void UpdateCharts(List<PlayerRatingDetailDto> playerRatings)
+    {
+        PlayerRatings = playerRatings;
+        SetupCharts();
+    }
+
     private void SetupCharts()
     {
-        Random random = new();
         for (int i = 0; i < PlayerRatings.Count; i++)
         {
             var rating = PlayerRatings[i];

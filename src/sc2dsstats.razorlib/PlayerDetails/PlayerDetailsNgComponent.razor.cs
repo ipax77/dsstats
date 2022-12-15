@@ -27,6 +27,7 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
     private PlayerDetailsResult? playerDetailsResult = null;
     private PlayerDetailsGroupResult? playerGroupResult = null;
     private PlayerDetailsCmdrCount? playerDetailsCmdrCount;
+    private PlayerDetailsRatingCharts? playerDetailsRatingCharts;
 
     private bool groupDataLoading = false;
     private RatingType ratingType = RatingType.None;
@@ -49,6 +50,13 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
     //    base.OnAfterRender(firstRender);
     //}
 
+    public void Update(RequestNames requestNames, RatingType ratingType)
+    {
+        RequestNames = requestNames;
+        RatingType = ratingType;
+        _ = LoadData();
+    }
+
     private async Task LoadData()
     {
         playerDetailsResult = await dataService.GetPlayerDetailsNg(RequestNames.ToonId, (int)RatingType, cts.Token);
@@ -56,7 +64,14 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
         {
             RequestNames.Name = playerDetailsResult.Ratings.FirstOrDefault()?.Player.Name ?? "";
         }
+        playerDetailsRatingCharts?.UpdateCharts(playerDetailsResult.Ratings);
+        playerDetailsCmdrCount?.Update(playerDetailsResult.Matchups);
+
         await InvokeAsync(() => StateHasChanged());
+        if (Data.IsMaui)
+        {
+            await LoadGroupData();
+        }
     }
 
     private async Task LoadGroupData()

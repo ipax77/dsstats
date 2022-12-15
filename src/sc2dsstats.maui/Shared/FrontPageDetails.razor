@@ -1,0 +1,144 @@
+﻿@using pax.dsstats.dbng.Services;
+@using pax.dsstats.shared;
+@using pax.dsstats.shared.Raven;
+@using sc2dsstats.maui.Services;
+@using sc2dsstats.razorlib.PlayerDetails;
+@using sc2dsstats.razorlib.Services;
+@inject IStatsService statsService
+@inject IRatingRepository ratingRepository
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+@if (playerNames.Count > 1)
+{
+    <div style="max-width: 200px">
+        <EditForm EditContext="editContext">
+            <InputSelect class="form-select" @bind-Value="interest">
+                @foreach (var name in playerNames)
+                {
+                    <option value="@name.ToonId">@name.Name @Data.GetRegionString(name.RegionId)</option>
+                }
+            </InputSelect>
+        </EditForm>
+    </div>
+}
+@if (requestNames != null)
+{
+    <div>
+        <PlayerDetailsNgComponent @ref="playerDetailsNgComponent"
+                              RequestNames="requestNames"
+                              RatingType="@(LatestReplay?.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr)"
+                              ReplaysRequest="ReplaysToonIdRequest" />
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public ReplayDto? LatestReplay { get; set; } = default!;
+
+    private PlayerDetailsNgComponent? playerDetailsNgComponent;
+    private RequestNames? requestNames;
+    private List<RequestNames> playerNames = new();
+    private int interest;
+    private EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(interest);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ = LoadData();
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    public void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        requestNames = playerNames.FirstOrDefault(f => f.ToonId == interest);
+        if (requestNames != null)
+        {
+            playerDetailsNgComponent?.Update(requestNames, LatestReplay?.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr);
+        }
+    }
+
+    public void Update(ReplayDto? latestReplay)
+    {
+        LatestReplay = latestReplay;
+        _ = LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        if (LatestReplay == null)
+        {
+            return;
+        }
+
+        var toonIds = UserSettingsService.UserSettings.BattleNetInfos
+            .SelectMany(s => s.ToonIds)
+            .Select(s => s.ToonId)
+            .ToList();
+
+        if (!toonIds.Any())
+        {
+            return;
+        }
+
+        if (!playerNames.Any())
+        {
+            foreach (var toonId in toonIds)
+            {
+                var name = await ratingRepository.GetRequestNames(toonId);
+                if (name != null)
+                {
+                    playerNames.Add(name);
+                }
+            }
+        }
+
+        requestNames = LatestReplay.ReplayPlayers
+            .Where(x => toonIds.Contains(x.Player.ToonId))
+            .Select(s => new RequestNames() { Name = s.Name, ToonId = s.Player.ToonId })
+            .FirstOrDefault();
+
+        if (requestNames == null)
+        {
+            requestNames = new RequestNames()
+                {
+                    ToonId = toonIds.First(),
+                    Name = await ratingRepository.GetToonIdName(toonIds.First()) ?? ""
+                };
+        }
+        interest = requestNames.ToonId;
+        playerDetailsNgComponent?.Update(requestNames, LatestReplay?.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr);
+
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void ReplaysToonIdRequest(ReplaysToonIdRequest request)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("replays",
+                new Dictionary<string, object?>()
+                        {
+                    { "Players", request.Name },
+                    { "ToonId", request.ToonId },
+                    { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
+                    { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
+                    { "ToonIdName", request.ToonIdName },
+                        }
+            )
+        );
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}

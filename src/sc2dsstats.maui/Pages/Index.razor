@@ -10,7 +10,6 @@
 @inject IReplayRepository ReplayRepository
 @inject DecodeService DecodeService
 @inject UploadService UploadService
-@inject IStatsService StatsService
 @inject IToastService toastSerivce
 @inject NavigationManager NavigationManager
 @implements IDisposable
@@ -44,33 +43,24 @@
     }
 </div>
 
+            @if (latestReplay != null)
+            {
 <div class="mt-2">
     <div class="row">
         <div class="col-auto">
-            @if (latestReplay != null)
-            {
+
                 <h3 class="text-warning p-2 bg-secondary">Latest Replay</h3>
                 <sc2dsstats.razorlib.Replay.ReplayComponent
                     @ref="replayComponent"
                     replayDto="latestReplay"
                     ReplaysRequest="ReplaysToonIdRequest" />
-            }
-        </div>
-        <div class="col-auto">
-@*            @if (mmrService.MauiMmrProgress.Any())
-            {
-                <MmrProgressComponent MauiMmrProgress="mmrService.MauiMmrProgress"></MmrProgressComponent>
-            }*@
         </div>
     </div>
 </div>
 <div class="mt-3">
-    @if (playerDetailInfo != null)
-    {
-        <h3 class="text-warning fw-bold bg-secondary p-2">Player Details</h3>
-        <PlayerDetailsSubComponent PlayerDetailInfo="playerDetailInfo"></PlayerDetailsSubComponent>
-    }
+    <FrontPageDetails @ref="frontPageDetails" LatestReplay="latestReplay" />
 </div>
+}
 
 @*<div class="btn-group">
     <button type="button" class="btn btn-primary" @onclick="DecodeService.DEBUGEmulateErrorsTest">Debug Errors</button>
@@ -81,9 +71,9 @@
 @code {
     ReplayDto? latestReplay = null;
     UploadConfirmModal? uploadConfirmModal;
-    PlayerDetailInfo? playerDetailInfo;
     TimeSpan elapsed = TimeSpan.Zero;
     ReplayComponent? replayComponent;
+    FrontPageDetails? frontPageDetails;
 
     private bool DEBUG = false;
 
@@ -122,20 +112,8 @@
         {
             replayComponent?.Init(latestReplay);
         }
+        frontPageDetails?.Update(latestReplay);
         await InvokeAsync(() => StateHasChanged());
-        if (UserSettingsService.UserSettings.BattleNetInfos != null)
-        {
-            var toonIds = UserSettingsService.UserSettings.BattleNetInfos.SelectMany(s => s.ToonIds).Select(s => s.ToonId).ToList();
-            if (toonIds.Any())
-            {
-                var matchupInfos = (await StatsService.GetPlayerDetailInfo(toonIds)).ToList();
-                playerDetailInfo = new PlayerDetailInfo()
-                    {
-                        MatchupInfos = matchupInfos
-                    };
-                await InvokeAsync(() => StateHasChanged());
-            }
-        }
     }
 
     private void Decode()
