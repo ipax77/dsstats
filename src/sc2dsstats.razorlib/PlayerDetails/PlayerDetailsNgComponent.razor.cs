@@ -27,6 +27,7 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
     private PlayerDetailsResult? playerDetailsResult = null;
     private PlayerDetailsGroupResult? playerGroupResult = null;
     private PlayerDetailsCmdrCount? playerDetailsCmdrCount;
+    private PlayerDetailsRatingCharts? playerDetailsRatingCharts;
 
     private bool groupDataLoading = false;
     private RatingType ratingType = RatingType.None;
@@ -56,6 +57,9 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
         {
             RequestNames.Name = playerDetailsResult.Ratings.FirstOrDefault()?.Player.Name ?? "";
         }
+        playerDetailsRatingCharts?.UpdateCharts(playerDetailsResult.Ratings);
+        playerDetailsCmdrCount?.Update(playerDetailsResult.Matchups);
+
         await InvokeAsync(() => StateHasChanged());
     }
 
