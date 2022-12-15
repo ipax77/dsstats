@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
+using sc2dsstats.razorlib.Services;
 
 namespace sc2dsstats.razorlib.PlayerDetails;
 
@@ -13,6 +14,8 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
     public RatingType RatingType { get; set; }
     [Parameter]
     public EventCallback OnCloseRequested { get; set; }
+    [Parameter]
+    public EventCallback<ReplaysToonIdRequest> ReplaysRequest { get; set; }
 
     [Inject]
     protected IDataService dataService { get; set; } = default!;
@@ -81,11 +84,34 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
 
     private void ShowReplays()
     {
-        NavigationManager.NavigateTo(
-            NavigationManager.GetUriWithQueryParameters("replays",
-                new Dictionary<string, object?>() { { "Players", RequestNames.Name } }
-            )
-        );
+        ReplaysRequest.InvokeAsync(new()
+        {
+            Name = RequestNames.Name,
+            ToonId = RequestNames.ToonId,
+        });
+    }
+
+    private void ShowWithReplays(KeyValuePair<int, string?> playerInfo)
+    {
+        ReplaysRequest.InvokeAsync(new()
+        {
+            Name = RequestNames.Name,
+            ToonId = RequestNames.ToonId,
+            ToonIdWith = playerInfo.Key,
+            ToonIdName = playerInfo.Value,
+        });
+    }
+
+    private void ShowVsReplays(KeyValuePair<int, string?> playerInfo)
+    {
+
+        ReplaysRequest.InvokeAsync(new()
+        {
+            Name = RequestNames.Name,
+            ToonId = RequestNames.ToonId,
+            ToonIdVs = playerInfo.Key,
+            ToonIdName = playerInfo.Value,
+        });
     }
 
     private async void RatingTypeChange(ChangeEventArgs e)

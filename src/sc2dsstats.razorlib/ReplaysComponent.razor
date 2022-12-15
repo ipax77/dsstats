@@ -137,7 +137,11 @@
 @if (replayDto != null)
 {
     @*<ReplayComponent @ref="replayComponent" replayDto="replayDto" OnCloseRequested="OnReplayClose"></ReplayComponent>*@
-    <sc2dsstats.razorlib.Replay.ReplayComponent @ref="replayComponent" replayDto="replayDto" OnCloseRequested="OnReplayClose"></sc2dsstats.razorlib.Replay.ReplayComponent>
+    <sc2dsstats.razorlib.Replay.ReplayComponent 
+        @ref="replayComponent"
+        replayDto="replayDto"
+        OnCloseRequested="OnReplayClose" 
+        ReplaysRequest="ReplaysToonIdRequest" />
 }
 
 @code {
@@ -176,6 +180,48 @@
         if (replaysRequest.ReplayHash != null)
         {
             await ShowReplay(replaysRequest.ReplayHash);
+        }
+    }
+
+    public async Task ReInit(ReplaysRequest reRequest)
+    {
+        logger.LogInformation($"reinit");
+        replaysRequest = reRequest;
+        if (replaysRequest.ReplayHash != null)
+        {
+            replayLoading = true;
+            await InvokeAsync(() => StateHasChanged());
+
+            replayDto = await dataService.GetReplay(replaysRequest.ReplayHash);
+            lastVisitHash = replayDto?.ReplayHash;
+            if (replayDto != null)
+            {
+                replayComponent?.Init(replayDto);
+            }
+            replayLoading = false;
+            await InvokeAsync(() => StateHasChanged());
+        }
+        else
+        {
+            replayDto = null;
+            await semaphoreSlim.WaitAsync();
+            try
+            {
+                fromServer = dataService.GetFromServer();
+                await SetCount(replaysRequest);
+                if (virtualizeComponent != null)
+                {
+                    await InvokeAsync(async () =>
+                   {
+                       await virtualizeComponent.RefreshDataAsync();
+                       StateHasChanged();
+                   });
+                }
+            }
+            finally
+            {
+                semaphoreSlim.Release();
+            }
         }
     }
 
@@ -281,6 +327,17 @@
 
         replayDto = null;
         await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void ReplaysToonIdRequest(ReplaysToonIdRequest request)
+    {
+        OnReplayClose();
+        replaysRequest.SearchPlayers = request.Name;
+        replaysRequest.ToonId = request.ToonId;
+        replaysRequest.ToonIdWith = request.ToonIdWith;
+        replaysRequest.ToonIdVs = request.ToonIdVs;
+        replaysRequest.ToonIdName = request.ToonIdName;
+        _ = Reload();
     }
 
     private string GetRowCssColorClass(ReplayListDto replay)

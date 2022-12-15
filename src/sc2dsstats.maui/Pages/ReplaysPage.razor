@@ -34,6 +34,22 @@
     [SupplyParameterFromQuery]
     public string? ReplayHash { get; set; }
 
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? ToonId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? ToonIdWith { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? ToonIdVs { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? ToonIdName { get; set; }
+
     ReplaysRequest replaysRequest = new();
 
     protected override void OnInitialized()
@@ -52,7 +68,11 @@
                 SearchString = SearchString,
                 SearchPlayers = Players,
                 ReplayHash = ReplayHash,
-                WithMmrChange = true
+                WithMmrChange = true,
+                ToonId = ToonId ?? 0,
+                ToonIdVs = ToonIdVs ?? 0,
+                ToonIdWith = ToonIdWith ?? 0,
+                ToonIdName = ToonIdName
             };
     }
 }

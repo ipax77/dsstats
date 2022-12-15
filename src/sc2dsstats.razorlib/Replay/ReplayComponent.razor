@@ -45,7 +45,8 @@
                                     @if (replayDto.ResultCorrected)
                                     {
                                         <button class="btn btn-sm" style="background-color: #BF40BF;"><b>@(replayDto.ReplayEvent != null ? replayDto.ReplayEvent.WinnerTeam : $"Team {i}") - Winner</b></button>
-                                    } else
+                                    }
+                                    else
                                     {
                                         <button class="btn btn-sm btn-success"><b>@(replayDto.ReplayEvent != null ? replayDto.ReplayEvent.WinnerTeam : $"Team {i}") - Winner</b></button>
                                     }
@@ -129,11 +130,10 @@
 @if (Interest != null)
 {
     @*<PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>*@
-    <sc2dsstats.razorlib.PlayerDetails.PlayerDetailsNgComponent
-        RequestNames="Interest"
-        RatingType="@(replayDto.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr)"
-        OnCloseRequested="DetailsClose"
-    />
+    <sc2dsstats.razorlib.PlayerDetails.PlayerDetailsNgComponent RequestNames="Interest"
+                                                            RatingType="@(replayDto.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr)"
+                                                            OnCloseRequested="DetailsClose" 
+                                                            ReplaysRequest="ReplaysRequest"/>
 }
 
 @if (showBuilds.Where(x => x).Any())
@@ -169,7 +169,13 @@
     public ReplayDto replayDto { get; set; } = null!;
 
     [Parameter]
+    public RequestNames? Interest { get; set; } = null;
+
+    [Parameter]
     public EventCallback OnCloseRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<ReplaysToonIdRequest> ReplaysRequest { get; set; }
 
     double mid1;
     double mid2;
@@ -183,8 +189,6 @@
     private ChartComponent? chartComponent;
 
     private bool showMiddleChart;
-
-    private RequestNames? Interest = null;
 
     protected override void OnInitialized()
     {
