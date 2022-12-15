@@ -3,7 +3,7 @@
 @using pax.dsstats.shared
 @using sc2dsstats.razorlib
 @inject NavigationManager NavigationManager
-@implements IDisposable
+@inject ILogger<ReplaysPage> logger
 
 <PageTitle>Replays</PageTitle>
 
@@ -48,20 +48,23 @@
     [SupplyParameterFromQuery]
     public int? ToonIdVs { get; set; }
 
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? ToonIdName { get; set; }
+
 
     private ReplaysRequest replaysRequest = new();
     private ReplaysComponent? replaysComponent;
     private object lockobject = new();
-    private bool jobDone = false;
+    private bool jobDone = true;
 
     protected override void OnInitialized()
     {
         SetRequest();
-        NavigationManager.LocationChanged += LocationChanged;
         base.OnInitialized();
     }
 
-    private void LocationChanged(object? sender, LocationChangedEventArgs e)
+    protected override void OnParametersSet()
     {
         lock (lockobject)
         {
@@ -75,6 +78,7 @@
                 replaysComponent?.ReInit(replaysRequest);
             }
         }
+        base.OnParametersSet();
     }
 
     private void SetRequest()
@@ -89,7 +93,8 @@
                 ReplayHash = ReplayHash,
                 ToonId = ToonId ?? 0,
                 ToonIdVs = ToonIdVs ?? 0,
-                ToonIdWith = ToonIdWith ?? 0
+                ToonIdWith = ToonIdWith ?? 0,
+                ToonIdName = ToonIdName
             };
     }
 
@@ -173,6 +178,15 @@
             queryDic.Add("ToonIdWith", null);
         }
 
+        if (!String.IsNullOrEmpty(request.ToonIdName))
+        {
+            queryDic.Add("ToonIdName", request.ToonIdName);
+        }
+        else
+        {
+            queryDic.Add("ToonIdName", null);
+        }
+
         lock (lockobject)
         {
             jobDone = true;
@@ -182,10 +196,5 @@
                 )
             );
         }
-    }
-
-    public void Dispose()
-    {
-        NavigationManager.LocationChanged -= LocationChanged;
     }
 }

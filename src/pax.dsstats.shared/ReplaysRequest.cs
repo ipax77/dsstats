@@ -20,6 +20,7 @@ public record ReplaysRequest
     public int ToonId { get; set; }
     public int ToonIdWith { get; set; }
     public int ToonIdVs { get; set; }
+    public string? ToonIdName { get; set; }
 }
 
 public record Order

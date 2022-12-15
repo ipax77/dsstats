@@ -21,10 +21,19 @@
                 </span>
             </div>
             <div class="col-auto">
-                <label class="form-label">
-                    Players:
-                    <InputText class="form-control" placeholder="PAX Feralan" @bind-Value="replaysRequest.SearchPlayers"></InputText>
-                </label>
+                <div>
+                    <label class="form-label">
+                        Players:
+                        <InputText class="form-control" placeholder="PAX Feralan" @bind-Value="replaysRequest.SearchPlayers"></InputText>
+                    </label>
+                </div>
+                @if (!String.IsNullOrEmpty(replaysRequest.ToonIdName))
+                {
+                    <span class="small text-warning">@(replaysRequest.ToonIdWith > 0 ? "with" : "vs") @replaysRequest.ToonIdName</span>
+                }
+                <div>
+
+                </div>
             </div>
 @*            <div class="col-auto">
                 <label class="form-label">
@@ -203,6 +212,7 @@
         replaysRequest.ToonId = 0;
         replaysRequest.ToonIdWith = 0;
         replaysRequest.ToonIdVs = 0;
+        replaysRequest.ToonIdName = null;
         StateHasChanged();
         OnFieldChanged.InvokeAsync();
     }

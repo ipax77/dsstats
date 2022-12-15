@@ -91,24 +91,26 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
         });
     }
 
-    private void ShowWithReplays(int toonId)
+    private void ShowWithReplays(KeyValuePair<int, string?> playerInfo)
     {
         ReplaysRequest.InvokeAsync(new()
         {
             Name = RequestNames.Name,
             ToonId = RequestNames.ToonId,
-            ToonIdWith = toonId
+            ToonIdWith = playerInfo.Key,
+            ToonIdName = playerInfo.Value,
         });
     }
 
-    private void ShowVsReplays(int toonId)
+    private void ShowVsReplays(KeyValuePair<int, string?> playerInfo)
     {
 
         ReplaysRequest.InvokeAsync(new()
         {
             Name = RequestNames.Name,
             ToonId = RequestNames.ToonId,
-            ToonIdVs = toonId
+            ToonIdVs = playerInfo.Key,
+            ToonIdName = playerInfo.Value,
         });
     }
 

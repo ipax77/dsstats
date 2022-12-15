@@ -133,4 +133,5 @@ public record ReplaysToonIdRequest
     public int ToonId { get; init; }
     public int ToonIdWith { get; init; }
     public int ToonIdVs { get; init; }
+    public string? ToonIdName { get; init; }
 }
