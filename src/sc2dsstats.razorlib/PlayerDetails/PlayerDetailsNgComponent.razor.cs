@@ -50,6 +50,13 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
     //    base.OnAfterRender(firstRender);
     //}
 
+    public void Update(RequestNames requestNames, RatingType ratingType)
+    {
+        RequestNames = requestNames;
+        RatingType = ratingType;
+        _ = LoadData();
+    }
+
     private async Task LoadData()
     {
         playerDetailsResult = await dataService.GetPlayerDetailsNg(RequestNames.ToonId, (int)RatingType, cts.Token);
@@ -61,6 +68,10 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
         playerDetailsCmdrCount?.Update(playerDetailsResult.Matchups);
 
         await InvokeAsync(() => StateHasChanged());
+        if (Data.IsMaui)
+        {
+            await LoadGroupData();
+        }
     }
 
     private async Task LoadGroupData()

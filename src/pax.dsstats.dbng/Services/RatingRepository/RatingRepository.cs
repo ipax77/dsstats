@@ -269,6 +269,22 @@ public partial class RatingRepository : IRatingRepository
             .FirstOrDefaultAsync();
     }
 
+    public async Task<RequestNames?> GetRequestNames(int toonId)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return await context.Players
+            .Where(x => x.ToonId == toonId)
+            .Select(s => new RequestNames()
+            {
+                Name = s.Name,
+                ToonId = toonId,
+                RegionId = s.RegionId,
+            })
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<List<RequestNames>> GetTopPlayers(RatingType ratingType, int minGames)
     {
         using var scope = scopeFactory.CreateScope();
@@ -385,7 +401,7 @@ public partial class RatingRepository : IRatingRepository
             if (mmrChange != null)
             {
                 replay.MmrChange = mmrChange.MmrChange;
-                replay.Commander= mmrChange.Commander;
+                replay.Commander = mmrChange.Commander;
             }
         }
     }
