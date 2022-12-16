@@ -17,6 +17,10 @@ public record ReplaysRequest
     public int PlayerCount { get; set; }
     public List<GameMode> GameModes { get; set; } = new();
     public bool WithMmrChange { get; set; }
+    public int ToonId { get; set; }
+    public int ToonIdWith { get; set; }
+    public int ToonIdVs { get; set; }
+    public string? ToonIdName { get; set; }
 }
 
 public record Order

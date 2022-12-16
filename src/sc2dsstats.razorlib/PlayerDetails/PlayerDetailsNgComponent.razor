@@ -34,7 +34,7 @@
                 </div>
             }
         }
-        @if (isUploader)
+        @if (!Data.IsMaui && isUploader)
         {
             <div class="align-self-center ms-2">
                 <span class="badge bg-success">Uploader</span>
@@ -69,7 +69,7 @@
 </div>
 @if (playerDetailsResult != null)
 {
-    <PlayerDetailsRatingCharts PlayerRatings="playerDetailsResult.Ratings"></PlayerDetailsRatingCharts>
+    <PlayerDetailsRatingCharts @ref="playerDetailsRatingCharts" PlayerRatings="playerDetailsResult.Ratings"></PlayerDetailsRatingCharts>
     <div class="row">
         @if (playerDetailsResult.GameModes.Any())
         {
@@ -172,7 +172,7 @@
                         </div>
                         <div class="card-body">
                             <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
-                                <TeamTable TeamResults="playerGroupResult.Teammates"></TeamTable>
+                                <TeamTable TeamResults="playerGroupResult.Teammates" ShowReplays="ShowWithReplays"></TeamTable>
                             </div>
                         </div>
                     </div>
@@ -187,7 +187,7 @@
                         </div>
                         <div class="card-body">
                             <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
-                                <TeamTable TeamResults="playerGroupResult.Opponents"></TeamTable>
+                                <TeamTable TeamResults="playerGroupResult.Opponents" ShowReplays="ShowVsReplays"></TeamTable>
                             </div>
                         </div>
                     </div>

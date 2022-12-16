@@ -106,7 +106,14 @@ public class ReplayRepository : IReplayRepository
             string? interest = request.SearchPlayers?
                 .Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
 
-            await ratingRepository.SetReplayListMmrChanges(list, interest, token);
+            if (request.ToonId > 0)
+            {
+                await ratingRepository.SetReplayListMmrChanges(list, request.ToonId, token);
+            }
+            else
+            {
+                await ratingRepository.SetReplayListMmrChanges(list, interest, token);
+            }
         }
 
         return list;
@@ -207,8 +214,47 @@ public class ReplayRepository : IReplayRepository
             replays = replays.Where(x => x.ResultCorrected);
         }
 
-        replays = SearchReplays(replays, request);
+        if (request.ToonId == 0)
+        {
+            replays = SearchReplays(replays, request);
+        }
+        else
+        {
+            replays = SearchToonIds(replays, request);
+        }
 
+        return replays;
+    }
+
+    private IQueryable<Replay> SearchToonIds(IQueryable<Replay> replays, ReplaysRequest request)
+    {
+        if (request.ToonId == 0)
+        {
+            return replays;
+        }
+
+        if (request.ToonIdWith > 0)
+        {
+            replays = from r in replays
+                      from rp in r.ReplayPlayers
+                      from w in r.ReplayPlayers
+                      where rp.Player.ToonId == request.ToonId
+                      where w.Team == rp.Team && w.Player.ToonId == request.ToonIdWith
+                      select r;
+        }
+        else if (request.ToonIdVs > 0)
+        {
+            replays = from r in replays
+                      from rp in r.ReplayPlayers
+                      from w in r.ReplayPlayers
+                      where rp.Player.ToonId == request.ToonId
+                      where w.Team != rp.Team && w.Player.ToonId == request.ToonIdVs
+                      select r;
+        }
+        else
+        {
+            replays = replays.Where(x => x.ReplayPlayers.Any(a => a.Player.ToonId == request.ToonId));
+        }
         return replays;
     }
 

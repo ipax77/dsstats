@@ -6,11 +6,12 @@
 @using sc2dsstats.maui.Services
 @using sc2dsstats.razorlib
 @using sc2dsstats.razorlib.Replay;
+@using sc2dsstats.razorlib.Services;
 @inject IReplayRepository ReplayRepository
 @inject DecodeService DecodeService
 @inject UploadService UploadService
-@inject IStatsService StatsService
 @inject IToastService toastSerivce
+@inject NavigationManager NavigationManager
 @implements IDisposable
 
 <div class="btn-group border border-3 rounded-2 border-light p-2">
@@ -42,30 +43,24 @@
     }
 </div>
 
+            @if (latestReplay != null)
+            {
 <div class="mt-2">
     <div class="row">
         <div class="col-auto">
-            @if (latestReplay != null)
-            {
+
                 <h3 class="text-warning p-2 bg-secondary">Latest Replay</h3>
-                <sc2dsstats.razorlib.Replay.ReplayComponent @ref="replayComponent" replayDto="latestReplay"></sc2dsstats.razorlib.Replay.ReplayComponent>
-            }
-        </div>
-        <div class="col-auto">
-@*            @if (mmrService.MauiMmrProgress.Any())
-            {
-                <MmrProgressComponent MauiMmrProgress="mmrService.MauiMmrProgress"></MmrProgressComponent>
-            }*@
+                <sc2dsstats.razorlib.Replay.ReplayComponent
+                    @ref="replayComponent"
+                    replayDto="latestReplay"
+                    ReplaysRequest="ReplaysToonIdRequest" />
         </div>
     </div>
 </div>
 <div class="mt-3">
-    @if (playerDetailInfo != null)
-    {
-        <h3 class="text-warning fw-bold bg-secondary p-2">Player Details</h3>
-        <PlayerDetailsSubComponent PlayerDetailInfo="playerDetailInfo"></PlayerDetailsSubComponent>
-    }
+    <FrontPageDetails @ref="frontPageDetails" LatestReplay="latestReplay" />
 </div>
+}
 
 @*<div class="btn-group">
     <button type="button" class="btn btn-primary" @onclick="DecodeService.DEBUGEmulateErrorsTest">Debug Errors</button>
@@ -76,9 +71,9 @@
 @code {
     ReplayDto? latestReplay = null;
     UploadConfirmModal? uploadConfirmModal;
-    PlayerDetailInfo? playerDetailInfo;
     TimeSpan elapsed = TimeSpan.Zero;
     ReplayComponent? replayComponent;
+    FrontPageDetails? frontPageDetails;
 
     private bool DEBUG = false;
 
@@ -117,20 +112,8 @@
         {
             replayComponent?.Init(latestReplay);
         }
+        frontPageDetails?.Update(latestReplay);
         await InvokeAsync(() => StateHasChanged());
-        if (UserSettingsService.UserSettings.BattleNetInfos != null)
-        {
-            var toonIds = UserSettingsService.UserSettings.BattleNetInfos.SelectMany(s => s.ToonIds).Select(s => s.ToonId).ToList();
-            if (toonIds.Any())
-            {
-                var matchupInfos = (await StatsService.GetPlayerDetailInfo(toonIds)).ToList();
-                playerDetailInfo = new PlayerDetailInfo()
-                    {
-                        MatchupInfos = matchupInfos
-                    };
-                await InvokeAsync(() => StateHasChanged());
-            }
-        }
     }
 
     private void Decode()
@@ -154,6 +137,22 @@
         {
             uploadConfirmModal?.Show();
         }
+    }
+
+    private void ReplaysToonIdRequest(ReplaysToonIdRequest request)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("replays",
+                new Dictionary<string, object?>()
+                    {
+                    { "Players", request.Name },
+                    { "ToonId", request.ToonId },
+                    { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
+                    { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
+                    { "ToonIdName", request.ToonIdName },
+                    }
+            )
+        );
     }
 
     public void Dispose()

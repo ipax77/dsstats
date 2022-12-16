@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
+using sc2dsstats.razorlib.Services;
 
 namespace sc2dsstats.razorlib.PlayerDetails;
 
@@ -13,6 +14,8 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
     public RatingType RatingType { get; set; }
     [Parameter]
     public EventCallback OnCloseRequested { get; set; }
+    [Parameter]
+    public EventCallback<ReplaysToonIdRequest> ReplaysRequest { get; set; }
 
     [Inject]
     protected IDataService dataService { get; set; } = default!;
@@ -24,6 +27,7 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
     private PlayerDetailsResult? playerDetailsResult = null;
     private PlayerDetailsGroupResult? playerGroupResult = null;
     private PlayerDetailsCmdrCount? playerDetailsCmdrCount;
+    private PlayerDetailsRatingCharts? playerDetailsRatingCharts;
 
     private bool groupDataLoading = false;
     private RatingType ratingType = RatingType.None;
@@ -46,6 +50,13 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
     //    base.OnAfterRender(firstRender);
     //}
 
+    public void Update(RequestNames requestNames, RatingType ratingType)
+    {
+        RequestNames = requestNames;
+        RatingType = ratingType;
+        _ = LoadData();
+    }
+
     private async Task LoadData()
     {
         playerDetailsResult = await dataService.GetPlayerDetailsNg(RequestNames.ToonId, (int)RatingType, cts.Token);
@@ -53,7 +64,14 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
         {
             RequestNames.Name = playerDetailsResult.Ratings.FirstOrDefault()?.Player.Name ?? "";
         }
+        playerDetailsRatingCharts?.UpdateCharts(playerDetailsResult.Ratings);
+        playerDetailsCmdrCount?.Update(playerDetailsResult.Matchups);
+
         await InvokeAsync(() => StateHasChanged());
+        if (Data.IsMaui)
+        {
+            await LoadGroupData();
+        }
     }
 
     private async Task LoadGroupData()
@@ -81,11 +99,34 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
 
     private void ShowReplays()
     {
-        NavigationManager.NavigateTo(
-            NavigationManager.GetUriWithQueryParameters("replays",
-                new Dictionary<string, object?>() { { "Players", RequestNames.Name } }
-            )
-        );
+        ReplaysRequest.InvokeAsync(new()
+        {
+            Name = RequestNames.Name,
+            ToonId = RequestNames.ToonId,
+        });
+    }
+
+    private void ShowWithReplays(KeyValuePair<int, string?> playerInfo)
+    {
+        ReplaysRequest.InvokeAsync(new()
+        {
+            Name = RequestNames.Name,
+            ToonId = RequestNames.ToonId,
+            ToonIdWith = playerInfo.Key,
+            ToonIdName = playerInfo.Value,
+        });
+    }
+
+    private void ShowVsReplays(KeyValuePair<int, string?> playerInfo)
+    {
+
+        ReplaysRequest.InvokeAsync(new()
+        {
+            Name = RequestNames.Name,
+            ToonId = RequestNames.ToonId,
+            ToonIdVs = playerInfo.Key,
+            ToonIdName = playerInfo.Value,
+        });
     }
 
     private async void RatingTypeChange(ChangeEventArgs e)

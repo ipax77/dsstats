@@ -5,6 +5,7 @@
 @using pax.dsstats.shared.Raven;
 @using sc2dsstats.razorlib.Services
 @inject IDataService dataService
+@inject NavigationManager NavigationManager
 @implements IDisposable
 
 <style>
@@ -191,11 +192,10 @@
 @if (Interest != null)
 {
     @*<PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>*@
-    <sc2dsstats.razorlib.PlayerDetails.PlayerDetailsNgComponent 
-        RequestNames="Interest"
-        RatingType="RatingsRequest.Type"
-        OnCloseRequested="DetailsClose"
-    />
+    <sc2dsstats.razorlib.PlayerDetails.PlayerDetailsNgComponent RequestNames="Interest"
+                                                            RatingType="RatingsRequest.Type"
+                                                            OnCloseRequested="DetailsClose"
+                                                            ReplaysRequest="ReplaysToonIdRequest" />
 }
 
 
@@ -312,6 +312,22 @@
         RatingsRequest.ToonId = null;
         OnRatingsChanged.InvokeAsync();
         StateHasChanged();
+    }
+
+    private void ReplaysToonIdRequest(ReplaysToonIdRequest request)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("replays",
+                new Dictionary<string, object?>()
+                {
+                    { "Players", request.Name },
+                    { "ToonId", request.ToonId },
+                    { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
+                    { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
+                    { "ToonIdName", request.ToonIdName },
+                }
+            )
+        );
     }
 
     private async Task LoadInitialPlayerInfo()

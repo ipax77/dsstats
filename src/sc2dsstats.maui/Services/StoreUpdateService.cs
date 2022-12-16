@@ -26,14 +26,15 @@ public static class StoreUpdateService
         IReadOnlyList<StorePackageUpdate> updates =
             await context.GetAppAndOptionalStorePackageUpdatesAsync();
 
-        if (updates.Any())
+        if (updates.Count > 0)
         {
             if (Application.Current != null && Application.Current.MainPage != null)
             {
                 bool answer = await Application.Current.MainPage.DisplayAlert("New Version Available!", "Would you like to update now?", "Yes", "No");
                 if (answer)
                 {
-                    await DownloadAndInstallAllUpdatesAsync(updates);
+                    //await DownloadAndInstallAllUpdatesAsync(updates);
+                    await UpdateApp(updates);
                 }
             }
         }
@@ -44,6 +45,33 @@ public static class StoreUpdateService
                 await Application.Current.MainPage.DisplayAlert("Update Result", "Current Version is up to date.", "Ok");
             }
         }
+    }
+
+    public static async Task<bool> UpdateApp(IReadOnlyList<StorePackageUpdate> updates)
+    {
+        if (context == null)
+        {
+            context = StoreContext.GetDefault();
+        }
+
+        if (updates.Count > 0)
+        {
+            IAsyncOperationWithProgress<StorePackageUpdateResult, StorePackageUpdateStatus> downloadOperation =
+                context.TrySilentDownloadAndInstallStorePackageUpdatesAsync(updates);
+
+            downloadOperation.Progress = (asyncInfo, progress) =>
+            {
+                OnUpdateProgress(new() { Progress = (uint)(progress.PackageDownloadProgress * 100.0) });
+            };
+
+            StorePackageUpdateResult result = await downloadOperation.AsTask();
+
+            if (result.OverallState == StorePackageUpdateState.Completed)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Downloads and installs package updates in separate steps.
@@ -79,6 +107,7 @@ public static class StoreUpdateService
 
         IAsyncOperationWithProgress<StorePackageUpdateResult, StorePackageUpdateStatus> downloadOperation =
             context.RequestDownloadStorePackageUpdatesAsync(updates);
+
 
         // The Progress async method is called one time for each step in the download process for each
         // package in this request.

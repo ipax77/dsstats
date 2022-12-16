@@ -269,6 +269,22 @@ public partial class RatingRepository : IRatingRepository
             .FirstOrDefaultAsync();
     }
 
+    public async Task<RequestNames?> GetRequestNames(int toonId)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return await context.Players
+            .Where(x => x.ToonId == toonId)
+            .Select(s => new RequestNames()
+            {
+                Name = s.Name,
+                ToonId = toonId,
+                RegionId = s.RegionId,
+            })
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<List<RequestNames>> GetTopPlayers(RatingType ratingType, int minGames)
     {
         using var scope = scopeFactory.CreateScope();
@@ -285,6 +301,48 @@ public partial class RatingRepository : IRatingRepository
                 ToonId = s.Player.ToonId
             })
             .ToListAsync();
+    }
+
+    public async Task SetReplayListMmrChanges(List<ReplayListDto> replays, int toonId, CancellationToken token = default)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var replayIds = replays.Select(s => s.ReplayId).Distinct().ToList();
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+        var replayPlayerRatings = await context.ReplayPlayerRatings
+            .Where(x => replayIds.Contains(x.ReplayId))
+            .Select(s => new MmrChangesList()
+            {
+                ReplayId = s.ReplayId,
+                ReplayPlayerId = s.ReplayPlayerId,
+                Commander = s.ReplayPlayer.Race,
+                Pos = s.Pos,
+                MmrChange = Math.Round(s.MmrChange, 1)
+            })
+            .ToListAsync(token);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+
+        var replayPlayerIds = await context.ReplayPlayers
+            .Where(x => x.Player.ToonId == toonId
+                && replayIds.Contains(x.ReplayId))
+            .Select(s => s.ReplayPlayerId)
+            .ToListAsync();
+
+        for (int i = 0; i < replays.Count; i++)
+        {
+            var replay = replays[i];
+
+            var mmrChange = replayPlayerRatings
+                .FirstOrDefault(f => f.ReplayId == replay.ReplayId
+                    && replayPlayerIds.Contains(f.ReplayPlayerId));
+
+            if (mmrChange != null)
+            {
+                replay.MmrChange = mmrChange.MmrChange;
+                replay.Commander = mmrChange.Commander;
+            }
+        }
     }
 
     public async Task SetReplayListMmrChanges(List<ReplayListDto> replays, string? searchPlayer = null, CancellationToken token = default)
@@ -343,27 +401,9 @@ public partial class RatingRepository : IRatingRepository
             if (mmrChange != null)
             {
                 replay.MmrChange = mmrChange.MmrChange;
-                replay.Commander= mmrChange.Commander;
+                replay.Commander = mmrChange.Commander;
             }
         }
-
-        //for (int i = 0; i < replays.Count; i++)
-        //{
-        //    if (replays[i].PlayerPos == 0)
-        //    {
-        //        continue;
-        //    }
-
-        //    if (token.IsCancellationRequested)
-        //    {
-        //        return;
-        //    }
-        //    replays[i].MmrChange = await context.ReplayPlayerRatings
-        //        .Where(f => f.ReplayId == replays[i].ReplayId
-        //            && f.Pos == replays[i].PlayerPos)
-        //        .Select(s => Math.Round(s.MmrChange, 1))
-        //        .FirstOrDefaultAsync(token);
-        //}
     }
 
     public async Task<int> UpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId, string csvBasePath)
@@ -448,6 +488,7 @@ internal record RatingMemory
 internal record MmrChangesList
 {
     public int ReplayId { get; init; }
+    public int ReplayPlayerId { get; init; }
     public string Name { get; init; } = "Anonymous";
     public Commander Commander { get; init; }
     public int Pos { get; init; }

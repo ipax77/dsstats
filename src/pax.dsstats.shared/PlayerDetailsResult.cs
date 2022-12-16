@@ -18,6 +18,7 @@ public record PlayerDetailsGroupResult
 public record PlayerTeamResult
 {
     public string? Name { get; init; }
+    public int ToonId { get; init; }
     public int Count { get; init; }
     public int Wins { get; init; }
 }
