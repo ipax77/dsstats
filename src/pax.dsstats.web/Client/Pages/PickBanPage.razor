@@ -5,10 +5,11 @@
 
 @if (String.IsNullOrEmpty(Mode) || Id == null || Id == Guid.Empty)
 {
-    <div class="btn-block">
-        <button type="button" class="btn btn-primary" @onclick="@(() => ChangeMode("Std"))">Standard</button>
-        <button type="button" class="btn btn-primary" @onclick="@(() => ChangeMode("Cmdr"))">Commanders</button>
-        <button type="button" class="btn btn-primary" @onclick="@(() => ChangeMode("Name"))">Name</button>
+    <h3>Pick-Ban-Helper</h3>
+    <div class="btn-group-vertical border rounded bg-secondary p-2 mt-2">
+        <button type="button" class="btn btn-outline-light" @onclick="@(() => ChangeMode("Std"))">Standard</button>
+        <button type="button" class="btn btn-outline-light" @onclick="@(() => ChangeMode("Cmdr"))">Commanders</button>
+        <button type="button" class="btn btn-outline-light" @onclick="@(() => ChangeMode("Name"))">Name</button>
     </div>
 }
 else

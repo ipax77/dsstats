@@ -14,7 +14,7 @@
     </div>
     <div class="card-body bg-light">
         <div class="d-flex">
-            <input class="text-black-50" id="input" type="text" value="@NavigationManager.Uri" style="min-width: 600px;" />
+            <input class="form-text" id="input" type="text" value="@NavigationManager.Uri" style="min-width: 600px;" />
         </div>
     </div>
     <div class="card-footer bg-primary">
@@ -104,7 +104,7 @@ else
                                                 }
                                             </div>
                                             <div>
-                                                @if (select.Commander == Commander.None)
+                                                @if (select.Commander == Commander.None || select.IsLocked)
                                                 {
                                                     <button type="button" disabled class="btn btn-danger">Lock</button>
                                                 }
@@ -164,7 +164,7 @@ else
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    @if (String.IsNullOrEmpty(select.PlayerName))
+                                                    @if (String.IsNullOrEmpty(select.PlayerName) || select.IsLocked)
                                                     {
                                                         <button type="button" disabled class="btn btn-danger">Lock</button>
                                                     }
@@ -236,7 +236,7 @@ else
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    @if (select.Commander == Commander.None)
+                                                    @if (select.Commander == Commander.None || select.IsLocked)
                                                     {
                                                         <button type="button" disabled class="btn btn-danger">Lock</button>
                                                     }
@@ -341,35 +341,42 @@ else
 
     private async Task LockBan(int pos)
     {
-        var ent = pickBanState.Bans.First(f => f.Pos == pos);
+        var ent = pickBanState.Bans.First(f => f.Pos == pos && !f.IsLocked);
         if (ent != null && hubConnection != null && isConnected)
         {
+            ent.IsLocked = true;
             await hubConnection.SendAsync("Ban", ent);
+            StateHasChanged();
         }
     }
 
     private async Task LockPick(int pos)
     {
-        var ent = pickBanState.Picks.First(f => f.Pos == pos);
+        var ent = pickBanState.Picks.First(f => f.Pos == pos && !f.IsLocked);
         if (ent != null && hubConnection != null && isConnected)
         {
+            ent.IsLocked = true;
             await hubConnection.SendAsync("Lock", ent);
+            StateHasChanged();
         }
     }
 
     private async Task LockPickName(int pos)
     {
-        var ent = pickBanState.Picks.First(f => f.Pos == pos);
+        var ent = pickBanState.Picks.First(f => f.Pos == pos && !f.IsLocked);
         if (!String.IsNullOrEmpty(ent.PlayerName))
         {
             if (ent.PlayerName.Length > 30)
             {
                 ent.PlayerName = ent.PlayerName.Substring(0, 30);
+                
             }
             if (hubConnection != null && isConnected)
             {
                 ent.Commander = Commander.Protoss;
+                ent.IsLocked = true;
                 await hubConnection.SendAsync("Lock", ent);
+                StateHasChanged();
             }
         }
     }
