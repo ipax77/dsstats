@@ -1,0 +1,41 @@
+﻿@page "/pickban"
+@inject NavigationManager NavigationManager
+
+<PageTitle>PickBan</PageTitle>
+
+@if (String.IsNullOrEmpty(Mode) || Id == null || Id == Guid.Empty)
+{
+    <div class="btn-block">
+        <button type="button" class="btn btn-primary" @onclick="@(() => ChangeMode("Std"))">Standard</button>
+        <button type="button" class="btn btn-primary" @onclick="@(() => ChangeMode("Cmdr"))">Commanders</button>
+        <button type="button" class="btn btn-primary" @onclick="@(() => ChangeMode("Name"))">Name</button>
+    </div>
+}
+else
+{
+    <sc2dsstats.razorlib.PickBan.PickBanComponent Mode="@Mode" Id="Id.Value"></sc2dsstats.razorlib.PickBan.PickBanComponent>
+}
+
+@code {
+    [Parameter, SupplyParameterFromQuery]
+    public Guid? Id { get; set; }
+
+    [Parameter, SupplyParameterFromQuery]
+    public string? Mode { get; set; }
+
+    protected override void OnInitialized()
+    {
+
+        base.OnInitialized();
+    }
+
+    private void ChangeMode(string newmode)
+    {
+        IReadOnlyDictionary<string, object?> qParams = new Dictionary<string, object?>
+            {
+                ["Mode"] = newmode,
+                ["Id"] = Guid.NewGuid()
+            };
+        NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters(qParams));
+    }
+}
