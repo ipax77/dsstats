@@ -66,6 +66,7 @@ builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
 builder.Services.AddTransient<IStatsRepository, StatsRepository>();
 builder.Services.AddTransient<BuildService>();
 builder.Services.AddTransient<CmdrsService>();
+builder.Services.AddTransient<TourneyService>();
 
 builder.Services.AddHostedService<CacheBackgroundService>();
 builder.Services.AddHostedService<RatingsBackgroundService>();
@@ -107,6 +108,9 @@ if (app.Environment.IsDevelopment())
 
     //var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
     //importService.ImportReplayBlobs().Wait();
+
+    var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
+    tourneyService.CollectTourneyReplays().Wait();
 }
 
 // Configure the HTTP request pipeline.
