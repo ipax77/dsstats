@@ -13,7 +13,7 @@ public record MmrOptions
     public const double ownMatchupPercentage = 1.0 / 3;
     public const double matesMatchupsPercentage = (1 - ownMatchupPercentage) / 2;
 
-    public MmrOptions(bool reCalc, double eloK = 32, double clip = 400)
+    public MmrOptions(bool reCalc, double eloK = 168, double clip = 1600)
     {
         ReCalc = reCalc;
 

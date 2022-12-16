@@ -7,7 +7,7 @@ namespace dsstats.mmr;
 
 public static partial class MmrService
 {
-    public static async Task<(Dictionary<RatingType, Dictionary<int, CalcRating>>, int, double)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
+    public static async Task<(Dictionary<RatingType, Dictionary<int, CalcRating>>, int, List<bool>)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
                                                                     Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                                                     Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
                                                                     MmrOptions mmrOptions,
@@ -53,13 +53,11 @@ public static partial class MmrService
         }
 
 
-        double accuracy = accuracyList.Count(x => x == true) / (double)accuracyList.Count;
-
         if (!dry && mmrChanges.Any())
         {
             mmrChangesAppendId = await ratingRepository!.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
         }
-        return (mmrIdRatings, mmrChangesAppendId, accuracy);
+        return (mmrIdRatings, mmrChangesAppendId, accuracyList);
     }
 
     public static (MmrChange?, bool?) ProcessReplay(ReplayDsRDto replay,
