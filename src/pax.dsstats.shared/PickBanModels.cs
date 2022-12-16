@@ -1,33 +1,20 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace pax.dsstats.shared;
-
-public record PickBanEnt
-{
-    public int Pos { get; set; }
-    public bool IsLocked { get; set; }
-    public int Commander { get; set; }
-    public string? CommanderString { get; set; }
-    public int Team { get; set; }
-    public int Order { get; set; }
-    [MaxLength(30)]
-    public string? PlayerName { get; set; }
-}
-
 public record PickBanState
 {
-    public PickBanState() { }
-
-    public PickBanState(int teams = 2, int bansPerTeam = 1, int entsPerTeam = 3)
+    public PickBanState(PickBanMode pickBanMode)
     {
+        PickBanMode = pickBanMode;
+
+        int teams = 2;
+        int entsPerTeam = 3;
+        int bansPerTeam = pickBanMode == PickBanMode.Standard ? 0 : 1;
+
         for (int i = 0; i < bansPerTeam * teams; i++)
         {
             Bans.Add(new PickBanEnt { Pos = i, Team = i % teams, });
-        }
-
-        if (!Bans.Any())
-        {
-            IsBansReady = true;
         }
 
         for (int i = 0; i < entsPerTeam * teams; i++)
@@ -35,40 +22,54 @@ public record PickBanState
             Picks.Add(new PickBanEnt { Pos = i, Team = i % teams, });
         }
     }
+
+    [JsonConstructor]
+    public PickBanState() { }
+
+    public PickBanMode PickBanMode { get; set; }
     public int Visitors { get; set; }
     public int Turn => Picks.Where(x => x.IsLocked).Count();
-    public bool IsBansReady { get; set; }
-    public bool IsPicksReady { get; set; }
+    public bool IsBansReady => !Bans.Any(a => a.Commander == Commander.None);
+    public bool IsPicksReady => !Picks.Any(a => a.Commander == Commander.None);
 
     public ICollection<PickBanEnt> Bans { get; set; } = new List<PickBanEnt>();
     public ICollection<PickBanEnt> Picks { get; set; } = new List<PickBanEnt>();
 
     public HashSet<Commander> GetOpenCommanders(int team)
     {
-        var commanders = Enum.GetValues(typeof(Commander)).Cast<Commander>().Where(x => (int)x >= 10).ToHashSet();
+        var commanders = Data.GetCommanders(PickBanMode == PickBanMode.Standard ? Data.CmdrGet.Std : Data.CmdrGet.NoStd).ToHashSet();
 
         var bans = Bans
             .Where(x => x.IsLocked && x.Commander > 0)
-            .Select(s => s.Commander)
-            .Cast<Commander>();
+            .Select(s => s.Commander);
         commanders.ExceptWith(bans);
 
-        var picked = Picks
-            .Where(x => x.IsLocked && x.Team == team && x.Commander > 0)
-            .Select(s => s.Commander)
-            .Cast<Commander>();
+        var picked = PickBanMode == PickBanMode.Commanders 
+            ? Picks
+                .Where(x => x.IsLocked && x.Team == team && x.Commander > 0)
+                .Select(s => s.Commander)
+            : new List<Commander>();
         commanders.ExceptWith(picked);
 
         return commanders;
     }
+}
 
-    public HashSet<Commander> GetGdslFunCommanders()
-    {
-        return new() { Commander.Protoss, Commander.Zerg };
-    }
+public record PickBanEnt
+{
+    public int Pos { get; set; }
+    public int Team { get; set; }
+    public Commander Commander { get; set; }
+    public bool IsLocked { get; set; }
+    public int Order { get; set; }
+    [MaxLength(30)]
+    public string? PlayerName { get; set; }
+}
 
-    public HashSet<Commander> GetStdCommanders()
-    {
-        return new() { Commander.Protoss, Commander.Terran, Commander.Zerg };
-    }
+public enum PickBanMode
+{
+    None = 0,
+    Standard = 1,
+    Commanders = 2,
+    Name = 3,
 }

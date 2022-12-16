@@ -1,10 +1,12 @@
 using AutoMapper;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using pax.dsstats.web.Server.Attributes;
+using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -42,11 +44,17 @@ builder.Services.AddRazorPages();
 
 builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+builder.Services.AddSignalR();
 
-//builder.Services.AddSingleton<MmrService>();
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "application/octet-stream" });
+});
 
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
+builder.Services.AddSingleton<PickBanService>();
 
 builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRepository>();
 builder.Services.AddScoped<ImportService>();
@@ -123,6 +131,7 @@ app.UseRouting();
 
 app.MapRazorPages();
 app.MapControllers();
+app.MapHub<PickBanHub>("/hubs/pickban");
 app.MapFallbackToFile("index.html");
 
 app.Run();

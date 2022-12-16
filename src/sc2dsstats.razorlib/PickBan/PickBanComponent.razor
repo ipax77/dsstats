@@ -1,0 +1,388 @@
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<h3 class="text-white-50">Pick Ban Helper</h3>
+
+<div class="card" style="width: 42rem;">
+    <div class="card-header bg-primary">
+        <h4 class="text-white-50">
+            Copy the Url and send it to the opposing team captain
+        </h4>
+    </div>
+    <div class="card-body bg-light">
+        <div class="d-flex">
+            <input class="form-text" id="input" type="text" value="@NavigationManager.Uri" style="min-width: 600px;" />
+        </div>
+    </div>
+    <div class="card-footer bg-primary">
+        <div class="d-flex">
+            <small class="text-white-50">This Page will be available until the next Server reboot.</small>
+            <small class="ms-auto">Visitors: @pickBanState.Visitors</small>
+        </div>
+    </div>
+</div>
+
+
+@if (pickBanState.Visitors < requiredVisitors && !pickBanState.IsPicksReady)
+{
+    <p class="text-white-50">Waiting for others to join ...</p>
+}
+else
+{
+    <div class="d-flex justify-content-around mt-2" style="width: 42rem;">
+        @for (int i = 0; i < 2; i++)
+        {
+            int team = i;
+            int teamPos = 0;
+            <div class="card" style="width: 20rem;">
+                <div class="card-header text-warning">
+                    <h5>Team @(team + 1)</h5>
+                </div>
+                <div class="card-body">
+                    @if (pickBanState.Bans.Any())
+                    {
+                        <h4 class="text-center">Bans</h4>
+                        <ul class="list-group list-group-flush">
+                            @foreach (var select in pickBanState.Bans.Where(x => x.Team == team).OrderBy(o => o.Pos))
+                            {
+                                @if (select.IsLocked)
+                                {
+                                    <li class="list-group-item">
+                                        <div class="d-flex">
+                                            <div>
+                                                @(
+                                                    select.Pos + 1
+                                                    )
+                                            </div>
+                                            <div class="mx-2">
+                                                @if (select.Commander != Commander.None)
+                                                {
+                                                    <img src="@HelperService.GetImageSrc(select.Commander)" width="30" height="30" />
+                                                    <span class="ms-2 text-white-50">@select.Commander</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="oi oi-question-mark"></span>
+                                                }
+                                            </div>
+
+                                        </div>
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li class="list-group-item">
+                                        <div class="d-flex">
+                                            <div>
+                                                @(
+                                                    select.Pos + 1
+                                                    )
+                                            </div>
+                                            <div class="form-group mx-2">
+                                                @if (select.IsLocked)
+                                                {
+                                                    <select class="form-select" disabled @bind="select.Commander">
+                                                        <option value="Commander.None">Ban Cmdr</option>
+                                                        @foreach (Commander cmdr in pickBanState.GetOpenCommanders(team))
+                                                        {
+                                                            <option value="@cmdr">@cmdr</option>
+                                                        }
+                                                    </select>
+                                                }
+                                                else
+                                                {
+                                                    <select class="form-select" @bind="select.Commander">
+                                                        <option value="Commander.None">Ban Cmdr</option>
+                                                        @foreach (Commander cmdr in pickBanState.GetOpenCommanders(team))
+                                                        {
+                                                            <option value="@cmdr">@cmdr</option>
+                                                        }
+                                                    </select>
+                                                }
+                                            </div>
+                                            <div>
+                                                @if (select.Commander == Commander.None || select.IsLocked)
+                                                {
+                                                    <button type="button" disabled class="btn btn-danger">Lock</button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn btn-danger" @onclick="e => LockBan(select.Pos)">Lock</button>
+                                                }
+                                            </div>
+                                        </div>
+                                    </li>
+                                }
+                            }
+                        </ul>
+                    }
+                    @if (pickBanMode == PickBanMode.Name)
+                    {
+                        <h4 class="text-center mt-3">Player Names</h4>
+                        <ul class="list-group list-group-flush">
+                            @foreach (var select in pickBanState.Picks.Where(x => x.Team == team).OrderBy(o => o.Pos))
+                            {
+                                <div class="d-none">
+                                    @(teamPos++)
+                                </div>
+                                if (pickBanState.IsBansReady)
+                                {
+                                    @if (select.IsLocked)
+                                    {
+                                        <li class="list-group-item">
+                                            <div class="d-flex">
+                                                <div>
+                                                    @(teamPos)
+                                                </div>
+                                                <div class="mx-2">
+                                                    @if (!String.IsNullOrEmpty(select.PlayerName))
+                                                    {
+                                                        <span class="ms-2">@select.PlayerName</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="oi oi-question-mark"></span>
+                                                    }
+                                                </div>
+
+                                            </div>
+                                        </li>
+                                    }
+                                    else
+                                    {
+                                        <li class="list-group-item">
+                                            <div class="d-flex">
+                                                <div>
+                                                    @(teamPos)
+                                                </div>
+                                                <div class="form-group mx-2">
+                                                    <div class="col-sm-10">
+                                                        <input type="text" id="@($"player{select.Pos}name")" class="form-control" @bind="select.PlayerName" @bind:event="oninput" />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    @if (String.IsNullOrEmpty(select.PlayerName) || select.IsLocked)
+                                                    {
+                                                        <button type="button" disabled class="btn btn-danger">Lock</button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button type="button" class="btn btn-danger" @onclick="e => LockPickName(select.Pos)">Lock</button>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </li>
+                                    }
+                                }
+                                else
+                                {
+                                    <li class="list-group-item">
+                                        TBD
+                                    </li>
+                                }
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <h4 class="text-center mt-3">Picks</h4>
+                        <ul class="list-group list-group-flush">
+                            @foreach (var select in pickBanState.Picks.Where(x => x.Team == team).OrderBy(o => o.Pos))
+                            {
+                                <div class="d-none">
+                                    @(teamPos++)
+                                </div>
+                                if (pickBanState.IsBansReady)
+                                {
+                                    @if (select.IsLocked)
+                                    {
+                                        <li class="list-group-item">
+                                            <div class="d-flex">
+                                                <div>
+                                                    @(teamPos)
+                                                </div>
+                                                <div class="mx-2">
+                                                    @if (select.Commander != Commander.None)
+                                                    {
+                                                        <img src="@HelperService.GetImageSrc(select.Commander)" width="30" height="30" />
+                                                        <span class="ms-2">@select.Commander</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="oi oi-question-mark"></span>
+                                                    }
+                                                </div>
+
+                                            </div>
+                                        </li>
+                                    }
+                                    else
+                                    {
+                                        <li class="list-group-item">
+                                            <div class="d-flex">
+                                                <div>
+                                                    @(teamPos)
+                                                </div>
+                                                <div class="form-group mx-2">
+                                                    <select class="form-select" @bind="select.Commander">
+                                                        <option value="@Commander.None">Pick Cmdr</option>
+                                                        @foreach (Commander cmdr in pickBanState.GetOpenCommanders(team))
+                                                        {
+                                                            <option value="@cmdr">@cmdr.ToString()</option>
+                                                        }
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    @if (select.Commander == Commander.None || select.IsLocked)
+                                                    {
+                                                        <button type="button" disabled class="btn btn-danger">Lock</button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button type="button" class="btn btn-danger" @onclick="e => LockPick(select.Pos)">Lock</button>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </li>
+                                    }
+                                }
+                                else
+                                {
+                                    <li class="list-group-item">
+                                        TBD
+                                    </li>
+                                }
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+            @if (i == 0)
+            {
+                <div style="border-left: 6px solid darkred;"></div>
+            }
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public string Mode { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public Guid Id { get; set; }
+
+    private HubConnection? hubConnection;
+    private PickBanState pickBanState = null!;
+    private PickBanMode pickBanMode;
+    private int requiredVisitors = 2;
+    private bool isConnected => hubConnection?.State == HubConnectionState.Connected;
+
+    protected override async Task OnInitializedAsync()
+    {
+        pickBanMode = Mode switch
+        {
+            "Std" => PickBanMode.Standard,
+            "Cmdr" => PickBanMode.Commanders,
+            "Name" => PickBanMode.Name,
+            _ => PickBanMode.None
+        };
+        pickBanState = new(pickBanMode);
+
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/hubs/pickban"))
+            .Build();
+
+        hubConnection.On<int>("VisitorJoined", (count) =>
+        {
+            pickBanState.Visitors = count;
+            StateHasChanged();
+        });
+
+        hubConnection.On<int>("VisitorLeft", (count) =>
+        {
+            pickBanState.Visitors = count;
+            StateHasChanged();
+        });
+
+        hubConnection.On<int>("CmdrBaned", (pb) =>
+        {
+            var pick = pickBanState.Bans.FirstOrDefault(f => f.Pos == pb);
+            if (pick != null)
+            {
+                pick.IsLocked = true;
+                StateHasChanged();
+            }
+        });
+
+        hubConnection.On<int>("CmdrLocked", (pb) =>
+        {
+            var pick = pickBanState.Picks.FirstOrDefault(f => f.Pos == pb);
+            if (pick != null)
+            {
+                pick.IsLocked = true;
+                StateHasChanged();
+            }
+        });
+
+        hubConnection.On<PickBanState>("ConnectInfo", (pb) =>
+        {
+            pickBanState = pb;
+            StateHasChanged();
+        });
+
+        await hubConnection.StartAsync();
+
+        await hubConnection.SendAsync("EnterPage", Id, Mode);
+    }
+
+    private async Task LockBan(int pos)
+    {
+        var ent = pickBanState.Bans.First(f => f.Pos == pos && !f.IsLocked);
+        if (ent != null && hubConnection != null && isConnected)
+        {
+            ent.IsLocked = true;
+            await hubConnection.SendAsync("Ban", ent);
+            StateHasChanged();
+        }
+    }
+
+    private async Task LockPick(int pos)
+    {
+        var ent = pickBanState.Picks.First(f => f.Pos == pos && !f.IsLocked);
+        if (ent != null && hubConnection != null && isConnected)
+        {
+            ent.IsLocked = true;
+            await hubConnection.SendAsync("Lock", ent);
+            StateHasChanged();
+        }
+    }
+
+    private async Task LockPickName(int pos)
+    {
+        var ent = pickBanState.Picks.First(f => f.Pos == pos && !f.IsLocked);
+        if (!String.IsNullOrEmpty(ent.PlayerName))
+        {
+            if (ent.PlayerName.Length > 30)
+            {
+                ent.PlayerName = ent.PlayerName.Substring(0, 30);
+                
+            }
+            if (hubConnection != null && isConnected)
+            {
+                ent.Commander = Commander.Protoss;
+                ent.IsLocked = true;
+                await hubConnection.SendAsync("Lock", ent);
+                StateHasChanged();
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        hubConnection?.DisposeAsync();
+    }
+}
