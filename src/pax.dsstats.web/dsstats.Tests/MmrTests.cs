@@ -45,11 +45,32 @@ public class MmrTests
         builder.Services.AddLogging();
 
         builder.Services.AddScoped<IRatingRepository, RatingRepository>();
+        builder.Services.AddScoped<MmrProduceService>();
         builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
 
         app = builder.Build();
 
         Data.MysqlConnectionString = importConnectionString;
+    }
+
+    [Fact]
+    public void MmrOptionsTest()
+    {
+        using var scope = app.Services.CreateScope();
+        MmrProduceService produceService = scope.ServiceProvider.GetService<MmrProduceService>()!;
+
+        var accuracies = new Dictionary<(int, int), double>();
+
+        for (int clip = 100; clip <= 1600; clip += 100)
+        {
+            for (int eloK = 0; eloK <= 256; eloK += 8)
+            {
+                double accuracy = produceService.ProduceRatings(new MmrOptions(true, (eloK == 0 ? 1 : eloK), clip)).GetAwaiter().GetResult();
+                accuracies.Add(((eloK == 0 ? 1 : eloK), clip), accuracy);
+            }
+        }
+
+        var result = accuracies.OrderByDescending(_ => _.Value).ToList();
     }
 
     [Fact]

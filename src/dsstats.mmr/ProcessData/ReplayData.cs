@@ -14,6 +14,22 @@ public record ReplayData
         WinnerTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam), true);
         LoserTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam), false);
     }
+    public ReplayData(DateTime gameTime,
+                      int duration,
+                      int maxLeaver,
+                      int maxkillsum,
+                      double confidence,
+                      TeamData winnerTeamData,
+                      TeamData loserTeamData)
+    {
+        GameTime = gameTime;
+        Duration = duration;
+        Maxleaver = maxLeaver;
+        Maxkillsum = maxkillsum;
+        Confidence = confidence;
+        WinnerTeamData = winnerTeamData;
+        LoserTeamData = loserTeamData;
+    }
 
     public DateTime GameTime { get; init; }
     public int Duration { get; init; }

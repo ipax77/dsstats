@@ -22,7 +22,7 @@ public partial class RatingRepository : IRatingRepository
         this.logger = logger;
     }
 
-    public async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetCalcRatings(List<ReplayDsRDto> replayDsRDtos)
+    public async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetCalcRatings(List<ReplayDsRDto> replayDsRDtos, MmrOptions mmrOptions)
     {
         Dictionary<RatingType, Dictionary<int, CalcRating>> calcRatings = new()
         {
@@ -59,7 +59,7 @@ public partial class RatingRepository : IRatingRepository
                         ratingMemory.CmdrRavenRating = new RavenRating();
                     }
 
-                    calcRatings[ratingType].Add(ratingMemory.RavenPlayer.ToonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.CmdrRavenRating));
+                    calcRatings[ratingType].Add(ratingMemory.RavenPlayer.ToonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.CmdrRavenRating, mmrOptions));
                 }
                 else if (ratingType == RatingType.Std)
                 {
@@ -69,7 +69,7 @@ public partial class RatingRepository : IRatingRepository
                         ratingMemory.StdRavenRating = new RavenRating();
                     }
 
-                    calcRatings[ratingType].Add(ratingMemory.RavenPlayer.ToonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.StdRavenRating));
+                    calcRatings[ratingType].Add(ratingMemory.RavenPlayer.ToonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.StdRavenRating, mmrOptions));
                 }
             }
         }
@@ -77,7 +77,7 @@ public partial class RatingRepository : IRatingRepository
         return await Task.FromResult(calcRatings);
     }
 
-    private static CalcRating GetCalcRating(RavenPlayer ravenPlayer, RavenRating ravenRating)
+    private static CalcRating GetCalcRating(RavenPlayer ravenPlayer, RavenRating ravenRating, MmrOptions mmrOptions)
     {
         return new CalcRating()
         {
@@ -89,7 +89,7 @@ public partial class RatingRepository : IRatingRepository
             Wins = ravenRating?.Wins ?? 0,
             Mvp = ravenRating?.Mvp ?? 0,
 
-            Mmr = ravenRating?.Mmr ?? MmrService.startMmr,
+            Mmr = ravenRating?.Mmr ?? mmrOptions.StartMmr,
             MmrOverTime = GetTimeRatings(ravenRating?.MmrOverTime),
 
             CmdrCounts = new(), // ToDo ???
