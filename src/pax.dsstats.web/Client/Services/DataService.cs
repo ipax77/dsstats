@@ -96,6 +96,52 @@ public class DataService : IDataService
         return new List<ReplayListDto>();
     }
 
+    public async Task<int> GetEventReplaysCount(ReplaysRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetEventReplaysCount", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<int>();
+            }
+            else
+            {
+                logger.LogError($"failed getting event replay count: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting event replay count: {e.Message}");
+        }
+        return 0;
+    }
+
+    public async Task<ICollection<ReplayListEventDto>> GetEventReplays(ReplaysRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetEventReplays", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ICollection<ReplayListEventDto>>() ?? new List<ReplayListEventDto>();
+            }
+            else
+            {
+                logger.LogError($"failed getting event replays: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting event replays: {e.Message}");
+        }
+        return new List<ReplayListEventDto>();
+    }
+
 
     public async Task<StatsResponse> GetStats(StatsRequest request, CancellationToken token = default)
     {

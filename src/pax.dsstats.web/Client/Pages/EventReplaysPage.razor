@@ -1,0 +1,121 @@
+﻿@page "/eventreplays"
+@using System.Collections.ObjectModel
+@using pax.dsstats.shared
+@using sc2dsstats.razorlib
+@using sc2dsstats.razorlib.EventReplays;
+@inject NavigationManager NavigationManager
+@inject ILogger<ReplaysPage> logger
+
+<PageTitle>EventReplays</PageTitle>
+
+<EventReplaysComponent @ref="replaysComponent" replaysRequest="replaysRequest" OnRequestChanged="SetUrl"></EventReplaysComponent>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Tournament { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? SearchString { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Players { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? ReplayHash { get; set; }
+
+    private ReplaysRequest replaysRequest = new();
+    private EventReplaysComponent? replaysComponent;
+    private object lockobject = new();
+    private bool jobDone = true;
+
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }
+
+    protected override void OnParametersSet()
+    {
+        lock (lockobject)
+        {
+            if (jobDone)
+            {
+                jobDone = false;
+            }
+            else
+            {
+                SetRequest();
+                replaysComponent?.ReInit(replaysRequest);
+            }
+        }
+        base.OnParametersSet();
+    }
+
+    private void SetRequest()
+    {
+        replaysRequest = new()
+            {
+                StartTime = new DateTime(2018, 1, 1),
+                EndTime = DateTime.Today,
+                Tournament = Tournament,
+                SearchString = SearchString,
+                SearchPlayers = Players,
+                ReplayHash = ReplayHash,
+            };
+    }
+
+    private void SetUrl(ReplaysRequest request)
+    {
+        Dictionary<string, object?> queryDic = new();
+
+        if (!String.IsNullOrEmpty(request.Tournament))
+        {
+            queryDic.Add("Tournament", request.Tournament);
+        }
+        else
+        {
+            queryDic.Add("Tournament", null);
+        }
+
+        if (!String.IsNullOrEmpty(request.SearchString))
+        {
+            queryDic.Add("SearchString", request.SearchString);
+        }
+        else
+        {
+            queryDic.Add("SearchString", null);
+        }
+
+        if (!String.IsNullOrEmpty(request.SearchPlayers))
+        {
+            queryDic.Add("Players", request.SearchPlayers);
+        }
+        else
+        {
+            queryDic.Add("Players", null);
+        }
+
+        if (!String.IsNullOrEmpty(request.ReplayHash))
+        {
+            queryDic.Add("ReplayHash", request.ReplayHash);
+        }
+        else
+        {
+            queryDic.Add("ReplayHash", null);
+        }
+
+        lock (lockobject)
+        {
+            jobDone = true;
+            NavigationManager.NavigateTo(
+                NavigationManager.GetUriWithQueryParameters(
+                    new Dictionary<string, object?>(queryDic)
+                )
+            );
+        }
+    }
+}

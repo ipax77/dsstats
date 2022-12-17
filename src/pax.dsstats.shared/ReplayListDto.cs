@@ -24,6 +24,12 @@ public record ReplayListDto
     public Commander[] Cmdrs2 => CommandersTeam2.Split('|', StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s)).Cast<Commander>().ToArray();
 }
 
+public record ReplayListEventDto : ReplayListDto
+{
+    public ReplayEventListDto? ReplayEvent { get; set; }
+}
+
+
 public record ReplayEventListDto
 {
     public string Round { get; set; } = null!;

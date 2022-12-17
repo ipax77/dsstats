@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.shared;
 using System.Text.Json;

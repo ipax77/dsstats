@@ -7,7 +7,7 @@ using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng.Repositories;
 
-public class ReplayRepository : IReplayRepository
+public partial class ReplayRepository : IReplayRepository
 {
     private readonly ILogger<ReplayRepository> logger;
     private readonly ReplayContext context;
