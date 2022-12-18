@@ -1,4 +1,5 @@
-﻿using pax.dsstats.shared;
+﻿using MathNet.Numerics.LinearAlgebra.Factorization;
+using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
 using System.Net.Http.Json;
 
@@ -460,6 +461,18 @@ public class DataService : IDataService
 
     public async Task<List<string>> GetTournaments()
     {
-        return await Task.FromResult(new List<string>());
+        try
+        {
+            var tournaments = await httpClient.GetFromJsonAsync<List<string>>($"{statsController}GetTournaments");
+            if (tournaments != null)
+            {
+                return tournaments;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting tournaments: {ex.Message}");
+        }
+        return new();
     }
 }

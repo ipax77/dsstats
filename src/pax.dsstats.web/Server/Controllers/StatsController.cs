@@ -90,6 +90,13 @@ namespace pax.dsstats.web.Server.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("GetTournaments")]
+        public async Task<List<string>> GetTournaments()
+        {
+            return await replayRepository.GetTournaments();
+        }
+
         [HttpPost]
         [Route("GetStats")]
         public async Task<StatsResponse> GetStats(StatsRequest request, CancellationToken token = default)

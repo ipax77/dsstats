@@ -20,6 +20,17 @@ public partial class TourneyService
 
     public async Task CollectTourneyReplays()
     {
+        //var tournamentReplays = await context.Replays
+        //    .Include(i => i.ReplayEvent)
+        //    .Where(x => !String.IsNullOrEmpty(x.FileName)).ToListAsync();
+        //tournamentReplays.ForEach(f => { f.FileName = ""; f.ReplayEvent = null; });
+        //await context.SaveChangesAsync();
+
+        //var replayEvents = await context.ReplayEvents.ToListAsync();
+        //context.ReplayEvents.RemoveRange(replayEvents);
+        //await context.SaveChangesAsync();
+
+
         var newReplayInfos = await ScanForNewReplays();
 
         if (!newReplayInfos.Any())
@@ -51,10 +62,11 @@ public partial class TourneyService
                 var replay = await context.Replays
                     .Include(i => i.ReplayEvent)
                     .ThenInclude(j => j.Event)
-                    .FirstOrDefaultAsync(f => f.FileName == eventReplay || f.ReplayHash == f.ReplayHash);
+                    .FirstOrDefaultAsync(f => f.FileName == eventReplay || f.ReplayHash == replayDto.ReplayHash);
 
                 if (replay == null)
                 {
+                    replayDto.FileName = eventReplay;
                     (units, upgrades, replay) = await replayRepository.SaveReplay(replayDto, units, upgrades, new ReplayEventDto()
                     {
                         Round = replayInfo.Round,
@@ -84,19 +96,30 @@ public partial class TourneyService
                         context.Events.Add(dbEvent);
                     }
 
-                    replay.FileName = eventReplay;
-                    replay.ReplayEvent = new ReplayEvent()
+                    var replayEvent = await context.ReplayEvents
+                        .FirstOrDefaultAsync(f => f.Event == dbEvent 
+                            && f.Round == replayInfo.Round 
+                            && f.WinnerTeam == replayInfo.WinnerTeam 
+                            && f.RunnerTeam == replayInfo.RunnerTeam);
+                    
+                    if (replayEvent == null)
                     {
-                        Round = replayInfo.Round,
-                        WinnerTeam = replayInfo.WinnerTeam,
-                        RunnerTeam = replayInfo.RunnerTeam,
-                        Ban1 = replayInfo.Ban1,
-                        Ban2 = replayInfo.Ban2,
-                        Ban3 = replayInfo.Ban3,
-                        Ban4 = replayInfo.Ban4,
-                        Ban5 = replayInfo.Ban5,
-                        Event = dbEvent
-                    };
+                        replayEvent = new ReplayEvent()
+                        {
+                            Round = replayInfo.Round,
+                            WinnerTeam = replayInfo.WinnerTeam,
+                            RunnerTeam = replayInfo.RunnerTeam,
+                            Ban1 = replayInfo.Ban1,
+                            Ban2 = replayInfo.Ban2,
+                            Ban3 = replayInfo.Ban3,
+                            Ban4 = replayInfo.Ban4,
+                            Ban5 = replayInfo.Ban5,
+                            Event = dbEvent
+                        };
+                    }
+
+                    replay.FileName = eventReplay;
+                    replay.ReplayEvent = replayEvent;
                     await context.SaveChangesAsync();
                 }
             }

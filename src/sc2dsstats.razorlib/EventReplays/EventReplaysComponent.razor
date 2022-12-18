@@ -64,17 +64,17 @@
                                 Team2
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "WinnerTeam"))">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Team1"))">
                             <SortArrow Property="WinnerTeam">
                                 Winner
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "MaxLeaver"))">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Team2"))">
                             <SortArrow Property="MaxLeaver">
                                 MaxLeaver
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GameMode"))">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Round"))">
                             <SortArrow Property="GameMode">
                                 GameMode
                             </SortArrow>
@@ -119,9 +119,25 @@
                                         }
                                     </div>
                                 </td>
-                                <td>@replay.WinnerTeam</td>
-                                <td>@TimeSpan.FromSeconds(replay.MaxLeaver).ToString(@"mm\:ss")</td>
-                                <td><span style="display:block; width: 200px;">@replay.GameMode</span></td>
+                                @if (replay.WinnerTeam == 1)
+                                {
+                                    <td>
+                                        <span class="text-truncate text-success" style="display: block; width: 250px;">@replay.ReplayEvent?.WinnerTeam</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-truncate text-danger" style="display: block; width: 250px;">@replay.ReplayEvent?.RunnerTeam</span>
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td>
+                                        <span class="text-truncate text-danger" style="display: block; width: 250px;">@replay.ReplayEvent?.RunnerTeam</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-truncate text-success" style="display: block; width: 250px;">@replay.ReplayEvent?.WinnerTeam</span>
+                                    </td>
+                                }
+                                <td>@replay.ReplayEvent?.Round</td>
                             </tr>
                         </ItemContent>
                         <Placeholder>

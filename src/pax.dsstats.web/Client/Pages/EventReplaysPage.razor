@@ -38,23 +38,6 @@
         base.OnInitialized();
     }
 
-    protected override void OnParametersSet()
-    {
-        lock (lockobject)
-        {
-            if (jobDone)
-            {
-                jobDone = false;
-            }
-            else
-            {
-                SetRequest();
-                replaysComponent?.ReInit(replaysRequest);
-            }
-        }
-        base.OnParametersSet();
-    }
-
     private void SetRequest()
     {
         replaysRequest = new()
