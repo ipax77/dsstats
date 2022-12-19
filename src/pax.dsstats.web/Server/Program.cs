@@ -86,11 +86,14 @@ context.Database.Migrate();
 // SEED
 if (app.Environment.IsProduction())
 {
-    //var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    //mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
+    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
 
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
+
+    var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
+    tourneyService.CollectTourneyReplays().Wait();
 }
 
 // DEBUG
@@ -100,8 +103,8 @@ if (app.Environment.IsDevelopment())
     // var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
     // cheatDetectService.DetectNoUpload().Wait();
 
-    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings(new(reCalc: true)).GetAwaiter().GetResult();
+    //var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    //mmrProduceService.ProduceRatings(new(reCalc: true)).GetAwaiter().GetResult();
 
     //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
     //var result = statsService.GetCrossTable(new());
