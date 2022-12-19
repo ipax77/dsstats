@@ -1,4 +1,5 @@
-﻿@page "/eventreplays"
+﻿@page "/tourneys/replays"
+@layout TourneyLayout
 @using System.Collections.ObjectModel
 @using pax.dsstats.shared
 @using sc2dsstats.razorlib
@@ -6,7 +7,7 @@
 @inject NavigationManager NavigationManager
 @inject ILogger<ReplaysPage> logger
 
-<PageTitle>EventReplays</PageTitle>
+<PageTitle>TourneyReplays</PageTitle>
 
 <EventReplaysComponent @ref="replaysComponent" replaysRequest="replaysRequest" OnRequestChanged="SetUrl"></EventReplaysComponent>
 
