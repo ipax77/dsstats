@@ -1,0 +1,177 @@
+﻿@page "/tourneys/upload"
+@layout TourneyLayout
+@using System.Linq
+@using System.Net.Http.Headers
+@using Microsoft.Extensions.Logging
+@using pax.dsstats.shared
+@inject HttpClient Http
+@inject ILogger<ReplayUploadPage> Logger
+
+<PageTitle>ReplayUpload</PageTitle>
+
+<h3>Tournament Replays Upload</h3>
+
+<sc2dsstats.razorlib.Tourneys.UploadInfoComponent OnValidInfoSubmit="UploadInfoReady"></sc2dsstats.razorlib.Tourneys.UploadInfoComponent>
+
+<div class="mt-3">
+@if (uploadInfo != null)
+{
+    <p>
+        <label>
+            Upload up to @maxAllowedFiles files:
+            <InputFile OnChange="@OnInputFileChange" multiple />
+        </label>
+    </p>
+
+    @if (files.Count > 0)
+    {
+        <div class="card">
+            <div class="card-body">
+                <ul>
+                    @foreach (var file in files)
+                    {
+                        <li>
+                            File: @file.Name
+                            <br>
+                            @if (FileUpload(uploadResults, file.Name, Logger,
+                             out var result))
+                            {
+                                <span>
+                                    Stored File Name: @result.StoredFileName
+                                </span>
+                            }
+                            else
+                            {
+                                <span>
+                                    There was an error uploading the file
+                                    (Error: @result.ErrorCode).
+                                </span>
+                            }
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    }
+}
+</div>
+
+@code {
+    private UploadInfo? uploadInfo = null;
+
+    private List<File> files = new();
+    private List<UploadResult> uploadResults = new();
+    private int maxAllowedFiles = 7;
+    private bool shouldRender;
+
+    protected override bool ShouldRender() => shouldRender;
+
+    public async Task UploadInfoReady(UploadInfo info)
+    {
+        uploadInfo = info;
+        try
+        {
+            var result = await Http.PostAsJsonAsync("ReplayUpload", info);
+            if (result.IsSuccessStatusCode)
+            {
+                Logger.LogInformation($"uploadinfo upload success");
+            }
+            else
+            {
+                Logger.LogError($"failed uploading uploadinfo: {result.StatusCode}");
+                uploadInfo = null;
+            }
+        } catch (Exception ex)
+        {
+            Logger.LogError($"failed uploading uploadinfo: {ex.Message}");
+            uploadInfo = null;
+        }
+        shouldRender = true;
+        await InvokeAsync(() => StateHasChanged());
+        shouldRender = false;
+    }
+
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        shouldRender = false;
+        long maxFileSize = 1024 * 1024 * 5;
+        var upload = false;
+
+        using var content = new MultipartFormDataContent();
+
+        foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
+        {
+            if (uploadResults.SingleOrDefault(
+                f => f.FileName == file.Name) is null)
+            {
+                try
+                {
+                    var fileContent = 
+                        new StreamContent(file.OpenReadStream(maxFileSize));
+
+                    fileContent.Headers.ContentType = 
+                        // new MediaTypeHeaderValue(file.ContentType);
+                        new MediaTypeHeaderValue("application/octet-stream");
+
+                    files.Add(new() { Name = file.Name });
+
+                    content.Add(
+                        content: fileContent,
+                        name: "\"files\"",
+                        fileName: file.Name);
+
+                    upload = true;
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogInformation(
+                        "{FileName} not uploaded (Err: 6): {Message}", 
+                        file.Name, ex.Message);
+
+                    uploadResults.Add(
+                        new()
+                        {
+                            FileName = file.Name, 
+                            ErrorCode = 6, 
+                            Uploaded = false
+                        });
+                }
+            }
+        }
+
+        if (upload && uploadInfo != null)
+        {
+            var response = await Http.PostAsync($"ReplayUpload/{uploadInfo.UploadId}", content);
+
+            var newUploadResults = await response.Content
+                .ReadFromJsonAsync<IList<UploadResult>>();
+
+            if (newUploadResults is not null)
+            {
+                uploadResults = uploadResults.Concat(newUploadResults).ToList();
+            }
+        }
+
+        shouldRender = true;
+    }
+
+    private static bool FileUpload(IList<UploadResult> uploadResults,
+        string? fileName, ILogger<ReplayUploadPage> logger, out UploadResult result)
+    {
+        result = uploadResults.SingleOrDefault(f => f.FileName == fileName) ?? new();
+
+        if (!result.Uploaded)
+        {
+            logger.LogInformation("{FileName} not uploaded (Err: 5)", fileName);
+            result.ErrorCode = 5;
+        }
+
+        return result.Uploaded;
+    }
+
+    private class File
+    {
+        public string? Name { get; set; }
+    }
+}

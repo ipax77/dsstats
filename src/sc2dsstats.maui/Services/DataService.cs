@@ -92,7 +92,7 @@ public partial class DataService : IDataService
         return await replayRepository.GetReplayPaths();
     }
 
-    public async Task<List<string>> GetTournaments()
+    public async Task<List<EventListDto>> GetTournaments()
     {
         return await replayRepository.GetTournaments();
     }
@@ -227,5 +227,20 @@ public partial class DataService : IDataService
     public async Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token)
     {
         return await ServerGetToonIdRatings(request, token);
+    }
+
+    public async Task<int> GetEventReplaysCount(ReplaysRequest request, CancellationToken token = default)
+    {
+        return await Task.FromResult(0);
+    }
+
+    public async Task<ICollection<ReplayListEventDto>> GetEventReplays(ReplaysRequest request, CancellationToken token = default)
+    {
+        return await Task.FromResult(new List<ReplayListEventDto>());
+    }
+
+    public async Task<StatsResponse> GetTourneyStats(StatsRequest request, CancellationToken token = default)
+    {
+        return await Task.FromResult(new StatsResponse());
     }
 }

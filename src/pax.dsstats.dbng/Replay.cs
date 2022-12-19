@@ -99,6 +99,8 @@ public class Event
     public Guid EventGuid { get; set; } = Guid.NewGuid();
     [Precision(0)]
     public DateTime EventStart { get; set; }
+    public string? WinnerTeam { get; set; }
+    public GameMode GameMode { get; set; }
     public virtual ICollection<ReplayEvent> ReplayEvents { get; set; }
 }
 

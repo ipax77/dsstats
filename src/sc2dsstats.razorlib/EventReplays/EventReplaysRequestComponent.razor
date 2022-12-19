@@ -8,6 +8,18 @@
     <EditForm EditContext="editContext">
         <div class="row">
             <div class="col-auto">
+                <label>
+                    Tournament
+                    <InputSelect class="form-select" @bind-Value="replaysRequest.Tournament">
+                        <option value="" selected>All</option>
+                        @foreach (var tournament in tournaments)
+                        {
+                            <option value="@tournament.Name">@tournament.Name</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+            <div class="col-auto">
                 <label class="form-label">
                     Search:
                     <InputText class="form-control" placeholder="Zagara Kerrigan" @bind-Value="replaysRequest.SearchString"></InputText>
@@ -32,75 +44,7 @@
                     <span class="small text-warning">@(replaysRequest.ToonIdWith > 0 ? "with" : "vs") @replaysRequest.ToonIdName</span>
                 }
                 <div>
-
                 </div>
-            </div>
-@*            <div class="col-auto">
-                <label class="form-label">
-                    Start:
-                    <InputDate class="form-control" @bind-Value="replaysRequest.StartTime"></InputDate>
-                </label>
-            </div>
-            <div class="col-auto">
-                <label class="form-label">
-                    End:
-                    <InputDate class="form-control" @bind-Value="replaysRequest.EndTime"></InputDate>
-                </label>
-            </div>*@
-            <div class="col-auto">
-                <select id="gamemodeselect" class="form-select" multiple aria-label="multiple" @onchange="GameModeChange">
-                    <option>All GameModes</option>
-                    @foreach (GameMode gameMode in Enum.GetValues(typeof(GameMode)))
-                    {
-                        @if (gameMode != GameMode.None)
-                        {
-                            <option value="@gameMode">@gameMode</option>
-                        }
-                    }
-                </select>
-            </div>
-            <div class="col-auto">
-                <div class="form-check form-switch">
-                    <label class="form-check-label">
-                        DefaultFilter
-                        <InputCheckbox class="form-check-input" @bind-Value="replaysRequest.DefaultFilter">
-                        </InputCheckbox>
-                    </label>
-                </div>
-                @if (WithMmrChange)
-                {
-                    <div class="form-check form-switch">
-                        <label class="form-check-label">
-                            MmrChange
-                            <InputCheckbox class="form-check-input" @bind-Value="replaysRequest.WithMmrChange">
-                            </InputCheckbox>
-                        </label>
-                    </div>
-                }
-                @if (!Data.IsMaui)
-                {
-                    <div class="d-flex">
-                        <div class="form-check form-switch">
-                            <label class="form-check-label">
-                                Adjusted
-                                <InputCheckbox class="form-check-input" @bind-Value="replaysRequest.ResultAdjusted">
-                                </InputCheckbox>
-                            </label>
-                        </div>
-                        <div class="ms-2">
-                            <span class="oi oi-info pointer" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/CheatDetection'"></span>
-                        </div>
-                    </div>
-                } else
-                {
-                    <div class="form-check form-switch">
-                        <label class="form-check-label">
-                            From Server
-                            <input type="checkbox" class="form-check-input" @onchange="FromServerChange">
-                            </input>
-                        </label>
-                    </div>
-                }
             </div>
             <div class="col-auto">
                 <div style="max-width: 150px;">
@@ -126,7 +70,7 @@
     [Parameter]
     public bool WithMmrChange { get; set; }
 
-    private List<string> tournaments = new();
+    private List<EventListDto> tournaments = new();
     private EditContext editContext = null!;
 
     protected override async Task OnInitializedAsync()
@@ -134,7 +78,7 @@
         editContext = new EditContext(replaysRequest);
         editContext.OnFieldChanged += FieldChanged;
 
-        //tournaments = await dataService.GetTournaments();
+        tournaments = await dataService.GetTournaments();
 
         await base.OnInitializedAsync();
     }
