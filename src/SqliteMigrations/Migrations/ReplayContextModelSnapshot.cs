@@ -15,7 +15,7 @@ namespace SqliteMigrations.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "6.0.11");
+            modelBuilder.HasAnnotation("ProductVersion", "6.0.12");
 
             modelBuilder.Entity("pax.dsstats.dbng.BattleNetInfo", b =>
                 {
@@ -74,9 +74,15 @@ namespace SqliteMigrations.Migrations
                         .HasPrecision(0)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("GameMode")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WinnerTeam")
                         .HasColumnType("TEXT");
 
                     b.HasKey("EventId");

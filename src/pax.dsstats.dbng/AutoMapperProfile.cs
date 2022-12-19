@@ -42,6 +42,7 @@ namespace pax.dsstats.dbng
 
             CreateMap<EventDto, Event>(MemberList.Source);
             CreateMap<Event, EventDto>(MemberList.Destination);
+            CreateMap<Event, EventListDto>(MemberList.Destination);
 
             CreateMap<Replay, ReplayListDto>(MemberList.Destination)
                 .ForMember(x => x.Commander, opt => opt.Ignore())

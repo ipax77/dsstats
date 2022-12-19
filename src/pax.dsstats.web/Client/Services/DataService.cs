@@ -481,11 +481,11 @@ public class DataService : IDataService
         return await Task.FromResult(new List<string>());
     }
 
-    public async Task<List<string>> GetTournaments()
+    public async Task<List<EventListDto>> GetTournaments()
     {
         try
         {
-            var tournaments = await httpClient.GetFromJsonAsync<List<string>>($"{statsController}GetTournaments");
+            var tournaments = await httpClient.GetFromJsonAsync<List<EventListDto>>($"{statsController}GetTournaments");
             if (tournaments != null)
             {
                 return tournaments;

@@ -12,7 +12,7 @@
                         <option value="">All</option>
                         @foreach (var tournament in tournaments)
                         {
-                            <option value="@tournament">@tournament</option>
+                            <option value="@tournament.Name">@tournament.Name</option>
                         }
                     </InputSelect>
                 </label>
@@ -39,7 +39,7 @@
     [Parameter]
     public EventCallback<StatsRequest> OnFieldChanged { get; set; }
 
-    private List<string> tournaments = new();
+    private List<EventListDto> tournaments = new();
     private EditContext editContext = null!;
 
     protected override async Task OnInitializedAsync()

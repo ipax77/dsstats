@@ -10,7 +10,14 @@
         <div class="col-auto ms-auto btn-group">
             @if (!string.IsNullOrEmpty(replayDto.FileName))
             {
-                <button type="button" class="btn btn-dark" @onclick="@(() => showReplayPath = !showReplayPath)">FileName</button>
+                @if (Data.IsMaui)
+                {
+                    <button type="button" class="btn btn-dark" @onclick="@(() => showReplayPath = !showReplayPath)">FileName</button>
+                }
+                else
+                {
+                    <a class="btn btn-light" href="@($"{NavigationManager.BaseUri}api/v1/ReplayDownload/{replayDto.ReplayHash}")" download>Download</a>
+                }
             }
             else
             {
@@ -28,7 +35,14 @@ else
         <div class="col-auto ms-auto btn-group">
             @if (!string.IsNullOrEmpty(replayDto.FileName))
             {
-                <button type="button" class="btn btn-dark" @onclick="@(() => showReplayPath = !showReplayPath)">FileName</button>
+                @if (Data.IsMaui)
+                {
+                    <button type="button" class="btn btn-dark" @onclick="@(() => showReplayPath = !showReplayPath)">FileName</button>
+                }
+                else
+                {
+                    <a class="btn btn-light" href="@($"{NavigationManager.BaseUri}api/v1/ReplayDownload/{replayDto.ReplayHash}")" download>Download</a>
+                }
             }
             else
             {

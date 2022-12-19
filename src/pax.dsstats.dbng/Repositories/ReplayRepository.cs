@@ -579,12 +579,12 @@ public partial class ReplayRepository : IReplayRepository
         }
     }
 
-    public async Task<List<string>> GetTournaments()
+    public async Task<List<EventListDto>> GetTournaments()
     {
         return await context.Events
             .AsNoTracking()
             .OrderBy(e => e.Name)
-            .Select(s => s.Name)
+            .ProjectTo<EventListDto>(mapper.ConfigurationProvider)
             .ToListAsync();
     }
 
@@ -614,6 +614,36 @@ public partial class ReplayRepository : IReplayRepository
         await context.SaveChangesAsync();
 
         context.ReplayViewCounts.RemoveRange(viewedHashes);
+
+        await context.SaveChangesAsync();
+    }
+
+    public async Task SetReplayDownloads()
+    {
+        var downloadedHashes = await context.ReplayDownloadCounts
+            .ToListAsync();
+
+        var replayHashDownloads = downloadedHashes.GroupBy(g => g.ReplayHash)
+            .Select(s => new { Hash = s.Key, Count = s.Count() })
+            .ToDictionary(k => k.Hash, v => v.Count);
+
+        int i = 0;
+        foreach (var ent in replayHashDownloads)
+        {
+            var replay = await context.Replays
+                .FirstOrDefaultAsync(f => f.ReplayHash == ent.Key);
+            if (replay != null)
+            {
+                replay.Downloads += ent.Value;
+            }
+            if (i % 1000 == 0)
+            {
+                await context.SaveChangesAsync();
+            }
+        }
+        await context.SaveChangesAsync();
+
+        context.ReplayDownloadCounts.RemoveRange(downloadedHashes);
 
         await context.SaveChangesAsync();
     }

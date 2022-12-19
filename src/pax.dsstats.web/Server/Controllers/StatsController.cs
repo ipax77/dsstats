@@ -92,7 +92,7 @@ namespace pax.dsstats.web.Server.Controllers
 
         [HttpGet]
         [Route("GetTournaments")]
-        public async Task<List<string>> GetTournaments()
+        public async Task<List<EventListDto>> GetTournaments()
         {
             return await replayRepository.GetTournaments();
         }

@@ -11,12 +11,13 @@ namespace pax.dsstats.dbng.Repositories
         Task<ICollection<ReplayListEventDto>> GetEventReplays(ReplaysRequest request, CancellationToken token = default);
         Task<ICollection<string>> GetReplayPaths();
         Task<(HashSet<Unit>, HashSet<Upgrade>, Replay)> SaveReplay(ReplayDto replayDto, HashSet<Unit> units, HashSet<Upgrade> upgrades, ReplayEventDto? replayEventDto);
-        Task<List<string>> GetTournaments();
+        Task<List<EventListDto>> GetTournaments();
         Task DeleteReplayByFileName(string fileName);
         Task<ReplayDto?> GetLatestReplay(CancellationToken token = default);
         Task<List<string>> GetSkipReplays();
         Task AddSkipReplay(string replayPath);
         Task RemoveSkipReplay(string replayPath);
         Task SetReplayViews();
+        Task SetReplayDownloads();
     }
 }

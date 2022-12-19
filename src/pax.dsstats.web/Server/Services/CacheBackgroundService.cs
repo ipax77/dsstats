@@ -58,6 +58,7 @@ public class CacheBackgroundService : IHostedService, IDisposable
 
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
             await replayRepository.SetReplayViews();
+            await replayRepository.SetReplayDownloads();
 
             sw.Stop();
             logger.LogWarning($"{DateTime.UtcNow.ToString(@"yyyy-MM-dd HH:mm:ss")} - Work done in {sw.ElapsedMilliseconds} ms");

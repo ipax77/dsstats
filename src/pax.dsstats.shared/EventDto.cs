@@ -21,3 +21,10 @@ public record ReplayEventDto
     public Commander Ban5 { get; set; }
     public EventDto Event { get; set; } = new();
 }
+
+public record EventListDto
+{
+    public string Name { get; init; } = "";
+    public string? WinnerTeam { get; init; }
+    public GameMode GameMode { get; init; }
+}

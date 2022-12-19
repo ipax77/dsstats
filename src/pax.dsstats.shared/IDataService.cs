@@ -11,7 +11,7 @@ public interface IDataService
     Task<int> GetEventReplaysCount(ReplaysRequest request, CancellationToken token = default);
     Task<ICollection<ReplayListEventDto>> GetEventReplays(ReplaysRequest request, CancellationToken token = default);
     Task<ICollection<string>> GetReplayPaths();
-    Task<List<string>> GetTournaments();
+    Task<List<EventListDto>> GetTournaments();
     Task<StatsResponse> GetStats(StatsRequest request, CancellationToken token = default);
     Task<StatsResponse> GetTourneyStats(StatsRequest request, CancellationToken token = default);
     Task<BuildResponse> GetBuild(BuildRequest request, CancellationToken token = default);
