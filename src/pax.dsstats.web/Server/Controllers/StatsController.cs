@@ -105,6 +105,13 @@ namespace pax.dsstats.web.Server.Controllers
         }
 
         [HttpPost]
+        [Route("GetTourneyStats")]
+        public async Task<StatsResponse> GetTourneyStats(StatsRequest request, CancellationToken token = default)
+        {
+            return await statsService.GetTourneyStats(request, token);
+        }
+
+        [HttpPost]
         [Route("GetBuild")]
         public async Task<BuildResponse> GetBuild(BuildRequest request)
         {
@@ -177,5 +184,4 @@ namespace pax.dsstats.web.Server.Controllers
             return NoContent();
         }
     }
-
 }

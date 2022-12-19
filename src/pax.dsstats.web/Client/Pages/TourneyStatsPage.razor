@@ -1,0 +1,65 @@
+﻿@page "/tourneys/stats"
+@layout TourneyLayout
+@using pax.dsstats.shared;
+@inject NavigationManager NavigationManager
+
+<PageTitle>TourneyStats</PageTitle>
+
+<sc2dsstats.razorlib.Tourneys.TourneyStatsComponent statsRequest="statsRequest" OnRequestChanged="SetUrl" />
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Tournament { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Round { get; set; }
+
+    private StatsRequest statsRequest = new();
+
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }
+
+    private void SetRequest()
+    {
+        statsRequest = new()
+            {
+                StatsMode = StatsMode.Winrate,
+                StartTime = new DateTime(2022, 1, 1),
+                Tournament = Tournament,
+                Round = Round
+            };
+    }
+    private void SetUrl(StatsRequest request)
+    {
+        Dictionary<string, object?> queryDic = new();
+
+        if (!String.IsNullOrEmpty(request.Tournament))
+        {
+            queryDic.Add("Tournament", request.Tournament);
+        }
+        else
+        {
+            queryDic.Add("Tournament", null);
+        }
+
+        if (!String.IsNullOrEmpty(request.Round))
+        {
+            queryDic.Add("Round", request.Round);
+        }
+        else
+        {
+            queryDic.Add("Round", null);
+        }
+
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters(
+                new Dictionary<string, object?>(queryDic)
+            )
+        );
+    }
+}

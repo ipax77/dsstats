@@ -143,12 +143,34 @@ public class DataService : IDataService
         return new List<ReplayListEventDto>();
     }
 
-
     public async Task<StatsResponse> GetStats(StatsRequest request, CancellationToken token = default)
     {
         try
         {
             var response = await httpClient.PostAsJsonAsync($"{statsController}GetStats", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<StatsResponse>() ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting stats: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting stats: {e.Message}");
+        }
+        return new();
+    }
+
+    public async Task<StatsResponse> GetTourneyStats(StatsRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetTourneyStats", request, token);
 
             if (response.IsSuccessStatusCode)
             {

@@ -213,6 +213,32 @@ public partial class TourneyService
             Ban5 = bans[4],
         };
     }
+
+    public async Task<string?> SaveFile(MemoryStream fileStream, UploadInfo uploadInfo)
+    {
+        var dir = Path.Combine(tourneyFolder, uploadInfo.Event, $"{uploadInfo.Round} - {uploadInfo.Team1} vs {uploadInfo.Team2} - {uploadInfo.Ban1}_{uploadInfo.Ban2}");
+        if (!Directory.Exists(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+
+        int i = 1;
+        string fileName = Path.Combine(dir, $"replay{i}.SC2Replay");
+        while (File.Exists(fileName))
+        {
+            i++;
+            fileName = Path.Combine(dir, $"replay{i}.SC2Replay");
+            if (i > 10)
+            {
+                return null;
+            }
+        }
+
+        await using FileStream fs = new(fileName, FileMode.Create);
+        fileStream.Position = 0;
+        await fileStream.CopyToAsync(fs);
+        return fileName;
+    }
 }
 
 internal record ReplayInfo()

@@ -13,6 +13,7 @@ public interface IDataService
     Task<ICollection<string>> GetReplayPaths();
     Task<List<string>> GetTournaments();
     Task<StatsResponse> GetStats(StatsRequest request, CancellationToken token = default);
+    Task<StatsResponse> GetTourneyStats(StatsRequest request, CancellationToken token = default);
     Task<BuildResponse> GetBuild(BuildRequest request, CancellationToken token = default);
 
     // ratings
