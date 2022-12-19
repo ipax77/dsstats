@@ -31,7 +31,6 @@
     private ReplaysRequest replaysRequest = new();
     private EventReplaysComponent? replaysComponent;
     private object lockobject = new();
-    private bool jobDone = true;
 
     protected override void OnInitialized()
     {
@@ -94,7 +93,6 @@
 
         lock (lockobject)
         {
-            jobDone = true;
             NavigationManager.NavigateTo(
                 NavigationManager.GetUriWithQueryParameters(
                     new Dictionary<string, object?>(queryDic)

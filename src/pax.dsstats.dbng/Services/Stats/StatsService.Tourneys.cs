@@ -76,12 +76,14 @@ public partial class StatsService
 
     private IQueryable<Replay> GetTourneyReplays(StatsRequest request)
     {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
         var replays = context.Replays
             .Include(i => i.ReplayEvent)
                 .ThenInclude(j => j.Event)
             .Include(i => i.ReplayPlayers)
             .Where(x => x.ReplayEvent != null)
             .AsNoTracking();
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
         if (!string.IsNullOrEmpty(request.Tournament))
         {
