@@ -141,7 +141,7 @@ public partial class TopRow : ComponentBase, IDisposable
         } catch (Exception ex)
         {
             Console.WriteLine(ex.Message.ToString());
-            ToastService.ShowWarning("Update check failed");
+            ToastService.ShowWarning("Update failed. Please update via the Microsoft Store.");
         }
         await InvokeAsync(() => StateHasChanged());
     }
