@@ -59,10 +59,12 @@ public partial class TourneyService
                     continue;
                 }
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                 var replay = await context.Replays
                     .Include(i => i.ReplayEvent)
                     .ThenInclude(j => j.Event)
                     .FirstOrDefaultAsync(f => f.FileName == eventReplay || f.ReplayHash == replayDto.ReplayHash);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
                 if (replay == null)
                 {
