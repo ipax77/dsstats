@@ -3,8 +3,6 @@
 @using sc2dsstats.razorlib.Services;
 @inject IDataService dataService
 
-<PageTitle>stats</PageTitle>
-
 <CascadingValue Value="statsRequest">
     <TourneyStatsRequestComponent OnFieldChanged="LoadStats"></TourneyStatsRequestComponent>
 </CascadingValue>

@@ -120,7 +120,7 @@ public partial class MmrProduceService
             (mmrIdRatings, mmrChangesAppendId, var partAccuracy) = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, mmrOptions, mmrChangesAppendId, ratingRepository);
             accuracyList.AddRange(partAccuracy);
         }
-        //var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings, !mmrOptions.ReCalc);
+        var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings, !mmrOptions.ReCalc);
 
         double accuracy = accuracyList.Count(x => x == true) / (double)accuracyList.Count;
         return (latestReplay, accuracy);
