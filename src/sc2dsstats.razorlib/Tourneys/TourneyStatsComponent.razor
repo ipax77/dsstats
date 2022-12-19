@@ -1,0 +1,174 @@
+﻿@using pax.dsstats.shared
+@using sc2dsstats.razorlib.Extensions;
+@using sc2dsstats.razorlib.Services;
+@inject IDataService dataService
+
+<PageTitle>stats</PageTitle>
+
+<CascadingValue Value="statsRequest">
+    <TourneyStatsRequestComponent OnFieldChanged="LoadStats"></TourneyStatsRequestComponent>
+</CascadingValue>
+
+@if (statsResponse == null)
+{
+    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else
+{
+    <div class="d-flex mt-2 mb-2" style="font-size: 18px;">
+        <span class="badge bg-info">Replays @statsResponse.Count</span>
+        <span class="badge bg-info ms-3">AvgDuration @TimeSpan.FromSeconds(statsResponse.AvgDuration).ToString(@"mm\:ss")</span>
+    </div>
+    <div>
+        <table class="table table-bordered table-dark table-hover table-striped w-auto">
+            <colgroup>
+                <col class="col-auto">
+                <col class="col-auto">
+                <col class="col-auto">
+                <col class="col-auto">
+                <col class="col-auto">
+            </colgroup>
+            <thead class="user-select-none">
+                <CascadingValue Value="Orders">
+                    <tr>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Label"))">
+                            <SortArrow Property="Label">
+                                Commander
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Winrate"))">
+                            <SortArrow Property="Winrate">
+                                Winrate
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Matchups"))">
+                            <SortArrow Property="Matchups">
+                                Matchups
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Wins"))">
+                            <SortArrow Property="Wins">
+                                Wins
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Bans"))">
+                            <SortArrow Property="Bans">
+                                Bans
+                            </SortArrow>
+                        </th>
+                    </tr>
+                </CascadingValue>
+            </thead>
+            <tbody>
+                @foreach (var item in GetSortedList())
+                {
+                    <tr>
+                        <td>
+                            <img src="@HelperService.GetImageSrc(item.Cmdr)"
+                         alt="@item.Label"
+                         title="@item.Label"
+                         width="30"
+                         height="30" />
+                            @item.Label
+                        </td>
+                        <td>@item.Winrate.ToString("N2") %</td>
+                        <td class="text-end">@item.Matchups</td>
+                        <td class="text-end">@item.Wins</td>
+                        <td>
+                            <div class="d-flex justify-content-center" style="width: 90px;">
+                                <div>@item.Bans</div>
+                                <div class="ms-1">(@(((double)item.Bans * 100.0 / (double)statsResponse.Bans).ToString("N2"))%)</div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public StatsRequest statsRequest { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback<StatsRequest> OnRequestChanged { get; set; }
+
+    private StatsResponse? statsResponse;
+    private List<TableOrder> Orders = new List<TableOrder>()
+    {
+        new TableOrder() { Property = "Winrate", Ascending = false }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStats(statsRequest);
+        await base.OnInitializedAsync();
+    }
+
+
+    private async Task LoadStats(StatsRequest request)
+    {
+        statsResponse = await dataService.GetTourneyStats(request);
+        await OnRequestChanged.InvokeAsync(request);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = Orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                Orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            Orders.Clear();
+            Orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+        StateHasChanged();
+    }
+
+    private List<StatsResponseItem> GetSortedList()
+    {
+        List<StatsResponseItem> items = new();
+
+        if (statsResponse != null && statsResponse.Items.Any())
+        {
+            var itemsQ = statsResponse.Items.AsQueryable();
+
+            foreach (var order in Orders)
+            {
+                if (order.Ascending)
+                {
+                    itemsQ = itemsQ.AppendOrderBy(order.Property);
+                }
+                else
+                {
+                    itemsQ = itemsQ.AppendOrderByDescending(order.Property);
+                }
+            }
+
+            items = itemsQ.ToList();
+        }
+
+        return items;
+    }
+}

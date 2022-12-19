@@ -1,0 +1,39 @@
+﻿@page "/tourneys"
+@using pax.dsstats.shared;
+@layout TourneyLayout
+@inject IDataService dataService
+
+<PageTitle>Tourneys</PageTitle>
+
+<h3>Recent Tournaments</h3>
+<div class="table-responsive">
+    <table class="table table-dark table-striped w-auto">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Winner</th>
+                <th>Mode</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var tournament in tournaments)
+            {
+                <tr>
+                    <td>@tournament.Name</td>
+                    <td>@tournament.WinnerTeam</td>
+                    <td>@tournament.GameMode</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private List<EventListDto> tournaments = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        tournaments = await dataService.GetTournaments();
+        await base.OnInitializedAsync();
+    }
+}

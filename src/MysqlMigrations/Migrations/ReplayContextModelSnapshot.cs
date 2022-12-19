@@ -16,7 +16,7 @@ namespace MysqlMigrations.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.11")
+                .HasAnnotation("ProductVersion", "6.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("ReplayUploader", b =>
@@ -91,10 +91,16 @@ namespace MysqlMigrations.Migrations
                         .HasPrecision(0)
                         .HasColumnType("datetime(0)");
 
+                    b.Property<int>("GameMode")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
+
+                    b.Property<string>("WinnerTeam")
+                        .HasColumnType("longtext");
 
                     b.HasKey("EventId");
 

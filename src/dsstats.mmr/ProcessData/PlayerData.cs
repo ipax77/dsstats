@@ -8,15 +8,65 @@ public record PlayerData
     {
         Deltas = new();
 
-        ReplayPlayer = replayPlayer;
-        Commander = replayPlayer.Race;
+        //ReplayPlayer = replayPlayer;
+        MmrId = MmrService.GetMmrId(replayPlayer.Player);
+        GamePos = replayPlayer.GamePos;
+        ReplayPlayerId = replayPlayer.ReplayPlayerId;
+        PlayerId = replayPlayer.Player.PlayerId;
+        IsUploader = replayPlayer.IsUploader;
+        Kills = replayPlayer.Kills;
+        PlayerResult = replayPlayer.PlayerResult;
+
+        Race = replayPlayer.Race;
         Duration = replayPlayer.Duration;
 
         IsLeaver = replayPlayer.Duration < replay.Duration - 90;
     }
+    public PlayerData(Commander race,
+                      Commander oppRace,
+                      int duration,
+                      bool isLeaver,
+                      double mmr,
+                      double consistency,
+                      double confidence,
+                      int mmrId,
+                      int gamePos,
+                      int replayPlayerId,
+                      int playerId,
+                      bool isUploader,
+                      int kills,
+                      PlayerResult playerResult)
+    {
+        Deltas = new();
 
-    public ReplayPlayerDsRDto ReplayPlayer { get; init; }
-    public Commander Commander { get; init; }
+        Race = race;
+        OppRace = oppRace;
+        Duration = duration;
+        IsLeaver = isLeaver;
+        Mmr = mmr;
+        Consistency = consistency;
+        Confidence = confidence;
+
+        MmrId = mmrId;
+        GamePos = gamePos;
+        ReplayPlayerId = replayPlayerId;
+        PlayerId = playerId;
+        IsUploader = isUploader;
+        Kills = kills;
+        PlayerResult = playerResult;
+    }
+
+    //public ReplayPlayerDsRDto ReplayPlayer { get; init; }
+    public int MmrId { get; init; }
+    public int GamePos { get; init; }
+    public int ReplayPlayerId { get; init; }
+    public int PlayerId { get; init; }
+    public bool IsUploader { get; init; }
+    public int Kills { get; init; }
+    public PlayerResult PlayerResult { get; init; }
+
+    public Commander Race { get; init; }
+    public Commander OppRace { get; init; }
     public int Duration { get; init; }
     public bool IsLeaver { get; init; }
 

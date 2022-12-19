@@ -7,28 +7,12 @@ namespace dsstats.mmr;
 
 public static partial class MmrService
 {
-    private const double eloK = 64; // default 32
-    private const double eloK_mult = 12.5;
-    private const double clip = eloK * eloK_mult; //shouldn't be bigger than startMmr!
-    public const double startMmr = 1000.0;
-
-    private const double consistencyImpact = 0.50;
-    private const double consistencyDeltaMult = 0.15;
-
-    private const double confidenceImpact = 0.90;
-    private const double distributionMult = 1.0 / (1/*2*/);
-
-    private const double antiSynergyPercentage = 0.50;
-    private const double synergyPercentage = 1 - antiSynergyPercentage;
-    private const double ownMatchupPercentage = 1.0 / 3;
-    private const double matesMatchupsPercentage = (1 - ownMatchupPercentage) / 2;
-
-    public static async Task<(Dictionary<RatingType, Dictionary<int, CalcRating>>, int/*, double*/)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
+    public static async Task<(Dictionary<RatingType, Dictionary<int, CalcRating>>, int, List<bool>)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
                                                                     Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                                                     Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
-                                                                    IRatingRepository ratingRepository,
                                                                     MmrOptions mmrOptions,
                                                                     int mmrChangesAppendId,
+                                                                    IRatingRepository ratingRepository,
                                                                     bool dry = false)
     {
         List<bool> accuracyList = new();
@@ -62,20 +46,18 @@ public static partial class MmrService
 
             if (!dry && mmrChanges.Count > 100000)
             {
-                mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
+                mmrChangesAppendId = await ratingRepository!.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
                 mmrChanges.Clear();
                 mmrChanges = new List<MmrChange>();
             }
         }
 
 
-        double accuracy = accuracyList.Count(x => x == true) / (double)accuracyList.Count;
-
         if (!dry && mmrChanges.Any())
         {
-            mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
+            mmrChangesAppendId = await ratingRepository!.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
         }
-        return (mmrIdRatings, mmrChangesAppendId/*, accuracy*/);
+        return (mmrIdRatings, mmrChangesAppendId, accuracyList);
     }
 
     public static (MmrChange?, bool?) ProcessReplay(ReplayDsRDto replay,
@@ -103,9 +85,9 @@ public static partial class MmrService
     }
 
     public static List<PlChange> ProcessReplay(ReplayData replayData,
-                                                Dictionary<int, CalcRating> mmrIdRatings,
-                                                Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
-                                                MmrOptions mmrOptions)
+                                               Dictionary<int, CalcRating> mmrIdRatings,
+                                               Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
+                                               MmrOptions mmrOptions)
     {
         CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.WinnerTeamData, mmrOptions);
         CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.LoserTeamData, mmrOptions);

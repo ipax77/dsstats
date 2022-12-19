@@ -13,17 +13,17 @@ namespace pax.dsstats.dbng.Services;
 public partial class MmrProduceService
 {
     private readonly IServiceProvider serviceProvider;
-    private readonly IMapper mapper;
+    //private readonly IMapper mapper;
     private readonly ILogger<MmrProduceService> logger;
 
     public MmrProduceService(IServiceProvider serviceProvider, IMapper mapper, ILogger<MmrProduceService> logger)
     {
         this.serviceProvider = serviceProvider;
-        this.mapper = mapper;
+        //this.mapper = mapper;
         this.logger = logger;
     }
 
-    public async Task ProduceRatings(MmrOptions mmrOptions,
+    public async Task<double> ProduceRatings(MmrOptions mmrOptions,
                                         DateTime latestReplay = default,
                                         List<ReplayDsRDto>? dependentReplays = null,
                                         DateTime startTime = default,
@@ -34,7 +34,7 @@ public partial class MmrProduceService
         using var scope = serviceProvider.CreateScope();
         var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
 
-        var cmdrMmrDic = await GetCommanderMmrsDic(true);
+        var cmdrMmrDic = await GetCommanderMmrsDic(mmrOptions, true);
 
         if (!mmrOptions.ReCalc
             && dependentReplays != null
@@ -53,11 +53,13 @@ public partial class MmrProduceService
             latestReplay = startTime;
         }
 
-        latestReplay = await ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrChangesAppendId, latestReplay, endTime);
+        (latestReplay, double accuracy) = await ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrChangesAppendId, latestReplay, endTime);
 
         await SaveCommanderMmrsDic(cmdrMmrDic);
         sw.Stop();
         logger.LogWarning($"ratings produced in {sw.ElapsedMilliseconds} ms");
+
+        return accuracy;
     }
 
 
@@ -80,7 +82,7 @@ public partial class MmrProduceService
         }
     }
 
-    public async Task<DateTime> ProduceRatings(MmrOptions mmrOptions,
+    public async Task<(DateTime, double)> ProduceRatings(MmrOptions mmrOptions,
                                          Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                          Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
                                          IRatingRepository ratingRepository,
@@ -88,6 +90,8 @@ public partial class MmrProduceService
                                          DateTime startTime = default,
                                          DateTime endTime = default)
     {
+        var accuracyList = new List<bool>();
+
         DateTime _startTime = startTime == DateTime.MinValue ? new DateTime(2018, 1, 1) : startTime;
         DateTime _endTime = endTime == DateTime.MinValue ? DateTime.Today.AddDays(2) : endTime;
 
@@ -113,11 +117,13 @@ public partial class MmrProduceService
 
             latestReplay = replays.Last().GameTime;
 
-            (mmrIdRatings, mmrChangesAppendId) = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrOptions, mmrChangesAppendId);
-            //break; // DEBUG
+            (mmrIdRatings, mmrChangesAppendId, var partAccuracy) = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, mmrOptions, mmrChangesAppendId, ratingRepository);
+            accuracyList.AddRange(partAccuracy);
         }
-        var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings, !mmrOptions.ReCalc);
-        return latestReplay;
+        //var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings, !mmrOptions.ReCalc);
+
+        double accuracy = accuracyList.Count(x => x == true) / (double)accuracyList.Count;
+        return (latestReplay, accuracy);
     }
 
     private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetMmrIdRatings(MmrOptions mmrOptions, IRatingRepository ratingRepository, List<ReplayDsRDto>? dependentReplays)
@@ -200,11 +206,11 @@ public partial class MmrProduceService
         await context.SaveChangesAsync();
     }
 
-    private async Task<Dictionary<CmdrMmmrKey, CmdrMmmrValue>> GetCommanderMmrsDic(bool clean)
+    private async Task<Dictionary<CmdrMmmrKey, CmdrMmmrValue>> GetCommanderMmrsDic(MmrOptions mmrOptions, bool clean)
     {
         if (clean)
         {
-            return GetCleanCommnaderMmrsDic();
+            return GetCleanCommnaderMmrsDic(mmrOptions);
         }
 
         using var scope = serviceProvider.CreateScope();
@@ -228,8 +234,8 @@ public partial class MmrProduceService
                         Race = race,
                         OppRace = oppRace,
 
-                        SynergyMmr = MmrService.startMmr,
-                        AntiSynergyMmr = MmrService.startMmr
+                        SynergyMmr = mmrOptions.StartMmr,
+                        AntiSynergyMmr = mmrOptions.StartMmr
                     };
                     cmdrMmrs.Add(cmdrMmr);
                 }
@@ -244,7 +250,7 @@ public partial class MmrProduceService
         });
     }
 
-    private Dictionary<CmdrMmmrKey, CmdrMmmrValue> GetCleanCommnaderMmrsDic()
+    private Dictionary<CmdrMmmrKey, CmdrMmmrValue> GetCleanCommnaderMmrsDic(MmrOptions mmrOptions)
     {
         List<CommanderMmr> cmdrMmrs = new();
 
@@ -259,8 +265,8 @@ public partial class MmrProduceService
                     Race = race,
                     OppRace = oppRace,
 
-                    SynergyMmr = MmrService.startMmr,
-                    AntiSynergyMmr = MmrService.startMmr
+                    SynergyMmr = mmrOptions.StartMmr,
+                    AntiSynergyMmr = mmrOptions.StartMmr
                 };
                 cmdrMmrs.Add(cmdrMmr);
             }

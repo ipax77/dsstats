@@ -1,4 +1,5 @@
-﻿using System.IO.Compression;
+﻿using System.Diagnostics;
+using System.IO.Compression;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -14,7 +15,16 @@ class Program
 
     static async Task Main(string[] args)
     {
-        if (args.Length < 3)
+        Console.CancelKeyPress += Console_CancelKeyPress;
+        AppDomain.CurrentDomain.ProcessExit += AppDomain_ProcessExit;
+
+        // DEBUG
+        if (args.Length == 0)
+        {
+            args = new string[2] { "tourneyjob", "1"};
+        }
+
+        if (args.Length < 2)
         {
             WriteHowToUse();
             return;
@@ -37,11 +47,48 @@ class Program
             }
             await Unzip(args[1], args[2]);
         }
+        else if (args[0] == "tourneyjob")
+        {
+            if (args.Length == 2 && int.TryParse(args[1], out int cores))
+            {
+                Stopwatch sw = Stopwatch.StartNew();
+                try
+                {
+                    TourneyService.DecodeTourneyFolders(cores, cts.Token).Wait();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"tourneyjob failed: {ex.Message}");
+                }
+                sw.Stop();
+                Console.WriteLine($"tourneyjob done in {sw.ElapsedMilliseconds}ms");
+            }
+            else
+            {
+                WriteHowToUse();
+            }
+        }
         else
         {
+            if (args.Length > 0)
+            {
+                Console.WriteLine($"arg: {args[0]}");
+            }
             WriteHowToUse();
             return;
         }
+    }
+
+    private static void AppDomain_ProcessExit(object? sender, EventArgs e)
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+
+    private static void Console_CancelKeyPress(object? sender, ConsoleCancelEventArgs e)
+    {
+        cts.Cancel();
+        cts.Dispose();
     }
 
     private static void WriteHowToUse()
@@ -56,6 +103,7 @@ class Program
         Console.WriteLine("\nUsage:");
         Console.WriteLine("  decode <replayPath> <outputPath>");
         Console.WriteLine("  unzip <base64Zipfile> <outputPath>");
+        Console.WriteLine("  tourneyjob <int:cpuCoresToUse>");
     }
 
     private static async Task Unzip(string base64Zipfile, string outputPath)
@@ -104,8 +152,7 @@ class Program
         };
 
         var replayPaths = Directory.GetFiles(replaysPath, "Direct Strike*.SC2Replay", SearchOption.TopDirectoryOnly);
-        
-        HashSet<string> mutations = new();
+
         await foreach (var decodeResult in decoder.DecodeParallelWithErrorReport(replayPaths, 8, decoderOptions, cts.Token))
         {
             if (cts.IsCancellationRequested)
@@ -124,7 +171,6 @@ class Program
                 var dsRep = Parse.GetDsReplay(decodeResult.Sc2Replay);
                 if (dsRep != null)
                 {
-                    mutations.UnionWith(dsRep.Mutations);
                     var dtoRep = Parse.GetReplayDto(dsRep);
                     SaveReplay(dtoRep, outputPath);
                 }
@@ -138,7 +184,6 @@ class Program
                 Console.WriteLine($"failed parsing sc2Replay: {ex.Message}");
             }
         }
-        File.WriteAllText("/data/ds/mutations.txt", String.Join(",", mutations));
     }
 
     private static void SaveReplay(ReplayDto? replayDto, string outputPath)

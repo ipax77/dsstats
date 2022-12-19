@@ -1,0 +1,59 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using pax.dsstats.shared
+@inject IDataService dataService
+
+<div>
+    <EditForm EditContext="editContext">
+        <div class="row">
+            <div class="col-auto">
+                <label class="form-label">
+                    Tournament:
+                    <InputSelect class="form-select" @bind-Value="statsRequest.Tournament">
+                        <option value="">All</option>
+                        @foreach (var tournament in tournaments)
+                        {
+                            <option value="@tournament.Name">@tournament.Name</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+            <div class="col-auto">
+                <label class="form-label">
+                    Round:
+                    <InputSelect class="form-select" @bind-Value="statsRequest.Round">
+                        <option value="">All</option>
+                        <option value="Group">Groups only</option>
+                        <option value="Ro">Bracket only</option>
+                    </InputSelect>
+                </label>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [CascadingParameter]
+    [EditorRequired]
+    public StatsRequest statsRequest { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<StatsRequest> OnFieldChanged { get; set; }
+
+    private List<EventListDto> tournaments = new();
+    private EditContext editContext = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        editContext = new EditContext(statsRequest);
+        editContext.OnFieldChanged += FieldChanged;
+
+        tournaments = await dataService.GetTournaments();
+
+        await base.OnInitializedAsync();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        OnFieldChanged.InvokeAsync(statsRequest);
+    }
+}

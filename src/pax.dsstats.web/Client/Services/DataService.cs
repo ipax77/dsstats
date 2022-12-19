@@ -1,4 +1,5 @@
-﻿using pax.dsstats.shared;
+﻿using MathNet.Numerics.LinearAlgebra.Factorization;
+using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
 using System.Net.Http.Json;
 
@@ -96,12 +97,80 @@ public class DataService : IDataService
         return new List<ReplayListDto>();
     }
 
+    public async Task<int> GetEventReplaysCount(ReplaysRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetEventReplaysCount", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<int>();
+            }
+            else
+            {
+                logger.LogError($"failed getting event replay count: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting event replay count: {e.Message}");
+        }
+        return 0;
+    }
+
+    public async Task<ICollection<ReplayListEventDto>> GetEventReplays(ReplaysRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetEventReplays", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ICollection<ReplayListEventDto>>() ?? new List<ReplayListEventDto>();
+            }
+            else
+            {
+                logger.LogError($"failed getting event replays: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting event replays: {e.Message}");
+        }
+        return new List<ReplayListEventDto>();
+    }
 
     public async Task<StatsResponse> GetStats(StatsRequest request, CancellationToken token = default)
     {
         try
         {
             var response = await httpClient.PostAsJsonAsync($"{statsController}GetStats", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<StatsResponse>() ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting stats: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting stats: {e.Message}");
+        }
+        return new();
+    }
+
+    public async Task<StatsResponse> GetTourneyStats(StatsRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetTourneyStats", request, token);
 
             if (response.IsSuccessStatusCode)
             {
@@ -412,8 +481,20 @@ public class DataService : IDataService
         return await Task.FromResult(new List<string>());
     }
 
-    public async Task<List<string>> GetTournaments()
+    public async Task<List<EventListDto>> GetTournaments()
     {
-        return await Task.FromResult(new List<string>());
+        try
+        {
+            var tournaments = await httpClient.GetFromJsonAsync<List<EventListDto>>($"{statsController}GetTournaments");
+            if (tournaments != null)
+            {
+                return tournaments;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting tournaments: {ex.Message}");
+        }
+        return new();
     }
 }

@@ -1,10 +1,12 @@
 using AutoMapper;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using pax.dsstats.web.Server.Attributes;
+using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -42,11 +44,17 @@ builder.Services.AddRazorPages();
 
 builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+builder.Services.AddSignalR();
 
-//builder.Services.AddSingleton<MmrService>();
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "application/octet-stream" });
+});
 
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
+builder.Services.AddSingleton<PickBanService>();
 
 builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRepository>();
 builder.Services.AddScoped<ImportService>();
@@ -58,6 +66,7 @@ builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
 builder.Services.AddTransient<IStatsRepository, StatsRepository>();
 builder.Services.AddTransient<BuildService>();
 builder.Services.AddTransient<CmdrsService>();
+builder.Services.AddTransient<TourneyService>();
 
 builder.Services.AddHostedService<CacheBackgroundService>();
 builder.Services.AddHostedService<RatingsBackgroundService>();
@@ -77,11 +86,14 @@ context.Database.Migrate();
 // SEED
 if (app.Environment.IsProduction())
 {
-    //var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    //mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
+    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
 
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
+
+    var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
+    tourneyService.CollectTourneyReplays().Wait();
 }
 
 // DEBUG
@@ -99,6 +111,9 @@ if (app.Environment.IsDevelopment())
 
     //var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
     //importService.ImportReplayBlobs().Wait();
+
+    var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
+    tourneyService.CollectTourneyReplays().Wait();
 }
 
 // Configure the HTTP request pipeline.
@@ -123,6 +138,7 @@ app.UseRouting();
 
 app.MapRazorPages();
 app.MapControllers();
+app.MapHub<PickBanHub>("/hubs/pickban");
 app.MapFallbackToFile("index.html");
 
 app.Run();

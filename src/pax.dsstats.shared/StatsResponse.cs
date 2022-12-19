@@ -7,6 +7,7 @@ public record StatsResponse
     public StatsRequest Request { get; init; } = new();
     public ICollection<StatsResponseItem> Items { get; init; } = new List<StatsResponseItem>();
     public CountResponse CountResponse { get; init; } = new();
+    public int Count { get; init; }
     public int Bans { get; set; }
     public int AvgDuration { get; init; }
 }
