@@ -14,5 +14,5 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: myrootpassword
       MYSQL_DATABASE: dsstatstests
-      MYSQL_USER: pax
+      MYSQL_USER: myuser
       MYSQL_PASSWORD: myuserpassword
