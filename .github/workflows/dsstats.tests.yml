@@ -8,15 +8,26 @@ jobs:
   tests:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:5.7
+        ports:
+          - 3306
+        env:
+          MYSQL_USER: myuser
+          MYSQL_PASSWORD: myuserpassword
+          MYSQL_DATABASE: dsstatstests
+          MYSQL_ROOT_PASSWORD: myrootpassword
+        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3    
     steps:
       - uses: actions/checkout@v3
-      - name: Setup docker
-        run: |
-          sudo chown root:root ./src/pax.dsstats.web/docker/data/mysqlfiles
-      - uses: isbang/compose-action@v1.4.1
-        with:
-          compose-file: "./src/pax.dsstats.web/docker/docker-compose.yml"
-          # up-flags: "--exit-code-from=mysql-db --abort-on-container-exit"
+      # - name: Setup docker
+      #   run: |
+      #     sudo chown root:root ./src/pax.dsstats.web/docker/data/mysqlfiles
+      # - uses: isbang/compose-action@v1.4.1
+      #   with:
+      #     compose-file: "./src/pax.dsstats.web/docker/docker-compose.yml"
+      #     # up-flags: "--exit-code-from=mysql-db --abort-on-container-exit"
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
         with:
