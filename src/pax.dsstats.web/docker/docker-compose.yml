@@ -1,0 +1,18 @@
+version: '3.3'
+
+services:
+  mysql-db:
+    image: mysql:5.7
+    #restart: always
+    volumes:
+      - ./data:/data
+      - ./db:/var/lib/mysql
+      - ./certs:/certs
+      - ./mysql:/etc/mysql
+    ports:
+      - "9101:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: myrootpassword
+      MYSQL_DATABASE: dsstatstests
+      MYSQL_USER: pax
+      MYSQL_PASSWORD: myuserpassword
