@@ -16,6 +16,7 @@ jobs:
       - uses: isbang/compose-action@v1.4.1
         with:
           compose-file: "./src/pax.dsstats.web/docker/docker-compose.yml"
+          up-flags: "--exit-code-from=mysql-db --abort-on-container-exit"
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
         with:
