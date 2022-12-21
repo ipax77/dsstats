@@ -12,7 +12,11 @@ jobs:
       - uses: actions/checkout@v3
       - name: Create config
         run: |
-          sudo mkdir -p /data/mysqlfiles && sudo chmod 777 /data/mysqlfiles && sudo cp ./src/pax.dsstats.web/Server/appsettings.Development.json /data/localserverconfig.json      
+          sudo mkdir -p /data/mysqlfiles \
+          && sudo mkdir -p /data/temp \
+          && sudo chmod 777 /data/mysqlfiles \
+          && sudo chmod 777 /data/temp \
+          && sudo cp ./src/pax.dsstats.web/Server/appsettings.Development.json /data/localserverconfig.json      
       - uses: isbang/compose-action@v1.4.1
         with:
           compose-file: "./src/pax.dsstats.web/docker/docker-compose.yml"
