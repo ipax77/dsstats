@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Create config
+        run: |
+          sudo mkdir -p /data/mysqlfiles && sudo chmod 777 /data/mysqlfiles && sudo cp ./src/pax.dsstats.web/Server/appsettings.Development.json /data/localserverconfig.json      
       - uses: isbang/compose-action@v1.4.1
         with:
           compose-file: "./src/pax.dsstats.web/docker/docker-compose.yml"
@@ -19,8 +22,5 @@ jobs:
         with:
           dotnet-version: '6.0.x'
       - run: dotnet build ./src/pax.dsstats.web/dsstats.Tests/dsstats.Tests.csproj
-      - name: Create config
-        run: |
-          sudo mkdir -p /data/mysqlfiles && sudo chmod 777 /data/mysqlfiles && sudo cp ./src/pax.dsstats.web/Server/appsettings.Development.json /data/localserverconfig.json
       - name: Run your tests
         run: dotnet test ./src/pax.dsstats.web/dsstats.Tests/dsstats.Tests.csproj --no-build
