@@ -1,7 +1,7 @@
 version: '3.3'
 
 services:
-  mysql-db:
+  mysql:
     image: mysql:5.7
     #restart: always
     volumes:
@@ -12,7 +12,7 @@ services:
     ports:
       - "3306:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: myrootpassword
+      MYSQL_ROOT_PASSWORD: My_Root_Password_1
       MYSQL_DATABASE: dsstatstests
       MYSQL_USER: myuser
-      MYSQL_PASSWORD: myuserpassword
+      MYSQL_PASSWORD: My_User_Password_1

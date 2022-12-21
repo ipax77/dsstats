@@ -13,8 +13,7 @@ jobs:
       - uses: isbang/compose-action@v1.4.1
         with:
           compose-file: "./src/pax.dsstats.web/docker/docker-compose.yml"
-          # up-flags: "--exit-code-from=mysql-db --abort-on-container-exit"
-          services: mysql-db
+          services: mysql
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
         with:
@@ -22,6 +21,6 @@ jobs:
       - run: dotnet build ./src/pax.dsstats.web/dsstats.Tests/dsstats.Tests.csproj
       - name: Create config
         run: |
-          sudo mkdir -p /data/mysqlfiles && sudo cp ./src/pax.dsstats.web/Server/appsettings.Development.json /data/localserverconfig.json
+          sudo mkdir -p /data/mysqlfiles && sudo chmod 777 /data/mysqlfiles && sudo cp ./src/pax.dsstats.web/Server/appsettings.Development.json /data/localserverconfig.json
       - name: Run your tests
         run: dotnet test ./src/pax.dsstats.web/dsstats.Tests/dsstats.Tests.csproj --no-build
