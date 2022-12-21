@@ -55,7 +55,7 @@ public static partial class MmrService
 
         if (!dry && mmrChanges.Any())
         {
-            mmrChangesAppendId = await ratingRepository!.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
+            mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
         }
         return (mmrIdRatings, mmrChangesAppendId, accuracyList);
     }
@@ -92,7 +92,10 @@ public static partial class MmrService
         CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.WinnerTeamData, mmrOptions);
         CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.LoserTeamData, mmrOptions);
 
-        FixMmrEquality(replayData.WinnerTeamData, replayData.LoserTeamData);
+        if (mmrOptions.UseEquality)
+        {
+            FixMmrEquality(replayData.WinnerTeamData, replayData.LoserTeamData);
+        }
 
         var mmrChanges1 = AddPlayersRankings(mmrIdRatings, replayData.WinnerTeamData, replayData.GameTime, replayData.Maxkillsum);
         var mmrChanges2 = AddPlayersRankings(mmrIdRatings, replayData.LoserTeamData, replayData.GameTime, replayData.Maxkillsum);

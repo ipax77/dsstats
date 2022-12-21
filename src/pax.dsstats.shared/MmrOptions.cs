@@ -17,8 +17,10 @@ public record MmrOptions
     {
         ReCalc = reCalc;
 
+        UseEquality = false;
+
         UseCommanderMmr = false;
-        UseConsistency = false;
+        UseConsistency = true;
         UseFactorToTeamMates = false;
         UseConfidence = true;
 
@@ -30,6 +32,8 @@ public record MmrOptions
     public double StartMmr { get; init; } // default 1000
     public double EloK { get; init; } // default 32
     public double Clip { get; init; } // default 400
+
+    public bool UseEquality { get; init; }
 
     public bool UseCommanderMmr { get; init; }
     public bool UseConsistency { get; init; }

@@ -1,3 +1,4 @@
+[![Dsstats Tests](https://github.com/ipax77/dsstats/actions/workflows/dsstats.tests.yml/badge.svg)](https://github.com/ipax77/dsstats/actions/workflows/dsstats.tests.yml)
 
 # Direct Strike Fan Project
 
