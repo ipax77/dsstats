@@ -8,6 +8,7 @@ using pax.dsstats.shared;
 using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -99,9 +100,12 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    // var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
+    var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
     // var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
-    // cheatDetectService.DetectNoUpload().Wait();
+    Stopwatch sw = Stopwatch.StartNew();
+    cheatDetectService.DetectNoUpload().Wait();
+    sw.Stop();
+    Console.Write($"NoUpload in {sw.ElapsedMilliseconds} ms");
 
     var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
     mmrProduceService.ProduceRatings(new(reCalc: true)).GetAwaiter().GetResult();
