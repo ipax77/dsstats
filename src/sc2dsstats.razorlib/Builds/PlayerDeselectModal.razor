@@ -51,7 +51,7 @@
                         <thead>
                             <tr>
                                 <th></th>
-                                <th>ToonId</th>
+                                <th>Region</th>
                                 <th>Name</th>
                             </tr>
                         </thead>
@@ -62,7 +62,7 @@
                                     <td>
                                         <button type="button" class="btn btn-sm btn-primary" @onclick="e => PlayerSelected(player)">Select</button>
                                     </td>
-                                    <td>@player.ToonId</td>
+                                    <td>@Data.GetRegionString(player.RegionId)</td>
                                     <td>@player.Name</td>
                                 </tr>
                             }

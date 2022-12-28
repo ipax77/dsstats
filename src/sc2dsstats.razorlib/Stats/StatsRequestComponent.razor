@@ -144,7 +144,7 @@
                             <option value="All" selected>All Players</option>
                             @foreach (var player in requestNames)
                             {
-                                <option value="@player.ToonId">@player.Name</option>
+                                <option value="@player.ToonId">@player.Name (@Data.GetRegionString(player.RegionId))</option>
                             }
                         </select>
                     </div>
@@ -402,7 +402,8 @@
         var requestName = new RequestNames()
             {
                 Name = player.Name,
-                ToonId = player.ToonId
+                ToonId = player.ToonId,
+                RegionId = player.RegionId
             };
         if (!requestNames.Contains(requestName))
         {
