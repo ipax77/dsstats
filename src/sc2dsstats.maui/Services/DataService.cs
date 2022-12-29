@@ -224,6 +224,11 @@ public partial class DataService : IDataService
         return await Task.FromResult(new CrossTableResponse());
     }
 
+    public async Task<List<BuildResponseReplay>> GetTeamReplays(CrossTableReplaysRequest request, CancellationToken token = default)
+    {
+        return await Task.FromResult(new List<BuildResponseReplay>());
+    }
+
     public async Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token)
     {
         return await ServerGetToonIdRatings(request, token);
