@@ -43,6 +43,12 @@ public partial class StatsService
         var cmdrString = GetTeamString(request.TeamCmdrs);
         replays = replays.Where(x => x.CommandersTeam1 == cmdrString || x.CommandersTeam2 == cmdrString);
 
+        if (request.TeamCmdrsVs != null)
+        {
+            var cmdrVsString = GetTeamString(request.TeamCmdrsVs);
+            replays = replays.Where(x => x.CommandersTeam1 == cmdrVsString || x.CommandersTeam2 == cmdrVsString);
+        }
+
         return await replays.Select(s => new BuildResponseReplay()
         {
             Hash = s.ReplayHash,
