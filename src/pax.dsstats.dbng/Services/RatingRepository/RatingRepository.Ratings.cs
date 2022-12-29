@@ -94,7 +94,7 @@ public partial class RatingRepository
             .Include(i => i.Player)
             .Where(x => x.Games > 20 && x.RatingType == request.Type);
 
-        if (!Data.IsMaui)
+        if (request.Uploaders && !Data.IsMaui)
         {
             ratings = ratings.Where(x => x.IsUploader);
         }

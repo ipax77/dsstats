@@ -122,6 +122,43 @@ namespace MysqlMigrations.Migrations
                     b.ToView("GroupByHelper");
                 });
 
+            modelBuilder.Entity("pax.dsstats.dbng.NoUploadResult", b =>
+                {
+                    b.Property<int>("NoUploadResultId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LatestNoUpload")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<DateTime>("LatestReplay")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<DateTime>("LatestUpload")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<int>("NoUploadDefeats")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NoUploadTotal")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PlayerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalReplays")
+                        .HasColumnType("int");
+
+                    b.HasKey("NoUploadResultId");
+
+                    b.HasIndex("PlayerId");
+
+                    b.ToTable("NoUploadResults");
+                });
+
             modelBuilder.Entity("pax.dsstats.dbng.Player", b =>
                 {
                     b.Property<int>("PlayerId")
@@ -211,6 +248,8 @@ namespace MysqlMigrations.Migrations
                     b.HasKey("PlayerRatingId");
 
                     b.HasIndex("PlayerId");
+
+                    b.HasIndex("RatingType");
 
                     b.ToTable("PlayerRatings");
                 });
@@ -778,6 +817,17 @@ namespace MysqlMigrations.Migrations
                         .IsRequired();
 
                     b.Navigation("Uploader");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.NoUploadResult", b =>
+                {
+                    b.HasOne("pax.dsstats.dbng.Player", "Player")
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Player");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Player", b =>

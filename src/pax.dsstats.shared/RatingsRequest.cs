@@ -11,6 +11,7 @@ public record RatingsRequest
     public List<TableOrder> Orders { get; set; } = new();
     public string? Search { get; set; }
     public int? ToonId { get; set; }
+    public bool Uploaders { get; set; } = true;
 }
 
 public record RatingsResult
