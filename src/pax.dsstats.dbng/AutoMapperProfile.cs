@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng
@@ -73,6 +74,12 @@ namespace pax.dsstats.dbng
             CreateMap<PlayerRating, PlayerRatingDetailDto>(MemberList.Destination)
                 .ForMember(x => x.FakeDiff, opt => opt.Ignore())
                 .ForMember(x => x.MmrChange, opt => opt.Ignore());
+
+            CreateMap<NoUploadResult, NoUploadResult>()
+                .ForMember(x => x.NoUploadResultId, opt => opt.Ignore())
+                .ForMember(x => x.Player, opt => opt.Ignore())
+                .ForSourceMember(x => x.NoUploadResultId, opt => opt.DoNotValidate())
+                .ForSourceMember(x => x.Player, opt => opt.DoNotValidate());
         }
     }
 }

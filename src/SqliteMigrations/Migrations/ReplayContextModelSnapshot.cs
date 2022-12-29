@@ -105,6 +105,43 @@ namespace SqliteMigrations.Migrations
                     b.ToView("GroupByHelper");
                 });
 
+            modelBuilder.Entity("pax.dsstats.dbng.NoUploadResult", b =>
+                {
+                    b.Property<int>("NoUploadResultId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LatestNoUpload")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LatestReplay")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LatestUpload")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("NoUploadDefeats")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("NoUploadTotal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PlayerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TotalReplays")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("NoUploadResultId");
+
+                    b.HasIndex("PlayerId");
+
+                    b.ToTable("NoUploadResults");
+                });
+
             modelBuilder.Entity("pax.dsstats.dbng.Player", b =>
                 {
                     b.Property<int>("PlayerId")
@@ -761,6 +798,17 @@ namespace SqliteMigrations.Migrations
                         .IsRequired();
 
                     b.Navigation("Uploader");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.NoUploadResult", b =>
+                {
+                    b.HasOne("pax.dsstats.dbng.Player", "Player")
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Player");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Player", b =>
