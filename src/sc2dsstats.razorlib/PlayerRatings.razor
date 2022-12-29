@@ -69,6 +69,14 @@
                             </input>
                         </label>
                     </div>
+                } else
+                {
+                    <div class="col-auto form-check form-switch align-self-center me-2">
+                        <label class="form-check-label">
+                            Uploaders
+                            <InputCheckbox class="form-check-input" @bind-Value="RatingsRequest.Uploaders"></InputCheckbox>
+                        </label>
+                    </div>
                 }
             </div>
         </EditForm>
@@ -78,6 +86,9 @@
         <div class="ms-3 align-self-center">
             <a href="https://github.com/ipax77/dsstats/wiki/Mmr-calculation"><span class="oi oi-info me-1"></span>Calculation</a>
         </div>
+    </div>
+    <div class="d-flex" style="max-width: 850px;">
+        <p class="ms-auto">#@ratingsCount</p>
     </div>
     <div class="tableFixHead">
         <table class="table table-dark table-hover table-striped w-auto">

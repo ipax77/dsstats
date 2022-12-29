@@ -104,5 +104,10 @@ public class ReplayContext : DbContext
             entity.ToView("GroupByHelper");
             entity.Property(p => p.Group).HasColumnName("Name");
         });
+
+        modelBuilder.Entity<PlayerRating>(entity =>
+        {
+            entity.HasIndex(e => e.RatingType);
+        });
     }
 }
