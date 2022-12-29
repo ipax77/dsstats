@@ -43,6 +43,7 @@ public partial class CheatDetectService
             {
                 playerIdNoUploads[playerId] = los;
             }
+            Console.WriteLine($"{playerId}, {total}, {los}");
         }
         if (!dry)
         {
