@@ -183,5 +183,17 @@ namespace pax.dsstats.web.Server.Controllers
             catch (OperationCanceledException) { }
             return NoContent();
         }
+
+        [HttpPost]
+        [Route("GetTeamReplays")]
+        public async Task<ActionResult<List<BuildResponseReplay>>> GetTeamReplays(CrossTableReplaysRequest request, CancellationToken token)
+        {
+            try
+            {
+                return await statsService.GetTeamReplays(request, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
+        }
     }
 }

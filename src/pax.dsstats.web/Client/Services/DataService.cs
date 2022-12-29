@@ -454,6 +454,28 @@ public class DataService : IDataService
         return new();
     }
 
+    public async Task<List<BuildResponseReplay>> GetTeamReplays(CrossTableReplaysRequest request, CancellationToken token)
+    {
+        try
+        {
+            var result = await httpClient.PostAsJsonAsync($"{statsController}GetTeamReplays", request);
+            if (result.IsSuccessStatusCode)
+            {
+                var teamReplays = await result.Content.ReadFromJsonAsync<List<BuildResponseReplay>>();
+                if (teamReplays != null)
+                {
+                    return teamReplays;
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting team replays: {ex.Message}");
+        }
+        return new();
+    }
+
     public async Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token)
     {
         try
