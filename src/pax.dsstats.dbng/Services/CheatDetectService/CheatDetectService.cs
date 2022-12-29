@@ -10,12 +10,15 @@ namespace pax.dsstats.dbng.Services;
 public partial class CheatDetectService
 {
     private readonly ReplayContext context;
+    private readonly IMapper mapper;
     private readonly ILogger<CheatDetectService> logger;
 
     public CheatDetectService(ReplayContext context,
+                              IMapper mapper,
                               ILogger<CheatDetectService> logger)
     {
         this.context = context;
+        this.mapper = mapper;
         this.logger = logger;
     }
 
