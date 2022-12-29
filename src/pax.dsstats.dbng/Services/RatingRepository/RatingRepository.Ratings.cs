@@ -23,34 +23,15 @@ public partial class RatingRepository
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        // var ratings = GetRequestRatingsQueirable(context, request);
-        // ratings = SortPlayerRatings(request, ratings);
-
-        var ratings = context.PlayerRatings
-            .OrderBy(o => o.PlayerRatingId);
+        var ratings = GetRequestRatingsQueirable(context, request);
+        ratings = SortPlayerRatings(request, ratings);
 
         return new()
         {
             Players = await ratings
             .Skip(request.Skip)
             .Take(request.Take)
-            //.ProjectTo<PlayerRatingDto>(mapper.ConfigurationProvider)
-            .Select(s => new PlayerRatingDto()
-            {
-                Rating = s.Rating,
-                Games = s.Games,
-                Wins = s.Wins,
-                Mvp = s.Mvp,
-                TeamGames = s.TeamGames,
-                MainCount = s.MainCount,
-                Main = s.Main,
-                Player = new PlayerRatingPlayerDto()
-                {
-                    Name = s.Player.Name,
-                    ToonId = s.Player.ToonId,
-                    RegionId = s.Player.RegionId
-                }
-            })
+            .ProjectTo<PlayerRatingDto>(mapper.ConfigurationProvider)
             .ToListAsync(token)
         };
     }
