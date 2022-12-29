@@ -53,7 +53,7 @@
         <tbody>
             @foreach (var team in GetSortedList())
             {
-                <tr>
+                <tr class="pointer @(Interest == team ? "table-primary" : "")" @onclick="e => RequestTeamReplays(team)">
                     <td>
                         <div class="d-flex">
                             @foreach (var cmdr in team.Comp.Cmdrs)
@@ -76,12 +76,24 @@
     public TeamCrossTable TeamCrossTables { get; set; } = default!;
 
     [Parameter]
+    public EventCallback<TeamCmdrs> TeamRequest { get; set; }
+
+    [Parameter]
     public EventCallback OnCloseRequested { get; set; }
 
     private List<TableOrder> Orders = new List<TableOrder>()
     {
         new TableOrder() { Property = nameof(TeamCrossTable.Winrate), Ascending = false }
     };
+
+    private TeamResult? Interest = null;
+
+    private void RequestTeamReplays(TeamResult teamResult)
+    {
+        Interest = teamResult;
+        TeamRequest.InvokeAsync(teamResult.Comp);
+        StateHasChanged();
+    }
 
     private void SortList(MouseEventArgs e, string property)
     {

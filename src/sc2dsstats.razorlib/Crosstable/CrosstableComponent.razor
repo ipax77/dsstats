@@ -313,7 +313,7 @@ else
         @if (Interest != null)
         {
             <div id="interesttable" class="col-auto">
-                <CrosstableDetails TeamCrossTables="Interest" OnCloseRequested="CloseCompTable"></CrosstableDetails>
+                <CrosstableDetails TeamCrossTables="Interest" TeamRequest="DetailTeamRequest" OnCloseRequested="CloseCompTable"></CrosstableDetails>
             </div>
             <div class="col-auto isdesktop ms-4 mt-3">
                 <div style="max-height: 650px; overflow: auto;">
@@ -401,6 +401,23 @@ else
             TeamCmdrs = Interest.Comp
         }, cts.Token);
         await jsRuntime.InvokeVoidAsync("scrollToId", "interesttable");
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task DetailTeamRequest(TeamCmdrs teamComp)
+    {
+        if (Interest == null)
+        {
+            return;
+        }
+        buildResponseReplays = await dataService.GetTeamReplays(new CrossTableReplaysRequest()
+            {
+                Mode = CrossTableRequest.Mode,
+                TimePeriod = CrossTableRequest.TimePeriod,
+                TeMaps = CrossTableRequest.TeMaps,
+                TeamCmdrs = Interest.Comp,
+                TeamCmdrsVs = teamComp
+            }, cts.Token);
         await InvokeAsync(() => StateHasChanged());
     }
 

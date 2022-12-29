@@ -198,7 +198,7 @@ public partial class CmdrsService
 
         var bestPlayersQuery = from rp in replayPlayersQuery
                                group new { rp, rp.Player } by rp.Player.ToonId into g
-                               where g.Count() > 15
+                               where g.Count() > 60
                                orderby g.Count(c => c.rp.PlayerResult == PlayerResult.Win) / g.Count() descending
                                select new CmdrTopPlayer
                                {
