@@ -93,8 +93,8 @@ if (app.Environment.IsProduction())
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
 
-    //var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
-    //tourneyService.CollectTourneyReplays().Wait();
+    var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
+    tourneyService.CollectTourneyReplays().Wait();
 }
 
 // DEBUG
