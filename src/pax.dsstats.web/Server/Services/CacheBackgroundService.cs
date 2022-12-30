@@ -60,6 +60,9 @@ public class CacheBackgroundService : IHostedService, IDisposable
             await replayRepository.SetReplayViews();
             await replayRepository.SetReplayDownloads();
 
+            var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
+            await tourneyService.CollectTourneyReplays();
+
             sw.Stop();
             logger.LogWarning($"{DateTime.UtcNow.ToString(@"yyyy-MM-dd HH:mm:ss")} - Work done in {sw.ElapsedMilliseconds} ms");
         }

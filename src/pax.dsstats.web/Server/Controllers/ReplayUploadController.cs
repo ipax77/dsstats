@@ -50,6 +50,13 @@ public class ReplayUploadController : ControllerBase
             return NotFound();
         }
 
+        uploadInfo = uploadInfo with
+        {
+            Team1 = uploadInfo.Team1.Replace('-', '_'),
+            Team2 = uploadInfo.Team2.Replace('-', '_'),
+            Round = uploadInfo.Round.Replace('-', '_'),
+        };
+
         foreach (var file in files)
         {
             var uploadResult = new UploadResult();
