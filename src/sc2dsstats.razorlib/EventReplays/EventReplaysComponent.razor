@@ -64,19 +64,29 @@
                                 Team2
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Team1"))">
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "WinnerTeam"))">
                             <SortArrow Property="WinnerTeam">
                                 Winner
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Team2"))">
-                            <SortArrow Property="MaxLeaver">
-                                MaxLeaver
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "ReplayEvent.WinnerTeam"))">
+                            <SortArrow Property="ReplayEvent.WinnerTeam">
+                                Winner Team
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Round"))">
-                            <SortArrow Property="GameMode">
-                                GameMode
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "ReplayEvent.RunnerTeam"))">
+                            <SortArrow Property="ReplayEvent.RunnerTeam">
+                                Losing Team
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "ReplayEvent.Round"))">
+                            <SortArrow Property="ReplayEvent.Round">
+                                Group/Round
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "ReplayEvent.Event.Name"))">
+                            <SortArrow Property="ReplayEvent.Event.Name">
+                                Event
                             </SortArrow>
                         </th>
                     </tr>
@@ -119,25 +129,19 @@
                                         }
                                     </div>
                                 </td>
-                                @if (replay.WinnerTeam == 1)
-                                {
-                                    <td>
-                                        <span class="text-truncate text-success" style="display: block; width: 250px;">@replay.ReplayEvent?.WinnerTeam</span>
-                                    </td>
-                                    <td>
-                                        <span class="text-truncate text-danger" style="display: block; width: 250px;">@replay.ReplayEvent?.RunnerTeam</span>
-                                    </td>
-                                }
-                                else
-                                {
-                                    <td>
-                                        <span class="text-truncate text-danger" style="display: block; width: 250px;">@replay.ReplayEvent?.RunnerTeam</span>
-                                    </td>
-                                    <td>
-                                        <span class="text-truncate text-success" style="display: block; width: 250px;">@replay.ReplayEvent?.WinnerTeam</span>
-                                    </td>
-                                }
+                                <td>
+                                    @replay.WinnerTeam
+                                </td>
+                                <td>
+                                    <span class="text-truncate text-success" style="display: block; width: 250px;">@replay.ReplayEvent?.WinnerTeam</span>
+                                </td>
+                                <td>
+                                    <span class="text-truncate text-danger" style="display: block; width: 250px;">@replay.ReplayEvent?.RunnerTeam</span>
+                                </td>
                                 <td>@replay.ReplayEvent?.Round</td>
+                                <td>
+                                    <span class="text-truncate" style="display: block; width: 250px;">@replay.ReplayEvent?.Event.Name</span>
+                                </td>
                             </tr>
                         </ItemContent>
                         <Placeholder>
