@@ -103,7 +103,7 @@ if (app.Environment.IsDevelopment())
     // var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
     // var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
     // cheatDetectService.DetectNoUpload().Wait();
-    
+
     //var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
     //mmrProduceService.ProduceRatings(new(reCalc: true)).GetAwaiter().GetResult();
 
@@ -113,8 +113,8 @@ if (app.Environment.IsDevelopment())
     //var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
     //importService.ImportReplayBlobs().Wait();
 
-    //var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
-    //tourneyService.CollectTourneyReplays().Wait();
+    var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
+    tourneyService.CollectTourneyReplays().Wait();
 }
 
 // Configure the HTTP request pipeline.

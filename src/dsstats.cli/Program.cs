@@ -18,12 +18,6 @@ class Program
         Console.CancelKeyPress += Console_CancelKeyPress;
         AppDomain.CurrentDomain.ProcessExit += AppDomain_ProcessExit;
 
-        // DEBUG
-        if (args.Length == 0)
-        {
-            args = new string[2] { "tourneyjob", "1"};
-        }
-
         if (args.Length < 2)
         {
             WriteHowToUse();
@@ -49,12 +43,17 @@ class Program
         }
         else if (args[0] == "tourneyjob")
         {
-            if (args.Length == 2 && int.TryParse(args[1], out int cores))
+            if (args.Length == 3 && int.TryParse(args[1], out int cores))
             {
+                if (!Directory.Exists(args[2]))
+                {
+                    Console.WriteLine($"tourney folder {args[2]} not found.");
+                    return;
+                }
                 Stopwatch sw = Stopwatch.StartNew();
                 try
                 {
-                    TourneyService.DecodeTourneyFolders(cores, cts.Token).Wait();
+                    TourneyService.DecodeTourneyFolders(cores, args[2], cts.Token).Wait();
                 }
                 catch (Exception ex)
                 {
@@ -194,6 +193,8 @@ class Program
         }
         var json = JsonSerializer.Serialize(replayDto, new JsonSerializerOptions() { WriteIndented = true });
         var outputFileName = Path.Combine(outputPath, Path.GetFileNameWithoutExtension(replayDto.FileName) + ".json");
-        File.WriteAllText(outputFileName, json);
+        var tempFileName = Path.Combine(outputPath, Path.GetFileNameWithoutExtension(replayDto.FileName) + ".temp");
+        File.WriteAllText(tempFileName, json);
+        File.Move(tempFileName, outputFileName);
     }
 }

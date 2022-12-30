@@ -6,10 +6,10 @@ namespace dsstats.cli;
 
 public static class TourneyService
 {
-    private const string tourneyFolder = "/data/ds/Tourneys";
-    public static async Task DecodeTourneyFolders(int cores, CancellationToken token = default)
+    // private const string tourneyFolder = "/data/ds/Tourneys";
+    public static async Task DecodeTourneyFolders(int cores, string tourneyFolder, CancellationToken token = default)
     {
-        var replays = GetDecodeReplays();
+        var replays = GetDecodeReplays(tourneyFolder);
         if (replays.Any())
         {
             await DecodeReplays(replays, cores, token);
@@ -73,7 +73,7 @@ public static class TourneyService
         decoder.Dispose();
     }
 
-    private static List<string> GetDecodeReplays()
+    private static List<string> GetDecodeReplays(string tourneyFolder)
     {
         var replayPaths = Directory.GetFiles(tourneyFolder, "*.SC2Replay", SearchOption.AllDirectories).ToHashSet();
         var jsonPaths = Directory.GetFiles(tourneyFolder, "*.json", SearchOption.AllDirectories).Select(s => s[..^4] + "SC2Replay").ToList();
