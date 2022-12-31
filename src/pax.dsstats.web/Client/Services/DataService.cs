@@ -519,4 +519,9 @@ public class DataService : IDataService
         }
         return new();
     }
+
+    public async Task<FunStats> GetFunStats(List<int> toonIds)
+    {
+        return await Task.FromResult(new FunStats());
+    }
 }
