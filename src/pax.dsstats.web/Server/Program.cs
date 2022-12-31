@@ -116,14 +116,14 @@ if (app.Environment.IsDevelopment())
     //var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
     //tourneyService.CollectTourneyReplays().Wait();
 
-    var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-    statsService.GetUpgradeStats(new BuildRequest()
-    {
-        PlayerNames = Data.GetDefaultRequestNames(),
-        StartTime = new DateTime(2022, 1, 1),
-        EndTime = DateTime.Today.AddDays(1),
-        Interest = Commander.Swann,
-    }).Wait();
+    //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+    //statsService.GetUpgradeStats(new BuildRequest()
+    //{
+    //    PlayerNames = Data.GetDefaultRequestNames(),
+    //    StartTime = new DateTime(2022, 1, 1),
+    //    EndTime = DateTime.Today.AddDays(1),
+    //    Interest = Commander.Swann,
+    //}).Wait();
 }
 
 // Configure the HTTP request pipeline.

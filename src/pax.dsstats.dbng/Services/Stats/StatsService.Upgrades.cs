@@ -6,9 +6,11 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class StatsService
 {
-    public async Task GetUpgradeStats(BuildRequest buildRequest)
+    public async Task<StatsUpgradesResponse> GetUpgradeStats(BuildRequest buildRequest, CancellationToken token)
     {
         List<int> toonIds = buildRequest.PlayerNames.Select(s => s.ToonId).ToList();
+
+        StatsUpgradesResponse statsUpgradesResponse = new();
 
         foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
         {
@@ -23,12 +25,13 @@ public partial class StatsService
                             && rp.Race == buildRequest.Interest
                             && (int)s.Breakpoint < 4
                            group s by s.Breakpoint into g
-                           select new
+                           select new StatsUpgradesBpInfo()
                            {
                                Breakpoint = g.Key,
                                Count = g.Count(),
-                               Upgrades = g.Sum(s => s.UpgradeSpent),
-                               Army = g.Sum(s => s.ArmyValue)
+                               UpgradeSpent = g.Sum(s => s.UpgradeSpent),
+                               ArmyValue = g.Sum(s => s.ArmyValue),
+                               Kills = g.Sum(s => s.KilledValue)
                            }
                           : from r in context.Replays
                             from rp in r.ReplayPlayers
@@ -39,21 +42,19 @@ public partial class StatsService
                          && rp.OppRace == buildRequest.Versus
                          && (int)s.Breakpoint < 4
                             group s by s.Breakpoint into g
-                            select new
+                            select new StatsUpgradesBpInfo()
                             {
                                 Breakpoint = g.Key,
                                 Count = g.Count(),
-                                Upgrades = g.Sum(s => s.UpgradeSpent),
-                                Army = g.Sum(s => s.ArmyValue)
+                                UpgradeSpent = g.Sum(s => s.UpgradeSpent),
+                                ArmyValue = g.Sum(s => s.ArmyValue),
+                                Kills = g.Sum(s => s.KilledValue)
                             };
 
-            var lupgrades = await upgrades.ToListAsync();
-
-            foreach (var upgrade in lupgrades)
-            {
-                Console.WriteLine($"{buildRequest.Interest}, {upgrade.Breakpoint}, {upgrade.Count}, {upgrade.Upgrades / upgrade.Count}, {upgrade.Army / upgrade.Count}");
-            }
+            var lupgrades = await upgrades.ToListAsync(token);
+            statsUpgradesResponse.BpInfos[cmdr] = lupgrades;
         }
+        return statsUpgradesResponse;
     }
 }
 

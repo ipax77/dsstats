@@ -33,4 +33,5 @@ public interface IDataService
     Task<List<BuildResponseReplay>> GetTeamReplays(CrossTableReplaysRequest request, CancellationToken token);
     Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token);
     Task<FunStats> GetFunStats(List<int> toonIds);
+    Task<StatsUpgradesResponse> GetUpgradeStats(BuildRequest buildRequest, CancellationToken token);
 }
