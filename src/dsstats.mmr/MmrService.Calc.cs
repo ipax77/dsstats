@@ -119,7 +119,7 @@ public static partial class MmrService
 
             consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
             confidenceAfter = Math.Clamp(confidenceAfter, 0, 1);
-            mmrAfter = Math.Max(1, mmrAfter);
+            //mmrAfter = Math.Max(1, mmrAfter);
 
             changes.Add(new PlChange() { Pos = player.GamePos, ReplayPlayerId = player.ReplayPlayerId, Change = mmrAfter - mmrBefore });
 

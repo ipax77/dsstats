@@ -24,7 +24,7 @@ public record MmrOptions
         UseFactorToTeamMates = false;
         UseConfidence = true;
 
-        StartMmr = 1000;
+        StartMmr = 0;
         EloK = eloK;
         Clip = clip;
     }
