@@ -1,0 +1,30 @@
+name: Dsstats Tests
+on:
+  push:
+    branches: [ dev, master ]
+  pull_request:
+    branches: [ dev, master ]
+jobs:
+  tests:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Create config
+        run: |
+          sudo mkdir -p /data/mysqlfiles \
+          && sudo mkdir -p /data/temp \
+          && sudo chmod 777 /data/mysqlfiles \
+          && sudo chmod 777 /data/temp \
+          && sudo cp ./src/pax.dsstats.web/Server/appsettings.Development.json /data/localserverconfig.json      
+      - uses: isbang/compose-action@v1.4.1
+        with:
+          compose-file: "./src/pax.dsstats.web/docker/docker-compose.yml"
+          services: mysql
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'
+      - run: dotnet build ./src/pax.dsstats.web/dsstats.Tests/dsstats.Tests.csproj
+      - name: Run your tests
+        run: dotnet test ./src/pax.dsstats.web/dsstats.Tests/dsstats.Tests.csproj --no-build

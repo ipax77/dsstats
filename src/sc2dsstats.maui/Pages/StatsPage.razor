@@ -13,7 +13,7 @@
 
 <sc2dsstats.razorlib.Stats.StatsComponent @ref="statsComponent"
     StatsRequest="statsRequest"
-    DefaultPlayers="GetDefaultPlayers()">
+    DefaultPlayers="defaultPlayers">
 </sc2dsstats.razorlib.Stats.StatsComponent>
 
 @code {
@@ -26,14 +26,18 @@
     };
     private StatsComponent? statsComponent;
 
-    protected override void OnInitialized()
+    List<RequestNames> defaultPlayers = new();
+
+    protected override async Task OnInitializedAsync()
     {
         (statsRequest.StartTime, statsRequest.EndTime) = Data.TimeperiodSelected("This Year");
         statsRequest.TimePeriod = "This Year";
 
         DecodeService.DecodeStateChanged += DecodeStateChanged;
 
-        base.OnInitialized();
+        defaultPlayers = await GetDefaultPlayers();
+
+        await base.OnInitializedAsync();
     }
 
     private void DecodeStateChanged(object? sender, DecodeEventArgs e)
@@ -44,31 +48,16 @@
         }
     }
 
-    private List<RequestNames> GetDefaultPlayers()
+    private async Task<List<RequestNames>> GetDefaultPlayers()
     {
-        List<RequestNames> requestNames = new();
+        HashSet<RequestNames> requestNames = new();
 
         foreach (var name in UserSettingsService.UserSettings.PlayerNames)
         {
-            var toonIds = ratingRepository.GetNameToonIds(name);
-            if (toonIds.Any())
-            {
-                foreach (var toonId in toonIds)
-                {
-                    requestNames.Add(new()
-                        {
-                            Name = name,
-                            ToonId = toonId
-                        });
-                }
-            }
-            else
-            {
-                // toastService.ShowWarning($"Players need at least 10 games to show up ({name})");
-            }
+            requestNames.UnionWith(await ratingRepository.GetRequestNames(name));
         }
 
-        return requestNames;
+        return requestNames.ToList();
     }
 
     public void Dispose()

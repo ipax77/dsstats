@@ -14,41 +14,26 @@
 
     List<RequestNames> defaultPlayers = new();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        defaultPlayers = GetDefaultPlayers();
+        defaultPlayers = await GetDefaultPlayers();
         buildRequest = new()
         {
             Interest = Commander.Abathur,
             PlayerNames = defaultPlayers
         };
-        base.OnInitialized();
+        await base.OnInitializedAsync();
     }
 
-    private List<RequestNames> GetDefaultPlayers()
+    private async Task<List<RequestNames>> GetDefaultPlayers()
     {
-        List<RequestNames> requestNames = new();
+        HashSet<RequestNames> requestNames = new();
 
         foreach (var name in UserSettingsService.UserSettings.PlayerNames)
         {
-            var toonIds = ratingRepository.GetNameToonIds(name);
-            if (toonIds.Any())
-            {
-                foreach (var toonId in toonIds)
-                {
-                    requestNames.Add(new()
-                        {
-                            Name = name,
-                            ToonId = toonId
-                        });
-                }
-            }
-            else
-            {
-                toastService.ShowWarning($"Players need at least 10 games to show up ({name})");
-            }
+            requestNames.UnionWith(await ratingRepository.GetRequestNames(name));
         }
 
-        return requestNames;
+        return requestNames.ToList();
     }
 }

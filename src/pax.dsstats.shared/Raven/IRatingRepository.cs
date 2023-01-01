@@ -20,6 +20,7 @@ public interface IRatingRepository
     Task<List<RequestNames>> GetTopPlayers(RatingType ratingType, int minGames);
     Task<string?> GetToonIdName(int toonId);
     Task<RequestNames?> GetRequestNames(int toonId);
+    Task<List<RequestNames>> GetRequestNames(string name);
     List<int> GetNameToonIds(string name);
     Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetCalcRatings(List<ReplayDsRDto> replayDsRDtos, MmrOptions mmrOptions);
     Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token);

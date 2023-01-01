@@ -112,6 +112,27 @@ public partial class RatingRepository : IRatingRepository
         //    .ToList();
     }
 
+    public async Task<List<RequestNames>> GetRequestNames(string name)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return await context.Players
+            .Where(x => x.Name == name)
+            .Select(s => new RequestNames()
+            {
+                Name = s.Name,
+                ToonId = s.ToonId,
+                RegionId = s.RegionId
+            })
+            .ToListAsync();
+
+        //return RatingMemory.Values
+        //    .Where(x => x.RavenPlayer.Name == name)
+        //    .Select(s => s.RavenPlayer.ToonId)
+        //    .ToList();
+    }
+
     public async Task<RavenPlayerDetailsDto> GetPlayerDetails(int toonId, CancellationToken token = default)
     {
         if (RatingMemory.ContainsKey(toonId))
@@ -298,7 +319,8 @@ public partial class RatingRepository : IRatingRepository
             .Select(s => new RequestNames()
             {
                 Name = s.Player.Name,
-                ToonId = s.Player.ToonId
+                ToonId = s.Player.ToonId,
+                RegionId = s.Player.RegionId
             })
             .ToListAsync();
     }
