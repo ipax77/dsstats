@@ -114,7 +114,7 @@ public static partial class MmrService
             double mmrAfter = mmrBefore + player.Deltas.Mmr;
             double consistencyAfter = consistencyBefore + player.Deltas.Consistency;
             //double confidenceAfter = (confidenceBeforeSummed + player.PlayerConfidenceDelta) / gamesCountAfter;
-            const double confidenceBeforePercentage = 0.90;
+            const double confidenceBeforePercentage = 0.99;
             double confidenceAfter = ((confidenceBefore * confidenceBeforePercentage) + (player.Deltas.Confidence * (1 - confidenceBeforePercentage)));
 
             consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
