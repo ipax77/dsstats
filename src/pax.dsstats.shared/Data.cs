@@ -30,7 +30,7 @@ public static class Data
             "Vorazun" => Commander.Vorazun,
             "Zagara" => Commander.Zagara,
             "Zeratul" => Commander.Zeratul,
-            _ => Commander.Terran
+            _ => Commander.None
         };
     }
 

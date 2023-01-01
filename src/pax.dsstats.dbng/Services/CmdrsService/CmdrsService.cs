@@ -196,9 +196,18 @@ public partial class CmdrsService
                                  && rp.Race == cmdrRequest.Cmdr
                               select rp;
 
+        var limit = (endTime - startTime).TotalDays switch
+        {
+            < 10 => 10,
+            < 20 => 20,
+            < 30 => 30,
+            < 40 => 40,
+            _ => 60
+        };
+
         var bestPlayersQuery = from rp in replayPlayersQuery
                                group new { rp, rp.Player } by rp.Player.ToonId into g
-                               where g.Count() > 15
+                               where g.Count() > limit
                                orderby g.Count(c => c.rp.PlayerResult == PlayerResult.Win) / g.Count() descending
                                select new CmdrTopPlayer
                                {

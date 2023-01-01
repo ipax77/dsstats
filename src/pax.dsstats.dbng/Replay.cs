@@ -46,6 +46,22 @@ public class BattleNetInfo
     public Uploader Uploader { get; set; } = null!;
 }
 
+public class NoUploadResult
+{
+    public int NoUploadResultId { get; set; }
+    public int TotalReplays { get; set; }
+    [Precision(0)]
+    public DateTime LatestReplay { get; set; }
+    public int NoUploadTotal { get; set; }
+    public int NoUploadDefeats { get; set; }
+    [Precision(0)]
+    public DateTime LatestNoUpload { get; set; }
+    [Precision(0)]
+    public DateTime LatestUpload { get; set; }
+    public int PlayerId { get; set; }
+    public Player Player { get; set; } = null!;
+}
+
 public class Player
 {
     public Player()

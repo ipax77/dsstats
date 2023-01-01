@@ -1,8 +1,11 @@
 ﻿@using Microsoft.JSInterop;
 @using pax.dsstats.shared;
 @using sc2dsstats.razorlib.Extensions;
+@using sc2dsstats.razorlib.Replay;
+@using sc2dsstats.razorlib.Services;
 @inject IDataService dataService
 @inject IJSRuntime jsRuntime
+@inject NavigationManager NavigationManager
 @implements IDisposable
 
 
@@ -200,7 +203,23 @@
         width: 30px;
         background-size: cover;
     }
+    .ismobile {
+    display: none;
+    }
 
+    .isdesktop {
+        display: block;
+    }
+
+    @@media only screen and (max-width: 1275px) {
+        .ismobile {
+            display: block;
+        }
+
+        .isdesktop {
+            display: none;
+        }
+}
 </style>
 
 <div>
@@ -294,18 +313,54 @@ else
         @if (Interest != null)
         {
             <div id="interesttable" class="col-auto">
-                <CrosstableDetails TeamCrossTables="Interest" OnCloseRequested="CloseCompTable"></CrosstableDetails>
+                <CrosstableDetails TeamCrossTables="Interest" TeamRequest="DetailTeamRequest" OnCloseRequested="CloseCompTable"></CrosstableDetails>
+            </div>
+            <div class="col-auto isdesktop ms-4 mt-3">
+                <div style="max-height: 650px; overflow: auto;">
+                    <table class="table table-sm table-dark">
+                        <thead>
+                            <tr>
+                                <th>Replays</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var brr in buildResponseReplays.OrderByDescending(o => o.Gametime))
+                            {
+                                <tr class="pointer" style="text-decoration: underline;" @onclick="e => ShowReplay(brr.Hash)">
+                                    <td class="@(brr.Hash == replayHash ? "table-primary" : "")">@brr.Gametime.ToString("yyyy-MM-dd")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             </div>
         }
     </div>
 }
+<div id="teamreplay" class="mt-2">
+    @if (isReplayLoading)
+    {
+        <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
+    @if (ReplayInterest != null)
+    {
+        <sc2dsstats.razorlib.Replay.ReplayComponent @ref="replayComponent"
+                                                replayDto="ReplayInterest"
+                                                OnCloseRequested="ReplayClose"
+                                                ReplaysRequest="ReplaysToonIdRequest" />
+    }
+</div>
 
 @code {
     [Parameter, EditorRequired]
     public CrossTableRequest CrossTableRequest { get; set; } = default!;
 
+    private ReplayComponent? replayComponent;
     private CancellationTokenSource cts = new();
     private CrossTableResponse? crossTableResponse;
+    private List<BuildResponseReplay> buildResponseReplays = new();
 
     private List<TableOrder> Orders = new List<TableOrder>()
     {
@@ -313,7 +368,10 @@ else
     };
 
     private bool isLoading;
+    private bool isReplayLoading;
     private TeamCrossTable? Interest;
+    private string? replayHash;
+    private ReplayDto? ReplayInterest;
 
     protected override void OnInitialized()
     {
@@ -335,14 +393,77 @@ else
     {
         Interest = interest;
         StateHasChanged();
-        await Task.Delay(25);
+        buildResponseReplays = await dataService.GetTeamReplays(new CrossTableReplaysRequest()
+        {
+            Mode = CrossTableRequest.Mode,
+            TimePeriod = CrossTableRequest.TimePeriod,
+            TeMaps = CrossTableRequest.TeMaps,
+            TeamCmdrs = Interest.Comp
+        }, cts.Token);
         await jsRuntime.InvokeVoidAsync("scrollToId", "interesttable");
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task DetailTeamRequest(TeamCmdrs teamComp)
+    {
+        if (Interest == null)
+        {
+            return;
+        }
+        buildResponseReplays = await dataService.GetTeamReplays(new CrossTableReplaysRequest()
+            {
+                Mode = CrossTableRequest.Mode,
+                TimePeriod = CrossTableRequest.TimePeriod,
+                TeMaps = CrossTableRequest.TeMaps,
+                TeamCmdrs = Interest.Comp,
+                TeamCmdrsVs = teamComp
+            }, cts.Token);
+        await InvokeAsync(() => StateHasChanged());
     }
 
     private void CloseCompTable()
     {
         Interest = null;
+        buildResponseReplays.Clear();
         StateHasChanged();
+    }
+
+    private async Task ShowReplay(string hash)
+    {
+        if (isReplayLoading)
+            return;
+        isReplayLoading = true;
+        replayHash = hash;
+        ReplayInterest = await dataService.GetReplay(hash);
+        if (ReplayInterest != null)
+        {
+            replayComponent?.Init(ReplayInterest);
+        }
+        isReplayLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+        await jsRuntime.InvokeVoidAsync("scrollToId", "teamreplay");
+    }
+
+    private void ReplayClose()
+    {
+        ReplayInterest = null;
+        StateHasChanged();
+    }
+
+    private void ReplaysToonIdRequest(ReplaysToonIdRequest request)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("replays",
+                new Dictionary<string, object?>()
+                {
+                    { "Players", request.Name },
+                    { "ToonId", request.ToonId },
+                    { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
+                    { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
+                    { "ToonIdName", request.ToonIdName },
+                }
+            )
+        );
     }
 
     private void SortList(MouseEventArgs e, string property)

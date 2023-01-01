@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Caching.Memory;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
-using System.Reflection.Metadata.Ecma335;
 
 namespace pax.dsstats.dbng.Services;
 
@@ -31,6 +30,37 @@ internal record TeamGroup
 
 public partial class StatsService
 {
+    public async Task<List<BuildResponseReplay>> GetTeamReplays(CrossTableReplaysRequest request, CancellationToken token)
+    {
+        var crossTableRequest = new CrossTableRequest()
+        {
+            Mode = request.Mode,
+            TimePeriod = request.TimePeriod,
+            TeMaps = request.TeMaps
+        };
+        var replays = request.Mode == "Standard" ? StdReplaysForCrossTable(crossTableRequest) : CmdrReplaysForCrossTable(crossTableRequest);
+
+        var cmdrString = GetTeamString(request.TeamCmdrs);
+        replays = replays.Where(x => x.CommandersTeam1 == cmdrString || x.CommandersTeam2 == cmdrString);
+
+        if (request.TeamCmdrsVs != null)
+        {
+            var cmdrVsString = GetTeamString(request.TeamCmdrsVs);
+            replays = replays.Where(x => x.CommandersTeam1 == cmdrVsString || x.CommandersTeam2 == cmdrVsString);
+        }
+
+        return await replays.Select(s => new BuildResponseReplay()
+        {
+            Hash = s.ReplayHash,
+            Gametime = s.GameTime
+        }).ToListAsync(token);
+    }
+
+    private string GetTeamString(TeamCmdrs teamCmdrs)
+    {
+        return $"|{(int)teamCmdrs.Cmdrs[0]}|{(int)teamCmdrs.Cmdrs[1]}|{(int)teamCmdrs.Cmdrs[2]}|";
+    }
+
     public async Task<CrossTableResponse> GetCrossTable(CrossTableRequest request, CancellationToken token = default)
     {
         var memkey = request.GenMemKey();
@@ -133,7 +163,7 @@ public partial class StatsService
 
         var group = from r in replays
                     group r by new { r.CommandersTeam1, r.CommandersTeam2 } into g
-                    select new
+                    select new TeamSqlGroup()
                     {
                         CmdrsT1 = g.Key.CommandersTeam1,
                         CmdrsT2 = g.Key.CommandersTeam2,

@@ -7,6 +7,7 @@ public class ReplayContext : DbContext
     public virtual DbSet<Uploader> Uploaders { get; set; } = null!;
     public virtual DbSet<BattleNetInfo> BattleNetInfos { get; set; } = null!;
     public virtual DbSet<Player> Players { get; set; } = null!;
+    public virtual DbSet<NoUploadResult> NoUploadResults { get; set; } = null!;
     public virtual DbSet<PlayerRating> PlayerRatings { get; set; } = null!;
     public virtual DbSet<Replay> Replays { get; set; } = null!;
     public virtual DbSet<ReplayPlayer> ReplayPlayers { get; set; } = null!;
@@ -103,6 +104,11 @@ public class ReplayContext : DbContext
             entity.HasNoKey();
             entity.ToView("GroupByHelper");
             entity.Property(p => p.Group).HasColumnName("Name");
+        });
+
+        modelBuilder.Entity<PlayerRating>(entity =>
+        {
+            entity.HasIndex(e => e.RatingType);
         });
     }
 }

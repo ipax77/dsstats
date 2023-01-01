@@ -87,25 +87,22 @@ context.Database.Migrate();
 // SEED
 if (app.Environment.IsProduction())
 {
-    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
+    //var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    //mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
 
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
 
-    //var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
-    //tourneyService.CollectTourneyReplays().Wait();
+    var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
+    tourneyService.CollectTourneyReplays().Wait();
 }
 
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    //var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
+    // var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
     // var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
-    //Stopwatch sw = Stopwatch.StartNew();
-    //cheatDetectService.DetectNoUpload().Wait();
-    //sw.Stop();
-    //Console.Write($"NoUpload in {sw.ElapsedMilliseconds} ms");
+    // cheatDetectService.DetectNoUpload().Wait();
 
     //var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
     //mmrProduceService.ProduceRatings(new(reCalc: true)).GetAwaiter().GetResult();
@@ -116,8 +113,8 @@ if (app.Environment.IsDevelopment())
     //var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
     //importService.ImportReplayBlobs().Wait();
 
-    //var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
-    //tourneyService.CollectTourneyReplays().Wait();
+    var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
+    tourneyService.CollectTourneyReplays().Wait();
 }
 
 // Configure the HTTP request pipeline.

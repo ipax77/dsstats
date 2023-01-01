@@ -30,6 +30,7 @@ else
                 <label for="groupSelect" class="form-label mt-4">Round</label>
                 <InputSelect class="form-select" id="groupSelect" @bind-Value="uploadInfo.Round">
                     <option value="">Round select ..</option>
+                    <option value="None">None</option>
                     <option value="GroupA">GroupA</option>
                     <option value="GroupB">GroupB</option>
                     <option value="GroupC">GroupC</option>
@@ -46,13 +47,6 @@ else
                 <div class="form-group col-4">
                     <label class="form-label w-100">
                         WinnerTeam:
-                        @*                    <InputSelect class="form-select" @bind-Value="uploadInfo.Team1">
-                    <option value="">Team1 ...</option>
-                    @foreach (var team in Teams.OrderBy(o => o.Name))
-                    {
-                    <option value="@team.Name">@team.Name</option>
-                    }
-                    </InputSelect>*@
                         <InputText class="form-control" @bind-Value="uploadInfo.Team1" />
 
                     </label>

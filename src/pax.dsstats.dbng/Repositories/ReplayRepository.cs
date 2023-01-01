@@ -258,7 +258,7 @@ public partial class ReplayRepository : IReplayRepository
         return replays;
     }
 
-    private IQueryable<Replay> SearchReplays(IQueryable<Replay> replays, ReplaysRequest request)
+    private IQueryable<Replay> SearchReplays(IQueryable<Replay> replays, ReplaysRequest request, bool withEvent = false)
     {
         if (String.IsNullOrEmpty(request.SearchPlayers) && String.IsNullOrEmpty(request.SearchString))
         {
@@ -276,7 +276,7 @@ public partial class ReplayRepository : IReplayRepository
         }
 
         replays = FilterCommanders(replays, searchCmdrs);
-        replays = FilterNames(replays, searchPlayers);
+        replays = FilterNames(replays, searchPlayers, withEvent);
 
         return replays;
     }
@@ -293,11 +293,23 @@ public partial class ReplayRepository : IReplayRepository
         return replays;
     }
 
-    private IQueryable<Replay> FilterNames(IQueryable<Replay> replays, List<string> searchPlayers)
+    private IQueryable<Replay> FilterNames(IQueryable<Replay> replays, List<string> searchPlayers, bool withEvent = false)
     {
         foreach (var player in searchPlayers)
         {
-            replays = replays.Where(x => x.ReplayPlayers.Any(a => a.Name.ToUpper().Contains(player.ToUpper())));
+            if (withEvent)
+            {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+                replays = replays
+                    .Where(x => x.ReplayEvent.WinnerTeam.ToUpper().Contains(player.ToUpper())
+                    || x.ReplayEvent.RunnerTeam.ToUpper().Contains(player.ToUpper())
+                    || x.ReplayPlayers.Any(a => a.Name.ToUpper().Contains(player.ToUpper())));
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+            }
+            else
+            {
+                replays = replays.Where(x => x.ReplayPlayers.Any(a => a.Name.ToUpper().Contains(player.ToUpper())));
+            }
         }
         return replays;
     }

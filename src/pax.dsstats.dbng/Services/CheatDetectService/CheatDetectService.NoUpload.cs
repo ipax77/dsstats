@@ -1,4 +1,5 @@
 
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
@@ -14,6 +15,7 @@ public partial class CheatDetectService
                     .ToListAsync();
 
         Dictionary<int, int> playerIdNoUploads = new();
+        List<NoUploadResult> noUploadResults = new List<NoUploadResult>();
 
         foreach (var playerId in uploaderPlayerIds)
         {
@@ -37,18 +39,69 @@ public partial class CheatDetectService
             }
 
             int total = results.Sum(s => s.Count);
-            var ratio = los * 100.0 / total;
+            //var ratio = los * 100.0 / total;
 
-            if (ratio > 50.0)
-            {
-                playerIdNoUploads[playerId] = los;
-            }
-            Console.WriteLine($"{playerId}, {total}, {los}");
+            //if (ratio > 50.0)
+            //{
+            //    playerIdNoUploads[playerId] = los;
+            //}
+
+            noUploadResults.Add(await GetNoUploadResult(playerId, total, los));
         }
         if (!dry)
         {
-            await SetNoUploads(playerIdNoUploads);
+            // await SetNoUploads(playerIdNoUploads);
+            await SetNoUploadResults(noUploadResults);
         }
+    }
+
+    private async Task SetNoUploadResults(List<NoUploadResult> noUploadResults)
+    {
+        foreach (var result in noUploadResults)
+        {
+            var dbResult = await context.NoUploadResults
+                .FirstOrDefaultAsync(f => f.PlayerId == result.PlayerId);
+
+            if (dbResult == null)
+            {
+                context.NoUploadResults.Add(result);
+            }
+            else
+            {
+                mapper.Map(result, dbResult);
+            }
+        }
+        await context.SaveChangesAsync();
+    }
+
+    private async Task<NoUploadResult> GetNoUploadResult(int playerId, int noUploadCount, int noUploadDefeats)
+    {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+        return new NoUploadResult()
+        {
+            PlayerId = playerId,
+            TotalReplays = await context.ReplayPlayers
+                .Where(x => x.Player.PlayerId == playerId)
+                .CountAsync(),
+            LatestReplay = await context.ReplayPlayers
+                .Where(x => x.Player.PlayerId == playerId)
+                .OrderByDescending(o => o.Replay.GameTime)
+                .Select(s => s.Replay.GameTime)
+                .FirstOrDefaultAsync(),
+            NoUploadTotal = noUploadCount,
+            NoUploadDefeats = noUploadDefeats,
+            LatestNoUpload = await context.ReplayPlayers
+                .Where(x => x.PlayerId == playerId
+                    && !x.IsUploader)
+                .OrderByDescending(o => o.Replay.GameTime)
+                .Select(s => s.Replay.GameTime)
+                .FirstOrDefaultAsync(),
+            LatestUpload = await context.Players
+                .Where(x => x.PlayerId == playerId)
+                .Select(s => s.Uploader.LatestUpload)
+                .FirstOrDefaultAsync()
+        };
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
     }
 
     private async Task SetNoUploads(Dictionary<int, int> playerIdNoUploads)
@@ -74,3 +127,4 @@ public partial class CheatDetectService
         await context.SaveChangesAsync();
     }
 }
+

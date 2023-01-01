@@ -30,5 +30,6 @@ public interface IDataService
 
     Task<CmdrResult> GetCmdrInfo(CmdrRequest request, CancellationToken token = default);
     Task<CrossTableResponse> GetCrossTable(CrossTableRequest request, CancellationToken token = default);
+    Task<List<BuildResponseReplay>> GetTeamReplays(CrossTableReplaysRequest request, CancellationToken token);
     Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token);
 }

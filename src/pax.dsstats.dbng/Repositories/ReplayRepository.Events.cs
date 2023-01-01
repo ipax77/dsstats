@@ -1,5 +1,6 @@
 ﻿using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng.Repositories;
@@ -16,7 +17,7 @@ public partial class ReplayRepository : IReplayRepository
     {
         var replays = GetRequestEventReplays(request);
 
-        replays = SortReplays(request, replays);
+        replays = SortEventReplays(request, replays);
 
         if (token.IsCancellationRequested)
         {
@@ -31,6 +32,23 @@ public partial class ReplayRepository : IReplayRepository
             .ToListAsync(token);
 
         return list;
+    }
+
+    private IQueryable<Replay> SortEventReplays(ReplaysRequest request, IQueryable<Replay> replays)
+    {
+
+        foreach (var order in request.Orders)
+        {
+            if (order.Ascending)
+            {
+                replays = replays.AppendOrderBy(order.Property);
+            }
+            else
+            {
+                replays = replays.AppendOrderByDescending(order.Property);
+            }
+        }
+        return replays;
     }
 
     private IQueryable<Replay> GetRequestEventReplays(ReplaysRequest request)
@@ -80,7 +98,7 @@ public partial class ReplayRepository : IReplayRepository
 
         if (request.ToonId == 0)
         {
-            replays = SearchReplays(replays, request);
+            replays = SearchReplays(replays, request, withEvent: true);
         }
         else
         {
