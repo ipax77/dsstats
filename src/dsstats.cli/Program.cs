@@ -18,6 +18,13 @@ class Program
         Console.CancelKeyPress += Console_CancelKeyPress;
         AppDomain.CurrentDomain.ProcessExit += AppDomain_ProcessExit;
 
+        // DEBUG
+        if (args.Length == 0)
+        {
+            // await Decode("C:\\Users\\pax77\\Documents\\StarCraft II\\Accounts\\107095918\\2-S2-1-226401\\Replays\\Multiplayer", "/data/ds/errorReplay/dummy", 8);
+            await CompareDb.CompareJsonToDb("/data/ds/errorReplay/dummy");
+        }
+
         if (args.Length < 2)
         {
             WriteHowToUse();
@@ -135,7 +142,7 @@ class Program
         await File.WriteAllTextAsync(outputFile, JsonSerializer.Serialize(replays, new JsonSerializerOptions { WriteIndented = true }));
     }
 
-    private static async Task Decode(string replaysPath, string outputPath)
+    private static async Task Decode(string replaysPath, string outputPath, int threads = 8)
     {
         ReplayDecoder decoder = new(assemblyPath);
 
@@ -152,7 +159,7 @@ class Program
 
         var replayPaths = Directory.GetFiles(replaysPath, "Direct Strike*.SC2Replay", SearchOption.TopDirectoryOnly);
 
-        await foreach (var decodeResult in decoder.DecodeParallelWithErrorReport(replayPaths, 8, decoderOptions, cts.Token))
+        await foreach (var decodeResult in decoder.DecodeParallelWithErrorReport(replayPaths, threads, decoderOptions, cts.Token))
         {
             if (cts.IsCancellationRequested)
             {
