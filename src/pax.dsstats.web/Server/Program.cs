@@ -23,6 +23,7 @@ builder.Host.ConfigureAppConfiguration((context, config) =>
 var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 40));
 var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
 var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"];
+
 // var connectionString = builder.Configuration["ServerConfig:DsstatsProdConnectionString"];
 // var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
 
@@ -35,8 +36,8 @@ builder.Services.AddDbContext<ReplayContext>(options =>
         p.MigrationsAssembly("MysqlMigrations");
         p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
     })
-    //.EnableDetailedErrors()
-    //.EnableSensitiveDataLogging()
+    .EnableDetailedErrors()
+    .EnableSensitiveDataLogging()
     ;
 });
 
@@ -113,8 +114,8 @@ if (app.Environment.IsDevelopment())
     //var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
     //importService.ImportReplayBlobs().Wait();
 
-    var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
-    tourneyService.CollectTourneyReplays().Wait();
+    //var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
+    //tourneyService.CollectTourneyReplays().Wait();
 }
 
 // Configure the HTTP request pipeline.

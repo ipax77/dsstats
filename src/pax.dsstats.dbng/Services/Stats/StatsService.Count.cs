@@ -82,7 +82,7 @@ public partial class StatsService
 
         sb.Append($"WHERE r.GameTime > '{request.StartTime.ToString(@"yyyy-MM-dd")}'");
 
-        if (request.EndTime != DateTime.UtcNow.Date)
+        if (request.EndTime < DateTime.UtcNow.Date.AddDays(-2))
         {
             sb.Append($" AND r.GameTime < '{request.EndTime.ToString(@"yyyy-MM-dd")}'");
         }
