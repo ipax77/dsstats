@@ -23,6 +23,7 @@ builder.Host.ConfigureAppConfiguration((context, config) =>
 var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 40));
 var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
 var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"];
+
 // var connectionString = builder.Configuration["ServerConfig:DsstatsProdConnectionString"];
 // var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
 
@@ -115,15 +116,6 @@ if (app.Environment.IsDevelopment())
 
     //var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
     //tourneyService.CollectTourneyReplays().Wait();
-
-    //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-    //statsService.GetUpgradeStats(new BuildRequest()
-    //{
-    //    PlayerNames = Data.GetDefaultRequestNames(),
-    //    StartTime = new DateTime(2022, 1, 1),
-    //    EndTime = DateTime.Today.AddDays(1),
-    //    Interest = Commander.Swann,
-    //}).Wait();
 }
 
 // Configure the HTTP request pipeline.

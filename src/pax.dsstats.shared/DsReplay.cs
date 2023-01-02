@@ -43,7 +43,7 @@ public record DsPlayer
     public string? Clan { get; set; }
     public int Pos { get; set; }
     public int GamePos { get; set; }
-    public int? WorkingsetSlot { get; set; }
+    public int WorkingsetSlot { get; set; }
     public int Control { get; set; }
     public int Team { get; set; }
     public int Duration { get; set; }

@@ -25,7 +25,7 @@ public static partial class Parse
                 Race = player.Race,
                 Control = player.Control,
                 Pos = failsafe_pos,
-                WorkingsetSlot = player.WorkingSetSlotId > 0 ? player.WorkingSetSlotId : failsafe_pos,
+                WorkingsetSlot = player.WorkingSetSlotId,
             });
         }
         replay.GameTime = DateTime.FromFileTimeUtc(details.TimeUTC);
