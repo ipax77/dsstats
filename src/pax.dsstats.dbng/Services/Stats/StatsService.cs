@@ -23,7 +23,7 @@ public partial class StatsService : IStatsService
                         ReplayContext context,
                         IMapper mapper,
                         IRatingRepository ratingRepository,
-                        IReplayRepository replayRepository)
+                        IReplayRepository replayRepository,
                         ILogger<StatsService> logger)
     {
         this.memoryCache = memoryCache;
