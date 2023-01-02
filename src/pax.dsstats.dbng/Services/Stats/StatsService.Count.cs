@@ -103,7 +103,7 @@ public partial class StatsService
             sb.Append($" AND EXISTS (SELECT 1 FROM ReplayPlayers AS rp WHERE r.ReplayId = rp.ReplayID AND rp.Race = {(int)request.Interest})");
         }
 
-        logger.LogWarning($"{request.TimePeriod} => {sb.ToString()}");
+        // logger.LogWarning($"{request.TimePeriod} => {sb.ToString()}");
         return sb.ToString();
     }
 
