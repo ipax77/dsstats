@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 using System.Collections;
@@ -14,13 +15,19 @@ public partial class StatsService : IStatsService
     private readonly ReplayContext context;
     private readonly IMapper mapper;
     private readonly IRatingRepository ratingRepository;
+    private readonly ILogger<StatsService> logger;
 
-    public StatsService(IMemoryCache memoryCache, ReplayContext context, IMapper mapper, IRatingRepository ratingRepository)
+    public StatsService(IMemoryCache memoryCache,
+                        ReplayContext context,
+                        IMapper mapper,
+                        IRatingRepository ratingRepository,
+                        ILogger<StatsService> logger)
     {
         this.memoryCache = memoryCache;
         this.context = context;
         this.mapper = mapper;
         this.ratingRepository = ratingRepository;
+        this.logger = logger;
     }
 
     public async Task<StatsResponse> GetStatsResponse(StatsRequest request)
