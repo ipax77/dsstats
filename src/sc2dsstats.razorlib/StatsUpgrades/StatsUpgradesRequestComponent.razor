@@ -1,0 +1,233 @@
+﻿@using Blazored.Toast.Services;
+@using Microsoft.AspNetCore.Components.Forms;
+@using Microsoft.JSInterop
+@using pax.dsstats.shared
+@using pax.dsstats.shared.Raven;
+@using sc2dsstats.razorlib.Builds;
+@inject IToastService toastService
+@inject IDataService dataService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<EditForm EditContext="editContext">
+    <div class="row align-items-center">
+        <div class="col-auto btn-group-vertical">
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-warning" @onclick="e => TopPlayers(true)">Top Std</button>
+                <button type="button" class="btn btn-outline-warning" @onclick="e => TopPlayers(false)">Top Cmdr</button>
+            </div>
+            <button type="button" class="btn btn-outline-light" @onclick="DefaultPlayers">Default Players</button>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Time Period
+                <InputSelect class="form-select" @bind-Value="BuildRequest.Timespan">
+                    @foreach (string time in Data.TimePeriods)
+                    {
+                            <option value="@time">@time</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Versus
+                <InputSelect class="form-select" @bind-Value="BuildRequest.Versus">
+                    <option value="@Commander.None">All</option>
+                    @foreach (Commander cmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
+                    {
+                            <option value="@cmdr">@cmdr</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto form-group" style="max-width: 250px;">
+            <select id="playerselect" class="selectpicker" multiple aria-label="playerselect" @onchange="PlayersSelected">
+                <option value="All" selected>All Players</option>
+                @foreach (var player in requestNames)
+                {
+                        <option value="@player.ToonId">@player.Name (@Data.GetRegionString(player.RegionId))</option>
+                }
+            </select>
+        </div>
+        <div class="col-auto btn-group-vertical">
+            <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => playerSelectModal?.Show()">Add Player</button>
+            <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => playerDeselectModal?.Show()">Remove Player</button>
+        </div>
+        @if (Data.IsMaui)
+        {
+                <div class="col-auto form-check form-switch">
+                    <label class="form-check-label">
+                        Online Builds
+                        <input type="checkbox" class="form-check-input" @onchange="FromServerChange">
+                        </input>
+                    </label>
+                </div>
+        }
+    </div>
+</EditForm>
+
+<PlayerSelectModal @ref="playerSelectModal" OnPlayerSelected="AddPlayer"></PlayerSelectModal>
+<PlayerDeselectModal @ref="playerDeselectModal" OnPlayerDeSelected="RemovePlayer" RequestNames="requestNames"></PlayerDeselectModal>
+
+@code {
+    [CascadingParameter, EditorRequired]
+    public BuildRequest BuildRequest { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public List<RequestNames> MauiPlayers { get; set; } = new();
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    private RatingsRequest ratingsRequest = new()
+        {
+            Skip = 0,
+            Take = 20,
+            Orders = new()
+        {
+            new()
+            {
+                Property = "CmdrRatingStats.Mmr",
+                Ascending = false
+            },
+
+        }
+        };
+
+    private EditContext editContext = null!;
+    private List<RequestNames> requestNames = new();
+    private List<RavenPlayerDto> addRequestPlayers = new();
+
+    private PlayerSelectModal? playerSelectModal;
+    private PlayerDeselectModal? playerDeselectModal;
+
+    protected override void OnInitialized()
+    {
+        requestNames = new(BuildRequest.PlayerNames);
+        editContext = new(BuildRequest);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        if (e.FieldIdentifier.FieldName == nameof(BuildRequest.Timespan))
+        {
+            (BuildRequest.StartTime, BuildRequest.EndTime) = Data.TimeperiodSelected(BuildRequest.Timespan);
+        }
+        OnRequestChanged.InvokeAsync();
+    }
+
+    private void FromServerChange(ChangeEventArgs e)
+    {
+        if (e.Value is bool value)
+        {
+            dataService.SetFromServer(value);
+            DefaultPlayers();
+        }
+    }
+
+    private async Task TopPlayers(bool std)
+    {
+        BuildRequest.PlayerNames = await dataService.GetTopPlayers(std);
+        requestNames = new(BuildRequest.PlayerNames);
+        StateHasChanged();
+        await OnRequestChanged.InvokeAsync();
+    }
+
+    private void DefaultPlayers()
+    {
+        if (!MauiPlayers.Any() || dataService.GetFromServer())
+        {
+            BuildRequest.PlayerNames = Data.GetDefaultRequestNames();
+        }
+        else
+        {
+            BuildRequest.PlayerNames = new(MauiPlayers);
+        }
+        requestNames = new(BuildRequest.PlayerNames);
+        StateHasChanged();
+        OnRequestChanged.InvokeAsync();
+    }
+
+    private void AddPlayer(PlayerRatingPlayerDto player)
+    {
+        if (requestNames.Count >= 10)
+        {
+            toastService.ShowError("Maximum number of players exceeded.");
+            return;
+        }
+
+        var requestName = new RequestNames()
+            {
+                Name = player.Name,
+                ToonId = player.ToonId,
+                RegionId = player.RegionId
+            };
+        if (!requestNames.Contains(requestName))
+        {
+            requestNames.Add(requestName);
+        }
+        if (!BuildRequest.PlayerNames.Contains(requestName))
+        {
+            BuildRequest.PlayerNames.Add(requestName);
+        }
+        StateHasChanged();
+        UpdateMultiselect();
+        OnRequestChanged.InvokeAsync();
+    }
+
+    private void RemovePlayer(RequestNames requestName)
+    {
+        requestNames.Remove(requestName);
+        if (BuildRequest.PlayerNames.Contains(requestName))
+        {
+            BuildRequest.PlayerNames.Remove(requestName);
+        }
+        StateHasChanged();
+        OnRequestChanged.InvokeAsync();
+    }
+
+    void PlayersSelected(ChangeEventArgs e)
+    {
+        if (e.Value is string[] toonIdStrs)
+        {
+            if (!toonIdStrs.Any() || (toonIdStrs.Contains("All")))
+            {
+                BuildRequest.PlayerNames = requestNames;
+            }
+            else
+            {
+                List<RequestNames> newNames = new();
+                foreach (var toonIdStr in toonIdStrs)
+                {
+                    if (int.TryParse(toonIdStr, out int toonId))
+                    {
+                        var pl = requestNames.FirstOrDefault(f => f.ToonId == toonId);
+                        if (pl != null)
+                        {
+                            newNames.Add(pl);
+                        }
+                    }
+                }
+                BuildRequest.PlayerNames = newNames;
+            }
+            OnRequestChanged.InvokeAsync();
+        }
+    }
+
+    private void UpdateMultiselect()
+    {
+        var selected = BuildRequest.PlayerNames.Any() ?
+            BuildRequest.PlayerNames.Select(s => s.ToonId.ToString()).ToArray() :
+            new string[1] { "All" };
+
+        JSRuntime.InvokeVoidAsync("setMultiSelect", "playerselect", selected);
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}
