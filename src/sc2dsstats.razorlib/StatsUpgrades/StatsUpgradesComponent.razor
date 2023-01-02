@@ -16,19 +16,19 @@
             Breakpoint @breakpoint
         </span>
     </div>
-    <div class="col-auto" style="min-width: 175px;">
+    <div class="col-auto ms-1 mt-1" style="min-width: 150px;">
         <input type="range" class="form-range" value="@((int)breakpoint)" min="1" max="3" step="1" id="spawnrange" @onchange="ChangeBreakpoint">
     </div>
 </div>
 
-@if (isLoading && statsUpgradesResponse == null)
+@if (isLoading)
 {
     <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
         <span class="visually-hidden">Loading...</span>
     </div>
 }
 
-<div class="w-75" style="height: @(chartHeight)px;">
+<div class="w-75 bg-dark border rounded" style="min-width: 550px; height: @(chartHeight)px;">
     <ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="ChartEventTriggered"></ChartComponent>
 </div>
 
@@ -48,7 +48,7 @@
     private ChartJsConfig chartJsConfig = null!;
     private bool isChartInit;
     private bool isDataReady;
-    private Breakpoint breakpoint = Breakpoint.Min15;
+    private Breakpoint breakpoint = Breakpoint.Min5;
     private int chartHeight = 1000;
     private readonly int barHeight = 30;
 
@@ -104,7 +104,7 @@
 
         var armyDataset = GetArmyDataset();
         var upgradeDataset = GetUpgradesDataset();
-        var incomeDataset = GetKillsDataset();
+        var killsDataset = GetKillsDataset();
 
         List<ChartHelper> chartHelpers = new();
 
@@ -119,7 +119,7 @@
 
             chartHelpers.Add(new()
             {
-                Label = ent.Key.ToString(),
+                Label = $"{ent.Key.ToString()} ({bpInfo.Count})",
                 Army = (object)(bpInfo.ArmyValue / (double)bpInfo.Count),
                 Upgrades = (object)(bpInfo.UpgradeSpent / (double)bpInfo.Count),
                 Kills = (object)(bpInfo.Kills / (double)bpInfo.Count)
@@ -135,9 +135,10 @@
             chartJsConfig.SetLabels(chartHelpers.Select(s => s.Label).ToList());
             armyDataset.Data = chartHelpers.Select(s => s.Army).ToList();
             upgradeDataset.Data = chartHelpers.Select(s => s.Upgrades).ToList();
-            incomeDataset.Data = chartHelpers.Select(s => s.Kills).ToList();
+            killsDataset.Data = chartHelpers.Select(s => s.Kills).ToList();
 
-            chartJsConfig.AddDatasets(new List<ChartJsDataset>() { armyDataset, upgradeDataset, incomeDataset });
+            // chartJsConfig.AddDatasets(new List<ChartJsDataset>() { armyDataset, upgradeDataset, getKillsDataset });
+            chartJsConfig.AddDatasets(new List<ChartJsDataset>() { armyDataset, upgradeDataset });
         }
     }
 
@@ -164,7 +165,7 @@
             {
                 Label = "Armyvalue",
                 Data = new List<object>(),
-                BackgroundColor = new IndexableOption<string>("rgba(255, 99, 132, 0.6)"),
+                BackgroundColor = new IndexableOption<string>("rgba(255, 99, 132, 0.4)"),
                 BorderColor = new IndexableOption<string>("rgba(255, 99, 132, 1)"),
                 BorderWidth = new IndexableOption<double>(1),
                 BarThickness = barHeight
@@ -177,7 +178,7 @@
             {
                 Label = "Upgrades",
                 Data = new List<object>(),
-                BackgroundColor = new IndexableOption<string>("rgba(54, 162, 235, 0.6)"),
+                BackgroundColor = new IndexableOption<string>("rgba(54, 162, 235, 0.4)"),
                 BorderColor = new IndexableOption<string>("rgba(54, 162, 235, 1)"),
                 BorderWidth = new IndexableOption<double>(1),
                 BarThickness = barHeight,
@@ -190,7 +191,7 @@
             {
                 Label = "KilledValue",
                 Data = new List<object>(),
-                BackgroundColor = new IndexableOption<string>("rgba(255, 206, 86, 0.6)"),
+                BackgroundColor = new IndexableOption<string>("rgba(255, 206, 86, 0.4)"),
                 BorderColor = new IndexableOption<string>("rgba(255, 206, 86, 1)"),
                 BorderWidth = new IndexableOption<double>(1),
                 BarThickness = barHeight,
