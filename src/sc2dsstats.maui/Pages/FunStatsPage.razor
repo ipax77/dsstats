@@ -1,0 +1,8 @@
+﻿@page "/funstats"
+@using sc2dsstats.maui.Services;
+
+<sc2dsstats.razorlib.FunStats.FunStatsComponent ToonIds="UserSettingsService.UserSettings.BattleNetInfos.SelectMany(s => s.ToonIds).Select(s => s.ToonId).ToList()" />
+
+@code {
+
+}

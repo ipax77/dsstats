@@ -248,4 +248,9 @@ public partial class DataService : IDataService
     {
         return await Task.FromResult(new StatsResponse());
     }
+
+    public async Task<FunStats> GetFunStats(List<int> toonIds)
+    {
+        return await statsService.GetFunStats(toonIds);
+    }
 }

@@ -1,0 +1,165 @@
+﻿@using System.Globalization;
+@using pax.dsstats.shared
+@using sc2dsstats.razorlib.Services;
+@inject IDataService dataService
+
+<h3 class="text-warning p-2 bg-secondary">FunStats</h3>
+
+@if (funStats == null)
+{
+    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-warning">Total Time Played</h3>
+                </div>
+                <div class="card-body">
+                    <span class="text-warning">@funStats.TotalDuration.ToString("c", CultureInfo.InvariantCulture)</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-warning">Most Build Unit</h3>
+                </div>
+                <div class="card-body">
+                    @funStats.MostBuildUnit?.UnitName: @HelperService.GetBigNumberString(funStats.MostBuildUnit?.Count ?? 0)
+                </div>
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-warning">Least Build Unit</h3>
+                </div>
+                <div class="card-body">
+                    @funStats.LeastBuildUnit?.UnitName: @funStats.LeastBuildUnit?.Count
+                </div>
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-warning">Player Positions</h3>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-dark table-striped">
+                        <thead>
+                            <tr>
+                                <th>Pos</th>
+                                <th>Count</th>
+                                <th>%</th>
+                                <th>Winrate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var posInfo in funStats.PosInfos.OrderBy(o => o.Pos))
+                            {
+                                <tr>
+                                    <td>@posInfo.Pos</td>
+                                    <td>@posInfo.Count</td>
+                                    <td>@HelperService.GetPercentageString(posInfo.Wins, posInfoSum)</td>
+                                    <td>@HelperService.GetPercentageString(posInfo.Wins, posInfo.Count)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        @if (funStats.FirstReplay != null)
+        {
+            <div class="col-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-warning">First Replay - @funStats.FirstReplay.GameTime.ToShortDateString()</h3>
+                    </div>
+                    <div class="card-body">
+                        <sc2dsstats.razorlib.Replay.ReplayComponent replayDto="funStats.FirstReplay" />
+                    </div>
+                </div>
+            </div>
+        }
+        @if (funStats.GreatestArmyReplay != null)
+        {
+            <div class="col-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-warning">Greatest Army Replay - @HelperService.GetBigNumberString(funStats.GreatestArmyReplay.ReplayPlayers.Where(x => ToonIds.Contains(x.Player.ToonId)).FirstOrDefault()?.Army ?? 0)</h3>
+                    </div>
+                    <div class="card-body">
+                        <sc2dsstats.razorlib.Replay.ReplayComponent replayDto="funStats.GreatestArmyReplay" />
+                    </div>
+                </div>
+            </div>
+        }
+        @if (funStats.MostUpgradesReplay != null)
+        {
+            <div class="col-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-warning">Most Upgrades Replay - @HelperService.GetBigNumberString(funStats.MostUpgradesReplay.ReplayPlayers.Where(x => ToonIds.Contains(x.Player.ToonId)).FirstOrDefault()?.UpgradesSpent ?? 0)</h3>
+                    </div>
+                    <div class="card-body">
+                        <sc2dsstats.razorlib.Replay.ReplayComponent replayDto="funStats.MostUpgradesReplay" />
+                    </div>
+                </div>
+            </div>
+        }
+        @if (funStats.MostCompetitiveReplay != null)
+        {
+            <div class="col-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-warning">Most Competitive Replay - Middle changes: @funStats.MostCompetitiveReplay.Middle.Split('|').Length</h3>
+                    </div>
+                    <div class="card-body">
+                        <sc2dsstats.razorlib.Replay.ReplayComponent replayDto="funStats.MostCompetitiveReplay" />
+                    </div>
+                </div>
+            </div>
+        }
+        @if (funStats.GreatestComebackReplay != null)
+        {
+            <div class="col-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-warning">Greatest Comeback Replay</h3>
+                    </div>
+                    <div class="card-body">
+                        <sc2dsstats.razorlib.Replay.ReplayComponent replayDto="funStats.GreatestComebackReplay" />
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+
+@code {
+    [Parameter, EditorRequired]
+    public List<int> ToonIds { get; set; } = new();
+
+    private FunStats? funStats;
+    int posInfoSum = 0;
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        funStats = await dataService.GetFunStats(ToonIds);
+        posInfoSum = funStats.PosInfos.Sum(s => s.Count);
+        await InvokeAsync(() => StateHasChanged());
+    }
+}

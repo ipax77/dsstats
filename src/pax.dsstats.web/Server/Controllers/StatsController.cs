@@ -195,5 +195,17 @@ namespace pax.dsstats.web.Server.Controllers
             catch (OperationCanceledException) { }
             return NoContent();
         }
+
+        [HttpPost]
+        [Route("GetStatsUpgrades")]
+        public async Task<ActionResult<StatsUpgradesResponse>> GetUpgradeStats(BuildRequest buildRequest, CancellationToken token)
+        {
+            try
+            {
+                return await statsService.GetUpgradeStats(buildRequest, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
+        }
     }
 }
