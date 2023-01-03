@@ -176,8 +176,6 @@ public partial class MmrProduceService
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
             .ToListAsync();
 
-        var invalid =  result.Where(r => r.ReplayPlayers.Any(x => x.Name.Contains(' '))).ToList();
-
         return result.Where(r => !r.ReplayPlayers.Any(x => x.Name.Contains(' '))).ToList();
     }
 
