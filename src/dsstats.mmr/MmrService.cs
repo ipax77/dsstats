@@ -7,7 +7,7 @@ namespace dsstats.mmr;
 
 public static partial class MmrService
 {
-    public static async Task<(Dictionary<RatingType, Dictionary<int, CalcRating>>, int, List<bool>)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
+    public static async Task<(Dictionary<RatingType, Dictionary<int, CalcRating>>, int, List<ReplayData>)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
                                                                     Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                                                     Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
                                                                     MmrOptions mmrOptions,
@@ -15,7 +15,7 @@ public static partial class MmrService
                                                                     IRatingRepository ratingRepository,
                                                                     bool dry = false)
     {
-        List<bool> accuracyList = new();
+        List<ReplayData> replayDatas = new();
         List<MmrChange> mmrChanges = new();
 
         for (int i = 0; i < replays.Count; i++)
@@ -28,16 +28,16 @@ public static partial class MmrService
 
             try
             {
-                var (changes, correctPrediction) = ProcessReplay(replays[i], mmrIdRatings[ratingType], cmdrMmrDic, mmrOptions);
+                var (changes, replayData) = ProcessReplay(replays[i], mmrIdRatings[ratingType], cmdrMmrDic, mmrOptions);
                 
                 if (changes != null)
                 {
                     mmrChanges.Add(changes);
                 }
-                if (correctPrediction != null)
-                {
-                    accuracyList.Add(correctPrediction.Value);
-                }
+                //if (replayData != null) // DEBUG
+                //{
+                //    replayDatas.Add(replayData);
+                //}
             }
             catch (Exception e)
             {
@@ -57,10 +57,10 @@ public static partial class MmrService
         {
             mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
         }
-        return (mmrIdRatings, mmrChangesAppendId, accuracyList);
+        return (mmrIdRatings, mmrChangesAppendId, replayDatas);
     }
 
-    public static (MmrChange?, bool?) ProcessReplay(ReplayDsRDto replay,
+    public static (MmrChange?, ReplayData?) ProcessReplay(ReplayDsRDto replay,
                                             Dictionary<int, CalcRating> mmrIdRatings,
                                             Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                             MmrOptions mmrOptions)
@@ -79,9 +79,7 @@ public static partial class MmrService
         SetReplayData(mmrIdRatings, replayData, cmdrMmrDic, mmrOptions);
 
         var mmrChanges = ProcessReplay(replayData, mmrIdRatings, cmdrMmrDic, mmrOptions);
-
-        bool correctPrediction = (replayData.WinnerTeamData.ExpectedResult > 0.5);
-        return (new MmrChange() { Hash = replay.ReplayHash, ReplayId = replay.ReplayId, Changes = mmrChanges }, correctPrediction);
+        return (new MmrChange() { Hash = replay.ReplayHash, ReplayId = replay.ReplayId, Changes = mmrChanges }, replayData);
     }
 
     public static List<PlChange> ProcessReplay(ReplayData replayData,
