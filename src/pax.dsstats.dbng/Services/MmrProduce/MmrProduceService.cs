@@ -156,6 +156,7 @@ public partial class MmrProduceService
             .Where(r => r.Playercount == 6
                 && r.Duration >= 300
                 && r.WinnerTeam > 0
+                && !r.ReplayPlayers.Any(x => x.Name.Contains(' '))
                 && gameModes.Contains(r.GameMode))
             .AsNoTracking();
 
