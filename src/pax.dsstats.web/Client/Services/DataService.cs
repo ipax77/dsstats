@@ -519,4 +519,31 @@ public class DataService : IDataService
         }
         return new();
     }
+
+    public async Task<FunStats> GetFunStats(List<int> toonIds)
+    {
+        return await Task.FromResult(new FunStats());
+    }
+
+    public async Task<StatsUpgradesResponse> GetUpgradeStats(BuildRequest buildRequest, CancellationToken token)
+    {
+        try
+        {
+            var result = await httpClient.PostAsJsonAsync($"{statsController}GetStatsUpgrades", buildRequest);
+            if (result.IsSuccessStatusCode)
+            {
+                var response = await result.Content.ReadFromJsonAsync<StatsUpgradesResponse>();
+                if (response != null)
+                {
+                    return response;
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting statsUpgrades: {ex.Message}");
+        }
+        return new();
+    }
 }

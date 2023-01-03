@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 using System.Text;
@@ -82,7 +83,7 @@ public partial class StatsService
 
         sb.Append($"WHERE r.GameTime > '{request.StartTime.ToString(@"yyyy-MM-dd")}'");
 
-        if (request.EndTime != DateTime.UtcNow.Date)
+        if (request.EndTime < DateTime.UtcNow.Date.AddDays(-2))
         {
             sb.Append($" AND r.GameTime < '{request.EndTime.ToString(@"yyyy-MM-dd")}'");
         }
@@ -102,6 +103,7 @@ public partial class StatsService
             sb.Append($" AND EXISTS (SELECT 1 FROM ReplayPlayers AS rp WHERE r.ReplayId = rp.ReplayID AND rp.Race = {(int)request.Interest})");
         }
 
+        // logger.LogWarning($"{request.TimePeriod} => {sb.ToString()}");
         return sb.ToString();
     }
 

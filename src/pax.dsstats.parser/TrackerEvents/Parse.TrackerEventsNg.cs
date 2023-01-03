@@ -9,7 +9,8 @@ public static partial class Parse
     {
         var zeroBornEvents = trackerevents.SUnitBornEvents.Where(x => x.Gameloop == 0).ToList();
 
-        FixPlayerPos(replay, trackerevents.SPlayerSetupEvents);
+        // FixPlayerPos(replay, trackerevents.SPlayerSetupEvents);
+        FixPlayerPosNg(replay, trackerevents.SPlayerSetupEvents);
 
         SetReplayLayout(replay, zeroBornEvents);
 

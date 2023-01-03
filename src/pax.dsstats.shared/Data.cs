@@ -88,8 +88,10 @@ public static class Data
     {
         return period switch
         {
-            "This Month" => (DateTime.Today.AddDays(-(DateTime.Today.Day - 1)), DateTime.Today),
-            "Last Month" => (DateTime.Today.AddDays(-(DateTime.Today.Day - 1)).AddMonths(-1), DateTime.Today.AddDays(-(DateTime.Today.Day - 1)).AddDays(-1)),
+            //"This Month" => (DateTime.Today.AddDays(-(DateTime.Today.Day - 1)), DateTime.Today),
+            // "Last Month" => (DateTime.Today.AddDays(-(DateTime.Today.Day - 1)).AddMonths(-1), DateTime.Today.AddDays(-(DateTime.Today.Day - 1)).AddDays(-1)),
+            "This Month" => (new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1), DateTime.Today),
+            "Last Month" => (new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-1), new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1)),
             "This Year" => (new DateTime(DateTime.Now.Year, 1, 1), DateTime.Today),
             "Last Year" => (new DateTime(DateTime.Now.AddYears(-1).Year, 1, 1), new DateTime(DateTime.Now.Year, 1, 1)),
             "Last Two Years" => (new DateTime(DateTime.Now.AddYears(-1).Year, 1, 1), DateTime.Today),

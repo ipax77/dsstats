@@ -1,12 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\pax.dsstats.dbng\pax.dsstats.dbng.csproj" />
     <ProjectReference Include="..\pax.dsstats.shared\pax.dsstats.shared.csproj" />
     <ProjectReference Include="..\pax.dsstats.parser\pax.dsstats.parser.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="IronPython.StdLib" Version="2.7.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.12" />
     <PackageReference Include="s2protocol.NET" Version="0.6.8" />
   </ItemGroup>
 
