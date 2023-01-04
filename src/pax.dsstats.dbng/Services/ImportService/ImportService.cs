@@ -347,4 +347,22 @@ public partial class ImportService
             File.Move(f, newFile);
         });
     }
+
+    public void DEBUGFixComputerGames()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var computerReplays = context.Replays
+            .Where(x => x.ReplayPlayers.Any(a => a.Player.ToonId == 0))
+            .ToList();
+
+        if (!computerReplays.Any() )
+        {
+            return;
+        }
+
+        computerReplays.ForEach(f => f.GameMode = GameMode.Tutorial);
+        context.SaveChanges();
+    }
 }

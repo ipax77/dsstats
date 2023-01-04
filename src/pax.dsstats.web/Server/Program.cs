@@ -88,8 +88,11 @@ context.Database.Migrate();
 // SEED
 if (app.Environment.IsProduction())
 {
-    //var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    //mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
+    var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+    importService.DEBUGFixComputerGames();
+
+    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
 
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
@@ -111,8 +114,9 @@ if (app.Environment.IsDevelopment())
     //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
     //var result = statsService.GetCrossTable(new());
 
-    var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-    importService.ImportReplayBlobs().Wait();
+    //var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+    //importService.DEBUGFixComputerGames();
+    //importService.ImportReplayBlobs().Wait();
 
     //var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
     //tourneyService.CollectTourneyReplays().Wait();

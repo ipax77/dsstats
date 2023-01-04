@@ -266,6 +266,7 @@ public partial class ImportService
             replay.Middle = string.Join('|', middles);
         }
 
+        bool isComputerGame = false;
         foreach (var replayPlayer in replay.ReplayPlayers)
         {
             replayPlayer.ReplayPlayerId = 0;
@@ -286,6 +287,16 @@ public partial class ImportService
                     spawnUnit.Poss = string.Join(',', poss);
                 }
             }
+
+            if (replayPlayer.Name.StartsWith("Computer "))
+            {
+                isComputerGame = true;
+            }
+        }
+
+        if (isComputerGame)
+        {
+            replay.GameMode = shared.GameMode.Tutorial;
         }
     }
 }

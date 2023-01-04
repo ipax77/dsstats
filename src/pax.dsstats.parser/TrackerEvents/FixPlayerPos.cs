@@ -31,7 +31,32 @@ public static partial class Parse
                 return;
             }
 
+            // try workingsetSlotIds with 0 + 1
+            var workingsetSlotIdsWithZeroToOne = GetZeroToOneAdjustedWorkingsetSlotIds(replay.Players);
+            if (playerIds.SequenceEqual(workingsetSlotIdsWithZeroToOne))
+            {
+                replay.Players.ForEach(f => f.Pos = f.WorkingsetSlot == 0 ? 1 : f.WorkingsetSlot);
+                return;
+            }
+            
             throw new ArgumentNullException(nameof(setupEvents));
         }
+    }
+
+    private static List<int> GetZeroToOneAdjustedWorkingsetSlotIds(List<DsPlayer> players)
+    {
+        HashSet<int> ids = new();
+        foreach (var player in players.OrderBy(o => o.WorkingsetSlot))
+        {
+            if (player.WorkingsetSlot == 0)
+            {
+                ids.Add(1);
+            }
+            else
+            {
+                ids.Add(player.WorkingsetSlot);
+            }
+        }
+        return ids.ToList();
     }
 }

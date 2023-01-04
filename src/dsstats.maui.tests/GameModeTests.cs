@@ -1,10 +1,16 @@
-﻿using pax.dsstats.parser;
+﻿using AutoMapper;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using pax.dsstats.dbng;
+using pax.dsstats.dbng.Repositories;
+using pax.dsstats.dbng.Services;
+using pax.dsstats.parser;
 using s2protocol.NET;
 using System.Reflection;
 
 namespace dsstats.maui.tests;
 
-public class GameModeTests
+public class GameModeTests : TestWithSqlite
 {
     public static readonly string? assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
@@ -352,5 +358,60 @@ public class GameModeTests
         var replayDto = Parse.GetReplayDto(dsReplay);
 
         Assert.True(replayDto.GameMode == pax.dsstats.shared.GameMode.Sabotage);
+    }
+
+    [Theory]
+    [InlineData("C:\\data\\ds\\decodeTest\\Direct Strike TE (86).SC2Replay")]
+    public async Task GameModeTutorialComputerTest(string replayFile)
+    {
+        Assert.True(assemblyPath != null, "Could not get ExecutingAssembly path");
+        if (assemblyPath == null)
+        {
+            return;
+        }
+        ReplayDecoder decoder = new(assemblyPath);
+        ReplayDecoderOptions options = new ReplayDecoderOptions()
+        {
+            Initdata = true,
+            Details = true,
+            Metadata = true,
+            MessageEvents = false,
+            TrackerEvents = true,
+            GameEvents = false,
+            AttributeEvents = false,
+        };
+        var replay = await decoder.DecodeAsync(Path.Combine(assemblyPath, "testdata", replayFile), options).ConfigureAwait(false);
+        Assert.True(replay != null, "Sc2Replay was null");
+        if (replay == null)
+        {
+            decoder.Dispose();
+            return;
+        }
+
+        var dsReplay = Parse.GetDsReplay(replay);
+
+        Assert.NotNull(dsReplay);
+        if (dsReplay == null)
+        {
+            decoder.Dispose();
+            return;
+        }
+
+        var replayDto = Parse.GetReplayDto(dsReplay);
+
+        var logger = NullLogger<ReplayRepository>.Instance;
+        var mapperConfiguration = new MapperConfiguration(cfg =>
+        {
+            cfg.AddProfile(new AutoMapperProfile());
+        });
+        var mapper = mapperConfiguration.CreateMapper();
+
+        var replayRepository = new ReplayRepository(logger, DbContext, mapper, null);
+
+        await replayRepository.SaveReplay(replayDto, new(), new(), null);
+
+        var dbReplay = DbContext.Replays.FirstOrDefault(f => f.ReplayHash == replayDto.ReplayHash);
+
+        Assert.Equal(pax.dsstats.shared.GameMode.Tutorial, dbReplay?.GameMode);
     }
 }
