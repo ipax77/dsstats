@@ -9,7 +9,7 @@ public record ReplayData
         GameTime = replay.GameTime;
         Duration = replay.Duration;
         Maxleaver = replay.Maxleaver;
-        Maxkillsum= replay.Maxkillsum;
+        Maxkillsum = replay.Maxkillsum;
 
         WinnerTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam), true);
         LoserTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam), false);
@@ -40,4 +40,6 @@ public record ReplayData
     public TeamData LoserTeamData { get; init; }
 
     public double Confidence { get; set; }
+
+    public bool CorrectPrediction => (WinnerTeamData.ExpectedResult > 0.50);
 }

@@ -8,8 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="5.0.17" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\dsstats.mmr\dsstats.mmr.csproj" />
     <ProjectReference Include="..\pax.dsstats.dbng\pax.dsstats.dbng.csproj" />
+    <ProjectReference Include="..\pax.dsstats.web\dsstats.Tests\dsstats.Tests.csproj" />
   </ItemGroup>
 
 </Project>
