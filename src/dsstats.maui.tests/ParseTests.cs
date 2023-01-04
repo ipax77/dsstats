@@ -67,8 +67,8 @@ public class ParseTests
 
     //[Fact]
     [Theory]
-    [InlineData("/data/ds/errorReplay/nosetupEvent/Direct_Strike_TE_2.SC2Replay")]
     [InlineData("/data/ds/errorReplay/nosetupEvent/Direct_Strike_TE_3.SC2Replay")]
+    [InlineData("/data/ds/errorReplay/nosetupEvent/Direct_Strike_TE_2.SC2Replay")]
     [InlineData("/data/ds/errorReplay/nosetupEvent/Direct_Strike_TE_4.SC2Replay")]
     [InlineData("/data/ds/errorReplay/nosetupEvent/Direct_Strike_TE_38.SC2Replay")]
     public async Task ParseTEMaps(string replayFile)

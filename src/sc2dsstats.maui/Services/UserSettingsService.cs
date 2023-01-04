@@ -1,4 +1,5 @@
-﻿using Blazored.Toast.Services;
+﻿using Microsoft.EntityFrameworkCore;
+using pax.dsstats.dbng;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using System.Text.Json;
@@ -16,12 +17,12 @@ internal class UserSettingsService
 
     public UserSettingsService(IServiceProvider serviceProvider)
     {
+        this.serviceProvider = serviceProvider;
         ReloadConfig();
         UserSettings.BattleNetInfos = GetBattleNetIds();
-        this.serviceProvider = serviceProvider;
     }
 
-    public static void ReloadConfig()
+    public void ReloadConfig()
     {
         if (!File.Exists(ConfigFile) || debug)
         {
@@ -44,6 +45,22 @@ internal class UserSettingsService
                 {
                     UserSettings.AutoScanForNewReplays = true;
                     UserSettings.AllowUploads = true;
+                }
+            }
+
+            if (UserSettings.DoV1_0_8_Init)
+            {
+                try
+                {
+                    DoV1_0_8InitJob();
+                } catch (Exception ex)
+                {
+                    Console.WriteLine($"failed doinng v1.0.8 init job: {ex.Message}");
+                }
+                finally
+                {
+                    UserSettings.DoV1_0_8_Init = false;
+                    SaveConfig();
                 }
             }
         }
@@ -247,6 +264,36 @@ internal class UserSettingsService
         }
     }
 
+    private void DoV1_0_8InitJob()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        // remove skip replays to redecode NoSetupEvent errors
+        var skipReplays = context.SkipReplays
+            .ToList();
+
+        if (skipReplays.Any())
+        {
+            context.SkipReplays.RemoveRange(skipReplays);
+            context.SaveChanges();
+        }
+
+        // adjust replays including Computer players
+        var computerReplays = context.Replays
+            .Where(x => x.ReplayPlayers.Any(a => a.Player.ToonId == 0))
+            .ToList();
+
+        if (computerReplays.Any())
+        {
+            computerReplays.ForEach(f => f.GameMode = GameMode.Tutorial);
+            context.SaveChanges();
+        }
+
+        // recalculate ratings
+        var mmrService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+        mmrService.ProduceRatings(new(reCalc: true)).Wait();
+    }
 }
 
 
@@ -265,6 +312,7 @@ public record UserSettings
     public List<string> ReplayPaths { get; set; } = new();
     public DateTime UploadAskTime { get; set; }
     public bool CheckForUpdates { get; set; } = true;
+    public bool DoV1_0_8_Init { get; set; } = true;
 }
 
 public record BattleNetInfo
