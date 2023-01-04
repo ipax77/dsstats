@@ -111,8 +111,8 @@ if (app.Environment.IsDevelopment())
     //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
     //var result = statsService.GetCrossTable(new());
 
-    //var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-    //importService.ImportReplayBlobs().Wait();
+    var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+    importService.ImportReplayBlobs().Wait();
 
     //var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
     //tourneyService.CollectTourneyReplays().Wait();

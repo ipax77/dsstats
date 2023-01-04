@@ -4,6 +4,7 @@ namespace pax.dsstats.shared;
 public record FunStats
 {
     public TimeSpan TotalDuration { get; set; }
+    public TimeSpan AvgDuration { get; set; }
     public List<PosInfo> PosInfos { get; set; } = new();
     public UnitInfo? MostBuildUnit { get; set; }
     public UnitInfo? LeastBuildUnit { get; set; }
