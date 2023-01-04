@@ -156,7 +156,6 @@ public partial class MmrProduceService
             .Where(r => r.Playercount == 6
                 && r.Duration >= 300
                 && r.WinnerTeam > 0
-                //&& !r.ReplayPlayers.Any(x => x.Name.Contains(' '))
                 && gameModes.Contains(r.GameMode))
             .AsNoTracking();
 
@@ -170,13 +169,11 @@ public partial class MmrProduceService
             replays = replays.Where(x => x.GameTime < endTime);
         }
 
-        var result = await replays
+        return await replays
             .OrderBy(o => o.GameTime)
                 .ThenBy(o => o.ReplayId)
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
             .ToListAsync();
-
-        return result.Where(r => !r.ReplayPlayers.Any(x => x.Name.Contains(' '))).ToList();
     }
 
     private async Task SaveCommanderMmrsDic(Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic)
