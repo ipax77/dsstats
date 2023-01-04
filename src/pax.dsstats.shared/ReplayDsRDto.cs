@@ -19,8 +19,6 @@ public record ReplayDsRDto
 
 public record ReplayPlayerDsRDto
 {
-    [MaxLength(50)]
-    public string Name { get; set; } = null!;
     public int ReplayPlayerId { get; init; }
     public int GamePos { get; init; }
     public int Team { get; init; }
