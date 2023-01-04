@@ -428,16 +428,23 @@ public partial class ReplayRepository : IReplayRepository
             dbReplay.ReplayEvent = replayEvent;
         }
 
-        foreach (var player in dbReplay.ReplayPlayers)
+        bool isComputer = false;
+
+        foreach (var replayPlayer in dbReplay.ReplayPlayers)
         {
-            var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == player.Player.ToonId);
+            if (replayPlayer.Player.ToonId == 0)
+            {
+                isComputer = true;
+            }
+
+            var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == replayPlayer.Player.ToonId);
             if (dbPlayer == null)
             {
                 dbPlayer = new()
                 {
-                    Name = player.Player.Name,
-                    ToonId = player.Player.ToonId,
-                    RegionId = player.Player.RegionId,
+                    Name = replayPlayer.Player.Name,
+                    ToonId = replayPlayer.Player.ToonId,
+                    RegionId = replayPlayer.Player.RegionId,
                 };
                 context.Players.Add(dbPlayer);
                 try
@@ -452,25 +459,27 @@ public partial class ReplayRepository : IReplayRepository
             }
             else
             {
-                dbPlayer.RegionId = player.Player.RegionId;
-                dbPlayer.Name = player.Player.Name;
+                dbPlayer.RegionId = replayPlayer.Player.RegionId;
+                dbPlayer.Name = replayPlayer.Player.Name;
             }
 
-            player.Player = dbPlayer;
-            player.Name = dbPlayer.Name;
+            replayPlayer.Player = dbPlayer;
+            replayPlayer.Name = dbPlayer.Name;
 
-            foreach (var spawn in player.Spawns)
+            foreach (var spawn in replayPlayer.Spawns)
             {
-                (spawn.Units, units) = await GetMapedSpawnUnits(spawn, player.Race, units);
+                (spawn.Units, units) = await GetMapedSpawnUnits(spawn, replayPlayer.Race, units);
             }
 
-            (player.Upgrades, upgrades) = await GetMapedPlayerUpgrades(player, upgrades);
+            (replayPlayer.Upgrades, upgrades) = await GetMapedPlayerUpgrades(replayPlayer, upgrades);
 
         }
 
-        //await AddDbCommanderMmr((dbReplay.CommandersTeam1.TrimEnd('|') + dbReplay.CommandersTeam2).Trim('|'));
-
-
+        if (isComputer)
+        {
+            dbReplay.GameMode = GameMode.Tutorial;
+        }
+        
         context.Replays.Add(dbReplay);
 
         try
