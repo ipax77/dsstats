@@ -88,11 +88,11 @@ context.Database.Migrate();
 // SEED
 if (app.Environment.IsProduction())
 {
-    var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-    importService.DEBUGFixComputerGames();
+    //var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+    //importService.DEBUGFixComputerGames();
 
-    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
+    //var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    //mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
 
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();

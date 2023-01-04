@@ -90,7 +90,7 @@ public partial class StatsService
     private async Task<ReplayDto?> GetGreatestArmyReplayInfo(List<int> toonIds)
     {
         var replayHash = await context.ReplayPlayers
-            .Where(x => toonIds.Contains(x.Player.ToonId))
+            .Where(x => x.Replay.GameMode != GameMode.Tutorial && toonIds.Contains(x.Player.ToonId))
             .OrderByDescending(o => o.Army)
             .Select(s => s.Replay.ReplayHash)
             .FirstOrDefaultAsync();
@@ -105,7 +105,7 @@ public partial class StatsService
     private async Task<ReplayDto?> GetGreatestComebackReplayInfo(IQueryable<ReplayPlayer> replayPlayers)
     {
         var infos = from rp in replayPlayers
-                    where rp.PlayerResult == PlayerResult.Win && rp.Replay.Duration > 360 && rp.Replay.Middle.Length > 0
+                    where rp.Replay.GameMode != GameMode.Tutorial && rp.PlayerResult == PlayerResult.Win && rp.Replay.Duration > 360 && rp.Replay.Middle.Length > 0
                     select new
                     {
                         rp.Replay.Middle,
@@ -140,7 +140,7 @@ public partial class StatsService
     private async Task<ReplayDto?> GetMostUpgradesReplayInfo(List<int> toonIds)
     {
         var replayHash = await context.ReplayPlayers
-            .Where(x => toonIds.Contains(x.Player.ToonId))
+            .Where(x => x.Replay.GameMode != GameMode.Tutorial && toonIds.Contains(x.Player.ToonId))
             .OrderByDescending(o => o.UpgradesSpent)
             .Select(s => s.Replay.ReplayHash)
             .FirstOrDefaultAsync();
@@ -155,7 +155,7 @@ public partial class StatsService
     private async Task<ReplayDto?> GetMostCompetitiveReplayInfo(List<int> toonIds)
     {
         var replayHash = await context.ReplayPlayers
-            .Where(x => toonIds.Contains(x.Player.ToonId))
+            .Where(x => x.Replay.GameMode != GameMode.Tutorial && toonIds.Contains(x.Player.ToonId))
             .OrderByDescending(o => o.Replay.Middle.Length)
             .Select(s => s.Replay.ReplayHash)
             .FirstOrDefaultAsync();
