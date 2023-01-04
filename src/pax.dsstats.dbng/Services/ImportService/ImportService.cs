@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Linq.Expressions;
 using System.Text.Json;
 
 namespace pax.dsstats.dbng.Services;
@@ -209,6 +210,22 @@ public partial class ImportService
             
             await context.Players
                 .Where(x => playerIds.Contains(x.PlayerId))
+                .LoadAsync();
+
+            var uploaderIds = continueReplays
+                .SelectMany(s => s.ReplayPlayers)
+                .Select(s => s.Player.UploaderId)
+                .Distinct().ToList();
+
+#pragma warning disable CS8629 // Nullable value type may be null.
+            List<int> uploadersIdsNoNull = uploaderIds
+                .Where(x => x != null)
+                .Select(s => s.Value)
+                .ToList();
+#pragma warning restore CS8629 // Nullable value type may be null.
+
+            await context.Uploaders
+                .Where(x => uploadersIdsNoNull.Contains(x.UploaderId))
                 .LoadAsync();
         }
 

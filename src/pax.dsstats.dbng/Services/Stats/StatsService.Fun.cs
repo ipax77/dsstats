@@ -20,7 +20,10 @@ public partial class StatsService
             .Where(x => playersIds.Contains(x.PlayerId));
 
         var sumDuration = await replayPlayers.SumAsync(s => s.Duration);
+        var avgDuration = await replayPlayers.AverageAsync(a => a.Duration);
+
         funStats.TotalDuration = TimeSpan.FromSeconds(sumDuration);
+        funStats.AvgDuration = TimeSpan.FromSeconds(avgDuration);
 
         funStats.PosInfos = await GetPosInfo(replayPlayers);
         funStats.FirstReplay = await GetFirstReplayInfo(toonIds);

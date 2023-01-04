@@ -23,6 +23,14 @@ else
                     <span class="text-warning">@funStats.TotalDuration.ToString("c", CultureInfo.InvariantCulture)</span>
                 </div>
             </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-warning">Average Game Duration</h3>
+                </div>
+                <div class="card-body">
+                    <span class="text-warning">@funStats.AvgDuration.ToString(@"hh\:mm\:ss")</span>
+                </div>
+            </div>
         </div>
         <div class="col-auto">
             <div class="card">
@@ -33,8 +41,6 @@ else
                     @funStats.MostBuildUnit?.UnitName: @HelperService.GetBigNumberString(funStats.MostBuildUnit?.Count ?? 0)
                 </div>
             </div>
-        </div>
-        <div class="col-auto">
             <div class="card">
                 <div class="card-header">
                     <h3 class="text-warning">Least Build Unit</h3>
@@ -150,10 +156,19 @@ else
     private FunStats? funStats;
     int posInfoSum = 0;
 
-    protected override void OnInitialized()
+    //protected override void OnInitialized()
+    //{
+    //    _ = LoadData();
+    //    base.OnInitialized();
+    //}
+
+    protected override void OnAfterRender(bool firstRender)
     {
-        _ = LoadData();
-        base.OnInitialized();
+        if (firstRender)
+        {
+            _ = LoadData();
+        }
+        base.OnAfterRender(firstRender);
     }
 
     private async Task LoadData()
