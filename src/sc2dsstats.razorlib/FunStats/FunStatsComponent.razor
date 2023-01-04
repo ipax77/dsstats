@@ -20,7 +20,7 @@ else
                     <h3 class="text-warning">Total Time Played</h3>
                 </div>
                 <div class="card-body">
-                    <span class="text-warning">@funStats.TotalDuration.ToString("c", CultureInfo.InvariantCulture)</span>
+                    <span class="fw-bold">@funStats.TotalDuration.ToString("c", CultureInfo.InvariantCulture)</span>
                 </div>
             </div>
             <div class="card">
@@ -28,7 +28,7 @@ else
                     <h3 class="text-warning">Average Game Duration</h3>
                 </div>
                 <div class="card-body">
-                    <span class="text-warning">@funStats.AvgDuration.ToString(@"hh\:mm\:ss")</span>
+                    <span class="fw-bold">@funStats.AvgDuration.ToString(@"hh\:mm\:ss")</span>
                 </div>
             </div>
         </div>
@@ -38,7 +38,7 @@ else
                     <h3 class="text-warning">Most Build Unit</h3>
                 </div>
                 <div class="card-body">
-                    @funStats.MostBuildUnit?.UnitName: @HelperService.GetBigNumberString(funStats.MostBuildUnit?.Count ?? 0)
+                    <span class="fw-bold">@funStats.MostBuildUnit?.UnitName: @HelperService.GetBigNumberString(funStats.MostBuildUnit?.Count ?? 0)</span>
                 </div>
             </div>
             <div class="card">
@@ -46,7 +46,7 @@ else
                     <h3 class="text-warning">Least Build Unit</h3>
                 </div>
                 <div class="card-body">
-                    @funStats.LeastBuildUnit?.UnitName: @funStats.LeastBuildUnit?.Count
+                    <span class="fw-bold">@funStats.LeastBuildUnit?.UnitName: @funStats.LeastBuildUnit?.Count</span>
                 </div>
             </div>
         </div>
@@ -69,10 +69,10 @@ else
                             @foreach (var posInfo in funStats.PosInfos.OrderBy(o => o.Pos))
                             {
                                 <tr>
-                                    <td>@posInfo.Pos</td>
+                                    <td><span class="fw-bold text-warning">@posInfo.Pos</span></td>
                                     <td>@posInfo.Count</td>
                                     <td>@HelperService.GetPercentageString(posInfo.Wins, posInfoSum)</td>
-                                    <td>@HelperService.GetPercentageString(posInfo.Wins, posInfo.Count)</td>
+                                    <td><span class="fw-bold text-warning">@HelperService.GetPercentageString(posInfo.Wins, posInfo.Count)</span></td>
                                 </tr>
                             }
                         </tbody>
