@@ -122,13 +122,7 @@ public partial class MmrProduceService
             allReplayDatas.AddRange(replayDatas);
         }
 
-        if (false) // DEBUG or TESTS
-        {
-        }
-        else
-        {
-            var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings, !mmrOptions.ReCalc);
-        }
+        var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings, !mmrOptions.ReCalc);
 
         return (latestReplay, allReplayDatas);
     }
