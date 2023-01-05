@@ -27,7 +27,14 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v1.0.7</summary>
+<details open="open"><summary>v1.0.8</summary>
+
+>- FunStats based on Default Filter
+>- Ratings calculation improved
+
+</details>
+
+<details><summary>v1.0.7</summary>
 
 >- FunStats
 >- Fixed (most) NoSetupEvent decoding errors

@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using dsstats.mmr;
+using dsstats.mmr.ProcessData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -23,7 +24,7 @@ public partial class MmrProduceService
         this.logger = logger;
     }
 
-    public async Task<double> ProduceRatings(MmrOptions mmrOptions,
+    public async Task<List<ReplayData>> ProduceRatings(MmrOptions mmrOptions,
                                         DateTime latestReplay = default,
                                         List<ReplayDsRDto>? dependentReplays = null,
                                         DateTime startTime = default,
@@ -53,13 +54,13 @@ public partial class MmrProduceService
             latestReplay = startTime;
         }
 
-        (latestReplay, double accuracy) = await ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrChangesAppendId, latestReplay, endTime);
+        (latestReplay, List<ReplayData> replayDatas) = await ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrChangesAppendId, latestReplay, endTime);
 
         await SaveCommanderMmrsDic(cmdrMmrDic);
         sw.Stop();
         logger.LogWarning($"ratings produced in {sw.ElapsedMilliseconds} ms");
 
-        return accuracy;
+        return replayDatas;
     }
 
 
@@ -82,7 +83,7 @@ public partial class MmrProduceService
         }
     }
 
-    public async Task<(DateTime, double)> ProduceRatings(MmrOptions mmrOptions,
+    public async Task<(DateTime, List<ReplayData>)> ProduceRatings(MmrOptions mmrOptions,
                                          Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                          Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
                                          IRatingRepository ratingRepository,
@@ -90,7 +91,7 @@ public partial class MmrProduceService
                                          DateTime startTime = default,
                                          DateTime endTime = default)
     {
-        var accuracyList = new List<bool>();
+        var allReplayDatas = new List<ReplayData>();
 
         DateTime _startTime = startTime == DateTime.MinValue ? new DateTime(2018, 1, 1) : startTime;
         DateTime _endTime = endTime == DateTime.MinValue ? DateTime.Today.AddDays(2) : endTime;
@@ -117,13 +118,12 @@ public partial class MmrProduceService
 
             latestReplay = replays.Last().GameTime;
 
-            (mmrIdRatings, mmrChangesAppendId, var partAccuracy) = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, mmrOptions, mmrChangesAppendId, ratingRepository);
-            accuracyList.AddRange(partAccuracy);
+            (mmrIdRatings, mmrChangesAppendId, var replayDatas) = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, mmrOptions, mmrChangesAppendId, ratingRepository);
+            allReplayDatas.AddRange(replayDatas);
         }
         var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings, !mmrOptions.ReCalc);
 
-        double accuracy = accuracyList.Count(x => x == true) / (double)accuracyList.Count;
-        return (latestReplay, accuracy);
+        return (latestReplay, allReplayDatas);
     }
 
     private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetMmrIdRatings(MmrOptions mmrOptions, IRatingRepository ratingRepository, List<ReplayDsRDto>? dependentReplays)
