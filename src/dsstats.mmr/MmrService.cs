@@ -34,7 +34,7 @@ public static partial class MmrService
                 {
                     mmrChanges.Add(changes);
                 }
-                if (false) // DEBUG or TESTS
+                if (dry)
                 {
                     if (replayData != null)
                     {
@@ -49,7 +49,7 @@ public static partial class MmrService
 
             if (!dry && mmrChanges.Count > 100000)
             {
-                mmrChangesAppendId = await ratingRepository!.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
+                mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
                 mmrChanges.Clear();
                 mmrChanges = new List<MmrChange>();
             }

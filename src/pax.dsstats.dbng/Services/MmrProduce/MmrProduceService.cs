@@ -65,7 +65,7 @@ public partial class MmrProduceService
 
 
 
-    private async Task<int> GetMmrChangesAppendId(MmrOptions mmrOptions)
+    public async Task<int> GetMmrChangesAppendId(MmrOptions mmrOptions)
     {
         if (mmrOptions.ReCalc)
         {
@@ -127,7 +127,7 @@ public partial class MmrProduceService
         return (latestReplay, allReplayDatas);
     }
 
-    private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetMmrIdRatings(MmrOptions mmrOptions, IRatingRepository ratingRepository, List<ReplayDsRDto>? dependentReplays)
+    public async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetMmrIdRatings(MmrOptions mmrOptions, IRatingRepository ratingRepository, List<ReplayDsRDto>? dependentReplays)
     {
         if (mmrOptions.ReCalc || dependentReplays == null)
         {
@@ -144,7 +144,7 @@ public partial class MmrProduceService
         }
     }
 
-    private async Task<List<ReplayDsRDto>> GetReplayDsRDtos(DateTime startTime, DateTime endTime)
+    public async Task<List<ReplayDsRDto>> GetReplayDsRDtos(DateTime startTime, DateTime endTime)
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -177,7 +177,7 @@ public partial class MmrProduceService
             .ToListAsync();
     }
 
-    private async Task SaveCommanderMmrsDic(Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic)
+    public async Task SaveCommanderMmrsDic(Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic)
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -207,7 +207,7 @@ public partial class MmrProduceService
         await context.SaveChangesAsync();
     }
 
-    private async Task<Dictionary<CmdrMmmrKey, CmdrMmmrValue>> GetCommanderMmrsDic(MmrOptions mmrOptions, bool clean)
+    public async Task<Dictionary<CmdrMmmrKey, CmdrMmmrValue>> GetCommanderMmrsDic(MmrOptions mmrOptions, bool clean)
     {
         if (clean)
         {
@@ -251,7 +251,7 @@ public partial class MmrProduceService
         });
     }
 
-    private Dictionary<CmdrMmmrKey, CmdrMmmrValue> GetCleanCommnaderMmrsDic(MmrOptions mmrOptions)
+    public Dictionary<CmdrMmmrKey, CmdrMmmrValue> GetCleanCommnaderMmrsDic(MmrOptions mmrOptions)
     {
         List<CommanderMmr> cmdrMmrs = new();
 
