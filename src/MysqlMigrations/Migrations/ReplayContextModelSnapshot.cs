@@ -233,6 +233,9 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("PlayerId")
                         .HasColumnType("int");
 
+                    b.Property<int>("Pos")
+                        .HasColumnType("int");
+
                     b.Property<double>("Rating")
                         .HasColumnType("double");
 

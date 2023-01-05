@@ -29,7 +29,10 @@
                     <span class="badge bg-primary ms-3" style="font-size: 1.2rem;">
                         <span class="small">@rating.RatingType Rating</span>
                         <br />
-                        <span class="text-warning">@rating.Rating.ToString("N2", CultureInfo.InvariantCulture)</span>
+                        <span class="text-warning">
+                            <span class="small text-danger">#@rating.Pos </span>
+                            @rating.Rating.ToString("N2", CultureInfo.InvariantCulture)
+                        </span>
                     </span>
                 </div>
             }

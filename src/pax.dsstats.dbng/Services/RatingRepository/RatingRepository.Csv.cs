@@ -23,12 +23,11 @@ public partial class RatingRepository
         sb.Append($"{nameof(PlayerRating.Consistency)},");
         sb.Append($"{nameof(PlayerRating.Confidence)},");
         sb.Append($"{nameof(PlayerRating.IsUploader)},");
-        sb.Append($"{nameof(PlayerRating.PlayerId)}");
+        sb.Append($"{nameof(PlayerRating.PlayerId)},");
+        sb.Append($"{nameof(PlayerRating.Pos)}");
         sb.Append(Environment.NewLine);
-        int i = 0;
-
         
-
+        int i = 0;
         foreach (var ent in mmrIdRatings)
         {
             foreach (var entCalc in ent.Value.Values)
@@ -50,7 +49,8 @@ public partial class RatingRepository
                 sb.Append($"{entCalc.Confidence.ToString(CultureInfo.InvariantCulture)},");
                 sb.Append($"{(entCalc.IsUploader ? 1 : 0)},");
 
-                sb.Append($"{entCalc.PlayerId}");
+                sb.Append($"{entCalc.PlayerId},");
+                sb.Append($"0");
                 sb.Append(Environment.NewLine);
             }
         }
@@ -208,6 +208,8 @@ public partial class RatingRepository
         ";
         command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
+        
+        await SetPlayerRatingsPos();
     }
 
     private async Task ReplayPlayerRatingsFromCsv2MySql(string csvBasePath)
@@ -261,5 +263,14 @@ public partial class RatingRepository
         command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
         File.Delete(csvFile);
+    }
+
+    private async Task SetPlayerRatingsPos()
+    {
+        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        await connection.OpenAsync();
+        var command = connection.CreateCommand();
+        command.CommandText = "CALL SetPlayerRatingPos();";
+        await command.ExecuteNonQueryAsync();
     }
 }

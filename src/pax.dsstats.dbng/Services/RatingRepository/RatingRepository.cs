@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
+using System.Diagnostics;
 
 namespace pax.dsstats.dbng.Services;
 
@@ -209,6 +210,7 @@ public partial class RatingRepository : IRatingRepository
                 dto.Ratings.Add(new()
                 {
                     Type = rating.RatingType,
+                    Pos = rating.Pos,
                     Games = rating.Games,
                     Wins = rating.Wins,
                     Mvp = rating.Mvp,
@@ -470,7 +472,6 @@ public partial class RatingRepository : IRatingRepository
         }
         return new();
     }
-
 
     private static List<TimeRating> GetTimeRatings(string? mmrOverTime)
     {
