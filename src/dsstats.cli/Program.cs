@@ -22,7 +22,10 @@ class Program
         if (args.Length == 0)
         {
             // await Decode("C:\\Users\\pax77\\Documents\\StarCraft II\\Accounts\\107095918\\2-S2-1-226401\\Replays\\Multiplayer", "/data/ds/errorReplay/dummy", 8);
-            await CompareDb.CompareJsonToDb("/data/ds/errorReplay/dummy");
+            //await CompareDb.CompareJsonToDb("/data/ds/errorReplay/dummy");
+
+            //var mmrService = new MmrService.MmrService();
+            //await mmrService.DerivationTest();
         }
 
         if (args.Length < 2)
@@ -74,6 +77,20 @@ class Program
                 WriteHowToUse();
             }
         }
+        else if (args[0] == "mmr")
+        {
+            var mmrService = new MmrService.MmrService();
+
+            if (args[1] == "accuracy")
+            {
+                var results = await mmrService.DerivationTest();
+            }
+            else
+            {
+                WriteHowToUse();
+                return;
+            }
+        }
         else
         {
             if (args.Length > 0)
@@ -110,6 +127,7 @@ class Program
         Console.WriteLine("  decode <replayPath> <outputPath>");
         Console.WriteLine("  unzip <base64Zipfile> <outputPath>");
         Console.WriteLine("  tourneyjob <int:cpuCoresToUse>");
+        Console.WriteLine("  mmr <string:mode> (accuracy, ...)");
     }
 
     private static async Task Unzip(string base64Zipfile, string outputPath)
