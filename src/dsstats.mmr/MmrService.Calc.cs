@@ -33,14 +33,16 @@ public static partial class MmrService
                 * (mmrOptions.UseConfidence ? factor_confidence : 1.0);
 
             playerData.Deltas.Mmr = CalculateMmrDelta(replayData.WinnerTeamData.ExpectedResult, playerImpact, mmrOptions.EloK);
-            playerData.Deltas.Consistency = MmrOptions.consistencyDeltaMult * 2 * (replayData.WinnerTeamData.ExpectedResult - 0.50);
+            //playerData.Deltas.Consistency = MmrOptions.consistencyDeltaMult * 2 * (replayData.WinnerTeamData.ExpectedResult - 0.50);
+            playerData.Deltas.Consistency = Math.Abs(teamData.ExpectedResult - teamData.ActualResult) < 0.50 ? 1 : 0;
             playerData.Deltas.Confidence = 1 - Math.Abs(teamData.ExpectedResult - teamData.ActualResult);
 
             //playerData.CommanderMmrDelta = CalculateMmrDelta(replayData.WinnerCmdrExpectationToWin, 1, commandersMmrImpact, mmrOptions.EloK);
 
             if (playerData.IsLeaver)
             {
-                playerData.Deltas.Consistency *= -1;
+                playerData.Deltas.Consistency = 0;
+                playerData.Deltas.Confidence = 0;
 
                 playerData.Deltas.Mmr *= -1;
                 playerData.Deltas.CommanderMmr = 0;
@@ -107,19 +109,17 @@ public static partial class MmrService
 
             double mmrBefore = currentPlayerRating.Mmr;
             double consistencyBefore = currentPlayerRating.Consistency;
-            //double confidenceBeforeSummed = currentPlayerRating.Confidence * gamesCountBefore;
             double confidenceBefore = currentPlayerRating.Confidence;
 
-            //int gamesCountAfter = gamesCountBefore + 1;
             double mmrAfter = mmrBefore + player.Deltas.Mmr;
-            double consistencyAfter = consistencyBefore + player.Deltas.Consistency;
-            //double confidenceAfter = (confidenceBeforeSummed + player.PlayerConfidenceDelta) / gamesCountAfter;
-            const double confidenceBeforePercentage = 0.90;
+            const double consistencyBeforePercentage = 0.99;
+            double consistencyAfter = ((consistencyBefore * consistencyBeforePercentage) + (player.Deltas.Consistency * (1 - consistencyBeforePercentage)));
+            const double confidenceBeforePercentage = 0.99;
             double confidenceAfter = ((confidenceBefore * confidenceBeforePercentage) + (player.Deltas.Confidence * (1 - confidenceBeforePercentage)));
 
             consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
             confidenceAfter = Math.Clamp(confidenceAfter, 0, 1);
-            mmrAfter = Math.Max(1, mmrAfter);
+            //mmrAfter = Math.Max(1, mmrAfter);
 
             changes.Add(new PlChange() { Pos = player.GamePos, ReplayPlayerId = player.ReplayPlayerId, Change = mmrAfter - mmrBefore });
 
