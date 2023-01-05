@@ -121,7 +121,14 @@ public partial class MmrProduceService
             (mmrIdRatings, mmrChangesAppendId, var replayDatas) = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, mmrOptions, mmrChangesAppendId, ratingRepository);
             allReplayDatas.AddRange(replayDatas);
         }
-        var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings, !mmrOptions.ReCalc);
+
+        if (false) // DEBUG or TESTS
+        {
+        }
+        else
+        {
+            var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings, !mmrOptions.ReCalc);
+        }
 
         return (latestReplay, allReplayDatas);
     }
