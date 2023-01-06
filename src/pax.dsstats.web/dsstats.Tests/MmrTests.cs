@@ -11,6 +11,7 @@ using Xunit.Sdk;
 using pax.dsstats.dbng.Services;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
+using pax.dsstats.shared.Raven;
 
 namespace dsstats.Tests;
 
@@ -202,5 +203,34 @@ public class MmrTests
 
         // cleanup
         Directory.Delete(testPath, true);
+    }
+
+    [Fact]
+    public void A4PlayerRatingPosTest()
+    {
+        // prepare services
+        var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+        {
+            if (ratingType == RatingType.None)
+            {
+                continue;
+            }
+
+            var ratings = context.PlayerRatings
+            .Where(x => x.RatingType == ratingType)
+            .OrderByDescending(o => o.Rating).ThenBy(o => o.PlayerId);
+
+            var firstRating = ratings.FirstOrDefault();
+            var secondRating = ratings.Skip(1).FirstOrDefault();
+
+            Assert.Equal(1, firstRating?.Pos);
+            Assert.Equal(2, secondRating?.Pos);
+        }
+
+        // PlayerRating.Pos is created with the database procedure SetPlayerRatingPos
+        // introduced in migration 20230105132613_PlayerRatingsRowNumber.cs
     }
 }

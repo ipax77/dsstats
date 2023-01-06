@@ -87,7 +87,7 @@
             <a href="https://github.com/ipax77/dsstats/wiki/Mmr-calculation"><span class="oi oi-info me-1"></span>Calculation</a>
         </div>
     </div>
-    <div class="d-flex" style="max-width: 850px;">
+    <div class="d-flex" style="max-width: 750px;">
         <p class="ms-auto p-0 m-0"><small class="text-primary">min 20 games</small> #@ratingsCount</p>
     </div>
     <div class="tableFixHead">
@@ -101,10 +101,16 @@
                 <col class="col">
                 <col class="col">
                 <col class="col">
+                <col class="col">
             </colgroup>
             <thead style="user-select: none;">
                 <CascadingValue Value="RatingsRequest.Orders">
                     <tr>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Pos"))">
+                            <SortArrow Property="Pos">
+                                #
+                            </SortArrow>
+                        </th>
                         <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Player.RegionId"))">
                             <SortArrow Property="Player.RegionId">
                                 <div class="text-center">
@@ -157,9 +163,12 @@
                         <ItemContent>
                             <tr height="41px;" class="pointer" @onclick="e => LoadPlayerChart(rating.Player)">
                                 <td>
+                                    <span class="text-truncate text-warning" style="display: block; width: 40px;">@rating.Pos</span>
+                                </td>
+                                <td>
                                     <span>@Data.GetRegionString(rating.Player.RegionId)</span>
                                 </td>
-                                <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Player.Name</span></td>
+                                <td><span class="text-truncate text-info" style="display: block; width: 130px;">@rating.Player.Name</span></td>
                                 <td>@(rating.Games == 0 || rating.MainCount * 100.0 / rating.Games < 10.5 ? "Random" : rating.Main.ToString())</td>
                                 <td>@HelperService.GetPercentageString(rating.MainCount, rating.Games)</td>
                                 <td class="border-start">@rating.Games</td>

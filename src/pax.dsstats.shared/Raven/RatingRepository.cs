@@ -13,6 +13,7 @@ public record RavenPlayerDetailsDto
 public record RavenRatingDetailsDto
 {
     public RatingType Type { get; init; }
+    public int Pos { get; init; }
     public int Games { get; init; }
     public int Wins { get; init; }
     public int Mvp { get; init; }

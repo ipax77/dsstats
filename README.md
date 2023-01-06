@@ -27,7 +27,13 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v1.0.8</summary>
+<details open="open"><summary>v1.0.9</summary>
+
+>- PlayerRatings Position
+
+</details>
+
+<details><summary>v1.0.8</summary>
 
 >- FunStats based on Default Filter
 >- Ratings calculation improved

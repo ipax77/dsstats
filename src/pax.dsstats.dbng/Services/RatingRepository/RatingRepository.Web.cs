@@ -59,8 +59,9 @@ public partial class RatingRepository
                 await command.ExecuteNonQueryAsync();
             }
         }
-
         await transaction.CommitAsync();
+
+        await SetPlayerRatingsPos();
         return new();
     }
 
