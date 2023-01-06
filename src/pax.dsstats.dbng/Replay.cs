@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
-using pax.dsstats.shared.Raven;
+using pax.dsstats;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -50,6 +50,8 @@ public class NoUploadResult
 {
     public int NoUploadResultId { get; set; }
     public int TotalReplays { get; set; }
+    [Precision(0)]
+    public DateTime Created { get; set; }
     [Precision(0)]
     public DateTime LatestReplay { get; set; }
     public int NoUploadTotal { get; set; }

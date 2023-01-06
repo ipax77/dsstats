@@ -1,5 +1,5 @@
 ﻿using pax.dsstats.shared;
-using pax.dsstats.shared.Raven;
+using pax.dsstats;
 using static pax.dsstats.dbng.Services.StatsService;
 
 namespace pax.dsstats.dbng.Services

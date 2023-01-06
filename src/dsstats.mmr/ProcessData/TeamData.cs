@@ -10,7 +10,6 @@ public record TeamData
         ActualResult = isWinner ? 1 : 0;
 
         Players = replayPlayers.Select(p => new PlayerData(replay, p)).ToArray();
-        HasStd = replayPlayers.All(a => (int)a.Race <= 3);
     }
     public TeamData(bool isWinner,
                     double mmr,
@@ -21,7 +20,6 @@ public record TeamData
     {
         IsWinner = isWinner;
         ActualResult = isWinner ? 1 : 0;
-        HasStd = players.All(a => (int)a.Race <= 3);
         Mmr = mmr;
         Confidence = confidence;
         CmdrComboMmr = cmdrComboMmr;
@@ -29,7 +27,6 @@ public record TeamData
         Players = players;
     }
 
-    public bool HasStd { get; init; }
     public PlayerData[] Players { get; init; }
 
     public bool IsWinner { get; init; }

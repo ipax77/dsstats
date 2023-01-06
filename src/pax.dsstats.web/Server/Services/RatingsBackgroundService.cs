@@ -1,4 +1,5 @@
-﻿using pax.dsstats.dbng.Services;
+﻿using pax.dsstats.dbng.Repositories;
+using pax.dsstats.dbng.Services;
 using System.Diagnostics;
 
 namespace pax.dsstats.web.Server.Services;
@@ -37,6 +38,10 @@ public class RatingsBackgroundService : IHostedService, IDisposable
         using var scope = serviceProvider.CreateScope();
         var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
         await cheatDetectService.Detect();
+        await cheatDetectService.DetectNoUpload();
+
+        var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
+        await replayRepository.FixPlayerNames();
 
         sw.Stop();
         logger.LogWarning($"{DateTime.UtcNow.ToString(@"yyyy-MM-dd HH:mm:ss")} - Work done in {sw.ElapsedMilliseconds} ms");

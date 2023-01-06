@@ -2,7 +2,6 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using System.Globalization;
 @using pax.dsstats.shared
-@using pax.dsstats.shared.Raven;
 @using sc2dsstats.razorlib.Services
 @inject IDataService dataService
 @inject NavigationManager NavigationManager
@@ -52,10 +51,10 @@
                 </div>
                 <div class="col-auto">
                     <label class="form-label">
-                        Mode
+                        Rating Type
                         <InputSelect class="form-select" @bind-Value="RatingsRequest.Type">
-                            <option value="@RatingType.Cmdr" selected>Cmdr</option>
-                            <option value="@RatingType.Std">Std</option>
+                            <option value="@RatingType.Cmdr" selected>@Data.GetRatingTypeLongName(RatingType.Cmdr)</option>
+                            <option value="@RatingType.Std">@Data.GetRatingTypeLongName(RatingType.Std)</option>
                         </InputSelect>
                     </label>
 

@@ -120,6 +120,9 @@ if (app.Environment.IsDevelopment())
 
     //var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
     //tourneyService.CollectTourneyReplays().Wait();
+
+    //var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
+    //replayRepository.FixPlayerNames().Wait();
 }
 
 // Configure the HTTP request pipeline.

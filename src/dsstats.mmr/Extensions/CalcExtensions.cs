@@ -1,5 +1,5 @@
 ﻿using pax.dsstats.shared;
-using pax.dsstats.shared.Raven;
+using pax.dsstats;
 
 namespace dsstats.mmr.Extensions;
 

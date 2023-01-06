@@ -68,7 +68,7 @@
 
         var toonIdRatingResponse = await dataService.GetToonIdRatings(new ToonIdRatingRequest()
             {
-                RatingType = pax.dsstats.shared.Raven.RatingType.None,
+                RatingType = pax.dsstats.shared.RatingType.None,
                 ToonIds = toonIds
             }, cts.Token);
 
@@ -76,7 +76,7 @@
 
         var response = await ratingRepository.GetToonIdRatings(new ToonIdRatingRequest()
             {
-                RatingType = pax.dsstats.shared.Raven.RatingType.None,
+                RatingType = pax.dsstats.shared.RatingType.None,
                 ToonIds = toonIds
             }, cts.Token);
 
@@ -89,7 +89,7 @@
     {
         var response = await ratingRepository.GetToonIdRatings(new ToonIdRatingRequest()
             {
-                RatingType = pax.dsstats.shared.Raven.RatingType.None,
+                RatingType = pax.dsstats.shared.RatingType.None,
                 ToonIds = toonIds
             }, cts.Token);
 

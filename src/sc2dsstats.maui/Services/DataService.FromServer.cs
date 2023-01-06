@@ -1,6 +1,5 @@
 ﻿
 using Microsoft.Extensions.Logging;
-using pax.dsstats.shared.Raven;
 using pax.dsstats.shared;
 using System.Net.Http.Json;
 

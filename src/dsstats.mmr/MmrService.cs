@@ -1,7 +1,7 @@
 ﻿
 using dsstats.mmr.ProcessData;
 using pax.dsstats.shared;
-using pax.dsstats.shared.Raven;
+using pax.dsstats;
 
 namespace dsstats.mmr;
 
@@ -34,10 +34,13 @@ public static partial class MmrService
                 {
                     mmrChanges.Add(changes);
                 }
-                //if (replayData != null) // DEBUG
-                //{
-                //    replayDatas.Add(replayData);
-                //}
+                if (dry)
+                {
+                    if (replayData != null)
+                    {
+                        replayDatas.Add(replayData);
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -46,7 +49,7 @@ public static partial class MmrService
 
             if (!dry && mmrChanges.Count > 100000)
             {
-                mmrChangesAppendId = await ratingRepository!.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
+                mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
                 mmrChanges.Clear();
                 mmrChanges = new List<MmrChange>();
             }
@@ -99,10 +102,10 @@ public static partial class MmrService
         var mmrChanges2 = AddPlayersRankings(mmrIdRatings, replayData.LoserTeamData, replayData.GameTime, replayData.Maxkillsum);
         var mmrChanges = mmrChanges1.Concat(mmrChanges2).ToList();
 
-        if (mmrOptions.UseCommanderMmr && replayData.Maxleaver < 90)
+        if (mmrOptions.UseCommanderMmr && !replayData.IsStd && replayData.Maxleaver < 90)
         {
-            SetCommandersComboMmr(replayData.WinnerTeamData, cmdrMmrDic);
-            SetCommandersComboMmr(replayData.LoserTeamData, cmdrMmrDic);
+            SetCommandersComboMmr(replayData, replayData.WinnerTeamData, cmdrMmrDic);
+            SetCommandersComboMmr(replayData, replayData.LoserTeamData, cmdrMmrDic);
         }
 
         return mmrChanges;
