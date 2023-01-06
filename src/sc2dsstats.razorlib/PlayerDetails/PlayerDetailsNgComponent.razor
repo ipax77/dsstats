@@ -46,8 +46,8 @@
             <label class="form-label">
                 Mode
                 <select class="form-select" @onchange="RatingTypeChange">
-                    <option selected="@(RatingType == RatingType.Std)" value="Standard">Standard</option>
-                    <option selected="@(RatingType == RatingType.Cmdr)" value="Commanders">Commanders</option>
+                    <option selected="@(RatingType == RatingType.Std)" value="Standard">@Data.GetRatingTypeLongName(RatingType.Std)</option>
+                    <option selected="@(RatingType == RatingType.Cmdr)" value="Commanders">@Data.GetRatingTypeLongName(RatingType.Cmdr)</option>
                 </select>
             </label>
         </div>
@@ -78,7 +78,7 @@
             <div class="col-auto mt-1">
                 <div class="card" style="min-width: 475px;">
                     <div class="card-header">
-                        <h4>GameModes Played</h4>
+                        <h4 class="text-warning">GameModes Played</h4>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
@@ -111,7 +111,8 @@
             <div class="col-auto mt-1">
                 <div class="card">
                     <div class="card-header">
-                        <h4>@interestRating.RatingType Rating Info</h4>
+                        <h4><span class="text-warning">Rating Info</span></h4>
+                        <small>@Data.GetRatingTypeLongName(interestRating.RatingType)</small>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -153,7 +154,14 @@
         <div class="col-auto mt-1">
             <div class="card" style="min-width: 475px;">
                 <div class="card-header">
-                    <h4>Matchups <small>Count > 10</small></h4>
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4><span class="text-warning">Matchups</span> <small>@Data.GetRatingTypeLongName(ratingType)</small></h4>
+                        </div>
+                        <div>
+                            <span class="text-info">min 10 games</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
@@ -170,7 +178,15 @@
                 <div class="col-auto mt-1">
                     <div class="card" style="min-width: 475px;">
                         <div class="card-header">
-                            <h4>Teammates <small>including the player</small></h4>
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4><span class="text-warning">Teammates</span> <small>including the player</small></h4>
+                                </div>
+                                <div>
+                                    <span class="text-info">min 10 games</span>
+                                </div>
+                            </div>
+                            <small>@Data.GetRatingTypeLongName(ratingType)</small>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
@@ -185,7 +201,15 @@
                 <div class="col-auto mt-1">
                     <div class="card" style="min-width: 475px;">
                         <div class="card-header">
-                            <h4>Opponents <small>and their winrate</small></h4>
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4><span class="text-warning">Opponents</span> <small>and their winrate</small></h4>
+                                </div>
+                                <div>
+                                    <span class="text-info">min 10 games</span>
+                                </div>
+                            </div>
+                            <small>@Data.GetRatingTypeLongName(ratingType)</small>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">

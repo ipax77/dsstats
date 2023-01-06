@@ -51,10 +51,10 @@
                 </div>
                 <div class="col-auto">
                     <label class="form-label">
-                        Mode
+                        Rating Type
                         <InputSelect class="form-select" @bind-Value="RatingsRequest.Type">
-                            <option value="@RatingType.Cmdr" selected>Cmdr</option>
-                            <option value="@RatingType.Std">Std</option>
+                            <option value="@RatingType.Cmdr" selected>@Data.GetRatingTypeLongName(RatingType.Cmdr)</option>
+                            <option value="@RatingType.Std">@Data.GetRatingTypeLongName(RatingType.Std)</option>
                         </InputSelect>
                     </label>
 
