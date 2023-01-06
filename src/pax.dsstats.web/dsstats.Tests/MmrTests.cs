@@ -11,6 +11,7 @@ using Xunit.Sdk;
 using pax.dsstats.dbng.Services;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
+using pax.dsstats.shared.Raven;
 
 namespace dsstats.Tests;
 
@@ -211,24 +212,25 @@ public class MmrTests
         var scope = app.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        var cmdrRatings = context.PlayerRatings
-            .Where(x => x.RatingType == pax.dsstats.shared.Raven.RatingType.Cmdr)
+        foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+        {
+            if (ratingType == RatingType.None)
+            {
+                continue;
+            }
+
+            var ratings = context.PlayerRatings
+            .Where(x => x.RatingType == ratingType)
             .OrderByDescending(o => o.Rating).ThenBy(o => o.PlayerId);
 
-        var firstRating = cmdrRatings.FirstOrDefault();
-        var secondRating = cmdrRatings.Skip(1).FirstOrDefault();
+            var firstRating = ratings.FirstOrDefault();
+            var secondRating = ratings.Skip(1).FirstOrDefault();
 
-        Assert.Equal(1, firstRating?.Pos);
-        Assert.Equal(2, secondRating?.Pos);
+            Assert.Equal(1, firstRating?.Pos);
+            Assert.Equal(2, secondRating?.Pos);
+        }
 
-        var stdRatings = context.PlayerRatings
-            .Where(x => x.RatingType == pax.dsstats.shared.Raven.RatingType.Std)
-            .OrderByDescending(o => o.Rating).ThenBy(o => o.PlayerId);
-
-        var stdFirstRating = stdRatings.FirstOrDefault();
-        var stdSecondRating = stdRatings.Skip(1).FirstOrDefault();
-
-        Assert.Equal(1, stdFirstRating?.Pos);
-        Assert.Equal(2, stdSecondRating?.Pos);
+        // PlayerRating.Pos is created with the database procedure SetPlayerRatingPos
+        // introduced in migration 20230105132613_PlayerRatingsRowNumber.cs
     }
 }
