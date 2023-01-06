@@ -92,7 +92,7 @@ public partial class RatingRepository
     {
         var ratings = context.PlayerRatings
             .Include(i => i.Player)
-            .Where(x => x.Games > 20 && x.RatingType == request.Type);
+            .Where(x => x.Games > 100 && x.RatingType == request.Type);
 
         if (request.Uploaders && !Data.IsMaui)
         {

@@ -79,13 +79,13 @@ public partial class RatingRepository
         if (request.Type == RatingType.Cmdr)
         {
             ratings = RatingMemory.Values
-                .Where(x => x.CmdrPlayer != null && x.CmdrPlayer.Rating.Games >= 20)
+                .Where(x => x.CmdrPlayer != null && x.CmdrPlayer.Rating.Games >= 100)
                 .Select(s => s.CmdrPlayer ?? new()).AsQueryable();
         }
         else if (request.Type == RatingType.Std)
         {
             ratings = RatingMemory.Values
-                .Where(x => x.StdPlayer != null && x.StdPlayer.Rating.Games >= 20)
+                .Where(x => x.StdPlayer != null && x.StdPlayer.Rating.Games >= 100)
                 .Select(s => s.StdPlayer ?? new()).AsQueryable();
         }
         else
