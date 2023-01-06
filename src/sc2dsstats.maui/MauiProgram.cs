@@ -93,6 +93,9 @@ public static class MauiProgram
         //    .Take(4)
         //    .ToList();
 
+        OcrService ocrService = new();
+        ocrService.DoIt().Wait();
+
         //context.Replays.RemoveRange(replays);
         //context.SaveChanges();
 
