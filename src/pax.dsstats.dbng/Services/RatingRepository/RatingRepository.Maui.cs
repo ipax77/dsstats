@@ -1,6 +1,8 @@
 ﻿using Microsoft.Data.Sqlite;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Raven;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using System.Collections.Generic;
 
 namespace pax.dsstats.dbng.Services;
 
@@ -53,7 +55,36 @@ public partial class RatingRepository
         }
 
         await transaction.CommitAsync();
+
+        await SetPlayerRatingPos();
+        
         return new();
+    }
+
+    private async Task SetPlayerRatingPos()
+    {
+        using var connection = new SqliteConnection(Data.SqliteConnectionString);
+        await connection.OpenAsync();
+
+        foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+        {
+            if (ratingType == RatingType.None)
+            {
+                continue;
+            }
+            var command = connection.CreateCommand();
+
+            command.CommandText =
+            $@"
+                UPDATE {nameof(ReplayContext.PlayerRatings)} as c
+                SET {nameof(PlayerRating.Pos)} = c2.rn
+                FROM(SELECT c2.*, row_number() OVER(ORDER BY {nameof(PlayerRating.Rating)} DESC, {nameof(PlayerRating.PlayerId)}) AS rn
+                FROM {nameof(ReplayContext.PlayerRatings)} as c2 WHERE c2.{nameof(PlayerRating.RatingType)} = {(int)ratingType}) c2
+                WHERE c.{nameof(PlayerRating.RatingType)} = {(int)ratingType} AND c.{nameof(PlayerRating.PlayerRatingId)} = c2.{nameof(PlayerRating.PlayerRatingId)};
+            ";
+
+            await command.ExecuteNonQueryAsync();
+        }
     }
 
     private async Task<int> MauiUpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId)
