@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
-using pax.dsstats.shared.Raven;
+using pax.dsstats;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 

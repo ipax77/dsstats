@@ -1,6 +1,6 @@
 ﻿using MathNet.Numerics.LinearAlgebra.Factorization;
 using pax.dsstats.shared;
-using pax.dsstats.shared.Raven;
+using pax.dsstats;
 using System.Net.Http.Json;
 
 namespace pax.dsstats.web.Client.Services;

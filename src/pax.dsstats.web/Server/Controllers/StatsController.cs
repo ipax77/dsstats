@@ -2,7 +2,7 @@
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
-using pax.dsstats.shared.Raven;
+using pax.dsstats;
 
 namespace pax.dsstats.web.Server.Controllers
 {

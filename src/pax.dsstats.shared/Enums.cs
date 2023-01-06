@@ -55,3 +55,10 @@ public enum PlayerResult
     Win = 1,
     Los = 2
 }
+
+public enum RatingType
+{
+    None = 0,
+    Cmdr = 1,
+    Std = 2
+}

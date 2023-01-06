@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
-using pax.dsstats.shared.Raven;
+using pax.dsstats;
 using System.Diagnostics;
 
 namespace pax.dsstats.dbng.Services;

@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using pax.dsstats.shared;
-using pax.dsstats.shared.Raven;
+using pax.dsstats.shared;
 using Raven.Client.Documents;
 using Raven.Client.Documents.BulkInsert;
 using Raven.Client.Documents.Linq;

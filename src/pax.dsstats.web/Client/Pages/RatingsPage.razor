@@ -1,6 +1,5 @@
 ﻿@page "/ratings"
 @using pax.dsstats.shared
-@using pax.dsstats.shared.Raven;
 @inject NavigationManager NavigationManager
 
 <PageTitle>Ratings</PageTitle>
@@ -18,7 +17,7 @@
 
     private RatingsRequest ratingsRequest = new()
     {
-        Type = shared.Raven.RatingType.Cmdr,
+        Type = shared.RatingType.Cmdr,
         Skip = 0,
         Take = 20,
         Orders = new()
@@ -64,7 +63,7 @@
             queryDic.Add("ToonId", null);
         }
 
-        if (ratingsRequest.Type != shared.Raven.RatingType.Cmdr)
+        if (ratingsRequest.Type != shared.RatingType.Cmdr)
         {
             queryDic.Add("Mode", ratingsRequest.Type.ToString());
         }

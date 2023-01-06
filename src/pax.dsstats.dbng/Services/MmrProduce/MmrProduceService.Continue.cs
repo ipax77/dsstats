@@ -1,5 +1,5 @@
-﻿using pax.dsstats.shared.Raven;
-using pax.dsstats.shared;
+﻿using pax.dsstats.shared;
+using pax.dsstats;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using dsstats.mmr;
