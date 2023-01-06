@@ -203,4 +203,32 @@ public class MmrTests
         // cleanup
         Directory.Delete(testPath, true);
     }
+
+    [Fact]
+    public void A4PlayerRatingPosTest()
+    {
+        // prepare services
+        var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var cmdrRatings = context.PlayerRatings
+            .Where(x => x.RatingType == pax.dsstats.shared.Raven.RatingType.Cmdr)
+            .OrderByDescending(o => o.Rating).ThenBy(o => o.PlayerId);
+
+        var firstRating = cmdrRatings.FirstOrDefault();
+        var secondRating = cmdrRatings.Skip(1).FirstOrDefault();
+
+        Assert.Equal(1, firstRating?.Pos);
+        Assert.Equal(2, secondRating?.Pos);
+
+        var stdRatings = context.PlayerRatings
+            .Where(x => x.RatingType == pax.dsstats.shared.Raven.RatingType.Std)
+            .OrderByDescending(o => o.Rating).ThenBy(o => o.PlayerId);
+
+        var stdFirstRating = stdRatings.FirstOrDefault();
+        var stdSecondRating = stdRatings.Skip(1).FirstOrDefault();
+
+        Assert.Equal(1, stdFirstRating?.Pos);
+        Assert.Equal(2, stdSecondRating?.Pos);
+    }
 }

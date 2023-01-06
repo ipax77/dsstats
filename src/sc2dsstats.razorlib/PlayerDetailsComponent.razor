@@ -27,7 +27,14 @@
             @foreach (var rating in playerDetailsDto.Ratings)
             {
                 <div class="align-self-center">
-                    <span class="badge bg-primary ms-3" style="font-size: 1.2rem;"><span class="small">@rating.Type Rating</span><br /><span class="text-warning">@rating.Mmr.ToString("N2", CultureInfo.InvariantCulture)</span></span>
+                    <span class="badge bg-primary ms-3" style="font-size: 1.2rem;">
+                        <span class="small">@rating.Type Rating</span>
+                        <br />
+                        <span class="text-warning">
+                            <span class="text-danger">#@rating.Pos </span>
+                            @rating.Mmr.ToString("N2", CultureInfo.InvariantCulture)
+                        </span>
+                    </span>
                 </div>
             }
         }

@@ -88,6 +88,7 @@ public class PlayerRating
     public int PlayerRatingId { get; set; }
     public RatingType RatingType { get; set; }
     public double Rating { get; set; }
+    public int Pos { get; set; }
     public int Games { get; set; }
     public int Wins { get; set; }
     public int Mvp { get; set; }
