@@ -31,7 +31,8 @@ public partial class MmrService
             SetPlayerData(mmrIdRatings, playerData, mmrOptions);
         }
 
-        teamData.Confidence = teamData.Players.Sum(p => p.Confidence) / teamData.Players.Length;
+        //teamData.Confidence = teamData.Players.Sum(p => p.Confidence) / teamData.Players.Length;
+        teamData.Confidence = teamData.Players.Sum(p => (!p.IsLeaver ? p.Confidence : 0)) / teamData.Players.Length;
         teamData.Mmr = teamData.Players.Sum(p => p.Mmr) / teamData.Players.Length;
 
         if (mmrOptions.UseCommanderMmr && !replayData.IsStd)
