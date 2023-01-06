@@ -177,10 +177,6 @@ public partial class UploadService
                 dbUploader.Players.Remove(dbPlayer);
                 dbPlayer.Uploader = null;
             }
-            else if (uploaderPlayer.Name != dbPlayer.Name)
-            {
-                dbPlayer.Name = uploaderPlayer.Name;
-            }
         }
 
         var uploaderPlayers = uploader.BattleNetInfos?.SelectMany(s => s.PlayerUploadDtos).ToList();
