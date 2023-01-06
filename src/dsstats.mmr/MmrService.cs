@@ -12,8 +12,7 @@ public static partial class MmrService
                                                                     Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
                                                                     MmrOptions mmrOptions,
                                                                     int mmrChangesAppendId,
-                                                                    IRatingRepository ratingRepository,
-                                                                    bool dry = false)
+                                                                    IRatingRepository ratingRepository)
     {
         List<ReplayData> replayDatas = new();
         List<MmrChange> mmrChanges = new();
@@ -34,12 +33,9 @@ public static partial class MmrService
                 {
                     mmrChanges.Add(changes);
                 }
-                if (dry)
+                if (replayData != null)
                 {
-                    if (replayData != null)
-                    {
-                        replayDatas.Add(replayData);
-                    }
+                    replayDatas.Add(replayData);
                 }
             }
             catch (Exception e)
@@ -47,7 +43,7 @@ public static partial class MmrService
                 Console.WriteLine(e.Message);
             }
 
-            if (!dry && mmrChanges.Count > 100000)
+            if (mmrChanges.Count > 100000)
             {
                 mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
                 mmrChanges.Clear();
@@ -56,7 +52,7 @@ public static partial class MmrService
         }
 
 
-        if (!dry && mmrChanges.Any())
+        if (mmrChanges.Any())
         {
             mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
         }
