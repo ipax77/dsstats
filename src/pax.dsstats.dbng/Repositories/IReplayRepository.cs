@@ -19,5 +19,6 @@ namespace pax.dsstats.dbng.Repositories
         Task RemoveSkipReplay(string replayPath);
         Task SetReplayViews();
         Task SetReplayDownloads();
+        Task FixPlayerNames();
     }
 }
