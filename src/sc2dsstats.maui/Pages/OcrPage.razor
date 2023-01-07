@@ -1,0 +1,93 @@
+﻿@page "/ocr"
+@using System.Text;
+@using sc2dsstats.maui.Services;
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<style>
+    .drop-zone {
+        padding: 20px;
+        width: 100%;
+        min- height: 100px;
+        border: 2px dashed #0087F7;
+        border-radius: 5px;
+    }
+
+    .drop-zone.hov er {
+        border-style: solid;
+    }
+</style>
+
+<h1>Upload files!</h1>
+
+<div @ref="dropZoneElement" class="drop-zone">
+    <p>Drop a file or paste an image from the clipboard or select a file using the input</p>
+    <InputFile OnChange="@OnChange" @ref="inputFile" />
+</div>
+
+<div>
+    <img src="@src" width="900" />
+</div>
+
+<div>
+    @foreach (var player in playerNames)
+    {
+        <p>@player</p>
+    }
+</div>
+
+@code {
+    ElementReference dropZoneElement;
+    InputFile? inputFile;
+
+    IJSObjectReference? _module;
+    IJSObjectReference? _dropZoneInstance;
+
+    string? src;
+
+    List<string> playerNames = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Load the JS file
+            _module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/dropZone.js");
+
+            // Initialize the drop zone
+            _dropZoneInstance = await _module.InvokeAsync<IJSObjectReference>("initializeFileDropZone", dropZoneElement, inputFile?.Element);
+        }
+    }
+
+    // Called when a new file is uploaded
+    async Task OnChange(InputFileChangeEventArgs e)
+    {
+        using var stream = e.File.OpenReadStream(maxAllowedSize: 512000 * 20);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        await Test(ms);
+        src = "data:" + e.File.ContentType + ";base64," + Convert.ToBase64String(ms.ToArray());
+    }
+
+    // Unregister the drop zone events
+    public async ValueTask DisposeAsync()
+    {
+        if (_dropZoneInstance != null)
+        {
+            await _dropZoneInstance.InvokeVoidAsync("dispose");
+            await _dropZoneInstance.DisposeAsync();
+        }
+
+        if (_module != null)
+        {
+            await _module.DisposeAsync();
+        }
+    }
+
+    private async Task Test(MemoryStream memoryStream)
+    {
+        OcrService ocrService = new();
+        playerNames = await ocrService.GetImagePlayerNames(memoryStream);
+        await InvokeAsync(() => StateHasChanged());
+    }
+}
