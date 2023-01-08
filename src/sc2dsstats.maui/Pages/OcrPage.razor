@@ -1,14 +1,20 @@
 ﻿@page "/ocr"
+@using System;
 @using System.Text;
+@using System.Drawing;
+@using System.Drawing.Imaging;
+@using pax.dsstats.shared;
+@using pax.dsstats.shared.Raven;
 @using sc2dsstats.maui.Services;
 @inject IJSRuntime JSRuntime
+@inject IDataService dataService
 @implements IAsyncDisposable
 
 <style>
     .drop-zone {
         padding: 20px;
-        width: 100%;
-        min- height: 100px;
+        width: 50%;
+        min-height: 100px;
         border: 2px dashed #0087F7;
         border-radius: 5px;
     }
@@ -18,23 +24,27 @@
     }
 </style>
 
-<h1>Upload files!</h1>
+<h3>GameInfo</h3>
 
 <div @ref="dropZoneElement" class="drop-zone">
     <p>Drop a file or paste an image from the clipboard or select a file using the input</p>
     <InputFile OnChange="@OnChange" @ref="inputFile" />
 </div>
 
+<div class="btn-group mt-2 mb-2">
+    <button type="button" class="btn btn-outline-warning" @onclick="MakeScreenShot">Make Screenshot</button>
+</div>
+
 <div>
     <img src="@src" width="900" />
 </div>
 
-<div>
-    @foreach (var player in playerNames)
-    {
-        <p>@player</p>
-    }
-</div>
+<CascadingValue Value="ratingType">
+@if (gameInfoResult != null)
+{
+    <sc2dsstats.razorlib.GameInfo.GameInfoComponent GameInfoResult="gameInfoResult" />
+}
+</CascadingValue>
 
 @code {
     ElementReference dropZoneElement;
@@ -45,7 +55,12 @@
 
     string? src;
 
+    CancellationTokenSource cts = new();
+
     List<string> playerNames = new();
+    GameInfoResult? gameInfoResult;
+
+    RatingType ratingType = RatingType.Cmdr;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -65,13 +80,44 @@
         using var stream = e.File.OpenReadStream(maxAllowedSize: 512000 * 20);
         using var ms = new MemoryStream();
         await stream.CopyToAsync(ms);
-        await Test(ms);
+        await GetResult(ms);
         src = "data:" + e.File.ContentType + ";base64," + Convert.ToBase64String(ms.ToArray());
+    }
+
+
+    private async Task GetResult(MemoryStream memoryStream)
+    {
+        OcrService ocrService = new();
+        playerNames = await ocrService.GetImagePlayerNames(memoryStream);
+        gameInfoResult = await dataService.GetGameInfo(new GameInfoRequest() { PlayerNames = playerNames }, cts.Token);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async void MakeScreenShot()
+    {
+        using var bitmap = new System.Drawing.Bitmap(Data.MauiWidth, Data.MauiHeight);
+        using (var g = Graphics.FromImage(bitmap))
+        {
+            g.CopyFromScreen(0, 0, 0, 0, bitmap.Size, CopyPixelOperation.SourceCopy);
+        }
+
+        using var memoryStream = new MemoryStream();
+        bitmap.Save(memoryStream, ImageFormat.Png);
+
+        await GetResult(memoryStream);
+
+        byte[] byteImage = memoryStream.ToArray();
+
+        src = "data:image/png;base64, " + Convert.ToBase64String(byteImage);
+        await InvokeAsync(() => StateHasChanged());
     }
 
     // Unregister the drop zone events
     public async ValueTask DisposeAsync()
     {
+        cts.Cancel();
+        cts.Dispose();
+
         if (_dropZoneInstance != null)
         {
             await _dropZoneInstance.InvokeVoidAsync("dispose");
@@ -82,12 +128,5 @@
         {
             await _module.DisposeAsync();
         }
-    }
-
-    private async Task Test(MemoryStream memoryStream)
-    {
-        OcrService ocrService = new();
-        playerNames = await ocrService.GetImagePlayerNames(memoryStream);
-        await InvokeAsync(() => StateHasChanged());
     }
 }

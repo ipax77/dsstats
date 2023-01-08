@@ -11,14 +11,14 @@ public class OcrService
 {
     public async Task<List<string>> GetImagePlayerNames(MemoryStream memoryStream)
     {
-        var tempFile = "/data/test.png";
+        var tempFile = @"C:\data\test.png";
 
         memoryStream.Position = 0;
 
-        StreamWriter sw = new StreamWriter(memoryStream);
-
-        using var stream = File.Open(tempFile, FileMode.Create);
-        await memoryStream.CopyToAsync(stream);
+        using (var stream = File.Open(tempFile, FileMode.Create))
+        {
+            await memoryStream.CopyToAsync(stream);
+        }
 
         var ocrResult = await GetTextFromOcr(tempFile);
         if (ocrResult != null)
