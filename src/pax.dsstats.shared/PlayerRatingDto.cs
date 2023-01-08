@@ -1,5 +1,4 @@
-﻿using pax.dsstats.shared;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace pax.dsstats.shared;
 
