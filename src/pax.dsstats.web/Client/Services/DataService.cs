@@ -316,7 +316,7 @@ public class DataService : IDataService
                 logger.LogError($"failed getting playerDetails: {response.StatusCode}");
             }
         }
-        catch(OperationCanceledException) { }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             logger.LogError($"failed getting playerDetails: {ex.Message}");
@@ -543,6 +543,28 @@ public class DataService : IDataService
         catch (Exception ex)
         {
             logger.LogError($"failed getting statsUpgrades: {ex.Message}");
+        }
+        return new();
+    }
+
+    public async Task<GameInfoResult> GetGameInfo(GameInfoRequest request, CancellationToken token)
+    {
+        try
+        {
+            var result = await httpClient.PostAsJsonAsync($"{statsController}GetGameInfo", request);
+            if (result.IsSuccessStatusCode)
+            {
+                var response = await result.Content.ReadFromJsonAsync<GameInfoResult>();
+                if (response != null)
+                {
+                    return response;
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting GameInfo: {ex.Message}");
         }
         return new();
     }

@@ -1,6 +1,7 @@
 ﻿using Blazored.Toast;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.UI.Windowing;
 using pax.BlazorChartJs;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
@@ -95,6 +96,9 @@ public static class MauiProgram
 
         //context.Replays.RemoveRange(replays);
         //context.SaveChanges();
+
+        //OcrService ocrService = new();
+        //ocrService.GetTextFromOcr().Wait();
 
         // END DEBUG
 
