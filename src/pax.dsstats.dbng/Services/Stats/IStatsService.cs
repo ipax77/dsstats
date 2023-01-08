@@ -22,5 +22,6 @@ namespace pax.dsstats.dbng.Services
         Task<StatsResponse> GetTourneyStats(StatsRequest statsRequest, CancellationToken token);
         Task<FunStats> GetFunStats(List<int> toonIds);
         Task<StatsUpgradesResponse> GetUpgradeStats(BuildRequest buildRequest, CancellationToken token);
+        Task<GameInfoResult> GetGameInfo(GameInfoRequest request, CancellationToken token);
     }
 }

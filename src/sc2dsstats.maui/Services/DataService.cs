@@ -166,7 +166,8 @@ public partial class DataService : IDataService
         if (fromServerSwitchService.GetFromServer())
         {
             return await ServerGetPlayerDetailsNg(toonId, rating, token);
-        } else
+        }
+        else
         {
             return await statsService.GetPlayerDetails(toonId, (RatingType)rating, token);
         }
@@ -256,5 +257,15 @@ public partial class DataService : IDataService
     public async Task<StatsUpgradesResponse> GetUpgradeStats(BuildRequest buildRequest, CancellationToken token)
     {
         return await Task.FromResult(new StatsUpgradesResponse());
+    }
+
+    public async Task<GameInfoResult> GetGameInfo(GameInfoRequest request, CancellationToken token)
+    {
+        try
+        {
+            return await statsService.GetGameInfo(request, token);
+        }
+        catch (OperationCanceledException) { }
+        return new();
     }
 }
