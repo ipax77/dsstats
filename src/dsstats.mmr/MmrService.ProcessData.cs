@@ -1,5 +1,4 @@
 ﻿using dsstats.mmr.ProcessData;
-using pax.dsstats.shared.Raven;
 using pax.dsstats.shared;
 
 using TeamData = dsstats.mmr.ProcessData.TeamData;
