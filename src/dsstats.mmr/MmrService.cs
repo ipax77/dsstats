@@ -165,6 +165,23 @@ public static partial class MmrService
             return LeaverType.TwoSameTeam;
         }
     }
+
+    public static double GetLeaverImpactForOneEachTeam(ReplayDsRDto replay)
+    {
+        var leaverPlayers = replay.ReplayPlayers.Where(x => x.Duration < replay.Duration - 90).ToList();
+
+        if (leaverPlayers.Count != 2)
+        {
+            throw new ArgumentOutOfRangeException(nameof(replay));
+        }
+
+        if (Math.Abs(leaverPlayers[0].Duration - leaverPlayers[1].Duration) > replay.Duration * 0.15)
+        {
+            return 1;
+        }
+
+        return 0.5;
+    }
 }
 
 public struct CmdrMmmrKey
