@@ -2,7 +2,7 @@
 
 public record MmrOptions
 {
-    public const double consistencyImpact = 0.50;
+    public const double consistencyImpact = /*0.50*/0.85; //while no confidence!!!
     public const double consistencyDeltaMult = 0.15;
 
     public const double confidenceImpact = 0.95;
