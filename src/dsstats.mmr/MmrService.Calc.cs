@@ -34,24 +34,7 @@ public static partial class MmrService
                 * (mmrOptions.UseConsistency ? factor_consistency : 1.0)
                 * (mmrOptions.UseConfidence ? factor_confidence : 1.0);
 
-            if (!playerData.IsLeaver && teamLeaverCount != 3 && replayLeaverCount > 0)
-            {
-                if (replayLeaverCount == 1 && teamLeaverCount == 1) // 1 Leaver only
-                {
-                    playerImpact *= 0.5;
-                }
-                else if (replayLeaverCount == 2 * teamLeaverCount) // 1 Leaver per Team, 2 Leavers per Team
-                {
-                    if (true) //> 15% time
-                    {
-                        playerImpact *= 0.5;
-                    }
-                }
-                else // 2 Leavers and 0/1 Leaver
-                {
-                    playerImpact *= 0.25;
-                }
-            }
+            playerImpact *= LeaverHandlingFactor(replayData, playerData, replayLeaverCount, teamLeaverCount);
 
             playerData.Deltas.Mmr = CalculateMmrDelta(replayData.WinnerTeamData.ExpectedResult, playerImpact, mmrOptions.EloK);
             //playerData.Deltas.Consistency = MmrOptions.consistencyDeltaMult * 2 * (replayData.WinnerTeamData.ExpectedResult - 0.50);
@@ -83,6 +66,45 @@ public static partial class MmrService
             //    // todo: no Exceptions prefered.
             //    throw new Exception("MmrDelta is bigger than eloK");
             //}
+        }
+    }
+
+    private static double LeaverHandlingFactor(ReplayData replayData, PlayerData playerData, int replayLeaverCount, int teamLeaverCount)
+    {
+        if (playerData.IsLeaver)
+        {
+            return 1;
+        }
+        if (teamLeaverCount == 3)
+        {
+            return 1;
+        }
+        if (replayLeaverCount > 0)
+        {
+            return 1;
+        }
+
+        if (replayLeaverCount == 1 && teamLeaverCount == 1) // 1 Leaver only
+        {
+            return 0.5;
+        }
+        else if (replayLeaverCount == 2 * teamLeaverCount) // 1 Leaver per Team, 2 Leavers per Team
+        {
+            var duration1avg = replayData.WinnerTeamData.Players.Where(x => x.IsLeaver).Sum(x => x.Duration) / teamLeaverCount;
+            var duration2avg = replayData.LoserTeamData.Players.Where(x => x.IsLeaver).Sum(x => x.Duration) / teamLeaverCount;
+
+            if (Math.Abs(duration1avg - duration2avg) > replayData.Duration * 0.15) // > 15% time
+            {
+                return 1;
+            }
+            else
+            {
+                return 0.5;
+            }
+        }
+        else // 2 Leavers and 0/1 Leaver
+        {
+            return 0.25;
         }
     }
 
