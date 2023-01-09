@@ -1,4 +1,4 @@
-﻿using pax.dsstats.shared.Raven;
+﻿using pax.dsstats.shared;
 using System.Text.Json.Serialization;
 
 namespace pax.dsstats.shared;

@@ -1,0 +1,54 @@
+﻿@using System.Globalization;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
+
+<tr>
+    @if (PlayerInfo.RequestNames != null)
+    {
+        <td class="pointer" @onclick=@(() => InfoRequest.InvokeAsync(PlayerInfo.RequestNames))>
+            @PlayerInfo.Name
+        </td>
+    }
+    else
+    {
+        <td>
+            @PlayerInfo.Name
+        </td>
+    }
+    @if (playerRating != null)
+    {
+        <td>
+            <span class="text-truncate text-danger" style="display: block; width: 60px;">#@playerRating.Pos </span>
+            <span class="text-warning">@playerRating.Rating.ToString("N2", CultureInfo.InvariantCulture)</span>
+        </td>
+        <td>
+            @playerRating.Games
+        </td>
+        <td>
+            @HelperService.GetPercentageString(playerRating.Wins, playerRating.Games)
+        </td>
+        <td>
+            @playerRating.Main (@HelperService.GetPercentageString(playerRating.MainCount, playerRating.Games))
+        </td>
+        <td>
+            @HelperService.GetPercentageString(playerRating.Mvp, playerRating.Games)
+        </td>
+    }
+    else
+    {
+        <td colspan="4">No data found.</td>
+    }
+</tr>
+
+@code {
+    [CascadingParameter]
+    public RatingType RatingType { get; set; }
+
+    [Parameter, EditorRequired]
+    public PlayerInfo PlayerInfo { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<RequestNames> InfoRequest { get; set; }
+
+    PlayerRatingInfoDto? playerRating => PlayerInfo.Ratings.FirstOrDefault(f => f.RatingType == RatingType);
+}

@@ -115,7 +115,7 @@ public partial class RatingRepository
         var ratings = context.PlayerRatings
             .Where(x => request.ToonIds.Contains(x.Player.ToonId));
 
-        if (request.RatingType != shared.Raven.RatingType.None)
+        if (request.RatingType != shared.RatingType.None)
         {
             ratings = ratings.Where(x => x.RatingType == request.RatingType);
         }

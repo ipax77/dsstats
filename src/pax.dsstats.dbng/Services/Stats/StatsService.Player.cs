@@ -1,11 +1,40 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
-using pax.dsstats.shared.Raven;
 
 namespace pax.dsstats.dbng.Services;
 
 public partial class StatsService
 {
+    public async Task<GameInfoResult> GetGameInfo(GameInfoRequest request, CancellationToken token)
+    {
+        GameInfoResult result = new();
+        foreach (var name in request.PlayerNames)
+        {
+            var player = await context.ReplayPlayers
+                .Where(x => x.Name == name)
+                .Select(s => s.Player)
+                .FirstOrDefaultAsync(token);
+
+            List<PlayerRatingInfoDto> ratings = new();
+            if (player != null)
+            {
+                ratings = await context.PlayerRatings
+                    .Where(x => x.PlayerId == player.PlayerId)
+                    .ProjectTo<PlayerRatingInfoDto>(mapper.ConfigurationProvider)
+                    .ToListAsync(token);
+            }
+
+            result.PlayerInfos.Add(new()
+            {
+                Name = name,
+                RequestNames = player == null ? null : new() { Name = player.Name, RegionId = player.RegionId, ToonId = player.ToonId },
+                Ratings = ratings
+            });
+        }
+        return result;
+    }
+
     public async Task<PlayerDetailDto> GetPlayerDetails(int toonId, CancellationToken token = default)
     {
         var matchups = await GetPlayerDetailInfo(toonId, token);

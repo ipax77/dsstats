@@ -1,5 +1,5 @@
 ﻿
-namespace pax.dsstats.shared.Raven;
+namespace pax.dsstats.shared;
 
 public record RavenPlayerDetailsDto
 {
@@ -120,9 +120,3 @@ public record UpdateResult
     public int New { get; set; }
 }
 
-public enum RatingType
-{
-    None = 0,
-    Cmdr = 1,
-    Std = 2
-}

@@ -2,7 +2,7 @@
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
-using pax.dsstats.shared.Raven;
+using pax.dsstats;
 
 namespace pax.dsstats.web.Server.Controllers
 {
@@ -132,7 +132,8 @@ namespace pax.dsstats.web.Server.Controllers
             try
             {
                 return await statsService.GetPlayerDetails(toonId, (RatingType)rating, token);
-            } catch (OperationCanceledException) { }
+            }
+            catch (OperationCanceledException) { }
             return NoContent();
         }
 
@@ -203,6 +204,18 @@ namespace pax.dsstats.web.Server.Controllers
             try
             {
                 return await statsService.GetUpgradeStats(buildRequest, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
+        }
+
+        [HttpPost]
+        [Route("GetGameInfo")]
+        public async Task<ActionResult<GameInfoResult>> GetGameInfo(GameInfoRequest request, CancellationToken token)
+        {
+            try
+            {
+                return await statsService.GetGameInfo(request, token);
             }
             catch (OperationCanceledException) { }
             return NoContent();

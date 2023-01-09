@@ -1,4 +1,4 @@
-﻿using pax.dsstats.shared.Raven;
+﻿using pax.dsstats.shared;
 
 namespace pax.dsstats.shared;
 public interface IDataService
@@ -34,4 +34,5 @@ public interface IDataService
     Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token);
     Task<FunStats> GetFunStats(List<int> toonIds);
     Task<StatsUpgradesResponse> GetUpgradeStats(BuildRequest buildRequest, CancellationToken token);
+    Task<GameInfoResult> GetGameInfo(GameInfoRequest request, CancellationToken token);
 }

@@ -1,5 +1,5 @@
 ﻿using pax.dsstats.shared;
-using pax.dsstats.shared.Raven;
+using pax.dsstats;
 using static pax.dsstats.dbng.Services.StatsService;
 
 namespace pax.dsstats.dbng.Services
@@ -22,5 +22,6 @@ namespace pax.dsstats.dbng.Services
         Task<StatsResponse> GetTourneyStats(StatsRequest statsRequest, CancellationToken token);
         Task<FunStats> GetFunStats(List<int> toonIds);
         Task<StatsUpgradesResponse> GetUpgradeStats(BuildRequest buildRequest, CancellationToken token);
+        Task<GameInfoResult> GetGameInfo(GameInfoRequest request, CancellationToken token);
     }
 }

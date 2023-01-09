@@ -111,6 +111,10 @@ namespace SqliteMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime>("Created")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("LatestNoUpload")
                         .HasPrecision(0)
                         .HasColumnType("TEXT");

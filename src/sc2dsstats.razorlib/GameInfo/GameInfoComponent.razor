@@ -1,0 +1,76 @@
+﻿@using pax.dsstats.shared;
+
+<div class="mt-2">
+    @if (!GameInfoResult.PlayerInfos.Any())
+    {
+        <p class="text-warning">No PlayerInfos found.</p>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-auto">
+                <h4 class="bg-light border rounded p-1 text-dark">Team1</h4>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Rating</th>
+                                <th>Games</th>
+                                <th>Winrate</th>
+                                <th>Main</th>
+                                <th>Mvp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < GameInfoResult.PlayerInfos.Count / 2; i++)
+                            {
+                                <PlayerInfoComponent PlayerInfo="GameInfoResult.PlayerInfos[i]"></PlayerInfoComponent>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-auto">
+                <h4 class="bg-light border rounded p-1 text-dark">Team2</h4>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Rating</th>
+                                <th>Games</th>
+                                <th>Winrate</th>
+                                <th>Main</th>
+                                <th>Mvp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (GameInfoResult.PlayerInfos.Count > 1)
+                            {
+                                @for (int i = GameInfoResult.PlayerInfos.Count / 2; i < GameInfoResult.PlayerInfos.Count; i++)
+                                {
+                                    <PlayerInfoComponent PlayerInfo="GameInfoResult.PlayerInfos[i]"></PlayerInfoComponent>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [CascadingParameter]
+    public RatingType RatingType { get; set; }
+
+    [Parameter, EditorRequired]
+    public GameInfoResult GameInfoResult { get; set; } = default!;
+
+    public void Update(GameInfoResult gameInfoResult)
+    {
+        GameInfoResult = gameInfoResult;
+        StateHasChanged();
+    }
+}

@@ -74,6 +74,7 @@
 	<ItemGroup>
 		<PackageReference Include="Blazored.Toast" Version="3.2.2" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="6.*" />
+		<PackageReference Include="System.Drawing.Common" Version="7.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -85,6 +86,6 @@
 		<ProjectReference Include="..\SqliteMigrations\SqliteMigrations.csproj" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
 	</ItemGroup>
 </Project>

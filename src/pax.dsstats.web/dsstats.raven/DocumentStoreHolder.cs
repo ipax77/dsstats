@@ -1,6 +1,6 @@
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
-using pax.dsstats.shared.Raven;
+using pax.dsstats.shared;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
 

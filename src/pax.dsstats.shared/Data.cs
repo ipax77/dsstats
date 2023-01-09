@@ -194,7 +194,19 @@ public static class Data
         };
     }
 
+    public static string GetRatingTypeLongName(RatingType ratingType)
+    {
+        return ratingType switch
+        {
+            RatingType.Cmdr => "Commanders 3v3",
+            RatingType.Std => "Standard 3v3",
+            _ => ""
+        };
+    }
+
     public static bool IsMaui { get; set; }
+    public static int MauiWidth { get; set; }
+    public static int MauiHeight { get; set; }
     public static string SqliteConnectionString { get; set; } = string.Empty;
     public static string MysqlConnectionString { get; set; } = string.Empty;
 }

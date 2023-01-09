@@ -27,6 +27,12 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
+<details open="open"><summary>v1.0.10</summary>
+
+>- RatingType LongNames
+
+</details>
+
 <details open="open"><summary>v1.0.9</summary>
 
 >- PlayerRatings Position

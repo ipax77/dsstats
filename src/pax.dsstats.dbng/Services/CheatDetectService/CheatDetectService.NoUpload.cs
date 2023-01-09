@@ -3,13 +3,17 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
+using System.Diagnostics;
 
 namespace pax.dsstats.dbng.Services;
 
 public partial class CheatDetectService
 {
+    private const int maxNoUploadInfoKeepCount = 40;
+
     public async Task DetectNoUpload(bool dry = false)
     {
+        Stopwatch sw = Stopwatch.StartNew();
         var uploaderPlayerIds = await context.Players.Where(x => x.UploaderId != null)
                     .Select(s => s.PlayerId)
                     .ToListAsync();
@@ -39,37 +43,24 @@ public partial class CheatDetectService
             }
 
             int total = results.Sum(s => s.Count);
-            //var ratio = los * 100.0 / total;
-
-            //if (ratio > 50.0)
-            //{
-            //    playerIdNoUploads[playerId] = los;
-            //}
-
             noUploadResults.Add(await GetNoUploadResult(playerId, total, los));
         }
         if (!dry)
         {
-            // await SetNoUploads(playerIdNoUploads);
             await SetNoUploadResults(noUploadResults);
+            await CleanupNoUploadResults();
         }
+        sw.Stop();
+        logger.LogWarning($"noupload results created in {sw.ElapsedMilliseconds}");
     }
 
     private async Task SetNoUploadResults(List<NoUploadResult> noUploadResults)
     {
+        DateTime created = DateTime.UtcNow;
         foreach (var result in noUploadResults)
         {
-            var dbResult = await context.NoUploadResults
-                .FirstOrDefaultAsync(f => f.PlayerId == result.PlayerId);
-
-            if (dbResult == null)
-            {
-                context.NoUploadResults.Add(result);
-            }
-            else
-            {
-                mapper.Map(result, dbResult);
-            }
+            result.Created = created;
+            context.NoUploadResults.Add(result);
         }
         await context.SaveChangesAsync();
     }
@@ -102,6 +93,23 @@ public partial class CheatDetectService
                 .FirstOrDefaultAsync()
         };
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
+    }
+
+    private async Task CleanupNoUploadResults()
+    {
+        DateTime minCreated = DateTime.UtcNow.AddDays(maxNoUploadInfoKeepCount * -1);
+
+        var removeResults = await context.NoUploadResults
+            .Where(x => x.Created < minCreated)
+            .ToListAsync();
+
+        if (!removeResults.Any())
+        {
+            return;
+        }
+
+        context.NoUploadResults.RemoveRange(removeResults);
+        await context.SaveChangesAsync();
     }
 
     private async Task SetNoUploads(Dictionary<int, int> playerIdNoUploads)
