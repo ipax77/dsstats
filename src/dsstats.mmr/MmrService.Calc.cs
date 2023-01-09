@@ -39,7 +39,7 @@ public static partial class MmrService
             playerData.Deltas.Mmr = CalculateMmrDelta(replayData.WinnerTeamData.ExpectedResult, playerImpact, mmrOptions.EloK);
             //playerData.Deltas.Consistency = MmrOptions.consistencyDeltaMult * 2 * (replayData.WinnerTeamData.ExpectedResult - 0.50);
             playerData.Deltas.Consistency = Math.Abs(teamData.ExpectedResult - teamData.ActualResult) < 0.50 ? 1 : 0;
-            playerData.Deltas.Confidence = 1 - Math.Abs(teamData.ExpectedResult - teamData.ActualResult);
+            playerData.Deltas.Confidence = 0;//1 - Math.Abs(teamData.ExpectedResult - teamData.ActualResult);
 
             if (mmrOptions.UseCommanderMmr)
             {
