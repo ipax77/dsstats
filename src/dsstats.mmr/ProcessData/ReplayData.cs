@@ -11,6 +11,14 @@ public record ReplayData
         Maxleaver = replay.Maxleaver;
         Maxkillsum = replay.Maxkillsum;
         LeaverType = MmrService.GetLeaverType(replay);
+        LeaverImpact = LeaverType switch
+        {
+            LeaverType.OneLeaver => 0.5,
+            LeaverType.OneEachTeam => MmrService.GetLeaverImpactForOneEachTeam(replay),
+            LeaverType.TwoSameTeam => 0.25,
+            LeaverType.MoreThanTwo => 0.25,
+            _ => 1
+        };
 
         WinnerTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam), true);
         LoserTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam), false);
@@ -23,6 +31,7 @@ public record ReplayData
                       int maxLeaver,
                       int maxkillsum,
                       double confidence,
+                      LeaverType leaverType,
                       TeamData winnerTeamData,
                       TeamData loserTeamData)
     {
@@ -34,11 +43,15 @@ public record ReplayData
         WinnerTeamData = winnerTeamData;
         LoserTeamData = loserTeamData;
 
+        LeaverType = leaverType;
+        LeaverImpact = 1;
+
         IsStd = WinnerTeamData.Players.All(a => (int)a.Race <= 3) && LoserTeamData.Players.All(a => (int)a.Race <= 3);
         IsInvalid = WinnerTeamData.Players.Any(a => (int)a.Race <= 3 || (int)a.OppRace <= 3) || LoserTeamData.Players.Any(a => (int)a.Race <= 3 || (int)a.OppRace <= 3);
     }
 
     public LeaverType LeaverType { get; init; }
+    public double LeaverImpact { get; init; }
     public DateTime GameTime { get; init; }
     public int Duration { get; init; }
     public int Maxleaver { get; init; }

@@ -18,43 +18,29 @@ public static partial class MmrService
         foreach (var playerData in teamData.Players)
         {
             var lastPlRating = mmrIdRatings[playerData.MmrId];
+            var playerImpact = GetPlayerImpact(teamData, replayData, lastPlRating, mmrOptions);
 
-            double playerConsistency = lastPlRating.Consistency;
-            double playerConfidence = lastPlRating.Confidence;
-            double playerMmr = lastPlRating.Mmr;
-
-            double factor_playerToTeamMates = PlayerToTeamMates(teamData.Mmr, playerMmr, teamData.Players.Length);
-            double factor_consistency = GetCorrectedRevConsistency(1 - playerConsistency);
-            double factor_confidence = GetCorrectedConfidenceFactor(playerConfidence, replayData.Confidence);
-
-            double playerImpact = 1
-                * (mmrOptions.UseFactorToTeamMates ? factor_playerToTeamMates : 1.0)
-                * (mmrOptions.UseConsistency ? factor_consistency : 1.0)
-                * (mmrOptions.UseConfidence ? factor_confidence : 1.0);
-
-            playerData.Deltas.Mmr = CalculateMmrDelta(replayData.WinnerTeamData.ExpectedResult, playerImpact, mmrOptions.EloK);
-            //playerData.Deltas.Consistency = MmrOptions.consistencyDeltaMult * 2 * (replayData.WinnerTeamData.ExpectedResult - 0.50);
-            playerData.Deltas.Consistency = Math.Abs(teamData.ExpectedResult - teamData.ActualResult) < 0.50 ? 1 : 0;
-            playerData.Deltas.Confidence = 1 - Math.Abs(teamData.ExpectedResult - teamData.ActualResult);
-
-            if (mmrOptions.UseCommanderMmr)
+            if (!playerData.IsLeaver)
             {
-                var commandersMmrImpact = (playerMmr / mmrOptions.StartMmr) * playerConfidence;
-                playerData.Deltas.CommanderMmr = CalculateMmrDelta(replayData.WinnerTeamData.ExpectedResult, commandersMmrImpact, mmrOptions.EloK);
+                playerImpact *= replayData.LeaverImpact;
+
+                SetPlayerDeltas(playerData, teamData, replayData, playerImpact, mmrOptions);
+
+                if (replayData.Maxleaver < 90 && mmrOptions.UseCommanderMmr)
+                {
+                    var commandersMmrImpact = (lastPlRating.Mmr / mmrOptions.StartMmr) * lastPlRating.Confidence;
+                    playerData.Deltas.CommanderMmr = CalculateMmrDelta(replayData.WinnerTeamData.ExpectedResult, commandersMmrImpact, mmrOptions.EloK);
+                }
+
+                if (!teamData.IsWinner)
+                {
+                    playerData.Deltas.Mmr *= -1;
+                    playerData.Deltas.CommanderMmr *= -1;
+                }
             }
-
-            if (playerData.IsLeaver)
+            else
             {
-                playerData.Deltas.Consistency = 0;
-                playerData.Deltas.Confidence = 0;
-
-                playerData.Deltas.Mmr *= -1;
-                playerData.Deltas.CommanderMmr = 0;
-            }
-            else if (!teamData.IsWinner)
-            {
-                playerData.Deltas.Mmr *= -1;
-                playerData.Deltas.CommanderMmr *= -1;
+                SetLeaverPlayerDeltas(playerData, replayData, playerImpact, mmrOptions);
             }
 
             //if (Math.Abs(playerData.Deltas.Mmr) > mmrOptions.EloK * teamData.Players.Length)
@@ -63,6 +49,32 @@ public static partial class MmrService
             //    throw new Exception("MmrDelta is bigger than eloK");
             //}
         }
+    }
+
+    private static void SetPlayerDeltas(PlayerData playerData, TeamData teamData, ReplayData replayData, double playerImpact, MmrOptions mmrOptions)
+    {
+        playerData.Deltas.Mmr = CalculateMmrDelta(replayData.WinnerTeamData.ExpectedResult, playerImpact, mmrOptions.EloK);
+        playerData.Deltas.Consistency = Math.Abs(teamData.ExpectedResult - teamData.ActualResult) < 0.50 ? 1 : 0;
+        playerData.Deltas.Confidence = 1 - Math.Abs(teamData.ExpectedResult - teamData.ActualResult);
+    }
+
+    private static void SetLeaverPlayerDeltas(PlayerData playerData, ReplayData replayData, double playerImpact, MmrOptions mmrOptions)
+    {
+        playerData.Deltas.Mmr = -1 * CalculateMmrDelta(replayData.LoserTeamData.ExpectedResult, playerImpact, mmrOptions.EloK); //ToDo
+        playerData.Deltas.Consistency = 0;
+        playerData.Deltas.Confidence = 0;
+    }
+
+    private static double GetPlayerImpact(TeamData teamData, ReplayData replayData, CalcRating lastPlRating, MmrOptions mmrOptions)
+    {
+        double factor_playerToTeamMates = PlayerToTeamMates(teamData.Mmr, lastPlRating.Mmr, teamData.Players.Length);
+        double factor_consistency = GetCorrectedRevConsistency(1 - lastPlRating.Consistency);
+        double factor_confidence = GetCorrectedConfidenceFactor(lastPlRating.Confidence, replayData.Confidence);
+
+        return 1
+            * (mmrOptions.UseFactorToTeamMates ? factor_playerToTeamMates : 1.0)
+            * (mmrOptions.UseConsistency ? factor_consistency : 1.0)
+            * (mmrOptions.UseConfidence ? factor_confidence : 1.0);
     }
 
     private static void FixMmrEquality(TeamData teamData, TeamData oppTeamData)
