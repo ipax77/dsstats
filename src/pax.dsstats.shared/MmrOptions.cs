@@ -5,7 +5,7 @@ public record MmrOptions
     public const double consistencyImpact = 0.50;
     public const double consistencyDeltaMult = 0.15;
 
-    public const double confidenceImpact = 1.0;//0.95;
+    public const double confidenceImpact = 0.95;
     public const double distributionMult = 1.0 / (1/*2*/);
 
     public const double antiSynergyPercentage = 0.50;
@@ -20,9 +20,9 @@ public record MmrOptions
         UseEquality = false;
 
         UseCommanderMmr = false;
-        UseConsistency = true;
         UseFactorToTeamMates = false;
-        UseConfidence = true;
+        UseConsistency = true;
+        UseConfidence = false;
 
         StartMmr = 1000;
         EloK = eloK;
