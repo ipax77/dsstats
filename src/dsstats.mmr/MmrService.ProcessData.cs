@@ -31,8 +31,12 @@ public partial class MmrService
             SetPlayerData(mmrIdRatings, playerData, mmrOptions);
         }
 
-        //teamData.Confidence = teamData.Players.Sum(p => p.Confidence) / teamData.Players.Length;
-        teamData.Confidence = teamData.Players.Sum(p => (!p.IsLeaver ? p.Confidence : 0)) / teamData.Players.Length;
+        teamData.Confidence = teamData.Players.Sum(p => p.Confidence) / teamData.Players.Length;
+        //teamData.Confidence =
+        //    (teamData.Players.Sum(p => (!p.IsLeaver ? p.Confidence : 0)) / teamData.Players.Length)
+        //    * (1 - (teamData.Players.Count(x => x.IsLeaver) / (double)teamData.Players.Length));
+        //ToDo: Leavers needs to get full impact!
+
         teamData.Mmr = teamData.Players.Sum(p => p.Mmr) / teamData.Players.Length;
 
         if (mmrOptions.UseCommanderMmr && !replayData.IsStd)
