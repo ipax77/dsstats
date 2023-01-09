@@ -14,6 +14,9 @@ public static partial class MmrService
                                                TeamData teamData,
                                                MmrOptions mmrOptions)
     {
+        int replayLeaverCount = replayData.WinnerTeamData.Players.Count(x => x.IsLeaver) + replayData.LoserTeamData.Players.Count(x => x.IsLeaver);
+        int teamLeaverCount = teamData.Players.Count(x => x.IsLeaver);
+
         foreach (var playerData in teamData.Players)
         {
             var lastPlRating = mmrIdRatings[playerData.MmrId];
@@ -30,6 +33,25 @@ public static partial class MmrService
                 * (mmrOptions.UseFactorToTeamMates ? factor_playerToTeamMates : 1.0)
                 * (mmrOptions.UseConsistency ? factor_consistency : 1.0)
                 * (mmrOptions.UseConfidence ? factor_confidence : 1.0);
+
+            if (!playerData.IsLeaver && teamLeaverCount != 3 && replayLeaverCount > 0)
+            {
+                if (replayLeaverCount == 1 && teamLeaverCount == 1) // 1 Leaver only
+                {
+                    playerImpact *= 0.5;
+                }
+                else if (replayLeaverCount == 2 * teamLeaverCount) // 1 Leaver per Team, 2 Leavers per Team
+                {
+                    if (true) //> 15% time
+                    {
+                        playerImpact *= 0.5;
+                    }
+                }
+                else // 2 Leavers and 0/1 Leaver
+                {
+                    playerImpact *= 0.25;
+                }
+            }
 
             playerData.Deltas.Mmr = CalculateMmrDelta(replayData.WinnerTeamData.ExpectedResult, playerImpact, mmrOptions.EloK);
             //playerData.Deltas.Consistency = MmrOptions.consistencyDeltaMult * 2 * (replayData.WinnerTeamData.ExpectedResult - 0.50);
