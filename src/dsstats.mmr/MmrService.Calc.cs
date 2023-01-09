@@ -93,7 +93,7 @@ public static partial class MmrService
             var duration1avg = replayData.WinnerTeamData.Players.Where(x => x.IsLeaver).Sum(x => x.Duration) / teamLeaverCount;
             var duration2avg = replayData.LoserTeamData.Players.Where(x => x.IsLeaver).Sum(x => x.Duration) / teamLeaverCount;
 
-            if (Math.Abs(duration1avg - duration2avg) > replayData.Duration * 0.15) // > 15% time
+            if (Math.Abs(duration1avg - duration2avg) < replayData.Duration * 0.15) // > 15% time
             {
                 return 1;
             }
