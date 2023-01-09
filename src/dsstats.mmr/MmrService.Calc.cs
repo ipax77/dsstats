@@ -79,12 +79,12 @@ public static partial class MmrService
         {
             return 1;
         }
-        if (replayLeaverCount > 0)
+        if (replayLeaverCount == 0)
         {
             return 1;
         }
 
-        if (replayLeaverCount == 1 && teamLeaverCount == 1) // 1 Leaver only
+        if (replayLeaverCount == 1) // 1 Leaver only
         {
             return 0.5;
         }
