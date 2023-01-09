@@ -131,6 +131,40 @@ public static partial class MmrService
             return RatingType.None;
         }
     }
+
+    public static LeaverType GetLeaverType(ReplayDsRDto replay)
+    {
+        if (replay.Maxleaver < 90)
+        {
+            return LeaverType.None;
+        }
+
+        var leaverCount = replay.ReplayPlayers
+            .Where(x => x.Duration < replay.Duration - 90)
+            .Count();
+
+        if (leaverCount == 1)
+        {
+            return LeaverType.OneLeaver;
+        }
+
+        if (leaverCount > 2)
+        {
+            return LeaverType.MoreThanTwo;
+        }
+
+        var leaverPlayers = replay.ReplayPlayers.Where(x => x.Duration < replay.Duration - 90);
+        var teamsCount = leaverPlayers.Select(s => s.Team).Distinct().Count();
+
+        if (teamsCount == 1) 
+        { 
+            return LeaverType.OneEachTeam;
+        }
+        else
+        {
+            return LeaverType.TwoSameTeam;
+        }
+    }
 }
 
 public struct CmdrMmmrKey
@@ -148,4 +182,14 @@ public record CmdrMmmrValue
 {
     public double SynergyMmr { get; set; }
     public double AntiSynergyMmr { get; set; }
+}
+
+public enum LeaverType
+{
+    None = 0,
+
+    OneLeaver = 1,
+    OneEachTeam = 2,
+    TwoSameTeam = 3,
+    MoreThanTwo = 4
 }

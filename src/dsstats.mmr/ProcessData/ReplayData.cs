@@ -10,6 +10,7 @@ public record ReplayData
         Duration = replay.Duration;
         Maxleaver = replay.Maxleaver;
         Maxkillsum = replay.Maxkillsum;
+        LeaverType = MmrService.GetLeaverType(replay);
 
         WinnerTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam), true);
         LoserTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam), false);
@@ -37,6 +38,7 @@ public record ReplayData
         IsInvalid = WinnerTeamData.Players.Any(a => (int)a.Race <= 3 || (int)a.OppRace <= 3) || LoserTeamData.Players.Any(a => (int)a.Race <= 3 || (int)a.OppRace <= 3);
     }
 
+    public LeaverType LeaverType { get; init; }
     public DateTime GameTime { get; init; }
     public int Duration { get; init; }
     public int Maxleaver { get; init; }
