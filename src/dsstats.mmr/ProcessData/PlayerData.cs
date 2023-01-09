@@ -18,9 +18,10 @@ public record PlayerData
         PlayerResult = replayPlayer.PlayerResult;
 
         Race = replayPlayer.Race;
+        OppRace = replayPlayer.OppRace;
         Duration = replayPlayer.Duration;
 
-        IsLeaver = replayPlayer.Duration < replay.Duration - 90;
+        IsLeaver = replayPlayer.Duration < (replay.Duration - 90); //Todo Adjusted
     }
     public PlayerData(Commander race,
                       Commander oppRace,
