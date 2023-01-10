@@ -1,15 +1,13 @@
-
 using dsstats.mmr.Extensions;
 using dsstats.mmr.ProcessData;
 using pax.dsstats.shared;
-using pax.dsstats;
+
 using TeamData = dsstats.mmr.ProcessData.TeamData;
 
 namespace dsstats.mmr;
 
 public static partial class MmrService
 {
-    //# Calculate
     private static void CalculateRatingsDeltas(Dictionary<int, CalcRating> mmrIdRatings,
                                                ReplayData replayData,
                                                TeamData teamData,
@@ -146,10 +144,4 @@ public static partial class MmrService
         }
         return changes;
     }
-
-
-
-
-
-    //# Formulas
 }
