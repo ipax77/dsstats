@@ -18,6 +18,7 @@ public record PlayerData
         PlayerResult = replayPlayer.PlayerResult;
 
         Race = replayPlayer.Race;
+        OppRace = replayPlayer.OppRace;
         Duration = replayPlayer.Duration;
 
         IsLeaver = replayPlayer.Duration < replay.Duration - 90;
