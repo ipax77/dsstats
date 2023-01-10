@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\dsstats.mmr\dsstats.mmr.csproj" />
     <ProjectReference Include="..\pax.dsstats.dbng\pax.dsstats.dbng.csproj" />
     <ProjectReference Include="..\pax.dsstats.shared\pax.dsstats.shared.csproj" />
     <ProjectReference Include="..\pax.dsstats.parser\pax.dsstats.parser.csproj" />
