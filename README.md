@@ -33,7 +33,7 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 </details>
 
-<details><summary>v1.0.10</summary>
+<details><summary>v1.1.0</summary>
 
 >- RatingType LongNames
 >- pax.BlazorChartJs to v0.4.1
