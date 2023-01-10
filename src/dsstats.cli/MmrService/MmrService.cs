@@ -68,7 +68,7 @@ namespace dsstats.cli.MmrService
             List<ReplayData> replayDatas;
             double realAccuracy;
             double loss;
-            double loss_d;
+            // double loss_d;
 
             var results = new List<(double, double, double, double)>();
             do

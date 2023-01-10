@@ -14,5 +14,7 @@ public record PlayerInfo
 
 public record GameInfoRequest
 {
-    public List<string> PlayerNames { get; init; } = new();
+    public int RegionId { get; set; } = 1;
+    public RatingType RatingType { get; set; } = RatingType.Cmdr;
+    public List<string> PlayerNames { get; set; } = new();
 }

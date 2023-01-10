@@ -1,6 +1,7 @@
 ﻿using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
+using System.Xml.Linq;
 
 namespace pax.dsstats.dbng.Services;
 
@@ -9,18 +10,26 @@ public partial class StatsService
     public async Task<GameInfoResult> GetGameInfo(GameInfoRequest request, CancellationToken token)
     {
         GameInfoResult result = new();
+
+        if (!request.PlayerNames.Any())
+        {
+            return result;
+        }
+
+        var players = await context.Players
+                .Where(x => request.PlayerNames.Contains(x.Name) && x.RegionId == request.RegionId)
+                .Select(s => new { s.Name, s.PlayerId, s.RegionId, s.ToonId })
+                .ToListAsync(token);
+
         foreach (var name in request.PlayerNames)
         {
-            var player = await context.ReplayPlayers
-                .Where(x => x.Name == name)
-                .Select(s => s.Player)
-                .FirstOrDefaultAsync(token);
+            var player = players.FirstOrDefault(f => f.Name == name);
 
             List<PlayerRatingInfoDto> ratings = new();
             if (player != null)
             {
                 ratings = await context.PlayerRatings
-                    .Where(x => x.PlayerId == player.PlayerId)
+                    .Where(x => x.PlayerId == player.PlayerId && x.RatingType == request.RatingType)
                     .ProjectTo<PlayerRatingInfoDto>(mapper.ConfigurationProvider)
                     .ToListAsync(token);
             }

@@ -390,4 +390,26 @@ public partial class DataService
         }
         return new();
     }
+
+    public async Task<GameInfoResult> ServerGetGameInfo(GameInfoRequest request, CancellationToken token)
+    {
+        try
+        {
+            var result = await httpClient.PostAsJsonAsync($"{statsController}GetGameInfo", request);
+            if (result.IsSuccessStatusCode)
+            {
+                var infoResult = await result.Content.ReadFromJsonAsync<GameInfoResult>();
+                if (infoResult != null)
+                {
+                    return infoResult;
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting GameInfo: {ex.Message}");
+        }
+        return new();
+    }
 }

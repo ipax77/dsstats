@@ -207,6 +207,7 @@ public static class Data
     public static bool IsMaui { get; set; }
     public static int MauiWidth { get; set; }
     public static int MauiHeight { get; set; }
+    public static int MauiRegionId { get; set; } = 1;
     public static string SqliteConnectionString { get; set; } = string.Empty;
     public static string MysqlConnectionString { get; set; } = string.Empty;
 }
