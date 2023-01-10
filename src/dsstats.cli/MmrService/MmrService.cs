@@ -61,10 +61,8 @@ namespace dsstats.cli.MmrService
 
         public async Task<List<(double, double, double, double)>> DerivationTest()
         {
-            using var scope = serviceProvider.CreateScope();
-
             const double startClip = 168;
-            double clip = startClip; //985
+            double clip = 1600; //startClip; //
             List<ReplayData> replayDatas;
             double realAccuracy;
             double loss;
@@ -74,6 +72,12 @@ namespace dsstats.cli.MmrService
             do
             {
                 replayDatas = await ProduceRatings(new MmrOptions(true, startClip, clip));
+                replayDatas = GetReplayDatasOfPlayer(10758, replayDatas);
+
+                var winRate = GetWinRate(10758, replayDatas);
+                var avgETW = GetAvgETW(10758, replayDatas);
+                var confidence = 1 - Math.Abs(winRate - avgETW);
+
                 realAccuracy = replayDatas.Count(x => x.CorrectPrediction) / (double)replayDatas.Count;
 
                 loss = Loss.GetLoss(clip, replayDatas);
@@ -81,10 +85,52 @@ namespace dsstats.cli.MmrService
 
                 results.Add((clip, realAccuracy, loss, 0/*-loss_d*/));
 
-                clip += 500;//-loss_d * startClip;
+                //clip += 500;//-loss_d * startClip;
             } while (loss > 0);
 
             return results;
+        }
+
+        public async Task<double> ConfidenceTest(int playerId = 10758)
+        {
+            var replayDatas = await ProduceRatings(new MmrOptions(true));
+            replayDatas = GetReplayDatasOfPlayer(playerId, replayDatas);
+
+            var winRate = GetWinRate(playerId, replayDatas);
+            var avgETW = GetAvgETW(playerId, replayDatas);
+            var confidence = 1 - Math.Abs(winRate - avgETW);
+
+            return confidence;
+        }
+
+        private static double GetAvgETW(int playerId, List<ReplayData> replayDatas)
+        {
+            double avgETW_sum = 0;
+            foreach (var replayData in replayDatas)
+            {
+                if (replayData.WinnerTeamData.Players.Any(p => p.PlayerId == playerId))
+                {
+                    avgETW_sum += replayData.WinnerTeamData.ExpectedResult;
+                }
+                else
+                {
+                    avgETW_sum += replayData.LoserTeamData.ExpectedResult;
+                }
+            }
+            return avgETW_sum / replayDatas.Count;
+        }
+
+        private static double GetWinRate(int playerId, List<ReplayData> replayDatas)
+        {
+            int winCounts = replayDatas.Count(r => r.WinnerTeamData.Players.Any(p => p.PlayerId == playerId));
+            return winCounts / (double)replayDatas.Count;
+        }
+
+        private static List<ReplayData> GetReplayDatasOfPlayer(int playerId, List<ReplayData> replayDatas)
+        {
+            var listWinnerTeam = replayDatas.Where(r => r.WinnerTeamData.Players.Any(p => p.PlayerId == playerId));
+            var listLoserTeam = replayDatas.Where(r => r.LoserTeamData.Players.Any(p => p.PlayerId == playerId));
+            return listWinnerTeam.Concat(listLoserTeam).ToList();
         }
 
         private async Task<List<ReplayData>> ProduceRatings(MmrOptions mmrOptions,
