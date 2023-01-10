@@ -261,11 +261,18 @@ public partial class DataService : IDataService
 
     public async Task<GameInfoResult> GetGameInfo(GameInfoRequest request, CancellationToken token)
     {
-        try
+        if (fromServerSwitchService.GetFromServer())
         {
-            return await statsService.GetGameInfo(request, token);
+            return await ServerGetGameInfo(request, token);
         }
-        catch (OperationCanceledException) { }
-        return new();
+        else
+        {
+            try
+            {
+                return await statsService.GetGameInfo(request, token);
+            }
+            catch (OperationCanceledException) { }
+            return new();
+        }
     }
 }
