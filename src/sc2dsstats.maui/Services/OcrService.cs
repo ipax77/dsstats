@@ -76,7 +76,14 @@ public class OcrService
             {
                 continue;
             }
-            playerNames.Add(text.Trim());
+
+            var name = text.Trim();
+            if (name.ToUpper() == "DIRECT STRIKE")
+            {
+                continue;
+            }
+
+            playerNames.Add(name);
             if (playerNames.Count == 6)
             {
                 break;
