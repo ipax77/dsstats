@@ -58,10 +58,15 @@ namespace pax.dsstats.dbng
             CreateMap<ReplayEvent, ReplayEventListDto>(MemberList.Destination);
 
             CreateMap<Replay, ReplayDsRDto>(MemberList.Destination);
-            CreateMap<ReplayPlayer, ReplayPlayerDsRDto>(MemberList.Destination);
-            CreateMap<Player, PlayerDsRDto>(MemberList.Destination);
+            CreateMap<ReplayDto, ReplayDsRDto>(MemberList.Destination);
 
-            //CreateMap<Player, PlayerRatingDto>(MemberList.Destination);
+            CreateMap<ReplayPlayer, ReplayPlayerDsRDto>(MemberList.Destination);
+            CreateMap<ReplayPlayerDto, ReplayPlayerDsRDto>(MemberList.Destination);
+
+            CreateMap<Player, PlayerDsRDto>(MemberList.Destination);
+            CreateMap<PlayerDto, PlayerDsRDto>(MemberList.Destination);
+
+            CreateMap<Player, PlayerRatingDto>(MemberList.Destination);
             CreateMap<Player, PlayerMapDto>(MemberList.Destination);
 
             CreateMap<UploaderDto, Uploader>(MemberList.Source);
