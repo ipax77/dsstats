@@ -27,13 +27,21 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v1.0.10</summary>
+<details open="open"><summary>v1.1.1</summary>
 
->- RatingType LongNames
+>- Fix Ocr temp image path
 
 </details>
 
-<details open="open"><summary>v1.0.9</summary>
+<details><summary>v1.0.10</summary>
+
+>- RatingType LongNames
+>- pax.BlazorChartJs to v0.4.1
+>- Ocr Direct Strike Loading Screen (experimental)
+
+</details>
+
+<details><summary>v1.0.9</summary>
 
 >- PlayerRatings Position
 
