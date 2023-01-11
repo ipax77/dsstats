@@ -163,11 +163,11 @@ public static partial class MmrService
 
         if (teamsCount == 1) 
         { 
-            return LeaverType.OneEachTeam;
+            return LeaverType.TwoSameTeam;
         }
         else
         {
-            return LeaverType.TwoSameTeam;
+            return LeaverType.OneEachTeam;
         }
     }
 
