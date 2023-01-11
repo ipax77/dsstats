@@ -2,7 +2,7 @@
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
-using pax.dsstats;
+using System.Text.Json.Serialization;
 
 namespace pax.dsstats.web.Server.Controllers
 {
@@ -40,11 +40,11 @@ namespace pax.dsstats.web.Server.Controllers
 
         [HttpPost]
         [Route("GetReplaysCount")]
-        public async Task<ActionResult<int>> GetReplaysCount(ReplaysRequest request, CancellationToken token = default)
+        public async Task<ActionResult<int>> GetReplaysCount(ReplaysRequestV1 request, CancellationToken token = default)
         {
             try
             {
-                return await replayRepository.GetReplaysCount(request, token);
+                return await replayRepository.GetReplaysCount(request.GetReplaysRequest(), token);
             }
             catch (OperationCanceledException) { }
             return NoContent();
@@ -52,11 +52,11 @@ namespace pax.dsstats.web.Server.Controllers
 
         [HttpPost]
         [Route("GetReplays")]
-        public async Task<ActionResult<ICollection<ReplayListDto>>> GetReplays(ReplaysRequest request, CancellationToken token = default)
+        public async Task<ActionResult<ICollection<ReplayListDto>>> GetReplays(ReplaysRequestV1 request, CancellationToken token = default)
         {
             try
             {
-                return Ok(await replayRepository.GetReplays(request, token));
+                return Ok(await replayRepository.GetReplays(request.GetReplaysRequest(), token));
             }
             catch (OperationCanceledException)
             {
@@ -66,11 +66,11 @@ namespace pax.dsstats.web.Server.Controllers
 
         [HttpPost]
         [Route("GetEventReplaysCount")]
-        public async Task<ActionResult<int>> GetEventReplaysCount(ReplaysRequest request, CancellationToken token = default)
+        public async Task<ActionResult<int>> GetEventReplaysCount(ReplaysRequestV1 request, CancellationToken token = default)
         {
             try
             {
-                return await replayRepository.GetEventReplaysCount(request, token);
+                return await replayRepository.GetEventReplaysCount(request.GetReplaysRequest(), token);
             }
             catch (OperationCanceledException) { }
             return NoContent();
@@ -78,11 +78,11 @@ namespace pax.dsstats.web.Server.Controllers
 
         [HttpPost]
         [Route("GetEventReplays")]
-        public async Task<ActionResult<ICollection<ReplayListEventDto>>> GetEventReplays(ReplaysRequest request, CancellationToken token = default)
+        public async Task<ActionResult<ICollection<ReplayListEventDto>>> GetEventReplays(ReplaysRequestV1 request, CancellationToken token = default)
         {
             try
             {
-                return Ok(await replayRepository.GetEventReplays(request, token));
+                return Ok(await replayRepository.GetEventReplays(request.GetReplaysRequest(), token));
             }
             catch (OperationCanceledException)
             {
@@ -99,23 +99,23 @@ namespace pax.dsstats.web.Server.Controllers
 
         [HttpPost]
         [Route("GetStats")]
-        public async Task<StatsResponse> GetStats(StatsRequest request, CancellationToken token = default)
+        public async Task<StatsResponse> GetStats(StatsRequestV1 request, CancellationToken token = default)
         {
-            return await statsService.GetStatsResponse(request);
+            return await statsService.GetStatsResponse(request.GetStatsRequest());
         }
 
         [HttpPost]
         [Route("GetTourneyStats")]
-        public async Task<StatsResponse> GetTourneyStats(StatsRequest request, CancellationToken token = default)
+        public async Task<StatsResponse> GetTourneyStats(StatsRequestV1 request, CancellationToken token = default)
         {
-            return await statsService.GetTourneyStats(request, token);
+            return await statsService.GetTourneyStats(request.GetStatsRequest(), token);
         }
 
         [HttpPost]
         [Route("GetBuild")]
-        public async Task<BuildResponse> GetBuild(BuildRequest request)
+        public async Task<BuildResponse> GetBuild(BuildRequestV1 request)
         {
-            return await buildService.GetBuild(request);
+            return await buildService.GetBuild(request.GetBuildRequest());
         }
 
         [HttpGet]
@@ -163,11 +163,11 @@ namespace pax.dsstats.web.Server.Controllers
 
         [HttpPost]
         [Route("GetCmdrInfo")]
-        public async Task<ActionResult<CmdrResult>> GetCmdrInfo(CmdrRequest cmdrRequest, CancellationToken token = default)
+        public async Task<ActionResult<CmdrResult>> GetCmdrInfo(CmdrRequestV1 cmdrRequest, CancellationToken token = default)
         {
             try
             {
-                return await cmdrService.GetCmdrInfo(cmdrRequest, token);
+                return await cmdrService.GetCmdrInfo(cmdrRequest.GetCmdrRequest(), token);
             }
             catch (OperationCanceledException) { }
             return NoContent();
@@ -175,11 +175,11 @@ namespace pax.dsstats.web.Server.Controllers
 
         [HttpPost]
         [Route("GetCrosstable")]
-        public async Task<ActionResult<CrossTableResponse>> GetCrosstable(CrossTableRequest request, CancellationToken token = default)
+        public async Task<ActionResult<CrossTableResponse>> GetCrosstable(CrossTableRequestV1 request, CancellationToken token = default)
         {
             try
             {
-                return await statsService.GetCrossTable(request, token);
+                return await statsService.GetCrossTable(request.GetCrossTableRequest(), token);
             }
             catch (OperationCanceledException) { }
             return NoContent();
@@ -187,11 +187,11 @@ namespace pax.dsstats.web.Server.Controllers
 
         [HttpPost]
         [Route("GetTeamReplays")]
-        public async Task<ActionResult<List<BuildResponseReplay>>> GetTeamReplays(CrossTableReplaysRequest request, CancellationToken token)
+        public async Task<ActionResult<List<BuildResponseReplay>>> GetTeamReplays(CrossTableReplaysRequestV1 request, CancellationToken token)
         {
             try
             {
-                return await statsService.GetTeamReplays(request, token);
+                return await statsService.GetTeamReplays(request.GetCrossTableReplaysRequest(), token);
             }
             catch (OperationCanceledException) { }
             return NoContent();
@@ -199,11 +199,11 @@ namespace pax.dsstats.web.Server.Controllers
 
         [HttpPost]
         [Route("GetStatsUpgrades")]
-        public async Task<ActionResult<StatsUpgradesResponse>> GetUpgradeStats(BuildRequest buildRequest, CancellationToken token)
+        public async Task<ActionResult<StatsUpgradesResponse>> GetUpgradeStats(BuildRequestV1 buildRequest, CancellationToken token)
         {
             try
             {
-                return await statsService.GetUpgradeStats(buildRequest, token);
+                return await statsService.GetUpgradeStats(buildRequest.GetBuildRequest(), token);
             }
             catch (OperationCanceledException) { }
             return NoContent();
@@ -220,5 +220,148 @@ namespace pax.dsstats.web.Server.Controllers
             catch (OperationCanceledException) { }
             return NoContent();
         }
+    }
+}
+
+public record ReplaysRequestV1
+{
+    public List<TableOrder> Orders { get; set; } = new List<TableOrder>() { new TableOrder() { Property = "GameTime" } };
+    public DateTime StartTime { get; set; } = new DateTime(2022, 2, 1);
+    public DateTime EndTime { get; set; } = DateTime.Today;
+    public int Skip { get; set; }
+    public int Take { get; set; }
+    public string? Tournament { get; set; }
+    public string? SearchString { get; set; }
+    public string? SearchPlayers { get; set; }
+    public bool LinkSearch { get; set; }
+    public bool ResultAdjusted { get; set; }
+    public string? ReplayHash { get; set; }
+    public bool DefaultFilter { get; set; }
+    public int PlayerCount { get; set; }
+    public List<GameMode> GameModes { get; set; } = new();
+    public bool WithMmrChange { get; set; }
+    public int ToonId { get; set; }
+    public int ToonIdWith { get; set; }
+    public int ToonIdVs { get; set; }
+    public string? ToonIdName { get; set; }
+
+    public ReplaysRequest GetReplaysRequest()
+    {
+        return new()
+        {
+            Orders = Orders,
+            Skip = Skip,
+            Take = Take,
+            Tournament = Tournament,
+            SearchString = SearchString,
+            SearchPlayers = SearchPlayers,
+            LinkSearch = LinkSearch,
+            ResultAdjusted = ResultAdjusted,
+            ReplayHash = ReplayHash,
+            DefaultFilter = DefaultFilter,
+            PlayerCount = PlayerCount,
+            GameModes = GameModes,
+            WithMmrChange = WithMmrChange,
+            ToonId = ToonId,
+            ToonIdWith = ToonIdWith,
+            ToonIdVs = ToonIdVs,
+            ToonIdName = ToonIdName,
+        };
+    }
+}
+
+public record CmdrRequestV1
+{
+    public Commander Cmdr { get; set; }
+    public string TimeSpan { get; set; } = "This Year";
+    public bool Uploaders { get; set; }
+
+    public CmdrRequest GetCmdrRequest()
+    {
+        return new()
+        {
+            Cmdr = Cmdr,
+            TimeSpan = Data.GetTimePeriodFromDeprecatedString(TimeSpan),
+            Uploaders = Uploaders
+        };
+    }
+}
+
+public record CrossTableRequestV1
+{
+    public string Mode { get; set; } = "Standard";
+    public string TimePeriod { get; set; } = "Last Two Years";
+    public bool TeMaps { get; set; }
+
+    public CrossTableRequest GetCrossTableRequest()
+    {
+        return new()
+        {
+            Mode = Mode,
+            TimePeriod = Data.GetTimePeriodFromDeprecatedString(TimePeriod),
+            TeMaps = TeMaps
+        };
+    }
+}
+
+public record CrossTableReplaysRequestV1
+{
+    public string Mode { get; set; } = "Standard";
+    public string TimePeriod { get; set; } = "Last Two Years";
+    public bool TeMaps { get; set; }
+    public TeamCmdrs TeamCmdrs { get; set; } = null!;
+    public TeamCmdrs? TeamCmdrsVs { get; set; }
+
+    public CrossTableReplaysRequest GetCrossTableReplaysRequest()
+    {
+        return new()
+        {
+            Mode = Mode,
+            TimePeriod = Data.GetTimePeriodFromDeprecatedString(TimePeriod),
+            TeMaps = TeMaps,
+            TeamCmdrs = TeamCmdrs,
+            TeamCmdrsVs = TeamCmdrsVs
+        };
+    }
+}
+
+public record StatsRequestV1
+{
+    public StatsMode StatsMode { get; set; }
+    public DateTime StartTime { get; set; }
+    public DateTime EndTime { get; set; }
+    public string TimePeriod { get; set; } = "This Year";
+    [JsonIgnore]
+    public bool BeginAtZero { get; set; }
+    [JsonIgnore]
+    public List<Commander> AddRemoveCommanders { get; set; } = new();
+    public Commander Interest { get; set; }
+    public Commander Versus { get; set; }
+    public bool Uploaders { get; set; }
+    public bool DefaultFilter { get; set; } = true;
+    public bool TeMaps { get; set; }
+    public int PlayerCount { get; set; }
+    public List<RequestNames> PlayerNames { get; set; } = new();
+    public List<GameMode> GameModes { get; set; } = new();
+    public string? Tournament { get; set; }
+    public string? Round { get; set; }
+
+    public StatsRequest GetStatsRequest()
+    {
+        return new()
+        {
+            StatsMode = StatsMode,
+            TimePeriod = Data.GetTimePeriodFromDeprecatedString(TimePeriod),
+            Interest = Interest,
+            Versus = Versus,
+            Uploaders = Uploaders,
+            DefaultFilter = DefaultFilter,
+            TeMaps = TeMaps,
+            PlayerCount = PlayerCount,
+            PlayerNames = PlayerNames,
+            GameModes = GameModes,
+            Tournament = Tournament,
+            Round = Round
+        };
     }
 }

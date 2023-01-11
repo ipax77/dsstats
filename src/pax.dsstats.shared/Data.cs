@@ -232,6 +232,20 @@ public static class Data
         };
     }
 
+    public static TimePeriod GetTimePeriodFromDeprecatedString(string timePeriod)
+    {
+        return timePeriod switch
+        {
+            "This Month" => TimePeriod.ThisMonth,
+            "Last Month" => TimePeriod.LastMonth,
+            "This Year" => TimePeriod.ThisYear,
+            "Last Year" => TimePeriod.LastYear,
+            "Last Two Years" => TimePeriod.Last2Years,
+            "Patch 2.60" => TimePeriod.Patch2_60,
+            _ => TimePeriod.None
+        };
+    }
+
     public static bool IsMaui { get; set; }
     public static int MauiWidth { get; set; }
     public static int MauiHeight { get; set; }
