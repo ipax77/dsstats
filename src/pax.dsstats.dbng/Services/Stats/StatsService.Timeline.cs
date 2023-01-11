@@ -19,12 +19,11 @@ public partial class StatsService
             return await GetCustomTimeline(request);
         }
 
-        // DateTime endTime = request.EndTime == DateTime.MinValue ? DateTime.Today.AddDays(1) : request.EndTime;
-        DateTime endTime = GetAdjustedEndTime(request);
+        (var startTime, var endTime) = Data.TimeperiodSelected(request.TimePeriod);
 
         var cmdrstats = await GetRequestStats(request);
 
-        var stats = cmdrstats.Where(x => x.Time >= request.StartTime && x.Time <= endTime);
+        var stats = cmdrstats.Where(x => x.Time >= startTime && x.Time <= endTime);
 
         int tcount = stats.Sum(s => s.Count);
 
@@ -36,7 +35,7 @@ public partial class StatsService
             Items = new List<StatsResponseItem>()
         };
 
-        DateTime requestTime = request.StartTime;
+        DateTime requestTime = startTime;
 
         while (requestTime < endTime)
         {
@@ -73,14 +72,14 @@ public partial class StatsService
         return response;
     }
 
-    private DateTime GetAdjustedEndTime(StatsRequest request)
-    {
-        return request.EndTime == DateTime.MinValue || request.EndTime == DateTime.Today ?
-            DateTime.Today.Day > 15 ?
-                new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)
-                : new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1)
-            : request.EndTime;
-    }
+    //private DateTime GetAdjustedEndTime(StatsRequest request)
+    //{
+    //    return request.EndTime == DateTime.MinValue || request.EndTime == DateTime.Today ?
+    //        DateTime.Today.Day > 15 ?
+    //            new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)
+    //            : new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1)
+    //        : request.EndTime;
+    //}
 
 
     public async Task<StatsResponse> GetCustomTimeline(StatsRequest request)
@@ -95,8 +94,9 @@ public partial class StatsService
             Items = new List<StatsResponseItem>()
         };
 
-        DateTime _dateTime = request.StartTime;
-        DateTime endTime = GetAdjustedEndTime(request);
+        (var startTime, var endTime) = Data.TimeperiodSelected(request.TimePeriod);
+
+        DateTime _dateTime = startTime;
 
         while (_dateTime < endTime)
         {

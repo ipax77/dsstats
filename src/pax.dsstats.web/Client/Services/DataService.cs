@@ -9,8 +9,8 @@ public class DataService : IDataService
 {
     private readonly HttpClient httpClient;
     private readonly ILogger<DataService> logger;
-    private readonly string statsController = "api/Stats/";
-    private readonly string buildsController = "api/Builds/";
+    private readonly string statsController = "api/v2/Stats/";
+    private readonly string buildsController = "api/v2/Builds/";
     private readonly string ratingController = "api/Ratings/";
 
     public DataService(HttpClient httpClient, ILogger<DataService> logger)

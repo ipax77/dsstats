@@ -78,10 +78,12 @@ public partial class BuildService
             .Where(x => x.DefaultFilter)
             .AsNoTracking();
 
-        replays = replays.Where(x => x.GameTime >= request.StartTime);
-        if (request.EndTime < DateTime.UtcNow.Date.AddDays(-2))
+        (var startTime, var endTime) = Data.TimeperiodSelected(request.Timespan);
+
+        replays = replays.Where(x => x.GameTime >= startTime);
+        if (endTime < DateTime.UtcNow.Date.AddDays(-2))
         {
-            replays = replays.Where(x => x.GameTime <= request.EndTime);
+            replays = replays.Where(x => x.GameTime <= endTime);
         }
 
         if ((int)request.Interest > 3)

@@ -126,6 +126,8 @@ public partial class StatsRepository : IStatsRepository
     {
         IQueryable<Replay> replays;
 
+        (var startTime, var endTime) = Data.TimeperiodSelected(request.TimePeriod);
+
         if (!String.IsNullOrEmpty(request.Tournament) || !String.IsNullOrEmpty(request.Round))
         {
 #pragma warning disable CS8602 // Dereference of a possibly null reference. (ef core handles this https://github.com/dotnet/efcore/issues/17212)
@@ -133,7 +135,7 @@ public partial class StatsRepository : IStatsRepository
                 .Include(i => i.ReplayEvent)
                     .ThenInclude(j => j.Event)
                 .Include(i => i.ReplayPlayers)
-                .Where(x => x.GameTime > request.StartTime);
+                .Where(x => x.GameTime > startTime);
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
         }
         else
@@ -141,12 +143,12 @@ public partial class StatsRepository : IStatsRepository
             replays = context.Replays
                 .Include(i => i.ReplayEvent)
                 .Include(i => i.ReplayPlayers)
-                .Where(x => x.GameTime > request.StartTime);
+                .Where(x => x.GameTime > startTime);
         }
 
-        if (request.EndTime > DateTime.MinValue)
+        if (endTime > DateTime.MinValue)
         {
-            replays = replays.Where(x => x.GameTime < request.EndTime);
+            replays = replays.Where(x => x.GameTime < endTime);
         }
 
         if (!string.IsNullOrEmpty(request.Tournament))

@@ -2,10 +2,10 @@
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 
-namespace pax.dsstats.web.Server.Controllers;
+namespace pax.dsstats.web.Server.Controllers.v2;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v2/[controller]")]
 public class BuildsController : Controller
 {
     private readonly BuildService buildService;

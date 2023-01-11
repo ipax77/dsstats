@@ -84,25 +84,6 @@ public static class Data
         return $"{CmdrColor[cmdr]}{transparency}";
     }
 
-    public static (DateTime, DateTime) TimeperiodSelected(string period)
-    {
-        return period switch
-        {
-            //"This Month" => (DateTime.Today.AddDays(-(DateTime.Today.Day - 1)), DateTime.Today),
-            // "Last Month" => (DateTime.Today.AddDays(-(DateTime.Today.Day - 1)).AddMonths(-1), DateTime.Today.AddDays(-(DateTime.Today.Day - 1)).AddDays(-1)),
-            "This Month" => (new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1), DateTime.Today),
-            "Last Month" => (new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-1), new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1)),
-            "This Year" => (new DateTime(DateTime.Now.Year, 1, 1), DateTime.Today),
-            "Last Year" => (new DateTime(DateTime.Now.AddYears(-1).Year, 1, 1), new DateTime(DateTime.Now.Year, 1, 1)),
-            "Last Two Years" => (new DateTime(DateTime.Now.AddYears(-1).Year, 1, 1), DateTime.Today),
-            "ALL" => (new DateTime(2018, 1, 1), DateTime.Today),
-            "Patch 2.60" => (new DateTime(2020, 07, 28, 5, 23, 0), DateTime.Today),
-            _ => (new DateTime(DateTime.Now.Year, 1, 1), DateTime.Today)
-        };
-    }
-
-    public static readonly string[] TimePeriods = new string[] { "This Month", "Last Month", "This Year", "Last Year", "Last Two Years", "Patch 2.60", "ALL" };
-
     public static List<Commander> GetCommanders(CmdrGet cmdrGet)
     {
         return cmdrGet switch
@@ -201,6 +182,67 @@ public static class Data
             RatingType.Cmdr => "Commanders 3v3",
             RatingType.Std => "Standard 3v3",
             _ => ""
+        };
+    }
+
+    public static List<TimePeriod> GetTimePeriods(TimePeriodGet timePeriodGet = TimePeriodGet.None)
+    {
+        return timePeriodGet switch
+        {
+            TimePeriodGet.NoNone => Enum.GetValues(typeof(TimePeriod)).Cast<TimePeriod>().Where(x => x != TimePeriod.None).ToList(),
+            TimePeriodGet.Builds => Enum.GetValues(typeof(TimePeriod)).Cast<TimePeriod>().Where(x => x != TimePeriod.None && (int)x < 6).ToList(),
+            _ => Enum.GetValues(typeof(TimePeriod)).Cast<TimePeriod>().ToList(),
+        };
+    }
+
+    public enum TimePeriodGet
+    {
+        None = 0,
+        NoNone = 1,
+        Builds = 2
+    }
+
+    public static (DateTime, DateTime) TimeperiodSelected(TimePeriod period)
+    {
+        return period switch
+        {
+            TimePeriod.Past90Days => (DateTime.Today.AddDays(-90), DateTime.Today),
+            TimePeriod.ThisMonth => (new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1), DateTime.Today),
+            TimePeriod.LastMonth => (new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-1), new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1)),
+            TimePeriod.ThisYear => (new DateTime(DateTime.Now.Year, 1, 1), DateTime.Today),
+            TimePeriod.LastYear => (new DateTime(DateTime.Now.AddYears(-1).Year, 1, 1), new DateTime(DateTime.Now.Year, 1, 1)),
+            TimePeriod.Last2Years => (new DateTime(DateTime.Now.AddYears(-1).Year, 1, 1), DateTime.Today),
+            TimePeriod.Patch2_60 => (new DateTime(2020, 07, 28, 5, 23, 0), DateTime.Today),
+            _ => (new DateTime(2018, 1, 1), DateTime.Today),
+        };
+    }
+
+    public static string GetTimePeriodLongName(TimePeriod period)
+    {
+        return period switch
+        {
+            TimePeriod.Past90Days => "Past 90 Days",
+            TimePeriod.ThisMonth => "This Month",
+            TimePeriod.ThisYear => "This Year",
+            TimePeriod.Last2Years => "Last Two Years",
+            TimePeriod.Patch2_60 => "Patch 2.60",
+            TimePeriod.LastMonth => "Last Month",
+            TimePeriod.LastYear => "Last Year",
+            _ => "All"
+        };
+    }
+
+    public static TimePeriod GetTimePeriodFromDeprecatedString(string timePeriod)
+    {
+        return timePeriod switch
+        {
+            "This Month" => TimePeriod.ThisMonth,
+            "Last Month" => TimePeriod.LastMonth,
+            "This Year" => TimePeriod.ThisYear,
+            "Last Year" => TimePeriod.LastYear,
+            "Last Two Years" => TimePeriod.Last2Years,
+            "Patch 2.60" => TimePeriod.Patch2_60,
+            _ => TimePeriod.None
         };
     }
 
