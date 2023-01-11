@@ -131,6 +131,62 @@ public static partial class MmrService
             return RatingType.None;
         }
     }
+
+    public static LeaverType GetLeaverType(ReplayDsRDto replay)
+    {
+        if (replay.Maxleaver < 90)
+        {
+            return LeaverType.None;
+        }
+
+        var leaverCount = replay.ReplayPlayers
+            .Where(x => x.Duration < replay.Duration - 90)
+            .Count();
+
+        if (leaverCount == 0)
+        {
+            return LeaverType.None; // Corrupt or mocked Replay
+        }
+
+        if (leaverCount == 1)
+        {
+            return LeaverType.OneLeaver;
+        }
+
+        if (leaverCount > 2)
+        {
+            return LeaverType.MoreThanTwo;
+        }
+
+        var leaverPlayers = replay.ReplayPlayers.Where(x => x.Duration < replay.Duration - 90);
+        var teamsCount = leaverPlayers.Select(s => s.Team).Distinct().Count();
+
+        if (teamsCount == 1) 
+        { 
+            return LeaverType.TwoSameTeam;
+        }
+        else
+        {
+            return LeaverType.OneEachTeam;
+        }
+    }
+
+    public static double GetLeaverImpactForOneEachTeam(ReplayDsRDto replay)
+    {
+        var leaverPlayers = replay.ReplayPlayers.Where(x => x.Duration < replay.Duration - 90).ToList();
+
+        if (leaverPlayers.Count != 2)
+        {
+            throw new ArgumentOutOfRangeException(nameof(replay));
+        }
+
+        if (Math.Abs(leaverPlayers[0].Duration - leaverPlayers[1].Duration) > replay.Duration * 0.15)
+        {
+            return 1;
+        }
+
+        return 0.5;
+    }
 }
 
 public struct CmdrMmmrKey
@@ -148,4 +204,14 @@ public record CmdrMmmrValue
 {
     public double SynergyMmr { get; set; }
     public double AntiSynergyMmr { get; set; }
+}
+
+public enum LeaverType
+{
+    None = 0,
+
+    OneLeaver = 1,
+    OneEachTeam = 2,
+    TwoSameTeam = 3,
+    MoreThanTwo = 4
 }
