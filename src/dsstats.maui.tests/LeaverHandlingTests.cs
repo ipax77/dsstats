@@ -12,8 +12,8 @@ namespace dsstats.maui.tests;
 
 public class LeaverHandlingTests : TestWithSqlite
 {
-    static (ReplayDsRDto, ReplayDto, Dictionary<int, CalcRating>) baseReplay;
-    static MmrOptions mmrOptions;
+    readonly (ReplayDsRDto, ReplayDto, Dictionary<int, CalcRating>) baseReplay;
+    readonly MmrOptions mmrOptions;
 
     public LeaverHandlingTests()
     {
@@ -21,7 +21,7 @@ public class LeaverHandlingTests : TestWithSqlite
         baseReplay = GetBaseReplay();
     }
 
-    private static (ReplayDsRDto, ReplayDto, Dictionary<int, CalcRating>) GetBaseReplay()
+    private (ReplayDsRDto, ReplayDto, Dictionary<int, CalcRating>) GetBaseReplay()
     {
         var replayDto = JsonSerializer.Deserialize<ReplayDto>(File.ReadAllText("/data/testdata/testreplayDto.json"));
         if (replayDto == null)
