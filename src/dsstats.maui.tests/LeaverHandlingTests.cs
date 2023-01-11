@@ -14,10 +14,17 @@ public class LeaverHandlingTests : TestWithSqlite
 {
     readonly (ReplayDsRDto, ReplayDto, Dictionary<int, CalcRating>) baseReplay;
     readonly MmrOptions mmrOptions;
+    private readonly IMapper mapper;
 
     public LeaverHandlingTests()
     {
         mmrOptions = new(true);
+        var mapperConfiguration = new MapperConfiguration(cfg =>
+        {
+            cfg.AddProfile(new AutoMapperProfile());
+        });
+        mapper = mapperConfiguration.CreateMapper();
+        mapper.ConfigurationProvider.AssertConfigurationIsValid();
         baseReplay = GetBaseReplay();
     }
 
@@ -29,14 +36,10 @@ public class LeaverHandlingTests : TestWithSqlite
             Assert.Fail("ERROR: replayDto == null");
         }
 
-        var mapperConfiguration = new MapperConfiguration(cfg =>
-        {
-            cfg.AddProfile(new AutoMapperProfile());
-        });
-        var mapper = mapperConfiguration.CreateMapper();
-
         var mmrIdRatings = new Dictionary<int, CalcRating>();
-        var replayDsRDto = mapper.Map<ReplayDsRDto>(replayDto);
+
+        var replay = mapper.Map<Replay>(replayDto);
+        var replayDsRDto = mapper.Map<ReplayDsRDto>(replay);
 
         for (int i = 0; i < replayDsRDto.ReplayPlayers.Count; i++)
         {
