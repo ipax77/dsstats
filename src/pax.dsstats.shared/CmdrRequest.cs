@@ -3,6 +3,6 @@
 public record CmdrRequest
 {
     public Commander Cmdr { get; set; }
-    public string TimeSpan { get; set; } = "This Year";
+    public TimePeriod TimeSpan { get; set; } = TimePeriod.Past90Days;
     public bool Uploaders { get; set; }
 }

@@ -27,10 +27,10 @@
 
 
     private BuildRequest buildRequest = new()
-        {
-            PlayerNames = Data.GetDefaultRequestNames(),
-            Interest = Commander.Abathur,
-        };
+    {
+        PlayerNames = Data.GetDefaultRequestNames(),
+        Interest = Commander.Abathur,
+    };
 
     protected override void OnInitialized()
     {
@@ -40,10 +40,11 @@
 
     private void SetRequest()
     {
-        if (!String.IsNullOrEmpty(Timespan))
+        if (!String.IsNullOrEmpty(Timespan) 
+            && Enum.TryParse(typeof(TimePeriod), Timespan, out var timePeriodObj) 
+            && timePeriodObj is TimePeriod timePeriod)
         {
-            (buildRequest.StartTime, buildRequest.EndTime) = Data.TimeperiodSelected(Timespan);
-            buildRequest.Timespan = Timespan;
+            buildRequest.Timespan = timePeriod;
         }
 
         if (Enum.TryParse(typeof(Commander), Interest, out object? interestObj))
@@ -89,7 +90,7 @@
     {
         Dictionary<string, object?> queryDic = new();
 
-        queryDic.Add("Timespan", buildRequest.Timespan);
+        queryDic.Add("Timespan", buildRequest.Timespan.ToString());
         queryDic.Add("Interest", buildRequest.Interest.ToString());
         queryDic.Add("Versus", buildRequest.Versus.ToString());
         queryDic.Add("PlayerNames", string.Join('x', buildRequest.PlayerNames.Select(s => $"{s.ToonId}|{s.Name}")));
