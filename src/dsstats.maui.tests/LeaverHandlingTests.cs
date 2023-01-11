@@ -35,6 +35,13 @@ public class LeaverHandlingTests : TestWithSqlite
         {
             Assert.Fail("ERROR: replayDto == null");
         }
+        replayDto = replayDto with
+        {
+            ReplayPlayers = replayDto.ReplayPlayers
+                .OrderBy(x => x.Team)
+                    .ThenBy(x => x.GamePos)
+                .ToArray()
+        };
 
         var mmrIdRatings = new Dictionary<int, CalcRating>();
 
