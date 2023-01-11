@@ -2,7 +2,7 @@
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 
-namespace pax.dsstats.web.Server.Controllers;
+namespace pax.dsstats.web.Server.Controllers.v1;
 
 [ApiController]
 [Route("api/[controller]")]

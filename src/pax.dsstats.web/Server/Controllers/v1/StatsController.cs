@@ -4,7 +4,7 @@ using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using System.Text.Json.Serialization;
 
-namespace pax.dsstats.web.Server.Controllers
+namespace pax.dsstats.web.Server.Controllers.v1
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -99,16 +99,18 @@ namespace pax.dsstats.web.Server.Controllers
 
         [HttpPost]
         [Route("GetStats")]
-        public async Task<StatsResponse> GetStats(StatsRequestV1 request, CancellationToken token = default)
+        public async Task<StatsResponseV1> GetStats(StatsRequestV1 request, CancellationToken token = default)
         {
-            return await statsService.GetStatsResponse(request.GetStatsRequest());
+            var response = await statsService.GetStatsResponse(request.GetStatsRequest());
+            return new(response, request);
         }
 
         [HttpPost]
         [Route("GetTourneyStats")]
-        public async Task<StatsResponse> GetTourneyStats(StatsRequestV1 request, CancellationToken token = default)
+        public async Task<StatsResponseV1> GetTourneyStats(StatsRequestV1 request, CancellationToken token = default)
         {
-            return await statsService.GetTourneyStats(request.GetStatsRequest(), token);
+            var response = await statsService.GetTourneyStats(request.GetStatsRequest(), token);
+            return new(response, request);
         }
 
         [HttpPost]
@@ -220,6 +222,26 @@ namespace pax.dsstats.web.Server.Controllers
             catch (OperationCanceledException) { }
             return NoContent();
         }
+    }
+}
+
+public record StatsResponseV1
+{
+    public StatsRequestV1 Request { get; init; } = new();
+    public ICollection<StatsResponseItem> Items { get; init; } = new List<StatsResponseItem>();
+    public CountResponse CountResponse { get; init; } = new();
+    public int Count { get; init; }
+    public int Bans { get; set; }
+    public int AvgDuration { get; init; }
+
+    public StatsResponseV1 (StatsResponse statsResponse, StatsRequestV1 statsRequestV1)
+    {
+        Request = statsRequestV1;
+        Items = statsResponse.Items;
+        CountResponse = statsResponse.CountResponse;
+        Count = statsResponse.Count;
+        Bans = statsResponse.Bans;
+        AvgDuration = statsResponse.AvgDuration;
     }
 }
 
