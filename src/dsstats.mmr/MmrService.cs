@@ -143,6 +143,11 @@ public static partial class MmrService
             .Where(x => x.Duration < replay.Duration - 90)
             .Count();
 
+        if (leaverCount == 0)
+        {
+            return LeaverType.None; // Corrupt or mocked Replay
+        }
+
         if (leaverCount == 1)
         {
             return LeaverType.OneLeaver;

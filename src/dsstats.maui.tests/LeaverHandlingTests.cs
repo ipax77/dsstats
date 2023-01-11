@@ -1,52 +1,32 @@
-﻿using AutoMapper;
+﻿using System.Net.Http.Headers;
+using System.Text.Json;
+
+using AutoMapper;
 using dsstats.mmr;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
+using dsstats.mmr.ProcessData;
 using pax.dsstats.dbng;
-using pax.dsstats.dbng.Repositories;
-using pax.dsstats.dbng.Services;
-using pax.dsstats.parser;
 using pax.dsstats.shared;
-using s2protocol.NET;
-using System.Reflection;
+using SqliteMigrations.Migrations;
 
 namespace dsstats.maui.tests;
 
 public class LeaverHandlingTests : TestWithSqlite
 {
-    public static readonly string? assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+    static (ReplayDsRDto, ReplayDto, Dictionary<int, CalcRating>) baseReplay;
+    static MmrOptions mmrOptions;
 
-    [Theory]
-    [InlineData("C:\\Users\\Zehnder\\Documents\\StarCraft II\\Accounts\\450391902\\3-S2-1-7276247\\Replays\\Multiplayer\\Direct Strike (155).SC2Replay")] // 1 Leaver Only (1, 0)
-    [InlineData("C:\\Users\\Zehnder\\Documents\\StarCraft II\\Accounts\\450391902\\2-S2-1-8509078\\Replays\\Multiplayer\\Direct Strike (1826).SC2Replay")] // 1 Leaver each Team (1, 1)
-    [InlineData("C:\\Users\\Zehnder\\Documents\\StarCraft II\\Accounts\\450391902\\3-S2-1-7276247\\Replays\\Multiplayer\\Direct Strike (159).SC2Replay")] // 2 Leaver same Team (2, 0)
-    [InlineData("C:\\Users\\Zehnder\\Documents\\StarCraft II\\Accounts\\450391902\\2-S2-1-8509078\\Replays\\Multiplayer\\Direct Strike (1592).SC2Replay")] // 4 Leaver (2, 2)
-    public async Task OnLeaverTest(string replayFile)
+    public LeaverHandlingTests()
     {
-        Assert.True(assemblyPath != null, "Could not get ExecutingAssembly path");
-        if (assemblyPath == null)
-        {
-            return;
-        }
+        mmrOptions = new(true);
+        baseReplay = GetBaseReplay();
+    }
 
-        ReplayDecoder decoder = new(assemblyPath);
-        ReplayDecoderOptions options = new ReplayDecoderOptions()
+    private static (ReplayDsRDto, ReplayDto, Dictionary<int, CalcRating>) GetBaseReplay()
+    {
+        var replayDto = JsonSerializer.Deserialize<ReplayDto>(File.ReadAllText("/data/testdata/testreplayDto.json"));
+        if (replayDto == null)
         {
-            Initdata = true,
-            Details = true,
-            Metadata = true,
-            MessageEvents = false,
-            TrackerEvents = true,
-            GameEvents = false,
-            AttributeEvents = false,
-        };
-
-        var replay = await decoder.DecodeAsync(Path.Combine(assemblyPath, "testdata", replayFile), options).ConfigureAwait(false);
-        Assert.True(replay != null, "Sc2Replay was null");
-        if (replay == null)
-        {
-            decoder.Dispose();
-            return;
+            Assert.Fail("ERROR: replayDto == null");
         }
 
         var mapperConfiguration = new MapperConfiguration(cfg =>
@@ -55,29 +35,109 @@ public class LeaverHandlingTests : TestWithSqlite
         });
         var mapper = mapperConfiguration.CreateMapper();
 
-        var dsReplay = Parse.GetDsReplay(replay);
-        Assert.NotNull(dsReplay);
-        if (dsReplay == null)
+        var mmrIdRatings = new Dictionary<int, CalcRating>();
+        var replayDsRDto = mapper.Map<ReplayDsRDto>(replayDto);
+
+        for (int i = 0; i < replayDsRDto.ReplayPlayers.Count; i++)
         {
-            decoder.Dispose();
-            return;
+            replayDsRDto.ReplayPlayers[i] = replayDsRDto.ReplayPlayers[i] with
+            {
+                Player = new PlayerDsRDto() with
+                {
+                    PlayerId = i
+                }
+            };
+
+            mmrIdRatings.Add(i, new CalcRating()
+            {
+                PlayerId = i,
+                Mmr = mmrOptions.StartMmr,
+                Consistency = 0,
+                Confidence = 0,
+                Games = 0,
+            });
         }
 
-        var replayDto = Parse.GetReplayDto(dsReplay);
-        var replayDsrDto = mapper.Map<ReplayDsRDto>(replayDto);
+        return (replayDsRDto with { }, replayDto with { }, mmrIdRatings);
+    }
 
-        //mocking
-        //var mockReplay = replayDsrDto with { };
-        //mockReplay.ReplayPlayers.ForEach(f => f = f with { Duration = replayDto.Duration });
+    [Fact]
+    public void NoneLeaver()
+    {
+        var (mockReplay, replayDto, mmrIdRatings) = baseReplay with { };
 
-        var mmrIdRatings = new Dictionary<RatingType, Dictionary<int, CalcRating>>()
+        mockReplay = mockReplay with { Maxleaver = 0 };
+        for (int i = 0; i < mockReplay.ReplayPlayers.Count; i++)
         {
-            { RatingType.Cmdr, new() },
-            { RatingType.Std, new() },
-        };
-        
-        var results = await MmrService.GeneratePlayerRatings(new List<ReplayDsRDto>() { replayDsrDto }, new(), mmrIdRatings, new MmrOptions(true), 0, null, true);
+            mockReplay.ReplayPlayers[i] = mockReplay.ReplayPlayers[i] with { Duration = replayDto.Duration };
+        }
 
-        Assert.True(true);
+        var plChanges = MmrService.ProcessReplay(new ReplayData(mockReplay), mmrIdRatings, new(), mmrOptions);
+
+        var winnerPlayers = replayDto.ReplayPlayers.Where(x => x.PlayerResult == PlayerResult.Win).ToArray();
+        var loserPlayers = replayDto.ReplayPlayers.Where(x => x.PlayerResult == PlayerResult.Los).ToArray();
+
+        var winnersChange = winnerPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / winnerPlayers.Length;
+        var loserChange = loserPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / loserPlayers.Length;
+
+        foreach (var player in winnerPlayers)
+        {
+            var plChange = plChanges.FirstOrDefault(f => f.Pos == player.GamePos);
+            Assert.True(plChange?.Change == winnersChange);
+        }
+
+        foreach (var player in loserPlayers)
+        {
+            var plChange = plChanges.FirstOrDefault(f => f.Pos == player.GamePos);
+            Assert.True(plChange?.Change == loserChange);
+        }
+    }
+
+    [Fact]
+    public void OneLeaver()
+    {
+        var (mockReplay, replayDto, mmrIdRatings) = baseReplay with { };
+
+        mockReplay = mockReplay with { Maxleaver = 91 };
+        for (int i = 0; i < mockReplay.ReplayPlayers.Count; i++)
+        {
+            if (i == 0)
+            {
+                mockReplay.ReplayPlayers[i] = mockReplay.ReplayPlayers[i] with { Duration = 0 };
+            }
+            else
+            {
+                mockReplay.ReplayPlayers[i] = mockReplay.ReplayPlayers[i] with { Duration = replayDto.Duration };
+            }
+        }
+
+        var plChanges = MmrService.ProcessReplay(new ReplayData(mockReplay), mmrIdRatings, new(), new(true));
+
+        var winnerPlayers = replayDto.ReplayPlayers.Where(x => x.PlayerResult == PlayerResult.Win).ToArray();
+        var loserPlayers = replayDto.ReplayPlayers.Where(x => x.PlayerResult == PlayerResult.Los).ToArray();
+
+        var leaverChange = plChanges.Min(x => x.Change);
+        //var winnersChange = winnerPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / winnerPlayers.Length;
+        //var loserChange = loserPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / loserPlayers.Length;
+        
+        foreach (var player in winnerPlayers)
+        {
+            var plChange = plChanges.FirstOrDefault(f => f.Pos == player.GamePos);
+
+            if (player == replayDto.ReplayPlayers.ElementAt(0))
+            {
+                Assert.True(plChange?.Change == leaverChange);
+            }
+            else
+            {
+                Assert.True(plChange?.Change == -0.5 * leaverChange);
+            }
+        }
+
+        foreach (var player in loserPlayers)
+        {
+            var plChange = plChanges.FirstOrDefault(f => f.Pos == player.GamePos);
+            Assert.True(plChange?.Change == 0.5 * leaverChange);
+        }
     }
 }
