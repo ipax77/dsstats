@@ -38,7 +38,7 @@ public static partial class MmrService
             }
             else
             {
-                SetLeaverPlayerDeltas(playerData, replayData, playerImpact, mmrOptions);
+                SetLeaverPlayerDeltas(playerData, teamData, replayData, playerImpact, mmrOptions);
             }
 
             //if (Math.Abs(playerData.Deltas.Mmr) > mmrOptions.EloK * teamData.Players.Length)
@@ -56,9 +56,17 @@ public static partial class MmrService
         playerData.Deltas.Confidence = 1 - Math.Abs(teamData.ExpectedResult - teamData.ActualResult);
     }
 
-    private static void SetLeaverPlayerDeltas(PlayerData playerData, ReplayData replayData, double playerImpact, MmrOptions mmrOptions)
+    private static void SetLeaverPlayerDeltas(PlayerData playerData, TeamData teamData, ReplayData replayData, double playerImpact, MmrOptions mmrOptions)
     {
-        playerData.Deltas.Mmr = -1 * CalculateMmrDelta(replayData.LoserTeamData.ExpectedResult, playerImpact, mmrOptions.EloK); //ToDo
+        if (teamData.ActualResult == replayData.WinnerTeamData.ActualResult)
+        {
+            playerData.Deltas.Mmr = -1 * CalculateMmrDelta(replayData.LoserTeamData.ExpectedResult, playerImpact, mmrOptions.EloK); //ToDo
+        }
+        else
+        {
+            playerData.Deltas.Mmr = -1 * CalculateMmrDelta(replayData.WinnerTeamData.ExpectedResult, playerImpact, mmrOptions.EloK); //ToDo
+        }
+
         playerData.Deltas.Consistency = 0;
         playerData.Deltas.Confidence = 0;
     }
