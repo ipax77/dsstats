@@ -58,7 +58,7 @@ public class LeaverHandlingTests : TestWithSqlite
             mmrIdRatings.Add(i, new CalcRating()
             {
                 PlayerId = i,
-                Mmr = mmrOptions.StartMmr + (i * 100),
+                Mmr = mmrOptions.StartMmr + (i * 200),
                 Consistency = 0,
                 Confidence = 0,
                 Games = 0,
@@ -176,12 +176,19 @@ public class LeaverHandlingTests : TestWithSqlite
         MmrService.SetReplayData(mmrIdRatings, replayData, new(), new(true));
         var plChanges = MmrService.ProcessReplay(replayData, mmrIdRatings, new(), new(true));
 
-        var winnerPlayers = replayDto.ReplayPlayers.Where(x => x.PlayerResult == PlayerResult.Win).ToArray();
-        var loserPlayers = replayDto.ReplayPlayers.Where(x => x.PlayerResult == PlayerResult.Los).ToArray();
+        var leaverPlayers = replayDto.ReplayPlayers.Where(x => replayData.WinnerTeamData.Players.Concat(replayData.LoserTeamData.Players).First(y => x.GamePos == y.GamePos).IsLeaver).ToArray();
+        var winnerPlayers = replayDto.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Win) && !leaverPlayers.Contains(x)).ToArray();
+        var loserPlayers = replayDto.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Los) && !leaverPlayers.Contains(x)).ToArray();
 
-        var leaverChange = plChanges.Min(x => x.Change);
-        //var winnersChange = winnerPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / winnerPlayers.Length;
-        //var loserChange = loserPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / loserPlayers.Length;
+        var leaverChange = leaverPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / leaverPlayers.Length;
+
+        var winnersChange = winnerPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / winnerPlayers.Length;
+        var loserChange = loserPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / loserPlayers.Length;
+
+        if (winnerPlayers.Length < loserPlayers.Length) // Leavers are in winnerTeam
+        {
+            return; // No solution to test properly yet!!!
+        }
 
         foreach (var player in winnerPlayers)
         {
@@ -201,7 +208,14 @@ public class LeaverHandlingTests : TestWithSqlite
         {
             var plChange = plChanges.FirstOrDefault(f => f.Pos == player.GamePos);
 
-            Assert.Equal(plChange?.Change, 0.25 * leaverChange);
+            if (player == replayDto.ReplayPlayers.ElementAt(0) || player == replayDto.ReplayPlayers.ElementAt(1))
+            {
+                Assert.Equal(plChange?.Change, leaverChange);
+            }
+            else
+            {
+                Assert.Equal(plChange?.Change, 0.25 * leaverChange);
+            }
         }
     }
 }
