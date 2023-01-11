@@ -72,7 +72,6 @@ public static class ReplayExtensions
     {
         var sb = new StringBuilder();
         sb.Append("StatsCount");
-        sb.Append(statsRequest.StartTime.ToString(@"yyyyMMdd"));
         sb.Append((int)statsRequest.Interest);
         sb.Append(statsRequest.TimePeriod);
         sb.Append(String.Concat(statsRequest.GameModes.Select(s => (int)s)));
@@ -93,7 +92,6 @@ public static class ReplayExtensions
         }
         sb.Append("Stats");
         sb.Append(statsRequest.StatsMode.ToString());
-        sb.Append(statsRequest.StartTime.ToString(@"yyyyMMdd"));
         sb.Append((int)statsRequest.Interest);
         sb.Append(statsRequest.DefaultFilter);
         sb.Append(statsRequest.Uploaders);
@@ -111,7 +109,7 @@ public static class ReplayExtensions
     {
         var sb = new StringBuilder();
         sb.Append("Builds");
-        sb.Append(buildRequest.StartTime.ToString(@"yyyyMMdd"));
+        sb.Append(buildRequest.Timespan);
         sb.Append(buildRequest.Interest);
         sb.Append(buildRequest.Versus);
         sb.Append(String.Concat(buildRequest.PlayerNames.Select(s => s.ToonId.ToString())));

@@ -1,5 +1,4 @@
 ﻿using pax.dsstats.shared;
-using pax.dsstats.shared.Raven;
 using System;
 using System.Collections.Generic;
 using System.Linq;

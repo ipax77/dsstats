@@ -2,7 +2,6 @@
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
-using System.Net.Http.Json;
 
 namespace sc2dsstats.maui.Services;
 
@@ -261,11 +260,18 @@ public partial class DataService : IDataService
 
     public async Task<GameInfoResult> GetGameInfo(GameInfoRequest request, CancellationToken token)
     {
-        try
+        if (fromServerSwitchService.GetFromServer())
         {
-            return await statsService.GetGameInfo(request, token);
+            return await ServerGetGameInfo(request, token);
         }
-        catch (OperationCanceledException) { }
-        return new();
+        else
+        {
+            try
+            {
+                return await statsService.GetGameInfo(request, token);
+            }
+            catch (OperationCanceledException) { }
+            return new();
+        }
     }
 }

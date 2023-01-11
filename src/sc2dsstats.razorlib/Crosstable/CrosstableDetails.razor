@@ -134,7 +134,18 @@
 
             foreach (var order in Orders)
             {
-                if (order.Ascending)
+                if (order.Property == nameof(TeamCrossTable.Comp))
+                {
+                    if (order.Ascending)
+                    {
+                        itemsQ = itemsQ.OrderBy(o => String.Concat(o.Comp.Cmdrs));
+                    }
+                    else
+                    {
+                        itemsQ = itemsQ.OrderByDescending(o => String.Concat(o.Comp.Cmdrs));
+                    }
+                }
+                else if (order.Ascending)
                 {
                     itemsQ = itemsQ.AppendOrderBy(order.Property);
                 }
@@ -146,7 +157,6 @@
 
             items = itemsQ.ToList();
         }
-
         return items;
     }
 }

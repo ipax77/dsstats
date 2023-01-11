@@ -30,9 +30,7 @@
     private StatsRequest statsRequest = new()
         {
             StatsMode = shared.StatsMode.Winrate,
-            StartTime = new DateTime(DateTime.Today.Year, 1, 1),
-            EndTime = DateTime.Today,
-            TimePeriod = "This Year",
+            TimePeriod = shared.TimePeriod.Past90Days,
             Uploaders = false,
             DefaultFilter = true,
             GameModes = new() { GameMode.Commanders, GameMode.CommandersHeroic }
@@ -54,10 +52,11 @@
             }
         }
 
-        if (!String.IsNullOrEmpty(TimePeriod))
+        if (!String.IsNullOrEmpty(TimePeriod) 
+            && Enum.TryParse(typeof(TimePeriod), TimePeriod, out var timePeriodObj) 
+            && timePeriodObj is TimePeriod timePeriod)
         {
-            (statsRequest.StartTime, statsRequest.EndTime) = Data.TimeperiodSelected(TimePeriod);
-            statsRequest.TimePeriod = TimePeriod;
+            statsRequest.TimePeriod = timePeriod;
         }
 
         if (Enum.TryParse(typeof(Commander), Interest, out object? interestObj))
@@ -84,7 +83,7 @@
         Dictionary<string, object?> queryDic = new();
 
         queryDic.Add("StatsMode", statsRequest.StatsMode.ToString());
-        queryDic.Add("TimePeriod", statsRequest.TimePeriod);
+        queryDic.Add("TimePeriod", statsRequest.TimePeriod.ToString());
         queryDic.Add("Interest", statsRequest.Interest.ToString());
         queryDic.Add("Uploaders", statsRequest.Uploaders);
         queryDic.Add("DefaultFilter", statsRequest.DefaultFilter);

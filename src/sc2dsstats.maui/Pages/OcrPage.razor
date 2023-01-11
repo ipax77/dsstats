@@ -18,15 +18,21 @@
         border-radius: 5px;
     }
 
-    .drop-zone.hov er {
-        border-style: solid;
-    }
+        .drop-zone.hov er {
+            border-style: solid;
+        }
 </style>
 
 <h3>GameInfo</h3>
 
 <div @ref="dropZoneElement" class="drop-zone">
-    <p>Drop a file or paste an image from the clipboard or select a file using the input</p>
+    <p>
+        Drop a file or paste an image from the clipboard or select a file using the input or use the 'Make Screenshot' button
+        <br />
+        <span class="fw-bold text-warning">The image should show the Direct Strike loading screen</span>
+        <br />
+        <small>The image is neither saved nor transmitted. Text recognition takes place locally. After loading another image or closing the app the image is gone.</small>
+    </p>
     <InputFile OnChange="@OnChange" @ref="inputFile" />
 </div>
 
@@ -38,11 +44,51 @@
     <img src="@src" width="900" />
 </div>
 
-<CascadingValue Value="ratingType">
-@if (gameInfoResult != null)
-{
-    <sc2dsstats.razorlib.GameInfo.GameInfoComponent GameInfoResult="gameInfoResult" />
-}
+<EditForm EditContext="editContext">
+    <div class="row">
+        <div class="col-auto me-2">
+            <label class="form-label">
+                Rating Type
+                <InputSelect class="form-select" @bind-Value="gameInfoRequest.RatingType">
+                    <option value="@RatingType.Cmdr" selected>@Data.GetRatingTypeLongName(RatingType.Cmdr)</option>
+                    <option value="@RatingType.Std">@Data.GetRatingTypeLongName(RatingType.Std)</option>
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto me-2">
+            <label class="form-label">
+                Region
+                <InputSelect class="form-select" @bind-Value="gameInfoRequest.RegionId">
+                    <option value="1">@Data.GetRegionString(1)</option>
+                    <option value="2">@Data.GetRegionString(2)</option>
+                    <option value="3">@Data.GetRegionString(3)</option>
+                </InputSelect>
+            </label>
+        </div>
+        @if (UserSettingsService.UserSettings.AllowUploads)
+        {
+            <div class="col-auto form-check form-switch align-self-center me-2">
+                <label class="form-check-label">
+                    Online Ratings
+                    <input type="checkbox" checked="@UserSettingsService.UserSettings.AllowUploads" class="form-check-input" @onchange="FromServerChange">
+                    </input>
+                </label>
+            </div>
+        }
+        else
+        {
+            <div class="col-auto ms-2">
+                <small class="text-primary">Server Info available for Uploaders only.</small>
+            </div>
+        }
+    </div>
+</EditForm>
+
+<CascadingValue Value="gameInfoRequest.RatingType">
+    @if (gameInfoResult != null)
+    {
+        <sc2dsstats.razorlib.GameInfo.GameInfoComponent GameInfoResult="gameInfoResult" />
+    }
 </CascadingValue>
 
 @code {
@@ -56,10 +102,21 @@
 
     CancellationTokenSource cts = new();
 
-    List<string> playerNames = new();
     GameInfoResult? gameInfoResult;
 
-    RatingType ratingType = RatingType.Cmdr;
+    private GameInfoRequest gameInfoRequest = null!;
+    EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        gameInfoRequest = new() { RegionId = Data.MauiRegionId };
+        editContext = new EditContext(gameInfoRequest);
+        editContext.OnFieldChanged += FieldChanged;
+
+        var fromServer = UserSettingsService.UserSettings.AllowUploads;
+        dataService.SetFromServer(fromServer);
+        base.OnInitialized();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -73,8 +130,14 @@
         }
     }
 
+    private async void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        gameInfoResult = await dataService.GetGameInfo(gameInfoRequest, cts.Token);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
     // Called when a new file is uploaded
-    async Task OnChange(InputFileChangeEventArgs e)
+    private async Task OnChange(InputFileChangeEventArgs e)
     {
         using var stream = e.File.OpenReadStream(maxAllowedSize: 512000 * 20);
         using var ms = new MemoryStream();
@@ -83,12 +146,11 @@
         src = "data:" + e.File.ContentType + ";base64," + Convert.ToBase64String(ms.ToArray());
     }
 
-
     private async Task GetResult(MemoryStream memoryStream)
     {
         OcrService ocrService = new();
-        playerNames = await ocrService.GetImagePlayerNames(memoryStream);
-        gameInfoResult = await dataService.GetGameInfo(new GameInfoRequest() { PlayerNames = playerNames }, cts.Token);
+        gameInfoRequest.PlayerNames = await ocrService.GetImagePlayerNames(memoryStream);
+        gameInfoResult = await dataService.GetGameInfo(gameInfoRequest, cts.Token);
         await InvokeAsync(() => StateHasChanged());
     }
 
@@ -109,6 +171,16 @@
 
         src = "data:image/png;base64, " + Convert.ToBase64String(byteImage);
         await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async void FromServerChange(ChangeEventArgs e)
+    {
+        if (e.Value is bool value)
+        {
+            dataService.SetFromServer(value);
+            gameInfoResult = await dataService.GetGameInfo(gameInfoRequest, cts.Token);
+            await InvokeAsync(() => StateHasChanged());
+        }
     }
 
     // Unregister the drop zone events

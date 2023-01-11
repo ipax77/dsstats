@@ -42,9 +42,7 @@
     private StatsRequest statsRequest = new()
         {
             StatsMode = StatsMode.Winrate,
-            StartTime = DateTime.Today.AddDays(-90),
-            EndTime = DateTime.Today,
-            TimePeriod = "Custom",
+            TimePeriod = TimePeriod.Past90Days,
             Uploaders = false,
             DefaultFilter = true,
             GameModes = new() { GameMode.Commanders, GameMode.CommandersHeroic }
