@@ -7,7 +7,7 @@ namespace dsstats.mmr;
 
 public partial class MmrService
 {
-    private static void SetReplayData(Dictionary<int, CalcRating> mmrIdRatings,
+    public static void SetReplayData(Dictionary<int, CalcRating> mmrIdRatings,
                                       ReplayData replayData,
                                       Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrDic,
                                       MmrOptions mmrOptions)
