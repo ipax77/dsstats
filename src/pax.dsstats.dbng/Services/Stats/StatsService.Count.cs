@@ -79,13 +79,15 @@ public partial class StatsService
 
     private string GetRequestQueryString(StatsRequest request)
     {
+        (var startTime, var endTime) = Data.TimeperiodSelected(request.TimePeriod);
+
         StringBuilder sb = new();
 
-        sb.Append($"WHERE r.GameTime > '{request.StartTime.ToString(@"yyyy-MM-dd")}'");
+        sb.Append($"WHERE r.GameTime > '{startTime.ToString(@"yyyy-MM-dd")}'");
 
-        if (request.EndTime < DateTime.UtcNow.Date.AddDays(-2))
+        if (endTime < DateTime.UtcNow.Date.AddDays(-2))
         {
-            sb.Append($" AND r.GameTime < '{request.EndTime.ToString(@"yyyy-MM-dd")}'");
+            sb.Append($" AND r.GameTime < '{endTime.ToString(@"yyyy-MM-dd")}'");
         }
 
         if (request.TeMaps)
@@ -177,15 +179,17 @@ public partial class StatsService
 
     private IQueryable<Replay> GetCountReplaysQueryiable(StatsRequest request)
     {
+        (var startTime, var endTime) = Data.TimeperiodSelected(request.TimePeriod);
+
         var replays = context.Replays
             .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Player)
-            .Where(x => x.GameTime > request.StartTime)
+            .Where(x => x.GameTime > startTime)
             .AsNoTracking();
 
-        if (request.EndTime < DateTime.UtcNow.Date.AddDays(-2))
+        if (endTime < DateTime.UtcNow.Date.AddDays(-2))
         {
-            replays = replays.Where(x => x.GameTime <= request.EndTime);
+            replays = replays.Where(x => x.GameTime <= endTime);
         }
 
         if (request.TeMaps)

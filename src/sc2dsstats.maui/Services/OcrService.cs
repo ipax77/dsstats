@@ -11,7 +11,7 @@ public class OcrService
 {
     public async Task<List<string>> GetImagePlayerNames(MemoryStream memoryStream)
     {
-        var tempFile = @"C:\data\test.png";
+        var tempFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "tmpImage.png");
 
         memoryStream.Position = 0;
 
@@ -25,6 +25,8 @@ public class OcrService
         {
             return GetPlayerNames(ocrResult);
         }
+
+        File.Delete(tempFile);
 
         return new();
     }
@@ -76,7 +78,14 @@ public class OcrService
             {
                 continue;
             }
-            playerNames.Add(text.Trim());
+
+            var name = text.Trim();
+            if (name.ToUpper() == "DIRECT STRIKE")
+            {
+                continue;
+            }
+
+            playerNames.Add(name);
             if (playerNames.Count == 6)
             {
                 break;

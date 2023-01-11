@@ -110,6 +110,12 @@
         if (latestReplay != null)
         {
             replayComponent?.Init(latestReplay);
+            if (latestReplay.PlayerPos > 0)
+            {
+                Data.MauiRegionId = latestReplay.ReplayPlayers
+                    .FirstOrDefault(f => f.GamePos == latestReplay.PlayerPos)?
+                    .Player.RegionId ?? 1;
+            }
         }
         frontPageDetails?.Update(latestReplay);
         await InvokeAsync(() => StateHasChanged());

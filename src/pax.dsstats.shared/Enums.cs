@@ -62,3 +62,16 @@ public enum RatingType
     Cmdr = 1,
     Std = 2
 }
+
+public enum TimePeriod
+{
+    None = 0,
+    Past90Days = 1,
+    ThisMonth = 2,
+    ThisYear = 3,
+    Last2Years = 4,
+    Patch2_60 = 5,
+    LastMonth = 6,
+    LastYear = 7,
+    All = 8
+}

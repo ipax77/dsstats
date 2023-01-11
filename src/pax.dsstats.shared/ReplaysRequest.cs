@@ -3,8 +3,6 @@
 public record ReplaysRequest
 {
     public List<TableOrder> Orders { get; set; } = new List<TableOrder>() { new TableOrder() { Property = "GameTime" } };
-    public DateTime StartTime { get; set; } = new DateTime(2022, 2, 1);
-    public DateTime EndTime { get; set; } = DateTime.Today;
     public int Skip { get; set; }
     public int Take { get; set; }
     public string? Tournament { get; set; }
