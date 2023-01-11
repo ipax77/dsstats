@@ -2,12 +2,11 @@
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
-using pax.dsstats;
 
-namespace pax.dsstats.web.Server.Controllers
+namespace pax.dsstats.web.Server.Controllers.v2
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v2/[controller]")]
     public class StatsController : ControllerBase
     {
         private readonly IReplayRepository replayRepository;

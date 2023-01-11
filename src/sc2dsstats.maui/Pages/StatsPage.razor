@@ -30,8 +30,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        (statsRequest.StartTime, statsRequest.EndTime) = Data.TimeperiodSelected("This Year");
-        statsRequest.TimePeriod = "This Year";
+        statsRequest.TimePeriod = TimePeriod.Past90Days;
 
         DecodeService.DecodeStateChanged += DecodeStateChanged;
 

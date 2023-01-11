@@ -36,8 +36,6 @@ public partial class CmdrsService
 
     private async Task<CmdrResult> GetCmdrInfoFromDb(CmdrRequest cmdrRequest, CancellationToken token)
     {
-        (var startTime, var endTime) = Data.TimeperiodSelected(cmdrRequest.TimeSpan);
-
         List<GameMode> gameModes;
         if ((int)cmdrRequest.Cmdr > 3)
         {
@@ -58,8 +56,6 @@ public partial class CmdrsService
             StatsMode = StatsMode.Winrate,
             Interest = cmdrRequest.Cmdr,
             TimePeriod = cmdrRequest.TimeSpan,
-            StartTime = startTime,
-            EndTime = endTime,
             DefaultFilter = true,
             GameModes = gameModes,
             Uploaders = cmdrRequest.Uploaders
@@ -75,8 +71,6 @@ public partial class CmdrsService
             StatsMode = StatsMode.Count,
             Interest = Commander.None,
             TimePeriod = cmdrRequest.TimeSpan,
-            StartTime = startTime,
-            EndTime = endTime,
             DefaultFilter = true,
             GameModes = gameModes,
             Uploaders = cmdrRequest.Uploaders
@@ -92,8 +86,6 @@ public partial class CmdrsService
             StatsMode = StatsMode.Duration,
             Interest = cmdrRequest.Cmdr,
             TimePeriod = cmdrRequest.TimeSpan,
-            StartTime = startTime,
-            EndTime = endTime,
             DefaultFilter = true,
             GameModes = gameModes,
             Uploaders = cmdrRequest.Uploaders
@@ -119,8 +111,6 @@ public partial class CmdrsService
             StatsMode = StatsMode.Synergy,
             Interest = cmdrRequest.Cmdr,
             TimePeriod = cmdrRequest.TimeSpan,
-            StartTime = startTime,
-            EndTime = endTime,
             DefaultFilter = true,
             GameModes = gameModes,
             Uploaders = cmdrRequest.Uploaders
@@ -165,17 +155,19 @@ public partial class CmdrsService
                 Cmdr = worstSynergy?.Cmdr ?? Commander.None,
                 Wr = worstSynergy == null ? 0 : MathF.Round((float)worstSynergy.Winrate, 2)
             },
-            TopPlayers = await GetBestPayers(cmdrRequest, startTime, endTime, token),
+            TopPlayers = await GetBestPayers(cmdrRequest, token),
         };
 
         return cmdrResult;
     }
 
-    private async Task<List<CmdrTopPlayer>> GetBestPayers(CmdrRequest cmdrRequest, DateTime startTime, DateTime endTime, CancellationToken token)
+    private async Task<List<CmdrTopPlayer>> GetBestPayers(CmdrRequest cmdrRequest, CancellationToken token)
     {
         var gameModes = (int)cmdrRequest.Cmdr > 3 ?
             new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic }
             : new List<GameMode>() { GameMode.Standard };
+
+        (var startTime, var endTime) = Data.TimeperiodSelected(cmdrRequest.TimeSpan);
 
         var replayPlayersQuery = cmdrRequest.Uploaders ?
                                 from r in context.Replays
