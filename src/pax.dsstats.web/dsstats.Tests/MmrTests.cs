@@ -11,7 +11,6 @@ using Xunit.Sdk;
 using pax.dsstats.dbng.Services;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
-using pax.dsstats.shared;
 
 namespace dsstats.Tests;
 

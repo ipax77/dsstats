@@ -14,9 +14,9 @@
             <label class="form-label">
                 Time Period
                 <InputSelect class="form-select" @bind-Value="CmdrRequest.TimeSpan">
-                    @foreach (string time in Data.TimePeriods)
+                    @foreach (TimePeriod time in Data.GetTimePeriods(Data.TimePeriodGet.NoNone))
                     {
-                        <option value="@time">@time</option>
+                        <option value="@time">@Data.GetTimePeriodLongName(time)</option>
                     }
                 </InputSelect>
             </label>

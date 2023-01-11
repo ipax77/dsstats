@@ -67,13 +67,6 @@ public partial class ReplayRepository : IReplayRepository
             replays = replays.Include(i => i.ReplayPlayers);
         }
 
-        replays = replays.Where(x => x.GameTime >= request.StartTime);
-
-        if (request.EndTime < DateTime.UtcNow.Date.AddDays(-2))
-        {
-            replays = replays.Where(x => x.GameTime < request.EndTime);
-        }
-
         if (request.PlayerCount != 0)
         {
             replays = replays.Where(x => x.Playercount == request.PlayerCount);

@@ -161,25 +161,27 @@ public partial class StatsService : IStatsService
     {
         IQueryable<Replay> replays;
 
+        (var startTime, var endTime) = Data.TimeperiodSelected(request.TimePeriod);
+
         if (request.PlayerNames.Any())
         {
             replays = context.Replays
                 .Include(i => i.ReplayPlayers)
                     .ThenInclude(i => i.Player)
-                .Where(x => x.GameTime > request.StartTime)
+                .Where(x => x.GameTime > startTime)
                 .AsNoTracking();
         }
         else
         {
             replays = context.Replays
                     .Include(i => i.ReplayPlayers)
-                    .Where(x => x.GameTime > request.StartTime)
+                    .Where(x => x.GameTime > startTime)
                     .AsNoTracking();
         }
 
-        if (request.EndTime < DateTime.UtcNow.Date.AddDays(-2))
+        if (endTime < DateTime.UtcNow.Date.AddDays(-2))
         {
-            replays = replays.Where(x => x.GameTime <= request.EndTime);
+            replays = replays.Where(x => x.GameTime <= endTime);
         }
 
         if (request.GameModes.Any())
@@ -211,25 +213,27 @@ public partial class StatsService : IStatsService
     {
         IQueryable<Replay> replays;
 
+        (var startTime, var endTime) = Data.TimeperiodSelected(request.TimePeriod);
+
         if (request.PlayerNames.Any())
         {
             replays = context.Replays
                     .Include(i => i.ReplayPlayers)
                         .ThenInclude(i => i.Player)
-                    .Where(x => x.GameTime > request.StartTime)
+                    .Where(x => x.GameTime > startTime)
                     .AsNoTracking();
         }
         else
         {
             replays = context.Replays
                     .Include(i => i.ReplayPlayers)
-                    .Where(x => x.GameTime > request.StartTime)
+                    .Where(x => x.GameTime > startTime)
                     .AsNoTracking();
         }
 
-        if (request.EndTime < DateTime.UtcNow.Date.AddDays(-2))
+        if (endTime < DateTime.UtcNow.Date.AddDays(-2))
         {
-            replays = replays.Where(x => x.GameTime <= request.EndTime);
+            replays = replays.Where(x => x.GameTime <= endTime);
         }
 
         if (request.GameModes.Any())

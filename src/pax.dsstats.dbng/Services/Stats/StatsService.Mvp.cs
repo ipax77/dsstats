@@ -27,9 +27,9 @@ public partial class StatsService
 
         var cmdrstats = await GetRequestStats(request);
 
-        DateTime endTime = request.EndTime == DateTime.MinValue ? DateTime.Today.AddDays(1) : request.EndTime;
+        (var startTime, var endTime) = Data.TimeperiodSelected(request.TimePeriod);
 
-        var stats = cmdrstats.Where(x => x.Time >= request.StartTime && x.Time <= endTime);
+        var stats = cmdrstats.Where(x => x.Time >= startTime && x.Time <= endTime);
 
         if (request.Interest != Commander.None)
         {

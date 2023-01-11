@@ -7,7 +7,7 @@
 @code {
     CmdrRequest cmdrRequest = new()
     {
-        TimeSpan = "Last Two Years",
+        TimeSpan = TimePeriod.Past90Days,
         Cmdr = Commander.Abathur
     };
 }

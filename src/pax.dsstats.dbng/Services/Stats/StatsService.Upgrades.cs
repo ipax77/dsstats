@@ -12,6 +12,8 @@ public partial class StatsService
 
         StatsUpgradesResponse statsUpgradesResponse = new();
 
+        (var startTime, var endTime) = Data.TimeperiodSelected(buildRequest.Timespan);
+
         foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
         {
             buildRequest.Interest = cmdr;
@@ -20,7 +22,7 @@ public partial class StatsService
                            from r in context.Replays
                            from rp in r.ReplayPlayers
                            from s in rp.Spawns
-                           where r.GameTime > buildRequest.StartTime
+                           where r.GameTime > startTime
                             && toonIds.Contains(rp.Player.ToonId)
                             && rp.Race == buildRequest.Interest
                             && (int)s.Breakpoint < 4
@@ -36,7 +38,7 @@ public partial class StatsService
                           : from r in context.Replays
                             from rp in r.ReplayPlayers
                             from s in rp.Spawns
-                            where r.GameTime > buildRequest.StartTime
+                            where r.GameTime > startTime
                          && toonIds.Contains(rp.Player.ToonId)
                          && rp.Race == buildRequest.Interest
                          && rp.OppRace == buildRequest.Versus
