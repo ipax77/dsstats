@@ -27,6 +27,14 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
+<details open="open"><summary>v1.1.2 (web only atm)</summary>
+
+>- [Leaver Handling](https://github.com/ipax77/dsstats/wiki/LeaverHandling) active
+>- TimePeriods refactoring - new TimePeriod "Past 90 Days" is default, now
+>- Std-Teams details ordering fixed
+
+</details>
+
 <details open="open"><summary>v1.1.1</summary>
 
 >- Fix Ocr temp image path

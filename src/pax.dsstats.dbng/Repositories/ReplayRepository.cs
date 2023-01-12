@@ -174,7 +174,9 @@ public partial class ReplayRepository : IReplayRepository
 
     private IQueryable<Replay> GetRequestReplays(ReplaysRequest request)
     {
-        var replays = context.Replays.AsNoTracking();
+        var replays = context.Replays
+            .Where(x => x.GameTime > new DateTime(2018, 1, 1))
+            .AsNoTracking();
 
         if (request.DefaultFilter)
         {

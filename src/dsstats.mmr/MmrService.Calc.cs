@@ -1,15 +1,13 @@
-
 using dsstats.mmr.Extensions;
 using dsstats.mmr.ProcessData;
 using pax.dsstats.shared;
-using pax.dsstats;
+
 using TeamData = dsstats.mmr.ProcessData.TeamData;
 
 namespace dsstats.mmr;
 
 public static partial class MmrService
 {
-    //# Calculate
     private static void CalculateRatingsDeltas(Dictionary<int, CalcRating> mmrIdRatings,
                                                ReplayData replayData,
                                                TeamData teamData,
@@ -40,7 +38,7 @@ public static partial class MmrService
             }
             else
             {
-                SetLeaverPlayerDeltas(playerData, replayData, playerImpact, mmrOptions);
+                SetLeaverPlayerDeltas(playerData, teamData, replayData, playerImpact, mmrOptions);
             }
 
             //if (Math.Abs(playerData.Deltas.Mmr) > mmrOptions.EloK * teamData.Players.Length)
@@ -58,9 +56,17 @@ public static partial class MmrService
         playerData.Deltas.Confidence = 1 - Math.Abs(teamData.ExpectedResult - teamData.ActualResult);
     }
 
-    private static void SetLeaverPlayerDeltas(PlayerData playerData, ReplayData replayData, double playerImpact, MmrOptions mmrOptions)
+    private static void SetLeaverPlayerDeltas(PlayerData playerData, TeamData teamData, ReplayData replayData, double playerImpact, MmrOptions mmrOptions)
     {
-        playerData.Deltas.Mmr = -1 * CalculateMmrDelta(replayData.LoserTeamData.ExpectedResult, playerImpact, mmrOptions.EloK); //ToDo
+        if (teamData.ActualResult == replayData.WinnerTeamData.ActualResult)
+        {
+            playerData.Deltas.Mmr = -1 * CalculateMmrDelta(replayData.LoserTeamData.ExpectedResult, playerImpact, mmrOptions.EloK); //ToDo
+        }
+        else
+        {
+            playerData.Deltas.Mmr = -1 * CalculateMmrDelta(replayData.WinnerTeamData.ExpectedResult, playerImpact, mmrOptions.EloK); //ToDo
+        }
+
         playerData.Deltas.Consistency = 0;
         playerData.Deltas.Confidence = 0;
     }
@@ -157,192 +163,5 @@ public static partial class MmrService
             currentPlayerRating.SetMmr(mmrAfter, gameTime);
         }
         return changes;
-    }
-
-    //# Commander-Mmr
-    private static double GetCommandersComboMmr(ReplayData replayData, TeamData teamData, Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic)
-    {
-        if (replayData.IsInvalid)
-        {
-            return 1.0;
-        }
-
-        double commandersComboMMRSum = 0;
-
-        for (int playerIndex = 0; playerIndex < teamData.Players.Length; playerIndex++)
-        {
-            var playerCmdr = teamData.Players[playerIndex].Race;
-
-            double synergySum = 0;
-            double antiSynergySum = 0;
-
-            for (int synergyPlayerIndex = 0; synergyPlayerIndex < teamData.Players.Length; synergyPlayerIndex++)
-            {
-                if (playerIndex == synergyPlayerIndex)
-                {
-                    continue;
-                }
-
-                var synergyPlayerCmdr = teamData.Players[synergyPlayerIndex].Race;
-
-                var synergy = cmdrMmrDic[new CmdrMmmrKey() { Race = playerCmdr, OppRace = synergyPlayerCmdr }];
-
-                synergySum += ((1 / 2.0) * synergy.SynergyMmr);
-            }
-
-            for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamData.Players.Length; antiSynergyPlayerIndex++)
-            {
-                var antiSynergyPlayerCmdr = teamData.Players[antiSynergyPlayerIndex].OppRace;
-
-                var antiSynergy = cmdrMmrDic[new CmdrMmmrKey() { Race = playerCmdr, OppRace = antiSynergyPlayerCmdr }];
-
-                if (playerIndex == antiSynergyPlayerIndex)
-                {
-                    antiSynergySum += (MmrOptions.ownMatchupPercentage * antiSynergy.AntiSynergyMmr);
-                }
-                else
-                {
-                    antiSynergySum += (MmrOptions.matesMatchupsPercentage * antiSynergy.AntiSynergyMmr);
-                }
-            }
-
-            commandersComboMMRSum +=
-                (MmrOptions.antiSynergyPercentage * antiSynergySum)
-                + (MmrOptions.synergyPercentage * synergySum);
-        }
-
-        return commandersComboMMRSum / 3;
-    }
-
-    private static void SetCommandersComboMmr(ReplayData replayData, TeamData teamData, Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic)
-    {
-        if (replayData.IsInvalid) {
-            return;
-        }
-
-        for (int playerIndex = 0; playerIndex < teamData.Players.Length; playerIndex++) {
-            var playerCmdr = teamData.Players[playerIndex].Race;
-
-            for (int synergyPlayerIndex = 0; synergyPlayerIndex < teamData.Players.Length; synergyPlayerIndex++) {
-                if (playerIndex == synergyPlayerIndex) {
-                    continue;
-                }
-
-                var synergyPlayerCmdr = teamData.Players[synergyPlayerIndex].Race;
-
-                var synergy = cmdrMmrDic[new CmdrMmmrKey() { Race = playerCmdr, OppRace = synergyPlayerCmdr }];
-
-                synergy.SynergyMmr += teamData.Players[playerIndex].Deltas.CommanderMmr / 2;
-            }
-
-            for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamData.Players.Length; antiSynergyPlayerIndex++) {
-                var antiSynergyPlayerCmdr = teamData.Players[antiSynergyPlayerIndex].OppRace;
-
-                var antiSynergy = cmdrMmrDic[new CmdrMmmrKey() { Race = playerCmdr, OppRace = antiSynergyPlayerCmdr }];
-
-                antiSynergy.AntiSynergyMmr += teamData.Players[playerIndex].Deltas.CommanderMmr;
-            }
-        }
-    }
-
-
-    //# Set ProcessData
-    private static void SetReplayData(Dictionary<int, CalcRating> mmrIdRatings,
-                                      ReplayData replayData,
-                                      Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrDic,
-                                      MmrOptions mmrOptions)
-    {
-        SetTeamData(mmrIdRatings, replayData, replayData.WinnerTeamData, cmdrDic, mmrOptions);
-        SetTeamData(mmrIdRatings, replayData, replayData.LoserTeamData, cmdrDic, mmrOptions);
-        SetExpectationsToWin(replayData, mmrOptions);
-
-        replayData.Confidence = (replayData.WinnerTeamData.Confidence + replayData.LoserTeamData.Confidence) / 2;
-    }
-
-    private static void SetTeamData(Dictionary<int, CalcRating> mmrIdRatings,
-                                    ReplayData replayData,
-                                    TeamData teamData,
-                                    Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrDic,
-                                    MmrOptions mmrOptions)
-    {
-        foreach (var playerData in teamData.Players)
-        {
-            SetPlayerData(mmrIdRatings, playerData, mmrOptions);
-        }
-
-        teamData.Confidence = teamData.Players.Sum(p => p.Confidence) / teamData.Players.Length;
-        teamData.Mmr = teamData.Players.Sum(p => p.Mmr) / teamData.Players.Length;
-
-        if (mmrOptions.UseCommanderMmr && !replayData.IsStd)
-        {
-            teamData.CmdrComboMmr = GetCommandersComboMmr(replayData, teamData, cmdrDic);
-        }
-    }
-
-    private static void SetExpectationsToWin(ReplayData replayData, MmrOptions mmrOptions)
-    {
-        double winnerPlayersExpectationToWin = EloExpectationToWin(replayData.WinnerTeamData.Mmr, replayData.LoserTeamData.Mmr, mmrOptions.Clip);
-        replayData.WinnerTeamData.ExpectedResult = winnerPlayersExpectationToWin;
-
-        if (mmrOptions.UseCommanderMmr) {
-            double winnerCmdrExpectationToWin = EloExpectationToWin(replayData.WinnerTeamData.CmdrComboMmr, replayData.LoserTeamData.CmdrComboMmr, mmrOptions.Clip);
-            replayData.WinnerTeamData.ExpectedResult = (winnerPlayersExpectationToWin + winnerCmdrExpectationToWin) / 2;
-        }
-
-        replayData.LoserTeamData.ExpectedResult = (1 - replayData.WinnerTeamData.ExpectedResult);
-    }
-
-    private static void SetPlayerData(Dictionary<int, CalcRating> mmrIdRatings, PlayerData playerData, MmrOptions mmrOptions)
-    {
-        if (!mmrIdRatings.TryGetValue(playerData.MmrId, out var plRating))
-        {
-            plRating = mmrIdRatings[playerData.MmrId] = new CalcRating()
-            {
-                PlayerId = playerData.PlayerId,
-                Mmr = mmrOptions.StartMmr,
-                Consistency = 0,
-                Confidence = 0,
-                Games = 0,
-            };
-        }
-
-        playerData.Mmr = plRating.Mmr;
-        playerData.Consistency = plRating.Consistency;
-        playerData.Confidence = plRating.Confidence;
-    }
-
-
-    //# Formulas
-    private static double GetCorrectedConfidenceFactor(double playerConfidence, double replayConfidence)
-    {
-        double totalConfidenceFactor = (0.5 * (1 - GetConfidenceFactor(playerConfidence))) + (0.5 * GetConfidenceFactor(replayConfidence));
-        return 1 + MmrOptions.confidenceImpact * (totalConfidenceFactor - 1);
-    }
-
-    private static double GetConfidenceFactor(double confidence)
-    {
-        double variance = ((MmrOptions.distributionMult * 0.4) + (1 - confidence));
-
-        return MmrOptions.distributionMult * (1 / (Math.Sqrt(2 * Math.PI) * Math.Abs(variance)));
-    }
-
-    private static double CalculateMmrDelta(double elo, double playerImpact, double eloK = 32)
-    {
-        return (double)(eloK * (1 - elo) * playerImpact);
-    }
-
-    private static double GetCorrectedRevConsistency(double raw_revConsistency)
-    {
-        return 1 + MmrOptions.consistencyImpact * (raw_revConsistency - 1);
-    }
-
-    private static double PlayerToTeamMates(double teamMmrMean, double playerMmr, int teamSize)
-    {
-        return teamSize * (playerMmr / (teamMmrMean * teamSize));
-    }
-
-    public static double EloExpectationToWin(double ratingOne, double ratingTwo, double clip = 400)
-    {
-        return 1.0 / (1.0 + Math.Pow(10.0, (2.0 / clip) * (ratingTwo - ratingOne)));
     }
 }
