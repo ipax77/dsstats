@@ -259,7 +259,10 @@
 
     private async Task SetCount(ReplaysRequest request)
     {
+        replayLoading = true;
+        await InvokeAsync(() => StateHasChanged());
         ReplaysCount = await dataService.GetReplaysCount(request, cts.Token);
+        replayLoading = false;
         await InvokeAsync(() => StateHasChanged());
     }
 

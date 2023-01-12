@@ -56,6 +56,7 @@ public class ReplayContext : DbContext
             entity.HasIndex(e => new { e.Race, e.OppRace });
             entity.HasIndex(e => e.Kills);
             entity.HasIndex(e => new { e.IsUploader, e.Team });
+            entity.HasIndex(e => e.Name);
 
             entity.Property(p => p.LastSpawnHash)
                 .HasMaxLength(64)
