@@ -87,7 +87,7 @@
                                                     </td>
                                                 }
                                                 <td>
-                                                    <span @onclick:stopPropagation @onclick="e => ShowPlayerDetails(player.Player)" class="d-inline-block text-truncate" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
+                                                    <span @onclick:stopPropagation @onclick="e => ShowPlayerDetails(player.Player)" class="d-inline-block text-truncate text-decoration-underline" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
                                                         @player.Name
                                                     </span>
                                                 </td>
@@ -115,6 +115,23 @@
                             </div>
                         </div>
                     }
+                </div>
+                <div>
+                    <button 
+                        class="btn btn-sm btn-outline-light"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#ReplayRatingInfo"
+                        aria-expanded="false" 
+                        aria-controls="ReplayRatingInfo"
+                        @onclick="ShowHideRatingInfo"
+                    >
+                        <span class="oi @(showRatingInfo ? "oi-caret-bottom" : "oi-caret-top")"></span>
+                        Rating Info
+                    </button>
+                </div>
+                <div class="collapse" id="ReplayRatingInfo">
+                    <ReplayRatingInfo></ReplayRatingInfo>
                 </div>
             </div>
             <div class="card-footer">
@@ -183,6 +200,7 @@
     private int breakpointsCount = 1;
     private List<bool> showBuilds = new List<bool>() { false, false, false, false, false, false, false };
     private bool showPlayerNames = true;
+    private bool showRatingInfo;
 
     private ChartJsConfig chartJsConfig = null!;
     private ChartComponent? chartComponent;
@@ -210,6 +228,7 @@
 
     public async void Init(ReplayDto replay)
     {
+        showRatingInfo = false;
         if (showMiddleChart)
         {
             showMiddleChart = false;
@@ -232,6 +251,11 @@
     private void ChartEventTriggered(ChartJsEvent chartJsEvent)
     {
 
+    }
+
+    private void ShowHideRatingInfo()
+    {
+        showRatingInfo = !showRatingInfo;
     }
 
     private void MoveSpawn(ChangeEventArgs e)

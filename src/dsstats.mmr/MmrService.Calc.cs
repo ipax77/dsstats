@@ -120,12 +120,12 @@ public static partial class MmrService
         }
     }
 
-    private static List<PlChange> AddPlayersRankings(Dictionary<int, CalcRating> mmrIdRatings,
+    private static List<RepPlayerRatingDto> AddPlayersRankings(Dictionary<int, CalcRating> mmrIdRatings,
                                                                   TeamData teamData,
                                                                   DateTime gameTime,
                                                                   int maxKills)
     {
-        List<PlChange> changes = new();
+        List<RepPlayerRatingDto> ratings = new();
         foreach (var player in teamData.Players) {
             var currentPlayerRating = mmrIdRatings[player.MmrId];
 
@@ -143,7 +143,16 @@ public static partial class MmrService
             confidenceAfter = Math.Clamp(confidenceAfter, 0, 1);
             //mmrAfter = Math.Max(1, mmrAfter);
 
-            changes.Add(new PlChange() { Pos = player.GamePos, ReplayPlayerId = player.ReplayPlayerId, Change = mmrAfter - mmrBefore });
+            ratings.Add(new()
+            {
+                GamePos = player.GamePos,
+                Rating = MathF.Round((float)mmrAfter, 2),
+                RatingChange = MathF.Round((float)(mmrAfter - mmrBefore), 2),
+                Games = currentPlayerRating.Games,
+                Consistency = MathF.Round((float)consistencyBefore, 2),
+                Confidence = MathF.Round((float)confidenceBefore, 2),
+                ReplayPlayerId = player.ReplayPlayerId,
+            });
 
             currentPlayerRating.Consistency = consistencyAfter;
             currentPlayerRating.Confidence = confidenceAfter;
@@ -162,6 +171,6 @@ public static partial class MmrService
             currentPlayerRating.SetCmdr(player.Race);
             currentPlayerRating.SetMmr(mmrAfter, gameTime);
         }
-        return changes;
+        return ratings;
     }
 }

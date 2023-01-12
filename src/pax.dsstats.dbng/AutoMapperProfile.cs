@@ -80,6 +80,13 @@ namespace pax.dsstats.dbng
                 .ForMember(x => x.Player, opt => opt.Ignore())
                 .ForSourceMember(x => x.NoUploadResultId, opt => opt.DoNotValidate())
                 .ForSourceMember(x => x.Player, opt => opt.DoNotValidate());
+
+            CreateMap<ReplayRating, ReplayRatingDto>(MemberList.Destination);
+            CreateMap<RepPlayerRating, RepPlayerRatingDto>(MemberList.Destination);
+
+            CreateMap<ReplayRatingDto, ReplayRating>(MemberList.Source);
+            CreateMap<RepPlayerRatingDto, RepPlayerRating>(MemberList.Source);
+
         }
     }
 }

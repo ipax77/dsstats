@@ -122,7 +122,7 @@ public class MmrTests
         // assert
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         Assert.True(context.PlayerRatings.Any());
-        Assert.True(context.ReplayPlayerRatings.Any());
+        Assert.True(context.RepPlayerRatings.Any());
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class MmrTests
         }
         File.Copy(testFile, testFilePath);
         
-        var replayPlayerRatingsCountBefore = context.ReplayPlayerRatings.Count();
+        var replayPlayerRatingsCountBefore = context.RepPlayerRatings.Count();
         
         var mmrBefore = context.PlayerRatings.Sum(s => s.Rating);
         var replays = context.Replays
@@ -174,12 +174,12 @@ public class MmrTests
             .Distinct()
             .ToList();
 
-        var replayPlayerRatings = context.ReplayPlayerRatings
+        var replayPlayerRatings = context.RepPlayerRatings
             .Where(x => replayPlayerIds.Contains(x.ReplayPlayerId))
             .ToList();
 
         context.Replays.RemoveRange(replays);
-        context.ReplayPlayerRatings.RemoveRange(replayPlayerRatings);
+        context.RepPlayerRatings.RemoveRange(replayPlayerRatings);
         context.SaveChanges();
 
         mmrProduceService.ProduceRatings(new(reCalc: true)).GetAwaiter().GetResult();
@@ -194,7 +194,7 @@ public class MmrTests
         // assert
 
         var replayCountAfter = context.Replays.Count();
-        var replayPlayerRatingsCountAfter = context.ReplayPlayerRatings.Count();
+        var replayPlayerRatingsCountAfter = context.RepPlayerRatings.Count();
         Assert.True(replayCountAfter > replayCountBefore);
         Assert.Equal(replayPlayerRatingsCountBefore, replayPlayerRatingsCountAfter);
         // Assert.Equal(mmrBefore, context.PlayerRatings.Sum(s => s.Rating));

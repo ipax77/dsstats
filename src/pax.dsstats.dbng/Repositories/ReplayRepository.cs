@@ -41,15 +41,15 @@ public partial class ReplayRepository : IReplayRepository
             return null;
         }
 
-        var changes = await ratingRepository.GetReplayPlayerMmrChanges(replayHash, token);
-        foreach (var change in changes)
-        {
-            var player = replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == change.Pos);
-            if (player != null)
-            {
-                player.MmrChange = MathF.Round((float)change.Change, 1, MidpointRounding.AwayFromZero);
-            }
-        }
+        //var changes = await ratingRepository.GetReplayPlayerMmrChanges(replayHash, token);
+        //foreach (var change in changes)
+        //{
+        //    var player = replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == change.Pos);
+        //    if (player != null)
+        //    {
+        //        player.MmrChange = MathF.Round((float)change.Change, 1, MidpointRounding.AwayFromZero);
+        //    }
+        //}
 
         if (!dry)
         {
@@ -108,11 +108,11 @@ public partial class ReplayRepository : IReplayRepository
 
             if (request.ToonId > 0)
             {
-                await ratingRepository.SetReplayListMmrChanges(list, request.ToonId, token);
+                // await ratingRepository.SetReplayListMmrChanges(list, request.ToonId, token);
             }
             else
             {
-                await ratingRepository.SetReplayListMmrChanges(list, interest, token);
+                // await ratingRepository.SetReplayListMmrChanges(list, interest, token);
             }
         }
 

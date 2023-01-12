@@ -1,0 +1,150 @@
+﻿@using System.Text.Json.Serialization;
+@using System.Globalization;
+@using pax.dsstats.shared;
+
+<div class="d-flex justify-content-center">
+    <div class="col-auto">
+        <h5><span class="badge bg-secondary me-4"><span class="text-light">RatingType</span> @Data.GetRatingTypeLongName(replayInfo.RatingType)</span></h5>
+    </div>
+    <div class="col-auto">
+        <h5><span class="badge bg-secondary ms-4"><span class="text-light">LeaverType</span> @replayInfo.LeaverType</span></h5>
+    </div>
+</div>
+<div class="row">
+    @for (int i = 1; i <= 2; i++)
+    {
+        var infos = replayInfo.RatingInfos.Where(x => x.Team == i).ToList();
+        <div class="col-auto">
+            <div class="d-flex">
+                <div class="table-responsive" style="width: 560px;">
+                    <table class="table table-sm table-hover table-dark">
+                        <thead>
+                            <tr>
+                                <th style="width: 30px;">#</th>
+                                <th class="text-warning">Rating</th>
+                                <th class="text-info">Pre-Rating</th>
+                                <th>Change</th>
+                                <th>Games</th>
+                                <th>Consistency</th>
+                                <th>Confidence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var info in infos)
+                            {
+                                <tr>
+                                    <td>@info.GamePos</td>
+                                    <td>
+                                        <span class="text-warning">@info.Rating.ToString("N2", CultureInfo.InvariantCulture)</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-info">@((info.Rating - info.RatingChange).ToString("N2", CultureInfo.InvariantCulture))</span>
+                                    </td>
+                                    <td>
+                                        <span class="oi @(info.RatingChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">@info.RatingChange.ToString("N1", CultureInfo.InvariantCulture)</span>
+                                    </td>
+                                    <td>@info.Games</td>
+                                    <td>@info.Consistency.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                    <td>@info.Confidence.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private Random random = new();
+
+    ReplayInfo replayInfo = null!;
+
+    protected override void OnInitialized()
+    {
+        replayInfo = new()
+            {
+                RatingType = RatingType.Cmdr,
+                LeaverType = LeaverType.None,
+                RatingInfos = new()
+    {
+    new()
+    {
+    GamePos = 1,
+    Rating = MathF.Round((float)random.NextDouble()  * (3000 - 500) + 500, 2),
+    RatingChange = MathF.Round((float)random.NextDouble()  * (50 - -50) + -50, 2),
+    Consistency = MathF.Round((float)random.NextDouble(), 2),
+    Confidence = MathF.Round((float)random.NextDouble(), 2),
+    Games = random.Next(1, 9999)
+    },
+    new()
+    {
+    GamePos = 2,
+    Rating = MathF.Round((float)random.NextDouble()  * (3000 - 500) + 500, 2),
+    RatingChange = MathF.Round((float)random.NextDouble()  * (50 - -50) + -50, 2),
+    Consistency = MathF.Round((float)random.NextDouble(), 2),
+    Confidence = MathF.Round((float)random.NextDouble(), 2),
+    Games = random.Next(1, 9999)
+    },
+    new()
+    {
+    GamePos = 3,
+    Rating = MathF.Round((float)random.NextDouble()  * (3000 - 500) + 500, 2),
+    RatingChange = MathF.Round((float)random.NextDouble()  * (50 - -50) + -50, 2),
+    Consistency = MathF.Round((float)random.NextDouble(), 2),
+    Confidence = MathF.Round((float)random.NextDouble(), 2),
+    Games = random.Next(1, 9999)
+    },
+    new()
+    {
+    GamePos = 4,
+    Rating = MathF.Round((float)random.NextDouble()  * (3000 - 500) + 500, 2),
+    RatingChange = MathF.Round((float)random.NextDouble()  * (50 - -50) + -50, 2),
+    Consistency = MathF.Round((float)random.NextDouble(), 2),
+    Confidence = MathF.Round((float)random.NextDouble(), 2),
+    Games = random.Next(1, 9999)
+    },
+    new()
+    {
+    GamePos = 5,
+    Rating = MathF.Round((float)random.NextDouble()  * (3000 - 500) + 500, 2),
+    RatingChange = MathF.Round((float)random.NextDouble()  * (50 - -50) + -50, 2),
+    Consistency = MathF.Round((float)random.NextDouble(), 2),
+    Confidence = MathF.Round((float)random.NextDouble(), 2),
+    Games = random.Next(1, 9999)
+    },
+    new()
+    {
+    GamePos = 6,
+    Rating = MathF.Round((float)random.NextDouble()  * (3000 - 500) + 500, 2),
+    RatingChange = MathF.Round((float)random.NextDouble()  * (50 - -50) + -50, 2),
+    Consistency = MathF.Round((float)random.NextDouble(), 2),
+    Confidence = MathF.Round((float)random.NextDouble(), 2),
+    Games = random.Next(1, 9999)
+    }
+    }
+            };
+        base.OnInitialized();
+    }
+
+
+    public record ReplayInfo
+    {
+        public RatingType RatingType { get; init; }
+        public LeaverType LeaverType { get; init; }
+        public List<RatingInfo> RatingInfos { get; init; } = new();
+    }
+
+    public record RatingInfo
+    {
+        public int GamePos { get; init; }
+        public float Rating { get; init; }
+        public float RatingChange { get; init; }
+        public int Games { get; init; }
+        public float Consistency { get; init; }
+        public float Confidence { get; init; }
+        [JsonIgnore]
+        public int Team => GamePos <= 3 ? 1 : 2;
+    }
+}
