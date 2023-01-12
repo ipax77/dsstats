@@ -8,11 +8,11 @@ public record FunStats
     public List<PosInfo> PosInfos { get; set; } = new();
     public UnitInfo? MostBuildUnit { get; set; }
     public UnitInfo? LeastBuildUnit { get; set; }
-    public ReplayDto? FirstReplay { get; set; }
-    public ReplayDto? GreatestArmyReplay { get; set; }
-    public ReplayDto? MostUpgradesReplay { get; set; }
-    public ReplayDto? MostCompetitiveReplay { get; set; }
-    public ReplayDto? GreatestComebackReplay { get; set; }
+    public ReplayDetailsDto? FirstReplay { get; set; }
+    public ReplayDetailsDto? GreatestArmyReplay { get; set; }
+    public ReplayDetailsDto? MostUpgradesReplay { get; set; }
+    public ReplayDetailsDto? MostCompetitiveReplay { get; set; }
+    public ReplayDetailsDto? GreatestComebackReplay { get; set; }
 }
 
 public record UnitInfo

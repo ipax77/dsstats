@@ -12,14 +12,37 @@ public partial class ReplayRepository : IReplayRepository
     private readonly ILogger<ReplayRepository> logger;
     private readonly ReplayContext context;
     private readonly IMapper mapper;
-    private readonly IRatingRepository ratingRepository;
 
-    public ReplayRepository(ILogger<ReplayRepository> logger, ReplayContext context, IMapper mapper, IRatingRepository ratingRepository)
+    public ReplayRepository(ILogger<ReplayRepository> logger, ReplayContext context, IMapper mapper)
     {
         this.logger = logger;
         this.context = context;
         this.mapper = mapper;
-        this.ratingRepository = ratingRepository;
+    }
+
+    public async Task<ReplayDetailsDto?> GetDetailReplay(string replayHash, bool dry = false, CancellationToken token = default)
+    {
+        var replay = await context.Replays
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Where(x => x.ReplayHash == replayHash)
+            .ProjectTo<ReplayDetailsDto>(mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync(token);
+
+        if (replay == null)
+        {
+            return null;
+        }
+
+        if (!dry)
+        {
+            context.ReplayViewCounts.Add(new ReplayViewCount()
+            {
+                ReplayHash = replay.ReplayHash
+            });
+            await context.SaveChangesAsync();
+        }
+        return replay with { Views = replay.Views + 1 };
     }
 
     public async Task<ReplayDto?> GetReplay(string replayHash, bool dry = false, CancellationToken token = default)

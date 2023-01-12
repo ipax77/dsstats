@@ -5,6 +5,7 @@ namespace pax.dsstats.dbng.Repositories
     public interface IReplayRepository
     {
         Task<ReplayDto?> GetReplay(string replayHash, bool dry = true, CancellationToken token = default);
+        Task<ReplayDetailsDto?> GetDetailReplay(string replayHash, bool dry = true, CancellationToken token = default);
         Task<int> GetReplaysCount(ReplaysRequest request, CancellationToken token = default);
         Task<ICollection<ReplayListDto>> GetReplays(ReplaysRequest request, CancellationToken token = default);
         Task<int> GetEventReplaysCount(ReplaysRequest request, CancellationToken token = default);

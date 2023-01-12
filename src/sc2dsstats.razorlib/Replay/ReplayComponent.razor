@@ -131,7 +131,7 @@
                     </button>
                 </div>
                 <div class="collapse" id="ReplayRatingInfo">
-                    <ReplayRatingInfo></ReplayRatingInfo>
+                    <ReplayRatingInfo ReplayRatingDto="replayDto.ReplayRatingInfo"></ReplayRatingInfo>
                 </div>
             </div>
             <div class="card-footer">
@@ -182,7 +182,7 @@
 @code {
     [Parameter]
     [EditorRequired]
-    public ReplayDto replayDto { get; set; } = null!;
+    public ReplayDetailsDto replayDto { get; set; } = null!;
 
     [Parameter]
     public RequestNames? Interest { get; set; } = null;
@@ -226,7 +226,7 @@
         base.OnAfterRender(firstRender);
     }
 
-    public async void Init(ReplayDto replay)
+    public async void Init(ReplayDetailsDto replay)
     {
         showRatingInfo = false;
         if (showMiddleChart)
@@ -243,6 +243,15 @@
         breakpoint = Breakpoint.All;
         breakpointsCount = replay.ReplayPlayers.Select(s => s.Spawns.Count).Max();
         chartJsConfig = GetMiddleChartConfig(replay.Middle, replay.Duration, replay.WinnerTeam, replay.Cannon, replay.Bunker);
+
+        if (replay.ReplayRatingInfo != null)
+        {
+            foreach (var player in replay.ReplayPlayers)
+            {
+                var plRating = replay.ReplayRatingInfo.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
+                player.MmrChange = plRating?.RatingChange ?? 0;
+            }
+        }
 
         await InvokeAsync(() => StateHasChanged());
         await JSRuntime.InvokeVoidAsync("enableTooltips");

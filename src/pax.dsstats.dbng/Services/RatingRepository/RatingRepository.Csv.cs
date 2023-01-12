@@ -102,7 +102,7 @@ public partial class RatingRepository
         }
         else
         {
-            File.AppendAllText($"{csvBasePath}/ReplayRatings.csv", sbPlayer.ToString());
+            File.AppendAllText($"{csvBasePath}/ReplayRatings.csv", sbReplay.ToString());
             File.AppendAllText($"{csvBasePath}/ReplayPlayerRatings.csv", sbPlayer.ToString());
         }
         return (replayAppendId, replayPlayerAppendId);

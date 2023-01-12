@@ -5,7 +5,7 @@ public interface IDataService
 {
     void SetFromServer(bool fromServer);
     bool GetFromServer();
-    Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default);
+    Task<ReplayDetailsDto?> GetDetailReplay(string replayHash, CancellationToken token = default);
     Task<int> GetReplaysCount(ReplaysRequest request, CancellationToken token = default);
     Task<ICollection<ReplayListDto>> GetReplays(ReplaysRequest request, CancellationToken token = default);
     Task<int> GetEventReplaysCount(ReplaysRequest request, CancellationToken token = default);

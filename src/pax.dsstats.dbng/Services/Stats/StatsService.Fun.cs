@@ -73,7 +73,7 @@ public partial class StatsService
         return (firstInfo, lastInfo);
     }
 
-    private async Task<ReplayDto?> GetFirstReplayInfo(List<int> toonIds)
+    private async Task<ReplayDetailsDto?> GetFirstReplayInfo(List<int> toonIds)
     {
         var replayHash = await context.ReplayPlayers
             .Where(x => toonIds.Contains(x.Player.ToonId))
@@ -85,10 +85,10 @@ public partial class StatsService
         {
             return null;
         }
-        return await replayRepository.GetReplay(replayHash);
+        return await replayRepository.GetDetailReplay(replayHash);
     }
 
-    private async Task<ReplayDto?> GetGreatestArmyReplayInfo(List<int> toonIds)
+    private async Task<ReplayDetailsDto?> GetGreatestArmyReplayInfo(List<int> toonIds)
     {
         var replayHash = await context.ReplayPlayers
             .Where(x => x.Replay.DefaultFilter && toonIds.Contains(x.Player.ToonId))
@@ -100,10 +100,10 @@ public partial class StatsService
         {
             return null;
         }
-        return await replayRepository.GetReplay(replayHash);
+        return await replayRepository.GetDetailReplay(replayHash);
     }
 
-    private async Task<ReplayDto?> GetGreatestComebackReplayInfo(IQueryable<ReplayPlayer> replayPlayers)
+    private async Task<ReplayDetailsDto?> GetGreatestComebackReplayInfo(IQueryable<ReplayPlayer> replayPlayers)
     {
         var infos = from rp in replayPlayers
                     where rp.Replay.DefaultFilter && rp.PlayerResult == PlayerResult.Win && rp.Replay.Duration > 360 && rp.Replay.Middle.Length > 0
@@ -135,10 +135,10 @@ public partial class StatsService
         {
             return null;
         }
-        return await replayRepository.GetReplay(replayHash);
+        return await replayRepository.GetDetailReplay(replayHash);
     }
 
-    private async Task<ReplayDto?> GetMostUpgradesReplayInfo(List<int> toonIds)
+    private async Task<ReplayDetailsDto?> GetMostUpgradesReplayInfo(List<int> toonIds)
     {
         var replayHash = await context.ReplayPlayers
             .Where(x => x.Replay.DefaultFilter && toonIds.Contains(x.Player.ToonId))
@@ -150,10 +150,10 @@ public partial class StatsService
         {
             return null;
         }
-        return await replayRepository.GetReplay(replayHash);
+        return await replayRepository.GetDetailReplay(replayHash);
     }
 
-    private async Task<ReplayDto?> GetMostCompetitiveReplayInfo(List<int> toonIds)
+    private async Task<ReplayDetailsDto?> GetMostCompetitiveReplayInfo(List<int> toonIds)
     {
         var replayHash = await context.ReplayPlayers
             .Where(x => x.Replay.DefaultFilter && toonIds.Contains(x.Player.ToonId))
@@ -165,7 +165,7 @@ public partial class StatsService
         {
             return null;
         }
-        return await replayRepository.GetReplay(replayHash);
+        return await replayRepository.GetDetailReplay(replayHash);
     }
 
     private async Task<List<PosInfo>> GetPosInfo(IQueryable<ReplayPlayer> replayPlayers)

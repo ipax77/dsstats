@@ -2,7 +2,6 @@
 
 public record ReplayRatingDto
 {
-    public int ReplayRatingInfoId { get; init; }
     public RatingType RatingType { get; set; }
     public LeaverType LeaverType { get; init; }
     public int ReplayId { get; set; }
