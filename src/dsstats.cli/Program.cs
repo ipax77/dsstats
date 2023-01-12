@@ -25,10 +25,10 @@ class Program
             //await CompareDb.CompareJsonToDb("/data/ds/errorReplay/dummy");
 
             //var mmrService = new MmrService.MmrService();
-            //await mmrService.DerivationTest();
+            //await mmrService.ConfidenceTest();
         }
 
-        if (args.Length < 2)
+        if (args.Length < 1)
         {
             WriteHowToUse();
             return;
@@ -36,6 +36,12 @@ class Program
 
         if (args[0] == "decode")
         {
+            if (args.Length != 3)
+            {
+                WriteHowToUse(args[0]);
+                return;
+            }
+
             if (!Directory.Exists(args[1]) || !Directory.Exists(args[2]))
             {
                 Console.WriteLine($"Directory not found :(");
@@ -46,48 +52,68 @@ class Program
         {
             if (args.Length != 3)
             {
-                WriteHowToUse();
+                WriteHowToUse(args[0]);
                 return;
             }
+
             await Unzip(args[1], args[2]);
         }
         else if (args[0] == "tourneyjob")
         {
-            if (args.Length == 3 && int.TryParse(args[1], out int cores))
+            if (args.Length != 3 || !int.TryParse(args[1], out int cores))
             {
-                if (!Directory.Exists(args[2]))
-                {
-                    Console.WriteLine($"tourney folder {args[2]} not found.");
-                    return;
-                }
-                Stopwatch sw = Stopwatch.StartNew();
-                try
-                {
-                    TourneyService.DecodeTourneyFolders(cores, args[2], cts.Token).Wait();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"tourneyjob failed: {ex.Message}");
-                }
-                sw.Stop();
-                Console.WriteLine($"tourneyjob done in {sw.ElapsedMilliseconds}ms");
+                WriteHowToUse(args[0]);
+                return;
             }
-            else
+
+            if (!Directory.Exists(args[2]))
             {
-                WriteHowToUse();
+                Console.WriteLine($"tourney folder {args[2]} not found.");
+                return;
             }
+            Stopwatch sw = Stopwatch.StartNew();
+            try
+            {
+                TourneyService.DecodeTourneyFolders(cores, args[2], cts.Token).Wait();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"tourneyjob failed: {ex.Message}");
+            }
+            sw.Stop();
+            Console.WriteLine($"tourneyjob done in {sw.ElapsedMilliseconds}ms");
         }
         else if (args[0] == "mmr")
         {
+            if (args.Length < 2)
+            {
+                WriteHowToUse(args[0]);
+                return;
+            }
+
             var mmrService = new MmrService.MmrService();
 
-            if (args[1] == "accuracy")
+            if (args[1] == "derivation")
             {
                 var results = await mmrService.DerivationTest();
             }
+            else if (args[1] == "confidence")
+            {
+                int playerId = 10758;
+                if (args.Length == 3)
+                {
+                    if (!int.TryParse(args[2], out playerId))
+                    {
+                        playerId = 10758;
+                    }
+                }
+
+                var confidence = await mmrService.ConfidenceTest(playerId);
+                Console.WriteLine("MMR-Confidence Player {0} => {1}", playerId, Math.Round(confidence, 5));
+            }
             else
             {
-                WriteHowToUse();
+                WriteHowToUse(args[0]);
                 return;
             }
         }
@@ -121,13 +147,30 @@ class Program
                                 .InformationalVersion
                                 .ToString();
 
+        Console.WriteLine("----------------------------");
         Console.WriteLine($"dsstats.cli v{versionString}");
-        Console.WriteLine("-------------");
+        Console.WriteLine("----------------------------");
         Console.WriteLine("\nUsage:");
         Console.WriteLine("  decode <replayPath> <outputPath>");
         Console.WriteLine("  unzip <base64Zipfile> <outputPath>");
         Console.WriteLine("  tourneyjob <int:cpuCoresToUse>");
-        Console.WriteLine("  mmr <string:mode> (accuracy, ...)");
+        Console.WriteLine("  mmr <string:mode>");
+    }
+
+    private static void WriteHowToUse(string firstArg)
+    {
+        switch (firstArg)
+        {
+            case "mmr":
+                {
+                    Console.WriteLine("  mmr <string:mode>");
+                    Console.WriteLine("    derivation (...explain...)");
+                    Console.WriteLine("    confidence <int:playerId> (...explain...)");
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     private static async Task Unzip(string base64Zipfile, string outputPath)
