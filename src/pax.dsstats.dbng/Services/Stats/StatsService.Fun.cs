@@ -1,6 +1,4 @@
-﻿
-using AutoMapper.QueryableExtensions;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng.Services;

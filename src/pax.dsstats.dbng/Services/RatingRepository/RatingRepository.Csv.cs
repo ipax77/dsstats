@@ -1,6 +1,5 @@
 ﻿using MySqlConnector;
 using pax.dsstats.shared;
-using pax.dsstats;
 using System.Globalization;
 using System.Text;
 
@@ -26,7 +25,7 @@ public partial class RatingRepository
         sb.Append($"{nameof(PlayerRating.PlayerId)},");
         sb.Append($"{nameof(PlayerRating.Pos)}");
         sb.Append(Environment.NewLine);
-        
+
         int i = 0;
         foreach (var ent in mmrIdRatings)
         {
@@ -203,7 +202,7 @@ public partial class RatingRepository
             }
             else
             {
-                mmrString = mmrString[(index+1)..];
+                mmrString = mmrString[(index + 1)..];
             }
         }
         return mmrString;
@@ -260,7 +259,7 @@ public partial class RatingRepository
         ";
         command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
-        
+
         await SetPlayerRatingsPos();
     }
 

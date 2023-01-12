@@ -29,7 +29,6 @@ public record ReplayListEventDto : ReplayListDto
     public ReplayEventListDto? ReplayEvent { get; set; }
 }
 
-
 public record ReplayEventListDto
 {
     public string Round { get; set; } = null!;
@@ -38,3 +37,32 @@ public record ReplayEventListDto
     public EventDto Event { get; init; } = null!;
 }
 
+public record ReplayListRatingDto : ReplayListDto
+{
+    public ReplayRatingListDto? ReplayRatingInfo { get; set; }
+    public List<ReplayPlayerListDto> ReplayPlayers { get; set; } = new();
+}
+
+public record ReplayPlayerListDto
+{
+    public string Name { get; set; } = string.Empty;
+    public int GamePos { get; set; }
+    public Commander Race { get; set; }
+    public PlayerListDto Player { get; set; } = null!;
+}
+
+public record PlayerListDto
+{
+    public int ToonId { get; set; }
+}
+
+public record ReplayRatingListDto
+{
+    public List<RepPlayerRatingListDto> RepPlayerRatings { get; set; } = new();
+}
+
+public record RepPlayerRatingListDto
+{
+    public int GamePos { get; set; }
+    public float RatingChange { get; set; }
+}

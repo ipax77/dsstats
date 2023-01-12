@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
-using pax.dsstats;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -189,17 +188,6 @@ public class Replay
     [NotMapped]
     public int UploaderId { get; set; }
 }
-
-//public class ReplayPlayerRating
-//{
-//    public int ReplayPlayerRatingId { get; set; }
-//    public double MmrChange { get; set; }
-//    public int Pos { get; set; }
-//    public int ReplayPlayerId { get; set; }
-//    public virtual ReplayPlayer? ReplayPlayer { get; set; }
-//    public int ReplayId { get; set; }
-//    public virtual Replay? Replay { get; set; }
-//}
 
 public class ReplayPlayer
 {

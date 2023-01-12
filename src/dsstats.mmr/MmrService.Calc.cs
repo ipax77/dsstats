@@ -102,20 +102,25 @@ public static partial class MmrService
         //    throw new Exception("Not same player amount.");
         //}
 
-        if (absSumPosDeltas == 0 || absSumNegDeltas == 0) {
-            foreach (var player in teamData.Players) {
+        if (absSumPosDeltas == 0 || absSumNegDeltas == 0)
+        {
+            foreach (var player in teamData.Players)
+            {
                 player.Deltas.Mmr = 0;
             }
-            foreach (var player in oppTeamData.Players) {
+            foreach (var player in oppTeamData.Players)
+            {
                 player.Deltas.Mmr = 0;
             }
             return;
         }
 
-        foreach (var posDeltaPlayer in posDeltaPlayers) {
+        foreach (var posDeltaPlayer in posDeltaPlayers)
+        {
             posDeltaPlayer.Deltas.Mmr *= (absSumAllDeltas / (absSumPosDeltas * 2));
         }
-        foreach (var negDeltaPlayer in negPlayerDeltas) {
+        foreach (var negDeltaPlayer in negPlayerDeltas)
+        {
             negDeltaPlayer.Deltas.Mmr *= (absSumAllDeltas / (absSumNegDeltas * 2));
         }
     }
@@ -126,7 +131,8 @@ public static partial class MmrService
                                                                   int maxKills)
     {
         List<RepPlayerRatingDto> ratings = new();
-        foreach (var player in teamData.Players) {
+        foreach (var player in teamData.Players)
+        {
             var currentPlayerRating = mmrIdRatings[player.MmrId];
 
             double mmrBefore = currentPlayerRating.Mmr;
@@ -158,13 +164,16 @@ public static partial class MmrService
             currentPlayerRating.Confidence = confidenceAfter;
             currentPlayerRating.Games++;
 
-            if (player.PlayerResult == PlayerResult.Win) {
+            if (player.PlayerResult == PlayerResult.Win)
+            {
                 currentPlayerRating.Wins++;
             }
-            if (player.Kills == maxKills) {
+            if (player.Kills == maxKills)
+            {
                 currentPlayerRating.Mvp++;
             }
-            if (player.IsUploader) {
+            if (player.IsUploader)
+            {
                 currentPlayerRating.IsUploader = true;
             }
 

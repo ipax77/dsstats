@@ -48,12 +48,6 @@ public partial class ReplayRepository : IReplayRepository
     public async Task<ReplayDto?> GetReplay(string replayHash, bool dry = false, CancellationToken token = default)
     {
         var replay = await context.Replays
-            //.Include(i => i.ReplayPlayers)
-            //    .ThenInclude(t => t.Spawns)
-            //        .ThenInclude(t => t.Units)
-            //            .ThenInclude(t => t.Unit)
-            //.Include(i => i.ReplayPlayers)
-            //  .ThenInclude(t => t.Player)
             .AsNoTracking()
             .AsSplitQuery()
             .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
@@ -63,16 +57,6 @@ public partial class ReplayRepository : IReplayRepository
         {
             return null;
         }
-
-        //var changes = await ratingRepository.GetReplayPlayerMmrChanges(replayHash, token);
-        //foreach (var change in changes)
-        //{
-        //    var player = replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == change.Pos);
-        //    if (player != null)
-        //    {
-        //        player.MmrChange = MathF.Round((float)change.Change, 1, MidpointRounding.AwayFromZero);
-        //    }
-        //}
 
         if (!dry)
         {
@@ -117,27 +101,73 @@ public partial class ReplayRepository : IReplayRepository
             return new List<ReplayListDto>();
         }
 
+        if (request.WithMmrChange && !String.IsNullOrEmpty(request.SearchPlayers))
+        {
+            var mmrlist = await replays
+                .Skip(request.Skip)
+                .Take(request.Take)
+                .AsNoTracking()
+                .ProjectTo<ReplayListRatingDto>(mapper.ConfigurationProvider)
+                .ToListAsync(token);
+
+            if (request.ToonId > 0)
+            {
+                for (int i = 0; i < mmrlist.Count; i++)
+                {
+                    var rep = mmrlist[i];
+
+                    if (rep.ReplayRatingInfo== null)
+                    {
+                        continue;
+                    }
+                    
+                    var pl = rep.ReplayPlayers.FirstOrDefault(f => f.Player.ToonId == request.ToonId);
+                    if (pl != null)
+                    {
+                        var rat = rep.ReplayRatingInfo.RepPlayerRatings.FirstOrDefault(f => f.GamePos == pl.GamePos);
+                        rep.MmrChange = rat?.RatingChange ?? 0;
+                        rep.Commander = pl.Race;
+                    }
+                }
+            }
+            else
+            {
+                string? interest = request.SearchPlayers?
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+
+                for (int i = 0; i < mmrlist.Count; i++)
+                {
+                    var rep = mmrlist[i];
+
+                    if (rep.ReplayRatingInfo == null)
+                    {
+                        continue;
+                    }
+
+                    var pl = rep.ReplayPlayers.FirstOrDefault(f => f.Name == interest);
+                    if (pl != null)
+                    {
+                        var rat = rep.ReplayRatingInfo.RepPlayerRatings.FirstOrDefault(f => f.GamePos == pl.GamePos);
+                        rep.MmrChange = rat?.RatingChange ?? 0;
+                        rep.Commander = pl.Race;
+                    }
+                }
+
+            }
+            mmrlist.ForEach(f =>
+            {
+                f.ReplayPlayers.Clear();
+                f.ReplayRatingInfo = null;
+            });
+            return mmrlist.Cast<ReplayListDto>().ToList();
+        }
+
         var list = await replays
             .Skip(request.Skip)
             .Take(request.Take)
             .AsNoTracking()
             .ProjectTo<ReplayListDto>(mapper.ConfigurationProvider)
             .ToListAsync(token);
-
-        if (request.WithMmrChange)
-        {
-            string? interest = request.SearchPlayers?
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-
-            if (request.ToonId > 0)
-            {
-                // await ratingRepository.SetReplayListMmrChanges(list, request.ToonId, token);
-            }
-            else
-            {
-                // await ratingRepository.SetReplayListMmrChanges(list, interest, token);
-            }
-        }
 
         return list;
     }
@@ -206,21 +236,10 @@ public partial class ReplayRepository : IReplayRepository
             replays = replays.Where(x => x.DefaultFilter);
         }
 
-        if (!String.IsNullOrEmpty(request.SearchPlayers))
-        {
-            replays = replays.Include(i => i.ReplayPlayers);
-        }
-
         if (request.PlayerCount != 0)
         {
             replays = replays.Where(x => x.Playercount == request.PlayerCount);
         }
-
-        //if (!String.IsNullOrEmpty(request.Tournament))
-        //{
-        //    replays = replays.Where(x => x.ReplayEvent != null
-        //        && x.ReplayEvent.Event.Name.Equals(request.Tournament));
-        //}
 
         if (request.GameModes.Any())
         {
@@ -497,7 +516,7 @@ public partial class ReplayRepository : IReplayRepository
         {
             dbReplay.GameMode = GameMode.Tutorial;
         }
-        
+
         context.Replays.Add(dbReplay);
 
         try

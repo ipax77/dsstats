@@ -1,16 +1,15 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
-using pax.dsstats.dbng.Repositories;
-using pax.dsstats.dbng;
-using pax.dsstats.shared;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Xunit;
+using Microsoft.Extensions.Logging;
+using pax.dsstats.dbng;
+using pax.dsstats.dbng.Repositories;
+using pax.dsstats.dbng.Services;
+using pax.dsstats.shared;
 using Xunit.Abstractions;
 using Xunit.Sdk;
-using pax.dsstats.dbng.Services;
-using AutoMapper;
-using Microsoft.Extensions.Logging;
 
 namespace dsstats.Tests;
 
@@ -154,9 +153,9 @@ public class MmrTests
             Directory.CreateDirectory(testPath);
         }
         File.Copy(testFile, testFilePath);
-        
+
         var replayPlayerRatingsCountBefore = context.RepPlayerRatings.Count();
-        
+
         var mmrBefore = context.PlayerRatings.Sum(s => s.Rating);
         var replays = context.Replays
             .Include(i => i.ReplayPlayers)
@@ -185,8 +184,8 @@ public class MmrTests
         mmrProduceService.ProduceRatings(new(reCalc: true)).GetAwaiter().GetResult();
 
         var replayCountBefore = context.Replays.Count();
-        
-        
+
+
         // execute
         var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
         mmrProduceService.ProduceRatings(new(reCalc: false), result.LatestReplay, result.ContinueReplays).GetAwaiter().GetResult();

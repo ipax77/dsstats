@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng
@@ -56,6 +55,15 @@ namespace pax.dsstats.dbng
                 .ForMember(x => x.Cmdrs1, opt => opt.Ignore())
                 .ForMember(x => x.Cmdrs2, opt => opt.Ignore());
             CreateMap<ReplayEvent, ReplayEventListDto>(MemberList.Destination);
+            CreateMap<Replay, ReplayListRatingDto>(MemberList.Destination)
+                .ForMember(x => x.Commander, opt => opt.Ignore())
+                .ForMember(x => x.MmrChange, opt => opt.Ignore())
+                .ForMember(x => x.Cmdrs1, opt => opt.Ignore())
+                .ForMember(x => x.Cmdrs2, opt => opt.Ignore());
+            CreateMap<ReplayRating, ReplayRatingListDto>(MemberList.Destination);
+            CreateMap<RepPlayerRating, RepPlayerRatingListDto>(MemberList.Destination);
+            CreateMap<ReplayPlayer, ReplayPlayerListDto>(MemberList.Destination);
+            CreateMap<Player, PlayerListDto>(MemberList.Destination);
 
             CreateMap<Replay, ReplayDsRDto>(MemberList.Destination);
             CreateMap<ReplayPlayer, ReplayPlayerDsRDto>(MemberList.Destination);

@@ -1,8 +1,7 @@
-using System.Security.Cryptography.X509Certificates;
-using System.Text.Json;
 using pax.dsstats.shared;
 using Raven.Client.Documents;
 using Raven.Client.Documents.Indexes;
+using System.Text.Json;
 
 namespace dsstats.raven;
 public class DocumentStoreHolder
@@ -51,10 +50,10 @@ public class MmrChange_ByHash : AbstractIndexCreationTask<MmrChange>
     public MmrChange_ByHash()
     {
         Map = changes => from change in changes
-                                        select new
-                                        {
-                                            change.Hash
-                                        };
+                         select new
+                         {
+                             change.Hash
+                         };
     }
 }
 

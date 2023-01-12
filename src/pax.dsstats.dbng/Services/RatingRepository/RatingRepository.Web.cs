@@ -1,9 +1,8 @@
 ﻿
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using MySqlConnector;
 using pax.dsstats.shared;
-using pax.dsstats;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
 
 namespace pax.dsstats.dbng.Services;
 public partial class RatingRepository
@@ -81,7 +80,7 @@ public partial class RatingRepository
             if (replayRating == null)
             {
                 replayRating = mapper.Map<ReplayRating>(replayRatingDto);
-                context.ReplayRatings.Add(replayRating); 
+                context.ReplayRatings.Add(replayRating);
             }
             else
             {

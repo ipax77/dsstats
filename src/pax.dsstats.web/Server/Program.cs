@@ -8,7 +8,6 @@ using pax.dsstats.shared;
 using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
-using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 

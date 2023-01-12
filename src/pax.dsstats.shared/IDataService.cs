@@ -1,6 +1,4 @@
-﻿using pax.dsstats.shared;
-
-namespace pax.dsstats.shared;
+﻿namespace pax.dsstats.shared;
 public interface IDataService
 {
     void SetFromServer(bool fromServer);

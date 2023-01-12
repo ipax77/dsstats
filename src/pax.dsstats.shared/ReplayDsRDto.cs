@@ -1,6 +1,3 @@
-
-using System.ComponentModel.DataAnnotations;
-
 namespace pax.dsstats.shared;
 
 public record ReplayDsRDto
