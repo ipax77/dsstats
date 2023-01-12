@@ -89,7 +89,8 @@ public partial class MmrProduceService
                                          IRatingRepository ratingRepository,
                                          int mmrChangesAppendId,
                                          DateTime startTime = default,
-                                         DateTime endTime = default)
+                                         DateTime endTime = default,
+                                         bool dry = false)
     {
         var allReplayDatas = new List<ReplayData>();
 
@@ -118,11 +119,14 @@ public partial class MmrProduceService
 
             latestReplay = replays.Last().GameTime;
 
-            (mmrIdRatings, mmrChangesAppendId, var replayDatas) = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, mmrOptions, mmrChangesAppendId, ratingRepository);
+            (mmrIdRatings, mmrChangesAppendId, var replayDatas) = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, mmrOptions, mmrChangesAppendId, ratingRepository, dry);
             allReplayDatas.AddRange(replayDatas);
         }
 
-        var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings, !mmrOptions.ReCalc);
+        if (!dry)
+        {
+            var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings, !mmrOptions.ReCalc);
+        }
 
         return (latestReplay, allReplayDatas);
     }

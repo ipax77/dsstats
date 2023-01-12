@@ -1,4 +1,5 @@
 ﻿using dsstats.mmr.ProcessData;
+using dsstats.mmr;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -103,6 +104,11 @@ namespace dsstats.cli.MmrService
             return confidence;
         }
 
+        //private static int GetPlayerIdByName(string name)
+        //{
+
+        //}
+
         private static double GetAvgETW(int playerId, List<ReplayData> replayDatas)
         {
             double avgETW_sum = 0;
@@ -145,7 +151,7 @@ namespace dsstats.cli.MmrService
             var produceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
 
             var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
-
+            
             var cmdrMmrDic = await produceService.GetCommanderMmrsDic(mmrOptions, true);
 
             if (!mmrOptions.ReCalc
@@ -165,7 +171,7 @@ namespace dsstats.cli.MmrService
                 latestReplay = startTime;
             }
 
-            (latestReplay, List<ReplayData> replayDatas) = await produceService.ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrChangesAppendId, latestReplay, endTime);
+            (latestReplay, var replayDatas) = await produceService.ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrChangesAppendId, latestReplay, endTime, dry: true);
 
             await produceService.SaveCommanderMmrsDic(cmdrMmrDic);
             sw.Stop();
