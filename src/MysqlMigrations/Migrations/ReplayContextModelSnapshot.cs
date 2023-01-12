@@ -555,6 +555,8 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("LastSpawnHash")
                         .IsUnique();
 
+                    b.HasIndex("Name");
+
                     b.HasIndex("PlayerId");
 
                     b.HasIndex("Race");
