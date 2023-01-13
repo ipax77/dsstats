@@ -116,11 +116,11 @@ public partial class ReplayRepository : IReplayRepository
                 {
                     var rep = mmrlist[i];
 
-                    if (rep.ReplayRatingInfo== null)
+                    if (rep.ReplayRatingInfo == null)
                     {
                         continue;
                     }
-                    
+
                     var pl = rep.ReplayPlayers.FirstOrDefault(f => f.Player.ToonId == request.ToonId);
                     if (pl != null)
                     {
@@ -641,13 +641,15 @@ public partial class ReplayRepository : IReplayRepository
 
     public async Task DeleteReplayByFileName(string fileName)
     {
+# pragma warning disable CS8602
         var replay = await context.Replays
             .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Spawns)
                     .ThenInclude(i => i.Units)
             .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Upgrades)
-
+            .Include(i => i.ReplayRatingInfo)
+                .ThenInclude(i => i.RepPlayerRatings)
             .FirstOrDefaultAsync(f => f.FileName == fileName);
 
         if (replay != null)
@@ -655,6 +657,33 @@ public partial class ReplayRepository : IReplayRepository
             context.Replays.Remove(replay);
             await context.SaveChangesAsync();
         }
+# pragma warning restore CS8602
+    }
+
+    public async Task DeleteReplayAfterDate(DateTime startTime)
+    {
+# pragma warning disable CS8602
+        var replays = await context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Spawns)
+                    .ThenInclude(i => i.Units)
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Upgrades)
+            .Include(i => i.ReplayRatingInfo)
+                .ThenInclude(i => i.RepPlayerRatings)
+            .Where(x => x.GameTime > startTime)
+            .AsSplitQuery()
+            .ToListAsync();
+
+        if (replays.Any())
+        {
+            foreach (var replay in replays)
+            {
+                context.Replays.Remove(replay);
+                await context.SaveChangesAsync();
+            }
+        }
+# pragma warning restore CS8602
     }
 
     public async Task<List<EventListDto>> GetTournaments()

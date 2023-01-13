@@ -107,21 +107,18 @@ if (app.Environment.IsDevelopment())
     // var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
     // cheatDetectService.DetectNoUpload().Wait();
 
-    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings(new(reCalc: true)).GetAwaiter().GetResult();
 
     //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
     //var result = statsService.GetCrossTable(new());
 
-    //var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-    //importService.DEBUGFixComputerGames();
-    //importService.ImportReplayBlobs().Wait();
-
     //var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
     //tourneyService.CollectTourneyReplays().Wait();
 
-    //var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-    //replayRepository.FixPlayerNames().Wait();
+    var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+    var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
+
+    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    mmrProduceService.ProduceRatings(new(reCalc: false), result.LatestReplay, result.ContinueReplays).GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.

@@ -14,6 +14,7 @@ namespace pax.dsstats.dbng.Repositories
         Task<(HashSet<Unit>, HashSet<Upgrade>, Replay)> SaveReplay(ReplayDto replayDto, HashSet<Unit> units, HashSet<Upgrade> upgrades, ReplayEventDto? replayEventDto);
         Task<List<EventListDto>> GetTournaments();
         Task DeleteReplayByFileName(string fileName);
+        Task DeleteReplayAfterDate(DateTime startTime);
         Task<ReplayDetailsDto?> GetLatestReplay(CancellationToken token = default);
         Task<List<string>> GetSkipReplays();
         Task AddSkipReplay(string replayPath);
