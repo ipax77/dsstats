@@ -69,7 +69,7 @@ public partial class ReplayRepository : IReplayRepository
         return replay with { Views = replay.Views + 1 };
     }
 
-    public async Task<ReplayDto?> GetLatestReplay(CancellationToken token = default)
+    public async Task<ReplayDetailsDto?> GetLatestReplay(CancellationToken token = default)
     {
         var hash = await context.Replays
             .OrderByDescending(o => o.GameTime)
@@ -81,7 +81,7 @@ public partial class ReplayRepository : IReplayRepository
             return null;
         }
 
-        return await GetReplay(hash, true, token);
+        return await GetDetailReplay(hash, true, token);
     }
 
     public async Task<int> GetReplaysCount(ReplaysRequest request, CancellationToken token = default)
@@ -101,7 +101,7 @@ public partial class ReplayRepository : IReplayRepository
             return new List<ReplayListDto>();
         }
 
-        if (request.WithMmrChange && !String.IsNullOrEmpty(request.SearchPlayers))
+        if (request.WithMmrChange && (!String.IsNullOrEmpty(request.SearchPlayers) || Data.IsMaui))
         {
             var mmrlist = await replays
                 .Skip(request.Skip)
@@ -122,6 +122,26 @@ public partial class ReplayRepository : IReplayRepository
                     }
                     
                     var pl = rep.ReplayPlayers.FirstOrDefault(f => f.Player.ToonId == request.ToonId);
+                    if (pl != null)
+                    {
+                        var rat = rep.ReplayRatingInfo.RepPlayerRatings.FirstOrDefault(f => f.GamePos == pl.GamePos);
+                        rep.MmrChange = rat?.RatingChange ?? 0;
+                        rep.Commander = pl.Race;
+                    }
+                }
+            }
+            else if (Data.IsMaui && String.IsNullOrEmpty(request.SearchPlayers))
+            {
+                for (int i = 0; i < mmrlist.Count; i++)
+                {
+                    var rep = mmrlist[i];
+
+                    if (rep.ReplayRatingInfo == null)
+                    {
+                        continue;
+                    }
+
+                    var pl = rep.ReplayPlayers.FirstOrDefault(f => f.GamePos == rep.PlayerPos);
                     if (pl != null)
                     {
                         var rat = rep.ReplayRatingInfo.RepPlayerRatings.FirstOrDefault(f => f.GamePos == pl.GamePos);

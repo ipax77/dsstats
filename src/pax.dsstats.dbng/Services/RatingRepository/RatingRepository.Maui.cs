@@ -90,6 +90,7 @@ public partial class RatingRepository
         if (appendId == 0)
         {
             await DeleteReplayPlayerRatingsTable();
+            await DeleteReplayRatingsTable();
         }
 
         if (!replayRatingDtos.Any())
@@ -154,7 +155,16 @@ public partial class RatingRepository
         using var connection = new SqliteConnection(Data.SqliteConnectionString);
         await connection.OpenAsync();
 
-        using var delCommand = new SqliteCommand("DELETE FROM ReplayPlayerRatings;", connection);
+        using var delCommand = new SqliteCommand($"DELETE FROM {nameof(ReplayContext.RepPlayerRatings)};", connection);
+        await delCommand.ExecuteNonQueryAsync();
+    }
+
+    private async Task DeleteReplayRatingsTable()
+    {
+        using var connection = new SqliteConnection(Data.SqliteConnectionString);
+        await connection.OpenAsync();
+
+        using var delCommand = new SqliteCommand($"DELETE FROM {nameof(ReplayContext.ReplayRatings)};", connection);
         await delCommand.ExecuteNonQueryAsync();
     }
 }
