@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
-using pax.dsstats;
 using System.Diagnostics;
 
 namespace pax.dsstats.dbng.Services;
@@ -47,14 +46,21 @@ public partial class MmrProduceService
         }
 
         var mmrIdRatings = await GetMmrIdRatings(mmrOptions, ratingRepository, dependentReplays);
-        int mmrChangesAppendId = await GetMmrChangesAppendId(mmrOptions);
+        (int replayRatingAppendId, int replayPlayerAppendId) = await GetMmrChangesAppendId(mmrOptions);
 
         if (mmrOptions.ReCalc)
         {
             latestReplay = startTime;
         }
 
-        (latestReplay, List<ReplayData> replayDatas) = await ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrChangesAppendId, latestReplay, endTime);
+        (latestReplay, List<ReplayData> replayDatas) = await ProduceRatings(mmrOptions,
+                                                                            cmdrMmrDic,
+                                                                            mmrIdRatings,
+                                                                            ratingRepository,
+                                                                            replayRatingAppendId,
+                                                                            replayPlayerAppendId,
+                                                                            latestReplay,
+                                                                            endTime);
 
         await SaveCommanderMmrsDic(cmdrMmrDic);
         sw.Stop();
@@ -65,21 +71,28 @@ public partial class MmrProduceService
 
 
 
-    public async Task<int> GetMmrChangesAppendId(MmrOptions mmrOptions)
+    public async Task<(int, int)> GetMmrChangesAppendId(MmrOptions mmrOptions)
     {
         if (mmrOptions.ReCalc)
         {
-            return 0;
+            return (0, 0);
         }
         else
         {
             using var scope = serviceProvider.CreateScope();
             using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-            return await context.ReplayPlayerRatings
-                .OrderByDescending(o => o.ReplayPlayerRatingId)
-                .Select(s => s.ReplayPlayerRatingId)
+            var replayPlayerAppendId = await context.RepPlayerRatings
+                .OrderByDescending(o => o.RepPlayerRatingId)
+                .Select(s => s.RepPlayerRatingId)
                 .FirstOrDefaultAsync();
+
+            var replayRatingAppendId = await context.ReplayRatings
+                .OrderByDescending(o => o.ReplayRatingId)
+                .Select(s => s.ReplayRatingId)
+                .FirstOrDefaultAsync();
+
+            return (replayRatingAppendId, replayPlayerAppendId);
         }
     }
 
@@ -87,7 +100,8 @@ public partial class MmrProduceService
                                          Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                          Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
                                          IRatingRepository ratingRepository,
-                                         int mmrChangesAppendId,
+                                         int replayRatingAppendId,
+                                         int replayPlayerRatingAppendId,
                                          DateTime startTime = default,
                                          DateTime endTime = default)
     {
@@ -97,6 +111,15 @@ public partial class MmrProduceService
         DateTime _endTime = endTime == DateTime.MinValue ? DateTime.Today.AddDays(2) : endTime;
 
         DateTime latestReplay = DateTime.MinValue;
+
+        MmrService.CalcRatingRequest request = new()
+        {
+            CmdrMmrDic = cmdrMmrDic,
+            MmrIdRatings = mmrIdRatings,
+            MmrOptions = mmrOptions,
+            ReplayRatingAppendId = replayRatingAppendId,
+            ReplayPlayerRatingAppendId = replayPlayerRatingAppendId,
+        };
 
         while (_startTime < _endTime)
         {
@@ -118,8 +141,15 @@ public partial class MmrProduceService
 
             latestReplay = replays.Last().GameTime;
 
-            (mmrIdRatings, mmrChangesAppendId, var replayDatas) = await MmrService.GeneratePlayerRatings(replays, cmdrMmrDic, mmrIdRatings, mmrOptions, mmrChangesAppendId, ratingRepository);
-            allReplayDatas.AddRange(replayDatas);
+            request.ReplayDsRDtos = replays;
+
+
+            var calcResult = await MmrService.GeneratePlayerRatings(request, ratingRepository);
+
+            request.ReplayRatingAppendId = calcResult.ReplayRatingAppendId;
+            request.ReplayPlayerRatingAppendId = calcResult.ReplayPlayerRatingAppendId;
+
+            allReplayDatas.AddRange(calcResult.ReplayData);
         }
 
         var result = await ratingRepository.UpdateRavenPlayers(mmrIdRatings, !mmrOptions.ReCalc);

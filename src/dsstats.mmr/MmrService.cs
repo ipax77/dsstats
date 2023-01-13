@@ -1,26 +1,47 @@
 ﻿
 using dsstats.mmr.ProcessData;
 using pax.dsstats.shared;
-using pax.dsstats;
 
 namespace dsstats.mmr;
 
 public static partial class MmrService
 {
-    public static async Task<(Dictionary<RatingType, Dictionary<int, CalcRating>>, int, List<ReplayData>)> GeneratePlayerRatings(List<ReplayDsRDto> replays,
-                                                                    Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
-                                                                    Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
-                                                                    MmrOptions mmrOptions,
-                                                                    int mmrChangesAppendId,
+
+    public record CalcRatingResult
+    {
+        public Dictionary<RatingType, Dictionary<int, CalcRating>> CalcRatings { get; set; } = new();
+        public int ReplayRatingAppendId { get; set; }
+        public int ReplayPlayerRatingAppendId { get; set; }
+        public List<ReplayData> ReplayData { get; set; } = new();
+    }
+
+    public record CalcRatingRequest
+    {
+        public List<ReplayDsRDto> ReplayDsRDtos { get; set; } = new();
+        public Dictionary<CmdrMmmrKey, CmdrMmmrValue> CmdrMmrDic { get; set; } = new();
+        public Dictionary<RatingType, Dictionary<int, CalcRating>> MmrIdRatings { get; set; } = new();
+        public MmrOptions MmrOptions { get; set; } = new(true);
+        public int ReplayRatingAppendId { get; set; }
+        public int ReplayPlayerRatingAppendId { get; set; }
+    }
+
+    public static async Task<CalcRatingResult> GeneratePlayerRatings(CalcRatingRequest request,
                                                                     IRatingRepository ratingRepository,
                                                                     bool dry = false)
     {
         List<ReplayData> replayDatas = new();
-        List<MmrChange> mmrChanges = new();
+        List<ReplayRatingDto> replayRatingDtos = new();
 
-        for (int i = 0; i < replays.Count; i++)
+        CalcRatingResult result = new()
         {
-            RatingType ratingType = GetRatingType(replays[i]);
+            ReplayRatingAppendId = request.ReplayRatingAppendId,
+            ReplayPlayerRatingAppendId = request.ReplayPlayerRatingAppendId
+        };
+
+        for (int i = 0; i < request.ReplayDsRDtos.Count; i++)
+        {
+            var replay = request.ReplayDsRDtos[i];
+            RatingType ratingType = GetRatingType(replay);
             if (ratingType == RatingType.None)
             {
                 continue;
@@ -28,11 +49,12 @@ public static partial class MmrService
 
             try
             {
-                var (changes, replayData) = ProcessReplay(replays[i], mmrIdRatings[ratingType], cmdrMmrDic, mmrOptions);
-                
-                if (changes != null)
+                var (replayRatingDto, replayData) = ProcessReplay(replay, request.MmrIdRatings[ratingType], request.CmdrMmrDic, request.MmrOptions);
+
+                if (replayRatingDto != null)
                 {
-                    mmrChanges.Add(changes);
+                    replayRatingDto.RatingType = ratingType;
+                    replayRatingDtos.Add(replayRatingDto);
                 }
                 if (dry)
                 {
@@ -47,23 +69,29 @@ public static partial class MmrService
                 Console.WriteLine(e.Message);
             }
 
-            if (!dry && mmrChanges.Count > 100000)
+            if (!dry && replayRatingDtos.Count > 100000)
             {
-                mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
-                mmrChanges.Clear();
-                mmrChanges = new List<MmrChange>();
+                (result.ReplayRatingAppendId, result.ReplayPlayerRatingAppendId)
+                    = await ratingRepository.UpdateMmrChanges(replayRatingDtos, result.ReplayRatingAppendId, result.ReplayPlayerRatingAppendId);
+                replayRatingDtos.Clear();
+                replayRatingDtos = new List<ReplayRatingDto>();
             }
         }
 
 
-        if (!dry && mmrChanges.Any())
+        if (!dry && replayRatingDtos.Any())
         {
-            mmrChangesAppendId = await ratingRepository.UpdateMmrChanges(mmrChanges, mmrChangesAppendId);
+            (result.ReplayRatingAppendId, result.ReplayPlayerRatingAppendId)
+                = await ratingRepository.UpdateMmrChanges(replayRatingDtos, result.ReplayRatingAppendId, result.ReplayPlayerRatingAppendId);
         }
-        return (mmrIdRatings, mmrChangesAppendId, replayDatas);
+
+        result.ReplayData = replayDatas;
+        result.CalcRatings = request.MmrIdRatings;
+
+        return result;
     }
 
-    public static (MmrChange?, ReplayData?) ProcessReplay(ReplayDsRDto replay,
+    public static (ReplayRatingDto?, ReplayData?) ProcessReplay(ReplayDsRDto replay,
                                             Dictionary<int, CalcRating> mmrIdRatings,
                                             Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                             MmrOptions mmrOptions)
@@ -81,11 +109,12 @@ public static partial class MmrService
 
         SetReplayData(mmrIdRatings, replayData, cmdrMmrDic, mmrOptions);
 
-        var mmrChanges = ProcessReplay(replayData, mmrIdRatings, cmdrMmrDic, mmrOptions);
-        return (new MmrChange() { Hash = replay.ReplayHash, ReplayId = replay.ReplayId, Changes = mmrChanges }, replayData);
+        var replayRatingDto = ProcessReplay(replayData, mmrIdRatings, cmdrMmrDic, mmrOptions);
+
+        return (replayRatingDto, replayData);
     }
 
-    public static List<PlChange> ProcessReplay(ReplayData replayData,
+    public static ReplayRatingDto ProcessReplay(ReplayData replayData,
                                                Dictionary<int, CalcRating> mmrIdRatings,
                                                Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                                MmrOptions mmrOptions)
@@ -100,7 +129,6 @@ public static partial class MmrService
 
         var mmrChanges1 = AddPlayersRankings(mmrIdRatings, replayData.WinnerTeamData, replayData.GameTime, replayData.Maxkillsum);
         var mmrChanges2 = AddPlayersRankings(mmrIdRatings, replayData.LoserTeamData, replayData.GameTime, replayData.Maxkillsum);
-        var mmrChanges = mmrChanges1.Concat(mmrChanges2).ToList();
 
         if (mmrOptions.UseCommanderMmr && !replayData.IsStd && replayData.Maxleaver < 90)
         {
@@ -108,7 +136,12 @@ public static partial class MmrService
             SetCommandersComboMmr(replayData, replayData.LoserTeamData, cmdrMmrDic);
         }
 
-        return mmrChanges;
+        return new()
+        {
+            LeaverType = replayData.LeaverType,
+            ReplayId = replayData.ReplayId,
+            RepPlayerRatings = mmrChanges1.Concat(mmrChanges2).ToList()
+        };
     }
 
     public static int GetMmrId(PlayerDsRDto player)
@@ -161,8 +194,8 @@ public static partial class MmrService
         var leaverPlayers = replay.ReplayPlayers.Where(x => x.Duration < replay.Duration - 90);
         var teamsCount = leaverPlayers.Select(s => s.Team).Distinct().Count();
 
-        if (teamsCount == 1) 
-        { 
+        if (teamsCount == 1)
+        {
             return LeaverType.TwoSameTeam;
         }
         else
@@ -206,12 +239,3 @@ public record CmdrMmmrValue
     public double AntiSynergyMmr { get; set; }
 }
 
-public enum LeaverType
-{
-    None = 0,
-
-    OneLeaver = 1,
-    OneEachTeam = 2,
-    TwoSameTeam = 3,
-    MoreThanTwo = 4
-}

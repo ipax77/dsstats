@@ -406,7 +406,7 @@ public class GameModeTests : TestWithSqlite
         });
         var mapper = mapperConfiguration.CreateMapper();
 
-        var replayRepository = new ReplayRepository(logger, DbContext, mapper, null);
+        var replayRepository = new ReplayRepository(logger, DbContext, mapper);
 
         await replayRepository.SaveReplay(replayDto, new(), new(), null);
 

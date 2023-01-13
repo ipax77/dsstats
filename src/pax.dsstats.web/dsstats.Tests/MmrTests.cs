@@ -1,16 +1,15 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
-using pax.dsstats.dbng.Repositories;
-using pax.dsstats.dbng;
-using pax.dsstats.shared;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Xunit;
+using Microsoft.Extensions.Logging;
+using pax.dsstats.dbng;
+using pax.dsstats.dbng.Repositories;
+using pax.dsstats.dbng.Services;
+using pax.dsstats.shared;
 using Xunit.Abstractions;
 using Xunit.Sdk;
-using pax.dsstats.dbng.Services;
-using AutoMapper;
-using Microsoft.Extensions.Logging;
 
 namespace dsstats.Tests;
 
@@ -122,7 +121,7 @@ public class MmrTests
         // assert
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         Assert.True(context.PlayerRatings.Any());
-        Assert.True(context.ReplayPlayerRatings.Any());
+        Assert.True(context.RepPlayerRatings.Any());
     }
 
     [Fact]
@@ -154,9 +153,9 @@ public class MmrTests
             Directory.CreateDirectory(testPath);
         }
         File.Copy(testFile, testFilePath);
-        
-        var replayPlayerRatingsCountBefore = context.ReplayPlayerRatings.Count();
-        
+
+        var replayPlayerRatingsCountBefore = context.RepPlayerRatings.Count();
+
         var mmrBefore = context.PlayerRatings.Sum(s => s.Rating);
         var replays = context.Replays
             .Include(i => i.ReplayPlayers)
@@ -174,19 +173,19 @@ public class MmrTests
             .Distinct()
             .ToList();
 
-        var replayPlayerRatings = context.ReplayPlayerRatings
+        var replayPlayerRatings = context.RepPlayerRatings
             .Where(x => replayPlayerIds.Contains(x.ReplayPlayerId))
             .ToList();
 
         context.Replays.RemoveRange(replays);
-        context.ReplayPlayerRatings.RemoveRange(replayPlayerRatings);
+        context.RepPlayerRatings.RemoveRange(replayPlayerRatings);
         context.SaveChanges();
 
         mmrProduceService.ProduceRatings(new(reCalc: true)).GetAwaiter().GetResult();
 
         var replayCountBefore = context.Replays.Count();
-        
-        
+
+
         // execute
         var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
         mmrProduceService.ProduceRatings(new(reCalc: false), result.LatestReplay, result.ContinueReplays).GetAwaiter().GetResult();
@@ -194,7 +193,7 @@ public class MmrTests
         // assert
 
         var replayCountAfter = context.Replays.Count();
-        var replayPlayerRatingsCountAfter = context.ReplayPlayerRatings.Count();
+        var replayPlayerRatingsCountAfter = context.RepPlayerRatings.Count();
         Assert.True(replayCountAfter > replayCountBefore);
         Assert.Equal(replayPlayerRatingsCountBefore, replayPlayerRatingsCountAfter);
         // Assert.Equal(mmrBefore, context.PlayerRatings.Sum(s => s.Rating));

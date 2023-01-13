@@ -165,7 +165,7 @@
     private bool isLoading;
     private bool isReplayLoading;
     private BuildResponse? buildResponse;
-    private ReplayDto? replayDto;
+    private ReplayDetailsDto? replayDto;
     private string replayHash = "";
     private Breakpoint breakpoint = Breakpoint.All;
 
@@ -223,7 +223,7 @@
             return;
         isReplayLoading = true;
         replayHash = hash;
-        replayDto = await dataService.GetReplay(hash);
+        replayDto = await dataService.GetDetailReplay(hash);
         if (replayDto != null)
         {
             replayComponent?.Init(replayDto);

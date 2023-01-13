@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using pax.dsstats.shared;
-using pax.dsstats.shared;
+﻿using pax.dsstats.shared;
 using Raven.Client.Documents;
 using Raven.Client.Documents.BulkInsert;
 using Raven.Client.Documents.Linq;
@@ -255,7 +253,7 @@ public partial class RatingRepository
                 cmdrDic[cmdr] = games / 3;
             }
         }
-        else 
+        else
         {
             int total = Data.GetCommanders(Data.CmdrGet.NoStd).Count;
             foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.NoStd).Where(x => x != main))
@@ -264,7 +262,7 @@ public partial class RatingRepository
             }
         }
 
-        cmdrDic[main] = (int)((cmdrDic.Sum(s => s.Value) * mainPercentage) /(100 - mainPercentage));
+        cmdrDic[main] = (int)((cmdrDic.Sum(s => s.Value) * mainPercentage) / (100 - mainPercentage));
         return cmdrDic;
     }
 

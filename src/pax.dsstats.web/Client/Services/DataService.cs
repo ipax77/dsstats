@@ -1,6 +1,4 @@
-﻿using MathNet.Numerics.LinearAlgebra.Factorization;
-using pax.dsstats.shared;
-using pax.dsstats;
+﻿using pax.dsstats.shared;
 using System.Net.Http.Json;
 
 namespace pax.dsstats.web.Client.Services;
@@ -26,6 +24,29 @@ public class DataService : IDataService
     public bool GetFromServer()
     {
         return true;
+    }
+
+    public async Task<ReplayDetailsDto?> GetDetailReplay(string replayHash, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"{statsController}GetDetailReplay/{replayHash}", token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ReplayDetailsDto>();
+            }
+            else
+            {
+                logger.LogError($"failed getting replay: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting replay: {e.Message}");
+        }
+        return null;
     }
 
     public async Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default)

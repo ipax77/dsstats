@@ -21,7 +21,7 @@ public record PlayerData
         OppRace = replayPlayer.OppRace;
         Duration = replayPlayer.Duration;
 
-        IsLeaver = replayPlayer.Duration < replay.Duration - 90; //For Adapted Games???
+        IsLeaver = replayPlayer.Duration < replay.Duration - 90 || (replayPlayer.IsUploader && replay.ResultCorrected);
     }
     public PlayerData(Commander race,
                       Commander oppRace,

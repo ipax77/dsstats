@@ -44,6 +44,18 @@ public partial class DataService : IDataService
         return fromServerSwitchService.GetFromServer();
     }
 
+    public async Task<ReplayDetailsDto?> GetDetailReplay(string replayHash, CancellationToken token = default)
+    {
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await ServerGetDetailReplay(replayHash, token);
+        }
+        else
+        {
+            return await replayRepository.GetDetailReplay(replayHash, true, token);
+        }
+    }
+
     public async Task<ReplayDto?> GetReplay(string replayHash, CancellationToken token = default)
     {
         if (fromServerSwitchService.GetFromServer())
@@ -52,12 +64,7 @@ public partial class DataService : IDataService
         }
         else
         {
-            var replayDto = await replayRepository.GetReplay(replayHash, true, token);
-            if (replayDto == null)
-            {
-                return null;
-            }
-            return replayDto;
+            return await replayRepository.GetReplay(replayHash, true, token);
         }
     }
 

@@ -87,7 +87,7 @@
                                                     </td>
                                                 }
                                                 <td>
-                                                    <span @onclick:stopPropagation @onclick="e => ShowPlayerDetails(player.Player)" class="d-inline-block text-truncate" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
+                                                    <span @onclick:stopPropagation @onclick="e => ShowPlayerDetails(player.Player)" class="d-inline-block text-truncate text-decoration-underline" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
                                                         @player.Name
                                                     </span>
                                                 </td>
@@ -115,6 +115,23 @@
                             </div>
                         </div>
                     }
+                </div>
+                <div>
+                    <button 
+                        class="btn btn-sm btn-outline-light"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#ReplayRatingInfo"
+                        aria-expanded="false" 
+                        aria-controls="ReplayRatingInfo"
+                        @onclick="ShowHideRatingInfo"
+                    >
+                        <span class="oi @(showRatingInfo ? "oi-caret-bottom" : "oi-caret-top")"></span>
+                        Rating Info
+                    </button>
+                </div>
+                <div class="collapse" id="ReplayRatingInfo">
+                    <ReplayRatingInfo ReplayRatingDto="replayDto.ReplayRatingInfo"></ReplayRatingInfo>
                 </div>
             </div>
             <div class="card-footer">
@@ -165,7 +182,7 @@
 @code {
     [Parameter]
     [EditorRequired]
-    public ReplayDto replayDto { get; set; } = null!;
+    public ReplayDetailsDto replayDto { get; set; } = null!;
 
     [Parameter]
     public RequestNames? Interest { get; set; } = null;
@@ -183,6 +200,7 @@
     private int breakpointsCount = 1;
     private List<bool> showBuilds = new List<bool>() { false, false, false, false, false, false, false };
     private bool showPlayerNames = true;
+    private bool showRatingInfo;
 
     private ChartJsConfig chartJsConfig = null!;
     private ChartComponent? chartComponent;
@@ -208,8 +226,9 @@
         base.OnAfterRender(firstRender);
     }
 
-    public async void Init(ReplayDto replay)
+    public async void Init(ReplayDetailsDto replay)
     {
+        showRatingInfo = false;
         if (showMiddleChart)
         {
             showMiddleChart = false;
@@ -225,6 +244,15 @@
         breakpointsCount = replay.ReplayPlayers.Select(s => s.Spawns.Count).Max();
         chartJsConfig = GetMiddleChartConfig(replay.Middle, replay.Duration, replay.WinnerTeam, replay.Cannon, replay.Bunker);
 
+        if (replay.ReplayRatingInfo != null)
+        {
+            foreach (var player in replay.ReplayPlayers)
+            {
+                var plRating = replay.ReplayRatingInfo.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
+                player.MmrChange = plRating?.RatingChange ?? 0;
+            }
+        }
+
         await InvokeAsync(() => StateHasChanged());
         await JSRuntime.InvokeVoidAsync("enableTooltips");
     }
@@ -232,6 +260,11 @@
     private void ChartEventTriggered(ChartJsEvent chartJsEvent)
     {
 
+    }
+
+    private void ShowHideRatingInfo()
+    {
+        showRatingInfo = !showRatingInfo;
     }
 
     private void MoveSpawn(ChangeEventArgs e)

@@ -1,0 +1,102 @@
+﻿@using System.Text.Json.Serialization;
+@using System.Globalization;
+@using pax.dsstats.shared;
+
+@if (ReplayRatingDto == null)
+{
+    <div>
+        <p>No data available.</p>
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-center">
+        <div class="col-auto">
+            <h5><span class="badge bg-secondary me-4"><span class="text-light">RatingType</span> @Data.GetRatingTypeLongName(ReplayRatingDto.RatingType)</span></h5>
+        </div>
+        <div class="col-auto">
+            <h5><span class="badge bg-secondary ms-4 me-4"><span class="text-light">LeaverType</span> @ReplayRatingDto.LeaverType</span></h5>
+        </div>
+    </div>
+    <div class="row">
+        @for (int i = 1; i <= 2; i++)
+        {
+            var infos = i == 1 ? ReplayRatingDto.RepPlayerRatings.Where(x => x.GamePos <= 3).ToList()
+            : ReplayRatingDto.RepPlayerRatings.Where(x => x.GamePos > 3).ToList();
+            <div class="col-auto">
+                <div class="table-responsive" style="width: 560px;">
+                    <table class="table table-sm table-hover table-dark">
+                        <thead>
+                            <tr>
+                                <th style="width: 30px;">#</th>
+                                <th class="text-warning">Rating</th>
+                                <th class="text-info">Pre-Rating</th>
+                                <th>Change</th>
+                                <th>Games</th>
+                                <th>Consistency</th>
+                                <th>Confidence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var info in infos)
+                            {
+                                <tr>
+                                    <td>@info.GamePos</td>
+                                    <td>
+                                        <span class="text-warning">@info.Rating.ToString("N2", CultureInfo.InvariantCulture)</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-info">@((info.Rating - info.RatingChange).ToString("N2", CultureInfo.InvariantCulture))</span>
+                                    </td>
+                                    <td>
+                                        <span class="oi @(info.RatingChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">@info.RatingChange.ToString("N1", CultureInfo.InvariantCulture)</span>
+                                    </td>
+                                    <td>@info.Games</td>
+                                    <td>@info.Consistency.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                    <td>@info.Confidence.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td></td>
+                                @if (i == 1)
+                                {
+                                    <td colspan="6">
+                                        Expectation to Win <span class="fw-bold @(Team1ExpectationToWin > 0.5 ? "text-success" : "text-danger")">@Team1ExpectationToWin.ToString("P", CultureInfo.InvariantCulture)</span>
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td colspan="6">
+                                        Expectation to Win <span class="fw-bold @(Team1ExpectationToWin < 0.5 ? "text-success" : "text-danger")">@((1 - Team1ExpectationToWin).ToString("P", CultureInfo.InvariantCulture))</span>
+                                    </td>
+                                }
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public ReplayRatingDto? ReplayRatingDto { get; set; }
+
+    double Team1Mmr => ReplayRatingDto == null ? 0 : ReplayRatingDto.RepPlayerRatings
+        .Where(x => x.GamePos <= 3)
+        .Sum(s => s.Rating - s.RatingChange);
+
+    double Team2Mmr => ReplayRatingDto == null ? 0 : ReplayRatingDto.RepPlayerRatings
+        .Where(x => x.GamePos > 3)
+        .Sum(s => s.Rating - s.RatingChange);
+
+    double Team1ExpectationToWin => ReplayRatingDto == null ? 0 : EloExpectationToWin(Team1Mmr, Team2Mmr);
+
+    public static double EloExpectationToWin(double ratingOne, double ratingTwo, double clip = 1600)
+    {
+        return 1.0 / (1.0 + Math.Pow(10.0, (2.0 / clip) * (ratingTwo - ratingOne)));
+    }
+}
