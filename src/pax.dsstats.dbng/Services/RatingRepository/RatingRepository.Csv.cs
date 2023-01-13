@@ -224,6 +224,7 @@ public partial class RatingRepository
     {
         if (continueCalc)
         {
+            await ContinueReplayRatingsFromCsv2MySql(csvBasePath);
             await ContinueReplayPlayerRatingsFromCsv2MySql(csvBasePath);
         }
         else
@@ -306,6 +307,7 @@ public partial class RatingRepository
         var command = connection.CreateCommand();
         command.CommandText =
         $@"
+            SET FOREIGN_KEY_CHECKS = 0;
             TRUNCATE TABLE {nameof(ReplayContext.RepPlayerRatings)};
             LOAD DATA INFILE '{csvFile}'
             INTO TABLE {nameof(ReplayContext.RepPlayerRatings)}
@@ -313,6 +315,35 @@ public partial class RatingRepository
             OPTIONALLY ENCLOSED BY '""'
             ESCAPED BY '""'
             LINES TERMINATED BY '\n';
+            SET FOREIGN_KEY_CHECKS = 1;
+        ";
+        command.CommandTimeout = 120;
+        await command.ExecuteNonQueryAsync();
+        File.Delete(csvFile);
+    }
+
+    private async Task ContinueReplayRatingsFromCsv2MySql(string csvBasePath)
+    {
+        var csvFile = $"{csvBasePath}/ReplayRatings.csv";
+        if (!File.Exists(csvFile))
+        {
+            return;
+        }
+
+        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        await connection.OpenAsync();
+
+        var command = connection.CreateCommand();
+        command.CommandText =
+        $@"
+            SET FOREIGN_KEY_CHECKS = 0;
+            LOAD DATA INFILE '{csvFile}'
+            INTO TABLE {nameof(ReplayContext.ReplayRatings)}
+            COLUMNS TERMINATED BY ','
+            OPTIONALLY ENCLOSED BY '""'
+            ESCAPED BY '""'
+            LINES TERMINATED BY '\n';
+            SET FOREIGN_KEY_CHECKS = 1;
         ";
         command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
