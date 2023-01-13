@@ -115,6 +115,9 @@ if (app.Environment.IsDevelopment())
 
     //var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
     //mmrProduceService.ProduceRatings(new(reCalc: false), result.LatestReplay, result.ContinueReplays).GetAwaiter().GetResult();
+
+    var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
+    ratingRepository.GetRatingStats().Wait();
 }
 
 // Configure the HTTP request pipeline.

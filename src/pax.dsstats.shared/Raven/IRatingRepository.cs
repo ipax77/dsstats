@@ -18,4 +18,5 @@ public interface IRatingRepository
     Task<List<RequestNames>> GetRequestNames(string name);
     List<int> GetNameToonIds(string name);
     Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token);
+    Task GetRatingStats();
 }
