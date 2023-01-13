@@ -4,8 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
-using pax.dsstats;
-using System.Diagnostics;
 
 namespace pax.dsstats.dbng.Services;
 
@@ -260,27 +258,6 @@ public partial class RatingRepository : IRatingRepository
             .ToListAsync();
     }
 
-    public async Task<List<PlChange>> GetReplayPlayerMmrChanges(string replayHash, CancellationToken token = default)
-    {
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-        var replayId = await context.Replays
-            .Where(x => x.ReplayHash == replayHash)
-            .Select(s => s.ReplayId)
-            .FirstOrDefaultAsync();
-
-        return await context.ReplayPlayerRatings
-            .Where(x => x.ReplayId == replayId)
-            .Select(s => new PlChange()
-            {
-                Pos = s.Pos,
-                ReplayPlayerId = s.ReplayPlayerId,
-                Change = Math.Round(s.MmrChange, 1)
-            })
-            .ToListAsync();
-    }
-
     public async Task<string?> GetToonIdName(int toonId)
     {
         using var scope = scopeFactory.CreateScope();
@@ -327,118 +304,16 @@ public partial class RatingRepository : IRatingRepository
             .ToListAsync();
     }
 
-    public async Task SetReplayListMmrChanges(List<ReplayListDto> replays, int toonId, CancellationToken token = default)
-    {
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-        var replayIds = replays.Select(s => s.ReplayId).Distinct().ToList();
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-        var replayPlayerRatings = await context.ReplayPlayerRatings
-            .Where(x => replayIds.Contains(x.ReplayId))
-            .Select(s => new MmrChangesList()
-            {
-                ReplayId = s.ReplayId,
-                ReplayPlayerId = s.ReplayPlayerId,
-                Commander = s.ReplayPlayer.Race,
-                Pos = s.Pos,
-                MmrChange = Math.Round(s.MmrChange, 1)
-            })
-            .ToListAsync(token);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
-
-        var replayPlayerIds = await context.ReplayPlayers
-            .Where(x => x.Player.ToonId == toonId
-                && replayIds.Contains(x.ReplayId))
-            .Select(s => s.ReplayPlayerId)
-            .ToListAsync();
-
-        for (int i = 0; i < replays.Count; i++)
-        {
-            var replay = replays[i];
-
-            var mmrChange = replayPlayerRatings
-                .FirstOrDefault(f => f.ReplayId == replay.ReplayId
-                    && replayPlayerIds.Contains(f.ReplayPlayerId));
-
-            if (mmrChange != null)
-            {
-                replay.MmrChange = mmrChange.MmrChange;
-                replay.Commander = mmrChange.Commander;
-            }
-        }
-    }
-
-    public async Task SetReplayListMmrChanges(List<ReplayListDto> replays, string? searchPlayer = null, CancellationToken token = default)
-    {
-        if (String.IsNullOrEmpty(searchPlayer) && !replays.Any(a => a.PlayerPos > 0))
-        {
-            return;
-        }
-
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-        var replayIds = replays.Select(s => s.ReplayId).Distinct().ToList();
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-        var replayPlayerRatings = await context.ReplayPlayerRatings
-            .Where(x => replayIds.Contains(x.ReplayId))
-            .Select(s => new MmrChangesList()
-            {
-                ReplayId = s.ReplayId,
-                Name = s.ReplayPlayer.Name,
-                Commander = s.ReplayPlayer.Race,
-                Pos = s.Pos,
-                MmrChange = Math.Round(s.MmrChange, 1)
-            })
-            .ToListAsync(token);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
-
-        string? interest = null;
-        if (!String.IsNullOrEmpty(searchPlayer))
-        {
-            interest = replayPlayerRatings
-                .Select(s => s.Name)
-                .FirstOrDefault(f => f.ToUpper().Contains(searchPlayer.ToUpper()));
-        }
-
-        for (int i = 0; i < replays.Count; i++)
-        {
-            var replay = replays[i];
-
-            MmrChangesList? mmrChange;
-            if (interest == null)
-            {
-                if (replay.PlayerPos == 0)
-                {
-                    continue;
-                }
-                mmrChange = replayPlayerRatings
-                    .FirstOrDefault(f => f.ReplayId == replay.ReplayId && f.Pos == replay.PlayerPos);
-            }
-            else
-            {
-                mmrChange = replayPlayerRatings
-                    .FirstOrDefault(f => f.ReplayId == replay.ReplayId && f.Name == interest);
-            }
-
-            if (mmrChange != null)
-            {
-                replay.MmrChange = mmrChange.MmrChange;
-                replay.Commander = mmrChange.Commander;
-            }
-        }
-    }
-
-    public async Task<int> UpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId, string csvBasePath)
+    public async Task<(int, int)> UpdateMmrChanges(List<ReplayRatingDto> replayRatingDtos, int replayAppendId, int playerAppendId, string csvBasePath)
     {
         if (Data.IsMaui)
         {
-            return await MauiUpdateMmrChanges(replayPlayerMmrChanges, appendId);
+            var appendId = await MauiUpdateMmrChanges(replayRatingDtos, replayAppendId);
+            return (appendId, appendId);
         }
         else
         {
-            return WriteMmrChangeCsv(replayPlayerMmrChanges, appendId, csvBasePath);
+            return WriteMmrChangeCsv(replayRatingDtos, replayAppendId, playerAppendId, csvBasePath);
             // return await MysqlUpdateMmrChanges(replayPlayerMmrChanges, appendId);
         }
     }

@@ -80,21 +80,21 @@ public partial class StatsService
 
         var rps = request.Interest == Commander.None ?
              from p in replayPlayers
-                    group new { p } by new { race = p.Race } into g
-                    select new StatsResponseItem()
-                    {
-                        Label = g.Key.race.ToString(),
-                        Matchups = g.Count(),
-                        Wins = g.Count(c => c.p.PlayerResult == PlayerResult.Win),
-                    }
+             group new { p } by new { race = p.Race } into g
+             select new StatsResponseItem()
+             {
+                 Label = g.Key.race.ToString(),
+                 Matchups = g.Count(),
+                 Wins = g.Count(c => c.p.PlayerResult == PlayerResult.Win),
+             }
             : from p in replayPlayers
-                     group new { p } by new { race = p.OppRace } into g
-                     select new StatsResponseItem()
-                     {
-                         Label = g.Key.race.ToString(),
-                         Matchups = g.Count(),
-                         Wins = g.Count(c => c.p.PlayerResult == PlayerResult.Win),
-                     };
+              group new { p } by new { race = p.OppRace } into g
+              select new StatsResponseItem()
+              {
+                  Label = g.Key.race.ToString(),
+                  Matchups = g.Count(),
+                  Wins = g.Count(c => c.p.PlayerResult == PlayerResult.Win),
+              };
 
         var items = await rps.ToListAsync();
 

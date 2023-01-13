@@ -1,6 +1,5 @@
 
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
@@ -74,7 +73,7 @@ public partial class CheatDetectService
                 incomeDiff *= -1;
                 armyDiff *= -1;
                 killsDiff *= -1;
-            }            
+            }
 
             var rqScore = GetRqScore(incomeDiff, armyDiff, killsDiff, uploaderLastMiddleHoldDuration);
 

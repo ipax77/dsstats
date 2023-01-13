@@ -26,6 +26,18 @@ namespace pax.dsstats.web.Server.Controllers.v2
         }
 
         [HttpGet]
+        [Route("GetDetailReplay/{replayHash}")]
+        public async Task<ActionResult<ReplayDetailsDto?>> GetDetailReplay(string replayHash, CancellationToken token = default)
+        {
+            var replayDto = await replayRepository.GetDetailReplay(replayHash, false, token);
+            if (replayDto == null)
+            {
+                return NotFound();
+            }
+            return replayDto;
+        }
+
+        [HttpGet]
         [Route("GetReplay/{replayHash}")]
         public async Task<ActionResult<ReplayDto?>> GetReplay(string replayHash, CancellationToken token = default)
         {

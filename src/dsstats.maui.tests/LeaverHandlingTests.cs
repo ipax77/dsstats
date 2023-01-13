@@ -88,19 +88,19 @@ public class LeaverHandlingTests : TestWithSqlite
         var winnerPlayers = replayDto.ReplayPlayers.Where(x => x.PlayerResult == PlayerResult.Win).ToArray();
         var loserPlayers = replayDto.ReplayPlayers.Where(x => x.PlayerResult == PlayerResult.Los).ToArray();
 
-        var winnersChange = winnerPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / winnerPlayers.Length;
-        var loserChange = loserPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / loserPlayers.Length;
+        var winnersChange = winnerPlayers.Sum(p => plChanges.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / winnerPlayers.Length;
+        var loserChange = loserPlayers.Sum(p => plChanges.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / loserPlayers.Length;
 
         foreach (var player in winnerPlayers)
         {
-            var plChange = plChanges.FirstOrDefault(f => f.Pos == player.GamePos);
-            Assert.Equal(plChange?.Change, winnersChange);
+            var plChange = plChanges.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
+            Assert.Equal(plChange?.RatingChange, winnersChange);
         }
 
         foreach (var player in loserPlayers)
         {
-            var plChange = plChanges.FirstOrDefault(f => f.Pos == player.GamePos);
-            Assert.Equal(plChange?.Change, loserChange);
+            var plChange = plChanges.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
+            Assert.Equal(plChange?.RatingChange, loserChange);
         }
     }
 
@@ -132,7 +132,7 @@ public class LeaverHandlingTests : TestWithSqlite
         var winnerPlayers = replayDto.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Win) && !leaverPlayers.Contains(x)).ToArray();
         var loserPlayers = replayDto.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Los) && !leaverPlayers.Contains(x)).ToArray();
 
-        var leaverChange = leaverPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / leaverPlayers.Length;
+        var leaverChange = leaverPlayers.Sum(p => plChanges.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / leaverPlayers.Length;
 
         //var winnersChange = winnerPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / winnerPlayers.Length;
         //var loserChange = loserPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / loserPlayers.Length;
@@ -144,22 +144,22 @@ public class LeaverHandlingTests : TestWithSqlite
 
         foreach (var player in winnerPlayers)
         {
-            var plChange = plChanges.FirstOrDefault(f => f.Pos == player.GamePos);
+            var plChange = plChanges.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
 
             if (player == replayDto.ReplayPlayers.ElementAt(0))
             {
-                Assert.Equal(plChange?.Change, leaverChange);
+                Assert.Equal(plChange?.RatingChange, leaverChange);
             }
             else
             {
-                Assert.Equal(plChange?.Change, -0.5 * leaverChange);
+                Assert.Equal(plChange?.RatingChange, -0.5 * leaverChange);
             }
         }
 
         foreach (var player in loserPlayers)
         {
-            var plChange = plChanges.FirstOrDefault(f => f.Pos == player.GamePos);
-            Assert.Equal(plChange?.Change, 0.5 * leaverChange);
+            var plChange = plChanges.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
+            Assert.Equal(plChange?.RatingChange, 0.5 * leaverChange);
         }
     }
 
@@ -191,10 +191,10 @@ public class LeaverHandlingTests : TestWithSqlite
         var winnerPlayers = replayDto.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Win) && !leaverPlayers.Contains(x)).ToArray();
         var loserPlayers = replayDto.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Los) && !leaverPlayers.Contains(x)).ToArray();
 
-        var leaverChange = leaverPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / leaverPlayers.Length;
+        var leaverChange = leaverPlayers.Sum(p => plChanges.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / leaverPlayers.Length;
 
-        var winnersChange = winnerPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / winnerPlayers.Length;
-        var loserChange = loserPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / loserPlayers.Length;
+        var winnersChange = winnerPlayers.Sum(p => plChanges.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / winnerPlayers.Length;
+        var loserChange = loserPlayers.Sum(p => plChanges.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / loserPlayers.Length;
 
         if (winnerPlayers.Length < loserPlayers.Length) // Leavers are in winnerTeam
         {
@@ -203,29 +203,29 @@ public class LeaverHandlingTests : TestWithSqlite
 
         foreach (var player in winnerPlayers)
         {
-            var plChange = plChanges.FirstOrDefault(f => f.Pos == player.GamePos);
+            var plChange = plChanges.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
 
             if (player == replayDto.ReplayPlayers.ElementAt(0) || player == replayDto.ReplayPlayers.ElementAt(1))
             {
-                Assert.Equal(plChange?.Change, leaverChange);
+                Assert.Equal(plChange?.RatingChange, leaverChange);
             }
             else
             {
-                Assert.Equal(plChange?.Change, -0.25 * leaverChange);
+                Assert.Equal(plChange?.RatingChange, -0.25 * leaverChange);
             }
         }
 
         foreach (var player in loserPlayers)
         {
-            var plChange = plChanges.FirstOrDefault(f => f.Pos == player.GamePos);
+            var plChange = plChanges.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
 
             if (player == replayDto.ReplayPlayers.ElementAt(0) || player == replayDto.ReplayPlayers.ElementAt(1))
             {
-                Assert.Equal(plChange?.Change, leaverChange);
+                Assert.Equal(plChange?.RatingChange, leaverChange);
             }
             else
             {
-                Assert.Equal(plChange?.Change, 0.25 * leaverChange);
+                Assert.Equal(plChange?.RatingChange, 0.25 * leaverChange);
             }
         }
     }

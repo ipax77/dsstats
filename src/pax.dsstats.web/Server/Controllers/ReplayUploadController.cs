@@ -1,8 +1,8 @@
-﻿using System.Net;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
+using System.Net;
 
 namespace pax.dsstats.web.Server.Controllers;
 
