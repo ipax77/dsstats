@@ -11,7 +11,8 @@ public class ReplayContext : DbContext
     public virtual DbSet<PlayerRating> PlayerRatings { get; set; } = null!;
     public virtual DbSet<Replay> Replays { get; set; } = null!;
     public virtual DbSet<ReplayPlayer> ReplayPlayers { get; set; } = null!;
-    public virtual DbSet<ReplayPlayerRating> ReplayPlayerRatings { get; set; } = null!;
+    public virtual DbSet<ReplayRating> ReplayRatings { get; set; } = null!;
+    public virtual DbSet<RepPlayerRating> RepPlayerRatings { get; set; } = null!;
     public virtual DbSet<PlayerUpgrade> PlayerUpgrades { get; set; } = null!;
     public virtual DbSet<Spawn> Spawns { get; set; } = null!;
     public virtual DbSet<SpawnUnit> SpawnUnits { get; set; } = null!;
@@ -56,6 +57,7 @@ public class ReplayContext : DbContext
             entity.HasIndex(e => new { e.Race, e.OppRace });
             entity.HasIndex(e => e.Kills);
             entity.HasIndex(e => new { e.IsUploader, e.Team });
+            entity.HasIndex(e => e.Name);
 
             entity.Property(p => p.LastSpawnHash)
                 .HasMaxLength(64)

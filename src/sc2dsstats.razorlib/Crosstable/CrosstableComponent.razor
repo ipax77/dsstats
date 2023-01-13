@@ -371,7 +371,7 @@ else
     private bool isReplayLoading;
     private TeamCrossTable? Interest;
     private string? replayHash;
-    private ReplayDto? ReplayInterest;
+    private ReplayDetailsDto? ReplayInterest;
 
     protected override void OnInitialized()
     {
@@ -434,7 +434,7 @@ else
             return;
         isReplayLoading = true;
         replayHash = hash;
-        ReplayInterest = await dataService.GetReplay(hash);
+        ReplayInterest = await dataService.GetDetailReplay(hash);
         if (ReplayInterest != null)
         {
             replayComponent?.Init(ReplayInterest);

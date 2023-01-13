@@ -158,7 +158,7 @@
     [Parameter]
     public EventCallback<ReplaysRequest> OnRequestChanged { get; set; }
 
-    private ReplayDto? replayDto = null;
+    private ReplayDetailsDto? replayDto = null;
 
     private Virtualize<ReplayListDto>? virtualizeComponent;
     SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
@@ -192,7 +192,7 @@
             replayLoading = true;
             await InvokeAsync(() => StateHasChanged());
 
-            replayDto = await dataService.GetReplay(replaysRequest.ReplayHash);
+            replayDto = await dataService.GetDetailReplay(replaysRequest.ReplayHash);
             lastVisitHash = replayDto?.ReplayHash;
             if (replayDto != null)
             {
@@ -259,7 +259,10 @@
 
     private async Task SetCount(ReplaysRequest request)
     {
+        replayLoading = true;
+        await InvokeAsync(() => StateHasChanged());
         ReplaysCount = await dataService.GetReplaysCount(request, cts.Token);
+        replayLoading = false;
         await InvokeAsync(() => StateHasChanged());
     }
 
@@ -309,7 +312,7 @@
         replaysRequest.ReplayHash = replayHash;
         await OnRequestChanged.InvokeAsync(replaysRequest);
 
-        replayDto = await dataService.GetReplay(replayHash);
+        replayDto = await dataService.GetDetailReplay(replayHash);
         lastVisitHash = replayDto?.ReplayHash;
         if (replayDto != null)
         {

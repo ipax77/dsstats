@@ -75,3 +75,13 @@ public enum TimePeriod
     LastYear = 7,
     All = 8
 }
+
+public enum LeaverType
+{
+    None = 0,
+
+    OneLeaver = 1,
+    OneEachTeam = 2,
+    TwoSameTeam = 3,
+    MoreThanTwo = 4
+}

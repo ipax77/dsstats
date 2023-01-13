@@ -6,6 +6,7 @@ public record ReplayData
 {
     public ReplayData(ReplayDsRDto replay)
     {
+        ReplayId = replay.ReplayId;
         GameTime = replay.GameTime;
         Duration = replay.Duration;
         Maxleaver = replay.Maxleaver;
@@ -58,6 +59,7 @@ public record ReplayData
     public int Maxkillsum { get; init; }
     public bool IsStd { get; init; }
     public bool IsInvalid { get; init; }
+    public int ReplayId { get; init; }
 
     public TeamData WinnerTeamData { get; init; }
     public TeamData LoserTeamData { get; init; }

@@ -1,6 +1,5 @@
 ﻿using MySqlConnector;
 using pax.dsstats.shared;
-using pax.dsstats;
 using System.Globalization;
 using System.Text;
 
@@ -26,7 +25,7 @@ public partial class RatingRepository
         sb.Append($"{nameof(PlayerRating.PlayerId)},");
         sb.Append($"{nameof(PlayerRating.Pos)}");
         sb.Append(Environment.NewLine);
-        
+
         int i = 0;
         foreach (var ent in mmrIdRatings)
         {
@@ -57,47 +56,98 @@ public partial class RatingRepository
         File.WriteAllText($"{csvBasePath}/PlayerRatings.csv", sb.ToString());
     }
 
-    public int WriteMmrChangeCsv(List<MmrChange> replayPlayerMmrChanges, int appendId, string csvBasePath)
+    public (int, int) WriteMmrChangeCsv(List<ReplayRatingDto> replayRatingDtos, int replayAppendId, int replayPlayerAppendId, string csvBasePath)
     {
-        bool append = appendId > 0;
+        StringBuilder sbReplay = new();
+        StringBuilder sbPlayer = new();
 
-        StringBuilder sb = new();
-        //if (!append)
-        //{
-        //    sb.Append($"{nameof(ReplayPlayerRating.ReplayPlayerRatingId)},");
-        //    sb.Append($"{nameof(ReplayPlayerRating.MmrChange)},");
-        //    sb.Append($"{nameof(ReplayPlayerRating.Pos)},");
-        //    sb.Append($"{nameof(ReplayPlayerRating.ReplayPlayerId)},");
-        //    sb.Append($"{nameof(ReplayPlayerRating.ReplayId)}");
-        //    sb.Append(Environment.NewLine);
-        //}
+        bool append = replayAppendId > 0;
 
-        int i = appendId;
-
-        foreach (var change in replayPlayerMmrChanges)
+        foreach (var replayRatingDto in replayRatingDtos)
         {
-            foreach (var plChange in change.Changes)
+            if (!replayRatingDto.RepPlayerRatings.Any())
             {
-                i++;
-                sb.Append($"{i},");
-                sb.Append($"{plChange.Change.ToString(CultureInfo.InvariantCulture)},");
-                sb.Append($"{plChange.Pos},");
-                sb.Append($"{plChange.ReplayPlayerId},");
-                sb.Append($"{change.ReplayId}");
-                sb.Append(Environment.NewLine);
+                continue;
+            }
+
+            replayAppendId++;
+
+            sbReplay.Append($"{replayAppendId},");
+            sbReplay.Append($"{(int)replayRatingDto.RatingType},");
+            sbReplay.Append($"{(int)replayRatingDto.LeaverType},");
+            sbReplay.Append($"{replayRatingDto.ReplayId}");
+            sbReplay.Append(Environment.NewLine);
+
+            foreach (var rpr in replayRatingDto.RepPlayerRatings)
+            {
+                replayPlayerAppendId++;
+                sbPlayer.Append($"{replayPlayerAppendId},");
+                sbPlayer.Append($"{rpr.GamePos},");
+                sbPlayer.Append($"{rpr.Rating.ToString(CultureInfo.InvariantCulture)},");
+                sbPlayer.Append($"{rpr.RatingChange.ToString(CultureInfo.InvariantCulture)},");
+                sbPlayer.Append($"{rpr.Games},");
+                sbPlayer.Append($"{rpr.Consistency.ToString(CultureInfo.InvariantCulture)},");
+                sbPlayer.Append($"{rpr.Confidence.ToString(CultureInfo.InvariantCulture)},");
+                sbPlayer.Append($"{rpr.ReplayPlayerId},");
+                sbPlayer.Append($"{replayAppendId}");
+                sbPlayer.Append(Environment.NewLine);
             }
         }
 
         if (!append)
         {
-            File.WriteAllText($"{csvBasePath}/ReplayPlayerRatings.csv", sb.ToString());
+            File.WriteAllText($"{csvBasePath}/ReplayRatings.csv", sbReplay.ToString());
+            File.WriteAllText($"{csvBasePath}/ReplayPlayerRatings.csv", sbPlayer.ToString());
         }
         else
         {
-            File.AppendAllText($"{csvBasePath}/ReplayPlayerRatings.csv", sb.ToString());
+            File.AppendAllText($"{csvBasePath}/ReplayRatings.csv", sbReplay.ToString());
+            File.AppendAllText($"{csvBasePath}/ReplayPlayerRatings.csv", sbPlayer.ToString());
         }
-        return i;
+        return (replayAppendId, replayPlayerAppendId);
     }
+
+    //public int WriteMmrChangeCsv(List<MmrChange> replayPlayerMmrChanges, int appendId, string csvBasePath)
+    //{
+    //    bool append = appendId > 0;
+
+    //    StringBuilder sb = new();
+    //    //if (!append)
+    //    //{
+    //    //    sb.Append($"{nameof(ReplayPlayerRating.ReplayPlayerRatingId)},");
+    //    //    sb.Append($"{nameof(ReplayPlayerRating.MmrChange)},");
+    //    //    sb.Append($"{nameof(ReplayPlayerRating.Pos)},");
+    //    //    sb.Append($"{nameof(ReplayPlayerRating.ReplayPlayerId)},");
+    //    //    sb.Append($"{nameof(ReplayPlayerRating.ReplayId)}");
+    //    //    sb.Append(Environment.NewLine);
+    //    //}
+
+    //    int i = appendId;
+
+    //    foreach (var change in replayPlayerMmrChanges)
+    //    {
+    //        foreach (var plChange in change.Changes)
+    //        {
+    //            i++;
+    //            sb.Append($"{i},");
+    //            sb.Append($"{plChange.Change.ToString(CultureInfo.InvariantCulture)},");
+    //            sb.Append($"{plChange.Pos},");
+    //            sb.Append($"{plChange.ReplayPlayerId},");
+    //            sb.Append($"{change.ReplayId}");
+    //            sb.Append(Environment.NewLine);
+    //        }
+    //    }
+
+    //    if (!append)
+    //    {
+    //        File.WriteAllText($"{csvBasePath}/ReplayPlayerRatings.csv", sb.ToString());
+    //    }
+    //    else
+    //    {
+    //        File.AppendAllText($"{csvBasePath}/ReplayPlayerRatings.csv", sb.ToString());
+    //    }
+    //    return i;
+    //}
 
     public static string GetDbMmrOverTime(List<TimeRating> timeRatings)
     {
@@ -152,7 +202,7 @@ public partial class RatingRepository
             }
             else
             {
-                mmrString = mmrString[(index+1)..];
+                mmrString = mmrString[(index + 1)..];
             }
         }
         return mmrString;
@@ -174,11 +224,13 @@ public partial class RatingRepository
     {
         if (continueCalc)
         {
+            await ContinueReplayRatingsFromCsv2MySql(csvBasePath);
             await ContinueReplayPlayerRatingsFromCsv2MySql(csvBasePath);
         }
         else
         {
             await PlayerRatingsFromCsv2MySql(csvBasePath);
+            await ReplayRatingsFromCsv2MySql(csvBasePath);
             await ReplayPlayerRatingsFromCsv2MySql(csvBasePath);
         }
     }
@@ -208,8 +260,37 @@ public partial class RatingRepository
         ";
         command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
-        
+
         await SetPlayerRatingsPos();
+    }
+
+    private async Task ReplayRatingsFromCsv2MySql(string csvBasePath)
+    {
+        var csvFile = $"{csvBasePath}/ReplayRatings.csv";
+        if (!File.Exists(csvFile))
+        {
+            return;
+        }
+
+        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        await connection.OpenAsync();
+
+        var command = connection.CreateCommand();
+        command.CommandText =
+        $@"
+            SET FOREIGN_KEY_CHECKS = 0;
+            TRUNCATE TABLE {nameof(ReplayContext.ReplayRatings)};
+            LOAD DATA INFILE '{csvFile}'
+            INTO TABLE {nameof(ReplayContext.ReplayRatings)}
+            COLUMNS TERMINATED BY ','
+            OPTIONALLY ENCLOSED BY '""'
+            ESCAPED BY '""'
+            LINES TERMINATED BY '\n';
+            SET FOREIGN_KEY_CHECKS = 1;
+        ";
+        command.CommandTimeout = 120;
+        await command.ExecuteNonQueryAsync();
+        File.Delete(csvFile);
     }
 
     private async Task ReplayPlayerRatingsFromCsv2MySql(string csvBasePath)
@@ -226,13 +307,43 @@ public partial class RatingRepository
         var command = connection.CreateCommand();
         command.CommandText =
         $@"
-            TRUNCATE TABLE {nameof(ReplayContext.ReplayPlayerRatings)};
+            SET FOREIGN_KEY_CHECKS = 0;
+            TRUNCATE TABLE {nameof(ReplayContext.RepPlayerRatings)};
             LOAD DATA INFILE '{csvFile}'
-            INTO TABLE {nameof(ReplayContext.ReplayPlayerRatings)}
+            INTO TABLE {nameof(ReplayContext.RepPlayerRatings)}
             COLUMNS TERMINATED BY ','
             OPTIONALLY ENCLOSED BY '""'
             ESCAPED BY '""'
             LINES TERMINATED BY '\n';
+            SET FOREIGN_KEY_CHECKS = 1;
+        ";
+        command.CommandTimeout = 120;
+        await command.ExecuteNonQueryAsync();
+        File.Delete(csvFile);
+    }
+
+    private async Task ContinueReplayRatingsFromCsv2MySql(string csvBasePath)
+    {
+        var csvFile = $"{csvBasePath}/ReplayRatings.csv";
+        if (!File.Exists(csvFile))
+        {
+            return;
+        }
+
+        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        await connection.OpenAsync();
+
+        var command = connection.CreateCommand();
+        command.CommandText =
+        $@"
+            SET FOREIGN_KEY_CHECKS = 0;
+            LOAD DATA INFILE '{csvFile}'
+            INTO TABLE {nameof(ReplayContext.ReplayRatings)}
+            COLUMNS TERMINATED BY ','
+            OPTIONALLY ENCLOSED BY '""'
+            ESCAPED BY '""'
+            LINES TERMINATED BY '\n';
+            SET FOREIGN_KEY_CHECKS = 1;
         ";
         command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
@@ -253,12 +364,14 @@ public partial class RatingRepository
         var command = connection.CreateCommand();
         command.CommandText =
         $@"
+            SET FOREIGN_KEY_CHECKS = 0;
             LOAD DATA INFILE '{csvFile}'
-            INTO TABLE {nameof(ReplayContext.ReplayPlayerRatings)}
+            INTO TABLE {nameof(ReplayContext.RepPlayerRatings)}
             COLUMNS TERMINATED BY ','
             OPTIONALLY ENCLOSED BY '""'
             ESCAPED BY '""'
             LINES TERMINATED BY '\n';
+            SET FOREIGN_KEY_CHECKS = 1;
         ";
         command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();

@@ -102,31 +102,37 @@ public static partial class MmrService
         //    throw new Exception("Not same player amount.");
         //}
 
-        if (absSumPosDeltas == 0 || absSumNegDeltas == 0) {
-            foreach (var player in teamData.Players) {
+        if (absSumPosDeltas == 0 || absSumNegDeltas == 0)
+        {
+            foreach (var player in teamData.Players)
+            {
                 player.Deltas.Mmr = 0;
             }
-            foreach (var player in oppTeamData.Players) {
+            foreach (var player in oppTeamData.Players)
+            {
                 player.Deltas.Mmr = 0;
             }
             return;
         }
 
-        foreach (var posDeltaPlayer in posDeltaPlayers) {
+        foreach (var posDeltaPlayer in posDeltaPlayers)
+        {
             posDeltaPlayer.Deltas.Mmr *= (absSumAllDeltas / (absSumPosDeltas * 2));
         }
-        foreach (var negDeltaPlayer in negPlayerDeltas) {
+        foreach (var negDeltaPlayer in negPlayerDeltas)
+        {
             negDeltaPlayer.Deltas.Mmr *= (absSumAllDeltas / (absSumNegDeltas * 2));
         }
     }
 
-    private static List<PlChange> AddPlayersRankings(Dictionary<int, CalcRating> mmrIdRatings,
+    private static List<RepPlayerRatingDto> AddPlayersRankings(Dictionary<int, CalcRating> mmrIdRatings,
                                                                   TeamData teamData,
                                                                   DateTime gameTime,
                                                                   int maxKills)
     {
-        List<PlChange> changes = new();
-        foreach (var player in teamData.Players) {
+        List<RepPlayerRatingDto> ratings = new();
+        foreach (var player in teamData.Players)
+        {
             var currentPlayerRating = mmrIdRatings[player.MmrId];
 
             double mmrBefore = currentPlayerRating.Mmr;
@@ -143,25 +149,37 @@ public static partial class MmrService
             confidenceAfter = Math.Clamp(confidenceAfter, 0, 1);
             //mmrAfter = Math.Max(1, mmrAfter);
 
-            changes.Add(new PlChange() { Pos = player.GamePos, ReplayPlayerId = player.ReplayPlayerId, Change = mmrAfter - mmrBefore });
+            ratings.Add(new()
+            {
+                GamePos = player.GamePos,
+                Rating = MathF.Round((float)mmrAfter, 2),
+                RatingChange = MathF.Round((float)(mmrAfter - mmrBefore), 2),
+                Games = currentPlayerRating.Games,
+                Consistency = MathF.Round((float)consistencyBefore, 2),
+                Confidence = MathF.Round((float)confidenceBefore, 2),
+                ReplayPlayerId = player.ReplayPlayerId,
+            });
 
             currentPlayerRating.Consistency = consistencyAfter;
             currentPlayerRating.Confidence = confidenceAfter;
             currentPlayerRating.Games++;
 
-            if (player.PlayerResult == PlayerResult.Win) {
+            if (player.PlayerResult == PlayerResult.Win)
+            {
                 currentPlayerRating.Wins++;
             }
-            if (player.Kills == maxKills) {
+            if (player.Kills == maxKills)
+            {
                 currentPlayerRating.Mvp++;
             }
-            if (player.IsUploader) {
+            if (player.IsUploader)
+            {
                 currentPlayerRating.IsUploader = true;
             }
 
             currentPlayerRating.SetCmdr(player.Race);
             currentPlayerRating.SetMmr(mmrAfter, gameTime);
         }
-        return changes;
+        return ratings;
     }
 }

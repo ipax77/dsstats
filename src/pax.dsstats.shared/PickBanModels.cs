@@ -44,7 +44,7 @@ public record PickBanState
             .Select(s => s.Commander);
         commanders.ExceptWith(bans);
 
-        var picked = PickBanMode == PickBanMode.Commanders 
+        var picked = PickBanMode == PickBanMode.Commanders
             ? Picks
                 .Where(x => x.IsLocked && x.Team == team && x.Commander > 0)
                 .Select(s => s.Commander)

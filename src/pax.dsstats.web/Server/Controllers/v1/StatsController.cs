@@ -234,7 +234,7 @@ public record StatsResponseV1
     public int Bans { get; set; }
     public int AvgDuration { get; init; }
 
-    public StatsResponseV1 (StatsResponse statsResponse, StatsRequestV1 statsRequestV1)
+    public StatsResponseV1(StatsResponse statsResponse, StatsRequestV1 statsRequestV1)
     {
         Request = statsRequestV1;
         Items = statsResponse.Items;

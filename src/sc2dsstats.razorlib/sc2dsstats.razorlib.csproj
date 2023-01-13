@@ -12,11 +12,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Blazored.Toast" Version="3.2.2" />
+    <PackageReference Include="Blazored.Toast" Version="4.0.0" />
     <PackageReference Include="Humanizer.Core" Version="2.14.1" />
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.12" />
-	<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.13" />
+	<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.13" />
 	<PackageReference Include="pax.BlazorChartJs" Version="0.4.1" />
   </ItemGroup>
 

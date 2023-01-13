@@ -1,6 +1,5 @@
 ﻿using dsstats.raven.Extensions;
 using pax.dsstats.shared;
-using pax.dsstats.shared;
 
 namespace dsstats.raven;
 
