@@ -143,9 +143,7 @@ public partial class MmrProduceService
             latestReplay = replays.Last().GameTime;
 
             request.ReplayDsRDtos = replays;
-
-
-            var calcResult = await MmrService.GeneratePlayerRatings(request, ratingRepository);
+            var calcResult = await MmrService.GeneratePlayerRatings(request, ratingRepository, dry);
 
             request.ReplayRatingAppendId = calcResult.ReplayRatingAppendId;
             request.ReplayPlayerRatingAppendId = calcResult.ReplayPlayerRatingAppendId;
