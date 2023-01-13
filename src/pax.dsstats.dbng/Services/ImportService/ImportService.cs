@@ -6,7 +6,6 @@ using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
 using System.Diagnostics;
 using System.IO.Compression;
-using System.Linq.Expressions;
 using System.Text.Json;
 
 namespace pax.dsstats.dbng.Services;
@@ -88,7 +87,7 @@ public partial class ImportService
         importReport.MappingDuration = Convert.ToInt32(sw.Elapsed.TotalSeconds);
 
         sw.Restart();
-        
+
         replays.ForEach(f => AdjustImportValues(f));
 
         int countBefore = replays.Count;
@@ -207,7 +206,7 @@ public partial class ImportService
                 .SelectMany(s => s.ReplayPlayers)
                 .Select(s => s.PlayerId)
                 .Distinct().ToList();
-            
+
             await context.Players
                 .Where(x => playerIds.Contains(x.PlayerId))
                 .LoadAsync();
@@ -357,7 +356,7 @@ public partial class ImportService
             .Where(x => x.ReplayPlayers.Any(a => a.Player.ToonId == 0))
             .ToList();
 
-        if (!computerReplays.Any() )
+        if (!computerReplays.Any())
         {
             return;
         }

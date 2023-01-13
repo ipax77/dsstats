@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 using System.Text;

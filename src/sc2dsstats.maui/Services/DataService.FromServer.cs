@@ -11,6 +11,29 @@ public partial class DataService
     private readonly string buildsController = "api/v2/Builds/";
     private readonly string ratingController = "api/Ratings/";
 
+    public async Task<ReplayDetailsDto?> ServerGetDetailReplay(string replayHash, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync($"{statsController}GetDetailReplay/{replayHash}", token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ReplayDetailsDto>();
+            }
+            else
+            {
+                logger.LogError($"failed getting replay: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting replay: {e.Message}");
+        }
+        return null;
+    }
+
     public async Task<ReplayDto?> ServerGetReplay(string replayHash, CancellationToken token = default)
     {
         try

@@ -1,7 +1,6 @@
 ﻿
 using Microsoft.AspNetCore.Components;
 using pax.dsstats.shared;
-using pax.dsstats;
 using sc2dsstats.razorlib.Services;
 
 namespace sc2dsstats.razorlib.PlayerDetails;

@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using pax.dsstats.shared;
-using pax.dsstats;
 
 namespace pax.dsstats.web.Server.Controllers;
 

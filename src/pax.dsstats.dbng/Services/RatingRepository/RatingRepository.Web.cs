@@ -1,7 +1,8 @@
 ﻿
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using MySqlConnector;
 using pax.dsstats.shared;
-using pax.dsstats;
 
 namespace pax.dsstats.dbng.Services;
 public partial class RatingRepository
@@ -65,49 +66,28 @@ public partial class RatingRepository
         return new();
     }
 
-    public async Task<int> MysqlUpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId)
+    public async Task MysqlUpdateMmrChanges(List<ReplayRatingDto> replayRatingDtos)
     {
-        if (appendId == 0)
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        foreach (var replayRatingDto in replayRatingDtos)
         {
-            await DeleteMyqlReplayPlayerRatingsTable();
-        }
+            var replayRating = await context.ReplayRatings
+                .Include(i => i.RepPlayerRatings)
+                .FirstOrDefaultAsync(f => f.ReplayId == replayRatingDto.ReplayId);
 
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
-        await connection.OpenAsync();
-
-        using var transaction = connection.BeginTransaction();
-        var command = connection.CreateCommand();
-        command.CommandText =
-            $@"
-                INSERT INTO ReplayPlayerRatings ({nameof(ReplayPlayerRating.ReplayPlayerRatingId)},{nameof(ReplayPlayerRating.MmrChange)},{nameof(ReplayPlayerRating.Pos)},{nameof(ReplayPlayerRating.ReplayPlayerId)},{nameof(ReplayPlayerRating.ReplayId)})
-                VALUES (@value1,@value2,@value3,@value4,@value5)
-            ";
-        command.Transaction = transaction;
-
-        List<MySqlParameter> parameters = new List<MySqlParameter>();
-        for (int i = 1; i <= 5; i++)
-        {
-            var parameter = command.CreateParameter();
-            parameter.ParameterName = $"@value{i}";
-            command.Parameters.Add(parameter);
-            parameters.Add(parameter);
-        }
-
-        for (int i = 0; i < replayPlayerMmrChanges.Count; i++)
-        {
-            for (int j = 0; j < replayPlayerMmrChanges[i].Changes.Count; j++)
+            if (replayRating == null)
             {
-                appendId++;
-                parameters[0].Value = appendId;
-                parameters[1].Value = replayPlayerMmrChanges[i].Changes[j].Change;
-                parameters[2].Value = replayPlayerMmrChanges[i].Changes[j].Pos;
-                parameters[3].Value = replayPlayerMmrChanges[i].Changes[j].ReplayPlayerId;
-                parameters[4].Value = replayPlayerMmrChanges[i].ReplayId;
-                await command.ExecuteNonQueryAsync();
+                replayRating = mapper.Map<ReplayRating>(replayRatingDto);
+                context.ReplayRatings.Add(replayRating);
+            }
+            else
+            {
+                mapper.Map<ReplayRatingDto, ReplayRating>(replayRatingDto, replayRating);
             }
         }
-        await transaction.CommitAsync();
-        return appendId;
+        await context.SaveChangesAsync();
     }
 
     private async Task DeleteMyqlReplayPlayerRatingsTable()

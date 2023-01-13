@@ -1,7 +1,6 @@
 ﻿using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
-using System.Xml.Linq;
 
 namespace pax.dsstats.dbng.Services;
 
