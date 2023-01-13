@@ -32,6 +32,7 @@ We really like people helping us with the project. Nevertheless, take your time 
 >- [Leaver Handling](https://github.com/ipax77/dsstats/wiki/LeaverHandling) active
 >- TimePeriods refactoring - new TimePeriod "Past 90 Days" is default, now
 >- Std-Teams details ordering fixed
+>- Replay Rating Info
 
 </details>
 
