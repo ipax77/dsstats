@@ -1,0 +1,16 @@
+﻿@page "/ratingchanges"
+@using pax.dsstats.shared;
+
+<PageTitle>Rating Changes</PageTitle>
+
+<sc2dsstats.razorlib.RatingChanges.RatingChangesComponent Request="Request" />
+
+@code {
+    RatingChangesRequest Request = new()
+    {
+        RatingType = RatingType.Cmdr,
+        TimePeriod = RatingChangeTimePeriod.Past30Days,
+        Skip = 0,
+        Take = 25
+    };
+}

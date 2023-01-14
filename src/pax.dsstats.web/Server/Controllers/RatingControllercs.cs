@@ -65,4 +65,18 @@ public class RatingsController
     {
         return await ratingRepository.GetToonIdRatings(request, token);
     }
+
+    [HttpPost]
+    [Route("GetRatingChangesCount")]
+    public async Task<int> GetRatingChangesCount(RatingChangesRequest request, CancellationToken token)
+    {
+        return await ratingRepository.GetRatingChangesCount(request, token);
+    }
+
+    [HttpPost]
+    [Route("GetRatingChanges")]
+    public async Task<RatingChangesResult> GetRatingChanges(RatingChangesRequest request, CancellationToken token)
+    {
+        return await ratingRepository.GetRatingChanges(request, token);
+    }
 }

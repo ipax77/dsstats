@@ -22,6 +22,7 @@ public partial class StatsService
                 .ToListAsync(token),
             GameModes = await GetGameModeCounts(toonIds, token),
             Matchups = await GetPlayerMatchups(toonIds, ratingType, token),
+            PlayerRatingChanges = await GetRatingChanges(toonIds, token)
         };
     }
 
@@ -139,7 +140,41 @@ public partial class StatsService
         }).ToList();
     }
 
-    public static IQueryable<Replay> GetRatingReplays(ReplayContext context, RatingType ratingType)
+    private async Task<List<PlayerRatingChange>> GetRatingChanges(List<int> toonIds, CancellationToken token)
+    {
+        DateTime fromDate = DateTime.Today.AddDays(-30);
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+
+        var plchanges = from p in context.Players
+                        from rp in p.ReplayPlayers
+                        where rp.Replay.GameTime > fromDate
+                          && toonIds.Contains(p.ToonId)
+                          && rp.ReplayPlayerRatingInfo != null
+                        group rp.ReplayPlayerRatingInfo by rp.ReplayPlayerRatingInfo.ReplayRatingInfo.RatingType into g
+                        select new PlayerRatingChange
+                        {
+                            RatingType = g.Key,
+                            Count = g.Count(),
+                            Sum = MathF.Round(g.Sum(s => s.RatingChange), 2)
+                        };
+
+        //var changes = from r in context.Replays
+        //          from rpr in r.ReplayRatingInfo.RepPlayerRatings
+        //          from rp in r.ReplayPlayers
+        //          where r.GameTime > DateTime.Today.AddDays(-30)
+        //            && toonIds.Contains(rp.Player.ToonId)
+        //          group rpr by rpr.ReplayRatingInfo.RatingType into g
+        //          select new PlayerRatingChange
+        //          {
+        //              RatingType = g.Key,
+        //              Count = g.Count(),
+        //              Sum = MathF.Round(g.Sum(s => s.RatingChange), 2)
+        //          };
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+        return await plchanges.ToListAsync(token);
+    }
+
+    private static IQueryable<Replay> GetRatingReplays(ReplayContext context, RatingType ratingType)
     {
         var gameModes = ratingType switch
         {

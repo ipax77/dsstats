@@ -32,6 +32,7 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
     private RatingType ratingType = RatingType.None;
     private bool isUploader => playerDetailsResult?.Ratings.Any(a => a.IsUploader) ?? false;
     private PlayerRatingDetailDto? interestRating => playerDetailsResult?.Ratings.FirstOrDefault(f => f.RatingType == ratingType);
+    private PlayerRatingChange? ratingChange => playerDetailsResult?.PlayerRatingChanges.FirstOrDefault(f => f.RatingType == ratingType);
 
     protected override void OnInitialized()
     {

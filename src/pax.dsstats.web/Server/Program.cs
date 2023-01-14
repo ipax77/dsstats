@@ -104,10 +104,10 @@ if (app.Environment.IsDevelopment())
     // var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
     // cheatDetectService.DetectNoUpload().Wait();
 
-    var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-    var result = statsService.GetServerStats().GetAwaiter().GetResult();
+    //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+    //var result = statsService.GetServerStats().GetAwaiter().GetResult();
 
-    Console.WriteLine(result);
+    //Console.WriteLine(result);
 
     //var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
     //tourneyService.CollectTourneyReplays().Wait();

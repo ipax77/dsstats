@@ -143,6 +143,23 @@
                                         <td>Confidence</td>
                                         <td colspan="2">@interestRating.Confidence.ToString("N2", CultureInfo.InvariantCulture)</td>
                                     </tr>
+                                    <tr>
+                                        <td>
+                                            Rating Change
+                                            <br />
+                                            <small class="text-white-50">past 30 days</small>
+                                        </td>
+                                        <td colspan="2">
+                                            @if (ratingChange != null)
+                                            {
+                                                <span class="@(ratingChange.Sum >= 0 ? "oi oi-arrow-top text-success" : "oi oi-arrow-bottom text-danger")">
+                                                    @ratingChange.Sum.ToString("N2", CultureInfo.InvariantCulture)
+                                                </span>
+                                                <br />
+                                                <small class="text-white-50">@ratingChange.Count Games</small>
+                                            }
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>

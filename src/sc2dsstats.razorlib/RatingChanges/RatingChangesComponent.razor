@@ -1,0 +1,293 @@
+﻿@using Microsoft.AspNetCore.Components.Forms;
+@using Microsoft.AspNetCore.Components.Web.Virtualization;
+@using System.Globalization;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
+@inject IDataService dataService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<style>
+    .tableFixHead {
+        overflow-y: auto;
+        height: 600px;
+    }
+
+        .tableFixHead thead th {
+            position: sticky;
+            top: 0;
+        }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+
+    th {
+        background: purple;
+    }
+
+    .tablebackground {
+        position: absolute;
+        z-index: -1;
+        opacity: 0.15;
+    }
+</style>
+
+<div class="@(Interest == null ? "" : "visually-hidden")">
+    <div>
+        <EditForm EditContext="editContext">
+            <div class="row">
+                <div class="col-auto">
+                    <label class="form-label">
+                        Search
+                        <InputText class="form-control" @bind-Value="Request.Search"></InputText>
+                    </label>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">
+                        Rating Type
+                        <InputSelect class="form-select" @bind-Value="Request.RatingType">
+                            <option value="@RatingType.Cmdr" selected>@Data.GetRatingTypeLongName(RatingType.Cmdr)</option>
+                            <option value="@RatingType.Std">@Data.GetRatingTypeLongName(RatingType.Std)</option>
+                        </InputSelect>
+                    </label>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">
+                        Time Period
+                        <InputSelect class="form-select" @bind-Value="Request.TimePeriod">
+                            <option value="@RatingChangeTimePeriod.Past24h" selected>@RatingChangeTimePeriod.Past24h</option>
+                            <option value="@RatingChangeTimePeriod.Past10Days" selected>@RatingChangeTimePeriod.Past10Days</option>
+                            <option value="@RatingChangeTimePeriod.Past30Days" selected>@RatingChangeTimePeriod.Past30Days</option>
+                        </InputSelect>
+                    </label>
+                </div>
+                <div class="align-self-center ms-2">
+                    <span class="oi oi-x text-danger pointer" @onclick="ResetSearch"></span>
+                </div>
+            </div>
+        </EditForm>
+    </div>
+    <div class="d-flex" style="max-width: 550px;">
+        <p class="ms-auto p-0 m-0"> #@ratingsCount</p>
+    </div>
+    <div class="tableFixHead">
+        <table class="table table-dark table-hover table-striped w-auto">
+            <colgroup>
+                <col class="col">
+                <col class="col">
+                <col class="col">
+                <col class="col">
+            </colgroup>
+            <thead>
+                <CascadingValue Value="Request.Orders">
+                    <tr>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "RequestNames.RegionId"))">
+                            <SortArrow Property="RequestNames.RegionId">
+                                <div class="text-center">
+                                    <span class="oi oi-globe rounded-circle bg-primary p-1"></span>
+                                </div>
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "RequestNames.Name"))">
+                            <SortArrow Property="RequestNames.Name">
+                                Name
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" style="z-index: 1;" @onclick="@(e => SortList(e, "RatingChange"))">
+                            <SortArrow Property="RatingChange">
+                                RatingChange
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Games"))">
+                            <SortArrow Property="Games">
+                                Games
+                            </SortArrow>
+                        </th>
+                    </tr>
+                </CascadingValue>
+            </thead>
+            <tbody>
+                @if (ratingsCount > 0)
+                {
+                    <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings" OverscanCount="10" ItemSize="41">
+                        <ItemContent>
+                            <tr height="41px;" class="pointer" @onclick="e => LoadPlayerChart(rating.RequestNames)">
+                                <td>
+                                    <span>@Data.GetRegionString(rating.RequestNames.RegionId)</span>
+                                </td>
+                                <td><span class="text-truncate text-info" style="display: block; width: 130px;">@rating.RequestNames.Name</span></td>
+                                <td>
+                                    <span class="@(rating.RatingChange >= 0 ? "oi oi-arrow-top text-success" : "oi oi-arrow-bottom text-danger")">@rating.RatingChange.ToString("N2", CultureInfo.InvariantCulture)</span>
+                                </td>
+                                <td>
+                                    @rating.Games
+                                </td>
+                            </tr>
+                        </ItemContent>
+                        <Placeholder>
+                            <tr height="41px"><td colspan="12">Loading ...</td></tr>
+                        </Placeholder>
+                    </Virtualize>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+@if (Interest != null)
+{
+    <sc2dsstats.razorlib.PlayerDetails.PlayerDetailsNgComponent RequestNames="Interest"
+                                                            RatingType="Request.RatingType"
+                                                            OnCloseRequested="DetailsClose"
+                                                            ReplaysRequest="ReplaysToonIdRequest" />
+}
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public RatingChangesRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRatingsChanged { get; set; }
+
+    private int ratingsCount;
+    private Virtualize<PlayerRatingStat>? virtualize;
+    private CancellationTokenSource cts = new();
+
+    private EditContext editContext = null!;
+
+    private RequestNames? Interest;
+
+    protected override void OnInitialized()
+    {
+        dataService.SetFromServer(false);
+        _ = SetRatingsCount();
+        editContext = new EditContext(Request);
+        editContext.OnFieldChanged += FieldChanged;
+
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        _ = Reload();
+        OnRatingsChanged.InvokeAsync();
+    }
+
+    private void FromServerChange(ChangeEventArgs e)
+    {
+        if (e.Value is bool value)
+        {
+            dataService.SetFromServer(value);
+            _ = Reload();
+        }
+    }
+
+    private async Task SetRatingsCount()
+    {
+        ratingsCount = await dataService.GetRatingChangesCount(Request, cts.Token);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public async Task Reload()
+    {
+        await SetRatingsCount();
+        if (virtualize != null)
+        {
+            await virtualize.RefreshDataAsync();
+        }
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = Request.Orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                Request.Orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            Request.Orders.Clear();
+            Request.Orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+        await Reload();
+    }
+
+    private async ValueTask<ItemsProviderResult<PlayerRatingStat>> LoadRatings(ItemsProviderRequest request)
+    {
+        var numRatings = Math.Min(request.Count, ratingsCount - request.StartIndex);
+        Request.Skip = request.StartIndex;
+        Request.Take = numRatings;
+
+        if (Request.Skip < 0 || Request.Take < 0)
+        {
+            return new ItemsProviderResult<PlayerRatingStat>();
+        }
+        var result = await dataService.GetRatingChanges(Request, request.CancellationToken);
+        return new ItemsProviderResult<PlayerRatingStat>(result.PlayerRatingStats, ratingsCount);
+    }
+
+    private void DetailsClose()
+    {
+        Interest = null;
+        OnRatingsChanged.InvokeAsync();
+        StateHasChanged();
+    }
+
+    private void LoadPlayerChart(RequestNames requestNames)
+    {
+        Interest = requestNames;
+        StateHasChanged();
+        OnRatingsChanged.InvokeAsync();
+    }
+
+    private void ReplaysToonIdRequest(ReplaysToonIdRequest request)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("replays",
+                new Dictionary<string, object?>()
+                        {
+                    { "Players", request.Name },
+                    { "ToonId", request.ToonId },
+                    { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
+                    { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
+                    { "ToonIdName", request.ToonIdName },
+                        }
+            )
+        );
+    }
+
+    private void ResetSearch()
+    {
+        Request.Search = string.Empty;
+        _ = Reload();
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}

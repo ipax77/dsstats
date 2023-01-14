@@ -33,4 +33,6 @@ public interface IDataService
     Task<FunStats> GetFunStats(List<int> toonIds);
     Task<StatsUpgradesResponse> GetUpgradeStats(BuildRequest buildRequest, CancellationToken token);
     Task<GameInfoResult> GetGameInfo(GameInfoRequest request, CancellationToken token);
+    Task<int> GetRatingChangesCount(RatingChangesRequest request, CancellationToken token);
+    Task<RatingChangesResult> GetRatingChanges(RatingChangesRequest request, CancellationToken token);
 }
