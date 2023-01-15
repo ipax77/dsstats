@@ -49,7 +49,9 @@ BEGIN
     declare days int default -1;
     declare hlimit int unsigned default 2;
 
-	TRUNCATE TABLE playerratingchanges;
+    SET FOREIGN_KEY_CHECKS = 0;
+    TRUNCATE playerratingchanges;
+    SET FOREIGN_KEY_CHECKS = 1;
     
 	WHILE ratingType_counter < ratingType_max DO
 		WHILE timePeriod_counter < timePeriod_max DO

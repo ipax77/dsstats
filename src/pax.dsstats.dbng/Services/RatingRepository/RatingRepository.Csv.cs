@@ -249,7 +249,9 @@ public partial class RatingRepository
         var command = connection.CreateCommand();
         command.CommandText =
         $@"
+            SET FOREIGN_KEY_CHECKS = 0;
             TRUNCATE TABLE {nameof(ReplayContext.PlayerRatings)};
+            SET FOREIGN_KEY_CHECKS = 1;
             LOAD DATA INFILE '{csvFile}'
             INTO TABLE {nameof(ReplayContext.PlayerRatings)}
             COLUMNS TERMINATED BY ','
