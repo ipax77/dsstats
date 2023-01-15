@@ -50,7 +50,7 @@ BEGIN
     declare hlimit int unsigned default 2;
 
     SET FOREIGN_KEY_CHECKS = 0;
-    TRUNCATE playerratingchanges;
+    TRUNCATE PlayerRatingChanges;
     SET FOREIGN_KEY_CHECKS = 1;
     
 	WHILE ratingType_counter < ratingType_max DO
@@ -81,36 +81,36 @@ BEGIN
 			  );
 			  
 			IF timePeriod_counter = 1 THEN
-              INSERT INTO playerratingchanges (Change24h, Change10d, Change30d, PlayerRatingId)
+              INSERT INTO PlayerRatingChanges (Change24h, Change10d, Change30d, PlayerRatingId)
 				SELECT ROUND(RatingChange, 2), 0, 0, PlayerRatingId
 				FROM TEMP_changetable
                 ON DUPLICATE KEY UPDATE Change24h =
                 (
 					SELECT ROUND(RatingChange, 2)
 					FROM TEMP_changetable
-                    WHERE playerratingchanges.PlayerRatingId = TEMP_changetable.PlayerRatingId
+                    WHERE PlayerRatingChanges.PlayerRatingId = TEMP_changetable.PlayerRatingId
 				)
 			  ;
 			ELSEIF timePeriod_counter = 2 THEN
-              INSERT INTO playerratingchanges (Change24h, Change10d, Change30d, PlayerRatingId)
+              INSERT INTO PlayerRatingChanges (Change24h, Change10d, Change30d, PlayerRatingId)
 				SELECT 0, ROUND(RatingChange, 2), 0, PlayerRatingId
 				FROM TEMP_changetable
                 ON DUPLICATE KEY UPDATE Change10d =
                 (
 					SELECT ROUND(RatingChange, 2)
 					FROM TEMP_changetable
-                    WHERE playerratingchanges.PlayerRatingId = TEMP_changetable.PlayerRatingId
+                    WHERE PlayerRatingChanges.PlayerRatingId = TEMP_changetable.PlayerRatingId
 				)
 			  ;
 			ELSE
-              INSERT INTO playerratingchanges (Change24h, Change10d, Change30d, PlayerRatingId)
+              INSERT INTO PlayerRatingChanges (Change24h, Change10d, Change30d, PlayerRatingId)
 				SELECT 0, 0, ROUND(RatingChange, 2), PlayerRatingId
 				FROM TEMP_changetable
                 ON DUPLICATE KEY UPDATE Change30d =
                 (
 					SELECT ROUND(RatingChange, 2)
 					FROM TEMP_changetable
-                    WHERE playerratingchanges.PlayerRatingId = TEMP_changetable.PlayerRatingId
+                    WHERE PlayerRatingChanges.PlayerRatingId = TEMP_changetable.PlayerRatingId
 				)
 			  ;
 			END IF;
