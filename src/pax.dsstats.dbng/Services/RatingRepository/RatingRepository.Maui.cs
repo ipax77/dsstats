@@ -167,70 +167,107 @@ public partial class RatingRepository
         }
     }
 
-    private async Task<int> MauiUpdateMmrChanges(List<ReplayRatingDto> replayRatingDtos, int appendId)
+    private async Task<(int, int)> MauiUpdateMmrChanges(List<ReplayRatingDto> replayRatingDtos, int replayAppendId, int playerAppendId)
     {
-        if (appendId == 0)
+        var newReplayAppendId = await MauiUpdateReplayRatings(replayRatingDtos, replayAppendId);
+        playerAppendId = await MauiUpdateRepPlayerRatings(replayRatingDtos, replayAppendId, playerAppendId);
+        
+        return(newReplayAppendId, playerAppendId);
+    }
+
+    private async Task<int> MauiUpdateReplayRatings(List<ReplayRatingDto> replayRatingDtos, int replayRatingAppendId)
+    {
+        if (replayRatingAppendId == 0)
         {
-            await DeleteReplayPlayerRatingsTable();
             await DeleteReplayRatingsTable();
         }
 
-        if (!replayRatingDtos.Any())
+        using var connection = new SqliteConnection(Data.SqliteConnectionString);
+        await connection.OpenAsync();
+
+        using var transaction = connection.BeginTransaction();
+        var command = connection.CreateCommand();
+
+        command.CommandText =
+            $@"
+                INSERT INTO {nameof(ReplayContext.ReplayRatings)} ({nameof(ReplayRating.ReplayRatingId)}, {nameof(ReplayRating.RatingType)},{nameof(ReplayRating.LeaverType)},{nameof(ReplayRating.ReplayId)})
+                VALUES ($value1,$value2,$value3,$value4)
+            ";
+
+        List<SqliteParameter> parameters = new List<SqliteParameter>();
+        for (int i = 1; i <= 4; i++)
         {
-            return 1;
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = $"$value{i}";
+            command.Parameters.Add(parameter);
+            parameters.Add(parameter);
         }
 
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        for (int i = 0; i < replayRatingDtos.Count; i++)
+        {
+            replayRatingAppendId++;
+            var replayRatingDto = replayRatingDtos[i];
+            
+            parameters[0].Value = replayRatingAppendId;
+            parameters[1].Value = (int)replayRatingDto.RatingType;
+            parameters[2].Value = (int)replayRatingDto.LeaverType;
+            parameters[3].Value = replayRatingDto.ReplayId;
+            await command.ExecuteNonQueryAsync();
+        }
+        await transaction.CommitAsync();
 
-        await context.ReplayRatings.AddRangeAsync(replayRatingDtos.Select(s => mapper.Map<ReplayRating>(s)));
-        return await context.SaveChangesAsync();
+        return replayRatingAppendId;
     }
 
-    //private async Task<int> MauiUpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId)
-    //{
-    //    if (appendId == 0)
-    //    {
-    //        await DeleteReplayPlayerRatingsTable();
-    //    }
+    private async Task<int> MauiUpdateRepPlayerRatings(List<ReplayRatingDto> replayRatingDtos, int replayRatingAppendId, int repPlayerRatingAppendId)
+    {
+        using var connection = new SqliteConnection(Data.SqliteConnectionString);
+        await connection.OpenAsync();
 
-    //    using var connection = new SqliteConnection(Data.SqliteConnectionString);
-    //    await connection.OpenAsync();
+        using var transaction = connection.BeginTransaction();
+        var command = connection.CreateCommand();
 
-    //    using var transaction = connection.BeginTransaction();
-    //    var command = connection.CreateCommand();
+        command.CommandText =
+            $@"
+                INSERT INTO {nameof(ReplayContext.RepPlayerRatings)} ({nameof(RepPlayerRating.RepPlayerRatingId)},{nameof(RepPlayerRating.GamePos)},{nameof(RepPlayerRating.Rating)},{nameof(RepPlayerRating.RatingChange)},{nameof(RepPlayerRating.Games)},{nameof(RepPlayerRating.Consistency)},{nameof(RepPlayerRating.Confidence)},{nameof(RepPlayerRating.ReplayPlayerId)},{nameof(RepPlayerRating.ReplayRatingInfoId)})
+                VALUES ($value1,$value2,$value3,$value4,$value5,$value6,$value7,$value8,$value9)
+            ";
 
-    //    command.CommandText =
-    //    $@"
-    //            INSERT INTO ReplayPlayerRatings ({nameof(ReplayPlayerRating.ReplayPlayerRatingId)},{nameof(ReplayPlayerRating.MmrChange)},{nameof(ReplayPlayerRating.Pos)},{nameof(ReplayPlayerRating.ReplayPlayerId)},{nameof(ReplayPlayerRating.ReplayId)})
-    //            VALUES ($value1,$value2,$value3,$value4,$value5)
-    //        ";
+        List<SqliteParameter> parameters = new List<SqliteParameter>();
+        for (int i = 1; i <= 9; i++)
+        {
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = $"$value{i}";
+            command.Parameters.Add(parameter);
+            parameters.Add(parameter);
+        }
 
-    //    List<SqliteParameter> parameters = new List<SqliteParameter>();
-    //    for (int i = 1; i <= 5; i++)
-    //    {
-    //        var parameter = command.CreateParameter();
-    //        parameter.ParameterName = $"$value{i}";
-    //        command.Parameters.Add(parameter);
-    //        parameters.Add(parameter);
-    //    }
+        for (int i = 0; i < replayRatingDtos.Count; i++)
+        {
+            var replayRatingDto = replayRatingDtos[i];
+            replayRatingAppendId++;
 
-    //    for (int i = 0; i < replayPlayerMmrChanges.Count; i++)
-    //    {
-    //        for (int j = 0; j < replayPlayerMmrChanges[i].Changes.Count; j++)
-    //        {
-    //            appendId++;
-    //            parameters[0].Value = appendId;
-    //            parameters[1].Value = replayPlayerMmrChanges[i].Changes[j].Change;
-    //            parameters[2].Value = replayPlayerMmrChanges[i].Changes[j].Pos;
-    //            parameters[3].Value = replayPlayerMmrChanges[i].Changes[j].ReplayPlayerId;
-    //            parameters[4].Value = replayPlayerMmrChanges[i].ReplayId;
-    //            await command.ExecuteNonQueryAsync();
-    //        }
-    //    }
-    //    await transaction.CommitAsync();
-    //    return appendId;
-    //}
+            for (int j = 0; j < replayRatingDto.RepPlayerRatings.Count; j++)
+            {
+                var repPlayerRatingDto = replayRatingDto.RepPlayerRatings[j];
+
+                repPlayerRatingAppendId++;
+                parameters[0].Value = repPlayerRatingAppendId;
+                parameters[1].Value = repPlayerRatingDto.GamePos;
+                parameters[2].Value = repPlayerRatingDto.Rating;
+                parameters[3].Value = repPlayerRatingDto.RatingChange;
+                parameters[4].Value = repPlayerRatingDto.Games;
+                parameters[5].Value = repPlayerRatingDto.Consistency;
+                parameters[6].Value = repPlayerRatingDto.Confidence;
+                parameters[7].Value = repPlayerRatingDto.ReplayPlayerId;
+                parameters[8].Value = replayRatingAppendId;
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+        await transaction.CommitAsync();
+
+        return repPlayerRatingAppendId;
+    }
 
     private async Task DeleteReplayPlayerRatingsTable()
     {
