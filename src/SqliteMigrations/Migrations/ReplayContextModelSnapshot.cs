@@ -15,7 +15,7 @@ namespace SqliteMigrations.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "6.0.12");
+            modelBuilder.HasAnnotation("ProductVersion", "6.0.13");
 
             modelBuilder.Entity("pax.dsstats.dbng.BattleNetInfo", b =>
                 {
@@ -242,6 +242,32 @@ namespace SqliteMigrations.Migrations
                     b.HasIndex("RatingType");
 
                     b.ToTable("PlayerRatings");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.PlayerRatingChange", b =>
+                {
+                    b.Property<int>("PlayerRatingChangeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<float>("Change10d")
+                        .HasColumnType("REAL");
+
+                    b.Property<float>("Change24h")
+                        .HasColumnType("REAL");
+
+                    b.Property<float>("Change30d")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("PlayerRatingId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("PlayerRatingChangeId");
+
+                    b.HasIndex("PlayerRatingId")
+                        .IsUnique();
+
+                    b.ToTable("PlayerRatingChanges");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.PlayerUpgrade", b =>
@@ -878,6 +904,17 @@ namespace SqliteMigrations.Migrations
                     b.Navigation("Player");
                 });
 
+            modelBuilder.Entity("pax.dsstats.dbng.PlayerRatingChange", b =>
+                {
+                    b.HasOne("pax.dsstats.dbng.PlayerRating", "PlayerRating")
+                        .WithOne("PlayerRatingChange")
+                        .HasForeignKey("pax.dsstats.dbng.PlayerRatingChange", "PlayerRatingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PlayerRating");
+                });
+
             modelBuilder.Entity("pax.dsstats.dbng.PlayerUpgrade", b =>
                 {
                     b.HasOne("pax.dsstats.dbng.ReplayPlayer", "ReplayPlayer")
@@ -1025,6 +1062,11 @@ namespace SqliteMigrations.Migrations
                     b.Navigation("PlayerRatings");
 
                     b.Navigation("ReplayPlayers");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.PlayerRating", b =>
+                {
+                    b.Navigation("PlayerRatingChange");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Replay", b =>

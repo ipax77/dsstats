@@ -231,5 +231,12 @@ namespace pax.dsstats.web.Server.Controllers.v2
             catch (OperationCanceledException) { }
             return NoContent();
         }
+
+        [HttpGet]
+        [Route("GetServerStats")]
+        public async Task<ActionResult<ServerStatsResponse>> GetServerStats(CancellationToken token)
+        {
+            return await statsService.GetServerStats(token);
+        }
     }
 }

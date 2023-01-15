@@ -57,7 +57,16 @@
                             <option value="@RatingType.Std">@Data.GetRatingTypeLongName(RatingType.Std)</option>
                         </InputSelect>
                     </label>
-
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">
+                        Change
+                        <InputSelect class="form-select" @bind-Value="RatingsRequest.TimePeriod">
+                            <option value="@RatingChangeTimePeriod.Past24h">@RatingChangeTimePeriod.Past24h</option>
+                            <option value="@RatingChangeTimePeriod.Past10Days">@RatingChangeTimePeriod.Past10Days</option>
+                            <option value="@RatingChangeTimePeriod.Past30Days">@RatingChangeTimePeriod.Past30Days</option>
+                        </InputSelect>
+                    </label>
                 </div>
                 @if (Data.IsMaui)
                 {
@@ -101,6 +110,7 @@
                 <col class="col">
                 <col class="col">
                 <col class="col">
+                <col class="col">
             </colgroup>
             <thead style="user-select: none;">
                 <CascadingValue Value="RatingsRequest.Orders">
@@ -122,7 +132,7 @@
                                 Name
                             </SortArrow>
                         </th>
-                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Main"))">
+                        <th scope="col" class="pointer text-info" style="width: 90px;" @onclick="@(e => SortList(e, "Main"))">
                             <SortArrow Property="Main">
                                 Main
                             </SortArrow>
@@ -140,6 +150,11 @@
                         <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "Rating"))">
                             <SortArrow Property="Rating">
                                 Rating
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" style="z-index: 1;" @onclick="@(e => SortList(e, ratingChangeSort))">
+                            <SortArrow Property="@ratingChangeSort">
+                                Change
                             </SortArrow>
                         </th>
                         <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Wins"))">
@@ -171,7 +186,21 @@
                                 <td>@(rating.Games == 0 || rating.MainCount * 100.0 / rating.Games < 10.5 ? "Random" : rating.Main.ToString())</td>
                                 <td>@HelperService.GetPercentageString(rating.MainCount, rating.Games)</td>
                                 <td class="border-start">@rating.Games</td>
-                                <td class="text-warning">@Math.Round(rating.Rating, 2).ToString(CultureInfo.InvariantCulture)</td>
+                                <td class="text-warning">@rating.Rating.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                <td>
+                                    @if (rating.PlayerRatingChange != null)
+                                    {
+                                        var ratingChange = RatingsRequest.TimePeriod switch
+                                        {
+                                            RatingChangeTimePeriod.Past24h => rating.PlayerRatingChange.Change24h,
+                                            RatingChangeTimePeriod.Past10Days => rating.PlayerRatingChange.Change10d,
+                                            _ => rating.PlayerRatingChange.Change30d
+                                        };
+                                        <span class="@(ratingChange >= 0 ? "oi oi-arrow-top text-success" : "oi oi-arrow-bottom text-danger")">
+                                            @ratingChange.ToString("N2", CultureInfo.InvariantCulture)
+                                        </span>
+                                    }
+                                </td>
                                 <td>@HelperService.GetPercentageString(rating.Wins, rating.Games)</td>
                                 <td>@HelperService.GetPercentageString(rating.Mvp, rating.Games)</td>
                             </tr>
@@ -236,6 +265,13 @@
 
     private RequestNames? Interest;
 
+    private string ratingChangeSort => RatingsRequest.TimePeriod switch
+    {
+        RatingChangeTimePeriod.Past24h => "PlayerRatingChange.Change24h",
+        RatingChangeTimePeriod.Past10Days => "PlayerRatingChange.Change10d",
+        _ => "PlayerRatingChange.Change30d"
+    };
+
     protected override void OnInitialized()
     {
         dataService.SetFromServer(false);
@@ -249,7 +285,21 @@
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
-        _ = Reload();
+        if (e.FieldIdentifier.FieldName == "TimePeriod")
+        {
+            if (RatingsRequest.Orders.Any(a => a.Property.StartsWith("PlayerRatingChange.")))
+            {
+                RatingsRequest.Orders
+                    .Where(x => x.Property.StartsWith("PlayerRatingChange."))
+                    .ToList()
+                    .ForEach(f => f.Property = ratingChangeSort);
+                _ = Reload();
+            }
+        }
+        else
+        {
+            _ = Reload();
+        }
         OnRatingsChanged.InvokeAsync();
     }
 

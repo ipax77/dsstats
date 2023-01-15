@@ -9,7 +9,6 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class RatingRepository : IRatingRepository
 {
-    private static Dictionary<int, RatingMemory> RatingMemory = new();
     private readonly IServiceScopeFactory scopeFactory;
     private readonly IMapper mapper;
     private readonly ILogger<RatingRepository> logger;
@@ -19,61 +18,6 @@ public partial class RatingRepository : IRatingRepository
         this.scopeFactory = scopeFactory;
         this.mapper = mapper;
         this.logger = logger;
-    }
-
-    public async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetCalcRatings(List<ReplayDsRDto> replayDsRDtos, MmrOptions mmrOptions)
-    {
-        Dictionary<RatingType, Dictionary<int, CalcRating>> calcRatings = new()
-        {
-            { RatingType.Cmdr, new() },
-            { RatingType.Std, new() },
-        };
-
-        foreach (var replayDsrDto in replayDsRDtos)
-        {
-            foreach (var replayPlayerDsRDto in replayDsrDto.ReplayPlayers)
-            {
-                if (!RatingMemory.TryGetValue(replayPlayerDsRDto.Player.ToonId, out var ratingMemory))
-                {
-                    ratingMemory = RatingMemory[replayPlayerDsRDto.Player.ToonId] = new RatingMemory()
-                    {
-                        RavenPlayer = new RavenPlayer()
-                        {
-                            RegionId = replayPlayerDsRDto.Player.RegionId,
-                            PlayerId = replayPlayerDsRDto.Player.PlayerId,
-                            IsUploader = replayPlayerDsRDto.IsUploader,
-                            Name = replayPlayerDsRDto.Player.Name,
-                            ToonId = replayPlayerDsRDto.Player.ToonId
-                        }
-                    };
-                }
-
-                RatingType ratingType = MmrService.GetRatingType(replayDsrDto);
-
-                if (ratingType == RatingType.Cmdr)
-                {
-                    if (ratingMemory.CmdrRavenRating == null)
-                    {
-                        //ToDo
-                        ratingMemory.CmdrRavenRating = new RavenRating();
-                    }
-
-                    calcRatings[ratingType].Add(ratingMemory.RavenPlayer.ToonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.CmdrRavenRating, mmrOptions));
-                }
-                else if (ratingType == RatingType.Std)
-                {
-                    if (ratingMemory.StdRavenRating == null)
-                    {
-                        //ToDo
-                        ratingMemory.StdRavenRating = new RavenRating();
-                    }
-
-                    calcRatings[ratingType].Add(ratingMemory.RavenPlayer.ToonId, GetCalcRating(ratingMemory.RavenPlayer, ratingMemory.StdRavenRating, mmrOptions));
-                }
-            }
-        }
-
-        return await Task.FromResult(calcRatings);
     }
 
     private static CalcRating GetCalcRating(RavenPlayer ravenPlayer, RavenRating ravenRating, MmrOptions mmrOptions)
@@ -134,94 +78,46 @@ public partial class RatingRepository : IRatingRepository
 
     public async Task<RavenPlayerDetailsDto> GetPlayerDetails(int toonId, CancellationToken token = default)
     {
-        if (RatingMemory.ContainsKey(toonId))
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var ratings = await context.PlayerRatings
+            .Include(i => i.Player)
+            .Where(x => x.Player != null && x.Player.ToonId == toonId)
+            .ToListAsync(token);
+
+        if (!ratings.Any())
         {
-            var ratingMemory = RatingMemory[toonId];
-            RavenPlayerDetailsDto dto = new()
-            {
-                Name = ratingMemory.RavenPlayer.Name,
-                ToonId = ratingMemory.RavenPlayer.ToonId,
-                RegionId = ratingMemory.RavenPlayer.RegionId,
-                IsUploader = ratingMemory.RavenPlayer.IsUploader,
-            };
-
-            if (ratingMemory.CmdrRavenRating != null)
-            {
-                dto.Ratings.Add(new()
-                {
-                    Type = ratingMemory.CmdrRavenRating.Type,
-                    Games = ratingMemory.CmdrRavenRating.Games,
-                    Wins = ratingMemory.CmdrRavenRating.Wins,
-                    Mvp = ratingMemory.CmdrRavenRating.Mvp,
-                    TeamGames = ratingMemory.CmdrRavenRating.TeamGames,
-                    Main = ratingMemory.CmdrRavenRating.Main,
-                    MainPercentage = ratingMemory.CmdrRavenRating.MainPercentage,
-                    Mmr = ratingMemory.CmdrRavenRating.Mmr,
-                    MmrOverTime = ratingMemory.CmdrRavenRating.MmrOverTime,
-                });
-            }
-
-            if (ratingMemory.StdRavenRating != null)
-            {
-                dto.Ratings.Add(new()
-                {
-                    Type = ratingMemory.StdRavenRating.Type,
-                    Games = ratingMemory.StdRavenRating.Games,
-                    Wins = ratingMemory.StdRavenRating.Wins,
-                    Mvp = ratingMemory.StdRavenRating.Mvp,
-                    TeamGames = ratingMemory.StdRavenRating.TeamGames,
-                    Main = ratingMemory.StdRavenRating.Main,
-                    MainPercentage = ratingMemory.StdRavenRating.MainPercentage,
-                    Mmr = ratingMemory.StdRavenRating.Mmr,
-                    MmrOverTime = ratingMemory.StdRavenRating.MmrOverTime,
-                });
-            }
-            return dto;
+            return new RavenPlayerDetailsDto();
         }
-        else
-        {
-            using var scope = scopeFactory.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-            var ratings = await context.PlayerRatings
-                .Include(i => i.Player)
-                .Where(x => x.Player != null && x.Player.ToonId == toonId)
-                .ToListAsync(token);
-
-            if (!ratings.Any())
-            {
-                return new RavenPlayerDetailsDto();
-            }
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
-            RavenPlayerDetailsDto dto = new()
-            {
-                Name = ratings.First().Player.Name,
-                ToonId = ratings.First().Player.ToonId,
-                RegionId = ratings.First().Player.RegionId,
-                IsUploader = ratings.First().IsUploader,
-            };
+        RavenPlayerDetailsDto dto = new()
+        {
+            Name = ratings.First().Player.Name,
+            ToonId = ratings.First().Player.ToonId,
+            RegionId = ratings.First().Player.RegionId,
+            IsUploader = ratings.First().IsUploader,
+        };
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
 
-            foreach (var rating in ratings)
+        foreach (var rating in ratings)
+        {
+            dto.Ratings.Add(new()
             {
-                dto.Ratings.Add(new()
-                {
-                    Type = rating.RatingType,
-                    Pos = rating.Pos,
-                    Games = rating.Games,
-                    Wins = rating.Wins,
-                    Mvp = rating.Mvp,
-                    TeamGames = rating.TeamGames,
-                    Main = rating.Main,
-                    MainPercentage = rating.Games == 0 ? 0 : Math.Round(rating.MainCount * 100.0 / rating.Games, 2),
-                    Mmr = rating.Rating,
-                    MmrOverTime = rating.MmrOverTime,
-                });
-            }
-            return dto;
-
+                Type = rating.RatingType,
+                Pos = rating.Pos,
+                Games = rating.Games,
+                Wins = rating.Wins,
+                Mvp = rating.Mvp,
+                TeamGames = rating.TeamGames,
+                Main = rating.Main,
+                MainPercentage = rating.Games == 0 ? 0 : Math.Round(rating.MainCount * 100.0 / rating.Games, 2),
+                Mmr = rating.Rating,
+                MmrOverTime = rating.MmrOverTime,
+            });
         }
+        return dto;
     }
 
     public async Task<List<MmrDevDto>> GetRatingsDeviation()
@@ -376,19 +272,3 @@ public partial class RatingRepository : IRatingRepository
     }
 }
 
-internal record RatingMemory
-{
-    public RavenPlayer RavenPlayer { get; set; } = null!;
-    public RavenRating? CmdrRavenRating { get; set; }
-    public RavenRating? StdRavenRating { get; set; }
-}
-
-internal record MmrChangesList
-{
-    public int ReplayId { get; init; }
-    public int ReplayPlayerId { get; init; }
-    public string Name { get; init; } = "Anonymous";
-    public Commander Commander { get; init; }
-    public int Pos { get; init; }
-    public double MmrChange { get; init; }
-}
