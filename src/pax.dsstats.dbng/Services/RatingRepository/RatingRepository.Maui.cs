@@ -56,7 +56,7 @@ public partial class RatingRepository
         await transaction.CommitAsync();
 
         await SetPlayerRatingPos();
-        // await SetMauiRatingChange(); TODO - FIX COUNT
+        await SetMauiRatingChange();
 
         return new();
     }
@@ -114,22 +114,22 @@ public partial class RatingRepository
                 };
 
                 var fromDate = GetRatingChangesFromDate(request.TimePeriod);
-                
 
                 var statsQuery = from r in context.Replays
-                                 from rpr in r.ReplayRatingInfo.RepPlayerRatings
-                                 from rp in r.ReplayPlayers
-                                 from pr in rp.Player.PlayerRatings
-                                 where r.GameTime > fromDate
-                                   && pr.RatingType == request.RatingType
-                                 group new { rp.Player, pr, rpr } by new { rp.Player.PlayerId, pr.PlayerRatingId }
-                                 into g
-                                 where g.Count() > GetRatingChangeLimit(request.TimePeriod)
-                                 select new
-                                 {
-                                     g.Key.PlayerRatingId,
-                                     RatingChange = MathF.Round(g.Sum(s => s.rpr.RatingChange), 2)
-                                 };
+                          from rr in context.ReplayPlayers.Where(x => x.ReplayId == r.ReplayId)
+                          from pr in rr.ReplayPlayerRatingInfo.ReplayPlayer.Player.PlayerRatings
+                          where r.GameTime > fromDate
+                            && pr.RatingType == request.RatingType
+                          group new { rr.ReplayPlayerRatingInfo.ReplayPlayer.Player, pr, rr }
+                            by new { rr.ReplayPlayerRatingInfo.ReplayPlayer.Player.PlayerId, pr.PlayerRatingId }
+                            into g
+                          where g.Count() > GetRatingChangeLimit(request.TimePeriod)
+                          select new
+                          {
+                              g.Key.PlayerId,
+                              g.Key.PlayerRatingId,
+                              RatingChange = MathF.Round(g.Sum(s => s.rr.ReplayPlayerRatingInfo.RatingChange), 2)
+                          };
 
                 var stats = await statsQuery.ToListAsync();
 
