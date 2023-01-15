@@ -16,7 +16,7 @@ namespace MysqlMigrations.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.12")
+                .HasAnnotation("ProductVersion", "6.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("ReplayUploader", b =>
@@ -259,6 +259,32 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("RatingType");
 
                     b.ToTable("PlayerRatings");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.PlayerRatingChange", b =>
+                {
+                    b.Property<int>("PlayerRatingChangeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<float>("Change10d")
+                        .HasColumnType("float");
+
+                    b.Property<float>("Change24h")
+                        .HasColumnType("float");
+
+                    b.Property<float>("Change30d")
+                        .HasColumnType("float");
+
+                    b.Property<int>("PlayerRatingId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PlayerRatingChangeId");
+
+                    b.HasIndex("PlayerRatingId")
+                        .IsUnique();
+
+                    b.ToTable("PlayerRatingChanges");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.PlayerUpgrade", b =>
@@ -895,6 +921,17 @@ namespace MysqlMigrations.Migrations
                     b.Navigation("Player");
                 });
 
+            modelBuilder.Entity("pax.dsstats.dbng.PlayerRatingChange", b =>
+                {
+                    b.HasOne("pax.dsstats.dbng.PlayerRating", "PlayerRating")
+                        .WithOne("PlayerRatingChange")
+                        .HasForeignKey("pax.dsstats.dbng.PlayerRatingChange", "PlayerRatingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PlayerRating");
+                });
+
             modelBuilder.Entity("pax.dsstats.dbng.PlayerUpgrade", b =>
                 {
                     b.HasOne("pax.dsstats.dbng.ReplayPlayer", "ReplayPlayer")
@@ -1027,6 +1064,11 @@ namespace MysqlMigrations.Migrations
                     b.Navigation("PlayerRatings");
 
                     b.Navigation("ReplayPlayers");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.PlayerRating", b =>
+                {
+                    b.Navigation("PlayerRatingChange");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Replay", b =>

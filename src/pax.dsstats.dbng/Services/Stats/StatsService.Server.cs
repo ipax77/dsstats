@@ -70,6 +70,7 @@ public partial class StatsService
 
     private async Task GetMostRatingGainedReplay(DateTime fromDate)
     {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
         var ratingStats = from r in context.Replays
                           where r.GameTime > fromDate
                             && r.ReplayRatingInfo.RatingType == RatingType.Cmdr
@@ -78,6 +79,7 @@ public partial class StatsService
                           {
                               g.Key,
                           };
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
         var l = await ratingStats.ToListAsync();
     }

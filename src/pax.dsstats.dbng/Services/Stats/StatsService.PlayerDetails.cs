@@ -22,7 +22,6 @@ public partial class StatsService
                 .ToListAsync(token),
             GameModes = await GetGameModeCounts(toonIds, token),
             Matchups = await GetPlayerMatchups(toonIds, ratingType, token),
-            PlayerRatingChanges = await GetRatingChanges(toonIds, token)
         };
     }
 
@@ -140,7 +139,7 @@ public partial class StatsService
         }).ToList();
     }
 
-    private async Task<List<PlayerRatingChange>> GetRatingChanges(List<int> toonIds, CancellationToken token)
+    private async Task<List<shared.PlayerRatingChange>> GetRatingChanges(List<int> toonIds, CancellationToken token)
     {
         DateTime fromDate = DateTime.Today.AddDays(-30);
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -151,7 +150,7 @@ public partial class StatsService
                           && toonIds.Contains(p.ToonId)
                           && rp.ReplayPlayerRatingInfo != null
                         group rp.ReplayPlayerRatingInfo by rp.ReplayPlayerRatingInfo.ReplayRatingInfo.RatingType into g
-                        select new PlayerRatingChange
+                        select new shared.PlayerRatingChange
                         {
                             RatingType = g.Key,
                             Count = g.Count(),

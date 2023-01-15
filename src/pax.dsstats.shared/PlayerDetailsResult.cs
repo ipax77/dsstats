@@ -6,8 +6,6 @@ public record PlayerDetailsResult
     public List<PlayerRatingDetailDto> Ratings { get; init; } = new();
     public List<PlayerGameModeResult> GameModes { get; init; } = new();
     public List<PlayerMatchupInfo> Matchups { get; set; } = new();
-    public List<PlayerRatingChange> PlayerRatingChanges { get; init; } = new();
-
 }
 
 public record PlayerRatingChange

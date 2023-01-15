@@ -150,13 +150,11 @@
                                             <small class="text-white-50">past 30 days</small>
                                         </td>
                                         <td colspan="2">
-                                            @if (ratingChange != null)
+                                            @if (interestRating.PlayerRatingChange != null)
                                             {
-                                                <span class="@(ratingChange.Sum >= 0 ? "oi oi-arrow-top text-success" : "oi oi-arrow-bottom text-danger")">
-                                                    @ratingChange.Sum.ToString("N2", CultureInfo.InvariantCulture)
+                                                <span class="@(interestRating.PlayerRatingChange.Change30d >= 0 ? "oi oi-arrow-top text-success" : "oi oi-arrow-bottom text-danger")">
+                                                    @interestRating.PlayerRatingChange.Change30d.ToString("N2", CultureInfo.InvariantCulture)
                                                 </span>
-                                                <br />
-                                                <small class="text-white-50">@ratingChange.Count Games</small>
                                             }
                                         </td>
                                     </tr>

@@ -20,4 +20,5 @@ public interface IRatingRepository
     Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token);
     Task<int> GetRatingChangesCount(RatingChangesRequest request, CancellationToken token);
     Task<RatingChangesResult> GetRatingChanges(RatingChangesRequest request, CancellationToken token);
+    Task SeedRatingChanges();
 }

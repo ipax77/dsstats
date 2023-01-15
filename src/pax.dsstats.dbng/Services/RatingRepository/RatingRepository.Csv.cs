@@ -262,6 +262,7 @@ public partial class RatingRepository
         await command.ExecuteNonQueryAsync();
 
         await SetPlayerRatingsPos();
+        await SetRatingChange();
     }
 
     private async Task ReplayRatingsFromCsv2MySql(string csvBasePath)
@@ -384,6 +385,15 @@ public partial class RatingRepository
         await connection.OpenAsync();
         var command = connection.CreateCommand();
         command.CommandText = "CALL SetPlayerRatingPos();";
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private async Task SetRatingChange()
+    {
+        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        await connection.OpenAsync();
+        var command = connection.CreateCommand();
+        command.CommandText = "CALL SetRatingChange();";
         await command.ExecuteNonQueryAsync();
     }
 }
