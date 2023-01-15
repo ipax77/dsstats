@@ -13,6 +13,7 @@ public record PlayerRatingDto
     public int MainCount { get; init; }
     public Commander Main { get; init; }
     public PlayerRatingPlayerDto Player { get; init; } = null!;
+    public PlayerRatingChangeDto? PlayerRatingChange { get; init; }
 }
 
 public record PlayerRatingPlayerDto
@@ -38,6 +39,7 @@ public record PlayerRatingDetailDto
     public bool IsUploader { get; set; }
     public string MmrOverTime { get; set; } = "";
     public PlayerRatingPlayerDto Player { get; init; } = null!;
+    public PlayerRatingChangeDto? PlayerRatingChange { get; init; }
     [NotMapped]
     public double MmrChange { get; set; }
     [NotMapped]
@@ -55,4 +57,11 @@ public record PlayerRatingInfoDto
     public int TeamGames { get; init; }
     public int MainCount { get; init; }
     public Commander Main { get; init; }
+}
+
+public record PlayerRatingChangeDto
+{
+    public float Change24h { get; set; }
+    public float Change10d { get; set; }
+    public float Change30d { get; set; }
 }

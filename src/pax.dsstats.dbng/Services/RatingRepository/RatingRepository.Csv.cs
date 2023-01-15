@@ -249,7 +249,9 @@ public partial class RatingRepository
         var command = connection.CreateCommand();
         command.CommandText =
         $@"
+            SET FOREIGN_KEY_CHECKS = 0;
             TRUNCATE TABLE {nameof(ReplayContext.PlayerRatings)};
+            SET FOREIGN_KEY_CHECKS = 1;
             LOAD DATA INFILE '{csvFile}'
             INTO TABLE {nameof(ReplayContext.PlayerRatings)}
             COLUMNS TERMINATED BY ','
@@ -262,6 +264,7 @@ public partial class RatingRepository
         await command.ExecuteNonQueryAsync();
 
         await SetPlayerRatingsPos();
+        await SetRatingChange();
     }
 
     private async Task ReplayRatingsFromCsv2MySql(string csvBasePath)
@@ -384,6 +387,15 @@ public partial class RatingRepository
         await connection.OpenAsync();
         var command = connection.CreateCommand();
         command.CommandText = "CALL SetPlayerRatingPos();";
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private async Task SetRatingChange()
+    {
+        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        await connection.OpenAsync();
+        var command = connection.CreateCommand();
+        command.CommandText = "CALL SetRatingChange();";
         await command.ExecuteNonQueryAsync();
     }
 }

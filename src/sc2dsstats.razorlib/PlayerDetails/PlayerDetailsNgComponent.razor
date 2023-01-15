@@ -143,6 +143,21 @@
                                         <td>Confidence</td>
                                         <td colspan="2">@interestRating.Confidence.ToString("N2", CultureInfo.InvariantCulture)</td>
                                     </tr>
+                                    <tr>
+                                        <td>
+                                            Rating Change
+                                            <br />
+                                            <small class="text-white-50">past 30 days</small>
+                                        </td>
+                                        <td colspan="2">
+                                            @if (interestRating.PlayerRatingChange != null)
+                                            {
+                                                <span class="@(interestRating.PlayerRatingChange.Change30d >= 0 ? "oi oi-arrow-top text-success" : "oi oi-arrow-bottom text-danger")">
+                                                    @interestRating.PlayerRatingChange.Change30d.ToString("N2", CultureInfo.InvariantCulture)
+                                                </span>
+                                            }
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>

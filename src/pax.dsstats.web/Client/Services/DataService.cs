@@ -589,4 +589,50 @@ public class DataService : IDataService
         }
         return new();
     }
+
+    public async Task<int> GetRatingChangesCount(RatingChangesRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{ratingController}GetRatingChangesCount", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<int>(cancellationToken: token);
+            }
+            else
+            {
+                logger.LogError($"failed getting ratingchangescount: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting ratingChanges count: {e.Message}");
+        }
+        return new();
+    }
+
+    public async Task<RatingChangesResult> GetRatingChanges(RatingChangesRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{ratingController}GetRatingChanges", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<RatingChangesResult>(cancellationToken: token) ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting ratingChanges: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting ratingChanges: {e.Message}");
+        }
+        return new();
+    }
 }

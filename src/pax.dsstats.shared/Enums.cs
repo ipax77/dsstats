@@ -85,3 +85,11 @@ public enum LeaverType
     TwoSameTeam = 3,
     MoreThanTwo = 4
 }
+
+public enum RatingChangeTimePeriod
+{
+    None = 0,
+    Past24h = 1,
+    Past10Days = 2,
+    Past30Days = 3
+}

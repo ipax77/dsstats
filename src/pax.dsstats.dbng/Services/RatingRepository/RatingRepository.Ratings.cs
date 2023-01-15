@@ -26,13 +26,15 @@ public partial class RatingRepository
         var ratings = GetRequestRatingsQueirable(context, request);
         ratings = SortPlayerRatings(request, ratings);
 
-        return new()
-        {
-            Players = await ratings
+        var lratings = await ratings
             .Skip(request.Skip)
             .Take(request.Take)
             .ProjectTo<PlayerRatingDto>(mapper.ConfigurationProvider)
-            .ToListAsync(token)
+            .ToListAsync(token);
+
+        return new()
+        {
+            Players = lratings
         };
     }
 

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using pax.dsstats.shared;
 
@@ -55,6 +56,7 @@ public partial class RatingRepository
         await transaction.CommitAsync();
 
         await SetPlayerRatingPos();
+        // await SetMauiRatingChange(); TODO - FIX COUNT
 
         return new();
     }
@@ -82,6 +84,86 @@ public partial class RatingRepository
             ";
 
             await command.ExecuteNonQueryAsync();
+        }
+    }
+
+    private async Task SetMauiRatingChange()
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        Dictionary<int, PlayerRatingChange> ratingChanges = new();
+
+        foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+        {
+            if (ratingType == RatingType.None)
+            {
+                continue;
+            }
+            foreach (RatingChangeTimePeriod timePeriod in Enum.GetValues(typeof(RatingChangeTimePeriod)))
+            {
+                if (timePeriod == RatingChangeTimePeriod.None)
+                {
+                    continue;
+                }
+
+                RatingChangesRequest request = new()
+                {
+                    RatingType = ratingType,
+                    TimePeriod = timePeriod
+                };
+
+                var fromDate = GetRatingChangesFromDate(request.TimePeriod);
+                
+
+                var statsQuery = from r in context.Replays
+                                 from rpr in r.ReplayRatingInfo.RepPlayerRatings
+                                 from rp in r.ReplayPlayers
+                                 from pr in rp.Player.PlayerRatings
+                                 where r.GameTime > fromDate
+                                   && pr.RatingType == request.RatingType
+                                 group new { rp.Player, pr, rpr } by new { rp.Player.PlayerId, pr.PlayerRatingId }
+                                 into g
+                                 where g.Count() > GetRatingChangeLimit(request.TimePeriod)
+                                 select new
+                                 {
+                                     g.Key.PlayerRatingId,
+                                     RatingChange = MathF.Round(g.Sum(s => s.rpr.RatingChange), 2)
+                                 };
+
+                var stats = await statsQuery.ToListAsync();
+
+                foreach (var stat in stats)
+                {
+                    if (!ratingChanges.TryGetValue(stat.PlayerRatingId, out PlayerRatingChange? change))
+                    {
+                        change = ratingChanges[stat.PlayerRatingId] = new PlayerRatingChange()
+                        {
+                            PlayerRatingId = stat.PlayerRatingId
+                        };
+                    }
+
+                    if (request.TimePeriod == RatingChangeTimePeriod.Past24h)
+                    {
+                        change.Change24h = stat.RatingChange;
+                    }
+                    else if (request.TimePeriod == RatingChangeTimePeriod.Past10Days)
+                    {
+                        change.Change10d = stat.RatingChange;
+                    }
+                    else
+                    {
+                        change.Change30d = stat.RatingChange;
+                    }
+                }
+            }
+        }
+
+        await DeletePlayerRatingChangesTable();
+        if (ratingChanges.Any())
+        {
+            context.PlayerRatingChanges.AddRange(ratingChanges.Values);
+            await context.SaveChangesAsync();
         }
     }
 
@@ -165,6 +247,15 @@ public partial class RatingRepository
         await connection.OpenAsync();
 
         using var delCommand = new SqliteCommand($"DELETE FROM {nameof(ReplayContext.ReplayRatings)};", connection);
+        await delCommand.ExecuteNonQueryAsync();
+    }
+
+    private async Task DeletePlayerRatingChangesTable()
+    {
+        using var connection = new SqliteConnection(Data.SqliteConnectionString);
+        await connection.OpenAsync();
+
+        using var delCommand = new SqliteCommand($"DELETE FROM {nameof(ReplayContext.PlayerRatingChanges)};", connection);
         await delCommand.ExecuteNonQueryAsync();
     }
 }
