@@ -8,7 +8,9 @@ namespace MysqlMigrations.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            var sp = @"CREATE OR REPLACE PROCEDURE `SetRatingChange`()
+            var sp = @"
+	DROP PROCEDURE IF EXISTS SetRatingChange;
+	CREATE PROCEDURE `SetRatingChange`()
 BEGIN
 	declare ratingType_counter int unsigned default 1;
 	declare timePeriod_counter int unsigned default 1;
