@@ -245,13 +245,24 @@ public class DecodeService : IDisposable
 
             if (potentialMmrContinue && newReplays.Any())
             {
-                var newReplaysDsRDto = newReplays.AsQueryable().ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider).ToList();
-                await mmrProduceService.ProduceRatings(new(reCalc: false), latestReplay, newReplaysDsRDto);
-                if (newReplays.Count == 1)
+                if (UserSettingsService.UserSettings.DoV1_1_2_Init)
                 {
-                    LastReplayToonIds = GetPlayerToonIds(newReplays.First());
+                    UserSettingsService.UserSettings.DoV1_1_2_Init = false;
+                    var userSettingsService = scope.ServiceProvider.GetRequiredService<UserSettingsService>();
+                    await userSettingsService.Save();
+
+                    await mmrProduceService.ProduceRatings(new(reCalc: true));
                 }
-                newReplays = new();
+                else
+                {
+                    var newReplaysDsRDto = newReplays.AsQueryable().ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider).ToList();
+                    await mmrProduceService.ProduceRatings(new(reCalc: false), latestReplay, newReplaysDsRDto);
+                    if (newReplays.Count == 1)
+                    {
+                        LastReplayToonIds = GetPlayerToonIds(newReplays.First());
+                    }
+                    newReplays = new();
+                }
             }
             else
             {

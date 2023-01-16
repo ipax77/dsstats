@@ -313,6 +313,7 @@ public record UserSettings
     public DateTime UploadAskTime { get; set; }
     public bool CheckForUpdates { get; set; } = true;
     public bool DoV1_0_8_Init { get; set; } = true;
+    public bool DoV1_1_2_Init { get; set; } = true;
 }
 
 public record BattleNetInfo
