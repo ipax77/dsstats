@@ -63,6 +63,7 @@ public partial class RatingRepository
         await transaction.CommitAsync();
 
         await SetPlayerRatingsPos();
+        await SetRatingChange();
         return new();
     }
 

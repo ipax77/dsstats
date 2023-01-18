@@ -281,4 +281,14 @@ public partial class DataService : IDataService
             return new();
         }
     }
+
+    public async Task<int> GetRatingChangesCount(RatingChangesRequest request, CancellationToken token)
+    {
+        return await Task.FromResult(0);
+    }
+
+    public async Task<RatingChangesResult> GetRatingChanges(RatingChangesRequest request, CancellationToken token)
+    {
+        return await Task.FromResult(new RatingChangesResult());
+    }
 }

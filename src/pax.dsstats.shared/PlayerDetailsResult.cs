@@ -6,7 +6,13 @@ public record PlayerDetailsResult
     public List<PlayerRatingDetailDto> Ratings { get; init; } = new();
     public List<PlayerGameModeResult> GameModes { get; init; } = new();
     public List<PlayerMatchupInfo> Matchups { get; set; } = new();
+}
 
+public record PlayerRatingChange
+{
+    public RatingType RatingType { get; init; }
+    public int Count { get; init; }
+    public float Sum { get; init; }
 }
 
 public record PlayerDetailsGroupResult

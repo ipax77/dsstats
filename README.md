@@ -33,6 +33,7 @@ We really like people helping us with the project. Nevertheless, take your time 
 >- TimePeriods refactoring - new TimePeriod "Past 90 Days" is default, now
 >- Std-Teams details ordering fixed
 >- Replay Rating Info
+>- Player rating changes (past 24h, 10 days, 30 days)
 
 </details>
 

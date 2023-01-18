@@ -164,7 +164,7 @@ namespace dsstats.cli.MmrService
             }
 
             var mmrIdRatings = await produceService.GetMmrIdRatings(mmrOptions, ratingRepository, dependentReplays);
-            int mmrChangesAppendId = await produceService.GetMmrChangesAppendId(mmrOptions);
+            (int mmrChangesAppendId, var bab) = await produceService.GetMmrChangesAppendId(mmrOptions);
 
             if (mmrOptions.ReCalc)
             {
@@ -172,6 +172,7 @@ namespace dsstats.cli.MmrService
             }
 
             (latestReplay, var replayDatas) = await produceService.ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrChangesAppendId, latestReplay, endTime, dry: true);
+            (latestReplay, List<ReplayData> replayDatas) = await produceService.ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrChangesAppendId, bab, latestReplay, endTime);
 
             await produceService.SaveCommanderMmrsDic(cmdrMmrDic);
             sw.Stop();

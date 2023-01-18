@@ -204,8 +204,8 @@ public partial class RatingRepository : IRatingRepository
     {
         if (Data.IsMaui)
         {
-            var appendId = await MauiUpdateMmrChanges(replayRatingDtos, replayAppendId);
-            return (appendId, appendId);
+            (replayAppendId, playerAppendId) = await MauiUpdateMmrChanges(replayRatingDtos, replayAppendId, playerAppendId);
+            return (replayAppendId, playerAppendId);
         }
         else
         {

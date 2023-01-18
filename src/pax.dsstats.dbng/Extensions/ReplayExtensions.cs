@@ -1,4 +1,5 @@
 
+using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using System.Security.Cryptography;
 using System.Text;
@@ -133,6 +134,17 @@ public static class ReplayExtensions
         sb.Append(crossTableRequest.TimePeriod);
         sb.Append(crossTableRequest.Mode);
         sb.Append(crossTableRequest.TeMaps);
+        return sb.ToString();
+    }
+
+    public static string GenMemKey(this RatingChangesRequest ratingChangesRequest)
+    {
+        var fromDate = RatingRepository.GetRatingChangesFromDate(ratingChangesRequest.TimePeriod);
+        var sb = new StringBuilder();
+        sb.Append("ratingChange");
+        sb.Append(fromDate.ToString("yyyyMMdd"));
+        sb.Append(ratingChangesRequest.RatingType.ToString());
+        sb.Append(ratingChangesRequest.TimePeriod.ToString());
         return sb.ToString();
     }
 

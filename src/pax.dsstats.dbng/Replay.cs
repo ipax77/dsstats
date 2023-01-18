@@ -101,8 +101,19 @@ public class PlayerRating
     public double Consistency { get; set; }
     public double Confidence { get; set; }
     public bool IsUploader { get; set; }
+    public PlayerRatingChange? PlayerRatingChange { get; set; }
     public int PlayerId { get; set; }
     public virtual Player Player { get; set; } = null!;
+}
+
+public class PlayerRatingChange
+{
+    public int PlayerRatingChangeId { get; set; }
+    public float Change24h { get; set; }
+    public float Change10d { get; set; }
+    public float Change30d { get; set; }
+    public int PlayerRatingId { get; set; }
+    public PlayerRating PlayerRating { get; set; } = null!;
 }
 
 public class Event

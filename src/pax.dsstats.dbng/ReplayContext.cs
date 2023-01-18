@@ -9,6 +9,7 @@ public class ReplayContext : DbContext
     public virtual DbSet<Player> Players { get; set; } = null!;
     public virtual DbSet<NoUploadResult> NoUploadResults { get; set; } = null!;
     public virtual DbSet<PlayerRating> PlayerRatings { get; set; } = null!;
+    public virtual DbSet<PlayerRatingChange> PlayerRatingChanges { get; set; } = null!;
     public virtual DbSet<Replay> Replays { get; set; } = null!;
     public virtual DbSet<ReplayPlayer> ReplayPlayers { get; set; } = null!;
     public virtual DbSet<ReplayRating> ReplayRatings { get; set; } = null!;
