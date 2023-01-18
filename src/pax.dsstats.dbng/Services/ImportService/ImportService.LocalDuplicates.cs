@@ -63,12 +63,15 @@ public partial class ImportService
         {
             if (!DuplicateIsPlausible(replay, dupReplay))
             {
+                logger.LogWarning($"false positive duplicate (gametime)? {dupReplay.ReplayHash}");
+                replay.ReplayPlayers.ToList().ForEach(f => f.LastSpawnHash = null);
                 continue;
             }
 
             var syncedReplayPlayers = SyncReplayPlayers(replayPlayers, dupReplay.ReplayPlayers.ToList());
             if (!syncedReplayPlayers.Any())
             {
+                replay.ReplayPlayers.ToList().ForEach(f => f.LastSpawnHash = null);
                 logger.LogWarning($"false positive duplicate (dtoPlayer)? {dupReplay.ReplayHash}");
                 continue;
             }
