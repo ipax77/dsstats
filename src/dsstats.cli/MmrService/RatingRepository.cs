@@ -24,6 +24,16 @@ namespace dsstats.cli.MmrService
             throw new NotImplementedException();
         }
 
+        public Task<RatingChangesResult> GetRatingChanges(RatingChangesRequest request, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<int> GetRatingChangesCount(RatingChangesRequest request, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
         public Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token)
         {
             throw new NotImplementedException();
@@ -74,6 +84,11 @@ namespace dsstats.cli.MmrService
             throw new NotImplementedException();
         }
 
+        public Task SeedRatingChanges()
+        {
+            throw new NotImplementedException();
+        }
+
         public Task SetReplayListMmrChanges(List<ReplayListDto> replays, string? searchPlayer = null, CancellationToken token = default)
         {
             throw new NotImplementedException();
@@ -87,6 +102,11 @@ namespace dsstats.cli.MmrService
         public Task<int> UpdateMmrChanges(List<MmrChange> replayPlayerMmrChanges, int appendId, string csvBasePath = "/data/mysqlfiles")
         {
             return Task.FromResult(0);
+        }
+
+        public Task<(int, int)> UpdateMmrChanges(List<ReplayRatingDto> replayRatingDtos, int replayAppendId, int playerAppendId, string csvBasePath = "/data/mysqlfiles")
+        {
+            throw new NotImplementedException();
         }
 
         public Task<UpdateResult> UpdateRavenPlayers(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings, bool continueCalc, string csvBasePath = "/data/mysqlfiles")
