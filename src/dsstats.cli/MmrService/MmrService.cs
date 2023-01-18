@@ -171,8 +171,7 @@ namespace dsstats.cli.MmrService
                 latestReplay = startTime;
             }
 
-            (latestReplay, var replayDatas) = await produceService.ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrChangesAppendId, latestReplay, endTime, dry: true);
-            (latestReplay, List<ReplayData> replayDatas) = await produceService.ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrChangesAppendId, bab, latestReplay, endTime);
+            (latestReplay, var replayDatas) = await produceService.ProduceRatings(mmrOptions, cmdrMmrDic, mmrIdRatings, ratingRepository, mmrChangesAppendId, bab, latestReplay, endTime, dry: true);
 
             await produceService.SaveCommanderMmrsDic(cmdrMmrDic);
             sw.Stop();
