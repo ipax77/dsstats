@@ -77,20 +77,6 @@ class Program
                 WriteHowToUse();
             }
         }
-        else if (args[0] == "mmr")
-        {
-            var mmrService = new MmrService.MmrService();
-
-            if (args[1] == "accuracy")
-            {
-                var results = await mmrService.DerivationTest();
-            }
-            else
-            {
-                WriteHowToUse();
-                return;
-            }
-        }
         else
         {
             if (args.Length > 0)
@@ -127,7 +113,6 @@ class Program
         Console.WriteLine("  decode <replayPath> <outputPath>");
         Console.WriteLine("  unzip <base64Zipfile> <outputPath>");
         Console.WriteLine("  tourneyjob <int:cpuCoresToUse>");
-        Console.WriteLine("  mmr <string:mode> (accuracy, ...)");
     }
 
     private static async Task Unzip(string base64Zipfile, string outputPath)
