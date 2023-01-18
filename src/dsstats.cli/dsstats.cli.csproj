@@ -1,6 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <Compile Remove="MmrService\**" />
+    <EmbeddedResource Remove="MmrService\**" />
+    <None Remove="MmrService\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\pax.dsstats.dbng\pax.dsstats.dbng.csproj" />
     <ProjectReference Include="..\pax.dsstats.shared\pax.dsstats.shared.csproj" />
     <ProjectReference Include="..\pax.dsstats.parser\pax.dsstats.parser.csproj" />
