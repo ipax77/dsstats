@@ -118,11 +118,9 @@ public static partial class MmrService
             SetCommandersComboMmr(replayData, replayData.LoserTeamData, cmdrMmrDic);
         }
 
-        RatingType ratingType = GetRatingType(replay);
-
         var replayRatingDto = new ReplayRatingDto()
         {
-            RatingType = ratingType,
+            RatingType = GetRatingType(replay),
             LeaverType = replayData.LeaverType,
             ReplayId = replayData.ReplayId,
             RepPlayerRatings = mmrChanges1.Concat(mmrChanges2).ToList()
