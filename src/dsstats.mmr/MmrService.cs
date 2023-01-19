@@ -102,16 +102,6 @@ public static partial class MmrService
 
         SetReplayData(mmrIdRatings, replayData, cmdrMmrDic, mmrOptions);
 
-        var replayRatingDto = ProcessReplay(replayData, mmrIdRatings, cmdrMmrDic, mmrOptions);
-
-        return (replayRatingDto, replayData);
-    }
-
-    public static ReplayRatingDto ProcessReplay(ReplayData replayData,
-                                               Dictionary<int, CalcRating> mmrIdRatings,
-                                               Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
-                                               MmrOptions mmrOptions)
-    {
         CalculateRatingsDeltas(replayData, replayData.WinnerTeamData, mmrOptions);
         CalculateRatingsDeltas(replayData, replayData.LoserTeamData, mmrOptions);
 
@@ -129,12 +119,15 @@ public static partial class MmrService
             SetCommandersComboMmr(replayData, replayData.LoserTeamData, cmdrMmrDic);
         }
 
-        return new()
+
+        var replayRatingDto = new ReplayRatingDto()
         {
             LeaverType = replayData.LeaverType,
             ReplayId = replayData.ReplayId,
             RepPlayerRatings = mmrChanges1.Concat(mmrChanges2).ToList()
         };
+
+        return (replayRatingDto, replayData);
     }
 
     public static int GetMmrId(PlayerDsRDto player)
