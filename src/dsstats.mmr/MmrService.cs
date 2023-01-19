@@ -6,13 +6,11 @@ namespace dsstats.mmr;
 
 public static partial class MmrService
 {
-
     public record CalcRatingResult
     {
         public Dictionary<RatingType, Dictionary<int, CalcRating>> CalcRatings { get; set; } = new();
         public int ReplayRatingAppendId { get; set; }
         public int ReplayPlayerRatingAppendId { get; set; }
-        public List<ReplayData> ReplayData { get; set; } = new();
     }
 
     public record CalcRatingRequest
@@ -29,7 +27,6 @@ public static partial class MmrService
                                                                     IRatingRepository ratingRepository,
                                                                     bool dry = false)
     {
-        List<ReplayData> replayDatas = new();
         List<ReplayRatingDto> replayRatingDtos = new();
 
         CalcRatingResult result = new()
@@ -47,18 +44,11 @@ public static partial class MmrService
                 continue;
             }
 
-            var (replayRatingDto, replayData) = ProcessReplay(replay, request.MmrIdRatings[ratingType], request.CmdrMmrDic, request.MmrOptions);
+            var replayRatingDto = ProcessReplay(replay, request.MmrIdRatings[ratingType], request.CmdrMmrDic, request.MmrOptions);
 
             if (replayRatingDto != null)
             {
                 replayRatingDtos.Add(replayRatingDto);
-            }
-            if (dry)
-            {
-                if (replayData != null)
-                {
-                    replayDatas.Add(replayData);
-                }
             }
 
             if (!dry && replayRatingDtos.Count > 100000)
@@ -77,26 +67,25 @@ public static partial class MmrService
                 = await ratingRepository.UpdateMmrChanges(replayRatingDtos, result.ReplayRatingAppendId, result.ReplayPlayerRatingAppendId);
         }
 
-        result.ReplayData = replayDatas;
         result.CalcRatings = request.MmrIdRatings;
 
         return result;
     }
 
-    public static (ReplayRatingDto?, ReplayData?) ProcessReplay(ReplayDsRDto replay,
+    public static ReplayRatingDto? ProcessReplay(ReplayDsRDto replay,
                                             Dictionary<int, CalcRating> mmrIdRatings,
                                             Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                             MmrOptions mmrOptions)
     {
         if (replay.WinnerTeam == 0)
         {
-            return (null, null);
+            return null;
         }
 
         ReplayData replayData = new(replay);
         if (replayData.WinnerTeamData.Players.Length != 3 || replayData.LoserTeamData.Players.Length != 3)
         {
-            return (null, null);
+            return null;
         }
 
         SetReplayData(mmrIdRatings, replayData, cmdrMmrDic, mmrOptions);
@@ -126,7 +115,7 @@ public static partial class MmrService
             RepPlayerRatings = mmrChanges1.Concat(mmrChanges2).ToList()
         };
 
-        return (replayRatingDto, replayData);
+        return replayRatingDto;
     }
 
     public static int GetMmrId(PlayerDsRDto player)
