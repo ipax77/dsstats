@@ -47,26 +47,19 @@ public static partial class MmrService
                 continue;
             }
 
-            try
-            {
-                var (replayRatingDto, replayData) = ProcessReplay(replay, request.MmrIdRatings[ratingType], request.CmdrMmrDic, request.MmrOptions);
+            var (replayRatingDto, replayData) = ProcessReplay(replay, request.MmrIdRatings[ratingType], request.CmdrMmrDic, request.MmrOptions);
 
-                if (replayRatingDto != null)
-                {
-                    replayRatingDto.RatingType = ratingType;
-                    replayRatingDtos.Add(replayRatingDto);
-                }
-                if (dry)
-                {
-                    if (replayData != null)
-                    {
-                        replayDatas.Add(replayData);
-                    }
-                }
-            }
-            catch (Exception e)
+            if (replayRatingDto != null)
             {
-                Console.WriteLine(e.Message);
+                replayRatingDto.RatingType = ratingType;
+                replayRatingDtos.Add(replayRatingDto);
+            }
+            if (dry)
+            {
+                if (replayData != null)
+                {
+                    replayDatas.Add(replayData);
+                }
             }
 
             if (!dry && replayRatingDtos.Count > 100000)
