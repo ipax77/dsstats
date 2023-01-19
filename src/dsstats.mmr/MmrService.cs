@@ -119,8 +119,8 @@ public static partial class MmrService
                                                Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
                                                MmrOptions mmrOptions)
     {
-        CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.WinnerTeamData, mmrOptions);
-        CalculateRatingsDeltas(mmrIdRatings, replayData, replayData.LoserTeamData, mmrOptions);
+        CalculateRatingsDeltas(replayData, replayData.WinnerTeamData, mmrOptions);
+        CalculateRatingsDeltas(replayData, replayData.LoserTeamData, mmrOptions);
 
         if (mmrOptions.UseEquality)
         {
