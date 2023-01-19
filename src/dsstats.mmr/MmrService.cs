@@ -51,7 +51,6 @@ public static partial class MmrService
 
             if (replayRatingDto != null)
             {
-                replayRatingDto.RatingType = ratingType;
                 replayRatingDtos.Add(replayRatingDto);
             }
             if (dry)
