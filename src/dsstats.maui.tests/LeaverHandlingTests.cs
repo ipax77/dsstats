@@ -81,9 +81,7 @@ public class LeaverHandlingTests : TestWithSqlite
             mockReplay.ReplayPlayers[i] = mockReplay.ReplayPlayers[i] with { Duration = replayDto.Duration };
         }
 
-        var replayData = new ReplayData(mockReplay);
-        MmrService.SetReplayData(mmrIdRatings, replayData, new(), new(true));
-        var plChanges = MmrService.ProcessReplay(replayData, mmrIdRatings, new(), new(true));
+        var plChanges = MmrService.ProcessReplay(mockReplay, mmrIdRatings, new(), new(true));
 
         var winnerPlayers = replayDto.ReplayPlayers.Where(x => x.PlayerResult == PlayerResult.Win).ToArray();
         var loserPlayers = replayDto.ReplayPlayers.Where(x => x.PlayerResult == PlayerResult.Los).ToArray();
@@ -124,9 +122,7 @@ public class LeaverHandlingTests : TestWithSqlite
             }
         }
 
-        var replayData = new ReplayData(mockReplay);
-        MmrService.SetReplayData(mmrIdRatings, replayData, new(), new(true));
-        var plChanges = MmrService.ProcessReplay(replayData, mmrIdRatings, new(), new(true));
+        var plChanges = MmrService.ProcessReplay(mockReplay, mmrIdRatings, new(), new(true));
 
         var leaverPlayers = replayDto.ReplayPlayers.Where(x => replayData.WinnerTeamData.Players.Concat(replayData.LoserTeamData.Players).First(y => x.GamePos == y.GamePos).IsLeaver).ToArray();
         var winnerPlayers = replayDto.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Win) && !leaverPlayers.Contains(x)).ToArray();
@@ -183,9 +179,7 @@ public class LeaverHandlingTests : TestWithSqlite
             }
         }
 
-        var replayData = new ReplayData(mockReplay);
-        MmrService.SetReplayData(mmrIdRatings, replayData, new(), new(true));
-        var plChanges = MmrService.ProcessReplay(replayData, mmrIdRatings, new(), new(true));
+        var plChanges = MmrService.ProcessReplay(mockReplay, mmrIdRatings, new(), new(true));
 
         var leaverPlayers = replayDto.ReplayPlayers.Where(x => replayData.WinnerTeamData.Players.Concat(replayData.LoserTeamData.Players).First(y => x.GamePos == y.GamePos).IsLeaver).ToArray();
         var winnerPlayers = replayDto.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Win) && !leaverPlayers.Contains(x)).ToArray();
