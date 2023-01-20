@@ -181,6 +181,8 @@ public static class Data
         {
             RatingType.Cmdr => "Commanders 3v3",
             RatingType.Std => "Standard 3v3",
+            RatingType.CmdrTE => "Cmdrs 3v3 TE",
+            RatingType.StdTE => "Std 3v3 TE",
             _ => ""
         };
     }

@@ -125,7 +125,15 @@ public static partial class MmrService
 
     public static RatingType GetRatingType(ReplayDsRDto replayDsRDto)
     {
-        if (replayDsRDto.GameMode == GameMode.Commanders || replayDsRDto.GameMode == GameMode.CommandersHeroic)
+        if (replayDsRDto.TournamentEdition && replayDsRDto.GameMode == GameMode.Commanders)
+        {
+            return RatingType.CmdrTE;
+        }
+        else if (replayDsRDto.TournamentEdition && replayDsRDto.GameMode == GameMode.Standard)
+        {
+            return RatingType.StdTE;
+        }
+        else if (replayDsRDto.GameMode == GameMode.Commanders || replayDsRDto.GameMode == GameMode.CommandersHeroic)
         {
             return RatingType.Cmdr;
         }

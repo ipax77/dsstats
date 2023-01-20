@@ -53,8 +53,14 @@
                     <label class="form-label">
                         Rating Type
                         <InputSelect class="form-select" @bind-Value="RatingsRequest.Type">
-                            <option value="@RatingType.Cmdr" selected>@Data.GetRatingTypeLongName(RatingType.Cmdr)</option>
-                            <option value="@RatingType.Std">@Data.GetRatingTypeLongName(RatingType.Std)</option>
+                            @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+                            {
+                                @if (ratingType == RatingType.None)
+                                {
+                                    continue;
+                                }
+                                <option value="@ratingType">@Data.GetRatingTypeLongName(ratingType)</option>
+                            }
                         </InputSelect>
                     </label>
                 </div>

@@ -132,20 +132,31 @@ public partial class PlayerDetailsNgComponent : ComponentBase, IDisposable
     {
         if (e.Value is string value)
         {
-            if (value == "Standard")
+            if (Enum.TryParse(typeof(RatingType), value, out var ratingTypeObj)
+                && ratingTypeObj is RatingType ratingTypeValue)
             {
-                ratingType = RatingType.Std;
-                await LoadGroupData();
-                _ = LoadMatchups();
-
-            }
-            else if (value == "Commanders")
-            {
-                ratingType = RatingType.Cmdr;
+                ratingType = ratingTypeValue;
                 await LoadGroupData();
                 _ = LoadMatchups();
             }
         }
+
+        //if (e.Value is string value)
+        //{
+        //    if (value == "Standard")
+        //    {
+        //        ratingType = RatingType.Std;
+        //        await LoadGroupData();
+        //        _ = LoadMatchups();
+
+        //    }
+        //    else if (value == "Commanders")
+        //    {
+        //        ratingType = RatingType.Cmdr;
+        //        await LoadGroupData();
+        //        _ = LoadMatchups();
+        //    }
+        //}
     }
 
     private void FromServerChange(ChangeEventArgs e)

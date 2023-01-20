@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using dsstats.mmr;
-using dsstats.mmr.ProcessData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -54,13 +53,13 @@ public partial class MmrProduceService
         }
 
         latestReplay = await ProduceRatings(mmrOptions,
-                                                                            cmdrMmrDic,
-                                                                            mmrIdRatings,
-                                                                            ratingRepository,
-                                                                            replayRatingAppendId,
-                                                                            replayPlayerAppendId,
-                                                                            latestReplay,
-                                                                            endTime);
+                                            cmdrMmrDic,
+                                            mmrIdRatings,
+                                            ratingRepository,
+                                            replayRatingAppendId,
+                                            replayPlayerAppendId,
+                                            latestReplay,
+                                            endTime);
 
         await SaveCommanderMmrsDic(cmdrMmrDic);
         sw.Stop();
@@ -155,11 +154,17 @@ public partial class MmrProduceService
     {
         if (mmrOptions.ReCalc || dependentReplays == null)
         {
-            return new Dictionary<RatingType, Dictionary<int, CalcRating>>()
+            Dictionary<RatingType, Dictionary<int, CalcRating>> calcRatings = new();
+
+            foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
             {
-                { RatingType.Cmdr, new() },
-                { RatingType.Std, new() },
-            };
+                if (ratingType == RatingType.None)
+                {
+                    continue;
+                }
+                calcRatings[ratingType] = new();
+            }
+            return calcRatings;
         }
         else
         {
