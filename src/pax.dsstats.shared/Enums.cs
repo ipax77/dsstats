@@ -60,7 +60,9 @@ public enum RatingType
 {
     None = 0,
     Cmdr = 1,
-    Std = 2
+    Std = 2,
+    CmdrTE = 3,
+    StdTE = 4
 }
 
 public enum TimePeriod

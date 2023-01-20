@@ -27,7 +27,13 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v1.1.2 (web only atm)</summary>
+<details open="open"><summary>v1.1.3 (web only atm)</summary>
+
+>- Tournament Edition RatingTypes (Cmdr 3v3 TE, Std 3v3 TE)
+
+</details>
+
+<details><summary>v1.1.2</summary>
 
 >- [Leaver Handling](https://github.com/ipax77/dsstats/wiki/LeaverHandling) active
 >- TimePeriods refactoring - new TimePeriod "Past 90 Days" is default, now

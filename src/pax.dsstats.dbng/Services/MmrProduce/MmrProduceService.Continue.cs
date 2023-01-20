@@ -9,11 +9,16 @@ public partial class MmrProduceService
 {
     private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetCalcRatings(List<ReplayDsRDto> replayDsRDtos)
     {
-        Dictionary<RatingType, Dictionary<int, CalcRating>> calcRatings = new()
+        Dictionary<RatingType, Dictionary<int, CalcRating>> calcRatings = new();
+
+        foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
         {
-            { RatingType.Cmdr, new() },
-            { RatingType.Std, new() },
-        };
+            if (ratingType == RatingType.None)
+            {
+                continue;
+            }
+            calcRatings[ratingType] = new();
+        }
 
         var playerIds = replayDsRDtos
             .SelectMany(s => s.ReplayPlayers)
