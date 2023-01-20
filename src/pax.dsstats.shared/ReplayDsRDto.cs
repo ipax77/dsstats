@@ -11,6 +11,7 @@ public record ReplayDsRDto
     public int Duration { get; init; }
     public int Maxkillsum { get; init; }
     public GameMode GameMode { get; init; }
+    public bool TournamentEdition { get; init; }
     public bool ResultCorrected { get; init; }
     public List<ReplayPlayerDsRDto> ReplayPlayers { get; init; } = new();
 }

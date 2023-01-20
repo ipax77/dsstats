@@ -82,6 +82,8 @@ public partial class StatsService
         {
             RatingType.Std => 0,
             RatingType.Cmdr => 3,
+            RatingType.StdTE => 0,
+            RatingType.CmdrTE => 3,
             _ => 0
         };
 
@@ -179,14 +181,25 @@ public partial class StatsService
         {
             RatingType.Cmdr => new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic },
             RatingType.Std => new List<GameMode>() { GameMode.Standard },
+            RatingType.CmdrTE => new List<GameMode>() { GameMode.Commanders },
+            RatingType.StdTE => new List<GameMode>() { GameMode.Standard },
             _ => new List<GameMode>()
         };
+
+        bool te = ratingType switch
+        {
+            RatingType.Cmdr => false,
+            RatingType.Std => false,
+            _ => true
+        };
+
         var playerCount = 6;
 
         return context.Replays
         .Where(r => r.Playercount == playerCount
             && r.Duration >= 300
             && r.WinnerTeam > 0
+            && r.TournamentEdition == te
             && gameModes.Contains(r.GameMode))
         .AsNoTracking();
     }
