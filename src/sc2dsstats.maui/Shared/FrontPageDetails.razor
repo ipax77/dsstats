@@ -26,7 +26,7 @@
     <div>
         <PlayerDetailsNgComponent @ref="playerDetailsNgComponent"
                               RequestNames="requestNames"
-                              RatingType="@(LatestReplay?.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr)"
+                              RatingType="@ratingType"
                               ReplaysRequest="ReplaysToonIdRequest" />
     </div>
 }
@@ -40,6 +40,15 @@
     private List<RequestNames> playerNames = new();
     private int interest;
     private EditContext editContext = null!;
+    private RatingType ratingType => (LatestReplay?.GameMode, LatestReplay?.TournamentEdition) switch
+    {
+        (GameMode.Commanders, false) => RatingType.Cmdr,
+        (GameMode.CommandersHeroic, false) => RatingType.Cmdr,
+        (GameMode.Commanders, true) => RatingType.CmdrTE,
+        (GameMode.Standard, false) => RatingType.Std,
+        (GameMode.Standard, true) => RatingType.StdTE,
+        _ => RatingType.Cmdr
+    };
 
     protected override void OnInitialized()
     {
@@ -115,7 +124,8 @@
                 };
         }
         interest = requestNames.ToonId;
-        playerDetailsNgComponent?.Update(requestNames, LatestReplay?.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr);
+
+        playerDetailsNgComponent?.Update(requestNames, ratingType);
 
         await InvokeAsync(() => StateHasChanged());
     }
