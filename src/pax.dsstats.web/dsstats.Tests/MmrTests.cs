@@ -221,6 +221,11 @@ public class MmrTests
             .Where(x => x.RatingType == ratingType)
             .OrderByDescending(o => o.Rating).ThenBy(o => o.PlayerId);
 
+            if (ratings.Count() < 2)
+            {
+                continue;
+            }
+
             var firstRating = ratings.FirstOrDefault();
             var secondRating = ratings.Skip(1).FirstOrDefault();
 
