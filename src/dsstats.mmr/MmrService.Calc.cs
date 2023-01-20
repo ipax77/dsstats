@@ -8,15 +8,13 @@ namespace dsstats.mmr;
 
 public static partial class MmrService
 {
-    private static void CalculateRatingsDeltas(Dictionary<int, CalcRating> mmrIdRatings,
-                                               ReplayData replayData,
+    private static void CalculateRatingsDeltas(ReplayData replayData,
                                                TeamData teamData,
                                                MmrOptions mmrOptions)
     {
         foreach (var playerData in teamData.Players)
         {
-            var lastPlRating = mmrIdRatings[playerData.MmrId];
-            var playerImpact = GetPlayerImpact(teamData, replayData, lastPlRating, mmrOptions);
+            var playerImpact = GetPlayerImpact(playerData, teamData, replayData, mmrOptions);
 
             if (!playerData.IsLeaver)
             {
@@ -26,7 +24,7 @@ public static partial class MmrService
 
                 if (replayData.Maxleaver < 90 && mmrOptions.UseCommanderMmr)
                 {
-                    var commandersMmrImpact = (lastPlRating.Mmr / mmrOptions.StartMmr) * lastPlRating.Confidence;
+                    var commandersMmrImpact = (playerData.Mmr / mmrOptions.StartMmr) * playerData.Confidence;
                     playerData.Deltas.CommanderMmr = CalculateMmrDelta(replayData.WinnerTeamData.ExpectedResult, commandersMmrImpact, mmrOptions.EloK);
                 }
 
@@ -71,11 +69,11 @@ public static partial class MmrService
         playerData.Deltas.Confidence = 0;
     }
 
-    private static double GetPlayerImpact(TeamData teamData, ReplayData replayData, CalcRating lastPlRating, MmrOptions mmrOptions)
+    private static double GetPlayerImpact(PlayerData playerData, TeamData teamData, ReplayData replayData, MmrOptions mmrOptions)
     {
-        double factor_playerToTeamMates = PlayerToTeamMates(teamData.Mmr, lastPlRating.Mmr, teamData.Players.Length);
-        double factor_consistency = GetCorrectedRevConsistency(1 - lastPlRating.Consistency);
-        double factor_confidence = GetCorrectedConfidenceFactor(lastPlRating.Confidence, replayData.Confidence);
+        double factor_playerToTeamMates = PlayerToTeamMates(teamData.Mmr, playerData.Mmr, teamData.Players.Length);
+        double factor_consistency = GetCorrectedRevConsistency(1 - playerData.Consistency);
+        double factor_confidence = GetCorrectedConfidenceFactor(playerData.Confidence, replayData.Confidence);
 
         return 1
             * (mmrOptions.UseFactorToTeamMates ? factor_playerToTeamMates : 1.0)
