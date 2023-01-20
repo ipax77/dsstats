@@ -166,6 +166,11 @@
                 foreach (var removeCmdr in removeCmdrs)
                 {
                     await statsChartComponent.PrepareChart(StatsRequest with { Interest = removeCmdr }, true);
+
+                    if (StatsRequest.Interest == removeCmdr)
+                    {
+                        StatsRequest.Interest = Commander.None;
+                    }
                 }
             }
 
@@ -182,6 +187,8 @@
 
                 // Task.WaitAll(addTasks.ToArray());
                 await Task.WhenAll(addTasks);
+
+                StatsRequest.Interest = addCmdrs.First();
             }
 
             isLoading = false;
@@ -196,6 +203,12 @@
             isLoading = false;
             ss.Release();
         }
+
+        if (StatsRequest.Interest != Commander.None)
+        {
+            await OnRequestChanged.InvokeAsync();
+        }
+
     }
 
     public async Task LoadAddData(StatsRequest request)
