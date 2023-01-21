@@ -30,7 +30,9 @@ We really like people helping us with the project. Nevertheless, take your time 
 <details open="open"><summary>v1.1.3</summary>
 
 >- Tournament Edition RatingTypes (Cmdr 3v3 TE, Std 3v3 TE)
->- Some Info links / tooltips
+>- Some Info links / tooltips (thx to heyrandompeople)
+>- Replays filter for TE maps
+>- Maui ratings top-row limited to current player
 
 </details>
 
