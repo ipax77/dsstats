@@ -61,7 +61,7 @@
     {
         if (firstRender)
         {
-            _ = LoadData();
+            _ = LoadData(true);
         }
         base.OnAfterRender(firstRender);
     }
@@ -81,7 +81,7 @@
         _ = LoadData();
     }
 
-    private async Task LoadData()
+    private async Task LoadData(bool init = false)
     {
         if (LatestReplay == null)
         {
@@ -110,10 +110,17 @@
             }
         }
 
-        requestNames = LatestReplay.ReplayPlayers
-            .Where(x => toonIds.Contains(x.Player.ToonId))
-            .Select(s => new RequestNames() { Name = s.Name, ToonId = s.Player.ToonId })
-            .FirstOrDefault();
+        if (init)
+        {
+            requestNames = new() { Name = "PAX", ToonId = 10188255, RegionId = 1 };
+        }
+        else
+        {
+            requestNames = LatestReplay.ReplayPlayers
+                .Where(x => toonIds.Contains(x.Player.ToonId))
+                .Select(s => new RequestNames() { Name = s.Name, ToonId = s.Player.ToonId })
+                .FirstOrDefault();
+        }
 
         if (requestNames == null)
         {
@@ -135,13 +142,13 @@
         NavigationManager.NavigateTo(
             NavigationManager.GetUriWithQueryParameters("replays",
                 new Dictionary<string, object?>()
-                        {
+                            {
                     { "Players", request.Name },
                     { "ToonId", request.ToonId },
                     { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
                     { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
                     { "ToonIdName", request.ToonIdName },
-                        }
+                            }
             )
         );
     }
