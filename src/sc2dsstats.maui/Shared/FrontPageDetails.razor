@@ -33,7 +33,7 @@
 
 @code {
     [Parameter, EditorRequired]
-    public ReplayDetailsDto? LatestReplay { get; set; } = default!;
+    public ReplayDetailsDto? LatestReplay { get; set; }
 
     private PlayerDetailsNgComponent? playerDetailsNgComponent;
     private RequestNames? requestNames;
@@ -110,17 +110,10 @@
             }
         }
 
-        if (init)
-        {
-            requestNames = new() { Name = "PAX", ToonId = 10188255, RegionId = 1 };
-        }
-        else
-        {
-            requestNames = LatestReplay.ReplayPlayers
-                .Where(x => toonIds.Contains(x.Player.ToonId))
-                .Select(s => new RequestNames() { Name = s.Name, ToonId = s.Player.ToonId })
-                .FirstOrDefault();
-        }
+        requestNames = LatestReplay.ReplayPlayers
+            .Where(x => toonIds.Contains(x.Player.ToonId))
+            .Select(s => new RequestNames() { Name = s.Name, ToonId = s.Player.ToonId })
+            .FirstOrDefault();
 
         if (requestNames == null)
         {
@@ -142,13 +135,13 @@
         NavigationManager.NavigateTo(
             NavigationManager.GetUriWithQueryParameters("replays",
                 new Dictionary<string, object?>()
-                            {
+                {
                     { "Players", request.Name },
                     { "ToonId", request.ToonId },
                     { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
                     { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
                     { "ToonIdName", request.ToonIdName },
-                            }
+                }
             )
         );
     }

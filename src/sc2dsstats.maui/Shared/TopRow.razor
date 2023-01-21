@@ -1,17 +1,18 @@
 ﻿@using System.Globalization;
+@using pax.dsstats.shared;
 @using sc2dsstats.maui.Services;
 <div class="top-row bg-secondary px-4">
     <div>
         <span class="oi @(!showRatings ? "oi-chevron-top" : "oi-chevron-bottom") pointer me-2" @onclick="@(() => showRatings = !showRatings)"></span>
     </div>
     <span class="pointer badge bg-info px-1 me-1"
-        style="height: 80% !important; padding: 1rem 0; font-size: 1em;"
-        @onclick="@(() => { navigationManager.NavigateTo("replays"); })">
+          style="height: 80% !important; padding: 1rem 0; font-size: 1em;"
+          @onclick="@(() => { navigationManager.NavigateTo("replays"); })">
         Replays: @decodeService.DbReplays
     </span>
     <span class="pointer badge @(decodeService.NewReplays == 0 ? "bg-success" : "bg-warning") px-1 me-1"
-        style="height: 80% !important; padding: 1rem 0; font-size: 1em;"
-        @onclick="StartDecoding">
+          style="height: 80% !important; padding: 1rem 0; font-size: 1em;"
+          @onclick="StartDecoding">
         New Replays: @decodeService.NewReplays
     </span>
 
@@ -32,12 +33,12 @@
                 <div class="position-absolute w-100" style="height: 1rem;">
                     <div class="progress">
                         <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-                                role="progressbar"
-                                aria-label="Decode process"
-                                aria-valuenow="@(decodeEventArgs.Decoded)"
-                                aria-valuemin="0"
-                                aria-valuemax="@decodeEventArgs.Total"
-                                style="width: @(Math.Round(decodeEventArgs.Decoded * 100.0 / decodeEventArgs.Total, 2).ToString(CultureInfo.InvariantCulture))%;">
+                     role="progressbar"
+                     aria-label="Decode process"
+                     aria-valuenow="@(decodeEventArgs.Decoded)"
+                     aria-valuemin="0"
+                     aria-valuemax="@decodeEventArgs.Total"
+                     style="width: @(Math.Round(decodeEventArgs.Decoded * 100.0 / decodeEventArgs.Total, 2).ToString(CultureInfo.InvariantCulture))%;">
                             @(Math.Round(decodeEventArgs.Decoded * 100.0 / decodeEventArgs.Total, 2))%
                         </div>
                     </div>
@@ -106,7 +107,9 @@
     </div>
 </div>
 <div class="@(showRatings ? "" : "visually-hidden")">
-    <TopRowRatings @ref="topRowRatings"></TopRowRatings>
+    <CascadingValue Value="Data.MauiRequestNames">
+        <TopRowRatings @ref="topRowRatings" OnHidePlayerRatings="@(() => showRatings = false)"></TopRowRatings>
+    </CascadingValue>
 </div>
 <DecodeErrorModal @ref="decodeErrorModal"></DecodeErrorModal>
 <UploadQuestionModal @ref="uploadQuestionModal"></UploadQuestionModal>

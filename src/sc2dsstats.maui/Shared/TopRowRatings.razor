@@ -1,4 +1,5 @@
 ﻿@using System.Globalization;
+@using pax.dsstats.dbng.Repositories;
 @using pax.dsstats.shared
 @using sc2dsstats.maui.Services
 @inject IDataService dataService
@@ -11,6 +12,13 @@
         <div class="row ms-1">
             @foreach (var rating in serverRatings)
             {
+                @if (!showAll 
+                    && !(rating.Player.Name == requestNames?.Name
+                        && rating.Player.ToonId == requestNames?.ToonId
+                        && rating.Player.RegionId == requestNames?.RegionId))
+                {
+                    continue;
+                }
                 <div class="col-auto d-flex border rounded">
                     <div class="align-self-center">
                         <span class="badge text-warning ps-0" style="font-size: 1.0rem;">
@@ -39,15 +47,37 @@
                     }
                 </div>
             }
+            <div class="col-auto align-self-center">
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => showAll = !showAll)">@showAllButtontext</button>
+            </div>
+            <div class="col-auto">
+                <span class="oi oi-x text-danger pointer" @onclick="e => OnHidePlayerRatings.InvokeAsync()"></span>
+            </div>
         </div>
     </div>
 }
 
 @code {
+    [CascadingParameter]
+    public RequestNames? requestNames { get; set; }
+
+    [Parameter]
+    public EventCallback OnHidePlayerRatings { get; set; }
+
     private CancellationTokenSource cts = new();
 
     List<PlayerRatingDetailDto> serverRatings = new();
     List<PlayerRatingDetailDto> localRatings = new();
+
+    private bool showAll;
+    private string showAllButtontext => showAll ? "Hide others" : "Show all";
+    //private RequestNames? requestNames;
+
+    protected override void OnInitialized()
+    {
+        //replayRepository.LatestReplayChanged += ReplayRepository_LatestReplayChanged;
+        base.OnInitialized();
+    }
 
     protected override void OnAfterRender(bool firstRender)
     {
@@ -56,6 +86,28 @@
             _ = LoadData();
         }
         base.OnAfterRender(firstRender);
+    }
+
+    private void ReplayRepository_LatestReplayChanged(object? sender, LatestReplayEventArgs e)
+    {
+        if (e.LatestReplay == null)
+        {
+            requestNames = null;
+        }
+        else
+        {
+            var player = e.LatestReplay.ReplayPlayers.FirstOrDefault(f => f.GamePos == e.LatestReplay.PlayerPos);
+            if (player != null)
+            {
+                requestNames = new()
+                    { 
+                        Name = player.Name,
+                        ToonId = player.Player.ToonId,
+                        RegionId = player.Player.RegionId
+                    };
+                InvokeAsync(() => StateHasChanged());
+            }
+        }
     }
 
     private async Task LoadData()
@@ -120,6 +172,7 @@
 
     public void Dispose()
     {
+        //replayRepository.LatestReplayChanged -= ReplayRepository_LatestReplayChanged;
         cts.Cancel();
         cts.Dispose();
     }
