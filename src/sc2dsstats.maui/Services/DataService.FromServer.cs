@@ -7,7 +7,7 @@ namespace sc2dsstats.maui.Services;
 
 public partial class DataService
 {
-    private readonly string statsController = "api/v2/Stats/";
+    private readonly string statsController = "api/v3/Stats/";
     private readonly string buildsController = "api/v2/Builds/";
     private readonly string ratingController = "api/Ratings/";
 
