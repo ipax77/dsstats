@@ -44,7 +44,8 @@
         }
         <div class="col-auto align-self-center">
             <label class="form-label">
-                Mode
+                Rating Type
+                <span class="oi oi-info pointer ms-2" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/Mmr-calculation#rating-types'"></span>
                 <select class="form-select" @onchange="RatingTypeChange">
                     @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
                     {

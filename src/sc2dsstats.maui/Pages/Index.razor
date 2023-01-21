@@ -112,9 +112,18 @@
             replayComponent?.Init(latestReplay);
             if (latestReplay.PlayerPos > 0)
             {
-                Data.MauiRegionId = latestReplay.ReplayPlayers
-                    .FirstOrDefault(f => f.GamePos == latestReplay.PlayerPos)?
-                    .Player.RegionId ?? 1;
+                var player = latestReplay.ReplayPlayers
+                    .FirstOrDefault(f => f.GamePos == latestReplay.PlayerPos);
+
+                if (player != null)
+                {
+                    Data.MauiRequestNames = new() 
+                        {
+                            Name = player.Name,
+                            ToonId = player.Player.ToonId,
+                            RegionId = player.Player.RegionId 
+                        };
+                }
             }
         }
         frontPageDetails?.Update(latestReplay);

@@ -26,20 +26,29 @@
     <div>
         <PlayerDetailsNgComponent @ref="playerDetailsNgComponent"
                               RequestNames="requestNames"
-                              RatingType="@(LatestReplay?.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr)"
+                              RatingType="@ratingType"
                               ReplaysRequest="ReplaysToonIdRequest" />
     </div>
 }
 
 @code {
     [Parameter, EditorRequired]
-    public ReplayDetailsDto? LatestReplay { get; set; } = default!;
+    public ReplayDetailsDto? LatestReplay { get; set; }
 
     private PlayerDetailsNgComponent? playerDetailsNgComponent;
     private RequestNames? requestNames;
     private List<RequestNames> playerNames = new();
     private int interest;
     private EditContext editContext = null!;
+    private RatingType ratingType => (LatestReplay?.GameMode, LatestReplay?.TournamentEdition) switch
+    {
+        (GameMode.Commanders, false) => RatingType.Cmdr,
+        (GameMode.CommandersHeroic, false) => RatingType.Cmdr,
+        (GameMode.Commanders, true) => RatingType.CmdrTE,
+        (GameMode.Standard, false) => RatingType.Std,
+        (GameMode.Standard, true) => RatingType.StdTE,
+        _ => RatingType.Cmdr
+    };
 
     protected override void OnInitialized()
     {
@@ -52,7 +61,7 @@
     {
         if (firstRender)
         {
-            _ = LoadData();
+            _ = LoadData(true);
         }
         base.OnAfterRender(firstRender);
     }
@@ -72,7 +81,7 @@
         _ = LoadData();
     }
 
-    private async Task LoadData()
+    private async Task LoadData(bool init = false)
     {
         if (LatestReplay == null)
         {
@@ -115,7 +124,8 @@
                 };
         }
         interest = requestNames.ToonId;
-        playerDetailsNgComponent?.Update(requestNames, LatestReplay?.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr);
+
+        playerDetailsNgComponent?.Update(requestNames, ratingType);
 
         await InvokeAsync(() => StateHasChanged());
     }
@@ -125,13 +135,13 @@
         NavigationManager.NavigateTo(
             NavigationManager.GetUriWithQueryParameters("replays",
                 new Dictionary<string, object?>()
-                        {
+                {
                     { "Players", request.Name },
                     { "ToonId", request.ToonId },
                     { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
                     { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
                     { "ToonIdName", request.ToonIdName },
-                        }
+                }
             )
         );
     }

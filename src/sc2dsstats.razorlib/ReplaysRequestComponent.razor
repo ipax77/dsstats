@@ -101,6 +101,18 @@
                         </label>
                     </div>
                 }
+                <div class="d-flex">
+                    <div class="form-check form-switch">
+                        <label class="form-check-label">
+                            TE maps
+                            <InputCheckbox class="form-check-input" @bind-Value="replaysRequest.TEMaps">
+                            </InputCheckbox>
+                        </label>
+                    </div>
+                    <div class="ms-2">
+                        <span class="oi oi-info pointer" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki#te-map'"></span>
+                    </div>
+                </div>
             </div>
             <div class="col-auto">
                 <div style="max-width: 150px;">

@@ -49,7 +49,59 @@
     public void UpdateCharts(List<PlayerRatingDetailDto> playerRatings)
     {
         PlayerRatings = playerRatings;
-        SetupCharts();
+
+        chartDataUp = false;
+
+        foreach (var chartJsConfig in chartJsConfigs.ToArray())
+        {
+            var title = chartJsConfig.Options?.Plugins?.Title?.Text?.SingleValue;
+
+            if (title == null)
+            {
+                continue;
+            }
+
+            var index = title.IndexOf(' ');
+
+            if (index <= 0)
+            {
+                continue;
+            }
+
+            var ratingString = title[..index];
+            ratingString = ratingString.Trim();
+
+            if (Enum.TryParse(typeof(RatingType), ratingString, out var ratingTypeObj)
+                && ratingTypeObj is RatingType ratingType)
+            {
+                var playerRating = PlayerRatings.FirstOrDefault(f => f.RatingType == ratingType);
+
+                if (playerRating == null)
+                {
+                    chartJsConfigs.Remove(chartJsConfig);
+                    chartSetups--;
+                }
+            }
+        }
+
+        foreach (var playerRating in PlayerRatings)
+        {
+            var chartJsConfig = chartJsConfigs
+                .FirstOrDefault(f => f.Options?.Plugins?.Title?.Text?.SingleValue == $"{playerRating.RatingType} development");
+
+            if (chartJsConfig == null)
+            {
+                chartJsConfigs.Add(GetLineChartConfig(playerRating.RatingType));
+                chartsSetup = false;
+            }
+        }
+        chartDataUp = true;
+        StateHasChanged();
+
+        if (chartDataUp && chartsSetup)
+        {
+            SetupCharts();
+        }
     }
 
     private void SetupCharts()

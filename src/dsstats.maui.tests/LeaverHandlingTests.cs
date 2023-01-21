@@ -1,12 +1,9 @@
-﻿using System.Net.Http.Headers;
-using System.Text.Json;
+﻿using System.Text.Json;
 
 using AutoMapper;
 using dsstats.mmr;
-using dsstats.mmr.ProcessData;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
-using SqliteMigrations.Migrations;
 
 namespace dsstats.maui.tests;
 
@@ -24,7 +21,7 @@ public class LeaverHandlingTests : TestWithSqlite
         mapper.ConfigurationProvider.AssertConfigurationIsValid();
     }
 
-    (ReplayDsRDto, ReplayDto, Dictionary<int, CalcRating>) GetBaseReplay(string filePath)
+    private (ReplayDsRDto, ReplayDto, Dictionary<int, CalcRating>) GetBaseReplay(string filePath)
     {
         var replayDto = JsonSerializer.Deserialize<ReplayDto>(File.ReadAllText(filePath));
         if (replayDto == null)
@@ -67,6 +64,10 @@ public class LeaverHandlingTests : TestWithSqlite
 
         return (replayDsRDto with { }, replayDto with { }, mmrIdRatings);
     }
+    private static bool IsLeaver(ReplayDsRDto replay, ReplayPlayerDsRDto replayPlayer)
+    {
+        return replayPlayer.Duration < replay.Duration - 90 || (replayPlayer.IsUploader && replay.ResultCorrected);
+    }
 
     [Theory]
     [InlineData("/data/testdata/team1Win.json")]
@@ -81,25 +82,23 @@ public class LeaverHandlingTests : TestWithSqlite
             mockReplay.ReplayPlayers[i] = mockReplay.ReplayPlayers[i] with { Duration = replayDto.Duration };
         }
 
-        var replayData = new ReplayData(mockReplay);
-        MmrService.SetReplayData(mmrIdRatings, replayData, new(), new(true));
-        var plChanges = MmrService.ProcessReplay(replayData, mmrIdRatings, new(), new(true));
+        var replayRatingDto = MmrService.ProcessReplay(mockReplay, mmrIdRatings, new(), new(true))!;
 
         var winnerPlayers = replayDto.ReplayPlayers.Where(x => x.PlayerResult == PlayerResult.Win).ToArray();
         var loserPlayers = replayDto.ReplayPlayers.Where(x => x.PlayerResult == PlayerResult.Los).ToArray();
 
-        var winnersChange = winnerPlayers.Sum(p => plChanges.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / winnerPlayers.Length;
-        var loserChange = loserPlayers.Sum(p => plChanges.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / loserPlayers.Length;
+        var winnersChange = winnerPlayers.Sum(p => replayRatingDto.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / winnerPlayers.Length;
+        var loserChange = loserPlayers.Sum(p => replayRatingDto.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / loserPlayers.Length;
 
         foreach (var player in winnerPlayers)
         {
-            var plChange = plChanges.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
+            var plChange = replayRatingDto.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
             Assert.Equal(plChange?.RatingChange, winnersChange);
         }
 
         foreach (var player in loserPlayers)
         {
-            var plChange = plChanges.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
+            var plChange = replayRatingDto.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
             Assert.Equal(plChange?.RatingChange, loserChange);
         }
     }
@@ -124,15 +123,13 @@ public class LeaverHandlingTests : TestWithSqlite
             }
         }
 
-        var replayData = new ReplayData(mockReplay);
-        MmrService.SetReplayData(mmrIdRatings, replayData, new(), new(true));
-        var plChanges = MmrService.ProcessReplay(replayData, mmrIdRatings, new(), new(true));
+        var replayRatingDto = MmrService.ProcessReplay(mockReplay, mmrIdRatings, new(), new(true))!;
 
-        var leaverPlayers = replayDto.ReplayPlayers.Where(x => replayData.WinnerTeamData.Players.Concat(replayData.LoserTeamData.Players).First(y => x.GamePos == y.GamePos).IsLeaver).ToArray();
-        var winnerPlayers = replayDto.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Win) && !leaverPlayers.Contains(x)).ToArray();
-        var loserPlayers = replayDto.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Los) && !leaverPlayers.Contains(x)).ToArray();
+        var leaverPlayers = mockReplay.ReplayPlayers.Where(x => IsLeaver(mockReplay, x)).ToArray();
+        var winnerPlayers = mockReplay.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Win) && !IsLeaver(mockReplay, x)).ToArray();
+        var loserPlayers = mockReplay.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Los) && !IsLeaver(mockReplay, x)).ToArray();
 
-        var leaverChange = leaverPlayers.Sum(p => plChanges.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / leaverPlayers.Length;
+        var leaverChange = leaverPlayers.Sum(p => replayRatingDto.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / leaverPlayers.Length;
 
         //var winnersChange = winnerPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / winnerPlayers.Length;
         //var loserChange = loserPlayers.Sum(p => plChanges.Find(x => x.Pos == p.GamePos)?.Change) / loserPlayers.Length;
@@ -144,22 +141,22 @@ public class LeaverHandlingTests : TestWithSqlite
 
         foreach (var player in winnerPlayers)
         {
-            var plChange = plChanges.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
+            var repPlayerRatingDto = replayRatingDto.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
 
-            if (player == replayDto.ReplayPlayers.ElementAt(0))
+            if (player == mockReplay.ReplayPlayers.ElementAt(0))
             {
-                Assert.Equal(plChange?.RatingChange, leaverChange);
+                Assert.Equal(repPlayerRatingDto?.RatingChange, leaverChange);
             }
             else
             {
-                Assert.Equal(plChange?.RatingChange, -0.5 * leaverChange);
+                Assert.Equal(repPlayerRatingDto?.RatingChange, -0.5 * leaverChange);
             }
         }
 
         foreach (var player in loserPlayers)
         {
-            var plChange = plChanges.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
-            Assert.Equal(plChange?.RatingChange, 0.5 * leaverChange);
+            var repPlayerRatingDto = replayRatingDto.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
+            Assert.Equal(repPlayerRatingDto?.RatingChange, 0.5 * leaverChange);
         }
     }
 
@@ -183,18 +180,16 @@ public class LeaverHandlingTests : TestWithSqlite
             }
         }
 
-        var replayData = new ReplayData(mockReplay);
-        MmrService.SetReplayData(mmrIdRatings, replayData, new(), new(true));
-        var plChanges = MmrService.ProcessReplay(replayData, mmrIdRatings, new(), new(true));
+        var replayRatingDto = MmrService.ProcessReplay(mockReplay, mmrIdRatings, new(), new(true))!;
 
-        var leaverPlayers = replayDto.ReplayPlayers.Where(x => replayData.WinnerTeamData.Players.Concat(replayData.LoserTeamData.Players).First(y => x.GamePos == y.GamePos).IsLeaver).ToArray();
-        var winnerPlayers = replayDto.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Win) && !leaverPlayers.Contains(x)).ToArray();
-        var loserPlayers = replayDto.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Los) && !leaverPlayers.Contains(x)).ToArray();
+        var leaverPlayers = mockReplay.ReplayPlayers.Where(x => IsLeaver(mockReplay, x)).ToArray();
+        var winnerPlayers = mockReplay.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Win) && !IsLeaver(mockReplay, x)).ToArray();
+        var loserPlayers = mockReplay.ReplayPlayers.Where(x => (x.PlayerResult == PlayerResult.Los) && !IsLeaver(mockReplay, x)).ToArray();
 
-        var leaverChange = leaverPlayers.Sum(p => plChanges.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / leaverPlayers.Length;
+        var leaverChange = leaverPlayers.Sum(p => replayRatingDto.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / leaverPlayers.Length;
 
-        var winnersChange = winnerPlayers.Sum(p => plChanges.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / winnerPlayers.Length;
-        var loserChange = loserPlayers.Sum(p => plChanges.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / loserPlayers.Length;
+        //var winnersChange = winnerPlayers.Sum(p => replayRatingDto.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / winnerPlayers.Length;
+        //var loserChange = loserPlayers.Sum(p => replayRatingDto.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / loserPlayers.Length;
 
         if (winnerPlayers.Length < loserPlayers.Length) // Leavers are in winnerTeam
         {
@@ -203,29 +198,29 @@ public class LeaverHandlingTests : TestWithSqlite
 
         foreach (var player in winnerPlayers)
         {
-            var plChange = plChanges.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
+            var repPlayerRatingDto = replayRatingDto.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
 
-            if (player == replayDto.ReplayPlayers.ElementAt(0) || player == replayDto.ReplayPlayers.ElementAt(1))
+            if (player == mockReplay.ReplayPlayers.ElementAt(0) || player == mockReplay.ReplayPlayers.ElementAt(1))
             {
-                Assert.Equal(plChange?.RatingChange, leaverChange);
+                Assert.Equal(repPlayerRatingDto?.RatingChange, leaverChange);
             }
             else
             {
-                Assert.Equal(plChange?.RatingChange, -0.25 * leaverChange);
+                Assert.Equal(repPlayerRatingDto?.RatingChange, -0.25 * leaverChange);
             }
         }
 
         foreach (var player in loserPlayers)
         {
-            var plChange = plChanges.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
+            var repPlayerRatingDto = replayRatingDto.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
 
-            if (player == replayDto.ReplayPlayers.ElementAt(0) || player == replayDto.ReplayPlayers.ElementAt(1))
+            if (player == mockReplay.ReplayPlayers.ElementAt(0) || player == mockReplay.ReplayPlayers.ElementAt(1))
             {
-                Assert.Equal(plChange?.RatingChange, leaverChange);
+                Assert.Equal(repPlayerRatingDto?.RatingChange, leaverChange);
             }
             else
             {
-                Assert.Equal(plChange?.RatingChange, 0.25 * leaverChange);
+                Assert.Equal(repPlayerRatingDto?.RatingChange, 0.25 * leaverChange);
             }
         }
     }

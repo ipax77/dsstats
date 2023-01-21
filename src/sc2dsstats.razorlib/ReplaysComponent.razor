@@ -71,7 +71,7 @@
                         </th>
                         <th scope="col" class="pointer" @onclick="@(e => SortList(e, "MaxLeaver"))">
                             <SortArrow Property="MaxLeaver">
-                                MaxLeaver
+                                <span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="The maximum amount of time the game lasts with at least one Leaver">MaxLeaver</span>
                             </SortArrow>
                         </th>
                         <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GameMode"))">
@@ -183,6 +183,15 @@
         }
     }
 
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            JSRuntime.InvokeVoidAsync("enableTooltips");
+        }
+        base.OnAfterRender(firstRender);
+    }
+
     public async Task ReInit(ReplaysRequest reRequest)
     {
         logger.LogInformation($"reinit");
@@ -223,15 +232,6 @@
                 semaphoreSlim.Release();
             }
         }
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        if (firstRender)
-        {
-            JSRuntime.InvokeVoidAsync("enableTooltips");
-        }
-        base.OnAfterRender(firstRender);
     }
 
     private async Task Reload()

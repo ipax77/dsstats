@@ -12,6 +12,7 @@ public record ReplaysRequest
     public bool ResultAdjusted { get; set; }
     public string? ReplayHash { get; set; }
     public bool DefaultFilter { get; set; }
+    public bool TEMaps { get; set; }
     public int PlayerCount { get; set; }
     public List<GameMode> GameModes { get; set; } = new();
     public bool WithMmrChange { get; set; }

@@ -109,7 +109,7 @@
 
     protected override void OnInitialized()
     {
-        gameInfoRequest = new() { RegionId = Data.MauiRegionId };
+        gameInfoRequest = new() { RegionId = Data.MauiRequestNames?.RegionId ?? 1 };
         editContext = new EditContext(gameInfoRequest);
         editContext.OnFieldChanged += FieldChanged;
 

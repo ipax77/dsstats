@@ -271,6 +271,11 @@ public partial class ReplayRepository : IReplayRepository
             replays = replays.Where(x => x.ResultCorrected);
         }
 
+        if (request.TEMaps)
+        {
+            replays = replays.Where(x => x.TournamentEdition);
+        }
+
         if (request.ToonId == 0)
         {
             replays = SearchReplays(replays, request);
