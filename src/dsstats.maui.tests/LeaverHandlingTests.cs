@@ -67,6 +67,10 @@ public class LeaverHandlingTests : TestWithSqlite
 
         return (replayDsRDto with { }, replayDto with { }, mmrIdRatings);
     }
+    private static bool IsLeaver(ReplayDsRDto replay, ReplayPlayerDsRDto replayPlayer)
+    {
+        return replayPlayer.Duration < replay.Duration - 90 || (replayPlayer.IsUploader && replay.ResultCorrected);
+    }
 
     [Theory]
     [InlineData("/data/testdata/team1Win.json")]
