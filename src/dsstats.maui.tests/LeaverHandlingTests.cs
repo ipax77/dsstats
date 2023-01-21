@@ -1,12 +1,9 @@
-﻿using System.Net.Http.Headers;
-using System.Text.Json;
+﻿using System.Text.Json;
 
 using AutoMapper;
 using dsstats.mmr;
-using dsstats.mmr.ProcessData;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
-using SqliteMigrations.Migrations;
 
 namespace dsstats.maui.tests;
 
@@ -24,7 +21,7 @@ public class LeaverHandlingTests : TestWithSqlite
         mapper.ConfigurationProvider.AssertConfigurationIsValid();
     }
 
-    (ReplayDsRDto, ReplayDto, Dictionary<int, CalcRating>) GetBaseReplay(string filePath)
+    private (ReplayDsRDto, ReplayDto, Dictionary<int, CalcRating>) GetBaseReplay(string filePath)
     {
         var replayDto = JsonSerializer.Deserialize<ReplayDto>(File.ReadAllText(filePath));
         if (replayDto == null)
@@ -191,8 +188,8 @@ public class LeaverHandlingTests : TestWithSqlite
 
         var leaverChange = leaverPlayers.Sum(p => plChanges.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / leaverPlayers.Length;
 
-        var winnersChange = winnerPlayers.Sum(p => plChanges.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / winnerPlayers.Length;
-        var loserChange = loserPlayers.Sum(p => plChanges.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / loserPlayers.Length;
+        //var winnersChange = winnerPlayers.Sum(p => replayRatingDto.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / winnerPlayers.Length;
+        //var loserChange = loserPlayers.Sum(p => replayRatingDto.RepPlayerRatings.Find(x => x.GamePos == p.GamePos)?.RatingChange) / loserPlayers.Length;
 
         if (winnerPlayers.Length < loserPlayers.Length) // Leavers are in winnerTeam
         {
