@@ -131,30 +131,25 @@ public static partial class MmrService
         List<RepPlayerRatingDto> ratings = new();
         foreach (var player in teamData.Players)
         {
-            var currentPlayerRating = mmrIdRatings[player.MmrId];
-
-            double mmrBefore = currentPlayerRating.Mmr;
-            double consistencyBefore = currentPlayerRating.Consistency;
-            double confidenceBefore = currentPlayerRating.Confidence;
-
-            double mmrAfter = mmrBefore + player.Deltas.Mmr;
+            double mmrAfter = player.Mmr + player.Deltas.Mmr;
             const double consistencyBeforePercentage = 0.99;
-            double consistencyAfter = ((consistencyBefore * consistencyBeforePercentage) + (player.Deltas.Consistency * (1 - consistencyBeforePercentage)));
+            double consistencyAfter = ((player.Consistency * consistencyBeforePercentage) + (player.Deltas.Consistency * (1 - consistencyBeforePercentage)));
             const double confidenceBeforePercentage = 0.99;
-            double confidenceAfter = ((confidenceBefore * confidenceBeforePercentage) + (player.Deltas.Confidence * (1 - confidenceBeforePercentage)));
+            double confidenceAfter = ((player.Confidence * confidenceBeforePercentage) + (player.Deltas.Confidence * (1 - confidenceBeforePercentage)));
 
             consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
             confidenceAfter = Math.Clamp(confidenceAfter, 0, 1);
-            //mmrAfter = Math.Max(1, mmrAfter);
+
+            var currentPlayerRating = mmrIdRatings[player.MmrId];
 
             ratings.Add(new()
             {
                 GamePos = player.GamePos,
                 Rating = MathF.Round((float)mmrAfter, 2),
-                RatingChange = MathF.Round((float)(mmrAfter - mmrBefore), 2),
+                RatingChange = MathF.Round((float)(mmrAfter - player.Mmr), 2),
                 Games = currentPlayerRating.Games,
-                Consistency = MathF.Round((float)consistencyBefore, 2),
-                Confidence = MathF.Round((float)confidenceBefore, 2),
+                Consistency = MathF.Round((float)player.Consistency, 2),
+                Confidence = MathF.Round((float)player.Confidence, 2),
                 ReplayPlayerId = player.ReplayPlayerId,
             });
 
