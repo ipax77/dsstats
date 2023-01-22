@@ -25,7 +25,7 @@ public record ReplayData
         LoserTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam), false);
 
         IsStd = WinnerTeamData.Players.All(a => (int)a.Race <= 3);
-        IsInvalid = WinnerTeamData.Players.Any(a => (int)a.Race <= 3 || (int)a.OppRace <= 3) || LoserTeamData.Players.Any(a => (int)a.Race <= 3 || (int)a.OppRace <= 3);
+        IsInvalid = !IsStd && (WinnerTeamData.Players.Any(a => (int)a.Race <= 3 || (int)a.OppRace <= 3) || LoserTeamData.Players.Any(a => (int)a.Race <= 3 || (int)a.OppRace <= 3));
     }
     public ReplayData(DateTime gameTime,
                       int duration,
