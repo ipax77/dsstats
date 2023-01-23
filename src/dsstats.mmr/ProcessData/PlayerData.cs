@@ -13,39 +13,6 @@ public record PlayerData
 
         IsLeaver = replayPlayer.Duration < replay.Duration - 90 || (replayPlayer.IsUploader && replay.ResultCorrected);
     }
-    public PlayerData(Commander race,
-                      Commander oppRace,
-                      int duration,
-                      bool isLeaver,
-                      double mmr,
-                      double consistency,
-                      double confidence,
-                      int mmrId,
-                      int gamePos,
-                      int replayPlayerId,
-                      int playerId,
-                      bool isUploader,
-                      int kills,
-                      PlayerResult playerResult)
-    {
-        Deltas = new();
-
-        Race = race;
-        OppRace = oppRace;
-        Duration = duration;
-        IsLeaver = isLeaver;
-        Mmr = mmr;
-        Consistency = consistency;
-        Confidence = confidence;
-
-        MmrId = mmrId;
-        GamePos = gamePos;
-        ReplayPlayerId = replayPlayerId;
-        PlayerId = playerId;
-        IsUploader = isUploader;
-        Kills = kills;
-        PlayerResult = playerResult;
-    }
 
     public ReplayPlayerDsRDto ReplayPlayer { get; init; }
     public int MmrId { get; init; }
