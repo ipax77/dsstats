@@ -9,7 +9,7 @@ public partial class MmrService
 {
     private static double GetCommandersComboMmr(ReplayData replayData, TeamData teamData, Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic)
     {
-        if (replayData.IsInvalid)
+        if (replayData.RatingType != RatingType.Cmdr && replayData.RatingType != RatingType.CmdrTE)
         {
             return 1.0;
         }
@@ -63,7 +63,7 @@ public partial class MmrService
 
     private static void SetCommandersComboMmr(ReplayData replayData, TeamData teamData, Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic)
     {
-        if (replayData.IsInvalid)
+        if (replayData.RatingType != RatingType.Cmdr && replayData.RatingType != RatingType.CmdrTE)
         {
             return;
         }

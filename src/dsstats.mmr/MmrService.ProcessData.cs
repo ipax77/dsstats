@@ -33,7 +33,8 @@ public partial class MmrService
         teamData.Confidence = teamData.Players.Sum(p => p.Confidence) / teamData.Players.Length;
         teamData.Mmr = teamData.Players.Sum(p => p.Mmr) / teamData.Players.Length;
 
-        if (mmrOptions.UseCommanderMmr && !replayData.IsStd)
+        if (mmrOptions.UseCommanderMmr
+            && (replayData.RatingType == RatingType.Cmdr || replayData.RatingType == RatingType.CmdrTE))
         {
             teamData.CmdrComboMmr = GetCommandersComboMmr(replayData, teamData, cmdrDic);
         }

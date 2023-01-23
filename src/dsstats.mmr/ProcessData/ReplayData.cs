@@ -24,21 +24,16 @@ public record ReplayData
         WinnerTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam), true);
         LoserTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam), false);
 
-        IsStd = replay.ReplayPlayers.Any(a => (int)a.Race <= 3);
-        IsInvalid = !IsStd && (WinnerTeamData.Players
-            .Any(a => (int)a.Race <= 3
-             || (int)a.OppRace <= 3)
-             || LoserTeamData.Players.Any(a => (int)a.Race <= 3 || (int)a.OppRace <= 3));
+        RatingType = MmrService.GetRatingType(replay);
     }
 
     public LeaverType LeaverType { get; init; }
+    public RatingType RatingType { get; init; }
     public double LeaverImpact { get; init; }
     public DateTime GameTime { get; init; }
     public int Duration { get; init; }
     public int Maxleaver { get; init; }
     public int Maxkillsum { get; init; }
-    public bool IsStd { get; init; }
-    public bool IsInvalid { get; init; }
     public int ReplayId { get; init; }
 
     public TeamData WinnerTeamData { get; init; }
