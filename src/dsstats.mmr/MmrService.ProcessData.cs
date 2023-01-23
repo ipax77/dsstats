@@ -9,7 +9,7 @@ public partial class MmrService
 {
     public static void SetReplayData(Dictionary<int, CalcRating> mmrIdRatings,
                                       ReplayData replayData,
-                                      Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrDic,
+                                      Dictionary<CmdrMmrKey, CmdrMmrValue> cmdrDic,
                                       MmrOptions mmrOptions)
     {
         SetTeamData(mmrIdRatings, replayData, replayData.WinnerTeamData, cmdrDic, mmrOptions);
@@ -22,7 +22,7 @@ public partial class MmrService
     private static void SetTeamData(Dictionary<int, CalcRating> mmrIdRatings,
                                     ReplayData replayData,
                                     TeamData teamData,
-                                    Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrDic,
+                                    Dictionary<CmdrMmrKey, CmdrMmrValue> cmdrDic,
                                     MmrOptions mmrOptions)
     {
         foreach (var playerData in teamData.Players)
