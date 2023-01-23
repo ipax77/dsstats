@@ -24,31 +24,11 @@ public record ReplayData
         WinnerTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam), true);
         LoserTeamData = new(replay, replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam), false);
 
-        IsStd = WinnerTeamData.Players.All(a => (int)a.Race <= 3);
-        IsInvalid = !IsStd && (WinnerTeamData.Players.Any(a => (int)a.Race <= 3 || (int)a.OppRace <= 3) || LoserTeamData.Players.Any(a => (int)a.Race <= 3 || (int)a.OppRace <= 3));
-    }
-    public ReplayData(DateTime gameTime,
-                      int duration,
-                      int maxLeaver,
-                      int maxkillsum,
-                      double confidence,
-                      LeaverType leaverType,
-                      TeamData winnerTeamData,
-                      TeamData loserTeamData)
-    {
-        GameTime = gameTime;
-        Duration = duration;
-        Maxleaver = maxLeaver;
-        Maxkillsum = maxkillsum;
-        Confidence = confidence;
-        WinnerTeamData = winnerTeamData;
-        LoserTeamData = loserTeamData;
-
-        LeaverType = leaverType;
-        LeaverImpact = 1;
-
-        IsStd = WinnerTeamData.Players.All(a => (int)a.Race <= 3) && LoserTeamData.Players.All(a => (int)a.Race <= 3);
-        IsInvalid = WinnerTeamData.Players.Any(a => (int)a.Race <= 3 || (int)a.OppRace <= 3) || LoserTeamData.Players.Any(a => (int)a.Race <= 3 || (int)a.OppRace <= 3);
+        IsStd = replay.ReplayPlayers.Any(a => (int)a.Race <= 3);
+        IsInvalid = !IsStd && (WinnerTeamData.Players
+            .Any(a => (int)a.Race <= 3
+             || (int)a.OppRace <= 3)
+             || LoserTeamData.Players.Any(a => (int)a.Race <= 3 || (int)a.OppRace <= 3));
     }
 
     public LeaverType LeaverType { get; init; }
