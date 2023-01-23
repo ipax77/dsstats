@@ -100,9 +100,10 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    // var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
+    var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
     // var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
     // cheatDetectService.DetectNoUpload().Wait();
+    cheatDetectService.GetCheatDetectResult().Wait();
 
     //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
     //var result = statsService.GetServerStats().GetAwaiter().GetResult();
