@@ -9,7 +9,6 @@ public record PlayerData
         ReplayPlayer = replayPlayer;
         Deltas = new();
 
-        //ReplayPlayer = replayPlayer;
         MmrId = MmrService.GetMmrId(replayPlayer.Player);
 
         IsLeaver = replayPlayer.Duration < replay.Duration - 90 || (replayPlayer.IsUploader && replay.ResultCorrected);
