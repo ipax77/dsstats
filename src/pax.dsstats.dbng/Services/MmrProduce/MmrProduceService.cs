@@ -94,7 +94,7 @@ public partial class MmrProduceService
     }
 
     public async Task<DateTime> ProduceRatings(MmrOptions mmrOptions,
-                                         Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic,
+                                         Dictionary<CmdrMmrKey, CmdrMmrValue> cmdrMmrDic,
                                          Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
                                          IRatingRepository ratingRepository,
                                          int replayRatingAppendId,
@@ -206,7 +206,7 @@ public partial class MmrProduceService
             .ToListAsync();
     }
 
-    public async Task SaveCommanderMmrsDic(Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrMmrDic)
+    public async Task SaveCommanderMmrsDic(Dictionary<CmdrMmrKey, CmdrMmrValue> cmdrMmrDic)
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -236,7 +236,7 @@ public partial class MmrProduceService
         await context.SaveChangesAsync();
     }
 
-    public async Task<Dictionary<CmdrMmmrKey, CmdrMmmrValue>> GetCommanderMmrsDic(MmrOptions mmrOptions, bool clean)
+    public async Task<Dictionary<CmdrMmrKey, CmdrMmrValue>> GetCommanderMmrsDic(MmrOptions mmrOptions, bool clean)
     {
         if (clean)
         {
@@ -273,14 +273,14 @@ public partial class MmrProduceService
             context.CommanderMmrs.AddRange(cmdrMmrs);
             await context.SaveChangesAsync();
         }
-        return cmdrMmrs.ToDictionary(k => new CmdrMmmrKey(k.Race, k.OppRace), v => new CmdrMmmrValue()
+        return cmdrMmrs.ToDictionary(k => new CmdrMmrKey(k.Race, k.OppRace), v => new CmdrMmrValue()
         {
             SynergyMmr = v.SynergyMmr,
             AntiSynergyMmr = v.AntiSynergyMmr
         });
     }
 
-    public Dictionary<CmdrMmmrKey, CmdrMmmrValue> GetCleanCommnaderMmrsDic(MmrOptions mmrOptions)
+    public Dictionary<CmdrMmrKey, CmdrMmrValue> GetCleanCommnaderMmrsDic(MmrOptions mmrOptions)
     {
         List<CommanderMmr> cmdrMmrs = new();
 
@@ -302,7 +302,7 @@ public partial class MmrProduceService
             }
         }
 
-        return cmdrMmrs.ToDictionary(k => new CmdrMmmrKey(k.Race, k.OppRace), v => new CmdrMmmrValue()
+        return cmdrMmrs.ToDictionary(k => new CmdrMmrKey(k.Race, k.OppRace), v => new CmdrMmrValue()
         {
             SynergyMmr = v.SynergyMmr,
             AntiSynergyMmr = v.AntiSynergyMmr

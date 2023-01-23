@@ -6,8 +6,8 @@ namespace sc2dsstats.maui.Services;
 internal static class UpdateService
 {
     private static readonly string packageUri = "https://github.com/ipax77/dsstats/releases/latest/download/";
-    public static Version NewVersion { get; private set; } = new Version(1, 1, 3, 0);
-    public static Version CurrentVersion { get; private set; } = new Version(1, 1, 3, 0);
+    public static Version NewVersion { get; private set; } = new Version(1, 1, 4, 0);
+    public static Version CurrentVersion { get; private set; } = new Version(1, 1, 4, 0);
 
     public static EventHandler<UpdateProgressEvent>? UpdateProgress;
     private static bool isStore = true;

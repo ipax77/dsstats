@@ -103,6 +103,7 @@ if (app.Environment.IsDevelopment())
     // var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
     // var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
     // cheatDetectService.DetectNoUpload().Wait();
+    // cheatDetectService.GetCheatDetectResult().Wait();
 
     //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
     //var result = statsService.GetServerStats().GetAwaiter().GetResult();
@@ -115,8 +116,8 @@ if (app.Environment.IsDevelopment())
     //var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
     //var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
 
-    //var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    //mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
+    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
 
     //var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
     //ratingRepository.SeedRatingChanges().Wait();
