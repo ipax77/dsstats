@@ -101,8 +101,7 @@ public static partial class MmrService
         var mmrChanges1 = AddPlayersRankings(mmrIdRatings, replayData.WinnerTeamData, replayData.ReplayDsRDto.GameTime, replayData.ReplayDsRDto.Maxkillsum);
         var mmrChanges2 = AddPlayersRankings(mmrIdRatings, replayData.LoserTeamData, replayData.ReplayDsRDto.GameTime, replayData.ReplayDsRDto.Maxkillsum);
 
-        if (mmrOptions.UseCommanderMmr && replayData.ReplayDsRDto.Maxleaver < 90
-            && (replayData.ReplayDsRDto.GameMode == GameMode.Commanders || replayData.ReplayDsRDto.GameMode == GameMode.CommandersHeroic))
+        if (mmrOptions.UseCommanderMmr && replayData.ReplayDsRDto.Maxleaver < 90)
         {
             SetCommandersComboMmr(replayData, replayData.WinnerTeamData, cmdrMmrDic);
             SetCommandersComboMmr(replayData, replayData.LoserTeamData, cmdrMmrDic);
