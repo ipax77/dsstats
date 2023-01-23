@@ -26,7 +26,7 @@ public static partial class MmrService
 
                 SetPlayerDeltas(playerData, teamData, replayData, playerImpact, mmrOptions);
 
-                if (replayData.Maxleaver < 90 && mmrOptions.UseCommanderMmr)
+                if (replayData.ReplayDsRDto.Maxleaver < 90 && mmrOptions.UseCommanderMmr)
                 {
                     var commandersMmrImpact = (playerData.Mmr / mmrOptions.StartMmr) * playerData.Confidence;
                     playerData.Deltas.CommanderMmr = CalculateMmrDelta(replayData.WinnerTeamData.ExpectedResult, commandersMmrImpact, mmrOptions.EloK);

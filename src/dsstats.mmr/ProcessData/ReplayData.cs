@@ -6,11 +6,8 @@ public record ReplayData
 {
     public ReplayData(ReplayDsRDto replay)
     {
-        ReplayId = replay.ReplayId;
-        GameTime = replay.GameTime;
-        Duration = replay.Duration;
-        Maxleaver = replay.Maxleaver;
-        Maxkillsum = replay.Maxkillsum;
+        ReplayDsRDto = replay;
+
         LeaverType = MmrService.GetLeaverType(replay);
         LeaverImpact = LeaverType switch
         {
@@ -27,14 +24,11 @@ public record ReplayData
         RatingType = MmrService.GetRatingType(replay);
     }
 
+    public ReplayDsRDto ReplayDsRDto { get; init; }
+
     public LeaverType LeaverType { get; init; }
     public RatingType RatingType { get; init; }
     public double LeaverImpact { get; init; }
-    public DateTime GameTime { get; init; }
-    public int Duration { get; init; }
-    public int Maxleaver { get; init; }
-    public int Maxkillsum { get; init; }
-    public int ReplayId { get; init; }
 
     public TeamData WinnerTeamData { get; init; }
     public TeamData LoserTeamData { get; init; }

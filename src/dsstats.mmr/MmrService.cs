@@ -98,11 +98,11 @@ public static partial class MmrService
             FixMmrEquality(replayData.WinnerTeamData, replayData.LoserTeamData);
         }
 
-        var mmrChanges1 = AddPlayersRankings(mmrIdRatings, replayData.WinnerTeamData, replayData.GameTime, replayData.Maxkillsum);
-        var mmrChanges2 = AddPlayersRankings(mmrIdRatings, replayData.LoserTeamData, replayData.GameTime, replayData.Maxkillsum);
+        var mmrChanges1 = AddPlayersRankings(mmrIdRatings, replayData.WinnerTeamData, replayData.ReplayDsRDto.GameTime, replayData.ReplayDsRDto.Maxkillsum);
+        var mmrChanges2 = AddPlayersRankings(mmrIdRatings, replayData.LoserTeamData, replayData.ReplayDsRDto.GameTime, replayData.ReplayDsRDto.Maxkillsum);
 
-        if (mmrOptions.UseCommanderMmr && replayData.Maxleaver < 90
-            && (replayData.RatingType == RatingType.Cmdr || replayData.RatingType == RatingType.CmdrTE))
+        if (mmrOptions.UseCommanderMmr && replayData.ReplayDsRDto.Maxleaver < 90
+            && (replayData.ReplayDsRDto.GameMode == GameMode.Commanders || replayData.ReplayDsRDto.GameMode == GameMode.CommandersHeroic))
         {
             SetCommandersComboMmr(replayData, replayData.WinnerTeamData, cmdrMmrDic);
             SetCommandersComboMmr(replayData, replayData.LoserTeamData, cmdrMmrDic);
@@ -112,7 +112,7 @@ public static partial class MmrService
         {
             RatingType = replayData.RatingType,
             LeaverType = replayData.LeaverType,
-            ReplayId = replayData.ReplayId,
+            ReplayId = replayData.ReplayDsRDto.ReplayId,
             RepPlayerRatings = mmrChanges1.Concat(mmrChanges2).ToList()
         };
 

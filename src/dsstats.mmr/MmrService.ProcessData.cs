@@ -34,7 +34,7 @@ public partial class MmrService
         teamData.Mmr = teamData.Players.Sum(p => p.Mmr) / teamData.Players.Length;
 
         if (mmrOptions.UseCommanderMmr
-            && (replayData.RatingType == RatingType.Cmdr || replayData.RatingType == RatingType.CmdrTE))
+            && (replayData.ReplayDsRDto.GameMode == GameMode.Commanders || replayData.ReplayDsRDto.GameMode == GameMode.CommandersHeroic))
         {
             teamData.CmdrComboMmr = GetCommandersComboMmr(replayData, teamData, cmdrDic);
         }
