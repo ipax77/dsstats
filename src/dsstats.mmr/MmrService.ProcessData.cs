@@ -60,7 +60,7 @@ public partial class MmrService
         {
             plRating = mmrIdRatings[playerData.MmrId] = new CalcRating()
             {
-                PlayerId = playerData.PlayerId,
+                PlayerId = playerData.ReplayPlayer.Player.PlayerId,
                 Mmr = mmrOptions.StartMmr,
                 Consistency = 0,
                 Confidence = 0,

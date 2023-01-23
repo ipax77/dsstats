@@ -146,33 +146,33 @@ public static partial class MmrService
 
             ratings.Add(new()
             {
-                GamePos = player.GamePos,
+                GamePos = player.ReplayPlayer.GamePos,
                 Rating = MathF.Round((float)mmrAfter, 2),
                 RatingChange = MathF.Round((float)(mmrAfter - player.Mmr), 2),
                 Games = currentPlayerRating.Games,
                 Consistency = MathF.Round((float)player.Consistency, 2),
                 Confidence = MathF.Round((float)player.Confidence, 2),
-                ReplayPlayerId = player.ReplayPlayerId,
+                ReplayPlayerId = player.ReplayPlayer.ReplayPlayerId,
             });
 
             currentPlayerRating.Consistency = consistencyAfter;
             currentPlayerRating.Confidence = confidenceAfter;
             currentPlayerRating.Games++;
 
-            if (player.PlayerResult == PlayerResult.Win)
+            if (player.ReplayPlayer.PlayerResult == PlayerResult.Win)
             {
                 currentPlayerRating.Wins++;
             }
-            if (player.Kills == maxKills)
+            if (player.ReplayPlayer.Kills == maxKills)
             {
                 currentPlayerRating.Mvp++;
             }
-            if (player.IsUploader)
+            if (player.ReplayPlayer.IsUploader)
             {
                 currentPlayerRating.IsUploader = true;
             }
 
-            currentPlayerRating.SetCmdr(player.Race);
+            currentPlayerRating.SetCmdr(player.ReplayPlayer.Race);
             currentPlayerRating.SetMmr(mmrAfter, gameTime);
         }
         return ratings;

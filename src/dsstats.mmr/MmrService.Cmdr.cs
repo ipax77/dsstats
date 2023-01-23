@@ -18,7 +18,7 @@ public partial class MmrService
 
         for (int playerIndex = 0; playerIndex < teamData.Players.Length; playerIndex++)
         {
-            var playerCmdr = teamData.Players[playerIndex].Race;
+            var playerCmdr = teamData.Players[playerIndex].ReplayPlayer.Race;
 
             double synergySum = 0;
             double antiSynergySum = 0;
@@ -30,7 +30,7 @@ public partial class MmrService
                     continue;
                 }
 
-                var synergyPlayerCmdr = teamData.Players[synergyPlayerIndex].Race;
+                var synergyPlayerCmdr = teamData.Players[synergyPlayerIndex].ReplayPlayer.Race;
 
                 var synergy = cmdrMmrDic[new CmdrMmmrKey() { Race = playerCmdr, OppRace = synergyPlayerCmdr }];
 
@@ -39,7 +39,7 @@ public partial class MmrService
 
             for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamData.Players.Length; antiSynergyPlayerIndex++)
             {
-                var antiSynergyPlayerCmdr = teamData.Players[antiSynergyPlayerIndex].OppRace;
+                var antiSynergyPlayerCmdr = teamData.Players[antiSynergyPlayerIndex].ReplayPlayer.OppRace;
 
                 var antiSynergy = cmdrMmrDic[new CmdrMmmrKey() { Race = playerCmdr, OppRace = antiSynergyPlayerCmdr }];
 
@@ -70,7 +70,7 @@ public partial class MmrService
 
         for (int playerIndex = 0; playerIndex < teamData.Players.Length; playerIndex++)
         {
-            var playerCmdr = teamData.Players[playerIndex].Race;
+            var playerCmdr = teamData.Players[playerIndex].ReplayPlayer.Race;
 
             for (int synergyPlayerIndex = 0; synergyPlayerIndex < teamData.Players.Length; synergyPlayerIndex++)
             {
@@ -79,7 +79,7 @@ public partial class MmrService
                     continue;
                 }
 
-                var synergyPlayerCmdr = teamData.Players[synergyPlayerIndex].Race;
+                var synergyPlayerCmdr = teamData.Players[synergyPlayerIndex].ReplayPlayer.Race;
 
                 var synergy = cmdrMmrDic[new CmdrMmmrKey() { Race = playerCmdr, OppRace = synergyPlayerCmdr }];
 
@@ -88,7 +88,7 @@ public partial class MmrService
 
             for (int antiSynergyPlayerIndex = 0; antiSynergyPlayerIndex < teamData.Players.Length; antiSynergyPlayerIndex++)
             {
-                var antiSynergyPlayerCmdr = teamData.Players[antiSynergyPlayerIndex].OppRace;
+                var antiSynergyPlayerCmdr = teamData.Players[antiSynergyPlayerIndex].ReplayPlayer.OppRace;
 
                 var antiSynergy = cmdrMmrDic[new CmdrMmmrKey() { Race = playerCmdr, OppRace = antiSynergyPlayerCmdr }];
 
