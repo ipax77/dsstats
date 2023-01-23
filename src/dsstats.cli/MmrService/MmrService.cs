@@ -19,6 +19,8 @@ namespace dsstats.cli.MmrService
 {
     public class MmrService
     {
+        const double startClip = 168;
+
         readonly IServiceProvider serviceProvider;
 
         public MmrService()
@@ -63,7 +65,6 @@ namespace dsstats.cli.MmrService
         {
             using var scope = serviceProvider.CreateScope();
 
-            const double startClip = 168;
             double clip = startClip; //985
             List<ReplayData> replayDatas;
             double realAccuracy;

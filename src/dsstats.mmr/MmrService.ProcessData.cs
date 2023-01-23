@@ -9,7 +9,7 @@ public partial class MmrService
 {
     public static void SetReplayData(Dictionary<int, CalcRating> mmrIdRatings,
                                       ReplayData replayData,
-                                      Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrDic,
+                                      Dictionary<CmdrMmrKey, CmdrMmrValue> cmdrDic,
                                       MmrOptions mmrOptions)
     {
         SetTeamData(mmrIdRatings, replayData, replayData.WinnerTeamData, cmdrDic, mmrOptions);
@@ -22,7 +22,7 @@ public partial class MmrService
     private static void SetTeamData(Dictionary<int, CalcRating> mmrIdRatings,
                                     ReplayData replayData,
                                     TeamData teamData,
-                                    Dictionary<CmdrMmmrKey, CmdrMmmrValue> cmdrDic,
+                                    Dictionary<CmdrMmrKey, CmdrMmrValue> cmdrDic,
                                     MmrOptions mmrOptions)
     {
         foreach (var playerData in teamData.Players)
@@ -33,7 +33,8 @@ public partial class MmrService
         teamData.Confidence = teamData.Players.Sum(p => p.Confidence) / teamData.Players.Length;
         teamData.Mmr = teamData.Players.Sum(p => p.Mmr) / teamData.Players.Length;
 
-        if (mmrOptions.UseCommanderMmr && !replayData.IsStd)
+        if (mmrOptions.UseCommanderMmr
+            && (replayData.ReplayDsRDto.GameMode == GameMode.Commanders || replayData.ReplayDsRDto.GameMode == GameMode.CommandersHeroic))
         {
             teamData.CmdrComboMmr = GetCommandersComboMmr(replayData, teamData, cmdrDic);
         }
@@ -59,7 +60,7 @@ public partial class MmrService
         {
             plRating = mmrIdRatings[playerData.MmrId] = new CalcRating()
             {
-                PlayerId = playerData.PlayerId,
+                PlayerId = playerData.ReplayPlayer.Player.PlayerId,
                 Mmr = mmrOptions.StartMmr,
                 Consistency = 0,
                 Confidence = 0,
