@@ -8,6 +8,10 @@ namespace dsstats.mmr;
 
 public static partial class MmrService
 {
+    const double consistencyBeforePercentage = 0.99;
+    const double confidenceBeforePercentage = 0.99;
+
+
     private static void CalculateRatingsDeltas(ReplayData replayData,
                                                TeamData teamData,
                                                MmrOptions mmrOptions)
@@ -132,9 +136,7 @@ public static partial class MmrService
         foreach (var player in teamData.Players)
         {
             double mmrAfter = player.Mmr + player.Deltas.Mmr;
-            const double consistencyBeforePercentage = 0.99;
             double consistencyAfter = ((player.Consistency * consistencyBeforePercentage) + (player.Deltas.Consistency * (1 - consistencyBeforePercentage)));
-            const double confidenceBeforePercentage = 0.99;
             double confidenceAfter = ((player.Confidence * confidenceBeforePercentage) + (player.Deltas.Confidence * (1 - confidenceBeforePercentage)));
 
             consistencyAfter = Math.Clamp(consistencyAfter, 0, 1);
