@@ -27,14 +27,15 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v1.1.4 (web only atm)</summary>
+<details open="open"><summary>v1.1.4</summary>
 
 >- CheatDetect Results
 >- Rating calculation refactoring
+>- Sc2 Patch 5.0.11 - protocol 89634
 
 </details>
 
-<details open="open"><summary>v1.1.3</summary>
+<details><summary>v1.1.3</summary>
 
 >- Tournament Edition RatingTypes (Cmdr 3v3 TE, Std 3v3 TE)
 >- Some Info links / tooltips (thx to heyrandompeople)
