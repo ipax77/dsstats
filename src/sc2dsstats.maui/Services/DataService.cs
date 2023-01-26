@@ -291,4 +291,14 @@ public partial class DataService : IDataService
     {
         return await Task.FromResult(new RatingChangesResult());
     }
+
+    public async Task<List<PlayerRatingReplayCalcDto>> GetToonIdCalcRatings(ToonIdRatingRequest request, CancellationToken token)
+    {
+        return await ServerGetToonIdCalcRatings(request, token);
+    }
+
+    public ReplayRatingDto? GetOnlineRating(ReplayDetailsDto replayDto, List<PlayerRatingReplayCalcDto> calcDtos)
+    {
+        return ratingRepository.GetOnlineRating(replayDto, calcDtos);
+    }
 }

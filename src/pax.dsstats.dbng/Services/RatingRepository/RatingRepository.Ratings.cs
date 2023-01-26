@@ -1,5 +1,5 @@
-﻿
-using AutoMapper.QueryableExtensions;
+﻿using AutoMapper.QueryableExtensions;
+using dsstats.mmr;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using pax.dsstats.dbng.Extensions;
@@ -130,5 +130,75 @@ public partial class RatingRepository
                 .ProjectTo<PlayerRatingDetailDto>(mapper.ConfigurationProvider)
                 .ToListAsync(token)
         };
+    }
+
+    public async Task<List<PlayerRatingReplayCalcDto>> GetToonIdCalcRatings(ToonIdRatingRequest request, CancellationToken token)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return await context.PlayerRatings
+            .Where(x => x.RatingType == request.RatingType
+                && request.ToonIds.Contains(x.Player.ToonId))
+            .ProjectTo<PlayerRatingReplayCalcDto>(mapper.ConfigurationProvider)
+            .ToListAsync();
+    }
+
+    public ReplayRatingDto? GetOnlineRating(ReplayDetailsDto replayDto, List<PlayerRatingReplayCalcDto> calcDtos)
+    {
+        if (replayDto.ReplayRatingInfo == null || !calcDtos.Any())
+        {
+            return null;
+        }
+
+        var replayDsRDto = mapper.Map<ReplayDsRDto>(mapper.Map<Replay>(replayDto));
+
+        var dsrReplayPlayers = new List<ReplayPlayerDsRDto>(replayDsRDto.ReplayPlayers);
+        replayDsRDto.ReplayPlayers.Clear();
+
+        foreach (var dsrReplayPlayer in dsrReplayPlayers)
+        {
+            replayDsRDto.ReplayPlayers
+                .Add(dsrReplayPlayer with { Player = dsrReplayPlayer.Player with { PlayerId = dsrReplayPlayer.Player.ToonId } });
+        }
+
+        Dictionary<int, CalcRating> calcRatings = new();
+
+        foreach (var replayPlayer in replayDto.ReplayPlayers)
+        {
+            var calcDto = calcDtos.FirstOrDefault(f => f.Player.ToonId == replayPlayer.Player.ToonId);
+
+            CalcRating calcRating = new()
+            {
+                PlayerId = replayPlayer.Player.ToonId,
+                Games = calcDto?.Games ?? 0,
+                Mmr = calcDto?.Rating ?? 1000.0,
+                Consistency = calcDto?.Consistency ?? 0,
+                Confidence = calcDto?.Confidence ?? 0,
+                IsUploader = replayPlayer.IsUploader
+            };
+            calcRatings[replayPlayer.Player.ToonId] = calcRating;
+        }
+        var replayRating = MmrService.ProcessReplay(replayDsRDto, calcRatings, new(), new(false));
+
+        if (replayRating == null)
+        {
+            return null;
+        }
+
+        foreach (var replayPlayer in replayDto.ReplayPlayers)
+        {
+            var replayPlayerRating = replayRating.RepPlayerRatings
+                .FirstOrDefault(f => f.GamePos == replayPlayer.GamePos);
+
+            if (replayPlayerRating == null)
+            {
+                continue;
+            }
+
+            replayPlayer.MmrChange = replayPlayerRating.RatingChange;
+        }
+
+        return replayRating;
     }
 }

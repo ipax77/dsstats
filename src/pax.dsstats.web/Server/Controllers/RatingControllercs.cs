@@ -66,6 +66,13 @@ public class RatingsController
         return await ratingRepository.GetToonIdRatings(request, token);
     }
 
+    [HttpPost]
+    [Route("GetToonIdCalcRatings")]
+    public async Task<List<PlayerRatingReplayCalcDto>> GetToonIdCalcRatings(ToonIdRatingRequest request, CancellationToken token)
+    {
+        return await ratingRepository.GetToonIdCalcRatings(request, token);
+    }
+
     //[HttpPost]
     //[Route("GetRatingChangesCount")]
     //public async Task<int> GetRatingChangesCount(RatingChangesRequest request, CancellationToken token)

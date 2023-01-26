@@ -116,19 +116,29 @@
                         </div>
                     }
                 </div>
-                <div>
-                    <button 
-                        class="btn btn-sm btn-outline-light"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#ReplayRatingInfo"
-                        aria-expanded="false" 
-                        aria-controls="ReplayRatingInfo"
-                        @onclick="ShowHideRatingInfo"
-                    >
-                        <span class="oi @(showRatingInfo ? "oi-caret-bottom" : "oi-caret-top")"></span>
-                        Rating Info
-                    </button>
+                <div class="d-flex">
+                    <div>
+                        <button class="btn btn-sm btn-outline-light"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#ReplayRatingInfo"
+                                aria-expanded="false"
+                                aria-controls="ReplayRatingInfo"
+                                @onclick="ShowHideRatingInfo">
+                            <span class="oi @(showRatingInfo ? "oi-caret-bottom" : "oi-caret-top")"></span>
+                            Rating Info
+                        </button>
+                    </div>
+                    @if (Data.IsMaui && (DateTime.UtcNow - replayDto.GameTime) < TimeSpan.FromHours(24))
+                    {
+                        <div class="ms-5 form-check form-switch align-self-center">
+                            <label class="form-check-label">
+                                Online Rating (expected)
+                                <input type="checkbox" class="form-check-input" @onchange="ToggleOnlineRating">
+                                </input>
+                            </label>
+                        </div>
+                    }
                 </div>
                 <div class="collapse" id="ReplayRatingInfo">
                     <ReplayRatingInfo ReplayRatingDto="replayDto.ReplayRatingInfo"></ReplayRatingInfo>
@@ -148,8 +158,8 @@
     @*<PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>*@
     <sc2dsstats.razorlib.PlayerDetails.PlayerDetailsNgComponent RequestNames="Interest"
                                                             RatingType="@(replayDto.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr)"
-                                                            OnCloseRequested="DetailsClose" 
-                                                            ReplaysRequest="ReplaysRequest"/>
+                                                            OnCloseRequested="DetailsClose"
+                                                            ReplaysRequest="ReplaysRequest" />
 }
 
 @if (showBuilds.Where(x => x).Any())
@@ -206,6 +216,10 @@
     private ChartComponent? chartComponent;
 
     private bool showMiddleChart;
+
+    private CancellationTokenSource cts = new();
+    private SemaphoreSlim ss = new(1, 1);
+    private ReplayRatingDto? mauiRating;
 
     protected override void OnInitialized()
     {
@@ -307,6 +321,73 @@
     {
         Interest = new() { Name = player.Name, ToonId = player.ToonId };
         InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task ToggleOnlineRating()
+    {
+        await ss.WaitAsync();
+        try
+        {
+            if (mauiRating == null)
+            {
+                await SetOnlineRatings();
+            }
+            else
+            {
+                SetMauiRatings();
+            }
+        } 
+        finally
+        {
+            ss.Release();
+        }
+    }
+
+    private async Task SetOnlineRatings()
+    {
+        if (replayDto.ReplayRatingInfo == null)
+        {
+            return;
+        }
+
+        ToonIdRatingRequest request = new()
+            {
+                RatingType = replayDto.ReplayRatingInfo.RatingType,
+                ToonIds = replayDto.ReplayPlayers.Select(s => s.Player.ToonId).ToList()
+            };
+
+        List<PlayerRatingReplayCalcDto> playerCalcRatings = await dataService.GetToonIdCalcRatings(request, cts.Token);
+
+        if (mauiRating == null)
+        {
+            mauiRating = replayDto.ReplayRatingInfo;
+        }
+        replayDto.ReplayRatingInfo = dataService.GetOnlineRating(replayDto, playerCalcRatings);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void SetMauiRatings()
+    {
+        replayDto.ReplayRatingInfo = mauiRating;
+
+        if (mauiRating == null)
+        {
+            return;
+        }
+
+        foreach (var replayPlayer in replayDto.ReplayPlayers)
+        {
+            var replayPlayerRating = mauiRating.RepPlayerRatings
+                .FirstOrDefault(f => f.GamePos == replayPlayer.GamePos);
+
+            if (replayPlayerRating == null)
+            {
+                continue;
+            }
+
+            replayPlayer.MmrChange = replayPlayerRating.RatingChange;
+        }
+        mauiRating = null;
     }
 
     private void DetailsClose()
@@ -462,5 +543,8 @@
 
     public void Dispose()
     {
+        cts.Cancel();
+        cts.Dispose();
+        ss.Dispose();
     }
 }

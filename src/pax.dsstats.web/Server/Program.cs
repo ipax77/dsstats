@@ -116,8 +116,8 @@ if (app.Environment.IsDevelopment())
     //var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
     //var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
 
-    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
+    // var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    // mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
 
     //var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
     //ratingRepository.SeedRatingChanges().Wait();

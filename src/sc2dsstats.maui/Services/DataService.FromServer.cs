@@ -414,6 +414,28 @@ public partial class DataService
         return new();
     }
 
+    public async Task<List<PlayerRatingReplayCalcDto>> ServerGetToonIdCalcRatings(ToonIdRatingRequest request, CancellationToken token)
+    {
+        try
+        {
+            var result = await httpClient.PostAsJsonAsync($"{ratingController}GetToonIdCalcRatings", request);
+            if (result.IsSuccessStatusCode)
+            {
+                var toonIdRatingResponse = await result.Content.ReadFromJsonAsync<List<PlayerRatingReplayCalcDto>>();
+                if (toonIdRatingResponse != null)
+                {
+                    return toonIdRatingResponse;
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting toonIdCalcRatings: {ex.Message}");
+        }
+        return new();
+    }
+
     public async Task<GameInfoResult> ServerGetGameInfo(GameInfoRequest request, CancellationToken token)
     {
         try
