@@ -29,8 +29,8 @@ public partial class DataService : IDataService
         this.fromServerSwitchService = fromServerSwitchService;
         this.logger = logger;
         httpClient = new HttpClient();
-        // httpClient.BaseAddress = new Uri("https://localhost:7174");
-        httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
+        httpClient.BaseAddress = new Uri("https://localhost:7174");
+        // httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
     }
 
@@ -290,5 +290,15 @@ public partial class DataService : IDataService
     public async Task<RatingChangesResult> GetRatingChanges(RatingChangesRequest request, CancellationToken token)
     {
         return await Task.FromResult(new RatingChangesResult());
+    }
+
+    public async Task<List<PlayerRatingReplayCalcDto>> GetToonIdCalcRatings(ToonIdRatingRequest request, CancellationToken token)
+    {
+        return await ServerGetToonIdCalcRatings(request, token);
+    }
+
+    public ReplayRatingDto? GetOnlineRating(ReplayDetailsDto replayDto, List<PlayerRatingReplayCalcDto> calcDtos)
+    {
+        return ratingRepository.GetOnlineRating(replayDto, calcDtos);
     }
 }

@@ -65,3 +65,17 @@ public record PlayerRatingChangeDto
     public float Change10d { get; set; }
     public float Change30d { get; set; }
 }
+
+public record PlayerRatingReplayCalcDto
+{
+    public double Rating { get; init; }
+    public int Games { get; init; }
+    public double Consistency { get; init; }
+    public double Confidence { get; init; }
+    public PlayerReplayCalcDto Player { get; init; } = null!;
+}
+
+public record PlayerReplayCalcDto
+{
+    public int ToonId { get; init; }
+}
