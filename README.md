@@ -27,6 +27,12 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
+<details open="open"><summary>v1.1.5 (web only atm)</summary>
+
+>- App (latest)replay live ratings
+
+</details>
+
 <details open="open"><summary>v1.1.4</summary>
 
 >- CheatDetect Results
