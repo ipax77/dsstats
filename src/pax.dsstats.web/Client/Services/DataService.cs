@@ -635,4 +635,14 @@ public class DataService : IDataService
         }
         return new();
     }
+
+    public async Task<List<PlayerRatingReplayCalcDto>> GetToonIdCalcRatings(ToonIdRatingRequest request, CancellationToken token)
+    {
+        return await Task.FromResult(new List<PlayerRatingReplayCalcDto>());
+    }
+
+    public ReplayRatingDto? GetOnlineRating(ReplayDetailsDto replayDto, List<PlayerRatingReplayCalcDto> calcDtos)
+    {
+        return null;
+    }
 }
