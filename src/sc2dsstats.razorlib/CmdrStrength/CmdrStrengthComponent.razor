@@ -1,0 +1,112 @@
+﻿@using pax.dsstats.shared;
+@inject IDataService dataService
+@implements IDisposable
+
+<div>
+    <CmdrStrengthRequest Request="Request" OnRequestChanged="RequestChanged"></CmdrStrengthRequest>
+</div>
+
+<div class="mt-2">
+    <p class="text-warning">
+        Only replays with no leavers were used. AvgRating is the average rating of players that picked the corresponding commander in the given time period.
+    </p>
+</div>
+
+@if (result == null)
+{
+    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else
+{
+    @if (isLoading)
+    {
+        <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
+    <div class="mt-2">
+        <div class="row">
+            <div class="col-auto">
+                <CmdrStrengthTable @ref="cmdrStrengthTable" Result="result" OnTableHover="TableHover"></CmdrStrengthTable>
+            </div>
+            <div class="col-7">
+                <div class="w-100" style="min-width: 900px;">
+                    <CmdrStrengthChart @ref="cmdrStrengthChart" Request="Request" Result="result" OnBubbleHover="BubbleHover"></CmdrStrengthChart>
+                </div>
+                <div class="ms-2 mt-2 p-2 bg-dark">
+                    <h3 class="text-warning">Interpretation</h3>
+                    <p>
+                        <span class="oi oi-chevron-right"></span>
+                        The further right the bubble is, the higher the commander's winrate
+                    </p>
+                    <p>
+                        <span class="oi oi-chevron-right"></span>
+                        The higher the bubble, the more often the commander was played
+                    </p>
+                    <p>
+                        <span class="oi oi-chevron-right"></span>
+                        The bigger the bubble, the stronger the players who played the commander
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+}
+
+
+@code {
+    [Parameter, EditorRequired]
+    public pax.dsstats.shared.CmdrStrengthRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<pax.dsstats.shared.CmdrStrengthRequest> OnRequestChanged { get; set; }
+
+    private CmdrStrengthResult? result;
+    private CancellationTokenSource cts = new();
+    private bool isLoading;
+
+    private CmdrStrengthChart? cmdrStrengthChart;
+    private CmdrStrengthTable? cmdrStrengthTable;
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private void RequestChanged()
+    {
+        OnRequestChanged.InvokeAsync(Request);
+        _ = LoadData();
+    }
+
+    public async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        result = await dataService.GetCmdrStrengthResults(Request, cts.Token);
+        isLoading = false;
+        cmdrStrengthChart?.Update(Request, result);
+        TableHover(0);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void TableHover(int index)
+    {
+        cmdrStrengthChart?.AnimateBubble(index);
+    }
+
+    private void BubbleHover(int index)
+    {
+        cmdrStrengthTable?.BubbleHover(index);
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

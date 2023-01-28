@@ -30,6 +30,7 @@ We really like people helping us with the project. Nevertheless, take your time 
 <details open="open"><summary>v1.1.5 (web only atm)</summary>
 
 >- App (latest)replay live ratings
+>- Commander Strength Bubble Chart
 
 </details>
 

@@ -61,6 +61,11 @@ function registerImagePlugin(xWidth, yWidth) {
     preloadChartIcons(xWidth, yWidth);
 }
 
+function registerbubbleLabelsPlugin() {
+    const bubbleLabels = bubbleLabelsPlugin();
+    Chart.register(bubbleLabels);
+}
+
 function preloadChartIcons(xWidth, yWidth) {
     if (cmdrIconsMap.size > 0) {
         return;
@@ -148,4 +153,41 @@ function scrollToId(id) {
     if (ele != undefined) {
         ele.scrollIntoView({ behavior: 'smooth' });
     }
+}
+
+
+function bubbleLabelsPlugin() {
+    const fontSize = Chart.defaults.font.size;
+
+    return {
+        id: 'bubbleLabelsPlugin',
+        afterDatasetsDraw: (chart, args, options) => {
+            const ctx = chart.ctx
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+
+            chart.data.datasets.forEach((dataset, i) => {
+                const meta = chart.getDatasetMeta(i)
+                if (meta.type !== 'bubble') return
+
+                meta.data.forEach((element, index) => {
+                    const item = dataset.data[index]
+                    const position = element.tooltipPosition()
+                    ctx.fillStyle = "#4D60EB";
+                    ctx.fillText(item.label.toString(), position.x, position.y - item.r - fontSize)
+                })
+            })
+        },
+    }
+}
+
+function bubblePointHover(chartId, index) {
+    const chart = Chart.getChart(chartId);
+    chart.setActiveElements([
+        {
+            datasetIndex: 0,
+            index: index,
+        }
+    ]);
+    chart.update();
 }
