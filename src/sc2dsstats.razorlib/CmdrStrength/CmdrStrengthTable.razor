@@ -1,0 +1,177 @@
+﻿@using System.Globalization;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Extensions;
+@using sc2dsstats.razorlib.Services;
+
+<style>
+    .tableFixHead {
+        overflow-y: auto;
+    }
+
+        .tableFixHead thead th {
+            position: sticky;
+            top: 0;
+        }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+
+    th {
+        background: purple;
+    }
+
+    .tablebackground {
+        position: absolute;
+        z-index: -1;
+        opacity: 0.15;
+    }
+</style>
+
+<div class="table-responsive tableFixHead">
+    <table class="table table-dark table-hover w-auto">
+        <colgroup>
+            <col class="col">
+            <col class="col">
+            <col class="col">
+            <col class="col">
+        </colgroup>
+        <thead class="user-select-none">
+            <CascadingValue Value="Orders">
+                <tr>
+                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(CmdrStrengthItem.Commander))">
+                        <SortArrow Property="@nameof(CmdrStrengthItem.Commander)">
+                            Commander
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(CmdrStrengthItem.Matchups))">
+                        <SortArrow Property="@nameof(CmdrStrengthItem.Matchups)">
+                            Matchups
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(CmdrStrengthItem.Wins))">
+                        <SortArrow Property="@nameof(CmdrStrengthItem.Wins)">
+                            Wins
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Winrate"))">
+                        <SortArrow Property="Winrate">
+                            Winrate
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(CmdrStrengthItem.AvgRating))">
+                        <SortArrow Property="@nameof(CmdrStrengthItem.AvgRating)">
+                            AvgRating
+                        </SortArrow>
+                    </th>
+                </tr>
+            </CascadingValue>
+        </thead>
+        <tbody>
+            @foreach (var item in GetSortedList())
+            {
+                <tr>
+                    <td>
+                        @item.Commander
+                    </td>
+                    <td>
+                        @item.Matchups
+                    </td>
+                    <td>
+                        @item.Wins
+                    </td>
+                    <td>
+                        @HelperService.GetPercentageString(item.Wins, item.Matchups)
+                    </td>
+                    <td>
+                        @item.AvgRating.ToString("N2", CultureInfo.InvariantCulture)
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public CmdrStrengthResult Result { get; set; } = default!;
+
+    private List<TableOrder> Orders = new List<TableOrder>()
+    {
+        new TableOrder() { Property = nameof(CmdrStrengthItem.AvgRating), Ascending = false }
+    };
+
+    private void SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = Orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                Orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            Orders.Clear();
+            Orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+        StateHasChanged();
+    }
+
+    private List<CmdrStrengthItem> GetSortedList()
+    {
+        List<CmdrStrengthItem> items = new();
+
+        if (Result.Items.Any())
+        {
+            var itemsQ = Result.Items.AsQueryable();
+
+            foreach (var order in Orders)
+            {
+                if (order.Property == "Winrate")
+                {
+                    if (order.Ascending)
+                    {
+                        itemsQ = itemsQ.OrderBy(o => o.Matchups == 0 ? 0 : o.Wins * 100.0 / o.Matchups);
+                    }
+                    else
+                    {
+                        itemsQ = itemsQ.OrderByDescending(o => o.Matchups == 0 ? 0 : o.Wins * 100.0 / o.Matchups);
+                    }
+                }
+
+                else if (order.Ascending)
+                {
+                    itemsQ = itemsQ.AppendOrderBy(order.Property);
+                }
+                else
+                {
+                    itemsQ = itemsQ.AppendOrderByDescending(order.Property);
+                }
+            }
+
+            items = itemsQ.ToList();
+        }
+
+        return items;
+    }
+}

@@ -61,6 +61,7 @@ builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRe
 builder.Services.AddScoped<ImportService>();
 builder.Services.AddScoped<MmrProduceService>();
 builder.Services.AddScoped<CheatDetectService>();
+builder.Services.AddScoped<MlnetService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -121,6 +122,11 @@ if (app.Environment.IsDevelopment())
 
     //var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
     //ratingRepository.SeedRatingChanges().Wait();
+
+    var mlNetService = scope.ServiceProvider.GetRequiredService<MlnetService>();
+    var result = mlNetService.GetCmdrStrengthResults(RatingType.Cmdr, new DateTime(2023, 1, 1), DateTime.MinValue).GetAwaiter().GetResult();
+
+    Console.WriteLine(result);
 }
 
 // Configure the HTTP request pipeline.

@@ -13,6 +13,7 @@ public interface IDataService
     Task<StatsResponse> GetStats(StatsRequest request, CancellationToken token = default);
     Task<StatsResponse> GetTourneyStats(StatsRequest request, CancellationToken token = default);
     Task<BuildResponse> GetBuild(BuildRequest request, CancellationToken token = default);
+    Task<CmdrStrengthResult> GetCmdrStrengthResults(CmdrStrengthRequest request, CancellationToken token);
 
     // ratings
     Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token);
