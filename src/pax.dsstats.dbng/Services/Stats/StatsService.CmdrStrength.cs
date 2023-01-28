@@ -41,8 +41,8 @@ public partial class StatsService
                     {
                         Commander = g.Key,
                         Matchups = g.Count(),
-                        AvgRating = Math.Round(g.Sum(s => s.ReplayPlayerRatingInfo.Rating) / g.Count(), 2),
-                        AvgRatingGain = Math.Round(g.Sum(s => s.ReplayPlayerRatingInfo.RatingChange) / g.Count(), 2),
+                        AvgRating = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.Rating), 2),
+                        AvgRatingGain = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.RatingChange), 2),
                         Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
                     };
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
