@@ -180,3 +180,14 @@ function bubbleLabelsPlugin() {
         },
     }
 }
+
+function bubblePointHover(chartId, index) {
+    const chart = Chart.getChart(chartId);
+    chart.setActiveElements([
+        {
+            datasetIndex: 0,
+            index: index,
+        }
+    ]);
+    chart.update();
+}

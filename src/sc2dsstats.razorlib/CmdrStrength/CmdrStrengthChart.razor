@@ -12,6 +12,9 @@
     [Parameter, EditorRequired]
     public CmdrStrengthResult Result { get; set; } = default!;
 
+    [Parameter]
+    public EventCallback<int> OnBubbleHover { get; set; }
+
     private ChartJsConfig chartConfig = null!;
     private ChartComponent? chartComponent;
 
@@ -62,6 +65,38 @@
             chartIsReady = true;
             Update(Request, Result);
         }
+        else if (e is ChartJsLabelClickEvent clickEvent)
+        {
+            OnBubbleHover.InvokeAsync(FindClosestPoint(clickEvent.DataX, clickEvent.DataY));
+        }
+    }
+
+    private int FindClosestPoint(double x, double y)
+    {
+        int closestIndex = -1;
+        double closestDistance = double.MaxValue;
+
+        for (int i = 0; i < Result.Items.Count; i++)
+        {
+            var item = Result.Items[i];
+            double distance = Math.Sqrt(Math.Pow(x - (item.Wins * 100.0 / item.Matchups), 2) + Math.Pow(y - item.Matchups, 2));
+            if (distance < closestDistance)
+            {
+                closestIndex = i;
+                closestDistance = distance;
+            }
+        }
+
+        return closestIndex;
+    }
+
+    public void AnimateBubble(int index)
+    {
+        if (!chartIsReady)
+        {
+            return;
+        }
+        jsRuntime.InvokeVoidAsync("bubblePointHover", chartConfig.ChartJsConfigGuid, index);
     }
 
     public ChartJsDataset GetBubbleChartDataset(pax.dsstats.shared.CmdrStrengthRequest request, CmdrStrengthResult result)
@@ -79,7 +114,9 @@
                 R = GetRadius(s.AvgRating, min, max),
                 Label = s.Commander.ToString()
             })).ToList(),
-            BackgroundColor = new IndexableOption<string>(result.Items.Select(s => Data.GetBackgroundColor(s.Commander, "66")).ToList())
+            BackgroundColor = new IndexableOption<string>(result.Items.Select(s => Data.GetBackgroundColor(s.Commander, "66")).ToList()),
+            HoverBorderColor = new IndexableOption<string>("red"),
+            HoverBorderWidth = new IndexableOption<double>(6),
         };
     }
 
@@ -102,6 +139,12 @@
                     Responsive = true,
                     MaintainAspectRatio = true,
                     OnClickEvent = true,
+                    //Interaction = new Interactions()
+                    //{
+                    //    Mode = "dataset",
+                    //    //Axis = "y",
+                    //    Intersect = true
+                    //},
                     Plugins = new()
                     {
                         Title = new()

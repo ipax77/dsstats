@@ -29,11 +29,11 @@ else
     <div class="mt-2">
         <div class="row">
             <div class="col-auto">
-                <CmdrStrengthTable Result="result"></CmdrStrengthTable>
+                <CmdrStrengthTable @ref="cmdrStrengthTable" Result="result" OnTableHover="TableHover"></CmdrStrengthTable>
             </div>
             <div class="col-7">
                 <div class="w-100" style="min-width: 900px;">
-                    <CmdrStrengthChart @ref="cmdrStrengthChart" Request="Request" Result="result"></CmdrStrengthChart>
+                    <CmdrStrengthChart @ref="cmdrStrengthChart" Request="Request" Result="result" OnBubbleHover="BubbleHover"></CmdrStrengthChart>
                 </div>
                 <div class="ms-2 mt-2 p-2 bg-dark">
                     <h3 class="text-warning">Interpretation</h3>
@@ -69,6 +69,7 @@ else
     private bool isLoading;
 
     private CmdrStrengthChart? cmdrStrengthChart;
+    private CmdrStrengthTable? cmdrStrengthTable;
 
     protected override void OnInitialized()
     {
@@ -90,7 +91,16 @@ else
         isLoading = false;
         cmdrStrengthChart?.Update(Request, result);
         await InvokeAsync(() => StateHasChanged());
-        
+    }
+
+    private void TableHover(int index)
+    {
+        cmdrStrengthChart?.AnimateBubble(index);
+    }
+
+    private void BubbleHover(int index)
+    {
+        cmdrStrengthTable?.BubbleHover(index);
     }
 
     public void Dispose()

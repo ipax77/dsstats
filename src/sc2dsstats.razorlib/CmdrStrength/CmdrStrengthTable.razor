@@ -76,7 +76,8 @@
         <tbody>
             @foreach (var item in GetSortedList())
             {
-                <tr>
+                int itemIndex = Result.Items.IndexOf(item);
+                <tr class="@(hoverIndex >= 0 && hoverIndex == itemIndex ? "table-primary" : "")" @onmouseover="e => TableHover(itemIndex)">
                     <td>
                         @item.Commander
                     </td>
@@ -103,10 +104,26 @@
     [Parameter, EditorRequired]
     public CmdrStrengthResult Result { get; set; } = default!;
 
+    [Parameter]
+    public EventCallback<int> OnTableHover { get; set; }
+
     private List<TableOrder> Orders = new List<TableOrder>()
     {
         new TableOrder() { Property = nameof(CmdrStrengthItem.AvgRating), Ascending = false }
     };
+
+    private int hoverIndex = -1;
+
+    public void BubbleHover(int index)
+    {
+        hoverIndex = index;
+    }
+
+    private void TableHover(int index)
+    {
+        hoverIndex = index;
+        OnTableHover.InvokeAsync(hoverIndex);
+    }
 
     private void SortList(MouseEventArgs e, string property)
     {

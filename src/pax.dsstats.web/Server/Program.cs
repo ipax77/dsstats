@@ -122,11 +122,6 @@ if (app.Environment.IsDevelopment())
 
     //var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
     //ratingRepository.SeedRatingChanges().Wait();
-
-    var mlNetService = scope.ServiceProvider.GetRequiredService<MlnetService>();
-    var result = mlNetService.GetCmdrStrengthResults(RatingType.Cmdr, new DateTime(2023, 1, 1), DateTime.MinValue).GetAwaiter().GetResult();
-
-    Console.WriteLine(result);
 }
 
 // Configure the HTTP request pipeline.
