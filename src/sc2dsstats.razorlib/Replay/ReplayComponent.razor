@@ -14,7 +14,13 @@
                 <div class="row fw-bolder">
                     <div class="col">@replayDto.GameTime.ToShortDateString()</div>
                     <div class="col">Duration @duration</div>
-                    <div class="col">@replayDto.GameMode</div>
+                    <div class="col">
+                        @replayDto.GameMode
+                        @if (replayDto.TournamentEdition)
+                        {
+                            <span class="border rounded p-1 ms-2">TE</span>
+                        }
+                    </div>
                     <div class="col-2"><span class="oi oi-x text-danger pointer" @onclick="e => OnCloseRequested.InvokeAsync()"></span></div>
                 </div>
             </div>
