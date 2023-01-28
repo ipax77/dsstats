@@ -36,19 +36,31 @@ public partial class StatsService
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
         var group = from r in replays
                     from rp in r.ReplayPlayers
-                    group rp by rp.Race into g
+                    group rp by  rp.Race into g
                     select new CmdrStrengthItem()
                     {
                         Commander = g.Key,
                         Matchups = g.Count(),
                         AvgRating = Math.Round(g.Sum(s => s.ReplayPlayerRatingInfo.Rating) / g.Count(), 2),
+                        AvgRatingGain = Math.Round(g.Sum(s => s.ReplayPlayerRatingInfo.RatingChange) / g.Count(), 2),
                         Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
                     };
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
 
+        var items = await group.ToListAsync(token);
+
+        if (request.RatingType == RatingType.Cmdr || request.RatingType == RatingType.CmdrTE)
+        {
+            items = items.Where(x => (int)x.Commander > 3).ToList();
+        }
+        else if (request.RatingType == RatingType.Std || request.RatingType == RatingType.StdTE)
+        {
+            items = items.Where(x => (int)x.Commander <= 3).ToList();
+        }
+
         return new()
         {
-            Items = await group.ToListAsync(token)
+            Items = items
         };
     }
 }
