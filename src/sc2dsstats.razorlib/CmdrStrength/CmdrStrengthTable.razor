@@ -65,7 +65,7 @@
                             Winrate
                         </SortArrow>
                     </th>
-                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(CmdrStrengthItem.AvgRating))">
+                    <th scope="col" class="pointer text-warning" @onclick="e => SortList(e, nameof(CmdrStrengthItem.AvgRating))">
                         <SortArrow Property="@nameof(CmdrStrengthItem.AvgRating)">
                             AvgRating
                         </SortArrow>
@@ -79,7 +79,12 @@
                 int itemIndex = Result.Items.IndexOf(item);
                 <tr class="@(hoverIndex >= 0 && hoverIndex == itemIndex ? "table-primary" : "")" @onmouseover="e => TableHover(itemIndex)">
                     <td>
-                        @item.Commander
+                        <img src="@HelperService.GetImageSrc(item.Commander)"
+                         alt="@item.Commander"
+                         title="@item.Commander"
+                         width="30"
+                         height="30" />
+                            @item.Commander
                     </td>
                     <td>
                         @item.Matchups
@@ -90,7 +95,7 @@
                     <td>
                         @HelperService.GetPercentageString(item.Wins, item.Matchups)
                     </td>
-                    <td>
+                    <td class="text-warning">
                         @item.AvgRating.ToString("N2", CultureInfo.InvariantCulture)
                     </td>
                 </tr>

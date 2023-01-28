@@ -90,6 +90,7 @@ else
         result = await dataService.GetCmdrStrengthResults(Request, cts.Token);
         isLoading = false;
         cmdrStrengthChart?.Update(Request, result);
+        TableHover(0);
         await InvokeAsync(() => StateHasChanged());
     }
 

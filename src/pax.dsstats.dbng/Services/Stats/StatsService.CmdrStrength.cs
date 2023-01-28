@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng.Services;
@@ -6,6 +8,17 @@ namespace pax.dsstats.dbng.Services;
 public partial class StatsService
 {
     public async Task<CmdrStrengthResult> GetCmdrStrengthResults(CmdrStrengthRequest request, CancellationToken token)
+    {
+        var memKey = request.GenMemKey();
+        if (!memoryCache.TryGetValue(memKey, out CmdrStrengthResult result))
+        {
+            result = await ProduceCmdrStrengthResult(request, token);
+            memoryCache.Set(memKey, result, TimeSpan.FromHours(24));
+        }
+        return result;
+    }
+
+    private async Task<CmdrStrengthResult> ProduceCmdrStrengthResult(CmdrStrengthRequest request, CancellationToken token)
     {
         (var startDate, var endDate) = Data.TimeperiodSelected(request.TimePeriod);
 

@@ -61,7 +61,6 @@ builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRe
 builder.Services.AddScoped<ImportService>();
 builder.Services.AddScoped<MmrProduceService>();
 builder.Services.AddScoped<CheatDetectService>();
-builder.Services.AddScoped<MlnetService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
