@@ -55,11 +55,11 @@
                             Matchups
                         </SortArrow>
                     </th>
-                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(CmdrStrengthItem.Wins))">
+@*                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(CmdrStrengthItem.Wins))">
                         <SortArrow Property="@nameof(CmdrStrengthItem.Wins)">
                             Wins
                         </SortArrow>
-                    </th>
+                    </th>*@
                     <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Winrate"))">
                         <SortArrow Property="Winrate">
                             Winrate
@@ -68,6 +68,11 @@
                     <th scope="col" class="pointer text-warning" @onclick="e => SortList(e, nameof(CmdrStrengthItem.AvgRating))">
                         <SortArrow Property="@nameof(CmdrStrengthItem.AvgRating)">
                             AvgRating
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer text-warning" @onclick="e => SortList(e, nameof(CmdrStrengthItem.AvgRatingGain))">
+                        <SortArrow Property="@nameof(CmdrStrengthItem.AvgRatingGain)">
+                            AvgGain
                         </SortArrow>
                     </th>
                 </tr>
@@ -89,18 +94,27 @@
                     <td>
                         @item.Matchups
                     </td>
-                    <td>
+@*                    <td>
                         @item.Wins
-                    </td>
+                    </td>*@
                     <td>
                         @HelperService.GetPercentageString(item.Wins, item.Matchups)
                     </td>
                     <td class="text-warning">
                         @item.AvgRating.ToString("N2", CultureInfo.InvariantCulture)
                     </td>
+                    <td class="@(item.AvgRatingGain < 0 ? "text-danger" : "text-success")">
+                        @item.AvgRatingGain.ToString("N2", CultureInfo.InvariantCulture)
+                    </td>
                 </tr>
             }
         </tbody>
+@*        <tfoot>
+            <tr>
+                <td colspan="4"></td>
+                <td>&sum; @Result.Items.Sum(s => s.AvgRatingGain).ToString("N2", CultureInfo.InvariantCulture)</td>
+            </tr>
+        </tfoot>*@
     </table>
 </div>
 

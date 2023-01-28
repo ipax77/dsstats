@@ -16,6 +16,7 @@ public record CmdrStrengthItem
     public Commander Commander { get; init; }
     public int Matchups { get; init; }
     public double AvgRating { get; init; }
+    public double AvgRatingGain { get; init; }
     public int Wins { get; init; }
 }
 
