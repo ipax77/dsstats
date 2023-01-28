@@ -301,4 +301,9 @@ public partial class DataService : IDataService
     {
         return ratingRepository.GetOnlineRating(replayDto, calcDtos);
     }
+
+    public async Task<CmdrStrengthResult> GetCmdrStrengthResults(CmdrStrengthRequest request, CancellationToken token)
+    {
+        return await Task.FromResult(new CmdrStrengthResult());
+    }
 }
