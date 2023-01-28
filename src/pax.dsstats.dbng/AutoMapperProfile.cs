@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng

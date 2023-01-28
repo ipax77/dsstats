@@ -238,5 +238,17 @@ namespace pax.dsstats.web.Server.Controllers.v3
         {
             return await statsService.GetServerStats(token);
         }
+
+        [HttpPost]
+        [Route("GetCmdrStrength")]
+        public async Task<ActionResult<CmdrStrengthResult>> GetCmdrStrength(CmdrStrengthRequest request, CancellationToken token)
+        {
+            try
+            {
+                return await statsService.GetCmdrStrengthResults(request, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
+        }
     }
 }

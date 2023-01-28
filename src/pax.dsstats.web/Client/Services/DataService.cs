@@ -645,4 +645,27 @@ public class DataService : IDataService
     {
         return null;
     }
+
+    public async Task<CmdrStrengthResult> GetCmdrStrengthResults(CmdrStrengthRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetCmdrStrength", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<CmdrStrengthResult>(cancellationToken: token) ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting cmdrStrength: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting cmdrStrength: {e.Message}");
+        }
+        return new();
+    }
 }

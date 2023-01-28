@@ -22,5 +22,6 @@ namespace pax.dsstats.dbng.Services
         Task<StatsUpgradesResponse> GetUpgradeStats(BuildRequest buildRequest, CancellationToken token);
         Task<GameInfoResult> GetGameInfo(GameInfoRequest request, CancellationToken token);
         Task<ServerStatsResponse> GetServerStats(CancellationToken token = default);
+        Task<CmdrStrengthResult> GetCmdrStrengthResults(CmdrStrengthRequest request, CancellationToken token);
     }
 }

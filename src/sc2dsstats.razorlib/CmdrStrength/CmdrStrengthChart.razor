@@ -1,0 +1,218 @@
+﻿@using Microsoft.JSInterop;
+@using pax.BlazorChartJs;
+@using pax.dsstats.shared;
+@inject IJSRuntime jsRuntime
+
+<ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered" />
+
+@code {
+    [Parameter, EditorRequired]
+    public pax.dsstats.shared.CmdrStrengthRequest Request { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public CmdrStrengthResult Result { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<int> OnBubbleHover { get; set; }
+
+    private ChartJsConfig chartConfig = null!;
+    private ChartComponent? chartComponent;
+
+    private bool chartIsReady;
+    private bool bubbleLabelsRegistered;
+
+    private const double rMin = 2.0;
+    private const double rMax = 50.0;
+
+    protected override void OnInitialized()
+    {
+        chartConfig = GetBubbleChartConfig();
+        base.OnInitialized();
+    }
+
+    public void Update(pax.dsstats.shared.CmdrStrengthRequest request, CmdrStrengthResult result)
+    {
+        if (!chartIsReady)
+        {
+            return;
+        }
+
+        if (chartConfig.Data.Datasets.Any())
+        {
+            chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
+        }
+
+        if (!bubbleLabelsRegistered)
+        {
+            jsRuntime.InvokeVoidAsync("registerbubbleLabelsPlugin");
+            bubbleLabelsRegistered = true;
+        }
+
+        if (chartConfig.Options?.Scales?.Y != null)
+        {
+            var max = result.Items.Max(s => s.Matchups);
+            chartConfig.Options.Scales.Y.SuggestedMax = max + max * 0.2;
+            chartComponent?.UpdateChartOptions();
+        }
+
+        chartConfig.AddDataset(GetBubbleChartDataset(request, result));
+    }
+
+    private void ChartEventTriggered(ChartJsEvent e)
+    {
+        if (e is ChartJsInitEvent initEvent)
+        {
+            chartIsReady = true;
+            Update(Request, Result);
+        }
+        else if (e is ChartJsLabelClickEvent clickEvent)
+        {
+            OnBubbleHover.InvokeAsync(FindClosestPoint(clickEvent.DataX, clickEvent.DataY));
+        }
+    }
+
+    private int FindClosestPoint(double x, double y)
+    {
+        int closestIndex = -1;
+        double closestDistance = double.MaxValue;
+
+        for (int i = 0; i < Result.Items.Count; i++)
+        {
+            var item = Result.Items[i];
+            double distance = Math.Sqrt(Math.Pow(x - (item.Wins * 100.0 / item.Matchups), 2) + Math.Pow(y - item.Matchups, 2));
+            if (distance < closestDistance)
+            {
+                closestIndex = i;
+                closestDistance = distance;
+            }
+        }
+
+        return closestIndex;
+    }
+
+    public void AnimateBubble(int index)
+    {
+        if (!chartIsReady)
+        {
+            return;
+        }
+        jsRuntime.InvokeVoidAsync("bubblePointHover", chartConfig.ChartJsConfigGuid, index);
+    }
+
+    public ChartJsDataset GetBubbleChartDataset(pax.dsstats.shared.CmdrStrengthRequest request, CmdrStrengthResult result)
+    {
+        double min = Math.Max(result.Items.Min(m => m.AvgRating), 100);
+        double max = Math.Max(result.Items.Max(m => m.AvgRating), 200);
+
+        return new BubbleDataset()
+        {
+            Label = $"{Data.GetRatingTypeLongName(request.RatingType)} - {Data.GetTimePeriodLongName(request.TimePeriod)}",
+            Data = result.Items.Select(s => (object)(new CmdrBubbleDataPoint()
+            {
+                X = Math.Round(s.Matchups == 0 ? 0 : s.Wins * 100.0 / s.Matchups, 2),
+                Y = s.Matchups,
+                R = GetRadius(s.AvgRating, min, max),
+                Label = s.Commander.ToString()
+            })).ToList(),
+            BackgroundColor = new IndexableOption<string>(result.Items.Select(s => Data.GetBackgroundColor(s.Commander, "66")).ToList()),
+            HoverBorderColor = new IndexableOption<string>("red"),
+            HoverBorderWidth = new IndexableOption<double>(6),
+        };
+    }
+
+    private double GetRadius(double avgRating, double min, double max)
+    {
+        return Math.Round((((avgRating - min) * (rMax - rMin)) / (max - min)) + rMin, 2);
+    }
+
+    public ChartJsConfig GetBubbleChartConfig()
+    {
+        return new()
+            {
+                Type = ChartType.bubble,
+                Data = new ChartJsData()
+                {
+                    Datasets = new List<ChartJsDataset>()
+                },
+                Options = new ChartJsOptions()
+                {
+                    Responsive = true,
+                    MaintainAspectRatio = true,
+                    OnClickEvent = true,
+                    //Interaction = new Interactions()
+                    //{
+                    //    Mode = "dataset",
+                    //    //Axis = "y",
+                    //    Intersect = true
+                    //},
+                    Plugins = new()
+                    {
+                        Title = new()
+                        {
+                            Display = true,
+                            Text = new IndexableOption<string>("Commaders Strength"),
+                            Color = "white",
+                            Font = new()
+                            {
+                                Size = 16,
+                            }
+                        },
+                    },
+                    Scales = new ChartJsOptionsScales()
+                    {
+                        X = new LinearAxis()
+                        {
+                            Type = "linear",
+                            Position = "bottom",
+                            //SuggestedMin = 40,
+                            //SuggestedMax = 80
+                            Title = new()
+                            {
+                                Display = true,
+                                Text = new IndexableOption<string>("Winrate"),
+                                Color = "#4E58A0"
+                            },
+                            Ticks = new LinearAxisTick()
+                            {
+                                Color = "#4E58A0",
+                                Padding = 3,
+                                AutoSkipPadding = 3,
+                                BackdropColor = "rgba(255, 255, 255, 0.75)",
+                                Align = "center",
+                                CrossAlign = "near",
+                                ShowLabelBackdrop = false,
+                                BackdropPadding = new Padding(2)
+                            },
+                        },
+                        Y = new LinearAxis()
+                        {
+                            //SuggestedMin = 1000,
+                            //SuggestedMax = 2000
+                            Title = new()
+                            {
+                                Display = true,
+                                Text = new IndexableOption<string>("Matchups"),
+                                Color = "rgba(255, 255, 255, 0.75)"
+                            },
+                            Ticks = new LinearAxisTick()
+                            {
+                                Color = "lightgrey",
+                                Padding = 3,
+                                AutoSkipPadding = 3,
+                                BackdropColor = "rgba(255, 255, 255, 0.75)",
+                                Align = "center",
+                                CrossAlign = "near",
+                                ShowLabelBackdrop = false,
+                                BackdropPadding = new Padding(2)
+                            }
+                        }
+                    }
+                }
+            };
+    }
+
+    public record CmdrBubbleDataPoint : BubbleDataPoint
+    {
+        public string Label { get; set; } = string.Empty;
+    }
+}
