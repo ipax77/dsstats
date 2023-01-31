@@ -34,17 +34,34 @@ public partial class StatsService
         }
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
-        var group = from r in replays
-                    from rp in r.ReplayPlayers
-                    group rp by  rp.Race into g
-                    select new CmdrStrengthItem()
-                    {
-                        Commander = g.Key,
-                        Matchups = g.Count(),
-                        AvgRating = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.Rating), 2),
-                        AvgRatingGain = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.RatingChange), 2),
-                        Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
-                    };
+        var group = request.Interest == Commander.None 
+                    ?
+                        from r in replays
+                        from rp in r.ReplayPlayers
+                        group rp by  rp.Race into g
+                        select new CmdrStrengthItem()
+                        {
+                            Commander = g.Key,
+                            Matchups = g.Count(),
+                            AvgRating = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.Rating), 2),
+                            AvgRatingGain = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.RatingChange), 2),
+                            Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
+                        }
+                    :
+                        from r in replays
+                        from rp in r.ReplayPlayers
+                        where rp.Race == request.Interest
+                        group rp by rp.OppRace into g
+                        select new CmdrStrengthItem()
+                        {
+                            Commander = g.Key,
+                            Matchups = g.Count(),
+                            AvgRating = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.Rating), 2),
+                            AvgRatingGain = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.RatingChange), 2),
+                            Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
+                        }
+           ;
+
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
 
         var items = await group.ToListAsync(token);

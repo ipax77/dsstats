@@ -154,6 +154,7 @@ public static class ReplayExtensions
         sb.Append("cmdrStrength");
         sb.Append(request.RatingType.ToString());
         sb.Append(request.TimePeriod.ToString());
+        sb.Append(request.Interest);
         return sb.ToString();
     }
 
