@@ -31,6 +31,17 @@
                 </InputSelect>
             </label>
         </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Commander
+                <InputSelect class="form-select" @bind-Value="Request.Interest">
+                    @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                    {
+                        <option value="@cmdr">@cmdr</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
     </div>
 </EditForm>
 

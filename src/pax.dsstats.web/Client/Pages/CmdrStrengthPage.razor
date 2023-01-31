@@ -17,6 +17,10 @@
     [SupplyParameterFromQuery]
     public string? TimePeriod { get; set; }
 
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Interest { get; set; }
+
 
     private CmdrStrengthRequest request = new()
     {
@@ -45,6 +49,13 @@
         {
             request.TimePeriod = timePeriod;
         }
+
+        if (!String.IsNullOrEmpty(Interest)
+            && Enum.TryParse(typeof(Commander), Interest, out var interestObj)
+            && interestObj is Commander interest)
+        {
+            request.Interest = interest;
+        }
     }
 
     private void RequestChanged(CmdrStrengthRequest request)
@@ -53,6 +64,7 @@
 
         queryDic.Add("RatingType", request.RatingType.ToString());
         queryDic.Add("TimePeriod", request.TimePeriod.ToString());
+        queryDic.Add("Interest", request.Interest.ToString());
 
         NavigationManager.NavigateTo(
             NavigationManager.GetUriWithQueryParameters(

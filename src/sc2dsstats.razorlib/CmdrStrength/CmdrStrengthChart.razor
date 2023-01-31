@@ -48,10 +48,15 @@
             bubbleLabelsRegistered = true;
         }
 
-        if (chartConfig.Options?.Scales?.Y != null)
+        if (chartConfig.Options?.Scales?.Y != null
+            && chartConfig.Options?.Plugins?.Title != null)
         {
             var max = result.Items.Max(s => s.Matchups);
             chartConfig.Options.Scales.Y.SuggestedMax = max + max * 0.2;
+            chartConfig.Options.Plugins.Title.Text = request.Interest == Commander.None
+                ? new IndexableOption<string>("Commaders Strength")
+                : new IndexableOption<string>($"{request.Interest}s Strength")
+            ;
             chartComponent?.UpdateChartOptions();
         }
 
