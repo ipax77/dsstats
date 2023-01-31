@@ -1,4 +1,6 @@
 ﻿@using Microsoft.JSInterop;
+@using System.Text.Json;
+@using System.Text.Json.Nodes;
 @using pax.BlazorChartJs;
 @using pax.dsstats.shared;
 @inject IJSRuntime jsRuntime
@@ -42,6 +44,11 @@
             chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
         }
 
+        if (!result.Items.Any())
+        {
+            return;
+        }
+
         if (!bubbleLabelsRegistered)
         {
             jsRuntime.InvokeVoidAsync("registerbubbleLabelsPlugin");
@@ -72,7 +79,24 @@
         }
         else if (e is ChartJsLabelClickEvent clickEvent)
         {
-            OnBubbleHover.InvokeAsync(FindClosestPoint(clickEvent.DataX, clickEvent.DataY));
+            if (clickEvent.Value != null
+                && clickEvent.Value is JsonElement jsonElement)
+            {
+                if (jsonElement.TryGetProperty("label", out JsonElement labelEle)
+                    && Enum.TryParse(typeof(Commander), labelEle.GetString(), out var cmdrObj)
+                    && cmdrObj is Commander cmdr)
+                {
+                    var item = Result.Items.FirstOrDefault(f => f.Commander == cmdr);
+                    if (item != null)
+                    {
+                        OnBubbleHover.InvokeAsync(Result.Items.IndexOf(item));
+                    }
+                }
+            }
+            else
+            {
+                OnBubbleHover.InvokeAsync(FindClosestPoint(clickEvent.DataX, clickEvent.DataY));
+            }
         }
     }
 
@@ -84,7 +108,7 @@
         for (int i = 0; i < Result.Items.Count; i++)
         {
             var item = Result.Items[i];
-            double distance = Math.Sqrt(Math.Pow(x - (item.Wins * 100.0 / item.Matchups), 2) + Math.Pow(y - item.Matchups, 2));
+            double distance = Math.Sqrt(Math.Pow(x - (Math.Round(item.Wins * 100.0 / (double)item.Matchups, 2)), 2) + Math.Pow(y - item.Matchups, 2));
             if (distance < closestDistance)
             {
                 closestIndex = i;

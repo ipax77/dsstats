@@ -35,9 +35,31 @@
             <label class="form-label">
                 Commander
                 <InputSelect class="form-select" @bind-Value="Request.Interest">
-                    @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                    @if (Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)
                     {
-                        <option value="@cmdr">@cmdr</option>
+                        @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                        {
+                            @if ((int)cmdr > 3)
+                            {
+                                continue;
+                            }
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                    else if (Request.RatingType == RatingType.Cmdr || Request.RatingType == RatingType.CmdrTE)
+                    {
+                        @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                        {
+                            @if (cmdr == Commander.Protoss || cmdr == Commander.Terran || cmdr == Commander.Zerg)
+                            {
+                                continue;
+                            }
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                    else
+                    {
+                        <option value="@Commander.None">@Commander.None</option>
                     }
                 </InputSelect>
             </label>
@@ -63,6 +85,10 @@
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
+        if (e.FieldIdentifier.FieldName == "RatingType")
+        {
+            Request.Interest = Commander.None;
+        }
         OnRequestChanged.InvokeAsync();
     }
 
