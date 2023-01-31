@@ -3,10 +3,10 @@ using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 
-namespace pax.dsstats.web.Server.Controllers.v4
+namespace pax.dsstats.web.Server.Controllers.v5
 {
     [ApiController]
-    [Route("api/v4/[controller]")]
+    [Route("api/v5/[controller]")]
     public class StatsController : ControllerBase
     {
         private readonly IReplayRepository replayRepository;
@@ -241,30 +241,14 @@ namespace pax.dsstats.web.Server.Controllers.v4
 
         [HttpPost]
         [Route("GetCmdrStrength")]
-        public async Task<ActionResult<CmdrStrengthResult>> GetCmdrStrength(CmdrStrengthRequestV4 request, CancellationToken token)
+        public async Task<ActionResult<CmdrStrengthResult>> GetCmdrStrength(CmdrStrengthRequest request, CancellationToken token)
         {
             try
             {
-                return await statsService.GetCmdrStrengthResults(request.GetCmdrStrengthRequest(), token);
+                return await statsService.GetCmdrStrengthResults(request, token);
             }
             catch (OperationCanceledException) { }
             return NoContent();
         }
-    }
-}
-
-public record CmdrStrengthRequestV4
-{
-    public RatingType RatingType { get; set; }
-    public TimePeriod TimePeriod { get; set; }
-
-    public CmdrStrengthRequest GetCmdrStrengthRequest()
-    {
-        return new()
-        {
-            RatingType = RatingType,
-            TimePeriod = TimePeriod,
-            Interest = Commander.None
-        };
     }
 }
