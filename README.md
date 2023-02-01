@@ -27,18 +27,19 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v1.1.5 (web only atm)</summary>
+<details open="open"><summary>v1.1.5</summary>
 
 >- App (latest)replay live ratings
 >- Commander Strength Bubble Chart
+>- Sc2 Patch 5.0.11 - protocol 89720
 
 </details>
 
-<details open="open"><summary>v1.1.4</summary>
+<details><summary>v1.1.4</summary>
 
 >- CheatDetect Results
 >- Rating calculation refactoring
->- Sc2 Patch 5.0.11 - protocol 89634
+>- Sc2 Patch 5.0.11b - protocol 89634
 
 </details>
 
