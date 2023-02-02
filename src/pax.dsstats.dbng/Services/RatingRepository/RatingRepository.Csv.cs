@@ -107,48 +107,6 @@ public partial class RatingRepository
         return (replayAppendId, replayPlayerAppendId);
     }
 
-    //public int WriteMmrChangeCsv(List<MmrChange> replayPlayerMmrChanges, int appendId, string csvBasePath)
-    //{
-    //    bool append = appendId > 0;
-
-    //    StringBuilder sb = new();
-    //    //if (!append)
-    //    //{
-    //    //    sb.Append($"{nameof(ReplayPlayerRating.ReplayPlayerRatingId)},");
-    //    //    sb.Append($"{nameof(ReplayPlayerRating.MmrChange)},");
-    //    //    sb.Append($"{nameof(ReplayPlayerRating.Pos)},");
-    //    //    sb.Append($"{nameof(ReplayPlayerRating.ReplayPlayerId)},");
-    //    //    sb.Append($"{nameof(ReplayPlayerRating.ReplayId)}");
-    //    //    sb.Append(Environment.NewLine);
-    //    //}
-
-    //    int i = appendId;
-
-    //    foreach (var change in replayPlayerMmrChanges)
-    //    {
-    //        foreach (var plChange in change.Changes)
-    //        {
-    //            i++;
-    //            sb.Append($"{i},");
-    //            sb.Append($"{plChange.Change.ToString(CultureInfo.InvariantCulture)},");
-    //            sb.Append($"{plChange.Pos},");
-    //            sb.Append($"{plChange.ReplayPlayerId},");
-    //            sb.Append($"{change.ReplayId}");
-    //            sb.Append(Environment.NewLine);
-    //        }
-    //    }
-
-    //    if (!append)
-    //    {
-    //        File.WriteAllText($"{csvBasePath}/ReplayPlayerRatings.csv", sb.ToString());
-    //    }
-    //    else
-    //    {
-    //        File.AppendAllText($"{csvBasePath}/ReplayPlayerRatings.csv", sb.ToString());
-    //    }
-    //    return i;
-    //}
-
     public static string GetDbMmrOverTime(List<TimeRating> timeRatings)
     {
         if (!timeRatings.Any())
@@ -262,9 +220,6 @@ public partial class RatingRepository
         ";
         command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
-
-        await SetPlayerRatingsPos();
-        await SetRatingChange();
     }
 
     private async Task ReplayRatingsFromCsv2MySql(string csvBasePath)
