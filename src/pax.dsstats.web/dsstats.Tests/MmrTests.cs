@@ -236,4 +236,98 @@ public class MmrTests
         // PlayerRating.Pos is created with the database procedure SetPlayerRatingPos
         // introduced in migration 20230105132613_PlayerRatingsRowNumber.cs
     }
+
+    [Fact]
+    public void A5PlayerRatingChangesTest()
+    {
+        var testDir = "/data/temp";
+
+        // prepare services
+        var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<MmrProduceService>>();
+        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+        var serviceProvider = scope.ServiceProvider;
+        var mmrProduceService = new MmrProduceService(serviceProvider, mapper, logger);
+        var importLogger = scope.ServiceProvider.GetRequiredService<ILogger<ImportService>>();
+        var importService = new ImportService(serviceProvider, mapper, importLogger, testDir);
+
+        // prepare data
+        var testFile = Startup.GetTestFilePath("replayDto3.json");
+        var replayDto = System.Text.Json.JsonSerializer.Deserialize<ReplayDto>(File.ReadAllText(testFile));
+
+        Assert.NotNull(replayDto);
+
+        if (replayDto == null)
+        {
+            return;
+        }
+
+        replayDto = replayDto with { GameTime = DateTime.UtcNow };
+        var replay = mapper.Map<Replay>(replayDto);
+
+        Assert.NotNull(replay);
+
+        if (replay == null)
+        {
+            return;
+        }
+
+        var toonId = replayDto.ReplayPlayers.FirstOrDefault(f => f.Name == "PAX")?.Player.ToonId;
+        var player = context.Players.FirstOrDefault(f => f.ToonId == toonId);
+
+        Assert.NotNull(player);
+
+        if (player == null)
+        {
+            return;
+        }
+
+        var uploader = new Uploader() { AppGuid = Guid.NewGuid() };
+        uploader.Players.Add(player);
+
+        context.Uploaders.Add(uploader);
+        context.SaveChanges();
+        replay.UploaderId = uploader.UploaderId;
+
+        var result = importService.ImportReplays(new() { replay }, new()).GetAwaiter().GetResult();
+
+        Assert.Equal(1, result.SavedReplays);
+
+        mmrProduceService.ProduceRatings(new(false), result.LatestReplay, result.ContinueReplays).Wait();
+
+        var dbReplay = context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Player)
+                    .ThenInclude(i => i.PlayerRatings)
+                        .ThenInclude(i => i.PlayerRatingChange)
+            .Include(i => i.ReplayRatingInfo)
+            .Where(x => x.ReplayHash == replayDto.ReplayHash)
+            .FirstOrDefault();
+
+        Assert.NotNull(dbReplay);
+
+        if (dbReplay == null)
+        {
+            return;
+        }
+
+        // assert
+        
+        foreach (var replayPlayer in dbReplay.ReplayPlayers.Where(x => x.IsUploader))
+        {
+            var rating = replayPlayer.Player.PlayerRatings
+                .FirstOrDefault(f => f.RatingType == dbReplay.ReplayRatingInfo?.RatingType);
+
+            Assert.NotNull(rating);
+            Assert.NotNull(rating.PlayerRatingChange);
+
+            Assert.True(rating?.PlayerRatingChange?.Change24h != 0);
+            // Assert.True(rating?.PlayerRatingChange?.Change10d != 0);
+            // Assert.True(rating?.PlayerRatingChange?.Change30d != 0);
+        }
+
+        // PlayerRatingChanges is created with the database procedure SetRatingChange
+        // introduced in migration 20230114191807_PlayerRatingChanges and 20230116063107_FixSetRatingChangeProcedure
+    }
 }

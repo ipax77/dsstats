@@ -240,6 +240,8 @@ public partial class RatingRepository : IRatingRepository
                 await MysqlUpdateRavenPlayers(mmrIdRatings);
             }
             await Csv2MySql(continueCalc, csvBasePath);
+            await SetPlayerRatingsPos();
+            await SetRatingChange();
         }
         return new();
     }

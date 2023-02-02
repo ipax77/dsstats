@@ -42,15 +42,15 @@ public class CacheBackgroundService : IHostedService, IDisposable
                 statsService.ResetStatsCache();
                 await statsService.GetRequestStats(new shared.StatsRequest() { Uploaders = false });
 
-                var mmrProduceServer = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+                var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
 
                 if (result.ContinueReplays.Any())
                 {
-                    await mmrProduceServer.ProduceRatings(new(false), result.LatestReplay, result.ContinueReplays);
+                    await mmrProduceService.ProduceRatings(new(false), result.LatestReplay, result.ContinueReplays);
                 }
                 else
                 {
-                    await mmrProduceServer.ProduceRatings(new(true));
+                    await mmrProduceService.ProduceRatings(new(true));
                 }
                 logger.LogWarning($"Replays saved: {result.SavedReplays} ({result.ContinueReplays.Count}) - {result.LatestReplay}");
             }
