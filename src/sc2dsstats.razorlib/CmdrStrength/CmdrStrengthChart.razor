@@ -64,7 +64,7 @@
                 ? new IndexableOption<string>("Commaders Strength")
                 : new IndexableOption<string>($"{request.Interest}s Strength")
             ;
-            chartComponent?.UpdateChartOptions();
+            chartConfig.UpdateChartOptions();
         }
 
         chartConfig.AddDataset(GetBubbleChartDataset(request, result));

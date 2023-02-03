@@ -86,7 +86,7 @@ public partial class StatsChartComponent : ComponentBase
         if (chartConfig.Options?.Scales?.Y is LinearAxis linearAxis)
         {
             linearAxis.BeginAtZero = beginAtZero;
-            chartComponent?.UpdateChartOptions();
+            chartConfig.UpdateChartOptions();
         }
     }
 
@@ -132,7 +132,7 @@ public partial class StatsChartComponent : ComponentBase
                     ChartType.line => SetLineChartConfig(statsRequest),
                     _ => SetBarChartConfig(statsRequest)
                 };
-                chartComponent?.DrawChart();
+                chartConfig.ReinitializeChart();
                 await ssInit.WaitAsync();
             }
         }
@@ -226,7 +226,7 @@ public partial class StatsChartComponent : ComponentBase
             && chartConfig.Options.Plugins.Title != null)
         {
             chartConfig.Options.Plugins.Title.Text = title;
-            chartComponent?.UpdateChartOptions();
+            chartConfig.UpdateChartOptions();
         }
     }
 
@@ -293,7 +293,7 @@ public partial class StatsChartComponent : ComponentBase
         {
             chartConfig.Options.Plugins.BarIcons = icons;
         }
-        chartComponent?.UpdateChartOptions();
+        chartConfig.UpdateChartOptions();
 
         return true;
     }
@@ -352,7 +352,7 @@ public partial class StatsChartComponent : ComponentBase
         //{
         //    chartConfig.Options.Plugins.BarIcons = icons;
         //}
-        //chartComponent?.UpdateChartOptions();
+        //chartConfig.UpdateChartOptions();
         return true;
     }
 
@@ -390,7 +390,7 @@ public partial class StatsChartComponent : ComponentBase
         {
             chartConfig.Options.Plugins.BarIcons = icons;
         }
-        chartComponent?.UpdateChartOptions();
+        chartConfig.UpdateChartOptions();
 
         return true;
     }
