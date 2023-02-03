@@ -33,10 +33,8 @@ else
             <div class="col-auto">
                 <CmdrStrengthTable @ref="cmdrStrengthTable" Result="result" OnTableHover="TableHover"></CmdrStrengthTable>
             </div>
-            <div class="col-7">
-                <div class="w-100" style="min-width: 900px;">
-                    <CmdrStrengthChart @ref="cmdrStrengthChart" Request="Request" Result="result" OnBubbleHover="BubbleHover"></CmdrStrengthChart>
-                </div>
+            <div class="col-auto" style="min-width: 500px; width: 45vw; min-height: 550px; height: 75vh;">
+                <CmdrStrengthChart @ref="cmdrStrengthChart" Request="Request" Result="result" OnBubbleHover="BubbleHover"></CmdrStrengthChart>
                 @if (result.Items.Any(a => a.Matchups < 961))
                 {
                     <div class="ms-2 mt-2 p-2 bg-dark">
