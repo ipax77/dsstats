@@ -28,7 +28,7 @@
                 @if (showMiddleChart)
                 {
                     <div class="row" style="min-width: 600px;">
-                        <div class="col-auto w-75">
+                        <div class="col-auto w-75" style="min-height: 300px; height: 20vw;">
                             <ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="ChartEventTriggered"></ChartComponent>
                         </div>
                         <div class="col-auto">

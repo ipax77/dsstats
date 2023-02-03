@@ -85,7 +85,7 @@ function barIconsPlugin() {
         id: 'barIcons',
         // beforeDraw(chart, args, options) {
         afterDatasetDraw(chart, args, options) {
-        // afterDraw(chart, args, options) {
+            // afterDraw(chart, args, options) {
             const { ctx, chartArea: { top, right, bottom, left, width, height }, scales: { x, y } } = chart;
 
             ctx.save();
@@ -183,6 +183,15 @@ function bubbleLabelsPlugin() {
 
 function bubblePointHover(chartId, index) {
     const chart = Chart.getChart(chartId);
+
+    if (chart.data.datasets.length == 0) {
+        return;
+    }
+
+    if (chart.data.datasets[0].data.length < index) {
+        return;
+    }
+
     chart.setActiveElements([
         {
             datasetIndex: 0,

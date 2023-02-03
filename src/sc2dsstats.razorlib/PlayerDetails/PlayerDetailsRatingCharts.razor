@@ -5,7 +5,7 @@
 <div class="row">
     @foreach (var chartJsConfig in chartJsConfigs)
     {
-        <div class="col-auto" style="min-width: 500px; width: 35vw;">
+        <div class="col-auto" style="min-width: 500px; width: 35vw; min-height: 250px; height: 15vw;">
             <ChartComponent ChartJsConfig="chartJsConfig" OnEventTriggered="EventTriggered"></ChartComponent>
         </div>
     }
