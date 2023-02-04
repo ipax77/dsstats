@@ -8,8 +8,8 @@
 
 <div class="mt-2">
     <p class="text-warning">
-        Only replays with no leavers were used. 
-        AvgRating is the average rating of players that picked the corresponding commander in the given time period. 
+        Only replays with no leavers were used.
+        AvgRating is the average rating of players that picked the corresponding commander in the given time period.
         AvgGain is the average rating gained.
     </p>
 </div>
@@ -33,8 +33,10 @@ else
             <div class="col-auto">
                 <CmdrStrengthTable @ref="cmdrStrengthTable" Result="result" OnTableHover="TableHover"></CmdrStrengthTable>
             </div>
-            <div class="col-auto" style="min-width: 500px; width: 45vw; min-height: 550px; height: 75vh;">
-                <CmdrStrengthChart @ref="cmdrStrengthChart" Request="Request" Result="result" OnBubbleHover="BubbleHover"></CmdrStrengthChart>
+            <div class="col-auto" style="max-width: 50vw;">
+                <div class="border rounded border-secondary" style="min-width: 550px; width: 50vw; min-height: 300px; height: 25vw;">
+                    <CmdrStrengthChart @ref="cmdrStrengthChart" Request="Request" Result="result" OnBubbleHover="BubbleHover"></CmdrStrengthChart>
+                </div>
                 @if (result.Items.Any(a => a.Matchups < 961))
                 {
                     <div class="ms-2 mt-2 p-2 bg-dark">
@@ -49,31 +51,37 @@ else
                 {
                     <div class="ms-2 mt-2 p-2 bg-dark">
                         <h3 class="text-warning">Interpretation</h3>
-                    <p>
-                        <span class="oi oi-chevron-right"></span>
-                        The further right the bubble is, the higher the commanders winrate
-                    </p>
-                    <p>
-                        <span class="oi oi-chevron-right"></span>
-                        The higher the bubble, the more often the commander was played
-                    </p>
-                    <p>
-                        <span class="oi oi-chevron-right"></span>
-                        The bigger the bubble, the stronger the players who played the commander
-                    </p>
+                        <p class="fw-bold">
+                            TL;DR Top right is good, bottom left is bad
+                        </p>
+                        <p>
+                            <span class="oi oi-chevron-right"></span>
+                            The further right the bubble is, the higher the commanders winrate
+                        </p>
+                        <p>
+                            <span class="oi oi-chevron-right"></span>
+                            The higher the bubble, the more rating was gained while playing the commander
+                        </p>
+                        <p>
+                            <span class="oi oi-chevron-right"></span>
+                            The bigger the bubble, the stronger the players who played the commander
+                        </p>
                     </div>
                 }
                 else
                 {
                     <div class="ms-2 mt-2 p-2 bg-dark">
                         <h3 class="text-warning">Interpretation</h3>
+                        <p class="fw-bold">
+                            TL;DR Top right <span class="text-warning">@Request.Interest</span> is good against, bottom left is bad
+                        </p>
                         <p>
                             <span class="oi oi-chevron-right"></span>
                             The further right the bubble is, the higher <span class="text-warning">@Request.Interest</span>s winrate vs the commander
                         </p>
                         <p>
                             <span class="oi oi-chevron-right"></span>
-                            The higher the bubble, the more often the commander was played vs <span class="text-warning">@Request.Interest</span>
+                            The higher the bubble, the more rating was gained by the players who played <span class="text-warning">@Request.Interest</span>
                         </p>
                         <p>
                             <span class="oi oi-chevron-right"></span>
@@ -83,7 +91,7 @@ else
                 }
             </div>
         </div>
-        
+
     </div>
 }
 

@@ -173,7 +173,7 @@ function bubbleLabelsPlugin() {
                 meta.data.forEach((element, index) => {
                     const item = dataset.data[index]
                     const position = element.tooltipPosition()
-                    ctx.fillStyle = "#4D60EB";
+                    ctx.fillStyle = "#3F5FFA";
                     ctx.fillText(item.label.toString(), position.x, position.y - item.r - fontSize)
                 })
             })
@@ -198,5 +198,63 @@ function bubblePointHover(chartId, index) {
             index: index,
         }
     ]);
+    chart.update();
+}
+
+function setZeroLineColor(defaultColor, defaultTickColor, zeroColor, chartId) {
+    const chart = Chart.getChart(chartId);
+
+    if (chart == undefined) {
+        return;
+    }
+
+    chart.options.scales.y.grid.color = (context) => {
+        if (context.tick.value === 0) {
+            return zeroColor;
+        } else {
+            return defaultColor;
+        }
+    }
+
+    chart.options.scales.y.grid.tickColor = (context) => {
+        if (context.tick.value === 0) {
+            return zeroColor;
+        } else {
+            return defaultColor;
+        }
+    }
+
+    chart.options.scales.y.ticks.color = (context) => {
+        if (context.tick.value === 0) {
+            return 'red';
+        } else {
+            return defaultTickColor;
+        }
+    }
+
+    chart.options.scales.x.grid.color = (context) => {
+        if (context.tick.value === 50) {
+            return zeroColor;
+        } else {
+            return defaultColor;
+        }
+    }
+
+    chart.options.scales.x.grid.tickColor = (context) => {
+        if (context.tick.value === 50) {
+            return zeroColor;
+        } else {
+            return defaultColor;
+        }
+    }
+
+    chart.options.scales.x.ticks.color = (context) => {
+        if (context.tick.value === 50) {
+            return 'red';
+        } else {
+            return defaultTickColor;
+        }
+    }
+
     chart.update();
 }
