@@ -55,7 +55,7 @@ namespace pax.dsstats.web.Server.Controllers.v5
         {
             try
             {
-                return await replayRepository.GetReplaysCount(request, token);
+                return await replayRepository.GetReplaysCountNg(request, token);
             }
             catch (OperationCanceledException) { }
             return NoContent();
@@ -67,7 +67,7 @@ namespace pax.dsstats.web.Server.Controllers.v5
         {
             try
             {
-                return Ok(await replayRepository.GetReplays(request, token));
+                return Ok(await replayRepository.GetReplaysNg(request, token));
             }
             catch (OperationCanceledException)
             {
