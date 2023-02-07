@@ -8,6 +8,8 @@ namespace pax.dsstats.dbng.Repositories
         Task<ReplayDetailsDto?> GetDetailReplay(string replayHash, bool dry = true, CancellationToken token = default);
         Task<int> GetReplaysCount(ReplaysRequest request, CancellationToken token = default);
         Task<ICollection<ReplayListDto>> GetReplays(ReplaysRequest request, CancellationToken token = default);
+        Task<int> GetReplaysCountNg(ReplaysRequest request, CancellationToken token = default);
+        Task<ICollection<ReplayListDto>> GetReplaysNg(ReplaysRequest request, CancellationToken token = default);
         Task<int> GetEventReplaysCount(ReplaysRequest request, CancellationToken token = default);
         Task<ICollection<ReplayListEventDto>> GetEventReplays(ReplaysRequest request, CancellationToken token = default);
         Task<ICollection<string>> GetReplayPaths();
