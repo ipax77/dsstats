@@ -76,7 +76,7 @@ public partial class DataService : IDataService
         }
         else
         {
-            return await replayRepository.GetReplaysCount(request, token);
+            return await replayRepository.GetReplaysCountNg(request, token);
         }
     }
 
@@ -88,7 +88,7 @@ public partial class DataService : IDataService
         }
         else
         {
-            return await replayRepository.GetReplays(request, token);
+            return await replayRepository.GetReplaysNg(request, token);
         }
     }
 
