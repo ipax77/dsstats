@@ -37,58 +37,60 @@ else
                 <div class="border rounded border-secondary" style="min-width: 550px; width: 50vw; height: calc(50vw * 0.5); min-height: 275px;">
                     <CmdrStrengthChart @ref="cmdrStrengthChart" Request="Request" Result="result" OnBubbleHover="BubbleHover"></CmdrStrengthChart>
                 </div>
-                @if (result.Items.Any(a => a.Matchups < 961))
-                {
-                    <div class="ms-2 mt-2 p-2 bg-dark">
-                        <h3 class="text-danger">Warning</h3>
-                        <p>
-                            At least one matchups sample size is less than 961 which would be required to have a significant (p &lt; 0.05) result.
-                            Try to increase the Time Peroid to get a better sample size.
-                        </p>
-                    </div>
-                }
-                @if (Request.Interest == Commander.None)
-                {
-                    <div class="ms-2 mt-2 p-2 bg-dark">
-                        <h3 class="text-warning">Interpretation</h3>
-                        <p class="fw-bold">
-                            TL;DR Top right is good, bottom left is bad
-                        </p>
-                        <p>
-                            <span class="oi oi-chevron-right"></span>
-                            The further right the bubble is, the higher the commanders winrate
-                        </p>
-                        <p>
-                            <span class="oi oi-chevron-right"></span>
-                            The higher the bubble, the more rating was gained while playing the commander
-                        </p>
-                        <p>
-                            <span class="oi oi-chevron-right"></span>
-                            The bigger the bubble, the stronger the players who played the commander
-                        </p>
-                    </div>
-                }
-                else
-                {
-                    <div class="ms-2 mt-2 p-2 bg-dark">
-                        <h3 class="text-warning">Interpretation</h3>
-                        <p class="fw-bold">
-                            TL;DR Top right <span class="text-warning">@Request.Interest</span> is good against, bottom left is bad
-                        </p>
-                        <p>
-                            <span class="oi oi-chevron-right"></span>
-                            The further right the bubble is, the higher <span class="text-warning">@Request.Interest</span>s winrate vs the commander
-                        </p>
-                        <p>
-                            <span class="oi oi-chevron-right"></span>
-                            The higher the bubble, the more rating was gained by the players who played <span class="text-warning">@Request.Interest</span>
-                        </p>
-                        <p>
-                            <span class="oi oi-chevron-right"></span>
-                            The bigger the bubble, the stronger the players who played <span class="text-warning">@Request.Interest</span> vs the commander
-                        </p>
-                    </div>
-                }
+                <div style="max-width: 45vw;">
+                    @if (result.Items.Any(a => a.Matchups < 961))
+                    {
+                        <div class="ms-2 mt-2 p-2 bg-dark">
+                            <h3 class="text-danger">Warning</h3>
+                            <p>
+                                At least one matchups sample size is less than 961 which would be required to have a significant (p &lt; 0.05) result.
+                                Try to increase the Time Peroid to get a better sample size.
+                            </p>
+                        </div>
+                    }
+                    @if (Request.Interest == Commander.None)
+                    {
+                        <div class="ms-2 mt-2 p-2 bg-dark">
+                            <h3 class="text-warning">Interpretation</h3>
+                            <p class="fw-bold">
+                                TL;DR Top right is good, bottom left is bad
+                            </p>
+                            <p>
+                                <span class="oi oi-chevron-right"></span>
+                                The further right the bubble is, the higher the commanders winrate
+                            </p>
+                            <p>
+                                <span class="oi oi-chevron-right"></span>
+                                The higher the bubble, the more rating was gained while playing the commander
+                            </p>
+                            <p>
+                                <span class="oi oi-chevron-right"></span>
+                                The bigger the bubble, the stronger the players who played the commander
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ms-2 mt-2 p-2 bg-dark">
+                            <h3 class="text-warning">Interpretation</h3>
+                            <p class="fw-bold">
+                                TL;DR Top right <span class="text-warning">@Request.Interest</span> is good against, bottom left is bad
+                            </p>
+                            <p>
+                                <span class="oi oi-chevron-right"></span>
+                                The further right the bubble is, the higher <span class="text-warning">@Request.Interest</span>s winrate vs the commander
+                            </p>
+                            <p>
+                                <span class="oi oi-chevron-right"></span>
+                                The higher the bubble, the more rating was gained by the players who played <span class="text-warning">@Request.Interest</span>
+                            </p>
+                            <p>
+                                <span class="oi oi-chevron-right"></span>
+                                The bigger the bubble, the stronger the players who played <span class="text-warning">@Request.Interest</span> vs the commander
+                            </p>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
 
