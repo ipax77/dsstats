@@ -9,7 +9,7 @@
 
 <div class="row @(Interest == null ? "" : "visually-hidden")">
     <div class="col-auto">
-        <div class="card" style="max-width: 1200px;">
+        <div class="card" style="max-width: 1200px; min-width: 600px;">
             <div class="card-header">
                 <div class="row fw-bolder">
                     <div class="col">@replayDto.GameTime.ToShortDateString()</div>
@@ -27,13 +27,9 @@
             <div class="card-body">
                 @if (showMiddleChart)
                 {
-                    <div class="row" style="min-width: 600px;">
-                        <div class="col-auto w-75" style="min-height: 300px; height: 20vw;">
-                            <ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="ChartEventTriggered"></ChartComponent>
-                        </div>
-                        <div class="col-auto">
-                            <span class="oi oi-x text-danger pointer" @onclick="@(() => showMiddleChart = false)"></span>
-                        </div>
+                    <div style="position: relative; width: 50vw; min-width: 600px; max-width: 1000px; height: calc(50vw * 0.5); min-height: 300px; max-height: 500px;">
+                        <ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="ChartEventTriggered"></ChartComponent>
+                        <span class="oi oi-x pointer text-danger" style="position: absolute; top: 0; right: 0; padding: 10px; z-index: 1000;" @onclick="e => showMiddleChart = !showMiddleChart"></span>
                     </div>
                 }
                 <div class="row">
@@ -342,7 +338,7 @@
             {
                 SetMauiRatings();
             }
-        } 
+        }
         finally
         {
             ss.Release();
