@@ -26,6 +26,8 @@
     private const double rMin = 10.0;
     private const double rMax = 50.0;
 
+    private CmdrStrengthItem? hoverItem;
+
     private readonly string mainColor = "#3F5FFA";
 
     protected override void OnInitialized()
@@ -51,6 +53,8 @@
             return;
         }
 
+        hoverItem = null;
+
         if (!bubbleLabelsRegistered)
         {
             jsRuntime.InvokeVoidAsync("registerbubbleLabelsPlugin");
@@ -60,9 +64,9 @@
         if (chartConfig.Options?.Scales?.Y != null
             && chartConfig.Options?.Plugins?.Title != null)
         {
-            // var max = result.Items.Max(s => s.Matchups);
-            var max = Math.Max(result.Items.Max(s => s.AvgRatingGain), 0.1);
-            chartConfig.Options.Scales.Y.SuggestedMax = max + max * 0.2;
+            var yMax = Math.Max(result.Items.Select(s => s.AvgRatingGain).Max(), 0.1);
+
+            chartConfig.Options.Scales.Y.SuggestedMax = yMax + yMax * 0.2;
             chartConfig.Options.Plugins.Title.Text = request.Interest == Commander.None
                 ? new IndexableOption<string>($"Commaders Strength - {Data.GetRatingTypeLongName(request.RatingType)} - {Data.GetTimePeriodLongName(request.TimePeriod)}")
                 : new IndexableOption<string>($"{request.Interest}s Strength - {Data.GetRatingTypeLongName(request.RatingType)} - {Data.GetTimePeriodLongName(request.TimePeriod)}")
@@ -70,9 +74,14 @@
             chartConfig.UpdateChartOptions();
         }
 
-        chartConfig.AddDataset(GetBubbleChartDataset(request, result));
+        double min = Math.Max(result.Items.Min(m => m.AvgRating), 100);
+        double max = Math.Max(result.Items.Max(m => m.AvgRating), 200);
+
+        chartConfig.AddDataset(GetBubbleChartDataset(request, result, min, max));
 
         jsRuntime.InvokeVoidAsync("setZeroLineColor", "rgba(113, 116, 143, 0.25)", mainColor, "rgb(142, 139, 112, 0.50)", chartConfig.ChartJsConfigGuid);
+
+        jsRuntime.InvokeVoidAsync("setBubbleChartTooltips", request.Interest == Commander.None ? "" : request.Interest.ToString(), min, max, rMin, rMax, chartConfig.ChartJsConfigGuid);
     }
 
     private void ChartEventTriggered(ChartJsEvent e)
@@ -82,25 +91,22 @@
             chartIsReady = true;
             Update(Request, Result);
         }
-        else if (e is ChartJsLabelClickEvent clickEvent)
+        else if (e is ChartJsLabelHoverEvent hoverEvent)
         {
-            if (clickEvent.Value != null
-                && clickEvent.Value is JsonElement jsonElement)
+            if (hoverEvent.Value != null
+                && hoverEvent.Value is JsonElement jsonElement)
             {
                 if (jsonElement.TryGetProperty("label", out JsonElement labelEle)
                     && Enum.TryParse(typeof(Commander), labelEle.GetString(), out var cmdrObj)
                     && cmdrObj is Commander cmdr)
                 {
                     var item = Result.Items.FirstOrDefault(f => f.Commander == cmdr);
-                    if (item != null)
+                    if (item != null && hoverItem != item)
                     {
+                        hoverItem = item;
                         OnBubbleHover.InvokeAsync(Result.Items.IndexOf(item));
                     }
                 }
-            }
-            else
-            {
-                OnBubbleHover.InvokeAsync(FindClosestPoint(clickEvent.DataX, clickEvent.DataY));
             }
         }
     }
@@ -133,11 +139,8 @@
         jsRuntime.InvokeVoidAsync("bubblePointHover", chartConfig.ChartJsConfigGuid, index);
     }
 
-    public ChartJsDataset GetBubbleChartDataset(pax.dsstats.shared.CmdrStrengthRequest request, CmdrStrengthResult result)
+    public ChartJsDataset GetBubbleChartDataset(pax.dsstats.shared.CmdrStrengthRequest request, CmdrStrengthResult result, double min, double max)
     {
-        double min = Math.Max(result.Items.Min(m => m.AvgRating), 100);
-        double max = Math.Max(result.Items.Max(m => m.AvgRating), 200);
-
         return new BubbleDataset()
             {
                 Label = $"{Data.GetRatingTypeLongName(request.RatingType)} - {Data.GetTimePeriodLongName(request.TimePeriod)}",
@@ -175,7 +178,7 @@
                 {
                     Responsive = true,
                     MaintainAspectRatio = true,
-                    OnClickEvent = true,
+                    OnHoverEvent = true,
                     Plugins = new()
                     {
                         Title = new()

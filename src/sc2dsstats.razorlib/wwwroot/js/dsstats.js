@@ -201,6 +201,27 @@ function bubblePointHover(chartId, index) {
     chart.update();
 }
 
+function setBubbleChartTooltips(vs, min, max, rMin, rMax, chartId) {
+    const chart = Chart.getChart(chartId);
+
+    if (chart == undefined) {
+        return;
+    }
+
+    chart.options.plugins.tooltip.callbacks.label = (tooltipItem) => {
+        if (tooltipItem == undefined) {
+            return "";
+        }
+        let avgStrength = Math.round((((tooltipItem.raw.r - rMin) * (max - min)) / (rMax - rMin)) + min);
+        if (vs) {
+            return [vs + " vs " + tooltipItem.raw.label, "Winrate " + tooltipItem.raw.x + "%", "AvgGain: " + tooltipItem.raw.y, "AvgRating: " + avgStrength];
+        } else {
+            return [tooltipItem.raw.label, "Winrate " + tooltipItem.raw.x + "%", "AvgGain: " + tooltipItem.raw.y, "AvgRating: " + avgStrength];
+        }
+    };
+}
+
+
 function setZeroLineColor(defaultColor, defaultTickColor, zeroColor, chartId) {
     const chart = Chart.getChart(chartId);
 
