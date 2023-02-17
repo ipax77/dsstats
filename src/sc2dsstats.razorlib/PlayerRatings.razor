@@ -84,7 +84,8 @@
                             </input>
                         </label>
                     </div>
-                } else
+                }
+                else
                 {
                     <div class="col-auto form-check form-switch align-self-center me-2">
                         <label class="form-check-label">
@@ -102,143 +103,147 @@
             <a href="https://github.com/ipax77/dsstats/wiki/Mmr-calculation"><span class="oi oi-info me-1"></span>Calculation</a>
         </div>
     </div>
-    <div class="d-flex" style="max-width: 750px;">
-        <p class="ms-auto p-0 m-0"><small class="text-primary">min 20 games</small> #@ratingsCount</p>
-    </div>
-    <div class="tableFixHead">
-        <table class="table table-dark table-hover table-striped w-auto">
-            <colgroup>
-                <col class="col">
-                <col class="col">
-                <col class="col">
-                <col class="col">
-                <col class="col">
-                <col class="col">
-                <col class="col">
-                <col class="col">
-                <col class="col">
-                <col class="col">
-            </colgroup>
-            <thead style="user-select: none;">
-                <CascadingValue Value="RatingsRequest.Orders">
-                    <tr>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Pos"))">
-                            <SortArrow Property="Pos">
-                                #
-                            </SortArrow>
-                        </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Player.RegionId"))">
-                            <SortArrow Property="Player.RegionId">
-                                <div class="text-center">
-                                    <span class="oi oi-globe rounded-circle bg-primary p-1"></span>
-                                </div>
-                            </SortArrow>
-                        </th>
-                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Player.Name"))">
-                            <SortArrow Property="Player.Name">
-                                Name
-                            </SortArrow>
-                        </th>
-                        <th scope="col" class="pointer text-info" style="width: 90px;" @onclick="@(e => SortList(e, "Main"))">
-                            <SortArrow Property="Main">
-                                Main
-                            </SortArrow>
-                        </th>
-                        <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "MainCount"))">
-                            <SortArrow Property="MainCount">
-                                Main %
-                            </SortArrow>
-                        </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Games"))">
-                            <SortArrow Property="Games">
-                                Games
-                            </SortArrow>
-                        </th>
-                        <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "Rating"))">
-                            <SortArrow Property="Rating">
-                                Rating
-                            </SortArrow>
-                        </th>
-                        <th scope="col" class="pointer" style="z-index: 1;" @onclick="@(e => SortList(e, ratingChangeSort))">
-                            <SortArrow Property="@ratingChangeSort">
-                                Change
-                            </SortArrow>
-                        </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Wins"))">
-                            <SortArrow Property="Wins">
-                                Winrate
-                            </SortArrow>
-                        </th>
-                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Mvp"))">
-                            <SortArrow Property="Mvp">
-                                Mvp
-                            </SortArrow>
-                        </th>
-                    </tr>
-                </CascadingValue>
-            </thead>
-            <tbody>
-                @if (ratingsCount > 0)
-                {
-                    <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings" OverscanCount="10" ItemSize="41">
-                        <ItemContent>
-                            <tr height="41px;" class="pointer" @onclick="e => LoadPlayerChart(rating.Player)">
-                                <td>
-                                    <span class="text-truncate text-warning" style="display: block; width: 40px;">@rating.Pos</span>
-                                </td>
-                                <td>
-                                    <span>@Data.GetRegionString(rating.Player.RegionId)</span>
-                                </td>
-                                <td><span class="text-truncate text-info" style="display: block; width: 130px;">@rating.Player.Name</span></td>
-                                <td>@(rating.Games == 0 || rating.MainCount * 100.0 / rating.Games < 10.5 ? "Random" : rating.Main.ToString())</td>
-                                <td>@HelperService.GetPercentageString(rating.MainCount, rating.Games)</td>
-                                <td class="border-start">@rating.Games</td>
-                                <td class="text-warning">@rating.Rating.ToString("N2", CultureInfo.InvariantCulture)</td>
-                                <td>
-                                    @if (rating.PlayerRatingChange != null)
-                                    {
-                                        var ratingChange = RatingsRequest.TimePeriod switch
-                                        {
-                                            RatingChangeTimePeriod.Past24h => rating.PlayerRatingChange.Change24h,
-                                            RatingChangeTimePeriod.Past10Days => rating.PlayerRatingChange.Change10d,
-                                            _ => rating.PlayerRatingChange.Change30d
-                                        };
-                                        <span class="@(ratingChange >= 0 ? "oi oi-arrow-top text-success" : "oi oi-arrow-bottom text-danger")">
-                                            @ratingChange.ToString("N2", CultureInfo.InvariantCulture)
-                                        </span>
-                                    }
-                                </td>
-                                <td>@HelperService.GetPercentageString(rating.Wins, rating.Games)</td>
-                                <td>@HelperService.GetPercentageString(rating.Mvp, rating.Games)</td>
+    <div class="row">
+        <div class="col-auto">
+            <div class="d-flex" style="max-width: 750px;">
+                <p class="ms-auto p-0 m-0"><small class="text-primary">min 20 games</small> #@ratingsCount</p>
+            </div>
+            <div class="tableFixHead">
+                <table class="table table-dark table-hover table-striped w-auto">
+                    <colgroup>
+                        <col class="col">
+                        <col class="col">
+                        <col class="col">
+                        <col class="col">
+                        <col class="col">
+                        <col class="col">
+                        <col class="col">
+                        <col class="col">
+                        <col class="col">
+                        <col class="col">
+                    </colgroup>
+                    <thead style="user-select: none;">
+                        <CascadingValue Value="RatingsRequest.Orders">
+                            <tr>
+                                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Pos"))">
+                                    <SortArrow Property="Pos">
+                                        #
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Player.RegionId"))">
+                                    <SortArrow Property="Player.RegionId">
+                                        <div class="text-center">
+                                            <span class="oi oi-globe rounded-circle bg-primary p-1"></span>
+                                        </div>
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "Player.Name"))">
+                                    <SortArrow Property="Player.Name">
+                                        Name
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer text-info" style="width: 90px;" @onclick="@(e => SortList(e, "Main"))">
+                                    <SortArrow Property="Main">
+                                        Main
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "MainCount"))">
+                                    <SortArrow Property="MainCount">
+                                        Main %
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Games"))">
+                                    <SortArrow Property="Games">
+                                        Games
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "Rating"))">
+                                    <SortArrow Property="Rating">
+                                        Rating
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer" style="z-index: 1;" @onclick="@(e => SortList(e, ratingChangeSort))">
+                                    <SortArrow Property="@ratingChangeSort">
+                                        Change
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Wins"))">
+                                    <SortArrow Property="Wins">
+                                        Winrate
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Mvp"))">
+                                    <SortArrow Property="Mvp">
+                                        Mvp
+                                    </SortArrow>
+                                </th>
                             </tr>
-                        </ItemContent>
-                        <Placeholder>
-                            <tr height="41px"><td colspan="12">Loading ...</td></tr>
-                        </Placeholder>
-                    </Virtualize>
-                }
-            </tbody>
-        </table>
-    </div>
-    <div class="d-flex">
-        <div>
-            <button class="btn btn-sm btn-outline-light"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#Distribution"
-                    aria-expanded="false"
-                    aria-controls="Distribution"
-                    @onclick="e => showDistribution = !showDistribution">
-                <span class="oi @(showDistribution ? "oi-caret-bottom" : "oi-caret-top")"></span>
-                Rating Info
-            </button>
+                        </CascadingValue>
+                    </thead>
+                    <tbody>
+                        @if (ratingsCount > 0)
+                        {
+                            <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings" OverscanCount="10" ItemSize="41">
+                                <ItemContent>
+                                    <tr height="41px;" class="pointer" @onclick="e => LoadPlayerChart(rating.Player)">
+                                        <td>
+                                            <span class="text-truncate text-warning" style="display: block; width: 40px;">@rating.Pos</span>
+                                        </td>
+                                        <td>
+                                            <span>@Data.GetRegionString(rating.Player.RegionId)</span>
+                                        </td>
+                                        <td><span class="text-truncate text-info" style="display: block; width: 130px;">@rating.Player.Name</span></td>
+                                        <td>@(rating.Games == 0 || rating.MainCount * 100.0 / rating.Games < 10.5 ? "Random" : rating.Main.ToString())</td>
+                                        <td>@HelperService.GetPercentageString(rating.MainCount, rating.Games)</td>
+                                        <td class="border-start">@rating.Games</td>
+                                        <td class="text-warning">@rating.Rating.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                        <td>
+                                            @if (rating.PlayerRatingChange != null)
+                                            {
+                                                var ratingChange = RatingsRequest.TimePeriod switch
+                                                {
+                                                    RatingChangeTimePeriod.Past24h => rating.PlayerRatingChange.Change24h,
+                                                    RatingChangeTimePeriod.Past10Days => rating.PlayerRatingChange.Change10d,
+                                                    _ => rating.PlayerRatingChange.Change30d
+                                                };
+                                                <span class="@(ratingChange >= 0 ? "oi oi-arrow-top text-success" : "oi oi-arrow-bottom text-danger")">
+                                                    @ratingChange.ToString("N2", CultureInfo.InvariantCulture)
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>@HelperService.GetPercentageString(rating.Wins, rating.Games)</td>
+                                        <td>@HelperService.GetPercentageString(rating.Mvp, rating.Games)</td>
+                                    </tr>
+                                </ItemContent>
+                                <Placeholder>
+                                    <tr height="41px"><td colspan="12">Loading ...</td></tr>
+                                </Placeholder>
+                            </Virtualize>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
-    <div class="collapse" id="Distribution" style="width: 75vw; min-width: 500px; height: 37.5vw;  min-height: 250px;">
-        @if (showDistribution)
-        {
-            <sc2dsstats.razorlib.Distribution.DistributionComponent Request="distributionRequest" />
-        }
+        <div class="col-auto" style="min-width: 600px; width: 32vw; min-height: 500px; height: calc(32vw * 0.5);">
+            <div class="mt-2">
+                <button class="btn btn-sm btn-outline-light"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#Distribution"
+                        aria-expanded="false"
+                        aria-controls="Distribution"
+                        @onclick="e => showDistribution = !showDistribution">
+                    <span class="oi @(showDistribution ? "oi-caret-bottom" : "oi-caret-top")"></span>
+                    Distribution
+                </button>
+            </div>
+            <div class="collapse mt-2 w-100 h-100" id="Distribution">
+                @if (showDistribution)
+                {
+                    <sc2dsstats.razorlib.Distribution.DistributionComponent Request="distributionRequest" />
+                }
+            </div>
+        </div>
     </div>
 </div>
 
@@ -272,9 +277,9 @@
 
     private bool showDistribution;
     private DistributionRequest distributionRequest = new()
-    {
-        RatingType = RatingType.Cmdr
-    };
+        {
+            RatingType = RatingType.Cmdr
+        };
 
     private string ratingChangeSort => RatingsRequest.TimePeriod switch
     {
@@ -399,13 +404,13 @@
         NavigationManager.NavigateTo(
             NavigationManager.GetUriWithQueryParameters("replays",
                 new Dictionary<string, object?>()
-                {
+                            {
                     { "Players", request.Name },
                     { "ToonId", request.ToonId },
                     { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
                     { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
                     { "ToonIdName", request.ToonIdName },
-                }
+                            }
             )
         );
     }

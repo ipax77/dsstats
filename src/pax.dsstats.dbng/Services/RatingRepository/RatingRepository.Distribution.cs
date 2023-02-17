@@ -20,9 +20,21 @@ public partial class RatingRepository
         {
             var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
+            //var mmrDevs = await context.PlayerRatings
+            //    .Where(x => x.RatingType == request.RatingType)
+            //    .GroupBy(g => Math.Round(g.Rating, 0))
+            //    .Select(s => new MmrDevDto
+            //    {
+            //        Count = s.Count(),
+            //        //Mmr = s.Average(a => Math.Round(a.Rating, 0))
+            //        Mmr = s.Key
+            //    })
+            //    .OrderBy(o => o.Mmr)
+            //    .ToListAsync();
+
             var mmrDevs = await context.PlayerRatings
                 .Where(x => x.RatingType == request.RatingType)
-                .GroupBy(g => Math.Round(g.Rating, 0))
+                .GroupBy(g => Math.Floor((g.Rating / 10) + 1) * 10)
                 .Select(s => new MmrDevDto
                 {
                     Count = s.Count(),
@@ -34,8 +46,8 @@ public partial class RatingRepository
 
             response = new()
             {
-                // MmrDevs = mmrDevs
-                MmrDevs = GetStepedMmrDevs(mmrDevs)
+                MmrDevs = mmrDevs
+                //MmrDevs = GetStepedMmrDevs(mmrDevs)
             };
 
             memoryCache.Set(memKey, response, TimeSpan.FromHours(24));
@@ -43,7 +55,7 @@ public partial class RatingRepository
         return response;
     }
 
-    private List<MmrDevDto> GetStepedMmrDevs(List<MmrDevDto> mmrDevs, int stepSize = 25)
+    private List<MmrDevDto> GetStepedMmrDevs(List<MmrDevDto> mmrDevs, int stepSize = 10)
     {
         if (!mmrDevs.Any())
         {
@@ -60,7 +72,7 @@ public partial class RatingRepository
         {
             var mmrDev = mmrDevs[i];
 
-            if (mmrDev.Mmr < step)
+            if (mmrDev.Mmr <= step)
             {
                 stepDev.Count += mmrDev.Count;
             }
