@@ -121,6 +121,9 @@ if (app.Environment.IsDevelopment())
 
     //var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
     //ratingRepository.SeedRatingChanges().Wait();
+
+    // PlayerService.GetExpectationCount(context);
+
 }
 
 // Configure the HTTP request pipeline.

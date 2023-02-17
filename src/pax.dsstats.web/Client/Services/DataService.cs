@@ -668,4 +668,27 @@ public class DataService : IDataService
         }
         return new();
     }
+
+    public async Task<DistributionResponse> GetDistribution(DistributionRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{ratingController}GetDistribution", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<DistributionResponse>(cancellationToken: token) ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting distribution: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting distribution: {e.Message}");
+        }
+        return new();
+    }
 }
