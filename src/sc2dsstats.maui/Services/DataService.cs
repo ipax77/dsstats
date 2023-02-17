@@ -306,4 +306,9 @@ public partial class DataService : IDataService
     {
         return await Task.FromResult(new CmdrStrengthResult());
     }
+
+    public async Task<DistributionResponse> GetDistribution(DistributionRequest request, CancellationToken token = default)
+    {
+        return await ratingRepository.GetDistribution(request, token);
+    }
 }
