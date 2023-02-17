@@ -23,4 +23,5 @@ public interface IRatingRepository
     Task<RatingChangesResult> GetRatingChanges(RatingChangesRequest request, CancellationToken token);
     Task SeedRatingChanges();
     ReplayRatingDto? GetOnlineRating(ReplayDetailsDto replayDto, List<PlayerRatingReplayCalcDto> calcDtos);
+    Task<DistributionResponse> GetDistribution(DistributionRequest request, CancellationToken token = default);
 }
