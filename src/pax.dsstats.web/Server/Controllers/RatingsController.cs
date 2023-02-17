@@ -86,4 +86,11 @@ public class RatingsController
     //{
     //    return await ratingRepository.GetRatingChanges(request, token);
     //}
+
+    [HttpPost]
+    [Route("GetDistribution")]
+    public async Task<DistributionResponse> GetDistribution(DistributionRequest request, CancellationToken token)
+    {
+        return await ratingRepository.GetDistribution(request, token);
+    }
 }

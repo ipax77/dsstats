@@ -220,26 +220,24 @@
             </tbody>
         </table>
     </div>
-    <div class="">
-        <div class="btn-block">
-            <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => DistributionRequest = DistributionRequestEnum.Std)">Std Distribution</button>
-            <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => DistributionRequest = DistributionRequestEnum.Cmdr)">Cmdr Distribution</button>
-            @if (DistributionRequest != DistributionRequestEnum.None)
-            {
-                <button type="button" class="btn btn-sm btn-outline-warning" @onclick="@(() => DistributionRequest = DistributionRequestEnum.None)">Close</button>
-            }
+    <div class="d-flex">
+        <div>
+            <button class="btn btn-sm btn-outline-light"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#Distribution"
+                    aria-expanded="false"
+                    aria-controls="Distribution"
+                    @onclick="e => showDistribution = !showDistribution">
+                <span class="oi @(showDistribution ? "oi-caret-bottom" : "oi-caret-top")"></span>
+                Rating Info
+            </button>
         </div>
-        @if (DistributionRequest == DistributionRequestEnum.Std)
+    </div>
+    <div class="collapse" id="Distribution" style="width: 75vw; min-width: 500px; height: 37.5vw;  min-height: 250px;">
+        @if (showDistribution)
         {
-            <div>
-                <PlayerRatingsDeviation @ref="playerRatingsDeviation" Std="true"></PlayerRatingsDeviation>
-            </div>
-        }
-        else if (DistributionRequest == DistributionRequestEnum.Cmdr)
-        {
-            <div>
-                <PlayerRatingsDeviation @ref="playerRatingsDeviation" Std="false"></PlayerRatingsDeviation>
-            </div>
+            <sc2dsstats.razorlib.Distribution.DistributionComponent Request="distributionRequest" />
         }
     </div>
 </div>
@@ -271,6 +269,12 @@
     private EditContext editContext = null!;
 
     private RequestNames? Interest;
+
+    private bool showDistribution;
+    private DistributionRequest distributionRequest = new()
+    {
+        RatingType = RatingType.Cmdr
+    };
 
     private string ratingChangeSort => RatingsRequest.TimePeriod switch
     {
