@@ -1,4 +1,6 @@
-﻿namespace pax.dsstats.shared;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace pax.dsstats.shared;
 
 public record CmdrStrengthRequest
 {
@@ -19,5 +21,9 @@ public record CmdrStrengthItem
     public double AvgRating { get; init; }
     public double AvgRatingGain { get; init; }
     public int Wins { get; init; }
+    [NotMapped]
+    public double Strength { get; set; }
+    [NotMapped]
+    public double MarginOfError { get; set; }
 }
 

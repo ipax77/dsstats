@@ -34,11 +34,11 @@ else
                 <CmdrStrengthTable @ref="cmdrStrengthTable" Result="result" OnTableHover="TableHover"></CmdrStrengthTable>
             </div>
             <div class="col-auto">
-                <div class="border rounded border-secondary" style="min-width: 550px; width: 50vw; height: calc(50vw * 0.5); min-height: 275px;">
+                <div class="border rounded border-secondary" style="min-width: 550px; width: 44vw; height: calc(44vw * 0.5); min-height: 275px;">
                     <CmdrStrengthChart @ref="cmdrStrengthChart" Request="Request" Result="result" OnBubbleHover="BubbleHover"></CmdrStrengthChart>
                 </div>
-                <div style="max-width: 45vw;">
-                    @if (result.Items.Any(a => a.Matchups < 961))
+                <div style="min-width: 550px; max-width: 45vw;">
+@*                    @if (result.Items.Any(a => a.Matchups < 961))
                     {
                         <div class="ms-2 mt-2 p-2 bg-dark">
                             <h3 class="text-danger">Warning</h3>
@@ -47,7 +47,7 @@ else
                                 Try to increase the Time Peroid to get a better sample size.
                             </p>
                         </div>
-                    }
+                    }*@
                     @if (Request.Interest == Commander.None)
                     {
                         <div class="ms-2 mt-2 p-2 bg-dark">
@@ -92,6 +92,16 @@ else
                     }
                 </div>
             </div>
+            <div class="col-auto">
+                <div class="ms-2 mt-2 p-2 bg-dark" style="max-width: 1000px;">
+                    <p>
+                        The <b>Strength</b> value is a measure of a commander's overall effectiveness in StarCraft II Direct Strike, calculated based on factors such as their win rate, average rating, and matchup frequency. It gives an indication of how well a commander is performing in the game, with higher values indicating greater strength.
+                    </p>
+                    <p>
+                        <b>Error</b> represents the margin of error, it is a statistical measure that shows the range of possible error in a dataset. In the context of these commander strength rankings, it represents the range of possible values for the commander's true strength based on the available data. The smaller the margin of error, the more reliable the strength ranking is likely to be. In general, a margin of error of less than 0.05 can be considered small enough to suggest that the commander's strength ranking is statistically significant
+                    </p>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -132,7 +142,56 @@ else
         isLoading = false;
         cmdrStrengthChart?.Update(Request, result);
         TableHover(0);
+        SetStrength(result.Items);
         await InvokeAsync(() => StateHasChanged());
+    }
+
+    public void SetStrength(List<CmdrStrengthItem> items)
+    {
+        if (!items.Any())
+        {
+            return;
+        }
+
+        double weightMatchups = 1;
+        double weightWinrate = 5;
+        double weightRating = 8;
+        double weightGain = 8;
+
+        double z = 1.96; // 95% confidence interval
+
+        double minMatchups = items.Min(m => m.Matchups);
+        double maxMatchups = items.Max(m => m.Matchups);
+
+        var winrates = items.Select(s => s.Wins * 100.0 / (double)s.Matchups).ToList();
+        double minWinrate = winrates.Min();
+        double maxWinrate = winrates.Max();
+
+        double minRating = items.Min(m => m.AvgRating);
+        double maxRating = items.Max(m => m.AvgRating);
+
+        double minGain = items.Min(m => m.AvgRatingGain);
+        double maxGain = items.Max(m => m.AvgRatingGain);
+
+        foreach (var item in items)
+        {
+            var normalizedMatchups = (item.Matchups - minMatchups) / (maxMatchups - minMatchups);
+            var normalizedWinrate = (item.Wins * 100.0 / (double)item.Matchups - minWinrate) / (maxWinrate - minWinrate);
+            var normalizedRating = (item.AvgRating - minRating) / (maxRating - minRating);
+            var normalizedGain = (item.AvgRatingGain - minGain) / (maxGain - minGain);
+
+            double p = item.Wins / (double)item.Matchups;
+            double stdErr = Math.Sqrt(p * (1 - p) / item.Matchups);
+            double marginOfError = z * stdErr;
+
+            item.Strength =
+                  weightMatchups * normalizedMatchups
+                + weightWinrate * normalizedWinrate
+                + weightRating * normalizedRating
+                + weightGain * normalizedGain;
+
+            item.MarginOfError = marginOfError;
+        }
     }
 
     private void TableHover(int index)
