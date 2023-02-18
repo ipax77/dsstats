@@ -1,10 +1,13 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng.Services;
+
+
 
 public partial class PlayerService
 {
@@ -17,6 +20,56 @@ public partial class PlayerService
         this.scopeFactory = scopeFactory;
         this.mapper = mapper;
         this.logger = logger;
+    }
+
+    public async Task<PlayerDetailSummary> GetPlayerSummary(int toonId, CancellationToken token = default)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return new()
+        {
+            GameModesPlayed = await GetGameModeCounts(context, toonId, token),
+            Ratings = await GetRatings(context, toonId, token),
+            Commanders = await GetCommandersPlayed(context, toonId, token)
+        };
+    }
+
+    private static async Task<List<CommanderInfo>> GetCommandersPlayed(ReplayContext context, int toonId, CancellationToken token)
+    {
+        return await (from p in context.Players
+                    from rp in p.ReplayPlayers
+                    where p.ToonId == toonId
+                    group rp by rp.Race into g
+                    select new CommanderInfo()
+                    {
+                        Cmdr = g.Key,
+                        Count = g.Count()
+                    })
+                    .ToListAsync(token);
+    }
+
+    private async Task<List<PlayerRatingDetailDto>> GetRatings(ReplayContext context, int toonId, CancellationToken token)
+    {
+        return await context.PlayerRatings
+                .Where(x => x.Player.ToonId == toonId)
+                .ProjectTo<PlayerRatingDetailDto>(mapper.ConfigurationProvider)
+                .ToListAsync(token);
+    }
+
+    private static async Task<List<PlayerGameModeResult>> GetGameModeCounts(ReplayContext context, int toonId, CancellationToken token)
+    {
+        var gameModeGroup = from r in context.Replays
+                            from rp in r.ReplayPlayers
+                            where rp.Player.ToonId == toonId
+                            group r by new { r.GameMode, r.Playercount } into g
+                            select new PlayerGameModeResult()
+                            {
+                                GameMode = g.Key.GameMode,
+                                PlayerCount = g.Key.Playercount,
+                                Count = g.Count(),
+                            };
+        return await gameModeGroup.ToListAsync(token);
     }
 
     public async Task<PlayerDetailResponse> GetPlayerDetails(PlayerDetailRequest request, CancellationToken token = default)
@@ -106,11 +159,11 @@ public static class PlayerServiceDeprecated
         // int toonId = 8509078; // Firestorm
 
         var select = from r in context.Replays
-                      from rp in r.ReplayPlayers
-                      where rp.Player.ToonId == toonId
-                       && r.ReplayRatingInfo != null
-                       && r.ReplayRatingInfo.RatingType == shared.RatingType.CmdrTE && r.ReplayRatingInfo.LeaverType == LeaverType.None
-                      select r;
+                     from rp in r.ReplayPlayers
+                     where rp.Player.ToonId == toonId
+                      && r.ReplayRatingInfo != null
+                      && r.ReplayRatingInfo.RatingType == shared.RatingType.CmdrTE && r.ReplayRatingInfo.LeaverType == LeaverType.None
+                     select r;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
         var replays = await select
@@ -148,7 +201,8 @@ public static class PlayerServiceDeprecated
             if (playerTeam == 1)
             {
                 expectationToWin = EloExpectationToWin(team1Mmr, team2Mmr);
-            } else
+            }
+            else
             {
                 expectationToWin = EloExpectationToWin(team2Mmr, team1Mmr);
             }

@@ -250,13 +250,7 @@
 
 @if (Interest != null)
 {
-    @*<PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>*@
-@*    <sc2dsstats.razorlib.PlayerDetails.PlayerDetailsNgComponent RequestNames="Interest"
-                                                            RatingType="RatingsRequest.Type"
-                                                            OnCloseRequested="DetailsClose"
-                                                            ReplaysRequest="ReplaysToonIdRequest" />
-*@    <sc2dsstats.razorlib.PlayerDetailsNg.PlayerDetailsNgComponent RequestNames="Interest"
-                                                            RatingType="RatingsRequest.Type"
+    <sc2dsstats.razorlib.PlayerDetailsNg.PlayerDetailsSummary RequestNames="Interest"
                                                             OnCloseRequested="DetailsClose"
                                                             ReplaysRequest="ReplaysToonIdRequest" />
 }
@@ -425,7 +419,7 @@
 
     private void LoadPlayerChart(PlayerRatingPlayerDto playerDto)
     {
-        Interest = new() { Name = playerDto.Name, ToonId = playerDto.ToonId };
+        Interest = new() { Name = playerDto.Name, ToonId = playerDto.ToonId, RegionId = playerDto.RegionId };
         RatingsRequest.ToonId = playerDto.ToonId;
         StateHasChanged();
         OnRatingsChanged.InvokeAsync();

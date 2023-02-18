@@ -41,4 +41,5 @@ public interface IDataService
     Task<int> GetRatingChangesCount(RatingChangesRequest request, CancellationToken token);
     Task<RatingChangesResult> GetRatingChanges(RatingChangesRequest request, CancellationToken token);
     Task<PlayerDetailResponse> GetPlayerDetails(PlayerDetailRequest request, CancellationToken token);
+    Task<PlayerDetailSummary> GetPlayerSummary(int toonId, CancellationToken token = default);
 }

@@ -1,0 +1,186 @@
+@using pax.dsstats.shared
+@using sc2dsstats.razorlib.Services
+@using System.Globalization
+@inject IDataService dataService
+@implements IDisposable
+
+<div>
+    <div class="row bg-secondary p-2">
+        <div class="col-auto">
+            <span class="oi oi-x text-danger pointer" style="font-size: 2rem; z-index: 1000;"
+                @onclick="(() => OnCloseRequested.InvokeAsync())"></span>
+        </div>
+        <div class="col-auto align-self-center border p-1">
+            <span>@Data.GetRegionString(RequestNames.RegionId)</span>
+        </div>
+        <div class="col-auto align-self-center">
+            <h3 class="text-warning fw-bold">@RequestNames.Name Details</h3>
+        </div>
+        @if (isLoading)
+        {
+            <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        }
+        <div class="col-auto align-self-center">
+            <button type="button" class="btn btn-outline-light" @onclick="ShowReplays">Replays</button>
+        </div>
+    </div>
+    @if (playerSummary != null)
+    {
+        <div class="row mt-1">
+            @foreach (var interestRating in playerSummary.Ratings.OrderBy(o => o.RatingType))
+            {
+            <div class="col-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="badge" style="font-size: 1.2rem;">
+                            <span class="small">@Data.GetRatingTypeLongName(interestRating.RatingType)</span>
+                            <br />
+                            <span class="text-warning">
+                                <span class="small text-danger">#@interestRating.Pos </span>
+                                @interestRating.Rating.ToString("N2", CultureInfo.InvariantCulture)
+                            </span>
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-dark table-striped">
+                                <tbody>
+                                    <tr>
+                                        <td>Rating games</td>
+                                        <td colspan="2">@interestRating.Games</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Main</td>
+                                        <td>@(interestRating.Games == 0 || interestRating.MainCount * 100.0 / interestRating.Games < 10.5 ? "Random" : interestRating.Main.ToString())</td>
+                                        <td>@HelperService.GetPercentageString(interestRating.MainCount, interestRating.Games)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Winrate</td>
+                                        <td colspan="2">@HelperService.GetPercentageString(interestRating.Wins, interestRating.Games)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Mvp</td>
+                                        <td colspan="2">@HelperService.GetPercentageString(interestRating.Mvp, interestRating.Games)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Consistency</td>
+                                        <td colspan="2">@interestRating.Consistency.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Confidence</td>
+                                        <td colspan="2">@interestRating.Confidence.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            Rating Change
+                                            <br />
+                                            <small class="text-white-50">past 30 days</small>
+                                        </td>
+                                        <td colspan="2">
+                                            @if (interestRating.PlayerRatingChange != null)
+                                            {
+                                                <span class="@(interestRating.PlayerRatingChange.Change30d >= 0 ? "oi oi-arrow-top text-success" : "oi oi-arrow-bottom text-danger")">
+                                                    @interestRating.PlayerRatingChange.Change30d.ToString("N2", CultureInfo.InvariantCulture)
+                                                </span>
+                                            }
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            }
+            <div class="col-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="text-warning">GameModes Played</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto; overflow-x: hidden;">
+                            <table class="table table-sm table-striped table-dark w-auto">
+                                <thead>
+                                    <tr>
+                                        <th>GameMode</th>
+                                        <th>Players</th>
+                                        <th>Games</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var gameMode in playerSummary.GameModesPlayed.OrderByDescending(o => o.Count))
+                                    {
+                                        <tr>
+                                            <td>@gameMode.GameMode</td>
+                                            <td>@HelperService.GetPlayerCountString(gameMode.PlayerCount)</td>
+                                            <td>@gameMode.Count</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-auto">
+                <div style="width: 35vw; min-width: 375px; height: 35vw; min-height: 375px;">
+                    <PlayerCmdrChart CmdrInfos="playerSummary.Commanders"></PlayerCmdrChart>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public RequestNames RequestNames { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnCloseRequested { get; set; }
+    [Parameter]
+    public EventCallback<ReplaysToonIdRequest> ReplaysRequest { get; set; }
+
+    CancellationTokenSource cts = new();
+    bool isLoading;
+    PlayerDetailSummary? playerSummary;
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    public async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        playerSummary = await dataService.GetPlayerSummary(RequestNames.ToonId, cts.Token);
+        isLoading = false;
+        if (String.IsNullOrEmpty(RequestNames.Name))
+        {
+            if (playerSummary.Ratings.Any())
+            {
+                RequestNames.Name = playerSummary.Ratings[0].Player.Name;
+                RequestNames.RegionId = playerSummary.Ratings[0].Player.RegionId;
+            }
+        }
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void ShowReplays()
+    {
+        ReplaysRequest.InvokeAsync(new()
+            {
+                Name = RequestNames.Name,
+                ToonId = RequestNames.ToonId,
+            });
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

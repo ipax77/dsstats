@@ -103,4 +103,11 @@ public class RatingsController
     {
         return await playerService.GetPlayerDetails(request, token);
     }
+
+    [HttpGet]
+    [Route("GetPlayerDatailSummary/{toonId}")]
+    public async Task<PlayerDetailSummary> GetPlayerSummary(int toonId, CancellationToken token = default)
+    {
+        return await playerService.GetPlayerSummary(toonId, token);
+    }
 }
