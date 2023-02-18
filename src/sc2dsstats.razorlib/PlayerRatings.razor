@@ -110,7 +110,7 @@
                 <p class="ms-auto p-0 m-0"><small class="text-primary">min 20 games</small> #@ratingsCount</p>
             </div>
             <div class="tableFixHead">
-                <table class="table table-dark table-hover table-striped w-auto">
+                <table class="table table-dark table-hover table-striped">
                     <colgroup>
                         <col class="col">
                         <col class="col">
@@ -251,7 +251,11 @@
 @if (Interest != null)
 {
     @*<PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>*@
-    <sc2dsstats.razorlib.PlayerDetails.PlayerDetailsNgComponent RequestNames="Interest"
+@*    <sc2dsstats.razorlib.PlayerDetails.PlayerDetailsNgComponent RequestNames="Interest"
+                                                            RatingType="RatingsRequest.Type"
+                                                            OnCloseRequested="DetailsClose"
+                                                            ReplaysRequest="ReplaysToonIdRequest" />
+*@    <sc2dsstats.razorlib.PlayerDetailsNg.PlayerDetailsNgComponent RequestNames="Interest"
                                                             RatingType="RatingsRequest.Type"
                                                             OnCloseRequested="DetailsClose"
                                                             ReplaysRequest="ReplaysToonIdRequest" />

@@ -1,14 +1,103 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace pax.dsstats.dbng.Services;
 
-public static class PlayerService
+public partial class PlayerService
+{
+    private readonly IServiceScopeFactory scopeFactory;
+    private readonly IMapper mapper;
+    private readonly ILogger<PlayerService> logger;
+
+    public PlayerService(IServiceScopeFactory scopeFactory, IMapper mapper, ILogger<PlayerService> logger)
+    {
+        this.scopeFactory = scopeFactory;
+        this.mapper = mapper;
+        this.logger = logger;
+    }
+
+    public async Task<PlayerDetailResponse> GetPlayerDetails(PlayerDetailRequest request, CancellationToken token = default)
+    {
+        PlayerDetailResponse response = new();
+
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        if ((int)request.TimePeriod < 3)
+        {
+            request.TimePeriod = TimePeriod.Past90Days;
+        }
+
+        response.CmdrStrengthItems = await GetCmdrStrengthItems(context, request, token);
+
+        return response;
+    }
+
+    private async Task<List<CmdrStrengthItem>> GetCmdrStrengthItems(ReplayContext context, PlayerDetailRequest request, CancellationToken token)
+    {
+        (var startDate, var endDate) = Data.TimeperiodSelected(request.TimePeriod);
+
+        var replays = context.Replays
+            .Where(x => x.GameTime > startDate
+                && x.ReplayRatingInfo != null
+                && x.ReplayRatingInfo.LeaverType == LeaverType.None
+                && x.ReplayRatingInfo.RatingType == request.RatingType);
+
+        if (endDate != DateTime.MinValue && (DateTime.Today - endDate).TotalDays > 2)
+        {
+            replays = replays.Where(x => x.GameTime < endDate);
+        }
+
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+        var group = request.Interest == Commander.None
+            ?
+                from r in replays
+                from rp in r.ReplayPlayers
+                where rp.Player.ToonId == request.RequestNames.ToonId
+                group rp by rp.Race into g
+                select new CmdrStrengthItem()
+                {
+                    Commander = g.Key,
+                    Matchups = g.Count(),
+                    AvgRating = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.Rating), 2),
+                    AvgRatingGain = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.RatingChange), 2),
+                    Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
+                }
+            :
+                from r in replays
+                from rp in r.ReplayPlayers
+                where rp.Player.ToonId == request.RequestNames.ToonId
+                    && rp.Race == request.Interest
+                group rp by rp.OppRace into g
+                select new CmdrStrengthItem()
+                {
+                    Commander = g.Key,
+                    Matchups = g.Count(),
+                    AvgRating = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.Rating), 2),
+                    AvgRatingGain = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.RatingChange), 2),
+                    Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
+                }
+        ;
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+
+        var items = await group.ToListAsync(token);
+
+        if (request.RatingType == RatingType.Cmdr || request.RatingType == RatingType.CmdrTE)
+        {
+            items = items.Where(x => (int)x.Commander > 3).ToList();
+        }
+        else if (request.RatingType == RatingType.Std || request.RatingType == RatingType.StdTE)
+        {
+            items = items.Where(x => (int)x.Commander <= 3).ToList();
+        }
+        return items;
+    }
+}
+
+public static class PlayerServiceDeprecated
 {
     public static async void GetExpectationCount(ReplayContext context)
     {
@@ -23,12 +112,14 @@ public static class PlayerService
                        && r.ReplayRatingInfo.RatingType == shared.RatingType.CmdrTE && r.ReplayRatingInfo.LeaverType == LeaverType.None
                       select r;
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
         var replays = await select
             .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Player)
             .Include(i => i.ReplayRatingInfo)
                 .ThenInclude(i => i.RepPlayerRatings)
             .ToListAsync();
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
         List<double> expectations = new();
 
