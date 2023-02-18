@@ -35,8 +35,11 @@
 </style>
 
 <div class="table-responsive tableFixHead">
-    <table class="table table-sm table-dark w-auto">
+    <table class="table table-sm table-dark">
         <colgroup>
+            <col class="col">
+            <col class="col">
+            <col class="col">
             <col class="col">
             <col class="col">
             <col class="col">
@@ -48,6 +51,11 @@
                     <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(CmdrStrengthItem.Commander))">
                         <SortArrow Property="@nameof(CmdrStrengthItem.Commander)">
                             Commander
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer text-info" @onclick="e => SortList(e, nameof(CmdrStrengthItem.Strength))">
+                        <SortArrow Property="@nameof(CmdrStrengthItem.Strength)">
+                            Strength
                         </SortArrow>
                     </th>
                     <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(CmdrStrengthItem.Matchups))">
@@ -75,6 +83,12 @@
                             AvgGain
                         </SortArrow>
                     </th>
+
+                    <th scope="col" class="pointer text-light" @onclick="e => SortList(e, nameof(CmdrStrengthItem.MarginOfError))">
+                        <SortArrow Property="@nameof(CmdrStrengthItem.MarginOfError)">
+                            Error
+                        </SortArrow>
+                    </th>
                 </tr>
             </CascadingValue>
         </thead>
@@ -91,6 +105,9 @@
                          height="30" />
                             @item.Commander
                     </td>
+                    <td class="text-info">
+                        @item.Strength.ToString("N2", CultureInfo.InvariantCulture)
+                    </td>
                     <td>
                         @item.Matchups
                     </td>
@@ -105,6 +122,9 @@
                     </td>
                     <td class="@(item.AvgRatingGain < 0 ? "text-danger" : "text-success")">
                         @item.AvgRatingGain.ToString("N2", CultureInfo.InvariantCulture)
+                    </td>
+                    <td class="text-light">
+                        @item.MarginOfError.ToString("N2", CultureInfo.InvariantCulture)
                     </td>
                 </tr>
             }
@@ -128,7 +148,7 @@
 
     private List<TableOrder> Orders = new List<TableOrder>()
     {
-        new TableOrder() { Property = nameof(CmdrStrengthItem.AvgRating), Ascending = false }
+        new TableOrder() { Property = nameof(CmdrStrengthItem.Strength), Ascending = false }
     };
 
     private int hoverIndex = -1;

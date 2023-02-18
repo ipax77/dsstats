@@ -271,9 +271,7 @@
     public EventCallback OnRatingsChanged { get; set; }
 
     private int ratingsCount;
-    private PlayerRatingsDeviation? playerRatingsDeviation;
     private Virtualize<PlayerRatingDto>? virtualize;
-    private DistributionRequestEnum DistributionRequest = DistributionRequestEnum.None;
     private CancellationTokenSource cts = new();
 
     private EditContext editContext = null!;
@@ -347,10 +345,6 @@
             await virtualize.RefreshDataAsync();
         }
         await InvokeAsync(() => StateHasChanged());
-        if (playerRatingsDeviation != null)
-        {
-            await playerRatingsDeviation.LoadData();
-        }
     }
 
     private async Task SortList(MouseEventArgs e, string property)
