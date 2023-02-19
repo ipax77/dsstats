@@ -5,10 +5,6 @@
 
 <div>
     <div>
-        <span class="oi oi-x text-danger pointer" @onclick="e => OnCloseRequested.InvokeAsync()"></span>
-    </div>
-
-    <div>
         <CascadingValue Value="Request">
             <PlayerDetailsNgRequest OnRequestChanged="e => LoadData(Request)"/>
         </CascadingValue>
@@ -50,12 +46,6 @@
 
     [Parameter]
     public RatingType RatingType { get; set; } = RatingType.Cmdr;
-
-    [Parameter]
-    public EventCallback OnCloseRequested { get; set; }
-
-    [Parameter]
-    public EventCallback<ReplaysToonIdRequest> ReplaysRequest { get; set; }
 
     public PlayerDetailRequest Request = null!;
     public PlayerDetailResponse? Response;

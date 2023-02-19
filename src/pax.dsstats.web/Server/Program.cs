@@ -125,18 +125,18 @@ if (app.Environment.IsDevelopment())
 
     // PlayerService.GetExpectationCount(context);
 
-    var playerService = scope.ServiceProvider.GetRequiredService<PlayerService>();
-    playerService.GetPlayerDetails(new()
-    {
-        RequestNames = new()
-        {
-            Name = "PAX",
-            RegionId = 2,
-            ToonId = 226401
-        },
-        RatingType = RatingType.Cmdr,
-        TimePeriod = TimePeriod.Past90Days
-    }).Wait();
+    //var playerService = scope.ServiceProvider.GetRequiredService<PlayerService>();
+    //playerService.GetPlayerDetails(new()
+    //{
+    //    RequestNames = new()
+    //    {
+    //        Name = "PAX",
+    //        RegionId = 2,
+    //        ToonId = 226401
+    //    },
+    //    RatingType = RatingType.Cmdr,
+    //    TimePeriod = TimePeriod.Past90Days
+    //}).Wait();
 
 }
 
