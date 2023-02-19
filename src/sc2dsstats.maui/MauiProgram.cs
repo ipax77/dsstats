@@ -61,6 +61,7 @@ public static class MauiProgram
 
         builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRepository>();
         builder.Services.AddScoped<MmrProduceService>();
+        builder.Services.AddScoped<PlayerService>();
 
         builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
         builder.Services.AddTransient<IStatsRepository, StatsRepository>();

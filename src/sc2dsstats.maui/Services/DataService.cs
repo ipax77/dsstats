@@ -12,6 +12,7 @@ public partial class DataService : IDataService
     private readonly IStatsService statsService;
     private readonly IRatingRepository ratingRepository;
     private readonly IFromServerSwitchService fromServerSwitchService;
+    private readonly PlayerService playerService;
     private readonly ILogger<DataService> logger;
     private readonly HttpClient httpClient;
 
@@ -20,6 +21,7 @@ public partial class DataService : IDataService
                        IStatsService statsService,
                        IRatingRepository ratingRepository,
                        IFromServerSwitchService fromServerSwitchService,
+                       PlayerService playerService,
                        ILogger<DataService> logger)
     {
         this.replayRepository = replayRepository;
@@ -27,6 +29,7 @@ public partial class DataService : IDataService
         this.statsService = statsService;
         this.ratingRepository = ratingRepository;
         this.fromServerSwitchService = fromServerSwitchService;
+        this.playerService = playerService;
         this.logger = logger;
         httpClient = new HttpClient();
         // httpClient.BaseAddress = new Uri("https://localhost:7174");
@@ -310,5 +313,20 @@ public partial class DataService : IDataService
     public async Task<DistributionResponse> GetDistribution(DistributionRequest request, CancellationToken token = default)
     {
         return await ratingRepository.GetDistribution(request, token);
+    }
+
+    public async Task<PlayerDetailResponse> GetPlayerDetails(PlayerDetailRequest request, CancellationToken token)
+    {
+        return await playerService.GetPlayerDetails(request, token);
+    }
+
+    public async Task<PlayerDetailSummary> GetPlayerSummary(int toonId, CancellationToken token = default)
+    {
+        return await playerService.GetPlayerSummary(toonId, token);
+    }
+
+    public async Task<PlayerRatingDetails> GetPlayerRatingDetails(int toonId, RatingType ratingType, CancellationToken token = default)
+    {
+        return await playerService.GetPlayerRatingDetails(toonId, ratingType, token);
     }
 }
