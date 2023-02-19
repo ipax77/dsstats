@@ -110,7 +110,7 @@
                 <p class="ms-auto p-0 m-0"><small class="text-primary">min 20 games</small> #@ratingsCount</p>
             </div>
             <div class="tableFixHead">
-                <table class="table table-dark table-hover table-striped w-auto">
+                <table class="table table-dark table-hover table-striped">
                     <colgroup>
                         <col class="col">
                         <col class="col">
@@ -250,10 +250,9 @@
 
 @if (Interest != null)
 {
-    @*<PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>*@
-    <sc2dsstats.razorlib.PlayerDetails.PlayerDetailsNgComponent RequestNames="Interest"
-                                                            RatingType="RatingsRequest.Type"
+    <sc2dsstats.razorlib.PlayerDetailsNg.PlayerDetailsSummary RequestNames="Interest"
                                                             OnCloseRequested="DetailsClose"
+                                                            RatingType="RatingsRequest.Type"
                                                             ReplaysRequest="ReplaysToonIdRequest" />
 }
 
@@ -421,7 +420,7 @@
 
     private void LoadPlayerChart(PlayerRatingPlayerDto playerDto)
     {
-        Interest = new() { Name = playerDto.Name, ToonId = playerDto.ToonId };
+        Interest = new() { Name = playerDto.Name, ToonId = playerDto.ToonId, RegionId = playerDto.RegionId };
         RatingsRequest.ToonId = playerDto.ToonId;
         StateHasChanged();
         OnRatingsChanged.InvokeAsync();

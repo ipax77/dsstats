@@ -12,5 +12,5 @@ public record RequestNames
 {
     public string Name { get; set; } = "";
     public int ToonId { get; init; }
-    public int RegionId { get; init; }
+    public int RegionId { get; set; }
 }

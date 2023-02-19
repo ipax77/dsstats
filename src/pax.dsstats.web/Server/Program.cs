@@ -61,6 +61,7 @@ builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRe
 builder.Services.AddScoped<ImportService>();
 builder.Services.AddScoped<MmrProduceService>();
 builder.Services.AddScoped<CheatDetectService>();
+builder.Services.AddScoped<PlayerService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -123,6 +124,19 @@ if (app.Environment.IsDevelopment())
     //ratingRepository.SeedRatingChanges().Wait();
 
     // PlayerService.GetExpectationCount(context);
+
+    //var playerService = scope.ServiceProvider.GetRequiredService<PlayerService>();
+    //playerService.GetPlayerDetails(new()
+    //{
+    //    RequestNames = new()
+    //    {
+    //        Name = "PAX",
+    //        RegionId = 2,
+    //        ToonId = 226401
+    //    },
+    //    RatingType = RatingType.Cmdr,
+    //    TimePeriod = TimePeriod.Past90Days
+    //}).Wait();
 
 }
 
