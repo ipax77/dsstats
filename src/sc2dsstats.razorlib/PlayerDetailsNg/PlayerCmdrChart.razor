@@ -1,0 +1,80 @@
+@using pax.BlazorChartJs
+@using pax.dsstats.shared
+
+<pax.BlazorChartJs.ChartComponent ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered">
+</pax.BlazorChartJs.ChartComponent>
+
+@code {
+    [Parameter, EditorRequired]
+    public List<CommanderInfo> CmdrInfos { get; set; } = default!;
+
+    ChartJsConfig chartConfig = null!;
+
+    protected override void OnInitialized()
+    {
+        chartConfig = GetChartJsConfig();
+        base.OnInitialized();
+    }
+
+    public void ChartEventTriggered(ChartJsEvent chartEvent)
+    {
+        if (chartEvent is ChartJsInitEvent initEvent)
+        {
+            SetupChart();
+        }
+    }
+
+    public void SetupChart()
+    {
+        if (chartConfig.Data.Datasets.Any())
+        {
+            chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
+        }
+        var data = CmdrInfos.OrderByDescending(o => o.Count).ToList();
+        chartConfig.SetLabels(data.Select(s => s.Cmdr.ToString()).ToList());
+        chartConfig.AddDataset(GetDataset(data));
+    }
+
+    public ChartJsDataset GetDataset(List<CommanderInfo> data)
+    {
+        
+        return new PieDataset()
+            {
+                Data = data.Select(s => s.Count).Cast<object>().ToList(),
+                BackgroundColor = new IndexableOption<string>(data.Select(s => Data.GetBackgroundColor(s.Cmdr)).ToList()),
+                BorderColor = new IndexableOption<string>(data.Select(s => Data.CmdrColor[s.Cmdr]).ToList()),
+                BorderWidth = new IndexableOption<double>(1)
+            };
+    }
+
+    public ChartJsConfig GetChartJsConfig()
+    {
+        return new()
+            {
+                Type = ChartType.pie,
+                Options = new ChartJsOptions()
+                {
+                    Responsive = true,
+                    MaintainAspectRatio = true,
+                    Plugins = new Plugins()
+                    {
+                        Title = new Title()
+                        {
+                            Display = true,
+                            Text = new IndexableOption<string>("Commanders Played"),
+                            Color = "#f39c22",
+                            Font = new Font()
+                            {
+                                Size = 24,
+                            }
+                        },
+                        Legend = new Legend()
+                        {
+                            Display = true,
+                            Position = "right"
+                        }
+                    }
+                }
+            };
+    }
+}

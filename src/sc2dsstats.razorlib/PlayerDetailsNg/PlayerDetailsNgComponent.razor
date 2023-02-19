@@ -1,0 +1,115 @@
+﻿@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
+@inject IDataService dataService
+@implements IDisposable
+
+<div>
+    <div>
+        <CascadingValue Value="Request">
+            <PlayerDetailsNgRequest OnRequestChanged="e => LoadData(Request)"/>
+        </CascadingValue>
+    </div>
+
+    @if (Response == null)
+    {
+        <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @if (isLoading)
+            {
+                <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            }
+            @if (cmdrStrengthRequest != null && cmdrStrengthResult != null)
+            {
+                <div class="col-auto">
+                    <sc2dsstats.razorlib.CmdrStrength.CmdrStrengthTable @ref="cmdrStrengthTable" Result="cmdrStrengthResult" OnTableHover="TableHover" />
+                </div>
+                <div class="col-auto">
+                    <div class="border rounded border-secondary" style="min-width: 550px; width: 50vw; height: calc(50vw * 0.5); min-height: 275px;">
+                        <sc2dsstats.razorlib.CmdrStrength.CmdrStrengthChart @ref="cmdrStrengthChart" Request="cmdrStrengthRequest" Result="cmdrStrengthResult" OnBubbleHover="BubbleHover" />
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public RequestNames RequestNames { get; set; } = default!;
+
+    [Parameter]
+    public RatingType RatingType { get; set; } = RatingType.Cmdr;
+
+    public PlayerDetailRequest Request = null!;
+    public PlayerDetailResponse? Response;
+
+    CmdrStrengthRequest? cmdrStrengthRequest;
+    CmdrStrengthResult? cmdrStrengthResult;
+
+    sc2dsstats.razorlib.CmdrStrength.CmdrStrengthTable? cmdrStrengthTable;
+    sc2dsstats.razorlib.CmdrStrength.CmdrStrengthChart? cmdrStrengthChart;
+
+    bool isLoading;
+
+    CancellationTokenSource cts = new();
+
+    protected override void OnInitialized()
+    {
+        Request = new()
+            {
+                RequestNames = RequestNames,
+                RatingType = RatingType,
+                TimePeriod = TimePeriod.All,
+            };
+        _ = LoadData(Request);
+        base.OnInitialized();
+    }
+
+    public async Task LoadData(PlayerDetailRequest request)
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        var response = await dataService.GetPlayerDetails(request, cts.Token);
+        Response = response;
+
+        cmdrStrengthRequest = new()
+            {
+                RatingType = request.RatingType,
+                TimePeriod = request.TimePeriod,
+                Interest = request.Interest
+            };
+
+        cmdrStrengthResult = new()
+            {
+                Items = response.CmdrStrengthItems
+            };
+
+        isLoading = false;
+        cmdrStrengthChart?.Update(cmdrStrengthRequest, cmdrStrengthResult);
+        TableHover(0);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void TableHover(int index)
+    {
+        cmdrStrengthChart?.AnimateBubble(index);
+    }
+
+    private void BubbleHover(int index)
+    {
+        cmdrStrengthTable?.BubbleHover(index);
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}
