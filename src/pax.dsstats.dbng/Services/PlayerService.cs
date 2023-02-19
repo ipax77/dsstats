@@ -2,7 +2,6 @@
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng.Services;
@@ -13,13 +12,11 @@ public partial class PlayerService
 {
     private readonly IServiceScopeFactory scopeFactory;
     private readonly IMapper mapper;
-    private readonly ILogger<PlayerService> logger;
 
-    public PlayerService(IServiceScopeFactory scopeFactory, IMapper mapper, ILogger<PlayerService> logger)
+    public PlayerService(IServiceScopeFactory scopeFactory, IMapper mapper)
     {
         this.scopeFactory = scopeFactory;
         this.mapper = mapper;
-        this.logger = logger;
     }
 
     public async Task<PlayerDetailSummary> GetPlayerSummary(int toonId, CancellationToken token = default)
@@ -38,14 +35,14 @@ public partial class PlayerService
     private static async Task<List<CommanderInfo>> GetCommandersPlayed(ReplayContext context, int toonId, CancellationToken token)
     {
         return await (from p in context.Players
-                    from rp in p.ReplayPlayers
-                    where p.ToonId == toonId
-                    group rp by rp.Race into g
-                    select new CommanderInfo()
-                    {
-                        Cmdr = g.Key,
-                        Count = g.Count()
-                    })
+                      from rp in p.ReplayPlayers
+                      where p.ToonId == toonId
+                      group rp by rp.Race into g
+                      select new CommanderInfo()
+                      {
+                          Cmdr = g.Key,
+                          Count = g.Count()
+                      })
                     .ToListAsync(token);
     }
 
@@ -70,6 +67,90 @@ public partial class PlayerService
                                 Count = g.Count(),
                             };
         return await gameModeGroup.ToListAsync(token);
+    }
+
+    public async Task<PlayerRatingDetails> GetPlayerRatingDetails(int toonId, RatingType ratingType, CancellationToken token = default)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return new()
+        {
+            Teammates = await GetPlayerTeammates(context, toonId, ratingType, true, token),
+            Opponents = await GetPlayerTeammates(context, toonId, ratingType, false, token),
+            Matchups = await GetPlayerMatchups(context, toonId, ratingType, token)
+        };
+    }
+
+    private async Task<List<PlayerMatchupInfo>> GetPlayerMatchups(ReplayContext context, int toonId, RatingType ratingType, CancellationToken token)
+    {
+        return await (from p in context.Players
+                      from rp in p.ReplayPlayers
+                      where p.ToonId == toonId
+                          && rp.Replay.ReplayRatingInfo != null
+                          && rp.Replay.ReplayRatingInfo.RatingType == ratingType
+                      group rp by new { rp.Race, rp.OppRace } into g
+                      select new PlayerMatchupInfo
+                      {
+                          Commander = g.Key.Race,
+                          Versus = g.Key.OppRace,
+                          Count = g.Count(),
+                          Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
+                      })
+                    .ToListAsync(token);
+    }
+
+    private async Task<List<PlayerTeamResult>> GetPlayerTeammates(ReplayContext context, int toonId, RatingType ratingType, bool inTeam, CancellationToken token)
+    {
+        var teammateGroup = inTeam ?
+                                from p in context.Players
+                                from rp in p.ReplayPlayers
+                                from t in rp.Replay.ReplayPlayers
+                                where p.ToonId == toonId
+                                    && rp.Replay.ReplayRatingInfo != null
+                                    && rp.Replay.ReplayRatingInfo.RatingType == ratingType
+                                where t.Team == rp.Team
+                                group t by t.Player.ToonId into g
+                                where g.Count() > 10
+                                select new PlayerTeamResultHelper()
+                                {
+                                    ToonId = g.Key,
+                                    Count = g.Count(),
+                                    Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
+                                }
+                            : from p in context.Players
+                              from rp in p.ReplayPlayers
+                              from t in rp.Replay.ReplayPlayers
+                              where p.ToonId == toonId
+                                  && rp.Replay.ReplayRatingInfo != null
+                                  && rp.Replay.ReplayRatingInfo.RatingType == ratingType
+                              where rp.Player.ToonId == toonId
+                              where t.Team != rp.Team
+                              group t by t.Player.ToonId into g
+                              where g.Count() > 10
+                              select new PlayerTeamResultHelper()
+                              {
+                                  ToonId = g.Key,
+                                  Count = g.Count(),
+                                  Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
+                              };
+
+        var results = await teammateGroup
+            .ToListAsync(token);
+
+        var rtoonIds = results.Select(s => s.ToonId).ToList();
+        var names = (await context.Players
+            .Where(x => rtoonIds.Contains(x.ToonId))
+            .Select(s => new { s.ToonId, s.Name })
+            .ToListAsync(token)).ToDictionary(k => k.ToonId, v => v.Name);
+
+        return results.Select(s => new PlayerTeamResult()
+        {
+            Name = names[s.ToonId],
+            ToonId = s.ToonId,
+            Count = s.Count,
+            Wins = s.Wins
+        }).ToList();
     }
 
     public async Task<PlayerDetailResponse> GetPlayerDetails(PlayerDetailRequest request, CancellationToken token = default)

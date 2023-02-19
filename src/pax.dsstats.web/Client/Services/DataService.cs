@@ -731,4 +731,21 @@ public class DataService : IDataService
         }
         return new();
     }
+
+    public async Task<PlayerRatingDetails> GetPlayerRatingDetails(int toonId, RatingType ratingType, CancellationToken token = default)
+    {
+        try
+        {
+            var result = await httpClient.GetFromJsonAsync<PlayerRatingDetails>($"{ratingController}GetPlayerRatingDetails/{toonId}/{(int)ratingType}", token);
+            if (result != null)
+            {
+                return result;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting player rating details: {ex.Message}");
+        }
+        return new();
+    }
 }

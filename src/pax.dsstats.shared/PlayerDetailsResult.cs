@@ -35,3 +35,10 @@ public record PlayerGameModeResult
     public int PlayerCount { get; init; }
     public int Count { get; init; }
 }
+
+public record PlayerRatingDetails
+{
+    public List<PlayerTeamResult> Teammates { get; set; } = new();
+    public List<PlayerTeamResult> Opponents { get; set; } = new();
+    public List<PlayerMatchupInfo> Matchups { get; set; } = new();
+}

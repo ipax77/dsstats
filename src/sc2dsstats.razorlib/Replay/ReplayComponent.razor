@@ -157,11 +157,10 @@
 
 @if (Interest != null)
 {
-    @*<PlayerDetailsComponent RequestNames="Interest" OnCloseRequested="DetailsClose"></PlayerDetailsComponent>*@
-    <sc2dsstats.razorlib.PlayerDetails.PlayerDetailsNgComponent RequestNames="Interest"
-                                                            RatingType="@(replayDto.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr)"
-                                                            OnCloseRequested="DetailsClose"
-                                                            ReplaysRequest="ReplaysRequest" />
+    <sc2dsstats.razorlib.PlayerDetailsNg.PlayerDetailsSummary RequestNames="Interest"
+                                                          RatingType="@(replayDto.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr)"
+                                                          OnCloseRequested="DetailsClose"
+                                                          ReplaysRequest="ReplaysRequest" />
 }
 
 @if (showBuilds.Where(x => x).Any())
