@@ -1,0 +1,196 @@
+﻿@using System.Globalization;
+@using Microsoft.AspNetCore.Components.Forms;
+@using Microsoft.JSInterop;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Extensions;
+@using sc2dsstats.razorlib.Services;
+@inject IJSRuntime jsRuntime
+@implements IDisposable
+
+<div class="card" style="min-width: 475px;">
+    <div class="card-header">
+        <div>
+            <h4><span class="text-warning">Commanders Performance</span></h4>
+        </div>
+        <div>
+            <EditForm EditContext="editContext">
+                <label class="form-label">
+                    <InputSelect class="form-select form-select-sm" @bind-Value="timePeriod">
+                        @foreach (TimePeriod time in Data.GetTimePeriods(Data.TimePeriodGet.NoNone))
+                        {
+                            <option value="@time">@Data.GetTimePeriodLongName(time)</option>
+                        }
+                    </InputSelect>
+                </label>
+            </EditForm>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+            <table class="table table-sm table-dark table-striped">
+                <thead>
+                    <CascadingValue Value="orders">
+                        <tr>
+                            <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Commander"))">
+                                <SortArrow Property="Commander">
+                                    Commander
+                                </SortArrow>
+                            </th>
+                            <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Count"))">
+                                <SortArrow Property="Count">
+                                    Games
+                                </SortArrow>
+                            </th>
+                            <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Winrate"))">
+                                <SortArrow Property="Winrate">
+                                    Winrate
+                                </SortArrow>
+                            </th>
+                            <th scope="col" class="pointer" @onclick="@(e => SortList(e, "AvgGain"))" data-bs-toggle="tooltip" data-bs-placement="top" title="Average Rating Gained">
+                                <SortArrow Property="AvgGain">
+                                    AvgGain
+                                </SortArrow>
+                            </th>
+                        </tr>
+                    </CascadingValue>
+                </thead>
+                <tbody>
+                    @foreach (var cmdrAvgGain in GetSortedList())
+                    {
+                        <tr>
+                            <td>
+                                <img src="@HelperService.GetImageSrc(cmdrAvgGain.Commander)"
+                                 alt="@cmdrAvgGain.Commander"
+                                 title="@cmdrAvgGain.Commander"
+                                 width="30"
+                                 height="30" />
+                                @cmdrAvgGain.Commander
+                            </td>
+                            <td>
+                                @cmdrAvgGain.Count
+                            </td>
+                            <td>
+                                @HelperService.GetPercentageString(cmdrAvgGain.Wins, cmdrAvgGain.Count)
+                            </td>
+                            <td class="@(cmdrAvgGain.AvgGain < 0 ? "text-danger" : "text-success")">
+                                @cmdrAvgGain.AvgGain.ToString("N2", CultureInfo.InvariantCulture)
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public List<PlayerCmdrAvgGain> CmdrsAvgGain { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<TimePeriod> OnTimePeriodChanged { get; set; }
+
+    TimePeriod timePeriod = TimePeriod.Past90Days;
+    EditContext editContext = null!;
+
+    private List<TableOrder> orders = new()
+    {
+    new TableOrder()
+    {
+    Property = nameof(PlayerCmdrAvgGain.AvgGain)
+    }
+    };
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(timePeriod);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            jsRuntime.InvokeVoidAsync("enableTooltips");
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        OnTimePeriodChanged.InvokeAsync(timePeriod);
+    }
+
+    public void Update(List<PlayerCmdrAvgGain> cmdrsAvgGain)
+    {
+        CmdrsAvgGain = cmdrsAvgGain;
+        timePeriod = TimePeriod.Past90Days;
+        StateHasChanged();
+    }
+
+    private void SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            orders.Clear();
+            orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+    }
+
+    private List<PlayerCmdrAvgGain> GetSortedList()
+    {
+        var list = CmdrsAvgGain.AsQueryable();
+        foreach (var order in orders)
+        {
+            if (order.Property == "Winrate")
+            {
+                if (order.Ascending)
+                {
+                    list = list.OrderBy(o => o.Count == 0 ? 0 : o.Wins * 100.0 / o.Count);
+                }
+                else
+                {
+                    list = list.OrderByDescending(o => o.Count == 0 ? 0 : o.Wins * 100.0 / o.Count);
+                }
+            }
+            else
+            {
+                if (order.Ascending)
+                {
+                    list = list.AppendOrderBy(order.Property);
+                }
+                else
+                {
+                    list = list.AppendOrderByDescending(order.Property);
+                }
+            }
+        }
+        return list.ToList();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}

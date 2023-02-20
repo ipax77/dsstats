@@ -139,6 +139,9 @@
                                     <tr>
                                         <td>Main</td>
                                         <td>@(playerRatingDetailsDto.Games == 0 || playerRatingDetailsDto.MainCount * 100.0 / playerRatingDetailsDto.Games < 10.5 ? "Random" : playerRatingDetailsDto.Main.ToString())</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Main %</td>
                                         <td>@HelperService.GetPercentageString(playerRatingDetailsDto.MainCount, playerRatingDetailsDto.Games)</td>
                                     </tr>
                                     <tr>
@@ -181,7 +184,7 @@
         }
         @if (ratingDetails != null)
         {
-            <div class="col-auto">
+@*            <div class="col-auto">
                 <div class="card" style="min-width: 475px;">
                     <div class="card-header">
                         <div class="d-flex justify-content-between">
@@ -199,9 +202,11 @@
                         </div>
                     </div>
                 </div>
+            </div>*@
+            <div class="col-auto">
+                <PlayerCmdrsAvgGainComponent @ref="playerCmdrsAvgGainComponent" CmdrsAvgGain="ratingDetails.CmdrsAvgGain" OnTimePeriodChanged="LoadCmdrAvgGain" />
             </div>
-
-            <div class="col-auto mt-1">
+            <div class="col-auto">
                 <div class="card" style="min-width: 475px;">
                     <div class="card-header">
                         <div class="d-flex justify-content-between">
@@ -221,7 +226,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-auto mt-1">
+            <div class="col-auto">
                 <div class="card" style="min-width: 475px;">
                     <div class="card-header">
                         <div class="d-flex justify-content-between">
@@ -244,7 +249,7 @@
         }
         else
         {
-            <div class="col-auto mt-1">
+            <div class="col-auto">
                 <button type="button" class="btn btn-outline-warning mt-1" @onclick="LoadDetailData">More Details ..</button>
             </div>
         }
@@ -271,6 +276,8 @@
     PlayerRatingDetailDto? playerRatingDetailsDto;
     PlayerRatingChart? playerRatingChart;
 
+    PlayerCmdrsAvgGainComponent? playerCmdrsAvgGainComponent;
+
     EditContext editContext = null!;
 
     protected override void OnInitialized()
@@ -286,6 +293,21 @@
         _ = LoadDetailData();
     }
 
+    public async Task LoadCmdrAvgGain(TimePeriod timePeriod)
+    {
+        if (ratingDetails == null)
+        {
+            return;
+        }
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        var cmdrsAvgGain = await dataService.GetPlayerCmdrAvgGain(RequestNames.ToonId, RatingType, timePeriod, cts.Token);
+        ratingDetails.CmdrsAvgGain.Clear();
+        ratingDetails.CmdrsAvgGain.AddRange(cmdrsAvgGain);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
     public async Task LoadDetailData()
     {
         isLoading = true;
@@ -293,6 +315,7 @@
         ratingDetails = await dataService.GetPlayerRatingDetails(RequestNames.ToonId, RatingType, cts.Token);
         playerRatingDetailsDto = playerSummary?.Ratings.FirstOrDefault(f => f.RatingType == RatingType);
         playerRatingChart?.UpdateChart(playerRatingDetailsDto);
+        playerCmdrsAvgGainComponent?.Update(ratingDetails.CmdrsAvgGain);
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
     }
