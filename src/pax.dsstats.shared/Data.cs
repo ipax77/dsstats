@@ -193,6 +193,7 @@ public static class Data
         {
             TimePeriodGet.NoNone => Enum.GetValues(typeof(TimePeriod)).Cast<TimePeriod>().Where(x => x != TimePeriod.None).ToList(),
             TimePeriodGet.Builds => Enum.GetValues(typeof(TimePeriod)).Cast<TimePeriod>().Where(x => x != TimePeriod.None && (int)x < 6).ToList(),
+            TimePeriodGet.PlayerDetails => Enum.GetValues(typeof(TimePeriod)).Cast<TimePeriod>().Where(x => (int)x >= 6).ToList(),
             _ => Enum.GetValues(typeof(TimePeriod)).Cast<TimePeriod>().ToList(),
         };
     }
@@ -201,7 +202,8 @@ public static class Data
     {
         None = 0,
         NoNone = 1,
-        Builds = 2
+        Builds = 2,
+        PlayerDetails = 3
     }
 
     public static (DateTime, DateTime) TimeperiodSelected(TimePeriod period)

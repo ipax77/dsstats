@@ -748,4 +748,21 @@ public class DataService : IDataService
         }
         return new();
     }
+
+    public async Task<List<PlayerCmdrAvgGain>> GetPlayerCmdrAvgGain(int toonId, RatingType ratingType, TimePeriod timePeriod, CancellationToken token = default)
+    {
+        try
+        {
+            var result = await httpClient.GetFromJsonAsync<List<PlayerCmdrAvgGain>>($"{ratingController}GetPlayerCmdrAvgGain/{toonId}/{(int)ratingType}/{(int)timePeriod}", token);
+            if (result != null)
+            {
+                return result;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting player cmdr avg gain: {ex.Message}");
+        }
+        return new();
+    }
 }

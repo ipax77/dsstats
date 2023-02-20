@@ -84,9 +84,10 @@ public partial class PlayerService
         {
             Teammates = await GetPlayerTeammates(context, toonId, ratingType, true, token),
             Opponents = await GetPlayerTeammates(context, toonId, ratingType, false, token),
-            Matchups = await GetPlayerMatchups(context, toonId, ratingType, token),
+            // Matchups = await GetPlayerMatchups(context, toonId, ratingType, token),
             AvgTeamRating = await GetTeamRating(context, toonId, ratingType, true, token),
             // AvgOppRating = await GetTeamRating(context, toonId, ratingType, false, token),
+            CmdrsAvgGain = await GetPlayerCmdrAvgGain(toonId, ratingType, TimePeriod.Past90Days, token)
         };
     }
 
@@ -125,6 +126,46 @@ public partial class PlayerService
         };
     }
 
+    public async Task<List<PlayerCmdrAvgGain>> GetPlayerCmdrAvgGain(int toonId, RatingType ratingType, TimePeriod timePeriod, CancellationToken token)
+    {
+        (var startTime, var endTime) = Data.TimeperiodSelected(timePeriod);
+        if (endTime == DateTime.Today)
+        {
+            endTime = DateTime.Today.AddDays(2);
+        }
+
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+        var group = from p in context.Players
+                    from rp in p.ReplayPlayers
+                    where p.ToonId == toonId
+                        && rp.Replay.GameTime > startTime && rp.Replay.GameTime < endTime
+                        && rp.Replay.ReplayRatingInfo.RatingType == ratingType
+                    group rp by rp.Race into g
+                    select new PlayerCmdrAvgGain
+                    { 
+                        Commander = g.Key,
+                        AvgGain = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.RatingChange), 2),
+                        Count = g.Count(),
+                        Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
+                    };
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+
+        var items = await group.ToListAsync(token);
+
+        if (ratingType == RatingType.Cmdr || ratingType == RatingType.CmdrTE)
+        {
+            items = items.Where(x => (int)x.Commander > 3).ToList();
+        }
+        else if (ratingType == RatingType.Std || ratingType == RatingType.StdTE)
+        {
+            items = items.Where(x => (int)x.Commander <= 3).ToList();
+        }
+        return items;
+    }
+
     private async Task<double> GetTeamRating(ReplayContext context, int toonId, RatingType ratingType, bool inTeam, CancellationToken token)
     {
         var teamRatings = inTeam ? from p in context.Players
@@ -136,14 +177,14 @@ public partial class PlayerService
                                        && t != rp
                                        && t.Team == rp.Team
                                    select t.ReplayPlayerRatingInfo
-                  : from p in context.Players
-                    from rp in p.ReplayPlayers
-                    from t in rp.Replay.ReplayPlayers
-                    where p.ToonId == toonId
-                        && rp.Replay.ReplayRatingInfo != null
-                        && rp.Replay.ReplayRatingInfo.RatingType == ratingType
-                        && t.Team != rp.Team
-                    select t.ReplayPlayerRatingInfo;
+                                : from p in context.Players
+                                from rp in p.ReplayPlayers
+                                from t in rp.Replay.ReplayPlayers
+                                where p.ToonId == toonId
+                                    && rp.Replay.ReplayRatingInfo != null
+                                    && rp.Replay.ReplayRatingInfo.RatingType == ratingType
+                                    && t.Team != rp.Team
+                                select t.ReplayPlayerRatingInfo;
 
         return Math.Round(await teamRatings.AverageAsync(a => a.Rating, token), 2);
     }

@@ -43,4 +43,5 @@ public interface IDataService
     Task<PlayerDetailResponse> GetPlayerDetails(PlayerDetailRequest request, CancellationToken token);
     Task<PlayerDetailSummary> GetPlayerSummary(int toonId, CancellationToken token = default);
     Task<PlayerRatingDetails> GetPlayerRatingDetails(int toonId, RatingType ratingType, CancellationToken token = default);
+    Task<List<PlayerCmdrAvgGain>> GetPlayerCmdrAvgGain(int toonId, RatingType ratingType, TimePeriod timePeriod, CancellationToken token = default);
 }
