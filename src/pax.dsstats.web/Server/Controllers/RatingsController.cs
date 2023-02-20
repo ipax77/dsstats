@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using pax.dsstats.dbng;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 
@@ -116,5 +117,12 @@ public class RatingsController
     public async Task<PlayerRatingDetails> GetPlayerRatingDetails(int toonId, int ratingType, CancellationToken token = default)
     {
         return await playerService.GetPlayerRatingDetails(toonId, (RatingType)ratingType, token);
+    }
+
+    [HttpGet]
+    [Route("GetPlayerCmdrAvgGain/{toonId}/{ratingType}/{timePeriod}")]
+    public async Task<List<PlayerCmdrAvgGain>> GetPlayerCmdrAvgGain(int toonId, int ratingType, int timePeriod, CancellationToken token)
+    {
+        return await playerService.GetPlayerCmdrAvgGain(toonId, (RatingType)ratingType, (TimePeriod)timePeriod, token);
     }
 }
