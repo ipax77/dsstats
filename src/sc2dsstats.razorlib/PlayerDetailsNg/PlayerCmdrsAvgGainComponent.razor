@@ -1,8 +1,10 @@
 ﻿@using System.Globalization;
 @using Microsoft.AspNetCore.Components.Forms;
+@using Microsoft.JSInterop;
 @using pax.dsstats.shared;
 @using sc2dsstats.razorlib.Extensions;
 @using sc2dsstats.razorlib.Services;
+@inject IJSRuntime jsRuntime
 @implements IDisposable
 
 <div class="card" style="min-width: 475px;">
@@ -44,7 +46,7 @@
                                     Winrate
                                 </SortArrow>
                             </th>
-                            <th scope="col" class="pointer" @onclick="@(e => SortList(e, "AvgGain"))">
+                            <th scope="col" class="pointer" @onclick="@(e => SortList(e, "AvgGain"))" data-bs-toggle="tooltip" data-bs-placement="top" title="Average Rating Gained">
                                 <SortArrow Property="AvgGain">
                                     AvgGain
                                 </SortArrow>
@@ -105,6 +107,15 @@
         editContext = new EditContext(timePeriod);
         editContext.OnFieldChanged += FieldChanged;
         base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            jsRuntime.InvokeVoidAsync("enableTooltips");
+        }
+        base.OnAfterRender(firstRender);
     }
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)

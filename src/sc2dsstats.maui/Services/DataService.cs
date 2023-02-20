@@ -329,4 +329,9 @@ public partial class DataService : IDataService
     {
         return await playerService.GetPlayerRatingDetails(toonId, ratingType, token);
     }
+
+    public async Task<List<PlayerCmdrAvgGain>> GetPlayerCmdrAvgGain(int toonId, RatingType ratingType, TimePeriod timePeriod, CancellationToken token = default)
+    {
+        return await playerService.GetPlayerCmdrAvgGain(toonId, ratingType, timePeriod, token);
+    }
 }
