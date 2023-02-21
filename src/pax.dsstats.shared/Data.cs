@@ -217,6 +217,7 @@ public static class Data
             TimePeriod.LastYear => (new DateTime(DateTime.Now.AddYears(-1).Year, 1, 1), new DateTime(DateTime.Now.Year, 1, 1)),
             TimePeriod.Last2Years => (new DateTime(DateTime.Now.AddYears(-1).Year, 1, 1), DateTime.Today),
             TimePeriod.Patch2_60 => (new DateTime(2020, 07, 28, 5, 23, 0), DateTime.Today),
+            TimePeriod.Patch2_71 => (new DateTime(2023, 01, 22), DateTime.Today),
             _ => (new DateTime(2018, 1, 1), DateTime.Today),
         };
     }
@@ -232,6 +233,7 @@ public static class Data
             TimePeriod.Patch2_60 => "Patch 2.60",
             TimePeriod.LastMonth => "Last Month",
             TimePeriod.LastYear => "Last Year",
+            TimePeriod.Patch2_71 => "Patch 2.71",
             _ => "All"
         };
     }
@@ -246,6 +248,7 @@ public static class Data
             "Last Year" => TimePeriod.LastYear,
             "Last Two Years" => TimePeriod.Last2Years,
             "Patch 2.60" => TimePeriod.Patch2_60,
+            "Patch 2.71" => TimePeriod.Patch2_71,
             _ => TimePeriod.None
         };
     }
