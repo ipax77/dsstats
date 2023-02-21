@@ -186,7 +186,11 @@ public partial class PlayerService
                                     && t.Team != rp.Team
                                 select t.ReplayPlayerRatingInfo;
 
-        return Math.Round(await teamRatings.AverageAsync(a => a.Rating, token), 2);
+        var avgRating = await teamRatings
+            .Select(s => s.Rating)
+            .DefaultIfEmpty()
+            .AverageAsync(token);
+        return Math.Round(avgRating, 2);
     }
 
     private async Task<List<PlayerMatchupInfo>> GetPlayerMatchups(ReplayContext context, int toonId, RatingType ratingType, CancellationToken token)
