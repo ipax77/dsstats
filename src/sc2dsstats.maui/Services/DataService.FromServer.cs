@@ -7,7 +7,7 @@ namespace sc2dsstats.maui.Services;
 
 public partial class DataService
 {
-    private readonly string statsController = "api/v3/Stats/";
+    private readonly string statsController = "api/v5/Stats/";
     private readonly string buildsController = "api/v2/Builds/";
     private readonly string ratingController = "api/Ratings/";
 
@@ -454,6 +454,57 @@ public partial class DataService
         catch (Exception ex)
         {
             logger.LogError($"failed getting GameInfo: {ex.Message}");
+        }
+        return new();
+    }
+
+    public async Task<PlayerDetailSummary> ServerGetPlayerSummary(int toonId, CancellationToken token = default)
+    {
+        try
+        {
+            var result = await httpClient.GetFromJsonAsync<PlayerDetailSummary>($"{ratingController}GetPlayerDatailSummary/{toonId}", token);
+            if (result != null)
+            {
+                return result;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting player summary: {ex.Message}");
+        }
+        return new();
+    }
+
+    public async Task<PlayerRatingDetails> ServerGetPlayerRatingDetails(int toonId, RatingType ratingType, CancellationToken token = default)
+    {
+        try
+        {
+            var result = await httpClient.GetFromJsonAsync<PlayerRatingDetails>($"{ratingController}GetPlayerRatingDetails/{toonId}/{(int)ratingType}", token);
+            if (result != null)
+            {
+                return result;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting player rating details: {ex.Message}");
+        }
+        return new();
+    }
+
+    public async Task<List<PlayerCmdrAvgGain>> ServerGetPlayerCmdrAvgGain(int toonId, RatingType ratingType, TimePeriod timePeriod, CancellationToken token = default)
+    {
+        try
+        {
+            var result = await httpClient.GetFromJsonAsync<List<PlayerCmdrAvgGain>>($"{ratingController}GetPlayerCmdrAvgGain/{toonId}/{(int)ratingType}/{(int)timePeriod}", token);
+            if (result != null)
+            {
+                return result;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting player cmdr avg gain: {ex.Message}");
         }
         return new();
     }

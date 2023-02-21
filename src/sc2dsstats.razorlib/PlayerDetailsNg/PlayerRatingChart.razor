@@ -36,23 +36,30 @@
 
     public void UpdateChart(PlayerRatingDetailDto? playerRating)
     {
+        if (!chartReady)
+        {
+            return;
+        }
+
         if (chartConfig.Data.Datasets.Any())
         {
             chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
         }
 
-        if (playerRating != null)
+        if (playerRating == null)
         {
-            if (chartConfig.Options?.Plugins?.Title != null)
-            {
-                chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"{playerRating.RatingType} development");
-                chartConfig.UpdateChartOptions();
-            }
-
-            PlayerRating = playerRating;
-
-            SetupChart();
+            return;
         }
+
+        if (chartConfig.Options?.Plugins?.Title != null)
+        {
+            chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"{playerRating.RatingType} development");
+            chartConfig.UpdateChartOptions();
+        }
+
+        PlayerRating = playerRating;
+
+        SetupChart();
     }
 
     private void SetupChart()

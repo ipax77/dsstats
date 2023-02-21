@@ -322,16 +322,53 @@ public partial class DataService : IDataService
 
     public async Task<PlayerDetailSummary> GetPlayerSummary(int toonId, CancellationToken token = default)
     {
-        return await playerService.GetPlayerSummary(toonId, token);
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await ServerGetPlayerSummary(toonId, token);
+        }
+        else
+        {
+            try
+            {
+                return await playerService.GetPlayerSummary(toonId, token);
+            }
+            catch (OperationCanceledException) { }
+
+            return new();
+        }
     }
 
     public async Task<PlayerRatingDetails> GetPlayerRatingDetails(int toonId, RatingType ratingType, CancellationToken token = default)
     {
-        return await playerService.GetPlayerRatingDetails(toonId, ratingType, token);
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await ServerGetPlayerRatingDetails(toonId, ratingType, token);
+        }
+        else
+        {
+            try
+            {
+                return await playerService.GetPlayerRatingDetails(toonId, ratingType, token);
+            }
+            catch (OperationCanceledException) { }
+            return new();
+        }
     }
 
     public async Task<List<PlayerCmdrAvgGain>> GetPlayerCmdrAvgGain(int toonId, RatingType ratingType, TimePeriod timePeriod, CancellationToken token = default)
     {
-        return await playerService.GetPlayerCmdrAvgGain(toonId, ratingType, timePeriod, token);
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await GetPlayerCmdrAvgGain(toonId, ratingType, timePeriod, token);
+        }
+        else
+        {
+            try
+            {
+                return await playerService.GetPlayerCmdrAvgGain(toonId, ratingType, timePeriod, token);
+            }
+            catch (OperationCanceledException) { }
+            return new();
+        }
     }
 }

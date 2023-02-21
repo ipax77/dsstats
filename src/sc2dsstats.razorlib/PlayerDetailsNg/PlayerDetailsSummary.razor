@@ -33,6 +33,19 @@
         <div class="p-2">
             <button type="button" class="btn btn-outline-light" @onclick="ShowReplays">Replays</button>
         </div>
+        @if (Data.IsMaui)
+        {
+            <div class="col-auto ms-auto mt-2 me-2">
+                <div class="form-check form-switch">
+                    <label class="form-check-label">
+                        Server Details
+                        <input type="checkbox" class="form-check-input" checked="@dataService.GetFromServer()"
+                           @onchange="FromServerChange">
+                        </input>
+                    </label>
+                </div>
+            </div>
+        }
     </div>
     @if (playerSummary != null)
     {
@@ -84,7 +97,7 @@
             </div>
             <div class="col-auto">
                 <div style="width: 500px; height: 500px;">
-                    <PlayerCmdrChart CmdrInfos="playerSummary.Commanders"></PlayerCmdrChart>
+                    <PlayerCmdrChart @ref="playerCmdrChart" CmdrInfos="playerSummary.Commanders"></PlayerCmdrChart>
                 </div>
             </div>
         </div>
@@ -184,25 +197,6 @@
         }
         @if (ratingDetails != null)
         {
-@*            <div class="col-auto">
-                <div class="card" style="min-width: 475px;">
-                    <div class="card-header">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4><span class="text-warning">Matchups</span> <small>@Data.GetRatingTypeLongName(RatingType)</small></h4>
-                            </div>
-                            <div>
-                                <span class="text-info">min 10 games</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
-                            <MatchupsTable Matchups="ratingDetails.Matchups"></MatchupsTable>
-                        </div>
-                    </div>
-                </div>
-            </div>*@
             <div class="col-auto">
                 <PlayerCmdrsAvgGainComponent @ref="playerCmdrsAvgGainComponent" CmdrsAvgGain="ratingDetails.CmdrsAvgGain" OnTimePeriodChanged="LoadCmdrAvgGain" />
             </div>
@@ -250,7 +244,7 @@
         else
         {
             <div class="col-auto">
-                <button type="button" class="btn btn-outline-warning mt-1" @onclick="LoadDetailData">More Details ..</button>
+                <button type="button" class="btn btn-outline-warning mt-1" @onclick="e => LoadDetailData()">More Details ..</button>
             </div>
         }
     </div>
@@ -275,6 +269,7 @@
     PlayerRatingDetails? ratingDetails;
     PlayerRatingDetailDto? playerRatingDetailsDto;
     PlayerRatingChart? playerRatingChart;
+    PlayerCmdrChart? playerCmdrChart;
 
     PlayerCmdrsAvgGainComponent? playerCmdrsAvgGainComponent;
 
@@ -293,6 +288,16 @@
         _ = LoadDetailData();
     }
 
+    public async void Update(RequestNames requestNames, RatingType ratingType)
+    {
+        RequestNames = requestNames;
+
+        RatingType = ratingType;
+
+        await LoadData();
+        await LoadDetailData(true);
+    }
+
     public async Task LoadCmdrAvgGain(TimePeriod timePeriod)
     {
         if (ratingDetails == null)
@@ -306,15 +311,19 @@
         ratingDetails.CmdrsAvgGain.AddRange(cmdrsAvgGain);
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
+
     }
 
-    public async Task LoadDetailData()
+    public async Task LoadDetailData(bool dry = false)
     {
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
         ratingDetails = await dataService.GetPlayerRatingDetails(RequestNames.ToonId, RatingType, cts.Token);
-        playerRatingDetailsDto = playerSummary?.Ratings.FirstOrDefault(f => f.RatingType == RatingType);
-        playerRatingChart?.UpdateChart(playerRatingDetailsDto);
+        if (!dry)
+        {
+            playerRatingDetailsDto = playerSummary?.Ratings.FirstOrDefault(f => f.RatingType == RatingType);
+            playerRatingChart?.UpdateChart(playerRatingDetailsDto);
+        }
         playerCmdrsAvgGainComponent?.Update(ratingDetails.CmdrsAvgGain);
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
@@ -332,9 +341,24 @@
             RequestNames.RegionId = playerSummary.Ratings[0].Player.RegionId;
             isUploader = playerSummary.Ratings[0].IsUploader;
             playerRatingDetailsDto = playerSummary.Ratings.FirstOrDefault(f => f.RatingType == RatingType);
-            playerRatingChart?.UpdateChart(playerRatingDetailsDto);
         }
+        else
+        {
+            playerRatingDetailsDto = null;
+        }
+        playerRatingChart?.UpdateChart(playerRatingDetailsDto);
+        playerCmdrChart?.SetupChart(playerSummary.Commanders);
         await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void FromServerChange(ChangeEventArgs e)
+    {
+        if (e.Value is bool value)
+        {
+            ratingDetails = null;
+            dataService.SetFromServer(value);
+            _ = LoadData();
+        }
     }
 
     private void ShowReplays()
