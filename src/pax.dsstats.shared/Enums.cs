@@ -75,7 +75,8 @@ public enum TimePeriod
     LastYear = 5,
     Last2Years = 6,
     Patch2_60 = 7,
-    All = 8
+    All = 8,
+    Patch2_71 = 9
 }
 
 public enum LeaverType
