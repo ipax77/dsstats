@@ -1,7 +1,7 @@
 ﻿@using pax.dsstats.dbng.Services;
 @using pax.dsstats.shared;
 @using sc2dsstats.maui.Services;
-@using sc2dsstats.razorlib.PlayerDetails;
+@using sc2dsstats.razorlib.PlayerDetailsNg;
 @using sc2dsstats.razorlib.Services;
 @inject IStatsService statsService
 @inject IRatingRepository ratingRepository
@@ -24,10 +24,10 @@
 @if (requestNames != null)
 {
     <div>
-        <PlayerDetailsNgComponent @ref="playerDetailsNgComponent"
-                              RequestNames="requestNames"
-                              RatingType="@ratingType"
-                              ReplaysRequest="ReplaysToonIdRequest" />
+        <sc2dsstats.razorlib.PlayerDetailsNg.PlayerDetailsSummary @ref="playerDetailsSummary"
+                                                              RequestNames="requestNames"
+                                                              RatingType="@ratingType"
+                                                              ReplaysRequest="ReplaysToonIdRequest" />
     </div>
 }
 
@@ -35,7 +35,7 @@
     [Parameter, EditorRequired]
     public ReplayDetailsDto? LatestReplay { get; set; }
 
-    private PlayerDetailsNgComponent? playerDetailsNgComponent;
+    private PlayerDetailsSummary? playerDetailsSummary;
     private RequestNames? requestNames;
     private List<RequestNames> playerNames = new();
     private int interest;
@@ -71,7 +71,7 @@
         requestNames = playerNames.FirstOrDefault(f => f.ToonId == interest);
         if (requestNames != null)
         {
-            playerDetailsNgComponent?.Update(requestNames, LatestReplay?.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr);
+            playerDetailsSummary?.Update(requestNames, LatestReplay?.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr);
         }
     }
 
@@ -112,7 +112,7 @@
 
         requestNames = LatestReplay.ReplayPlayers
             .Where(x => toonIds.Contains(x.Player.ToonId))
-            .Select(s => new RequestNames() { Name = s.Name, ToonId = s.Player.ToonId })
+            .Select(s => new RequestNames() { Name = s.Name, ToonId = s.Player.ToonId, RegionId = s.Player.RegionId })
             .FirstOrDefault();
 
         if (requestNames == null)
@@ -120,12 +120,13 @@
             requestNames = new RequestNames()
                 {
                     ToonId = toonIds.First(),
-                    Name = await ratingRepository.GetToonIdName(toonIds.First()) ?? ""
+                    Name = await ratingRepository.GetToonIdName(toonIds.First()) ?? "",
+                    RegionId = 1
                 };
         }
         interest = requestNames.ToonId;
 
-        playerDetailsNgComponent?.Update(requestNames, ratingType);
+        playerDetailsSummary?.Update(requestNames, ratingType);
 
         await InvokeAsync(() => StateHasChanged());
     }

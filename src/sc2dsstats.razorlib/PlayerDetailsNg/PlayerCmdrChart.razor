@@ -9,6 +9,7 @@
     public List<CommanderInfo> CmdrInfos { get; set; } = default!;
 
     ChartJsConfig chartConfig = null!;
+    bool chartReady;
 
     protected override void OnInitialized()
     {
@@ -20,17 +21,26 @@
     {
         if (chartEvent is ChartJsInitEvent initEvent)
         {
-            SetupChart();
+            chartReady = true;
+            SetupChart(CmdrInfos);
         }
     }
 
-    public void SetupChart()
+    public void SetupChart(List<CommanderInfo> cmdrInfos)
     {
+        if (!chartReady)
+        {
+            return;
+        }
         if (chartConfig.Data.Datasets.Any())
         {
             chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
         }
-        var data = CmdrInfos.OrderByDescending(o => o.Count).ToList();
+        if (!cmdrInfos.Any())
+        {
+            return;
+        }
+        var data = cmdrInfos.OrderByDescending(o => o.Count).ToList();
         chartConfig.SetLabels(data.Select(s => s.Cmdr.ToString()).ToList());
         chartConfig.AddDataset(GetDataset(data));
     }

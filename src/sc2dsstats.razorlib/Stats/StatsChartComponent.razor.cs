@@ -454,7 +454,7 @@ public partial class StatsChartComponent : ComponentBase
             {
                 Legend = new Legend()
                 {
-                    Position = "right",
+                    Position = "bottom",
                     Labels = new Labels()
                     {
                         Color = "#f2f2f2",
@@ -492,7 +492,7 @@ public partial class StatsChartComponent : ComponentBase
             {
                 Legend = new Legend()
                 {
-                    Position = "right",
+                    Position = "bottom",
                     Labels = new Labels()
                     {
                         Color = "#f2f2f2",
@@ -546,11 +546,13 @@ public partial class StatsChartComponent : ComponentBase
         chartConfig.Data.Datasets = new List<ChartJsDataset>();
         chartConfig.Options = new IconsChartJsOptions()
         {
+            Responsive = true,
+            MaintainAspectRatio = true,
             Plugins = new IconsPlugins()
             {
                 Legend = new Legend()
                 {
-                    Position = "right"
+                    Position = "bottom"
                 },
                 Title = new Title()
                 {

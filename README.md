@@ -30,7 +30,13 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v1.1.5</summary>
+<details open="open"><summary>v1.1.6</summary>
+
+>- Player Details rework
+
+</details>
+
+<details><summary>v1.1.5</summary>
 
 >- App (latest)replay live ratings
 >- Commander Strength Bubble Chart
