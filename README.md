@@ -30,13 +30,14 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v1.1.7 (Web only atm)</summary>
+<details open="open"><summary>v1.1.7</summary>
 
 >- TimePeriod Patch 2.71 (2023-01-22)
+>- Fix player details update
 
 </details>
 
-<details open="open"><summary>v1.1.6</summary>
+<details><summary>v1.1.6</summary>
 
 >- Player Details rework
 
