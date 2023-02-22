@@ -359,7 +359,7 @@ public partial class DataService : IDataService
     {
         if (fromServerSwitchService.GetFromServer())
         {
-            return await GetPlayerCmdrAvgGain(toonId, ratingType, timePeriod, token);
+            return await ServerGetPlayerCmdrAvgGain(toonId, ratingType, timePeriod, token);
         }
         else
         {
