@@ -1,0 +1,264 @@
+@using System.Globalization;
+@using pax.dsstats.shared;
+@inject IDataService dataService
+@implements IDisposable
+
+<div>
+    <CascadingValue Value="Request">
+        <BuildsRatingRequestComponent OnRequestChanged="LoadData"></BuildsRatingRequestComponent>
+    </CascadingValue>
+</div>
+
+<div class="mt-2">
+    <div class="d-flex">
+        <div>
+            <h3>Average Unit Count for <span class="text-warning">@Request.Interest</span>
+                <span class="text-danger">@(Request.Vs == Commander.None ? "" : $"vs {Request.Vs}")</span>
+            </h3>
+        </div>
+        <div class="ms-3">
+            <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="collapse"
+                data-bs-target="#BuildCompare" aria-expanded="false" aria-controls="BuildCompare"
+                @onclick="e => showCompare = !showCompare">
+                <span class="oi @(showCompare ? "oi-caret-bottom" : "oi-caret-top")"></span>
+                Compare
+            </button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-auto">
+            <div class="row">
+                <div class="col-auto" style="width: 175px;">
+                    <label class="form-label">
+                        From Rating @(Request.FromRating == Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" : $"{Request.FromRating}") 
+                        <input type="range" class="form-range" value="@(Request.FromRating)" min="0" max="@Data.MaxBuildRating"
+                            step="50" id="spawnrange" @onchange="FromRatingChange">
+                    </label>
+                </div>
+                <div class="col-auto" style="width: 175px;">
+                    <label class="form-label">
+                        To Rating @(Request.ToRating >= Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" : $"{Request.ToRating}")
+                        <input type="range" class="form-range" value="@(Request.ToRating)" min="0" max="@Data.MaxBuildRating"
+                            step="50" id="spawnrange" @onchange="ToRatingChange">
+                    </label>
+                </div>           
+            </div> 
+            @if (response != null)
+            {
+                <div class="d-flex">
+                    @if (isLoading)
+                    {
+                        <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ms-4">
+                        </div>
+                    }
+                    <div>
+                        <h4><span class="badge bg-info">Games: @response.Count</span> <span class="badge bg-info">Winrate:
+                                @response.Winrate.ToString("N2", CultureInfo.InvariantCulture) %</span></h4>
+                    </div>
+                </div>
+            }
+            <div class="table-responsive">
+                <div>
+                    <h6>Player Ratings Range @Request.FromRating - @(Request.ToRating >= Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" : $"{Request.ToRating}")</h6>
+                </div>
+                <table class="table table-dark w-auto">
+                    <thead>
+                        <tr>
+                            <th>Unit</th>
+                            <th>AvgCount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (response != null)
+                        {
+                            int i = 0;
+                            @foreach (var unit in response.Units.OrderByDescending(o => o.Avg))
+                            {
+                                <div class="d-none">@(i++)</div>
+                                <tr class="@(i <= 3 ? "table-primary" : "")">
+                                    <td>@unit.Name</td>
+                                    <td>@unit.Avg.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="collapse" id="BuildCompare">
+                @if (showCompare)
+                {
+                    <div class="row">
+                        <div class="col-auto" style="width: 175px;">
+                            <label class="form-label">
+                                From Rating @(compareFrom == Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" :
+                            $"{compareFrom}")
+                                <input type="range" class="form-range" value="@(compareFrom)" min="0"
+                                    max="@Data.MaxBuildRating" step="50" id="spawnrange" @onchange="CompareFromRatingChange">
+                            </label>
+                        </div>
+                        <div class="col-auto" style="width: 175px;">
+                            <label class="form-label">
+                                To Rating @(compareTo >= Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" :
+                            $"{compareTo}")
+                                <input type="range" class="form-range" value="@(compareTo)" min="0"
+                                    max="@Data.MaxBuildRating" step="50" id="spawnrange" @onchange="CompareToRatingChange">
+                            </label>
+                        </div>
+                    </div>
+                    @if (compareResponse != null)
+                    {
+                        <div>
+                            <h4><span class="badge bg-info">Games: @compareResponse.Count</span> <span class="badge bg-info">Winrate:
+                                    @compareResponse.Winrate.ToString("N2", CultureInfo.InvariantCulture) %</span></h4>
+                        </div>
+                    }
+                    <div class="table-responsive">
+                        <div>
+                            <h6>Player Ratings Range @compareFrom - @(compareTo >= Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" : $"{compareTo}")</h6>
+                        </div>
+                        <table class="table table-dark w-auto">
+                            <thead>
+                                <tr>
+                                    <th>Unit</th>
+                                    <th>AvgCount</th>
+                                    <th>Diff</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (compareResponse != null)
+                                {
+                                    int i = 0;
+                                    @foreach (var unit in compareResponse.Units.OrderByDescending(o => o.Avg))
+                                    {
+                                        var diff = GetDiff(unit);
+                                        <div class="d-none">@(i++)</div>
+                                        <tr class="@(i <= 3 ? "table-primary" : "")">
+                                            <td>@unit.Name</td>
+                                            <td>@unit.Avg.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                            <td>
+                                                <span class="@(diff > 0 ? "text-success" : "text-danger")">@diff.ToString("N2", CultureInfo.InvariantCulture)</span>
+                                            </td>                                            
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>                                        
+                }
+            </div>
+        </div>
+    </div>
+</div>
+@code {
+    [Parameter]
+    public BuildRatingRequest Request { get; set; } = default!;
+
+    int compareFrom = 2000;
+    int compareTo = 2500;
+    private BuildRatingResponse? response;
+    private BuildRatingResponse? compareResponse;
+    private bool isLoading;
+    private bool showCompare;
+    private CancellationTokenSource cts = new();
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        if (isLoading)
+        {
+            return;
+        }
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        response = await dataService.GetBuildByRating(Request, cts.Token);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task LoadCompareData()
+    {
+        if (isLoading)
+        {
+            return;
+        }
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        var compareRequest = Request with { FromRating = compareFrom, ToRating = compareTo };
+    compareResponse = await dataService.GetBuildByRating(compareRequest, cts.Token);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void FromRatingChange(ChangeEventArgs e)
+    {
+        if (e.Value is string value && int.TryParse(value, out int intvalue))
+        {
+            Request.FromRating = intvalue;
+            if (Request.ToRating <= Request.FromRating)
+            {
+                Request.ToRating = Request.FromRating + 50;
+            }
+            _ = LoadData();
+        }
+    }
+
+    private void ToRatingChange(ChangeEventArgs e)
+    {
+        if (e.Value is string value && int.TryParse(value, out int intvalue))
+        {
+            Request.ToRating = intvalue;
+            if (Request.ToRating <= Request.FromRating)
+            {
+                Request.ToRating = Request.FromRating + 50;
+            }
+            _ = LoadData();            
+        }
+    }    
+
+    private void CompareFromRatingChange(ChangeEventArgs e)
+    {
+        if (e.Value is string value && int.TryParse(value, out int intvalue))
+        {
+            compareFrom = intvalue;
+            _ = LoadCompareData();
+        }
+    }
+
+    private void CompareToRatingChange(ChangeEventArgs e)
+    {
+        if (e.Value is string value && int.TryParse(value, out int intvalue))
+        {
+            compareTo = intvalue;
+            _ = LoadCompareData();
+        }
+    }
+
+    private double GetDiff(BuildRatingUnit compareUnit)
+    {
+        var unit = response?.Units.FirstOrDefault(f => f.Name == compareUnit.Name);
+        if (unit == null)
+        {
+            return 0;
+        }
+        return compareUnit.Avg - unit.Avg;
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

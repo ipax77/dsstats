@@ -6,24 +6,6 @@ using System.Text;
 
 namespace pax.dsstats.dbng.Services;
 
-public record BuildRatingRequest
-{
-    public RatingType RatingType { get; set; }
-    public TimePeriod TimePeriod { get; set; }
-    public Commander Interest { get; set; }
-    public Commander Vs { get; set; }
-    public Breakpoint Breakpoint { get; set; }
-    public int FromRating { get; set; }
-    public int ToRating { get; set; }
-}
-
-public record BuildRatingResponse
-{
-    public int Count { get; set; }
-    public double Winrate { get; set; }
-    public List<SumHelper> Sums { get; set; } = new();
-}
-
 public partial class BuildService
 {
     public async Task<BuildRatingResponse> GetBuildByRating(BuildRatingRequest request, CancellationToken token = default)
@@ -34,44 +16,81 @@ public partial class BuildService
             end.AddDays(2);
         }
 
+        if (request.ToRating >= Data.MaxBuildRating)
+        {
+            request.ToRating = 5000;
+        }
+
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
-        var cgroup = from rp in context.ReplayPlayers
-                     from sp in rp.Spawns
-                     from su in sp.Units
-                     where rp.Replay.ReplayRatingInfo.RatingType == request.RatingType
-                         && rp.ReplayPlayerRatingInfo.Rating >= request.FromRating
-                         && rp.ReplayPlayerRatingInfo.Rating < request.ToRating
-                         && rp.Race == request.Interest && rp.OppRace == request.Vs
-                         && rp.Replay.GameTime >= start && rp.Replay.GameTime < end
-                         && sp.Breakpoint == request.Breakpoint
+        var replayPlayers = request.Vs == Commander.None ?
+             from rp in context.ReplayPlayers
+             from sp in rp.Spawns
+             from su in sp.Units
+             where rp.Replay.ReplayRatingInfo.RatingType == request.RatingType
+                 && rp.ReplayPlayerRatingInfo.Rating >= request.FromRating
+                 && rp.ReplayPlayerRatingInfo.Rating < request.ToRating
+                 && rp.Race == request.Interest
+                 && rp.Replay.GameTime >= start && rp.Replay.GameTime < end
+                 && sp.Breakpoint == request.Breakpoint
+             select rp
+            : from rp in context.ReplayPlayers
+              from sp in rp.Spawns
+              from su in sp.Units
+              where rp.Replay.ReplayRatingInfo.RatingType == request.RatingType
+                  && rp.ReplayPlayerRatingInfo.Rating >= request.FromRating
+                  && rp.ReplayPlayerRatingInfo.Rating < request.ToRating
+                  && rp.Race == request.Interest && rp.OppRace == request.Vs
+                  && rp.Replay.GameTime >= start && rp.Replay.GameTime < end
+                  && sp.Breakpoint == request.Breakpoint
+
+              select rp;
+
+        replayPlayers = replayPlayers.Distinct();
+
+        var cgroup = from rp in replayPlayers
                      group rp by rp.PlayerResult into g
-                     select new 
-                     { 
+                     select new
+                     {
                          g.Key,
                          Count = g.Count()
                      };
+
         var clist = await cgroup.ToListAsync(token);
 
         double count = clist.Select(s => s.Count).Sum();
         double wins = clist.FirstOrDefault(f => f.Key == PlayerResult.Win)?.Count ?? 0;
 
-        var group = from rp in context.ReplayPlayers
-                    from sp in rp.Spawns
-                    from su in sp.Units
-                    where rp.Replay.ReplayRatingInfo.RatingType == request.RatingType
-                        && rp.ReplayPlayerRatingInfo.Rating >= request.FromRating
-                        && rp.ReplayPlayerRatingInfo.Rating < request.ToRating
-                        && rp.Race == request.Interest && rp.OppRace == request.Vs
-                        && rp.Replay.GameTime >= start && rp.Replay.GameTime < end
-                        && sp.Breakpoint == request.Breakpoint
-                    group su by su.Unit.Name into g
-                    select new SumHelper()
-                    {
-                        Name = g.Key,
-                        Sum = g.Sum(s => s.Count),
-                        Count = g.Count(),
-                        Avg = Math.Round(g.Average(s => s.Count), 2)
-                    };
+        var group = request.Vs == Commander.None ?
+            from rp in context.ReplayPlayers
+            from sp in rp.Spawns
+            from su in sp.Units
+            where rp.Replay.ReplayRatingInfo.RatingType == request.RatingType
+                && rp.ReplayPlayerRatingInfo.Rating >= request.FromRating
+                && rp.ReplayPlayerRatingInfo.Rating < request.ToRating
+                && rp.Race == request.Interest
+                && rp.Replay.GameTime >= start && rp.Replay.GameTime < end
+                && sp.Breakpoint == request.Breakpoint
+            group su by su.Unit.Name into g
+            select new SumHelper()
+            {
+                Name = g.Key,
+                Sum = g.Sum(s => s.Count),
+            }
+         : from rp in context.ReplayPlayers
+           from sp in rp.Spawns
+           from su in sp.Units
+           where rp.Replay.ReplayRatingInfo.RatingType == request.RatingType
+               && rp.ReplayPlayerRatingInfo.Rating >= request.FromRating
+               && rp.ReplayPlayerRatingInfo.Rating < request.ToRating
+               && rp.Race == request.Interest && rp.OppRace == request.Vs
+               && rp.Replay.GameTime >= start && rp.Replay.GameTime < end
+               && sp.Breakpoint == request.Breakpoint
+           group su by su.Unit.Name into g
+           select new SumHelper()
+           {
+               Name = g.Key,
+               Sum = g.Sum(s => s.Count),
+           };
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
 
         var list = await group.ToListAsync(token);
@@ -80,7 +99,11 @@ public partial class BuildService
         {
             Count = (int)count,
             Winrate = count == 0 ? 0 : Math.Round(wins * 100.0 / count, 2),
-            Sums = list
+            Units = list.Select(s => new BuildRatingUnit()
+            {
+                Name = s.Name,
+                Avg = Math.Round(s.Sum / count, 2),
+            }).ToList(),
         };
     }
 
@@ -91,11 +114,11 @@ public partial class BuildService
         sb.AppendLine($"Rating Range {requestA.FromRating} - {requestA.ToRating}    | {requestB.FromRating} - {requestB.ToRating}");
         sb.AppendLine("------------------------------------------------------------------");
 
-        List<string> sumsB = responseB.Sums.Select(s => s.Name).ToList();
+        List<string> sumsB = responseB.Units.Select(s => s.Name).ToList();
 
-        foreach (var sumA in responseA.Sums.OrderBy(o => o.Name))
+        foreach (var sumA in responseA.Units.OrderBy(o => o.Name))
         {
-            var sumB = responseB.Sums.FirstOrDefault(f => f.Name == sumA.Name);
+            var sumB = responseB.Units.FirstOrDefault(f => f.Name == sumA.Name);
             if (sumB == null)
             {
                 sb.AppendLine($"{sumA.Name}: {sumA.Avg}     | {sumA.Name}: 0");
@@ -111,7 +134,7 @@ public partial class BuildService
         {
             foreach (var nameB in sumsB)
             {
-                var sumB = responseB.Sums.FirstOrDefault(f => f.Name == nameB);
+                var sumB = responseB.Units.FirstOrDefault(f => f.Name == nameB);
                 if (sumB == null)
                 {
                     continue;
@@ -120,17 +143,15 @@ public partial class BuildService
             }
         }
         sb.AppendLine("------------------------------------------------------------------");
-        sb.AppendLine($"Games {responseA.Count} wr: {responseA.Winrate}%   | Games { responseB.Count} wr: { responseB.Winrate}% ");
+        sb.AppendLine($"Games {responseA.Count} wr: {responseA.Winrate}%   | Games {responseB.Count} wr: {responseB.Winrate}% ");
         Console.WriteLine(sb.ToString());
     }
 }
 
 
-public record SumHelper
+internal record SumHelper
 {
     public string Name { get; set; } = string.Empty;
     public int Sum { get; set; }
-    public int Count { get; set; }
-    public double Avg { get; set; }
 }
 

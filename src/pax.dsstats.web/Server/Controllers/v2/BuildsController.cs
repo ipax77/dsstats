@@ -27,4 +27,11 @@ public class BuildsController : Controller
     {
         return await buildService.GetBuild(request);
     }
+
+    [HttpPost]
+    [Route("GetRatingBuild")]
+    public async Task<BuildRatingResponse> GetBuildRating(BuildRatingRequest request, CancellationToken token = default)
+    {
+        return await buildService.GetBuildByRating(request, token);
+    }
 }

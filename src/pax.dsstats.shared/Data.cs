@@ -253,6 +253,8 @@ public static class Data
         };
     }
 
+    public static readonly int MaxBuildRating = 2500;
+
     public static bool IsMaui { get; set; }
     public static int MauiWidth { get; set; }
     public static int MauiHeight { get; set; }

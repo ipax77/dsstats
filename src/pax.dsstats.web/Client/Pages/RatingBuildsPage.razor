@@ -1,0 +1,20 @@
+@page "/ratingbuilds"
+@using pax.dsstats.shared
+@using sc2dsstats.razorlib
+
+<PageTitle>RatingBuilds</PageTitle>
+
+<sc2dsstats.razorlib.BuildsByRating.RatingBuildsComponent Request="Request" />
+
+@code {
+    BuildRatingRequest Request = new()
+        {
+            RatingType = RatingType.Cmdr,
+            TimePeriod = TimePeriod.Past90Days,
+            Interest = Commander.Abathur,
+            Breakpoint = Breakpoint.Min10,
+            FromRating = 1500,
+            ToRating = 2500
+        };
+
+}
