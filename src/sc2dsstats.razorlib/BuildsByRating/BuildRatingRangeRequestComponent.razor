@@ -1,0 +1,61 @@
+@using pax.dsstats.shared
+<div class="row">
+    <div class="col-auto" style="width: 175px;">
+        <label class="form-label">
+            From Rating @(fromRating == Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" : $"{fromRating}") 
+            <input type="range" class="form-range" value="@(fromRating)" min="@Data.MinBuildRating" max="@Data.MaxBuildRating"
+                step="50" id="spawnrange" @oninput="FromRatingChange">
+        </label>
+    </div>
+    <div class="col-auto" style="width: 175px;">
+        <label class="form-label">
+            To Rating @(toRating >= Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" : $"{toRating}")
+            <input type="range" class="form-range" value="@(toRating)" min="@Data.MinBuildRating" max="@Data.MaxBuildRating"
+                step="50" id="spawnrange" @oninput="ToRatingChange">
+        </label>
+    </div>    
+    <div class="col-auto">
+        <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => OnRangeSelected.InvokeAsync(new(fromRating, toRating)))">Set<br />Range</button>
+    </div>       
+</div> 
+@code {
+    [Parameter, EditorRequired]
+    public BuildRatingRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<KeyValuePair<int, int>> OnRangeSelected { get; set; }
+
+    private int fromRating;
+    private int toRating;
+
+    protected override void OnInitialized()
+    {
+        fromRating = Request.FromRating;
+        toRating = Request.ToRating;
+        base.OnInitialized();
+    }
+
+    private void FromRatingChange(ChangeEventArgs e)
+    {
+        if (e.Value is string value && int.TryParse(value, out int intvalue))
+        {
+            fromRating = intvalue;
+            if (toRating <= fromRating)
+            {
+                toRating = fromRating + 50;
+            }
+        }
+    }
+
+    private void ToRatingChange(ChangeEventArgs e)
+    {
+        if (e.Value is string value && int.TryParse(value, out int intvalue))
+        {
+            toRating = intvalue;
+            if (toRating <= fromRating)
+            {
+                toRating = fromRating + 50;
+            }
+        }
+    }            
+}

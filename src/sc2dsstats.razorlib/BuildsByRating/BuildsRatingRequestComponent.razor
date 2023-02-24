@@ -1,0 +1,141 @@
+﻿@using Microsoft.AspNetCore.Components.Forms;
+@using pax.dsstats.shared;
+@implements IDisposable
+
+<EditForm EditContext="editContext">
+    <div class="row">
+        <div class="col-auto">
+            <label class="form-label">
+                Rating Type
+                <span class="oi oi-info pointer ms-2"
+                    onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/Mmr-calculation#rating-types'"></span>
+                <InputSelect class="form-select" @bind-Value="Request.RatingType">
+                    @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+                    {
+                        @if (ratingType == RatingType.None || ratingType == RatingType.CmdrTE || ratingType == RatingType.StdTE)
+                        {
+                            continue;
+                        }
+                        <option value="@ratingType">@Data.GetRatingTypeLongName(ratingType)</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Time Period
+                <InputSelect class="form-select" @bind-Value="Request.TimePeriod">
+                    @foreach (TimePeriod time in Data.GetTimePeriods(Data.TimePeriodGet.NoNone))
+                    {
+                        <option value="@time">@Data.GetTimePeriodLongName(time)</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Commander
+                <InputSelect class="form-select" @bind-Value="Request.Interest">
+                    @if (Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)
+                    {
+                        @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                        {
+                            @if ((int)cmdr > 3)
+                            {
+                                continue;
+                            }
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                    else if (Request.RatingType == RatingType.Cmdr || Request.RatingType == RatingType.CmdrTE)
+                    {
+                        @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                        {
+                            @if (cmdr == Commander.Protoss || cmdr == Commander.Terran || cmdr == Commander.Zerg)
+                            {
+                                continue;
+                            }
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Vs
+                <InputSelect class="form-select" @bind-Value="Request.Vs">
+                    @if (Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)
+                    {
+                        @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                        {
+                            @if ((int)cmdr > 3)
+                            {
+                                continue;
+                            }
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                    else if (Request.RatingType == RatingType.Cmdr || Request.RatingType == RatingType.CmdrTE)
+                    {
+                        @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                        {
+                            @if (cmdr == Commander.Protoss || cmdr == Commander.Terran || cmdr == Commander.Zerg)
+                            {
+                                continue;
+                            }
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                    else
+                    {
+                        <option value="@Commander.None">@Commander.None</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Breakpoint
+                <InputSelect class="form-select" @bind-Value="Request.Breakpoint">
+                    @foreach (Breakpoint bp in Enum.GetValues(typeof(Breakpoint)))
+                    {
+                        if (bp == Breakpoint.None)
+                        {
+                            continue;
+                        }
+                        <option value="@bp">@bp</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+
+    </div>
+</EditForm>
+
+@code {
+    [CascadingParameter, EditorRequired]
+    public BuildRatingRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new(Request);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        OnRequestChanged.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}

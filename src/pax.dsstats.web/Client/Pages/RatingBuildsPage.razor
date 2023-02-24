@@ -1,0 +1,112 @@
+@page "/ratingbuilds"
+@using pax.dsstats.shared
+@inject NavigationManager NavigationManager
+
+<PageTitle>RatingBuilds</PageTitle>
+
+<sc2dsstats.razorlib.BuildsByRating.RatingBuildsComponent Request="Request" OnRequestChanged="RequestChanged" />
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Tp { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Int { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Vs { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Bp { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? From { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? To { get; set; }
+
+    BuildRatingRequest Request = new()
+        {
+            RatingType = RatingType.Cmdr,
+            TimePeriod = TimePeriod.Past90Days,
+            Interest = Commander.Abathur,
+            Breakpoint = Breakpoint.Min10,
+            FromRating = 1500,
+            ToRating = 2500
+        };
+
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }
+
+    private void SetRequest()
+    {
+        if (!String.IsNullOrEmpty(Tp) 
+            && Enum.TryParse(typeof(TimePeriod), Tp, out var timePeriodObj) 
+            && timePeriodObj is TimePeriod timePeriod)
+        {
+            Request.TimePeriod = timePeriod;
+        }
+
+        if (!String.IsNullOrEmpty(Int)
+            && Enum.TryParse(typeof(Commander), Int, out object? interestObj)
+            && interestObj is Commander interest)
+        {
+                Request.Interest = interest;
+        }
+
+        if (!String.IsNullOrEmpty(Vs)
+            && Enum.TryParse(typeof(Commander), Vs, out object? versusObj)
+            && versusObj is Commander versus)
+        {
+            Request.Vs = versus;
+        }
+
+        if (!String.IsNullOrEmpty(Bp)
+            && Enum.TryParse(typeof(Breakpoint), Bp, out object? bpObj)
+            && bpObj is Breakpoint bp)
+        {
+            Request.Breakpoint = bp;            
+        }
+
+        if (!String.IsNullOrEmpty(From)
+            && int.TryParse(From, out int from)
+            && from % 50 == 0)
+        {
+            Request.FromRating = from;
+        }
+
+        if (!String.IsNullOrEmpty(To)
+            && int.TryParse(To, out int to)
+            && to % 50 == 0)
+        {
+            Request.ToRating = to;
+        }
+    }
+
+    private void RequestChanged(BuildRatingRequest request)
+    {
+        Dictionary<string, object?> queryDic = new();
+
+        queryDic.Add("Tp", request.TimePeriod.ToString());
+        queryDic.Add("Int", request.Interest.ToString());
+        queryDic.Add("Vs", request.Vs.ToString());
+        queryDic.Add("Bp", request.Breakpoint.ToString());
+        queryDic.Add("From", request.FromRating.ToString());
+        queryDic.Add("To", request.ToRating.ToString());
+
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters(
+                new Dictionary<string, object?>(queryDic)
+            )
+        );
+    }
+}

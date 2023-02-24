@@ -371,4 +371,9 @@ public partial class DataService : IDataService
             return new();
         }
     }
+
+    public async Task<BuildRatingResponse> GetBuildByRating(BuildRatingRequest request, CancellationToken token = default)
+    {
+        return await Task.FromResult(new BuildRatingResponse());
+    }
 }

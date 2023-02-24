@@ -125,18 +125,33 @@ if (app.Environment.IsDevelopment())
 
     // PlayerService.GetExpectationCount(context);
 
-    //var playerService = scope.ServiceProvider.GetRequiredService<PlayerService>();
-    //playerService.GetPlayerDetails(new()
-    //{
-    //    RequestNames = new()
-    //    {
-    //        Name = "PAX",
-    //        RegionId = 2,
-    //        ToonId = 226401
-    //    },
-    //    RatingType = RatingType.Cmdr,
-    //    TimePeriod = TimePeriod.Past90Days
-    //}).Wait();
+    // var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
+
+    // var requestA = new BuildRatingRequest()
+    // {
+    //     RatingType = RatingType.Cmdr,
+    //     TimePeriod = TimePeriod.Past90Days,
+    //     Interest = Commander.Nova,
+    //     Vs = Commander.Dehaka,
+    //     Breakpoint = Breakpoint.Min10,
+    //     FromRating = 800,
+    //     ToRating = 1200
+    // };
+
+    // var requestB = new BuildRatingRequest()
+    // {
+    //     RatingType = RatingType.Cmdr,
+    //     TimePeriod = TimePeriod.Past90Days,
+    //     Interest = Commander.Nova,
+    //     Vs = Commander.Dehaka,
+    //     Breakpoint = Breakpoint.Min10,
+    //     FromRating = 1200,
+    //     ToRating = 1600
+    // };
+
+    // var responseA = buildService.GetBuildByRating(requestA).GetAwaiter().GetResult();
+    // var responseB = buildService.GetBuildByRating(requestB).GetAwaiter().GetResult();
+    // buildService.PresentDiff(requestA, responseA, requestB, responseB);
 
 }
 
