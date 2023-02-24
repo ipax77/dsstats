@@ -12,7 +12,7 @@
                 <InputSelect class="form-select" @bind-Value="Request.RatingType">
                     @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
                     {
-                        @if (ratingType == RatingType.None)
+                        @if (ratingType == RatingType.None || ratingType == RatingType.CmdrTE || ratingType == RatingType.StdTE)
                         {
                             continue;
                         }
