@@ -61,7 +61,7 @@ public partial class RatingRepository
         return new();
     }
 
-    private async Task SetPlayerRatingPos()
+    private static async Task SetPlayerRatingPos()
     {
         using var connection = new SqliteConnection(Data.SqliteConnectionString);
         await connection.OpenAsync();
@@ -114,7 +114,7 @@ public partial class RatingRepository
                 };
 
                 var fromDate = GetRatingChangesFromDate(request.TimePeriod);
-
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                 var statsQuery = from r in context.Replays
                           from rr in context.ReplayPlayers.Where(x => x.ReplayId == r.ReplayId)
                           from pr in rr.ReplayPlayerRatingInfo.ReplayPlayer.Player.PlayerRatings
@@ -130,7 +130,7 @@ public partial class RatingRepository
                               g.Key.PlayerRatingId,
                               RatingChange = MathF.Round(g.Sum(s => s.rr.ReplayPlayerRatingInfo.RatingChange), 2)
                           };
-
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                 var stats = await statsQuery.ToListAsync();
 
                 foreach (var stat in stats)
@@ -167,7 +167,7 @@ public partial class RatingRepository
         }
     }
 
-    private async Task<(int, int)> MauiUpdateMmrChanges(List<ReplayRatingDto> replayRatingDtos, int replayAppendId, int playerAppendId)
+    private static async Task<(int, int)> MauiUpdateMmrChanges(List<ReplayRatingDto> replayRatingDtos, int replayAppendId, int playerAppendId)
     {
         var newReplayAppendId = await MauiUpdateReplayRatings(replayRatingDtos, replayAppendId);
         playerAppendId = await MauiUpdateRepPlayerRatings(replayRatingDtos, replayAppendId, playerAppendId);
@@ -175,7 +175,7 @@ public partial class RatingRepository
         return(newReplayAppendId, playerAppendId);
     }
 
-    private async Task<int> MauiUpdateReplayRatings(List<ReplayRatingDto> replayRatingDtos, int replayRatingAppendId)
+    private static async Task<int> MauiUpdateReplayRatings(List<ReplayRatingDto> replayRatingDtos, int replayRatingAppendId)
     {
         if (replayRatingAppendId == 0)
         {
@@ -219,7 +219,7 @@ public partial class RatingRepository
         return replayRatingAppendId;
     }
 
-    private async Task<int> MauiUpdateRepPlayerRatings(List<ReplayRatingDto> replayRatingDtos, int replayRatingAppendId, int repPlayerRatingAppendId)
+    private static async Task<int> MauiUpdateRepPlayerRatings(List<ReplayRatingDto> replayRatingDtos, int replayRatingAppendId, int repPlayerRatingAppendId)
     {
         using var connection = new SqliteConnection(Data.SqliteConnectionString);
         await connection.OpenAsync();
@@ -269,7 +269,7 @@ public partial class RatingRepository
         return repPlayerRatingAppendId;
     }
 
-    private async Task DeleteReplayPlayerRatingsTable()
+    private static async Task DeleteReplayPlayerRatingsTable()
     {
         using var connection = new SqliteConnection(Data.SqliteConnectionString);
         await connection.OpenAsync();
@@ -278,7 +278,7 @@ public partial class RatingRepository
         await delCommand.ExecuteNonQueryAsync();
     }
 
-    private async Task DeleteReplayRatingsTable()
+    private static async Task DeleteReplayRatingsTable()
     {
         using var connection = new SqliteConnection(Data.SqliteConnectionString);
         await connection.OpenAsync();
@@ -287,7 +287,7 @@ public partial class RatingRepository
         await delCommand.ExecuteNonQueryAsync();
     }
 
-    private async Task DeletePlayerRatingChangesTable()
+    private static async Task DeletePlayerRatingChangesTable()
     {
         using var connection = new SqliteConnection(Data.SqliteConnectionString);
         await connection.OpenAsync();

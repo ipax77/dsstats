@@ -765,4 +765,27 @@ public class DataService : IDataService
         }
         return new();
     }
+
+    public async Task<BuildRatingResponse> GetBuildByRating(BuildRatingRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{buildsController}GetRatingBuild", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<BuildRatingResponse>(cancellationToken: token) ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting buildbyrating: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting buildbyrating: {e.Message}");
+        }
+        return new();
+    }
 }

@@ -30,6 +30,7 @@ public interface IDataService
 
     //Task<List<RavenPlayerDto>> GetPlayerRatings(int toonId);
     Task<List<RequestNames>> GetTopPlayers(bool std);
+    Task<BuildRatingResponse> GetBuildByRating(BuildRatingRequest request, CancellationToken token = default);
 
     Task<CmdrResult> GetCmdrInfo(CmdrRequest request, CancellationToken token = default);
     Task<CrossTableResponse> GetCrossTable(CrossTableRequest request, CancellationToken token = default);
