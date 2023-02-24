@@ -41,6 +41,12 @@
             ToRating = 2500
         };
 
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }
+
     private void SetRequest()
     {
         if (!String.IsNullOrEmpty(Tp) 
@@ -72,13 +78,15 @@
         }
 
         if (!String.IsNullOrEmpty(From)
-            && int.TryParse(From, out int from))
+            && int.TryParse(From, out int from)
+            && from % 50 == 0)
         {
             Request.FromRating = from;
         }
 
         if (!String.IsNullOrEmpty(To)
-            && int.TryParse(To, out int to))
+            && int.TryParse(To, out int to)
+            && to % 50 == 0)
         {
             Request.ToRating = to;
         }
