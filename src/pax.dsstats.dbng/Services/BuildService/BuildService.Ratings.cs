@@ -1,6 +1,8 @@
 ﻿
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 using System.Text;
 
@@ -9,6 +11,17 @@ namespace pax.dsstats.dbng.Services;
 public partial class BuildService
 {
     public async Task<BuildRatingResponse> GetBuildByRating(BuildRatingRequest request, CancellationToken token = default)
+    {
+        var memKey = request.GenMemKey();
+        if (!memoryCache.TryGetValue(memKey, out BuildRatingResponse result))
+        {
+            result = await ProduceBuildRating(request, token);
+            memoryCache.Set(memKey, result, TimeSpan.FromHours(24));
+        }
+        return result;
+    }
+
+    private async Task<BuildRatingResponse> ProduceBuildRating(BuildRatingRequest request, CancellationToken token = default)
     {
         (var start, var end) = Data.TimeperiodSelected(request.TimePeriod);
         if (end == DateTime.Today)
@@ -21,45 +34,52 @@ public partial class BuildService
             request.ToRating = 5000;
         }
 
+        if (request.FromRating <= Data.MinBuildRating)
+        {
+            request.FromRating = 0;
+        }
+
+        (var count, var wins, var cupgrades) = await GetCountAndWins(context, request, start, end, token);
+        var list = await GetUnitSums(context, request, start, end, token);
+        // var upgradesSpent = await GetUpgradesSpent(context, request, start, end, token);
+
+        return new()
+        {
+            Count = (int)count,
+            Winrate = count == 0 ? 0 : Math.Round(wins * 100.0 / count, 2),
+            UpgradesSpent = Math.Round(cupgrades, 2),
+            Units = list.Select(s => new BuildRatingUnit()
+            {
+                Name = s.Name,
+                Avg = Math.Round(s.Sum / count, 2),
+            }).ToList(),
+        };
+    }
+
+    private static async Task<double> GetUpgradesSpent(ReplayContext context, BuildRatingRequest request, DateTime start, DateTime end, CancellationToken token)
+    {
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
-        var replayPlayers = request.Vs == Commander.None ?
-             from rp in context.ReplayPlayers
-             from sp in rp.Spawns
-             from su in sp.Units
-             where rp.Replay.ReplayRatingInfo.RatingType == request.RatingType
-                 && rp.ReplayPlayerRatingInfo.Rating >= request.FromRating
-                 && rp.ReplayPlayerRatingInfo.Rating < request.ToRating
-                 && rp.Race == request.Interest
-                 && rp.Replay.GameTime >= start && rp.Replay.GameTime < end
-                 && sp.Breakpoint == request.Breakpoint
-             select rp
-            : from rp in context.ReplayPlayers
-              from sp in rp.Spawns
-              from su in sp.Units
-              where rp.Replay.ReplayRatingInfo.RatingType == request.RatingType
-                  && rp.ReplayPlayerRatingInfo.Rating >= request.FromRating
-                  && rp.ReplayPlayerRatingInfo.Rating < request.ToRating
-                  && rp.Race == request.Interest && rp.OppRace == request.Vs
-                  && rp.Replay.GameTime >= start && rp.Replay.GameTime < end
-                  && sp.Breakpoint == request.Breakpoint
+        var group = from r in context.Replays
+                    from rp in r.ReplayPlayers
+                    from sp in rp.Spawns
+                    where r.ReplayRatingInfo.RatingType == request.RatingType
+                        && rp.ReplayPlayerRatingInfo.Rating >= request.FromRating
+                        && rp.ReplayPlayerRatingInfo.Rating < request.ToRating
+                        && rp.Race == request.Interest
+                        && r.GameTime >= start && r.GameTime < end
+                        && sp.Breakpoint == request.Breakpoint
+                    select sp;
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
-              select rp;
+        return await group
+            .Select(s => s.UpgradeSpent)
+            .DefaultIfEmpty()
+            .AverageAsync(token);
+    }
 
-        replayPlayers = replayPlayers.Distinct();
-
-        var cgroup = from rp in replayPlayers
-                     group rp by rp.PlayerResult into g
-                     select new
-                     {
-                         g.Key,
-                         Count = g.Count()
-                     };
-
-        var clist = await cgroup.ToListAsync(token);
-
-        double count = clist.Select(s => s.Count).Sum();
-        double wins = clist.FirstOrDefault(f => f.Key == PlayerResult.Win)?.Count ?? 0;
-
+    private static async Task<List<SumHelper>> GetUnitSums(ReplayContext context, BuildRatingRequest request, DateTime start, DateTime end, CancellationToken token)
+    {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
         var group = request.Vs == Commander.None ?
             from rp in context.ReplayPlayers
             from sp in rp.Spawns
@@ -93,18 +113,57 @@ public partial class BuildService
            };
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
 
-        var list = await group.ToListAsync(token);
+        return await group.ToListAsync(token);
+    }
 
-        return new()
+    private static async Task<(double, double, double)> GetCountAndWins(ReplayContext context, BuildRatingRequest request, DateTime start, DateTime end, CancellationToken token)
+    {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+        var replayPlayers = request.Vs == Commander.None ?
+             from rp in context.ReplayPlayers
+             from sp in rp.Spawns
+             from su in sp.Units
+             where rp.Replay.ReplayRatingInfo.RatingType == request.RatingType
+                 && rp.ReplayPlayerRatingInfo.Rating >= request.FromRating
+                 && rp.ReplayPlayerRatingInfo.Rating < request.ToRating
+                 && rp.Race == request.Interest
+                 && rp.Replay.GameTime >= start && rp.Replay.GameTime < end
+                 && sp.Breakpoint == request.Breakpoint
+              group rp by rp.PlayerResult into g
+              select new 
+              {
+                g.Key,
+                Count = (from p in g select p.ReplayPlayerId).Distinct().Count(),
+                Upgrades = g.Average(a => a.Spawns.Where(x => x.Breakpoint == request.Breakpoint).Select(s => s.UpgradeSpent).Average())
+              }
+            : from rp in context.ReplayPlayers
+              from sp in rp.Spawns
+              from su in sp.Units
+              where rp.Replay.ReplayRatingInfo.RatingType == request.RatingType
+                  && rp.ReplayPlayerRatingInfo.Rating >= request.FromRating
+                  && rp.ReplayPlayerRatingInfo.Rating < request.ToRating
+                  && rp.Race == request.Interest && rp.OppRace == request.Vs
+                  && rp.Replay.GameTime >= start && rp.Replay.GameTime < end
+                  && sp.Breakpoint == request.Breakpoint
+              group rp by rp.PlayerResult into g
+              select new 
+              {
+                g.Key,
+                Count = (from p in g select p.ReplayPlayerId).Distinct().Count(),
+                Upgrades = g.Average(a => a.Spawns.Where(x => x.Breakpoint == request.Breakpoint).Select(s => s.UpgradeSpent).Average())
+              };
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+        var clist = await replayPlayers.ToListAsync(token);
+
+        double count = clist.Select(s => s.Count).Sum();
+        double wins = clist.FirstOrDefault(f => f.Key == PlayerResult.Win)?.Count ?? 0;
+        double upgrades = 0;
+
+        foreach (var ent in clist)
         {
-            Count = (int)count,
-            Winrate = count == 0 ? 0 : Math.Round(wins * 100.0 / count, 2),
-            Units = list.Select(s => new BuildRatingUnit()
-            {
-                Name = s.Name,
-                Avg = Math.Round(s.Sum / count, 2),
-            }).ToList(),
-        };
+            upgrades += ent.Count * ent.Upgrades;
+        }
+        return (count, wins, count == 0 ? 0 : upgrades / count);
     }
 
     public void PresentDiff(BuildRatingRequest requestA, BuildRatingResponse responseA, BuildRatingRequest requestB, BuildRatingResponse responseB)
@@ -153,5 +212,6 @@ internal record SumHelper
 {
     public string Name { get; set; } = string.Empty;
     public int Sum { get; set; }
+    public long Upgrades { get; set; }
 }
 

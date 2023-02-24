@@ -16,6 +16,7 @@ public record BuildRatingResponse
 {
     public int Count { get; set; }
     public double Winrate { get; set; }
+    public double UpgradesSpent { get; set; }
     public List<BuildRatingUnit> Units { get; set; } = new();
 }
 

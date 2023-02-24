@@ -252,7 +252,7 @@ public static class Data
             _ => TimePeriod.None
         };
     }
-
+    public static readonly int MinBuildRating = 500;
     public static readonly int MaxBuildRating = 2500;
 
     public static bool IsMaui { get; set; }
