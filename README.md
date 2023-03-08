@@ -33,6 +33,8 @@ We really like people helping us with the project. Nevertheless, take your time 
 <details open="open"><summary>v1.1.9 (web only atm)</summary>
 
 >- Builds by Ratings (suggested by heyrandompeople - ty!)
+>- Server Fun Stats (suggested by Mignoubou - ty!)
+>- Navigation redesign (website)
 
 </details>
 
