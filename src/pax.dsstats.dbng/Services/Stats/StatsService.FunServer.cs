@@ -135,7 +135,10 @@ public partial class StatsService
                       && rr.Replay.GameTime >= start
                       && rr.Replay.GameTime < end
                     select rr.Replay;
-        return Convert.ToInt32(await total.AverageAsync(a => a.Duration, token));
+        return Convert.ToInt32(await total
+            .Select(s => s.Duration)
+            .DefaultIfEmpty()
+            .AverageAsync(token));
     }
 
     private async Task<KeyValuePair<UnitInfo, UnitInfo>> GetMostLeastBuildUnit(RatingType ratingType,

@@ -1,0 +1,43 @@
+@using Microsoft.AspNetCore.Components.Routing
+@inject NavigationManager NavigationManager
+
+<nav class="navbar navbar-expand-lg bg-dark p-1">
+    <div class="container-fluid">
+        <a class="navbar-brand text-light" href="misc">Misc</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item px-1">
+                    <NavLink class="nav-link" href="misc/builds">
+                        <span class="oi oi-spreadsheet" arie-hidden="true"></span> Player Builds
+                    </NavLink>
+                </li>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="misc/teams">
+                        <span class="oi oi-grid-three-up" aria-hidden="true"></span> Std-Teams
+                    </NavLink>
+                </div>                
+                <li class="nav-item px-1">
+                    <NavLink class="nav-link" href="misc/funstats">
+                        <span class="oi oi-badge" arie-hidden="true"></span> Fun Stats
+                    </NavLink>
+                </li>
+                <li class="nav-item px-1">
+                    <NavLink class="nav-link" href="misc/commanders">
+                        <span class="oi oi-contrast" arie-hidden="true"></span> Commanders
+                    </NavLink>
+                </li>
+                <li class="nav-item px-1">
+                    <NavLink class="nav-link" href="misc/armyvalues">
+                        <span class="oi oi-list-rich" arie-hidden="true"></span> Army Values
+                    </NavLink>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+@code {
+}

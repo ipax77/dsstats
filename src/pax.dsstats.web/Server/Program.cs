@@ -124,19 +124,6 @@ if (app.Environment.IsDevelopment())
     //ratingRepository.SeedRatingChanges().Wait();
 
     // PlayerService.GetExpectationCount(context);
-
-    var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-
-    FunStatsRequest request = new() 
-    {
-        RatingType = RatingType.Cmdr,
-        TimePeriod = TimePeriod.LastYear,
-    };
-
-    var result = statsService.GetFunStats(request).GetAwaiter().GetResult();
-
-    Console.WriteLine(result);
-
 }
 
 // Configure the HTTP request pipeline.

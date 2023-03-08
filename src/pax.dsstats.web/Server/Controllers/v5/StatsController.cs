@@ -250,5 +250,17 @@ namespace pax.dsstats.web.Server.Controllers.v5
             catch (OperationCanceledException) { }
             return NoContent();
         }
+
+        [HttpPost]
+        [Route("GetFunStats")]
+        public async Task<ActionResult<FunStatsResult>> GetFunStats(FunStatsRequest request, CancellationToken token)
+        {
+            try 
+            {
+                return await statsService.GetFunStats(request, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
+        }
     }
 }

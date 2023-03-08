@@ -788,4 +788,27 @@ public class DataService : IDataService
         }
         return new();
     }
+
+    public async Task<FunStatsResult> GetFunStats(FunStatsRequest request, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetFunStats", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<FunStatsResult>(cancellationToken: token) ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting funstats: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting funstats: {e.Message}");
+        }
+        return new();
+    }
 }
