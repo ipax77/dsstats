@@ -16,7 +16,7 @@ namespace MysqlMigrations.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.13")
+                .HasAnnotation("ProductVersion", "6.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("ReplayUploader", b =>
@@ -108,6 +108,62 @@ namespace MysqlMigrations.Migrations
                         .IsUnique();
 
                     b.ToTable("Events");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.FunStatsMemory", b =>
+                {
+                    b.Property<int>("FunStatsMemoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("AvgGameDuration")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Created")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<string>("FirstReplay")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("GreatestArmyReplay")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("GreatestComebackReplay")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("MostCompetitiveReplay")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("MostUpgradesReplay")
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("RatingType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TimePeriod")
+                        .HasColumnType("int");
+
+                    b.Property<long>("TotalTimePlayed")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("UnitCountLeast")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UnitCountMost")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UnitNameLeast")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("UnitNameMost")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("FunStatsMemoryId");
+
+                    b.ToTable("FunStatMemories");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.GroupByHelper", b =>

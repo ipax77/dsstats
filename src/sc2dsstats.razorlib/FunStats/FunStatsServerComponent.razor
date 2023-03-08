@@ -1,0 +1,180 @@
+@using System.Globalization;
+@using pax.dsstats.shared
+@using sc2dsstats.razorlib.Services;
+@using Humanizer;
+@using Humanizer.Localisation;
+@inject IDataService dataService
+@implements IDisposable
+
+<div>
+    <CascadingValue Value="Request">
+        <FunStatsRequestComponent OnRequestChanged="e => LoadData()" />
+    </CascadingValue>
+</div>
+
+@if (funStats == null)
+{
+    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else
+{
+    <div class="row">
+        @if (isLoading)
+        {
+            <div class="col-auto">
+                <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        }
+        <div class="col-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="text-warning">Total Time Played</h5>
+                </div>
+                <div class="card-body">
+                    @* <span class="fw-bold">@TimeSpan.FromSeconds(funStats.TotalTimePlayed).ToString("c", CultureInfo.InvariantCulture)</span> *@
+                    <span class="fw-bold">@TimeSpan.FromSeconds(funStats.TotalTimePlayed).Humanize(10,  minUnit: TimeUnit.Day, maxUnit: TimeUnit.Year)</span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="text-warning">Average Game Duration</h5>
+                </div>
+                <div class="card-body">
+                    @* <span class="fw-bold">@TimeSpan.FromSeconds(funStats.AvgGameDuration).ToString(@"hh\:mm\:ss")</span> *@
+                    <span class="fw-bold">@TimeSpan.FromSeconds(funStats.AvgGameDuration).Humanize(10,  minUnit: TimeUnit.Minute, maxUnit: TimeUnit.Hour)</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="text-warning">Most Build Unit</h5>
+                </div>
+                <div class="card-body">
+                    <span class="fw-bold">@funStats.MostLeastBuildUnit.Key?.UnitName: @HelperService.GetBigNumberString(funStats.MostLeastBuildUnit.Key?.Count ?? 0)</span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="text-warning">Least Build Unit</h5>
+                </div>
+                <div class="card-body">
+                    <span class="fw-bold">@funStats.MostLeastBuildUnit.Value?.UnitName: @funStats.MostLeastBuildUnit.Value?.Count</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-auto">
+            <span class="small">created @((DateTime.UtcNow - @funStats.Created).Humanize()) ago</span>
+        </div>
+        @if (funStats.FirstReplay != null)
+        {
+            <div class="col-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-warning">First Replay - @funStats.FirstReplay.GameTime.ToShortDateString()</h3>
+                    </div>
+                    <div class="card-body">
+                        <sc2dsstats.razorlib.Replay.ReplayComponent HideCloseButton="true" replayDto="funStats.FirstReplay" />
+                    </div>
+                </div>
+            </div>
+        }
+        @if (funStats.GreatestArmyReplay != null)
+        {
+            <div class="col-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-warning">Greatest Army Replay - @HelperService.GetBigNumberString(funStats.GreatestArmyReplay.ReplayPlayers.OrderByDescending(o => o.Army).FirstOrDefault()?.Army ?? 0)</h3>
+                    </div>
+                    <div class="card-body">
+                        <sc2dsstats.razorlib.Replay.ReplayComponent HideCloseButton="true" replayDto="funStats.GreatestArmyReplay" />
+                    </div>
+                </div>
+            </div>
+        }
+        @if (funStats.MostUpgradesReplay != null)
+        {
+            <div class="col-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-warning">Most Upgrades Replay - @HelperService.GetBigNumberString(funStats.MostUpgradesReplay.ReplayPlayers.OrderByDescending(o => o.UpgradesSpent).FirstOrDefault()?.UpgradesSpent ?? 0)</h3>
+                    </div>
+                    <div class="card-body">
+                        <sc2dsstats.razorlib.Replay.ReplayComponent HideCloseButton="true" replayDto="funStats.MostUpgradesReplay" />
+                    </div>
+                </div>
+            </div>
+        }
+        @if (funStats.MostCompetitiveReplay != null)
+        {
+            <div class="col-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-warning">Most Competitive Replay - Middle changes: @funStats.MostCompetitiveReplay.Middle.Split('|').Length</h3>
+                    </div>
+                    <div class="card-body">
+                        <sc2dsstats.razorlib.Replay.ReplayComponent HideCloseButton="true" replayDto="funStats.MostCompetitiveReplay" />
+                    </div>
+                </div>
+            </div>
+        }
+        @if (funStats.GreatestComebackReplay != null)
+        {
+            <div class="col-auto">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-warning">Greatest Comeback Replay</h3>
+                    </div>
+                    <div class="card-body">
+                        <sc2dsstats.razorlib.Replay.ReplayComponent HideCloseButton="true" replayDto="funStats.GreatestComebackReplay" />
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+
+@code {
+    [Parameter, EditorRequired]
+    public FunStatsRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<FunStatsRequest> OnRequestChanged { get; set; }
+
+    private FunStatsResult? funStats;
+    private CancellationTokenSource cts = new();
+    bool isLoading;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ = LoadData(true);
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    private async Task LoadData(bool first = false)
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        funStats = await dataService.GetFunStats(Request, cts.Token);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+        if (!first)
+        {
+            await OnRequestChanged.InvokeAsync(Request);
+        }
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

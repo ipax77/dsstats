@@ -1,0 +1,66 @@
+@using Microsoft.AspNetCore.Components.Forms;
+@using pax.dsstats.shared;
+@implements IDisposable
+
+<EditForm EditContext="editContext">
+    <div class="row">
+        <div class="col-auto">
+            <label class="form-label">
+                Rating Type
+                <span class="oi oi-info pointer ms-2" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/Mmr-calculation#rating-types'"></span>
+                <InputSelect class="form-select" @bind-Value="Request.RatingType">
+                    @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+                    {
+                        @if (ratingType == RatingType.None)
+                        {
+                            continue;
+                        }
+                        <option value="@ratingType">@Data.GetRatingTypeLongName(ratingType)</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Time Period
+                <InputSelect class="form-select" @bind-Value="Request.TimePeriod">
+                    @foreach (TimePeriod time in Data.GetTimePeriods(Data.TimePeriodGet.NoNone))
+                    {
+                        @if ((int)time < 3)
+                        {
+                            continue;
+                        }
+                        <option value="@time">@Data.GetTimePeriodLongName(time)</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    [CascadingParameter, EditorRequired]
+    public FunStatsRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    private EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(Request);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        OnRequestChanged.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}

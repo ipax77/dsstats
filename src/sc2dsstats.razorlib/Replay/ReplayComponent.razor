@@ -148,7 +148,7 @@
             </div>
             <div class="card-footer">
                 <CascadingValue Value="replayDto">
-                    <ReplayFooter OnCloseRequested="OnCloseRequested"></ReplayFooter>
+                    <ReplayFooter OnCloseRequested="OnCloseRequested" HideCloseButton="HideCloseButton"></ReplayFooter>
                 </CascadingValue>
             </div>
         </div>
@@ -203,6 +203,9 @@
 
     [Parameter]
     public EventCallback<ReplaysToonIdRequest> ReplaysRequest { get; set; }
+
+    [Parameter]
+    public bool HideCloseButton { get; set; }
 
     double mid1;
     double mid2;

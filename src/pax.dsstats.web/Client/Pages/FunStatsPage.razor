@@ -1,0 +1,67 @@
+@page "/misc/funstats"
+@layout MiscLayout
+@using pax.dsstats.shared
+@inject NavigationManager NavigationManager
+
+<sc2dsstats.razorlib.FunStats.FunStatsServerComponent Request="request" OnRequestChanged="RequestChanged" />
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? RatingType { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? TimePeriod { get; set; }
+
+
+    FunStatsRequest request = new()
+    {
+        TimePeriod = pax.dsstats.shared.TimePeriod.Past90Days,
+        RatingType = pax.dsstats.shared.RatingType.Cmdr
+    };
+
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }
+
+    private void SetRequest()
+    {
+        if (!String.IsNullOrEmpty(RatingType)
+            && Enum.TryParse(typeof(RatingType), RatingType, out object? ratingTypeObj)
+            && ratingTypeObj is RatingType ratingType)
+        {
+            request.RatingType = ratingType;
+        }
+
+        if (!String.IsNullOrEmpty(TimePeriod)
+            && Enum.TryParse(typeof(TimePeriod), TimePeriod, out var timePeriodObj)
+            && timePeriodObj is TimePeriod timePeriod)
+        {
+            if ((int)timePeriod < 3)
+            {
+                request.TimePeriod = shared.TimePeriod.Past90Days;
+            }
+            else
+            {
+                request.TimePeriod = timePeriod;
+            }
+        }
+    }
+
+    private void RequestChanged(FunStatsRequest request)
+    {
+        Dictionary<string, object?> queryDic = new();
+
+        queryDic.Add("RatingType", request.RatingType.ToString());
+        queryDic.Add("TimePeriod", request.TimePeriod.ToString());
+
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters(
+                new Dictionary<string, object?>(queryDic)
+            )
+        );
+    }
+}
