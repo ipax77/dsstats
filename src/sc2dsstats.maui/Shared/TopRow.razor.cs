@@ -35,8 +35,15 @@ public partial class TopRow : ComponentBase, IDisposable
         decodeService.DecodeStateChanged += DecodeService_DecodeStateChanged;
         decodeService.ScanStateChanged += DecodeService_ScanStateChanged;
         uploadService.UploadStateChanged += UploadService_UploadStateChanged;
-        UpdateService.UpdateProgress += UpdateService_UpdateProgress;
+        // UpdateService.UpdateProgress += UpdateService_UpdateProgress;
+        StoreUpdateService.UpdateProgress += StoreUpdateService_UpdateProgress;
         base.OnInitialized();
+    }
+
+    private void StoreUpdateService_UpdateProgress(object? sender, UpdateProgressEvent e)
+    {
+        updateProgress = e.Progress;
+        InvokeAsync(() => StateHasChanged());
     }
 
     private void UpdateService_UpdateProgress(object? sender, UpdateProgressEvent e)
@@ -168,6 +175,7 @@ public partial class TopRow : ComponentBase, IDisposable
     {
         decodeService.DecodeStateChanged -= DecodeService_DecodeStateChanged;
         decodeService.ScanStateChanged -= DecodeService_ScanStateChanged;
-        UpdateService.UpdateProgress -= UpdateService_UpdateProgress;
+        // UpdateService.UpdateProgress -= UpdateService_UpdateProgress;
+        StoreUpdateService.UpdateProgress -= StoreUpdateService_UpdateProgress;
     }
 }

@@ -1,0 +1,20 @@
+@using Blazored.Toast.Configuration;
+@inherits LayoutComponentBase
+
+<BlazoredToasts Position="ToastPosition.BottomRight"
+                Timeout="5" />
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div>
+            <sc2dsstats.razorlib.Misc.MiscNavMenu />
+        </div>
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>

@@ -26,6 +26,7 @@ public class ReplayContext : DbContext
     public virtual DbSet<SkipReplay> SkipReplays { get; set; } = null!;
     public virtual DbSet<CommanderMmr> CommanderMmrs { get; set; } = null!;
     public virtual DbSet<GroupByHelper> GroupByHelpers { get; set; } = null!;
+    public virtual DbSet<FunStatsMemory> FunStatMemories { get; set; } = null!;
 
     public ReplayContext(DbContextOptions<ReplayContext> options)
     : base(options)
