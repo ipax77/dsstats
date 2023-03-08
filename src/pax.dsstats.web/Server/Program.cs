@@ -125,8 +125,8 @@ if (app.Environment.IsDevelopment())
 
     // PlayerService.GetExpectationCount(context);
 
-    var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-    statsService.SeedFunStats().Wait();
+    // var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+    // statsService.SeedFunStats().Wait();
 }
 
 // Configure the HTTP request pipeline.
