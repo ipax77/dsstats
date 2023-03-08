@@ -124,6 +124,9 @@ if (app.Environment.IsDevelopment())
     //ratingRepository.SeedRatingChanges().Wait();
 
     // PlayerService.GetExpectationCount(context);
+
+    var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+    statsService.SeedFunStats().Wait();
 }
 
 // Configure the HTTP request pipeline.

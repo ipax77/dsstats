@@ -40,7 +40,14 @@
             && Enum.TryParse(typeof(TimePeriod), TimePeriod, out var timePeriodObj)
             && timePeriodObj is TimePeriod timePeriod)
         {
-            request.TimePeriod = timePeriod;
+            if ((int)timePeriod < 3)
+            {
+                request.TimePeriod = shared.TimePeriod.Past90Days;
+            }
+            else
+            {
+                request.TimePeriod = timePeriod;
+            }
         }
     }
 

@@ -59,7 +59,17 @@ public partial class StatsService
             return null;
         }
 
-        if ((DateTime.UtcNow - funstats.Created).TotalDays > 30)
+        (var start, var end) = Data.TimeperiodSelected(request.TimePeriod);
+
+        int limit = (int)(end - start).TotalDays switch 
+        {
+            < 100 => 30,
+            < 400 => 90,
+            _ => 120
+        };
+
+
+        if ((DateTime.UtcNow - funstats.Created).TotalDays > limit)
         {
             return null;
         }
@@ -303,5 +313,31 @@ public partial class StatsService
         }
 
         return await replayRepository.GetDetailReplay(replayHash, true, token);
-    }              
+    }
+
+    public async Task SeedFunStats()
+    {
+        foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+        {
+            if (ratingType == RatingType.None)
+            {
+                continue;
+            }
+            foreach (TimePeriod timePeriod in Enum.GetValues(typeof(TimePeriod)))
+            {
+                if ((int)timePeriod < 3)
+                {
+                    continue;
+                }
+                FunStatsRequest request = new()
+                {
+                    RatingType = ratingType,
+                    TimePeriod = timePeriod
+                };
+
+                var result = await ProduceFunStats(request);
+                await UpdateFunStatsMemory(request, result);
+            }
+        }
+    }
 }

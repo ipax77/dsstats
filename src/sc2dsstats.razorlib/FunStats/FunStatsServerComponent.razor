@@ -1,6 +1,8 @@
 @using System.Globalization;
 @using pax.dsstats.shared
 @using sc2dsstats.razorlib.Services;
+@using Humanizer;
+@using Humanizer.Localisation;
 @inject IDataService dataService
 @implements IDisposable
 
@@ -33,7 +35,8 @@ else
                     <h5 class="text-warning">Total Time Played</h5>
                 </div>
                 <div class="card-body">
-                    <span class="fw-bold">@TimeSpan.FromSeconds(funStats.TotalTimePlayed).ToString("c", CultureInfo.InvariantCulture)</span>
+                    @* <span class="fw-bold">@TimeSpan.FromSeconds(funStats.TotalTimePlayed).ToString("c", CultureInfo.InvariantCulture)</span> *@
+                    <span class="fw-bold">@TimeSpan.FromSeconds(funStats.TotalTimePlayed).Humanize(10,  minUnit: TimeUnit.Day, maxUnit: TimeUnit.Year)</span>
                 </div>
             </div>
             <div class="card">
@@ -41,7 +44,8 @@ else
                     <h5 class="text-warning">Average Game Duration</h5>
                 </div>
                 <div class="card-body">
-                    <span class="fw-bold">@TimeSpan.FromSeconds(funStats.AvgGameDuration).ToString(@"hh\:mm\:ss")</span>
+                    @* <span class="fw-bold">@TimeSpan.FromSeconds(funStats.AvgGameDuration).ToString(@"hh\:mm\:ss")</span> *@
+                    <span class="fw-bold">@TimeSpan.FromSeconds(funStats.AvgGameDuration).Humanize(10,  minUnit: TimeUnit.Minute, maxUnit: TimeUnit.Hour)</span>
                 </div>
             </div>
         </div>
@@ -62,6 +66,9 @@ else
                     <span class="fw-bold">@funStats.MostLeastBuildUnit.Value?.UnitName: @funStats.MostLeastBuildUnit.Value?.Count</span>
                 </div>
             </div>
+        </div>
+        <div class="col-auto">
+            <span class="small">created @((DateTime.UtcNow - @funStats.Created).Humanize()) ago</span>
         </div>
         @if (funStats.FirstReplay != null)
         {
