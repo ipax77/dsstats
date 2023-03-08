@@ -125,33 +125,17 @@ if (app.Environment.IsDevelopment())
 
     // PlayerService.GetExpectationCount(context);
 
-    // var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
+    var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
 
-    // var requestA = new BuildRatingRequest()
-    // {
-    //     RatingType = RatingType.Cmdr,
-    //     TimePeriod = TimePeriod.Past90Days,
-    //     Interest = Commander.Nova,
-    //     Vs = Commander.Dehaka,
-    //     Breakpoint = Breakpoint.Min10,
-    //     FromRating = 800,
-    //     ToRating = 1200
-    // };
+    FunStatsRequest request = new() 
+    {
+        RatingType = RatingType.Cmdr,
+        TimePeriod = TimePeriod.LastYear,
+    };
 
-    // var requestB = new BuildRatingRequest()
-    // {
-    //     RatingType = RatingType.Cmdr,
-    //     TimePeriod = TimePeriod.Past90Days,
-    //     Interest = Commander.Nova,
-    //     Vs = Commander.Dehaka,
-    //     Breakpoint = Breakpoint.Min10,
-    //     FromRating = 1200,
-    //     ToRating = 1600
-    // };
+    var result = statsService.GetFunStats(request).GetAwaiter().GetResult();
 
-    // var responseA = buildService.GetBuildByRating(requestA).GetAwaiter().GetResult();
-    // var responseB = buildService.GetBuildByRating(requestB).GetAwaiter().GetResult();
-    // buildService.PresentDiff(requestA, responseA, requestB, responseB);
+    Console.WriteLine(result);
 
 }
 
