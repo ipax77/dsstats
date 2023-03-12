@@ -438,6 +438,9 @@ namespace SqliteMigrations.Migrations
                     b.Property<bool>("TournamentEdition")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("Uploaded")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Views")
                         .HasColumnType("INTEGER");
 
