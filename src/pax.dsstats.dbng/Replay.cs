@@ -165,6 +165,7 @@ public class Replay
     public int ReplayId { get; set; }
     [MaxLength(500)]
     public string FileName { get; set; } = null!;
+    public bool Uploaded { get; set; }
     public bool TournamentEdition { get; set; }
     [Precision(0)]
     public DateTime GameTime { get; set; }
