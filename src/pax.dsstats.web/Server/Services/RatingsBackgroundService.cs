@@ -37,7 +37,6 @@ public class RatingsBackgroundService : IHostedService, IDisposable
 
         using var scope = serviceProvider.CreateScope();
         var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
-        await cheatDetectService.Detect();
         await cheatDetectService.DetectNoUpload();
 
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();

@@ -24,7 +24,9 @@ var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionStri
 var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"];
 
 // var connectionString = builder.Configuration["ServerConfig:DsstatsProdConnectionString"];
+
 // var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
+// var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"];
 
 builder.Services.AddDbContext<ReplayContext>(options =>
 {
@@ -101,32 +103,16 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    // var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
-    // var result = cheatDetectService.Detect(true).GetAwaiter().GetResult();
-    // cheatDetectService.DetectNoUpload().Wait();
-    // cheatDetectService.GetCheatDetectResult().Wait();
+    var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
+    var result =  cheatDetectService.AdjustReplays().GetAwaiter().GetResult();
 
-    //var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-    //var result = statsService.GetServerStats().GetAwaiter().GetResult();
+    Console.WriteLine($"AdjustResult: {result}");
 
-    //Console.WriteLine(result);
+    var importSservice = scope.ServiceProvider.GetRequiredService<ImportService>();
+    importSservice.ImportReplayBlobs().Wait();
 
-    //var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
-    //tourneyService.CollectTourneyReplays().Wait();
-
-    //var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-    //var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
-
-    // var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    // mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
-
-    //var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
-    //ratingRepository.SeedRatingChanges().Wait();
-
-    // PlayerService.GetExpectationCount(context);
-
-    // var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-    // statsService.SeedFunStats().Wait();
+    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.

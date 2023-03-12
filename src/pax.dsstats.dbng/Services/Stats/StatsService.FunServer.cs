@@ -1,7 +1,6 @@
 
 using pax.dsstats.shared;
 using Microsoft.EntityFrameworkCore;
-using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace pax.dsstats.dbng.Services;
@@ -10,8 +9,6 @@ public partial class StatsService
 {
     public async Task<FunStatsResult> GetFunStats(FunStatsRequest request, CancellationToken token = default)
     {
-        Stopwatch sw = Stopwatch.StartNew();
-
         var result = await GetResultFromMemory(request, token);
 
         if (result == null)
@@ -19,9 +16,6 @@ public partial class StatsService
             result = await ProduceFunStats(request, token);
             await UpdateFunStatsMemory(request, result);
         }
-
-        sw.Stop();
-        logger.LogWarning($"FunStats produced in {sw.ElapsedMilliseconds} ms");
 
         return result;
     }
