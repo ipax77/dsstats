@@ -17,7 +17,7 @@ public partial class ImportService
     private readonly ILogger<ImportService> logger;
     private const string defaultBlobBaseDir = "/data/ds/replayblobs";
     private const int continueMaxCount = 100;
-    private string baseDir = defaultBlobBaseDir;
+    private readonly string baseDir = defaultBlobBaseDir;
 
     public ImportService(IServiceProvider serviceProvider, IMapper mapper, ILogger<ImportService> logger, string baseDir = defaultBlobBaseDir)
     {
@@ -178,6 +178,7 @@ public partial class ImportService
         Dictionary<int, Uploader> attachedUploaders = new();
         List<Replay> continueReplays = new();
         bool potentialContinue = replays.Count <= continueMaxCount;
+        CheatResult cheatResult = new();
 
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -187,6 +188,7 @@ public partial class ImportService
         {
             await AttachUploaders(context, replay, attachedUploaders);
             context.Replays.Add(replay);
+            await CheatDetectService.AdjustReplay(context, replay, cheatResult);
 
             i++;
             if (i % 1000 == 0)
@@ -226,6 +228,11 @@ public partial class ImportService
             await context.Uploaders
                 .Where(x => uploadersIdsNoNull.Contains(x.UploaderId))
                 .LoadAsync();
+        }
+
+        if (cheatResult.DcGames > 0 || cheatResult.RqGames > 0)
+        {
+            logger.LogWarning($"AdjustedReplays: {cheatResult}");
         }
 
         return (i, continueReplays);
