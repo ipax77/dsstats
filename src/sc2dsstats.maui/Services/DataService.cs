@@ -376,4 +376,9 @@ public partial class DataService : IDataService
     {
         return await Task.FromResult(new BuildRatingResponse());
     }
+
+    public Task<FunStatsResult> GetFunStats(FunStatsRequest request, CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
 }

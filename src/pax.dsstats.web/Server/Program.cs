@@ -103,16 +103,9 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
-    var result =  cheatDetectService.AdjustReplays().GetAwaiter().GetResult();
-
-    Console.WriteLine($"AdjustResult: {result}");
-
-    var importSservice = scope.ServiceProvider.GetRequiredService<ImportService>();
-    importSservice.ImportReplayBlobs().Wait();
-
-    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
+    var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+    var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
+    Console.WriteLine($"Result: {result}");
 }
 
 // Configure the HTTP request pipeline.

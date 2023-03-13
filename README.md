@@ -30,15 +30,16 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v1.1.9 (web only atm)</summary>
+<details open="open"><summary>v1.1.9</summary>
 
 >- Builds by Ratings (suggested by heyrandompeople - ty!)
 >- Server Fun Stats (suggested by Mignoubou - ty!)
 >- Navigation redesign (website)
+>- Replay uploaded improved (flag instead of latest replay date)
 
 </details>
 
-<details open="open"><summary>v1.1.8</summary>
+<details><summary>v1.1.8</summary>
 
 >- Fix player details Server update
 

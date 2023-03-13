@@ -67,29 +67,7 @@ public class UploadService
 
         try
         {
-            using var scope = serviceProvider.CreateScope();
-            using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-            var latestReplayDate = await GetLastReplayDate(context);
-            if (latestReplayDate == null)
-            {
-                return;
-            }
-
-            var replays = await context.Replays
-                .Include(i => i.ReplayPlayers)
-                    .ThenInclude(t => t.Spawns)
-                        .ThenInclude(t => t.Units)
-                            .ThenInclude(t => t.Unit)
-                .Include(i => i.ReplayPlayers)
-                    .ThenInclude(t => t.Player)
-                    .AsNoTracking()
-                    .AsSplitQuery()
-                .OrderBy(o => o.GameTime)
-                    .ThenBy(o => o.ReplayId)
-                .Where(x => x.GameTime > latestReplayDate)
-                .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
-                .ToListAsync();
+            var replays = await GetUploadReplays();
 
             if (!replays.Any())
             {
@@ -117,6 +95,8 @@ public class UploadService
                 f.MmrChange = 0;
             });
 
+            
+
             var base64string = GetBase64String(replays);
             var httpClient = GetHttpClient();
 
@@ -128,8 +108,10 @@ public class UploadService
             };
 
             var response = await httpClient.PostAsJsonAsync($"api/Upload/ImportReplays", uploadDto);
+
             if (response.IsSuccessStatusCode)
             {
+                await SetUploadedFlag(replays);
                 OnUploadStateChanged(new() { UploadStatus = UploadStatus.Success });
             }
             else
@@ -149,13 +131,50 @@ public class UploadService
         }
     }
 
+    private async Task<List<ReplayDto>> GetUploadReplays()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var latestReplayDate = await GetLastReplayDate(context);
+        if (latestReplayDate == null)
+        {
+            return new();
+        }
+
+        return await context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(t => t.Spawns)
+                    .ThenInclude(t => t.Units)
+                        .ThenInclude(t => t.Unit)
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(t => t.Player)
+                .AsNoTracking()
+                .AsSplitQuery()
+            .OrderBy(o => o.GameTime)
+                .ThenBy(o => o.ReplayId)
+            .Where(x => !x.Uploaded)
+            .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
+            .ToListAsync();
+    }
+
+    private async Task SetUploadedFlag(List<ReplayDto> replays)
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        string replayHashString = String.Join(", ", replays.Select(s => $"'{s.ReplayHash}'"));
+
+        string updateCommand = $"UPDATE {nameof(ReplayContext.Replays)} SET {nameof(Replay.Uploaded)} = 1 WHERE {nameof(Replay.ReplayHash)} IN ({replayHashString});";
+
+        await context.Database.ExecuteSqlRawAsync(updateCommand);
+    }
+
     private string GetBase64String(List<ReplayDto> replays)
     {
         var json = JsonSerializer.Serialize(replays);
         return Zip(json);
     }
-
-
 
     private async Task<DateTime?> GetLastReplayDate(ReplayContext context)
     {
