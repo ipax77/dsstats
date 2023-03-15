@@ -27,6 +27,9 @@ public class CacheBackgroundService : IHostedService, IDisposable
     private async void DoWork(object? state)
     {
         await ss.WaitAsync();
+
+        CacheBackgroundStatus status = new();
+
         try
         {
             using var scope = serviceProvider.CreateScope();
@@ -35,12 +38,16 @@ public class CacheBackgroundService : IHostedService, IDisposable
             Stopwatch sw = Stopwatch.StartNew();
 
             var result = await importService.ImportReplayBlobs();
+            status.ImportDone = true;
 
             if (result.SavedReplays > 0)
             {
                 var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
                 statsService.ResetStatsCache();
+                status.StatsReset = true;
+
                 await statsService.GetRequestStats(new shared.StatsRequest() { Uploaders = false });
+                status.StatsRebuilt = true;
 
                 var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
 
@@ -52,12 +59,15 @@ public class CacheBackgroundService : IHostedService, IDisposable
                 {
                     await mmrProduceService.ProduceRatings(new(true));
                 }
+                status.RatingsProduced = true;
                 logger.LogWarning($"Replays saved: {result.SavedReplays} ({result.ContinueReplays.Count}) - {result.LatestReplay}");
             }
 
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
             await replayRepository.SetReplayViews();
+            status.ReplayViewsSet = true;
             await replayRepository.SetReplayDownloads();
+            status.ReplayDownloadsSet = true;
 
             var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
             await tourneyService.CollectTourneyReplays();
@@ -67,7 +77,7 @@ public class CacheBackgroundService : IHostedService, IDisposable
         }
         catch (Exception ex)
         {
-            logger.LogError($"job failed: {ex.Message}");
+            logger.LogError($"job failed: {ex.Message} - {status}");
         }
         finally
         {
@@ -87,3 +97,12 @@ public class CacheBackgroundService : IHostedService, IDisposable
     }
 }
 
+internal record CacheBackgroundStatus
+{
+    public bool ImportDone { get; set; }
+    public bool StatsReset { get; set; }
+    public bool StatsRebuilt { get; set; }
+    public bool RatingsProduced { get; set; }
+    public bool ReplayViewsSet { get; set; }
+    public bool ReplayDownloadsSet { get; set; }
+}

@@ -57,6 +57,7 @@ public partial class RatingRepository
                 parameters[10].Value = calcEnt.Confidence;
                 parameters[11].Value = calcEnt.IsUploader;
                 parameters[12].Value = calcEnt.PlayerId;
+                command.CommandTimeout = 120;
                 await command.ExecuteNonQueryAsync();
             }
         }
@@ -95,6 +96,7 @@ public partial class RatingRepository
         await connection.OpenAsync();
 
         using var delCommand = new MySqlCommand("TRUNCATE ReplayPlayerRatings;", connection);
+        delCommand.CommandTimeout = 120;
         await delCommand.ExecuteNonQueryAsync();
     }
 }

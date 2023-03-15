@@ -342,6 +342,7 @@ public partial class RatingRepository
         await connection.OpenAsync();
         var command = connection.CreateCommand();
         command.CommandText = "CALL SetPlayerRatingPos();";
+        command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
     }
 
@@ -351,6 +352,7 @@ public partial class RatingRepository
         await connection.OpenAsync();
         var command = connection.CreateCommand();
         command.CommandText = "CALL SetRatingChange();";
+        command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
     }
 }

@@ -103,9 +103,8 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-    var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
-    Console.WriteLine($"Result: {result}");
+    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.
