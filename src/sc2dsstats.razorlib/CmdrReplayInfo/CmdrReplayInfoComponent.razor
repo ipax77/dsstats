@@ -1,0 +1,207 @@
+@using pax.dsstats.shared
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@inject IDataService dataService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<div class="@(replayDto == null ? "" : "visually-hidden")">
+    <div>
+        <CmdrReplayInfoRequestComponent Request="Request" OnRequestChanged="RequestChanged" />
+    </div>
+    <div>
+        @if (replaysCount > 0)
+        {
+            <div class="d-flex" style="max-width: 850px;">
+                <p class="ms-auto">#@replaysCount</p>
+                <span class="oi oi-reload text-primary pointer ms-2" style="font-size: 1rem;"
+                    @onclick="RequestChanged"></span>
+                @if (isLoading)
+                {
+                    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                }
+            </div>
+
+            <div class="table-responsive tableFixHead">
+                <table class="table table-dark table-hover w-auto">
+                    <thead>
+                        <tr>
+                            <th>GameTime</th>
+                            <th>Duration</th>
+                            <th>Team1</th>
+                            <th>Team2</th>
+                            <th>Winner</th>
+                            <th>Rating1</th>
+                            <th>Rating2</th>
+                            <th>AvgGain</th>
+                            <th>MaxLeaver</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <Virtualize @ref="virtualizeComponent" Context="replay" ItemsProvider="LoadReplays" ItemSize="47">
+                            <ItemContent>
+                                <tr class="pointer @(lastVisitHash == replay.ReplayHash ? "table-primary" : "")" @onclick="e => ShowReplay(replay.ReplayHash)">
+                                    <td>@replay.GameTime.ToString(@"yyyy-MM-dd")</td>
+                                    <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+                                    <td>
+                                        <div class="d-flex">
+                                            @foreach (var cmdr in replay.Cmdrs1)
+                                            {
+                                                <div class="preload-@(cmdr.ToString().ToLower())"
+                                                    style="width: 30px; height: 30px;"></div>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>
+
+                                        <div class="d-flex">
+                                            @foreach (var cmdr in replay.Cmdrs2)
+                                            {
+                                                <div class="preload-@(cmdr.ToString().ToLower())"
+                                                    style="width: 30px; height: 30px;"></div>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>@replay.WinnerTeam</td>
+                                    <td class="text-warning">@replay.Rating1</td>
+                                    <td class="text-warning">@replay.Rating2</td>
+                                    <td class="@(replay.AvgGain < 0 ? "text-danger" : "text-success")">@replay.AvgGain</td>
+                                    <td>@TimeSpan.FromSeconds(replay.Maxleaver).ToString(@"mm\:ss")</td>
+                                </tr>
+                            </ItemContent>
+                            <Placeholder>
+                                <tr height="47px">
+                                    <td colspan="9">Loading ...</td>
+                                </tr>
+                            </Placeholder>
+                        </Virtualize>
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            @if (isLoading)
+            {
+                <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            }
+            else
+            {
+                <p>
+                    No data available.
+                </p>
+            }
+        }
+    </div>
+</div>
+
+@if (replayDto != null)
+{
+    @*<ReplayComponent @ref="replayComponent" replayDto="replayDto" OnCloseRequested="OnReplayClose"></ReplayComponent>*@
+    <sc2dsstats.razorlib.Replay.ReplayComponent @ref="replayComponent" replayDto="replayDto"
+        OnCloseRequested="OnReplayClose" ReplaysRequest="ReplaysToonIdRequest" />
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public CmdrInfoRequest Request { get; set; } = default!;
+    [Parameter]
+    public EventCallback<CmdrInfoRequest> OnRequestChanged { get; set; }
+
+    CancellationTokenSource cts = new();
+    SemaphoreSlim ss = new(1, 1);
+
+    bool isLoading = false;
+    int replaysCount = 0;
+
+    private Virtualize<ReplayCmdrInfo>? virtualizeComponent;
+
+    ReplayDetailsDto? replayDto = null;
+    Replay.ReplayComponent? replayComponent;
+    string? lastVisitHash = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SetCount(Request);
+        await base.OnInitializedAsync();
+    }
+
+    private async Task SetCount(CmdrInfoRequest request)
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        replaysCount = await dataService.GetCmdrReplayInfosCount(request, cts.Token);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async ValueTask<ItemsProviderResult<ReplayCmdrInfo>> LoadReplays(ItemsProviderRequest prRequest)
+    {
+        Request.Skip = prRequest.StartIndex;
+        Request.Take = Math.Min(prRequest.Count, replaysCount - prRequest.StartIndex);
+
+        var replays = await dataService.GetCmdrReplayInfos(Request, prRequest.CancellationToken);
+
+        return new ItemsProviderResult<ReplayCmdrInfo>(replays ?? new List<ReplayCmdrInfo>(), replaysCount);
+    }
+
+
+    public async void RequestChanged()
+    {
+        await ss.WaitAsync();
+        try
+        {
+            await SetCount(Request);
+            if (virtualizeComponent != null)
+            {
+                await InvokeAsync(async () =>
+                {
+                    await virtualizeComponent.RefreshDataAsync();
+                    StateHasChanged();
+                });
+            }
+            await OnRequestChanged.InvokeAsync(Request);
+        }
+        finally
+        {
+            ss.Release();
+        }
+    }
+
+    public async Task ShowReplay(string replayHash)
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        await OnRequestChanged.InvokeAsync(Request);
+
+        replayDto = await dataService.GetDetailReplay(replayHash);
+        lastVisitHash = replayDto?.ReplayHash;
+        if (replayDto != null)
+        {
+            replayComponent?.Init(replayDto);
+        }
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async void OnReplayClose()
+    {
+        replayDto = null;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void ReplaysToonIdRequest(Services.ReplaysToonIdRequest request)
+    {
+
+    }    
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+        ss.Dispose();
+    }
+}

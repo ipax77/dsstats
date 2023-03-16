@@ -1,0 +1,10 @@
+@page "/cmdrinforeplays"
+@using pax.dsstats.shared
+
+<PageTitle>Cmdr Info</PageTitle>
+
+<sc2dsstats.razorlib.CmdrReplayInfo.CmdrReplayInfoComponent Request="Request" />
+
+@code {
+    CmdrInfoRequest Request = new();
+}

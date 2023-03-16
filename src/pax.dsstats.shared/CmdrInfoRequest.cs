@@ -1,4 +1,6 @@
 
+using System.Text.Json.Serialization;
+
 namespace pax.dsstats.shared;
 
 public record CmdrInfoRequest
@@ -19,6 +21,7 @@ public record ReplayCmdrInfo
     public int ReplayId { get; set; }
     public string ReplayHash { get; set; } = string.Empty;
     public DateTime GameTime { get; set; }
+    public int Duration { get; set; }
     public int Maxleaver { get; set; }
     public float Rating1 { get; set; }
     public float Rating2 { get; set; }
@@ -27,5 +30,9 @@ public record ReplayCmdrInfo
     public string Team2 { get; set; } = string.Empty;
     public int WinnerTeam { get; set; }
     public string Ratings { get; set; } = string.Empty;
+    [JsonIgnore]
+    public Commander[] Cmdrs1 => Team1.Split('|', StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s)).Cast<Commander>().ToArray();
+    [JsonIgnore]
+    public Commander[] Cmdrs2 => Team2.Split('|', StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s)).Cast<Commander>().ToArray();    
 }
 

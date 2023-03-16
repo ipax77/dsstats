@@ -103,9 +103,9 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-    var count = statsService.GetCmdrReplayInfosCount(new()).GetAwaiter().GetResult();
-    Console.WriteLine($"cmdrinfo count: {count}");
+    // var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+    // var count = statsService.GetCmdrReplayInfosCount(new()).GetAwaiter().GetResult();
+    // Console.WriteLine($"cmdrinfo count: {count}");
 }
 
 // Configure the HTTP request pipeline.
