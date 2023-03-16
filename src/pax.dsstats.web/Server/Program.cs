@@ -103,8 +103,8 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
+    var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+    statsService.GetCmdrInfo(new()).Wait();
 }
 
 // Configure the HTTP request pipeline.

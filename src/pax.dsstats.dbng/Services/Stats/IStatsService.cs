@@ -25,5 +25,6 @@ namespace pax.dsstats.dbng.Services
         Task<CmdrStrengthResult> GetCmdrStrengthResults(CmdrStrengthRequest request, CancellationToken token);
         Task<FunStatsResult> GetFunStats(FunStatsRequest request, CancellationToken token = default);
         Task SeedFunStats();
+        Task<CmdrInfoResult> GetCmdrInfo(CmdrInfoRequest request);
     }
 }
