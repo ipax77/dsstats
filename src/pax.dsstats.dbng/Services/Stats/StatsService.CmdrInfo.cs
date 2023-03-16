@@ -1,5 +1,4 @@
 
-using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
 using pax.dsstats.shared;
 
@@ -7,25 +6,50 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class StatsService
 {
-    public async Task<CmdrInfoResult> GetCmdrInfo(CmdrInfoRequest request)
+    public async Task<int> GetCmdrReplayInfosCount(CmdrInfoRequest request, CancellationToken token = default)
     {
-        var infos = await GetReplayCmdrInfos(request);
+        (var fromDate, var toDate) = Data.TimeperiodSelected(request.TimePeriod);
 
-        foreach (var info in infos.Take(20))
-        {
-            Console.WriteLine(info);
-        }
+        string sqlCommand = 
+        $@"
+            select count(*)
+            from Replays as r
+            inner join ReplayRatings as rr on rr.ReplayId = r.ReplayId
+            inner join RepPlayerRatings as rpr1 on rpr1.ReplayRatingInfoId = rr.ReplayRatingId and rpr1.GamePos <= 3
+            inner join RepPlayerRatings as rpr2 on rpr2.ReplayRatingInfoId = rr.ReplayRatingId and rpr2.GamePos > 3
+            inner join ReplayPlayers as rp on rp.ReplayId = r.ReplayId and rp.Race = {(int)request.Interest}
+            inner join RepPlayerRatings as rprc on rprc.ReplayPlayerId = rp.ReplayPlayerId
+            WHERE r.GameTime >= '{fromDate:yyyy-MM-dd}' " + 
+                (toDate == DateTime.Today ? "" : $@"and r.GameTime < '{toDate:yyyy-MM-dd}' ") +
+                (request.WithoutLeavers ? "and rr.LeaverType = 0 " : "") +
+                $@"and rr.RatingType = {(int)request.RatingType}
+            group by r.ReplayId " +
+                (request.MaxGap > 0 ? $@"having abs(avg(rpr1.Rating) - avg(rpr2.Rating)) < {request.MaxGap}" : "") +
+        "";
 
-        return new();
+        using MySqlConnection conn = new(Data.MysqlConnectionString);
+        await conn.OpenAsync(token);
+
+        using MySqlCommand cmd = new(sqlCommand, conn);
+        cmd.CommandTimeout = 120;
+
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync(token));
+    }    
+
+    public async Task<List<ReplayCmdrInfo>> GetCmdrReplayInfos(CmdrInfoRequest request, CancellationToken token = default)
+    {
+        var infos = await ProduceCmdrReplayInfos(request, token);
+        return infos;
     }
 
-    private async Task<List<ReplayCmdrInfo>> GetReplayCmdrInfos(CmdrInfoRequest request)
+    private static async Task<List<ReplayCmdrInfo>> ProduceCmdrReplayInfos(CmdrInfoRequest request, CancellationToken token)
     {
         (var fromDate, var toDate) = Data.TimeperiodSelected(request.TimePeriod);
 
         string sqlCommand = 
         $@"
             select r.ReplayId, r.CommandersTeam1, r.CommandersTeam2, r.WinnerTeam,
+            r.ReplayHash, r.Maxleaver, r.GameTime,
             round(avg(rpr1.Rating)) as rating1,
             round(avg(rpr2.Rating)) as rating2,
             group_concat(distinct rprc.Rating) as ratings,
@@ -36,26 +60,35 @@ public partial class StatsService
             inner join RepPlayerRatings as rpr2 on rpr2.ReplayRatingInfoId = rr.ReplayRatingId and rpr2.GamePos > 3
             inner join ReplayPlayers as rp on rp.ReplayId = r.ReplayId and rp.Race = {(int)request.Interest}
             inner join RepPlayerRatings as rprc on rprc.ReplayPlayerId = rp.ReplayPlayerId
-            WHERE r.GameTime >= '{fromDate:yyyy-MM-dd}' and r.GameTime < '{toDate:yyyy-MM-dd}'
-                and rr.RatingType = {(int)request.RatingType}
-            group by r.ReplayId, r.CommandersTeam1, r.CommandersTeam2, r.WinnerTeam
-            having abs(avg(rpr1.Rating) - avg(rpr2.Rating)) < {request.MaxGap};
+            WHERE r.GameTime >= '{fromDate:yyyy-MM-dd}' " + 
+                (toDate == DateTime.Today ? "" : $@"and r.GameTime < '{toDate:yyyy-MM-dd}' ") +
+                (request.WithoutLeavers ? "and rr.LeaverType = 0 " : "") +
+                $@"and rr.RatingType = {(int)request.RatingType}
+            group by r.ReplayId, r.CommandersTeam1, r.CommandersTeam2, r.WinnerTeam,
+                r.ReplayHash, r.Maxleaver, r.GameTime " +
+                (request.MaxGap > 0 ? $@"having abs(avg(rpr1.Rating) - avg(rpr2.Rating)) < {request.MaxGap}" : "") +
+            $@"order by r.GameTime desc
+            limit {request.Take}
+            offset {request.Skip};
         ";
 
         using MySqlConnection conn = new(Data.MysqlConnectionString);
-        await conn.OpenAsync();
+        await conn.OpenAsync(token);
 
         using MySqlCommand cmd = new(sqlCommand, conn);
         cmd.CommandTimeout = 120;
-        using MySqlDataReader reader = await cmd.ExecuteReaderAsync();
+        using MySqlDataReader reader = await cmd.ExecuteReaderAsync(token);
 
         List<ReplayCmdrInfo> result = new();
 
-        while (await reader.ReadAsync())
+        while (await reader.ReadAsync(token))
         {
             ReplayCmdrInfo replayCmdrInfo = new()
             {
                 ReplayId = reader.GetInt32("ReplayId"),
+                ReplayHash = reader.GetString("ReplayHash"),
+                GameTime = reader.GetDateTime("GameTime"),
+                Maxleaver = reader.GetInt32("Maxleaver"),
                 Team1 = reader.GetString("CommandersTeam1"),
                 Team2 = reader.GetString("CommandersTeam2"),
                 WinnerTeam = reader.GetInt32("WinnerTeam"),
@@ -70,38 +103,3 @@ public partial class StatsService
         return result;
     }
 }
-
-public record ReplayCmdrInfo
-{
-    public int ReplayId { get; set; }
-    public float Rating1 { get; set; }
-    public float Rating2 { get; set; }
-    public float AvgGain { get; set; }
-    public string Team1 { get; set; } = string.Empty;
-    public string Team2 { get; set; } = string.Empty;
-    public int WinnerTeam { get; set; }
-    public string Ratings { get; set; } = string.Empty;
-}
-
-
-public record CmdrRating
-{
-    public int GamePos { get; set; }
-    public float Rating { get; set; }
-}
-
-public record CmdrInfoRequest
-{
-    public RatingType RatingType { get; set; } = RatingType.Cmdr;
-    public TimePeriod TimePeriod { get; set; } = TimePeriod.Patch2_71;
-    public Commander Interest { get; set; } = Commander.Swann;
-    public int MaxGap { get; set; } = 200;
-    public int MinRating { get; set; }
-    public int MaxRating { get; set; }
-}
-
-public record CmdrInfoResult
-{
-
-}
-
