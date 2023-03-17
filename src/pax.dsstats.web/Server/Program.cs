@@ -103,8 +103,15 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
+    // var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+    // mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
+
+    // var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+    // var list = statsService.GetCmdrPlayerInfos(new()).GetAwaiter().GetResult();
+    // foreach (var l in list)
+    // {
+    //     Console.WriteLine(l);
+    // }
 }
 
 // Configure the HTTP request pipeline.

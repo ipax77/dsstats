@@ -262,5 +262,41 @@ namespace pax.dsstats.web.Server.Controllers.v5
             catch (OperationCanceledException) { }
             return NoContent();
         }
+
+        [HttpPost]
+        [Route("GetCmdrReplayInfosCount")]
+        public async Task<int> GetCmdrReplayInfosCount(CmdrInfoRequest request, CancellationToken token)
+        {
+            try 
+            {
+                return await statsService.GetCmdrReplayInfosCount(request, token);
+            }
+            catch (OperationCanceledException) { }
+            return 0;
+        }        
+
+        [HttpPost]
+        [Route("GetCmdrReplayInfos")]
+        public async Task<ActionResult<List<ReplayCmdrInfo>>> GetCmdrReplayInfos(CmdrInfoRequest request, CancellationToken token)
+        {
+            try 
+            {
+                return await statsService.GetCmdrReplayInfos(request, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
+        }
+
+        [HttpPost]
+        [Route("GetCmdrPlayerInfos")]
+        public async Task<ActionResult<List<CmdrPlayerInfo>>> GetCmdrPlayerInfos(CmdrInfoRequest request, CancellationToken token)
+        {
+            try 
+            {
+                return await statsService.GetCmdrPlayerInfos(request, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
+        }        
     }
 }

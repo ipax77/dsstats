@@ -1,0 +1,133 @@
+@using Microsoft.AspNetCore.Components.Forms;
+@using pax.dsstats.shared;
+@implements IDisposable
+
+<EditForm EditContext="editContext">
+    <div class="row">
+        <div class="col-auto">
+            <label class="form-label">
+                Rating Type
+                <span class="oi oi-info pointer ms-2" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/Mmr-calculation#rating-types'"></span>
+                <InputSelect class="form-select" @bind-Value="Request.RatingType">
+                    @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+                    {
+                        @if (ratingType == RatingType.None)
+                        {
+                            continue;
+                        }
+                        <option value="@ratingType">@Data.GetRatingTypeLongName(ratingType)</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Time Period
+                <InputSelect class="form-select" @bind-Value="Request.TimePeriod">
+                    @foreach (TimePeriod time in Data.GetTimePeriods(Data.TimePeriodGet.NoNone))
+                    {
+                        if ((int)time > 4)
+                        {
+                            continue;
+                        }
+                        <option value="@time">@Data.GetTimePeriodLongName(time)</option>
+                    }
+                    <option value="@TimePeriod.Patch2_71">@Data.GetTimePeriodLongName(TimePeriod.Patch2_71)</option>
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Commander
+                <InputSelect class="form-select" @bind-Value="Request.Interest">
+                    @if (Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)
+                    {
+                        @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                        {
+                            @if (cmdr == Commander.None || (int)cmdr > 3)
+                            {
+                                continue;
+                            }
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                    else if (Request.RatingType == RatingType.Cmdr || Request.RatingType == RatingType.CmdrTE)
+                    {
+                        @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                        {
+                            @if (cmdr == Commander.None 
+                                || cmdr == Commander.Protoss || cmdr == Commander.Terran || cmdr == Commander.Zerg)
+                            {
+                                continue;
+                            }
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                    else
+                    {
+                        <option value="@Commander.None">@Commander.None</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Max rating gap between teams (0 = disabled)
+                <InputNumber class="form-control" @bind-Value="Request.MaxGap" />
+            </label>
+        </div>
+        <div class="col-auto">
+            <div class="form-check form-switch">
+                <label class="form-check-label">
+                    WithoutLeavers
+                    <InputCheckbox class="form-check-input" @bind-Value="Request.WithoutLeavers">
+                    </InputCheckbox>
+                </label>
+            </div>
+        </div>        
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public pax.dsstats.shared.CmdrInfoRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    private EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(Request);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        if (e.FieldIdentifier.FieldName == "RatingType")
+        {
+            if (Request.RatingType == RatingType.Cmdr || Request.RatingType == RatingType.CmdrTE)
+            {
+                if ((int)Request.Interest <= 3)
+                {
+                    Request.Interest = Commander.Abathur;
+                }
+            }
+            else
+            {
+                if ((int)Request.Interest > 3)
+                {
+                    Request.Interest = Commander.Terran;
+                }
+            }
+        }
+        OnRequestChanged.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}
