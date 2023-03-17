@@ -36,3 +36,13 @@ public record ReplayCmdrInfo
     public Commander[] Cmdrs2 => Team2.Split('|', StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s)).Cast<Commander>().ToArray();    
 }
 
+public record CmdrPlayerInfo
+{
+    public string Name { get; set; } = string.Empty;
+    public int ToonId { get; set; }
+    public int RegionId { get; set; }
+    public int Count { get; set; }
+    public int Wins { get; set; }
+    public double AvgGain { get; set; }
+    public double AvgRating { get; set; }
+}
