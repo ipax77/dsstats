@@ -26,8 +26,13 @@
                 <InputSelect class="form-select" @bind-Value="Request.TimePeriod">
                     @foreach (TimePeriod time in Data.GetTimePeriods(Data.TimePeriodGet.NoNone))
                     {
+                        if ((int)time > 4)
+                        {
+                            continue;
+                        }
                         <option value="@time">@Data.GetTimePeriodLongName(time)</option>
                     }
+                    <option value="@TimePeriod.Patch2_71">@Data.GetTimePeriodLongName(TimePeriod.Patch2_71)</option>
                 </InputSelect>
             </label>
         </div>

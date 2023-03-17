@@ -45,7 +45,10 @@
             && Enum.TryParse(typeof(TimePeriod), TimePeriod, out var timePeriodObj)
             && timePeriodObj is TimePeriod timePeriod)
         {
-            request.TimePeriod = timePeriod;
+            if ((int)timePeriod <= 4 || timePeriod == shared.TimePeriod.Patch2_71)
+            {
+                request.TimePeriod = timePeriod;
+            }
         }
 
         if (!String.IsNullOrEmpty(Interest)
