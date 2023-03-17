@@ -8,6 +8,7 @@
         <thead class="user-select-none">
             <CascadingValue Value="orders">
                 <tr>
+                    <th>#</th>
                     <th scope="col" class="pointer" @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.RegionId)))">
                         <SortArrow Property="@nameof(CmdrPlayerInfo.RegionId)">
                             <div class="text-center">
@@ -15,12 +16,18 @@
                             </div>
                         </SortArrow>
                     </th>
-                    <th scope="col" class="pointer text-info"
+                    <th scope="col" class="pointer"
                         @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.Name)))">
                         <SortArrow Property="@nameof(CmdrPlayerInfo.Name)">
                             Name
                         </SortArrow>
                     </th>
+                    <th scope="col" class="pointer text-info"
+                        @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.Strength)))">
+                        <SortArrow Property="@nameof(CmdrPlayerInfo.Strength)">
+                            Strength
+                        </SortArrow>
+                    </th>                    
                     <th scope="col" class="pointer" @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.Count)))">
                         <SortArrow Property="@nameof(CmdrPlayerInfo.Count)">
                             Games
@@ -51,10 +58,12 @@
             {
                 <tr class="pointer"
                     @onclick="e => OnPlayerDetailsRequest.InvokeAsync(new() { Name = info.Name, ToonId = info.ToonId, RegionId = info.RegionId })">
+                    <td>@info.Pos</td>
                     <td>@Data.GetRegionString(info.RegionId)</td>
                     <td>
-                        <span class="text-truncate text-info" style="display: block; width: 130px;">@info.Name</span>
+                        <span class="text-truncate fw-bold" style="display: block; width: 130px;">@info.Name</span>
                     </td>
+                    <td class="text-info">@info.Strength.ToString("N2", CultureInfo.InvariantCulture)</td>
                     <td>@info.Count</td>
                     <td>@HelperService.GetPercentageString(info.Wins, info.Count)</td>
                     <td class="text-warning">@info.AvgRating</td>
@@ -77,13 +86,69 @@
     public EventCallback<RequestNames> OnPlayerDetailsRequest { get; set; }
 
     private List<TableOrder> orders = new()
-{
-new TableOrder()
-{
-Property = nameof(CmdrPlayerInfo.Count)
-}
-};
+    {
+        new TableOrder()
+        {
+            Property = nameof(CmdrPlayerInfo.Strength)
+        }
+    };
 
+    protected override void OnInitialized()
+    {
+        SetStrength(CmdrPlayerInfos);
+        base.OnInitialized();
+    }
+
+
+    public void SetStrength(List<CmdrPlayerInfo> items)
+    {
+        if (!items.Any())
+        {
+            return;
+        }
+
+        double weightMatchups = 1;
+        double weightWinrate = 5;
+        double weightRating = 8;
+        double weightGain = 8;
+
+        double minMatchups = items.Min(m => m.Count);
+        double maxMatchups = items.Max(m => m.Count);
+
+        var winrates = items.Select(s => s.Wins * 100.0 / (double)s.Count).ToList();
+        double minWinrate = winrates.Min();
+        double maxWinrate = winrates.Max();
+
+        double minRating = items.Min(m => m.AvgRating);
+        double maxRating = items.Max(m => m.AvgRating);
+
+        double minGain = items.Min(m => m.AvgGain);
+        double maxGain = items.Max(m => m.AvgGain);
+
+        foreach (var item in items)
+        {
+            var normalizedMatchups = (item.Count - minMatchups) / (maxMatchups - minMatchups);
+            var normalizedWinrate = (item.Wins * 100.0 / (double)item.Count - minWinrate) / (maxWinrate - minWinrate);
+            var normalizedRating = (item.AvgRating - minRating) / (maxRating - minRating);
+            var normalizedGain = (item.AvgGain - minGain) / (maxGain - minGain);
+
+            double p = item.Wins / (double)item.Count;
+            double stdErr = Math.Sqrt(p * (1 - p) / item.Count);
+
+            item.Strength =
+                  weightMatchups * normalizedMatchups
+                + weightWinrate * normalizedWinrate
+                + weightRating * normalizedRating
+                + weightGain * normalizedGain;
+
+        }
+
+        int i = 1;
+        foreach (var item in items.OrderByDescending(o => o.Strength))
+        {
+            item.Pos = i++;
+        }
+    }    
 
     private void SortList(MouseEventArgs e, string property)
     {
@@ -143,5 +208,4 @@ Property = nameof(CmdrPlayerInfo.Count)
         }
         return list.ToList();
     }
-
 }
