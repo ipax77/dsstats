@@ -308,7 +308,12 @@
         <div class="col-auto">
             <div class="d-flex" style="max-width: 675px;">
                 <div>
-                    <h4>Players who played <span class="text-warning">@Request.Interest</span> and their success <span class="text-light" style="font-size: 1rem;">(Games >= 10)</span></h4>
+                    <h4>
+                        Players who played 
+                        <span class="text-warning">@Request.Interest </span>
+                        and their success 
+                        <span class="text-light" style="font-size: 1rem;"> (Games >= 10)</span>
+                    </h4>
                 </div>                
                 <div class="ms-auto">
                     &Oslash;
@@ -317,7 +322,17 @@
                     </span>
                 </div>
             </div>
-            <CmdrPlayerInfoComponent CmdrPlayerInfos="playerInfos" OnPlayerDetailsRequest="PlayerDetailsRequest" />
+            <CmdrPlayerInfoComponent 
+                @ref="cmdrPlayerInfoComponent"
+                CmdrPlayerInfos="playerInfos"
+                OnPlayerDetailsRequest="PlayerDetailsRequest" />
+        </div>
+    </div>
+    <div class="col-auto">
+        <div class="ms-2 mt-2 p-2 bg-dark" style="max-width: 1000px;">
+            <p>
+                The <b>Strength</b> value is a measure of a players's overall effectiveness at playing <span class="text-warning">@Request.Interest</span>, calculated based on factors such as their win rate, average rating, and matchup frequency. It gives an indication of how well a player is performing with the commander, with higher values indicating greater strength.
+            </p>
         </div>
     </div>
 </div>
@@ -359,6 +374,8 @@
 
     private RequestNames? Interest;
 
+    CmdrPlayerInfoComponent? cmdrPlayerInfoComponent;
+
     protected override async Task OnInitializedAsync()
     {
         await SetCount(Request);
@@ -372,6 +389,7 @@
         replaysCount = await dataService.GetCmdrReplayInfosCount(request, cts.Token);
         isLoading = false;
         playerInfos = await dataService.GetCmdrPlayerInfos(request, cts.Token);
+        cmdrPlayerInfoComponent?.SetStrength(playerInfos);
         await InvokeAsync(() => StateHasChanged());
     }
 
