@@ -55,7 +55,7 @@ public partial class StatsService
             round(avg(rpr1.Rating)) as rating1,
             round(avg(rpr2.Rating)) as rating2,
             group_concat(distinct rprc.Rating) as ratings,
-            round(avg(distinct rprc.RatingChange)) as avgGain
+            round(avg(distinct rprc.RatingChange), 2) as avgGain
             from Replays as r
             inner join ReplayRatings as rr on rr.ReplayId = r.ReplayId
             inner join RepPlayerRatings as rpr1 on rpr1.ReplayRatingInfoId = rr.ReplayRatingId and rpr1.GamePos <= 3

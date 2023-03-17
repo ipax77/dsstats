@@ -856,5 +856,28 @@ public class DataService : IDataService
             logger.LogError($"failed getting cmdrreplayinfos: {e.Message}");
         }
         return new();
-    }    
+    }
+
+    public async Task<List<CmdrPlayerInfo>> GetCmdrPlayerInfos(CmdrInfoRequest request, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetCmdrPlayerInfos", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<List<CmdrPlayerInfo>>(cancellationToken: token) ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting CmdrPlayerInfos: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting CmdrPlayerInfos: {e.Message}");
+        }
+        return new();
+    }            
 }

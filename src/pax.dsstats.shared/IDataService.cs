@@ -48,4 +48,5 @@ public interface IDataService
     Task<FunStatsResult> GetFunStats(FunStatsRequest request, CancellationToken token);
     Task<int> GetCmdrReplayInfosCount(CmdrInfoRequest request, CancellationToken token = default);
     Task<List<ReplayCmdrInfo>> GetCmdrReplayInfos(CmdrInfoRequest request, CancellationToken token);
+    Task<List<CmdrPlayerInfo>> GetCmdrPlayerInfos(CmdrInfoRequest request, CancellationToken token = default);
 }

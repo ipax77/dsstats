@@ -5,13 +5,13 @@ namespace pax.dsstats.shared;
 
 public record CmdrInfoRequest
 {
-    public RatingType RatingType { get; set; } = RatingType.Cmdr;
-    public TimePeriod TimePeriod { get; set; } = TimePeriod.Patch2_71;
-    public Commander Interest { get; set; } = Commander.Swann;
-    public int MaxGap { get; set; } = 0;
+    public RatingType RatingType { get; set; }
+    public TimePeriod TimePeriod { get; set; }
+    public Commander Interest { get; set; }
+    public int MaxGap { get; set; }
     public int MinRating { get; set; }
     public int MaxRating { get; set; }
-    public bool WithoutLeavers { get; set; } = true;
+    public bool WithoutLeavers { get; set; }
     public int Skip { get; set; }
     public int Take { get; set; } = 20;
 }

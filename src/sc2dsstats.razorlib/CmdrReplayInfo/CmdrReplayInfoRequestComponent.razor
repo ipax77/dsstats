@@ -101,6 +101,23 @@
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
+        if (e.FieldIdentifier.FieldName == "RatingType")
+        {
+            if (Request.RatingType == RatingType.Cmdr || Request.RatingType == RatingType.CmdrTE)
+            {
+                if ((int)Request.Interest <= 3)
+                {
+                    Request.Interest = Commander.Abathur;
+                }
+            }
+            else
+            {
+                if ((int)Request.Interest > 3)
+                {
+                    Request.Interest = Commander.Terran;
+                }
+            }
+        }
         OnRequestChanged.InvokeAsync();
     }
 

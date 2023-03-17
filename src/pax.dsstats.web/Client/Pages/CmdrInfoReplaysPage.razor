@@ -1,10 +1,75 @@
-@page "/cmdrinforeplays"
+@page "/cmdrinfos"
 @using pax.dsstats.shared
+@inject NavigationManager NavigationManager
 
-<PageTitle>Cmdr Info</PageTitle>
+<PageTitle>Cmdr Infos</PageTitle>
 
-<sc2dsstats.razorlib.CmdrReplayInfo.CmdrReplayInfoComponent Request="Request" />
+<sc2dsstats.razorlib.CmdrReplayInfo.CmdrReplayInfoComponent Request="request" OnRequestChanged="RequestChanged"/>
 
 @code {
-    CmdrInfoRequest Request = new();
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? RatingType { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? TimePeriod { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Interest { get; set; }
+
+    CmdrInfoRequest request = new() 
+    {
+        RatingType = shared.RatingType.Cmdr,
+        TimePeriod = shared.TimePeriod.Past90Days,
+        Interest = Commander.Abathur,
+    };
+
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }    
+
+    private void SetRequest()
+    {
+        if (!String.IsNullOrEmpty(RatingType)
+            && Enum.TryParse(typeof(RatingType), RatingType, out object? ratingTypeObj)
+            && ratingTypeObj is RatingType ratingType)
+        {
+            request.RatingType = ratingType;
+        }
+
+        if (!String.IsNullOrEmpty(TimePeriod)
+            && Enum.TryParse(typeof(TimePeriod), TimePeriod, out var timePeriodObj)
+            && timePeriodObj is TimePeriod timePeriod)
+        {
+            request.TimePeriod = timePeriod;
+        }
+
+        if (!String.IsNullOrEmpty(Interest)
+            && Enum.TryParse(typeof(Commander), Interest, out var interestObj)
+            && interestObj is Commander interest)
+        {
+            if (interest != Commander.None)
+            {
+                request.Interest = interest;
+            }
+        }
+    }
+    private void RequestChanged(CmdrInfoRequest request)
+    {
+        Dictionary<string, object?> queryDic = new();
+
+        queryDic.Add("RatingType", request.RatingType.ToString());
+        queryDic.Add("TimePeriod", request.TimePeriod.ToString());
+        queryDic.Add("Interest", request.Interest.ToString());
+
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters(
+                new Dictionary<string, object?>(queryDic)
+            )
+        );
+    }  
 }

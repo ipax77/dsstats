@@ -286,5 +286,17 @@ namespace pax.dsstats.web.Server.Controllers.v5
             catch (OperationCanceledException) { }
             return NoContent();
         }
+
+        [HttpPost]
+        [Route("GetCmdrPlayerInfos")]
+        public async Task<ActionResult<List<CmdrPlayerInfo>>> GetCmdrPlayerInfos(CmdrInfoRequest request, CancellationToken token)
+        {
+            try 
+            {
+                return await statsService.GetCmdrPlayerInfos(request, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
+        }        
     }
 }
