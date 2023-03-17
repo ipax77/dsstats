@@ -811,4 +811,73 @@ public class DataService : IDataService
         }
         return new();
     }
+
+    public async Task<int> GetCmdrReplayInfosCount(CmdrInfoRequest request, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetCmdrReplayInfosCount", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<int>(cancellationToken: token);
+            }
+            else
+            {
+                logger.LogError($"failed getting cmdrreplayinfos count: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting cmdrreplayinfos count: {e.Message}");
+        }
+        return new();
+    }    
+
+    public async Task<List<ReplayCmdrInfo>> GetCmdrReplayInfos(CmdrInfoRequest request, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetCmdrReplayInfos", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<List<ReplayCmdrInfo>>(cancellationToken: token) ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting cmdrreplayinfos: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting cmdrreplayinfos: {e.Message}");
+        }
+        return new();
+    }
+
+    public async Task<List<CmdrPlayerInfo>> GetCmdrPlayerInfos(CmdrInfoRequest request, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetCmdrPlayerInfos", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<List<CmdrPlayerInfo>>(cancellationToken: token) ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting CmdrPlayerInfos: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting CmdrPlayerInfos: {e.Message}");
+        }
+        return new();
+    }            
 }
