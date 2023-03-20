@@ -8,6 +8,7 @@
         <thead class="user-select-none">
             <CascadingValue Value="orders">
                 <tr>
+                    <th></th>
                     <th>#</th>
                     <th scope="col" class="pointer" @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.RegionId)))">
                         <SortArrow Property="@nameof(CmdrPlayerInfo.RegionId)">
@@ -58,6 +59,9 @@
             {
                 <tr class="pointer"
                     @onclick="e => OnPlayerDetailsRequest.InvokeAsync(new() { Name = info.Name, ToonId = info.ToonId, RegionId = info.RegionId })">
+                    <td>
+                        <span class="oi oi-list text-primary" @onclick:stopPropagation @onclick="e => OnPlayerReplaysRequest.InvokeAsync(new() { Name = info.Name, ToonId = info.ToonId, RegionId = info.RegionId })"></span>
+                    </td>
                     <td>@info.Pos</td>
                     <td>@Data.GetRegionString(info.RegionId)</td>
                     <td>
@@ -84,6 +88,9 @@
 
     [Parameter]
     public EventCallback<RequestNames> OnPlayerDetailsRequest { get; set; }
+
+    [Parameter]
+    public EventCallback<RequestNames> OnPlayerReplaysRequest { get; set; }
 
     private List<TableOrder> orders = new()
     {

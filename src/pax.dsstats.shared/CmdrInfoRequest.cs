@@ -5,6 +5,19 @@ namespace pax.dsstats.shared;
 
 public record CmdrInfoRequest
 {
+    public CmdrInfoRequest()
+    {
+
+    }
+
+    public CmdrInfoRequest(CmdrInfosRequest request)
+    {
+        RatingType = request.RatingType;
+        TimePeriod = request.TimePeriod;
+        Interest = request.Interest;
+        WithoutLeavers = request.WithoutLeavers;
+    }
+
     public RatingType RatingType { get; set; }
     public TimePeriod TimePeriod { get; set; }
     public Commander Interest { get; set; }
@@ -49,4 +62,43 @@ public record CmdrPlayerInfo
     public int Pos { get; set; }
     [JsonIgnore]
     public double Strength { get; set; }
+}
+
+public record CmdrInfosRequest
+{
+    public RatingType RatingType { get; set; }
+    public TimePeriod TimePeriod { get; set; }
+    public Commander Interest { get; set; }
+    public int MinExp2Win { get; set; }
+    public int MaxExp2Win { get; set; }
+    public bool WithoutLeavers { get; set; }
+    public int ToonId { get; set; }
+    public int Skip { get; set; }
+    public int Take { get; set; } = 20;
+}
+
+public record ReplayCmdrListDto
+{
+    public string ReplayHash { get; init; } = string.Empty;
+    public DateTime GameTime { get; init; }
+    public int Duration { get; init; }
+    public string CommandersTeam1 { get; init; } = string.Empty;
+    public string CommandersTeam2 { get; init; } = string.Empty;
+    public int WinnerTeam { get; init; }
+    public int Maxleaver { get; init; }
+    public ReplayRatingCmdrDto ReplayRatingInfo { get; init; } = new();
+}
+
+public record ReplayRatingCmdrDto
+{
+    public float ExpectationToWin { get; init; }
+    public List<RepPlayerRatingCmdrDto> RepPlayerRatings { get; init; } = new();
+}
+
+
+public record RepPlayerRatingCmdrDto
+{
+    public int GamePos { get; init; }
+    public float Rating { get; init; }
+    public float RatingChange { get; init; }
 }

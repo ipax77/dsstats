@@ -1,10 +1,11 @@
-@page "/cmdrinfos"
+@page "/cmdrreplays"
 @using pax.dsstats.shared
 @inject NavigationManager NavigationManager
 
 <PageTitle>Cmdr Infos</PageTitle>
 
-<sc2dsstats.razorlib.CmdrReplayInfo.CmdrReplayInfoComponent Request="request" OnRequestChanged="RequestChanged"/>
+@* <sc2dsstats.razorlib.CmdrReplayInfo.CmdrReplayInfoComponent Request="request" OnRequestChanged="RequestChanged"/> *@
+<sc2dsstats.razorlib.CmdrReplays.CmdrReplaysComponent Request="request" OnRequestChanged="RequestChanged" />
 
 @code {
     [Parameter]
@@ -19,7 +20,7 @@
     [SupplyParameterFromQuery]
     public string? Interest { get; set; }
 
-    CmdrInfoRequest request = new() 
+    CmdrInfosRequest request = new() 
     {
         RatingType = shared.RatingType.Cmdr,
         TimePeriod = shared.TimePeriod.Past90Days,
@@ -61,7 +62,7 @@
             }
         }
     }
-    private void RequestChanged(CmdrInfoRequest request)
+    private void RequestChanged(CmdrInfosRequest request)
     {
         Dictionary<string, object?> queryDic = new();
 

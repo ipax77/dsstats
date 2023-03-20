@@ -879,5 +879,51 @@ public class DataService : IDataService
             logger.LogError($"failed getting CmdrPlayerInfos: {e.Message}");
         }
         return new();
-    }            
+    }      
+
+    public async Task<int> GetCmdrReplaysCount(CmdrInfosRequest request, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetCmdrReplaysCount", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<int>(cancellationToken: token);
+            }
+            else
+            {
+                logger.LogError($"failed getting CmdrReplaysCount count: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting CmdrReplaysCount count: {e.Message}");
+        }
+        return new();
+    }    
+
+    public async Task<List<ReplayCmdrListDto>> GetCmdrReplays(CmdrInfosRequest request, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}GetCmdrReplays", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<List<ReplayCmdrListDto>>(cancellationToken: token) ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting CmdrReplays: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting CmdrReplays: {e.Message}");
+        }
+        return new();
+    }          
 }
