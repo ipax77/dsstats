@@ -111,6 +111,7 @@ public static partial class MmrService
         {
             RatingType = replayData.RatingType,
             LeaverType = replayData.LeaverType,
+            ExpectationToWin = MathF.Round((float)replayData.WinnerTeamData.ExpectedResult, 2),
             ReplayId = replayData.ReplayDsRDto.ReplayId,
             RepPlayerRatings = mmrChanges1.Concat(mmrChanges2).ToList()
         };

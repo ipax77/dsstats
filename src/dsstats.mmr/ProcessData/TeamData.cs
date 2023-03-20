@@ -11,21 +11,6 @@ public record TeamData
 
         Players = replayPlayers.Select(p => new PlayerData(replay, p)).ToArray();
     }
-    public TeamData(bool isWinner,
-                    double mmr,
-                    double confidence,
-                    double cmdrComboMmr,
-                    double expectedResult,
-                    PlayerData[] players)
-    {
-        IsWinner = isWinner;
-        ActualResult = isWinner ? 1 : 0;
-        Mmr = mmr;
-        Confidence = confidence;
-        CmdrComboMmr = cmdrComboMmr;
-        ExpectedResult = expectedResult;
-        Players = players;
-    }
 
     public PlayerData[] Players { get; init; }
 
