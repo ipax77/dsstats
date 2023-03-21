@@ -396,4 +396,14 @@ public partial class DataService : IDataService
     {
         throw new NotImplementedException();
     }
+
+    public Task<int> GetCmdrReplaysCount(CmdrInfosRequest request, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<List<ReplayCmdrListDto>> GetCmdrReplays(CmdrInfosRequest request, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
 }

@@ -1,25 +1,29 @@
-@page "/cmdrinfos"
+@page "/cmdrreplays"
 @using pax.dsstats.shared
 @inject NavigationManager NavigationManager
 
 <PageTitle>Cmdr Infos</PageTitle>
 
-<sc2dsstats.razorlib.CmdrReplayInfo.CmdrReplayInfoComponent Request="request" OnRequestChanged="RequestChanged"/>
+<sc2dsstats.razorlib.CmdrReplays.CmdrReplaysComponent Request="request" OnRequestChanged="RequestChanged" />
 
 @code {
     [Parameter]
     [SupplyParameterFromQuery]
-    public string? RatingType { get; set; }
+    public string? Rt { get; set; }
 
     [Parameter]
     [SupplyParameterFromQuery]
-    public string? TimePeriod { get; set; }
+    public string? Tp { get; set; }
 
     [Parameter]
     [SupplyParameterFromQuery]
-    public string? Interest { get; set; }
+    public string? Int { get; set; }
 
-    CmdrInfoRequest request = new() 
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? Id { get; set; }
+
+    CmdrInfosRequest request = new() 
     {
         RatingType = shared.RatingType.Cmdr,
         TimePeriod = shared.TimePeriod.Past90Days,
@@ -34,15 +38,15 @@
 
     private void SetRequest()
     {
-        if (!String.IsNullOrEmpty(RatingType)
-            && Enum.TryParse(typeof(RatingType), RatingType, out object? ratingTypeObj)
+        if (!String.IsNullOrEmpty(Rt)
+            && Enum.TryParse(typeof(RatingType), Rt, out object? ratingTypeObj)
             && ratingTypeObj is RatingType ratingType)
         {
             request.RatingType = ratingType;
         }
 
-        if (!String.IsNullOrEmpty(TimePeriod)
-            && Enum.TryParse(typeof(TimePeriod), TimePeriod, out var timePeriodObj)
+        if (!String.IsNullOrEmpty(Tp)
+            && Enum.TryParse(typeof(TimePeriod), Tp, out var timePeriodObj)
             && timePeriodObj is TimePeriod timePeriod)
         {
             if ((int)timePeriod <= 4 || timePeriod == shared.TimePeriod.Patch2_71)
@@ -51,8 +55,8 @@
             }
         }
 
-        if (!String.IsNullOrEmpty(Interest)
-            && Enum.TryParse(typeof(Commander), Interest, out var interestObj)
+        if (!String.IsNullOrEmpty(Int)
+            && Enum.TryParse(typeof(Commander), Int, out var interestObj)
             && interestObj is Commander interest)
         {
             if (interest != Commander.None)
@@ -60,14 +64,27 @@
                 request.Interest = interest;
             }
         }
+
+        if (Id != null)
+        {
+            request.ToonId = Id.Value;
+        }
     }
-    private void RequestChanged(CmdrInfoRequest request)
+    private void RequestChanged(CmdrInfosRequest request)
     {
         Dictionary<string, object?> queryDic = new();
 
-        queryDic.Add("RatingType", request.RatingType.ToString());
-        queryDic.Add("TimePeriod", request.TimePeriod.ToString());
-        queryDic.Add("Interest", request.Interest.ToString());
+        queryDic.Add("Rt", request.RatingType.ToString());
+        queryDic.Add("Tp", request.TimePeriod.ToString());
+        queryDic.Add("Int", request.Interest.ToString());
+        if (request.ToonId > 0)
+        {
+            queryDic.Add("Id", request.ToonId);
+        }
+        else
+        {
+            queryDic.Add("Id", null);
+        }
 
         NavigationManager.NavigateTo(
             NavigationManager.GetUriWithQueryParameters(
