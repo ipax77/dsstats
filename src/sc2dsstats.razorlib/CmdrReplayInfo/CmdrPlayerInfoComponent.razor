@@ -71,7 +71,16 @@
                     <td>@info.Pos</td>
                     <td>@Data.GetRegionString(info.RegionId)</td>
                     <td>
-                        <span class="text-truncate fw-bold" style="display: block; width: 110px;">@info.Name</span>
+                        <span class="text-truncate fw-bold" style="display: block; width: 110px;">
+                            @if (string.IsNullOrEmpty(searchName))
+                            {
+                                @info.Name
+                            }
+                            else
+                            {
+                                <StringHighlight Text="@info.Name" SearchString="@searchName" />
+                            }
+                        </span>
                     </td>
                     <td class="text-info">@info.Strength.ToString("N2", CultureInfo.InvariantCulture)</td>
                     <td>@info.Count</td>
@@ -107,6 +116,7 @@
     };
 
     private int interestToonId = 0;
+    string searchName = string.Empty;
 
     protected override void OnInitialized()
     {
@@ -117,6 +127,7 @@
 
     public void SetStrength(List<CmdrPlayerInfo> items, int toonId = 0)
     {
+        searchName = string.Empty;
         interestToonId = toonId;
         if (!items.Any())
         {
@@ -194,6 +205,12 @@
         }
     }
 
+    public void SetSearch(string searchName)
+    {
+        this.searchName = searchName;
+        InvokeAsync(() => StateHasChanged());
+    }
+
     private List<CmdrPlayerInfo> GetSortedList()
     {
         var list = CmdrPlayerInfos.AsQueryable();
@@ -222,6 +239,15 @@
                 }
             }
         }
-        return list.ToList();
+        if (string.IsNullOrEmpty(searchName))
+        {
+            return list.ToList();
+        }
+        else
+        {
+            return list
+                .Where(x => x.Name.ToUpper().Contains(searchName.ToUpper()))
+                .ToList();
+        }
     }
 }

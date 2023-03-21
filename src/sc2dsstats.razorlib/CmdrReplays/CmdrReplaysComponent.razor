@@ -370,13 +370,16 @@
                         Players who played
                         <span class="text-warning">@Request.Interest </span>
                         and their success
-                        <span class="text-light" style="font-size: 1rem;"> (&sum; > 10)</span>
+                        <span class="text-light" style="font-size: 1rem;"> (&sum; > @(Request.RatingType == RatingType.CmdrTE ? "1" : "9"))</span>
                     </h4>
                 </div>
                 <div>
                     <label class="form-label ms-2" style="max-width: 160px;">
-                        <input type="text" class="form-control" placeholder="Search Name" @onchange="SearchName" />
+                        <input type="text" class="form-control" placeholder="Search Name" value="@searchName" @oninput="SearchName" />
                     </label>
+                </div>
+                <div>
+                    <span class="oi oi-x text-danger pointer" @onclick="ResetSearchName"></span>
                 </div>
                 <div class="ms-auto">
                     &Oslash;
@@ -570,7 +573,15 @@
 
     public void SearchName(ChangeEventArgs e)
     {
-        
+        searchName = e.Value?.ToString() ?? "";
+        cmdrPlayerInfoComponent?.SetSearch(searchName);
+
+    }
+
+    private void ResetSearchName()
+    {
+        searchName = string.Empty;
+        cmdrPlayerInfoComponent?.SetSearch(searchName);
     }
 
     public void PlayerDetailsRequest(RequestNames requestNames)

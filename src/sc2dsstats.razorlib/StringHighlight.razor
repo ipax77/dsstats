@@ -1,0 +1,43 @@
+@using System.Text;
+@using System.Text.RegularExpressions;
+
+@foreach (var ent in GenerateSplitText())
+{
+    <span>@ent.Key</span><span class="text-warning">@ent.Value</span>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string SearchString { get; set; } = string.Empty;
+
+
+    private List<KeyValuePair<string, string>> GenerateSplitText()
+    {
+        if (string.IsNullOrEmpty(SearchString) || string.IsNullOrEmpty(Text))
+        {
+            return new() { new(Text, "") };
+        }
+
+        List<KeyValuePair<string, string>> splitText = new();
+        Regex rx = new Regex(SearchString, RegexOptions.IgnoreCase);
+
+        int searchLength = SearchString.Length;
+        int index = 0;
+        foreach (Match match in rx.Matches(Text))
+        {
+            int i = match.Index;
+            splitText.Add(new(Text[index..i],Text[i..(i + searchLength)]));
+            index = i + searchLength;
+        }
+
+        if (index < Text.Length)
+        {
+            splitText.Add(new(Text[index..], ""));
+        }
+
+        return splitText;
+    }
+}
