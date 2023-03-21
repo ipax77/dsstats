@@ -75,6 +75,7 @@ public partial class RatingRepository
             sbReplay.Append($"{replayAppendId},");
             sbReplay.Append($"{(int)replayRatingDto.RatingType},");
             sbReplay.Append($"{(int)replayRatingDto.LeaverType},");
+            sbReplay.Append($"{replayRatingDto.ExpectationToWin.ToString(CultureInfo.InvariantCulture)},");
             sbReplay.Append($"{replayRatingDto.ReplayId}");
             sbReplay.Append(Environment.NewLine);
 

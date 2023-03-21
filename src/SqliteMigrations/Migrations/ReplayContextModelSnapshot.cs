@@ -15,7 +15,7 @@ namespace SqliteMigrations.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "6.0.14");
+            modelBuilder.HasAnnotation("ProductVersion", "6.0.15");
 
             modelBuilder.Entity("pax.dsstats.dbng.BattleNetInfo", b =>
                 {
@@ -645,6 +645,9 @@ namespace SqliteMigrations.Migrations
                     b.Property<int>("ReplayRatingId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
+
+                    b.Property<float>("ExpectationToWin")
+                        .HasColumnType("REAL");
 
                     b.Property<int>("LeaverType")
                         .HasColumnType("INTEGER");

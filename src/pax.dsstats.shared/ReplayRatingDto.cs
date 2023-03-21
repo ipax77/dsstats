@@ -4,6 +4,7 @@ public record ReplayRatingDto
 {
     public RatingType RatingType { get; set; }
     public LeaverType LeaverType { get; init; }
+    public float ExpectationToWin { get; init; } // WinnerTeam
     public int ReplayId { get; set; }
     public List<RepPlayerRatingDto> RepPlayerRatings { get; init; } = new();
 }

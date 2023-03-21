@@ -14,6 +14,12 @@ public partial class StatsService
             toDate = toDate.AddDays(2);
         }
 
+        int limit = 10;
+        if (request.RatingType == RatingType.CmdrTE)
+        {
+            limit = 2;
+        }
+
 #pragma warning disable CS8602 // Dereference of a possibly null reference.        
         var group = from pr in context.PlayerRatings
                       from rp in pr.Player.ReplayPlayers
@@ -23,7 +29,7 @@ public partial class StatsService
                         && rp.Replay.GameTime >= fromDate
                         && rp.Replay.GameTime < toDate
                       group new { pr.Player, rp } by new { rp.Player.Name, rp.Player.ToonId, rp.Player.RegionId } into g
-                      where g.Count() >= 10
+                      where g.Count() >= limit
                       select new CmdrPlayerInfo()
                       {
                         Name = g.Key.Name,

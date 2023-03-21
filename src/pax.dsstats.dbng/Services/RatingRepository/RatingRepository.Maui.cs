@@ -190,12 +190,12 @@ public partial class RatingRepository
 
         command.CommandText =
             $@"
-                INSERT INTO {nameof(ReplayContext.ReplayRatings)} ({nameof(ReplayRating.ReplayRatingId)}, {nameof(ReplayRating.RatingType)},{nameof(ReplayRating.LeaverType)},{nameof(ReplayRating.ReplayId)})
-                VALUES ($value1,$value2,$value3,$value4)
+                INSERT INTO {nameof(ReplayContext.ReplayRatings)} ({nameof(ReplayRating.ReplayRatingId)}, {nameof(ReplayRating.RatingType)},{nameof(ReplayRating.LeaverType)},{nameof(ReplayRating.ExpectationToWin)},{nameof(ReplayRating.ReplayId)})
+                VALUES ($value1,$value2,$value3,$value4,$value5)
             ";
 
         List<SqliteParameter> parameters = new List<SqliteParameter>();
-        for (int i = 1; i <= 4; i++)
+        for (int i = 1; i <= 5; i++)
         {
             var parameter = command.CreateParameter();
             parameter.ParameterName = $"$value{i}";
@@ -211,7 +211,8 @@ public partial class RatingRepository
             parameters[0].Value = replayRatingAppendId;
             parameters[1].Value = (int)replayRatingDto.RatingType;
             parameters[2].Value = (int)replayRatingDto.LeaverType;
-            parameters[3].Value = replayRatingDto.ReplayId;
+            parameters[3].Value = replayRatingDto.ExpectationToWin;
+            parameters[4].Value = replayRatingDto.ReplayId;
             await command.ExecuteNonQueryAsync();
         }
         await transaction.CommitAsync();

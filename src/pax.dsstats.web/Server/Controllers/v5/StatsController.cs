@@ -297,6 +297,30 @@ namespace pax.dsstats.web.Server.Controllers.v5
             }
             catch (OperationCanceledException) { }
             return NoContent();
-        }        
+        }  
+
+        [HttpPost]
+        [Route("GetCmdrReplaysCount")]
+        public async Task<ActionResult<int>> GetCmdrReplaysCount(CmdrInfosRequest request, CancellationToken token)
+        {
+            try 
+            {
+                return await statsService.GetCmdrReplaysCount(request, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
+        }
+
+        [HttpPost]
+        [Route("GetCmdrReplays")]
+        public async Task<ActionResult<List<ReplayCmdrListDto>>> GetCmdrReplays(CmdrInfosRequest request, CancellationToken token)
+        {
+            try 
+            {
+                return await statsService.GetCmdrReplays(request, token);
+            }
+            catch (OperationCanceledException) { }
+            return NoContent();
+        }               
     }
 }
