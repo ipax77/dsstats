@@ -9,7 +9,11 @@
             <CascadingValue Value="orders">
                 <tr>
                     <th></th>
-                    <th>#</th>
+                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.Pos)))">
+                        <SortArrow Property="@nameof(CmdrPlayerInfo.Pos)">
+                            #
+                        </SortArrow>
+                    </th>
                     <th scope="col" class="pointer" @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.RegionId)))">
                         <SortArrow Property="@nameof(CmdrPlayerInfo.RegionId)">
                             <div class="text-center">
@@ -42,13 +46,15 @@
                     <th scope="col" class="pointer text-warning"
                         @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.AvgRating)))">
                         <SortArrow Property="@nameof(CmdrPlayerInfo.AvgRating)">
-                            AvgRating
+                            <span data-bs-toggle="tooltip" data-bs-placement="top"
+                                  data-bs-title="Average rating over all replays with the selected commander">Rating</span>
                         </SortArrow>
                     </th>
                     <th scope="col" class="pointer" style="z-index: 1;"
                         @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.AvgGain)))">
                         <SortArrow Property="@nameof(CmdrPlayerInfo.AvgGain)">
-                            AvgGain
+                            <span data-bs-toggle="tooltip" data-bs-placement="top"
+                                  data-bs-title="Average gain in rating over all replays with the selected commander">AvgGain</span>
                         </SortArrow>
                     </th>
                 </tr>
@@ -57,15 +63,15 @@
         <tbody>
             @foreach (var info in GetSortedList())
             {
-                <tr class="pointer"
+                <tr class="pointer @(interestToonId == info.ToonId ? "table-primary" : "")"
                     @onclick="e => OnPlayerDetailsRequest.InvokeAsync(new() { Name = info.Name, ToonId = info.ToonId, RegionId = info.RegionId })">
-                    <td>
-                        <span class="oi oi-list text-primary" @onclick:stopPropagation @onclick="e => OnPlayerReplaysRequest.InvokeAsync(new() { Name = info.Name, ToonId = info.ToonId, RegionId = info.RegionId })"></span>
+                    <td @onclick:stopPropagation @onclick="e => OnPlayerReplaysRequest.InvokeAsync(new() { Name = info.Name, ToonId = info.ToonId, RegionId = info.RegionId })">
+                        <span class="oi oi-list text-primary"></span>
                     </td>
                     <td>@info.Pos</td>
                     <td>@Data.GetRegionString(info.RegionId)</td>
                     <td>
-                        <span class="text-truncate fw-bold" style="display: block; width: 130px;">@info.Name</span>
+                        <span class="text-truncate fw-bold" style="display: block; width: 110px;">@info.Name</span>
                     </td>
                     <td class="text-info">@info.Strength.ToString("N2", CultureInfo.InvariantCulture)</td>
                     <td>@info.Count</td>
@@ -100,6 +106,8 @@
         }
     };
 
+    private int interestToonId = 0;
+
     protected override void OnInitialized()
     {
         SetStrength(CmdrPlayerInfos);
@@ -107,8 +115,9 @@
     }
 
 
-    public void SetStrength(List<CmdrPlayerInfo> items)
+    public void SetStrength(List<CmdrPlayerInfo> items, int toonId = 0)
     {
+        interestToonId = toonId;
         if (!items.Any())
         {
             return;

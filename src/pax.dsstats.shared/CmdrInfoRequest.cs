@@ -75,6 +75,10 @@ public record CmdrInfosRequest
     public int ToonId { get; set; }
     public int Skip { get; set; }
     public int Take { get; set; } = 20;
+    public string SearchCmdrs { get; set; } = string.Empty;
+    public string SearchNames { get; set; } = string.Empty;
+    public bool LinkCmdrName { get; set; }
+    public List<TableOrder> Orders { get; set; } = new List<TableOrder>() { new TableOrder() { Property = "GameTime" } };
 }
 
 public record ReplayCmdrListDto

@@ -73,7 +73,30 @@
             <label class="form-label">
                 ToonId
                 <InputNumber class="form-control" @bind-Value="Request.ToonId" />
-            </label>            
+            </label>
+        </div>
+        <div class="col-auto">
+            <div class="row">
+                <div class="col-auto">
+                    <label class="form-label">
+                        Search Cmdrs:
+                        <InputText class="form-control" placeholder="Zagara Kerrigan" @bind-Value="Request.SearchCmdrs"></InputText>
+                    </label>
+                </div>
+                <div class="col-auto align-self-center p-0">
+                    <span class="oi @(Request.LinkCmdrName ? "oi-link-intact" : "oi-link-broken") text-light"
+                          style="font-size: 1rem;"
+                          data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Link cmdr and player"
+                          @onclick="SetLink">
+                    </span>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">
+                        Search Names:
+                        <InputText class="form-control" placeholder="PAX Feralan" @bind-Value="Request.SearchNames"></InputText>
+                    </label>
+                </div>
+            </div>
         </div>
         <div class="col-auto">
             <div class="form-check form-switch">
@@ -128,6 +151,12 @@
         OnRequestChanged.InvokeAsync();
     }
 
+    private void SetLink()
+    {
+        Request.LinkCmdrName = !Request.LinkCmdrName;
+        OnRequestChanged.InvokeAsync();
+    }
+
     private void Reset()
     {
         Request.RatingType = RatingType.Cmdr;
@@ -137,6 +166,9 @@
         Request.ToonId = 0;
         Request.MinExp2Win = 0;
         Request.MaxExp2Win = 0;
+        Request.SearchCmdrs = string.Empty;
+        Request.SearchNames = string.Empty;
+        Request.LinkCmdrName = false;
         OnRequestChanged.InvokeAsync();
     }
 
