@@ -77,6 +77,17 @@ class Program
                 WriteHowToUse();
             }
         }
+        else if (args[0] == "sitemap")
+        {
+            if (args.Length == 3)
+            {
+                SitemapService.GenerateSitemap(args[1], args[2]);
+            }
+            else if (args.Length == 4)
+            {
+                SitemapService.GenerateSitemap(args[1], args[2], args[3]);
+            }
+        }
         else
         {
             if (args.Length > 0)
@@ -113,6 +124,7 @@ class Program
         Console.WriteLine("  decode <replayPath> <outputPath>");
         Console.WriteLine("  unzip <base64Zipfile> <outputPath>");
         Console.WriteLine("  tourneyjob <int:cpuCoresToUse>");
+        Console.WriteLine("  sitemap <pagesFolder> <outputPath> <optional:baseUri>");
     }
 
     private static async Task Unzip(string base64Zipfile, string outputPath)

@@ -133,7 +133,6 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-
 app.MapRazorPages();
 app.MapControllers();
 app.MapHub<PickBanHub>("/hubs/pickban");
