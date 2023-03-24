@@ -1,4 +1,6 @@
 ﻿using pax.dsstats.dbng;
+using pax.dsstats.dbng.Extensions;
+using pax.dsstats.shared;
 using System.Threading.Channels;
 
 namespace dsstats.import.api.Services;
@@ -11,7 +13,7 @@ public partial class ImportService
 
     private async Task ConsumeImportChannel()
     {
-        lock(lockobject)
+        lock (lockobject)
         {
             if (importRunning)
             {
@@ -23,6 +25,10 @@ public partial class ImportService
             }
         }
 
+        int dups = 0;
+        int imports = 0;
+        int errors = 0;
+
         try
         {
             while (await ImportChannel.Reader.WaitToReadAsync())
@@ -32,23 +38,120 @@ public partial class ImportService
                     logger.LogError($"failed reading from Importchannel");
                     continue;
                 }
-                
-                await MapReplay(replay);
-                if (!await HandleDuplicate(replay))
+
+                try
                 {
-                    await SaveReplay(replay);
+                    AdjustImportValues(replay);
+
+                    await MapReplay(replay);
+
+                    if (!await HandleDuplicate(replay))
+                    {
+                        await SaveReplay(replay);
+                        imports++;
+                    }
+                    else
+                    {
+                        dups++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"failed importing replay: {ex.Message}");
+                    if (File.Exists(replay.Blobfile))
+                    {
+                        File.Move(replay.Blobfile, replay.Blobfile + ".error");
+                    }
+                    errors++;
+                }
+                finally
+                {
+                    if (blobCaches.TryGetValue(replay.Blobfile, out var cache))
+                    {
+                        cache.Count--;
+                        if (cache.Count == 0)
+                        {
+                            if (File.Exists(replay.Blobfile))
+                            {
+                                File.Move(replay.Blobfile, replay.Blobfile + ".done");
+                            }
+                            blobCaches.Remove(replay.Blobfile);
+                            if (!blobCaches.Any())
+                            {
+                                logger.LogWarning($"replays imported: {imports}, dups: {dups}, errors: {errors}");
+                                BlobsHandled(new());
+                            }
+                        }
+                    }
                 }
             }
-        } 
+        }
         finally
         {
             importRunning = false;
         }
     }
 
-    private Task SaveReplay(Replay replay)
+    private async Task SaveReplay(Replay replay)
     {
-        throw new NotImplementedException();
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        context.Replays.Add(replay);
+        await context.SaveChangesAsync();
+
+        dbCache.ReplayHashes[replay.ReplayHash] = replay.ReplayId;
+        foreach (var replayPlayer in replay.ReplayPlayers)
+        {
+            if (replayPlayer.LastSpawnHash == null)
+            {
+                continue;
+            }
+            dbCache.SpawnHashes[replayPlayer.LastSpawnHash] = replay.ReplayId;
+        }
+    }
+
+    private static void AdjustImportValues(Replay replay)
+    {
+        if (replay.Middle.Length > 4000)
+        {
+            replay.Middle = replay.Middle[..3999];
+            var middles = replay.Middle.Split('|', StringSplitOptions.RemoveEmptyEntries).SkipLast(1);
+            replay.Middle = string.Join('|', middles);
+        }
+
+        bool isComputerGame = false;
+        foreach (var replayPlayer in replay.ReplayPlayers)
+        {
+            replayPlayer.ReplayPlayerId = 0;
+            replayPlayer.LastSpawnHash = replayPlayer.Spawns
+                .FirstOrDefault(f => f.Breakpoint == Breakpoint.All)?
+                .GenHash(replay);
+
+            foreach (var spawnUnit in replayPlayer.Spawns.SelectMany(s => s.Units))
+            {
+                if (spawnUnit.Poss.Length > 3999)
+                {
+                    spawnUnit.Poss = spawnUnit.Poss[..3999];
+                    var poss = spawnUnit.Poss.Split(',', StringSplitOptions.RemoveEmptyEntries).SkipLast(1);
+                    if (poss.Count() % 2 != 0)
+                    {
+                        poss = poss.SkipLast(1);
+                    }
+                    spawnUnit.Poss = string.Join(',', poss);
+                }
+            }
+
+            if (replayPlayer.Name.StartsWith("Computer "))
+            {
+                isComputerGame = true;
+            }
+        }
+
+        if (isComputerGame)
+        {
+            replay.GameMode = GameMode.Tutorial;
+        }
     }
 
     private async Task MapReplay(Replay replay)
@@ -70,7 +173,7 @@ public partial class ImportService
                 continue;
             }
 
-            if (!dbCache.Players.TryGetValue(replayPlayer.PlayerId, out int playerId))
+            if (!dbCache.Players.TryGetValue(replayPlayer.Player.ToonId, out int playerId))
             {
                 var player = new Player()
                 {
@@ -96,6 +199,11 @@ public partial class ImportService
         {
             foreach (var spawnUnit in spawn.Units)
             {
+                if (spawnUnit.Unit == null)
+                {
+                    continue;
+                }
+
                 if (!dbCache.Units.TryGetValue(spawnUnit.Unit.Name, out int unitId))
                 {
                     var unit = new Unit()

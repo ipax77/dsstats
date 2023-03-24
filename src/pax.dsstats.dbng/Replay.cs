@@ -199,6 +199,8 @@ public class Replay
     public virtual ICollection<Uploader> Uploaders { get; set; }
     [NotMapped]
     public int UploaderId { get; set; }
+    [NotMapped]
+    public string Blobfile { get; set; } = string.Empty;
 }
 
 public class ReplayPlayer

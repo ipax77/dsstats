@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Text.Json;
 
@@ -11,16 +12,32 @@ public partial class ImportService
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
     private readonly ILogger<ImportService> logger;
+    private readonly SemaphoreSlim importSs;
 
     public ImportService(IServiceProvider serviceProvider, IMapper mapper, ILogger<ImportService> logger)
     {
         this.serviceProvider = serviceProvider;
         this.mapper = mapper;
         this.logger = logger;
+        importSs = new(1, 1);
         SeedImportCache();
     }
 
     private DbImportCache dbCache = new();
+    private Dictionary<string, BlobCache> blobCaches = new();
+    private Stopwatch sw = new();
+
+    public EventHandler<EventArgs> OnBlobsHandled { get; set; }
+
+    public void BlobsHandled(EventArgs e)
+    {
+        var handler = OnBlobsHandled;
+        handler?.Invoke(this, e);
+
+        sw.Stop();
+        logger.LogWarning($"elapsed: {sw.ElapsedMilliseconds} ms");
+        sw.Reset();
+    }
 
     private void SeedImportCache()
     {
@@ -39,42 +56,79 @@ public partial class ImportService
         dbCache.Uploaders = context.Uploaders
             .Select(s => new { s.AppGuid, s.UploaderId })
             .ToList().ToDictionary(k => k.AppGuid, v => v.UploaderId);
+        dbCache.ReplayHashes = context.Replays
+            .Select(s => new { s.ReplayHash, s.ReplayId })
+            .ToDictionary(k => k.ReplayHash, v => v.ReplayId);
+#pragma warning disable CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
+#pragma warning disable CS8619 // Nullability of reference types in value doesn't match target type.
+        dbCache.SpawnHashes = context.ReplayPlayers
+            .Where(x => !String.IsNullOrEmpty(x.LastSpawnHash))
+            .Select(s => new { s.LastSpawnHash, s.ReplayId })
+            .ToDictionary(k => k.LastSpawnHash, v => v.ReplayId);
+#pragma warning restore CS8619 // Nullability of reference types in value doesn't match target type.
+#pragma warning restore CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
     }
 
-    public async Task Import(ImportRequest request)
+    public async Task<ImportResult> Import(ImportRequest request)
     {
-        foreach (var blob in request.Replayblobs)
+        await importSs.WaitAsync();
+
+        sw.Start();
+
+        try
         {
-            var blobDir = new DirectoryInfo(Path.GetDirectoryName(blob) ?? "").Name;
-
-            if (!Guid.TryParse(blobDir, out Guid uploaderGuid))
+            foreach (var blob in request.Replayblobs)
             {
-                logger.LogError($"failed determining blob guid from directory name. {blob}");
-                continue;
-            }
-
-            List<Replay> replays;
-            try
-            {
-                replays = await GetReplaysFromBlobFile(blob);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"failed getting replays from {blob}: {ex.Message}");
-                continue;
-            }
-
-            dbCache.Uploaders.TryGetValue(uploaderGuid, out int uploaderId);
-
-            foreach (var replay in replays)
-            {
-                replay.UploaderId = uploaderId;
-                if (!ImportChannel.Writer.TryWrite(replay))
+                if (!File.Exists(blob))
                 {
-                    logger.LogError($"failed writing replay to import channel {replay.ReplayHash}");
-                };
+                    logger.LogError($"blob file not found: {blob}");
+                    continue;
+                }
+
+                var blobDir = new DirectoryInfo(Path.GetDirectoryName(blob) ?? "").Name;
+
+                if (!Guid.TryParse(blobDir, out Guid uploaderGuid))
+                {
+                    logger.LogError($"failed determining blob guid from directory name. {blob}");
+                    continue;
+                }
+
+                List<Replay> replays;
+                try
+                {
+                    replays = await GetReplaysFromBlobFile(blob);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"failed getting replays from {blob}: {ex.Message}");
+                    continue;
+                }
+
+                blobCaches[blob] = new() { Blob = blob, Count = replays.Count };
+
+                dbCache.Uploaders.TryGetValue(uploaderGuid, out int uploaderId);
+
+                foreach (var replay in replays)
+                {
+                    replay.UploaderId = uploaderId;
+                    replay.Blobfile = blob;
+                    if (!ImportChannel.Writer.TryWrite(replay))
+                    {
+                        logger.LogError($"failed writing replay to import channel {replay.ReplayHash}");
+                    };
+                }
             }
         }
+        catch (Exception ex)
+        {
+            logger.LogError($"faild importing replayblobs: {ex.Message}");
+        }
+        finally
+        {
+            importSs.Release();
+            _ = ConsumeImportChannel();
+        }
+        return new();
     }
 
     private async Task<List<Replay>> GetReplaysFromBlobFile(string blob)
@@ -106,6 +160,14 @@ public record DbImportCache
     public Dictionary<string, int> Upgrades { get; set; } = new();
     public Dictionary<int, int> Players { get; set; } = new();
     public Dictionary<Guid, int> Uploaders { get; set; } = new();
+    public Dictionary<string, int> ReplayHashes { get; set; } = new();
+    public Dictionary<string, int> SpawnHashes { get; set; } = new();
+}
+
+public record BlobCache
+{
+    public string Blob { get; init; } = string.Empty;
+    public int Count { get; set; }
 }
 
 public record ImportRequest

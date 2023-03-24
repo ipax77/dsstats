@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
+using pax.dsstats.shared;
 using System.Linq;
 
 namespace dsstats.import.api.Services;
@@ -11,11 +12,11 @@ public partial class ImportService
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        var dupReplay = await context.Replays
-            .Include(i => i.Uploaders)
-            .Include(i => i.ReplayPlayers)
-                .ThenInclude(i => i.Player)
-            .FirstOrDefaultAsync(f => f.ReplayHash == replay.ReplayHash);
+        Replay? dupReplay = null;
+        if (dbCache.ReplayHashes.TryGetValue(replay.ReplayHash, out int replayId))
+        {
+            dupReplay = await GetDupReplayFromId(replayId, context);
+        }
 
         if (dupReplay == null)
         {
@@ -23,14 +24,14 @@ public partial class ImportService
                 .Where(x => !String.IsNullOrEmpty(x))
                 .ToList();
 
-#pragma warning disable CS8604 // Possible null reference argument.
-            dupReplay = await context.Replays
-                .Include(i => i.Uploaders)
-                .Include(i => i.ReplayPlayers)
-                    .ThenInclude(i => i.Player)
-                .Where(x => x.ReplayPlayers.Any(a => replayLastSpawnHashes.Contains(a.LastSpawnHash)))
-                .FirstOrDefaultAsync();
-#pragma warning restore CS8604 // Possible null reference argument.
+            foreach (var lsHash in replayLastSpawnHashes)
+            {
+                if (dbCache.SpawnHashes.TryGetValue(lsHash, out int lsReplayId))
+                {
+                    dupReplay = await GetDupReplayFromId(lsReplayId, context);
+                    break;
+                }
+            }
         }
 
         if (dupReplay == null)
@@ -69,6 +70,17 @@ public partial class ImportService
 
             return false;
         }
+    }
+
+    private async Task<Replay?> GetDupReplayFromId(int replayId, ReplayContext context)
+    {
+        return await context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Spawns)
+                    .ThenInclude(i => i.Units)
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Upgrades)
+            .FirstOrDefaultAsync(f => f.ReplayId == replayId);
     }
 
     private static List<ReplayPlayer> SyncReplayPlayers(List<ReplayPlayer> keepReplayPlayers, List<ReplayPlayer> replayPlayers)

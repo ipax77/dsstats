@@ -13,8 +13,8 @@ public class Program
         builder.Configuration.AddJsonFile("/data/localserverconfig.json", optional: true, reloadOnChange: false);
 
         var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 41));
-        var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
-        var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"];
+        var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
+        var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"];
 
         builder.Services.AddDbContext<ReplayContext>(options =>
         {
@@ -55,9 +55,5 @@ public class Program
         app.MapControllers();
 
         app.Run();
-
-        // init singleton service
-        using var scope = app.Services.CreateScope();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
     }
 }
