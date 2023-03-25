@@ -42,13 +42,15 @@ public partial class ImportService
 
                 try
                 {
-                    AdjustImportValues(replay);
+                    using var scope = serviceProvider.CreateScope();
+                    var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-                    await MapReplay(replay);
+                    await MapReplay(replay, context);
+                    AdjustImportValues(replay);
 
                     if (!await HandleDuplicate(replay))
                     {
-                        await SaveReplay(replay);
+                        await SaveReplay(replay, context);
                         imports++;
                     }
                     else
@@ -93,14 +95,12 @@ public partial class ImportService
         }
     }
 
-    private async Task SaveReplay(Replay replay)
+    private async Task SaveReplay(Replay replay, ReplayContext context)
     {
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-        await CheatDetectService.AdjustReplay(context, replay, new());
-
         context.Replays.Add(replay);
+
+        await context.SaveChangesAsync();
+        await CheatDetectService.AdjustReplay(context, replay, new());
         await context.SaveChangesAsync();
 
         dbCache.ReplayHashes[replay.ReplayHash] = replay.ReplayId;
@@ -157,11 +157,8 @@ public partial class ImportService
         }
     }
 
-    private async Task MapReplay(Replay replay)
+    private async Task MapReplay(Replay replay, ReplayContext context)
     {
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
         await MapUnits(replay, context);
         await MapUpgrades(replay, context);
         await MapPlayers(replay, context);

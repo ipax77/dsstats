@@ -46,15 +46,14 @@ public partial class ImportService
 
         if (dupReplay.Duration >= replay.Duration)
         {
-            dupReplay.ReplayPlayers = SyncReplayPlayers(dupReplay.ReplayPlayers.ToList(), replay.ReplayPlayers.ToList());
-            
+            SyncReplayPlayers(dupReplay.ReplayPlayers.ToList(), replay.ReplayPlayers.ToList());
             await context.SaveChangesAsync();
             
             return true;
         }
         else
         {
-            replay.ReplayPlayers = SyncReplayPlayers(replay.ReplayPlayers.ToList(), dupReplay.ReplayPlayers.ToList());
+            SyncReplayPlayers(replay.ReplayPlayers.ToList(), dupReplay.ReplayPlayers.ToList());
 
             var delReplay = await context.Replays
                 .Include(i => i.ReplayPlayers)
@@ -76,39 +75,26 @@ public partial class ImportService
     {
         return await context.Replays
             .Include(i => i.ReplayPlayers)
-                .ThenInclude(i => i.Spawns)
-                    .ThenInclude(i => i.Units)
-            .Include(i => i.ReplayPlayers)
-                .ThenInclude(i => i.Upgrades)
+                .ThenInclude(i => i.Player)
             .FirstOrDefaultAsync(f => f.ReplayId == replayId);
     }
 
-    private static List<ReplayPlayer> SyncReplayPlayers(List<ReplayPlayer> keepReplayPlayers, List<ReplayPlayer> replayPlayers)
+    private void SyncReplayPlayers(List<ReplayPlayer> keepReplayPlayers, List<ReplayPlayer> replayPlayers)
     {
-        List<ReplayPlayer> syncedReplayPlayers = new();
-
         foreach (var keepReplayPlayer in keepReplayPlayers)
         {
             var replayPlayer = replayPlayers.FirstOrDefault(f => f.PlayerId == keepReplayPlayer.PlayerId);
             if (replayPlayer == null)
             {
-                return new();
+                logger.LogWarning($"dup replayPlayer not found: ReplayPlayerId {keepReplayPlayer.ReplayPlayerId}");
+                continue;
             }
-
-            bool isUploader = replayPlayer.IsUploader || keepReplayPlayer.IsUploader;
-
-            if (replayPlayer.Duration > keepReplayPlayer.Duration)
+            
+            if (replayPlayer.IsUploader)
             {
-                replayPlayer.IsUploader = isUploader;
-                syncedReplayPlayers.Add(replayPlayer);
-            }
-            else
-            {
-                keepReplayPlayer.IsUploader = isUploader;
-                syncedReplayPlayers.Add(keepReplayPlayer);
+                keepReplayPlayer.IsUploader = true;
             }
         }
-        return syncedReplayPlayers;
     }
 
     private bool DuplicateIsPlausible(Replay replay, Replay dupReplay)
