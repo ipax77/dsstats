@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Text.Json;
@@ -24,7 +25,7 @@ public partial class ImportService
     }
 
     private DbImportCache dbCache = new();
-    private Dictionary<string, BlobCache> blobCaches = new();
+    private ConcurrentDictionary<string, BlobCache> blobCaches = new();
     private Stopwatch sw = new();
 
     public EventHandler<EventArgs>? OnBlobsHandled { get; set; }
@@ -104,7 +105,11 @@ public partial class ImportService
                     continue;
                 }
 
-                blobCaches[blob] = new() { Blob = blob, Count = replays.Count };
+                if (!blobCaches.TryAdd(blob, new() { Blob = blob, Count = replays.Count }))
+                {
+                    logger.LogWarning($"blob cache add failed: {blob} already exists!");
+                    continue;
+                }
 
                 dbCache.Uploaders.TryGetValue(uploaderGuid, out int uploaderId);
 

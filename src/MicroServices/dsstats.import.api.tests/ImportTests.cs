@@ -2,6 +2,7 @@ using dsstats.import.api.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using pax.dsstats.dbng;
+using System.Diagnostics;
 using System.Text.Json;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -275,4 +276,116 @@ public class ImportTests
         Assert.Equal(2, replay?.ReplayPlayers.Count(c => c.IsUploader));
         Assert.Equal(599, replay?.Duration);
     }
+
+    [Fact]
+    public void A5DuplicateParallelTest()
+    {
+        using var scope = serviceProvider.CreateScope();
+
+        // DEBUG
+        //var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        //context.Database.EnsureDeleted();
+        //context.Database.Migrate();
+
+        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+
+        Assert.NotNull(importService);
+        ArgumentNullException.ThrowIfNull(importService, nameof(ImportService));
+
+        string testFile1 = "/data/ds/replayblobs/00000000-0000-0000-0000-000000000000/20221205-201113.base64";
+        string testFile2 = "/data/ds/replayblobs/00000000-0000-0000-0000-000000000000/20221225-191918.base64";
+        string testFile3 = "/data/ds/replayblobs/00000000-0000-0000-0000-000000000000/20221225-211225.base64";
+        string testFile4 = "/data/ds/replayblobs/00000000-0000-0000-0000-000000000000/20221226-053632.base64";
+        string testFile5 = "/data/ds/replayblobs/00000000-0000-0000-0000-000000000000/20221226-234555.base64";
+        string replayHash = "c594b7383e237d2d1442392cd04624d0";
+
+        List<string> testFiles = new() { testFile1, testFile2, testFile3, testFile4, testFile5 };
+
+        ManualResetEvent jobDoneEvent = new ManualResetEvent(false);
+
+        importService.OnBlobsHandled += delegate (object? sender, EventArgs e)
+        {
+            jobDoneEvent.Set();
+        };
+
+        foreach (var testFile in testFiles)
+        {
+            Assert.True(File.Exists(testFile));
+
+            importService.Import(new() { Replayblobs = new() { testFile } }).Wait();
+        }
+
+        var waitResult = jobDoneEvent.WaitOne(120000);
+
+        Assert.True(waitResult);
+
+        testFiles.ForEach(f => Assert.True(File.Exists(f + ".done")));
+
+        // Cleanup
+        foreach (var testFile in testFiles)
+        {
+            File.Move(testFile + ".done", testFile);
+        }
+
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var replay = context.Replays
+            .Include(i => i.ReplayPlayers)
+            .FirstOrDefault(f => f.ReplayHash == replayHash);
+
+        Assert.Equal(3, replay?.ReplayPlayers.Count(c => c.IsUploader));
+        Assert.Equal(918, replay?.Duration);
+    }
+
+    //[Fact]
+    //public void A6SpeedTest()
+    //{
+    //    using var scope = serviceProvider.CreateScope();
+    //    var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+    //    context.Database.EnsureDeleted();
+    //    context.Database.Migrate();
+
+    //    var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+
+    //    Assert.NotNull(importService);
+    //    ArgumentNullException.ThrowIfNull(importService, nameof(ImportService));
+
+    //    string testFile1 = "/data/ds/replayblobs/00000000-0000-0000-0000-000000000000/20221205-033218.base64";
+
+    //    Assert.True(File.Exists(testFile1));
+
+    //    ImportRequest request = new()
+    //    {
+    //        Replayblobs = new()
+    //        {
+    //            testFile1
+    //        }
+    //    };
+
+    //    ManualResetEvent jobDoneEvent = new ManualResetEvent(false);
+
+    //    importService.OnBlobsHandled += delegate (object? sender, EventArgs e)
+    //    {
+    //        jobDoneEvent.Set();
+    //    };
+
+    //    Stopwatch sw = Stopwatch.StartNew();
+
+    //    importService.Import(request).Wait();
+
+    //    var waitResult = jobDoneEvent.WaitOne(2400000);
+
+    //    Assert.True(waitResult);
+
+    //    sw.Stop();
+
+    //    Assert.True(context.Replays.Any());
+
+    //    Assert.True(File.Exists(testFile1 + ".done"));
+
+    //    // Cleanup
+    //    File.Move(testFile1 + ".done", testFile1);
+
+    //    Assert.Equal(0, sw.ElapsedMilliseconds);
+    //}
 }

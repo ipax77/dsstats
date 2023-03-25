@@ -78,10 +78,16 @@ public partial class ImportService
                             {
                                 File.Move(replay.Blobfile, replay.Blobfile + ".done");
                             }
-                            blobCaches.Remove(replay.Blobfile);
+                            
+
+                            if (!blobCaches.TryRemove(replay.Blobfile, out cache))
+                            {
+                                logger.LogWarning($"failed removing blob cache: {replay.Blobfile}");
+                            }
+
                             if (!blobCaches.Any())
                             {
-                                logger.LogWarning($"replays imported: {imports}, dups: {dups}, errors: {errors}");
+                                logger.LogInformation($"replays imported: {imports}, dups: {dups}, errors: {errors}");
                                 BlobsHandled(new());
                             }
                         }
