@@ -8,6 +8,7 @@ using pax.dsstats.shared;
 using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,8 +26,8 @@ var importConnectionString = builder.Configuration["ServerConfig:ImportConnectio
 
 // var connectionString = builder.Configuration["ServerConfig:DsstatsProdConnectionString"];
 
-// var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
-// var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"];
+//var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
+//var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"];
 
 builder.Services.AddDbContext<ReplayContext>(options =>
 {
@@ -112,6 +113,12 @@ if (app.Environment.IsDevelopment())
     // {
     //     Console.WriteLine(l);
     // }
+
+    Stopwatch sw = Stopwatch.StartNew();
+    var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+    var report = importService.ImportReplayBlobs().GetAwaiter().GetResult();
+    sw.Stop();
+    Console.WriteLine($"replays improted in {sw.ElapsedMilliseconds} ms. {report}");
 }
 
 // Configure the HTTP request pipeline.

@@ -27,7 +27,7 @@ public partial class ImportService
     private Dictionary<string, BlobCache> blobCaches = new();
     private Stopwatch sw = new();
 
-    public EventHandler<EventArgs> OnBlobsHandled { get; set; }
+    public EventHandler<EventArgs>? OnBlobsHandled { get; set; }
 
     public void BlobsHandled(EventArgs e)
     {

@@ -1,5 +1,6 @@
 ﻿using pax.dsstats.dbng;
 using pax.dsstats.dbng.Extensions;
+using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using System.Threading.Channels;
 
@@ -96,6 +97,8 @@ public partial class ImportService
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        await CheatDetectService.AdjustReplay(context, replay, new());
 
         context.Replays.Add(replay);
         await context.SaveChangesAsync();
@@ -227,6 +230,11 @@ public partial class ImportService
     {
         foreach (var plUpgrade in replay.ReplayPlayers.SelectMany(s => s.Upgrades))
         {
+            if (plUpgrade.Upgrade == null)
+            {
+                continue;
+            }
+
             if (!dbCache.Upgrades.TryGetValue(plUpgrade.Upgrade.Name, out int upgradeId))
             {
                 var upgrade = new Upgrade()
