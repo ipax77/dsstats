@@ -26,8 +26,8 @@ var importConnectionString = builder.Configuration["ServerConfig:ImportConnectio
 
 // var connectionString = builder.Configuration["ServerConfig:DsstatsProdConnectionString"];
 
-//var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
-//var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"];
+// var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
+// var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"];
 
 builder.Services.AddDbContext<ReplayContext>(options =>
 {
@@ -114,11 +114,13 @@ if (app.Environment.IsDevelopment())
     //     Console.WriteLine(l);
     // }
 
-    Stopwatch sw = Stopwatch.StartNew();
-    var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-    var report = importService.ImportReplayBlobs().GetAwaiter().GetResult();
-    sw.Stop();
-    Console.WriteLine($"replays improted in {sw.ElapsedMilliseconds} ms. {report}");
+    
+    // var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+    // importService.DEBUGSeedUnitsUpgradesFromJson();
+    // Stopwatch sw = Stopwatch.StartNew();
+    // var report = importService.ImportReplayBlobs().GetAwaiter().GetResult();
+    // sw.Stop();
+    // Console.WriteLine($"replays improted in {sw.ElapsedMilliseconds} ms. {report}");
 }
 
 // Configure the HTTP request pipeline.

@@ -337,55 +337,73 @@ public class ImportTests
         Assert.Equal(918, replay?.Duration);
     }
 
-    //[Fact]
-    //public void A6SpeedTest()
-    //{
-    //    using var scope = serviceProvider.CreateScope();
-    //    var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-    //    context.Database.EnsureDeleted();
-    //    context.Database.Migrate();
+    [Fact]
+    public void A6SpeedTest()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        context.Database.EnsureDeleted();
+        context.Database.Migrate();
+        DEBUGSeedUnitsUpgradesFromJson();
 
-    //    var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
 
-    //    Assert.NotNull(importService);
-    //    ArgumentNullException.ThrowIfNull(importService, nameof(ImportService));
+        Assert.NotNull(importService);
+        ArgumentNullException.ThrowIfNull(importService, nameof(ImportService));
 
-    //    string testFile1 = "/data/ds/replayblobs/00000000-0000-0000-0000-000000000000/20221205-033218.base64";
+        // string testFile1 = "/data/ds/replayblobs/00000000-0000-0000-0000-000000000000/20221205-033218.base64";
 
-    //    Assert.True(File.Exists(testFile1));
+        string testFile1 = "D:\\backup\\sc2dsstats\\replayblobs\\c182f07b-9263-402f-b8e9-bbc0bcb75b4d\\20221125-045426.base64";
+        
 
-    //    ImportRequest request = new()
-    //    {
-    //        Replayblobs = new()
-    //        {
-    //            testFile1
-    //        }
-    //    };
+        Assert.True(File.Exists(testFile1));
 
-    //    ManualResetEvent jobDoneEvent = new ManualResetEvent(false);
+        ImportRequest request = new()
+        {
+            Replayblobs = new()
+            {
+                testFile1
+            }
+        };
 
-    //    importService.OnBlobsHandled += delegate (object? sender, EventArgs e)
-    //    {
-    //        jobDoneEvent.Set();
-    //    };
+        ManualResetEvent jobDoneEvent = new ManualResetEvent(false);
 
-    //    Stopwatch sw = Stopwatch.StartNew();
+        importService.OnBlobsHandled += delegate (object? sender, EventArgs e)
+        {
+            jobDoneEvent.Set();
+        };
 
-    //    importService.Import(request).Wait();
+        Stopwatch sw = Stopwatch.StartNew();
 
-    //    var waitResult = jobDoneEvent.WaitOne(2400000);
+        importService.Import(request).Wait();
 
-    //    Assert.True(waitResult);
+        var waitResult = jobDoneEvent.WaitOne(2400000);
 
-    //    sw.Stop();
+        Assert.True(waitResult);
 
-    //    Assert.True(context.Replays.Any());
+        sw.Stop();
 
-    //    Assert.True(File.Exists(testFile1 + ".done"));
+        Assert.True(context.Replays.Any());
 
-    //    // Cleanup
-    //    File.Move(testFile1 + ".done", testFile1);
+        Assert.True(File.Exists(testFile1 + ".done"));
 
-    //    Assert.Equal(0, sw.ElapsedMilliseconds);
-    //}
+        // Cleanup
+        File.Move(testFile1 + ".done", testFile1);
+
+        Assert.Equal(0, sw.ElapsedMilliseconds);
+    }
+
+    private void DEBUGSeedUnitsUpgradesFromJson()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        List<Unit> units = JsonSerializer.Deserialize<List<Unit>>(File.ReadAllText("/data/ds/units.json")) ?? new();
+        context.Units.AddRange(units);
+        context.SaveChanges();
+
+        List<Upgrade> upgrades = JsonSerializer.Deserialize<List<Upgrade>>(File.ReadAllText("/data/ds/upgrades.json")) ?? new();
+        context.Upgrades.AddRange(upgrades);
+        context.SaveChanges();
+    }
 }

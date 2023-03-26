@@ -167,7 +167,7 @@ public partial class ImportService
     {
         await MapUnits(replay, context);
         await MapUpgrades(replay, context);
-        await MapPlayers(replay, context);
+        // await MapPlayers(replay, context);
     }
 
     private async Task MapPlayers(Replay replay, ReplayContext context)
@@ -179,7 +179,7 @@ public partial class ImportService
                 continue;
             }
 
-            if (!dbCache.Players.TryGetValue(replayPlayer.Player.ToonId, out int playerId))
+            if (!dbCache.Players.TryGetValue(replayPlayer.Player.ToonId, out var playerIdRegionId))
             {
                 var player = new Player()
                 {
@@ -189,10 +189,10 @@ public partial class ImportService
                 };
                 context.Players.Add(player);
                 await context.SaveChangesAsync();
-                playerId = player.PlayerId;
-                dbCache.Players[player.ToonId] = playerId;
+                playerIdRegionId = new(player.PlayerId, player.RegionId);
+                dbCache.Players[player.ToonId] = playerIdRegionId;
             }
-            replayPlayer.PlayerId = playerId;
+            replayPlayer.PlayerId = playerIdRegionId.Key;
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
             replayPlayer.Player = null;
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
