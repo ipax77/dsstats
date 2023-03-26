@@ -19,7 +19,7 @@ builder.Host.ConfigureAppConfiguration((context, config) =>
 
 // Add services to the container.
 
-var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 40));
+var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 41));
 var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
 var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"];
 
