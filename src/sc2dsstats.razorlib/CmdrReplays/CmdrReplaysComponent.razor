@@ -208,163 +208,13 @@
 
 <div class="@(replayDto != null || Interest != null ? "visually-hidden" : "")">
     <div>
-        <CmdrReplaysRequestComponent Request="Request" OnRequestChanged="RequestChanged" />
+        <CascadingValue Value="showReplays">
+            <CmdrReplaysRequestComponent Request="Request" OnRequestChanged="RequestChanged" />
+        </CascadingValue>
     </div>
-    <div class="row mt-2">
-        <div class="col-auto">
-            @if (replaysCount > 0)
-            {
-                <div class="d-flex" style="max-width: 850px;">
-                    <div>
-                        @if (ReplaysInterest == null)
-                        {
-                            <h4>Replays with <span class="text-warning">@Request.Interest</span></h4>
-                        }
-                        else
-                        {
-                            <h4>
-                                Replays with <span class="text-warning">@ReplaysInterest.Name</span> playing <span class="text-warning">@Request.Interest</span>
-                            </h4>
-                        }
-                    </div>
-                    <div class="ms-auto">
-                        #@replaysCount
-                        <span class="oi oi-reload text-primary pointer ms-2" style="font-size: 1rem;"
-                          @onclick="RequestChanged"></span>
-                    </div>
-                    @if (isLoading)
-                    {
-                        <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    }
-                </div>
-                <div class="table-responsive tableFixHead" style="width: 745px;">
-                    <table class="table table-dark table-hover w-auto">
-                        <CascadingValue Value="Request.Orders">
-                            <thead class="user-select-none">
-                                <tr>
-                                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GameTime"))">
-                                        <SortArrow Property="GameTime">
-                                            GameTime
-                                        </SortArrow>
-                                    </th>
-                                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Duration"))">
-                                        <SortArrow Property="Duration">
-                                            Duration
-                                        </SortArrow>
-                                    </th>
-                                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "CommandersTeam1"))">
-                                        <SortArrow Property="CommandersTeam1">
-                                            Team1
-                                        </SortArrow>
-                                    </th>
-                                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "CommandersTeam2"))">
-                                        <SortArrow Property="CommandersTeam2">
-                                            Team2
-                                        </SortArrow>
-                                    </th>
-@*                                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "WinnerTeam"))">
-                                        <SortArrow Property="WinnerTeam">
-                                            <span data-bs-toggle="tooltip" data-bs-placement="top"
-                                                  data-bs-title="Winner Team">Win</span>
-                                        </SortArrow>
-                                    </th>*@
-                                    <th scope="col" class="text-warning pointer" style="z-index: 1;" @onclick="@(e => SortList(e, "ReplayRatingInfo.ExpectationToWin"))">
-                                        <SortArrow Property="ReplayRatingInfo.ExpectationToWin">
-                                            <span data-bs-toggle="tooltip"
-                                                  data-bs-placement="top" data-bs-title="WinnerTeam Expectation to Win">Exp2Win</span>
-                                        </SortArrow>
-                                    </th>
-                                    <th scope="col" style="z-index: 1;">
-                                        <span data-bs-toggle="tooltip" data-bs-placement="top"
-                                              data-bs-title="Rating gained of the selected commander (average if there are multiple)">AvgGain</span>
-                                    </th>
-                                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "MaxLeaver"))">
-                                        <SortArrow Property="MaxLeaver">
-                                            <span data-bs-toggle="tooltip" data-bs-placement="top"
-                                                  data-bs-title="The maximum amount of time the game lasts with at least one Leaver">Leaver</span>
-                                        </SortArrow>
-                                    </th>
-                                </tr>
-                            </thead>
-                        </CascadingValue>
-                        <tbody>
-                            <Virtualize @ref="virtualizeComponent" Context="replay" ItemsProvider="LoadReplays"
-                                    ItemSize="47">
-                                <ItemContent>
-                                    @{
-                                        var cmdrAvgGain = GetAvgGain(replay);
-                                    }
-                                    <tr class="pointer @(lastVisitHash == replay.ReplayHash ? "table-primary" : "")"
-                                    @onclick="e => ShowReplay(replay.ReplayHash)">
-                                        <td>@replay.GameTime.ToString(@"yyyy-MM-dd")</td>
-                                        <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
-                                        <td>
-                                            <div class="d-flex @(replay.WinnerTeam == 1 ? "border border-success" : "border border-danger")">
-                                                @foreach (var cmdr in replay.CommandersTeam1
-                                            .Split('|', StringSplitOptions.RemoveEmptyEntries)
-                                            .Select(s => int.Parse(s))
-                                            .Cast<Commander>()
-                                            .ToArray())
-                                                {
-                                                    <div class="preload-@(cmdr.ToString().ToLower()) @(cmdr == Request.Interest ? "border border-warning" : "")"
-                                                            style="width: 28.5px; height: 28.5px;"></div>
-                                                }
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="d-flex @(replay.WinnerTeam == 2 ? "border border-success" : "border border-danger")">
-                                                @foreach (var cmdr in replay.CommandersTeam2
-                                            .Split('|', StringSplitOptions.RemoveEmptyEntries)
-                                            .Select(s => int.Parse(s))
-                                            .Cast<Commander>()
-                                            .ToArray())
-                                                {
-                                                    <div class="preload-@(cmdr.ToString().ToLower()) @(cmdr == Request.Interest ? "border border-warning" : "")"
-                                                         style="width: 28.5px; height: 28.5px;"></div>
-                                                }
-                                            </div>
-                                        </td>
-                                        @*<td>@replay.WinnerTeam</td>*@
-                                        <td class="@(replay.ReplayRatingInfo.ExpectationToWin >= 0.5f ? "text-success" : "text-danger")">
-                                            @replay.ReplayRatingInfo.ExpectationToWin.ToString("P0",CultureInfo.InvariantCulture)
-                                        </td>
-                                        <td class="@(cmdrAvgGain >= 0 ? "text-success" : "text-danger")">
-                                            <span class="@(cmdrAvgGain >= 0 ? "oi oi-arrow-top" : "oi oi-arrow-bottom")"></span>
-                                            @cmdrAvgGain.ToString("N2",CultureInfo.InvariantCulture)
-                                        </td>
-                                        <td>@TimeSpan.FromSeconds(replay.Maxleaver).ToString(@"mm\:ss")</td>
-                                    </tr>
-                                </ItemContent>
-                                <Placeholder>
-                                    <tr height="47px">
-                                        <td colspan="7">Loading ...</td>
-                                    </tr>
-                                </Placeholder>
-                            </Virtualize>
-                        </tbody>
-                    </table>
-                </div>
-            }
-            else
-            {
-                @if (isLoading)
-                {
-                    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                }
-                else
-                {
-                    <p>
-                        No data available.
-                    </p>
-                }
-            }
-        </div>
-        <div class="col-auto">
-            <div class="d-flex" style="max-width: 800px;">
+    <div class="row">
+        <div class="col-auto mt-2">
+            <div class="d-flex">
                 <div>
                     <h4>
                         Players who played
@@ -378,7 +228,7 @@
                         <input type="text" class="form-control" placeholder="Search Name" value="@searchName" @oninput="SearchName" />
                     </label>
                 </div>
-                <div>
+                <div class="ms-1">
                     <span class="oi oi-x text-danger pointer" @onclick="ResetSearchName"></span>
                 </div>
                 <div class="ms-auto">
@@ -391,6 +241,163 @@
             <CmdrPlayerInfoComponent @ref="cmdrPlayerInfoComponent" CmdrPlayerInfos="playerInfos"
                                      OnPlayerDetailsRequest="PlayerDetailsRequest" OnPlayerReplaysRequest="PlayerReplaysRequest" />
         </div>
+        <div class="col-auto mt-2">
+            <div class="d-flex" style="max-width: 850px;">
+                <div class="me-2">
+                    @if (showReplays)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-warning" @onclick="e => ShowHideReplays(false)">
+                            <span class="oi oi-caret-top"></span>
+                            Hide
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-warning" @onclick="e => ShowHideReplays(true)">
+                            <span class="oi oi-caret-bottom"></span>
+                            Show
+                        </button>
+                    }
+                </div>
+                <div>
+                    @if (ReplaysInterest == null)
+                    {
+                        <h4>Replays with <span class="text-warning">@Request.Interest</span></h4>
+                    }
+                    else
+                    {
+                        <h4>
+                            Replays with <span class="text-warning">@ReplaysInterest.Name</span> playing <span class="text-warning">@Request.Interest</span>
+                        </h4>
+                    }
+                </div>
+                <div class="ms-auto">
+                    @if (showReplays)
+                    {
+                        <span>#@replaysCount</span>
+                        <span class="oi oi-reload text-primary pointer ms-2" style="font-size: 1rem;"
+                              @onclick="RequestChanged"></span>
+                    }
+                </div>
+                @if (isLoading)
+                {
+                    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                }
+            </div>
+            <div class="table-responsive tableFixHead">
+                <table class="table table-dark table-hover w-auto">
+                    <CascadingValue Value="Request.Orders">
+                        <thead class="user-select-none">
+                            <tr>
+                                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GameTime"))">
+                                    <SortArrow Property="GameTime">
+                                        GameTime
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Duration"))">
+                                    <SortArrow Property="Duration">
+                                        Duration
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "CommandersTeam1"))">
+                                    <SortArrow Property="CommandersTeam1">
+                                        Team1
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "CommandersTeam2"))">
+                                    <SortArrow Property="CommandersTeam2">
+                                        Team2
+                                    </SortArrow>
+                                </th>
+                                @*                                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "WinnerTeam"))">
+                                <SortArrow Property="WinnerTeam">
+                                <span data-bs-toggle="tooltip" data-bs-placement="top"
+                                data-bs-title="Winner Team">Win</span>
+                                </SortArrow>
+                                </th>*@
+                                <th scope="col" class="text-warning pointer" style="z-index: 1;" @onclick="@(e => SortList(e, "ReplayRatingInfo.ExpectationToWin"))">
+                                    <SortArrow Property="ReplayRatingInfo.ExpectationToWin">
+                                        <span data-bs-toggle="tooltip"
+                                              data-bs-placement="top" data-bs-title="WinnerTeam Expectation to Win">Exp2Win</span>
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" style="z-index: 1;">
+                                    <span data-bs-toggle="tooltip" data-bs-placement="top"
+                                          data-bs-title="Rating gained of the selected commander (average if there are multiple)">AvgGain</span>
+                                </th>
+@*                                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "MaxLeaver"))">
+                                    <SortArrow Property="MaxLeaver">
+                                        <span data-bs-toggle="tooltip" data-bs-placement="top"
+                                              data-bs-title="The maximum amount of time the game lasts with at least one Leaver">Leaver</span>
+                                    </SortArrow>
+                                </th>*@
+                            </tr>
+                        </thead>
+                    </CascadingValue>
+                    <tbody>
+                        @if (showReplays && replaysCount > 0)
+                        {
+                            <Virtualize @ref="virtualizeComponent" Context="replay" ItemsProvider="LoadReplays"
+                                    ItemSize="47">
+                                <ItemContent>
+                                    @{
+                                        var cmdrAvgGain = GetAvgGain(replay);
+                                    }
+                                    <tr class="pointer @(lastVisitHash == replay.ReplayHash ? "table-primary" : "")"
+                                    @onclick="e => ShowReplay(replay.ReplayHash)">
+                                        <td>@replay.GameTime.ToString(@"yyyy-MM-dd")</td>
+                                        <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+                                        <td>
+                                            <div class="d-flex @(replay.WinnerTeam == 1 ? "border border-success" : "border border-danger")">
+                                                @foreach (var cmdr in replay.CommandersTeam1
+                                                   .Split('|', StringSplitOptions.RemoveEmptyEntries)
+                                                   .Select(s => int.Parse(s))
+                                                   .Cast<Commander>()
+                                                   .ToArray())
+                                                {
+                                                    <div class="preload-@(cmdr.ToString().ToLower()) @(cmdr == Request.Interest ? "border border-warning" : "")"
+                                                    style="width: 28.5px; height: 28.5px;"></div>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex @(replay.WinnerTeam == 2 ? "border border-success" : "border border-danger")">
+                                                @foreach (var cmdr in replay.CommandersTeam2
+                                                   .Split('|', StringSplitOptions.RemoveEmptyEntries)
+                                                   .Select(s => int.Parse(s))
+                                                   .Cast<Commander>()
+                                                   .ToArray())
+                                                {
+                                                    <div class="preload-@(cmdr.ToString().ToLower()) @(cmdr == Request.Interest ? "border border-warning" : "")"
+                                                    style="width: 28.5px; height: 28.5px;"></div>
+                                                }
+                                            </div>
+                                        </td>
+                                        @*<td>@replay.WinnerTeam</td>*@
+                                        <td class="@(replay.ReplayRatingInfo.ExpectationToWin >= 0.5f ? "text-success" : "text-danger")">
+                                            @replay.ReplayRatingInfo.ExpectationToWin.ToString("P0",CultureInfo.InvariantCulture)
+                                        </td>
+                                        <td class="@(cmdrAvgGain >= 0 ? "text-success" : "text-danger")">
+                                            <span class="@(cmdrAvgGain >= 0 ? "oi oi-arrow-top" : "oi oi-arrow-bottom")"></span>
+                                            @cmdrAvgGain.ToString("N2",CultureInfo.InvariantCulture)
+                                        </td>
+                                        @*<td>@TimeSpan.FromSeconds(replay.Maxleaver).ToString(@"mm\:ss")</td>*@
+                                    </tr>
+                                </ItemContent>
+                                <Placeholder>
+                                    <tr height="47px">
+                                        <td colspan="7">Loading ...</td>
+                                    </tr>
+                                </Placeholder>
+                            </Virtualize>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
     <div class="col-auto">
         <div class="ms-2 mt-2 p-2 bg-dark" style="max-width: 1000px;">
@@ -440,12 +447,14 @@
     private RequestNames? ReplaysInterest;
     private bool toolTipsSet = false;
     private string searchName = "";
+    private bool showReplays;
 
     CmdrPlayerInfoComponent? cmdrPlayerInfoComponent;
 
     protected override async Task OnInitializedAsync()
     {
-        await SetCount(Request);
+        // await SetCount(Request);
+        await LoadPlayerInfos(Request);
         await base.OnInitializedAsync();
     }
 
@@ -458,20 +467,28 @@
         base.OnAfterRender(firstRender);
     }
 
-    private async Task SetCount(CmdrInfosRequest request)
+    private async Task LoadPlayerInfos(CmdrInfosRequest request)
     {
-        isLoading = true;
-        await InvokeAsync(() => StateHasChanged());
-        replaysCount = await dataService.GetCmdrReplaysCount(request, cts.Token);
-        isLoading = false;
         playerInfos = await dataService.GetCmdrPlayerInfos(new(request), cts.Token);
         cmdrPlayerInfoComponent?.SetStrength(playerInfos, Request.ToonId);
-        await InvokeAsync(() => StateHasChanged());
-        if (!toolTipsSet)
+    }
+
+    private void ShowHideReplays(bool show)
+    {
+        showReplays = show;
+        if (showReplays)
         {
-            await jsRuntime.InvokeVoidAsync("enableTooltips");
-            toolTipsSet = true;
+            RequestChanged();
         }
+        else
+        {
+            InvokeAsync(() => StateHasChanged());
+        }
+    }
+
+    private async Task SetCount(CmdrInfosRequest request)
+    {
+        replaysCount = await dataService.GetCmdrReplaysCount(request, cts.Token);
     }
 
     private async ValueTask<ItemsProviderResult<ReplayCmdrListDto>> LoadReplays(ItemsProviderRequest prRequest)
@@ -497,15 +514,24 @@
 
         try
         {
-            await SetCount(Request);
-            if (virtualizeComponent != null)
+            isLoading = true;
+            await InvokeAsync(() => StateHasChanged());
+            await LoadPlayerInfos(Request);
+            if (showReplays)
             {
-                await InvokeAsync(async () =>
+                await SetCount(Request);
+                if (virtualizeComponent != null)
                 {
-                    await virtualizeComponent.RefreshDataAsync();
-                    StateHasChanged();
-                });
+                    await InvokeAsync(async () =>
+                    {
+                        await virtualizeComponent.RefreshDataAsync();
+                        StateHasChanged();
+                    });
+                }
             }
+            isLoading = false;
+            await InvokeAsync(() => StateHasChanged());
+            await jsRuntime.InvokeVoidAsync("enableTooltips");
             await OnRequestChanged.InvokeAsync(Request);
         }
         finally
@@ -592,6 +618,10 @@
 
     public void PlayerReplaysRequest(RequestNames requestNames)
     {
+        if (!showReplays)
+        {
+            showReplays = true;
+        }
         ReplaysInterest = requestNames;
         Request.ToonId = ReplaysInterest.ToonId;
         RequestChanged();
@@ -630,13 +660,13 @@
         NavigationManager.NavigateTo(
         NavigationManager.GetUriWithQueryParameters("replays",
         new Dictionary<string, object?>()
-                {
+                    {
 { "Players", request.Name },
 { "ToonId", request.ToonId },
 { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
 { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
 { "ToonIdName", request.ToonIdName },
-                }
+                    }
         )
         );
     }

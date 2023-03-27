@@ -58,6 +58,7 @@ public record CmdrPlayerInfo
     public int Wins { get; set; }
     public double AvgGain { get; set; }
     public double AvgRating { get; set; }
+    public double TeamRating { get; set; }
     [JsonIgnore]
     public int Pos { get; set; }
     [JsonIgnore]

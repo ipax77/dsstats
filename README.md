@@ -30,6 +30,12 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
+<details open="open"><summary>v1.2.0 (web only atm)</summary>
+
+>- Cmdr Info
+
+</details>
+
 <details open="open"><summary>v1.1.9</summary>
 
 >- Builds by Ratings (suggested by heyrandompeople - ty!)
