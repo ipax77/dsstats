@@ -57,6 +57,13 @@
                                   data-bs-title="Average gain in rating over all replays with the selected commander">AvgGain</span>
                         </SortArrow>
                     </th>
+                    <th scope="col" class="pointer" style="z-index: 1;"
+                        @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.TeamRating)))">
+                        <SortArrow Property="@nameof(CmdrPlayerInfo.TeamRating)">
+                            <span data-bs-toggle="tooltip" data-bs-placement="top"
+                                  data-bs-title="Average teammates rating over all replays with the selected commander">Team</span>
+                        </SortArrow>
+                    </th>
                 </tr>
             </CascadingValue>
         </thead>
@@ -90,6 +97,7 @@
                         <span class="@(info.AvgGain >= 0 ? "oi oi-arrow-top" : "oi oi-arrow-bottom")"></span>
                         @info.AvgGain.ToString("N2", CultureInfo.InvariantCulture)
                     </td>
+                    <td>@info.TeamRating</td>
                 </tr>
             }
         </tbody>
