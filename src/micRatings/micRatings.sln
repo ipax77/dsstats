@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MysqlMigrations", "..\Mysql
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.mmr", "..\dsstats.mmr\dsstats.mmr.csproj", "{245A1F28-9B8B-48FB-871A-409E0F0689B9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.ratings.api", "dsstats.ratings.api\dsstats.ratings.api.csproj", "{97C97547-2A89-4270-B072-4926457F5F0A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.ratings.api", "dsstats.ratings.api\dsstats.ratings.api.csproj", "{97C97547-2A89-4270-B072-4926457F5F0A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
