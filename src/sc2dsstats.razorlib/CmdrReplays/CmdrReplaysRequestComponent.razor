@@ -69,44 +69,47 @@
                 </InputSelect>
             </label>
         </div>
-        <div class="col-auto">
-            <label class="form-label">
-                ToonId
-                <InputNumber class="form-control" @bind-Value="Request.ToonId" />
-            </label>
-        </div>
-        <div class="col-auto">
-            <div class="row">
-                <div class="col-auto">
-                    <label class="form-label">
-                        Search Cmdrs:
-                        <InputText class="form-control" placeholder="Zagara Kerrigan" @bind-Value="Request.SearchCmdrs"></InputText>
-                    </label>
-                </div>
-                <div class="col-auto align-self-center p-0">
-                    <span class="oi @(Request.LinkCmdrName ? "oi-link-intact" : "oi-link-broken") text-light"
-                          style="font-size: 1rem;"
-                          data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Link cmdr and player"
-                          @onclick="SetLink">
-                    </span>
-                </div>
-                <div class="col-auto">
-                    <label class="form-label">
-                        Search Names:
-                        <InputText class="form-control" placeholder="PAX Feralan" @bind-Value="Request.SearchNames"></InputText>
-                    </label>
-                </div>
-            </div>
-        </div>
-        <div class="col-auto">
-            <div class="form-check form-switch">
-                <label class="form-check-label">
-                    WithoutLeavers
-                    <InputCheckbox class="form-check-input" @bind-Value="Request.WithoutLeavers">
-                    </InputCheckbox>
+        @if (ShowReplays)
+        {
+            <div class="col-auto">
+                <label class="form-label">
+                    ToonId
+                    <InputNumber class="form-control" @bind-Value="Request.ToonId" />
                 </label>
             </div>
-        </div>
+            <div class="col-auto">
+                <div class="row">
+                    <div class="col-auto">
+                        <label class="form-label">
+                            Search Cmdrs:
+                            <InputText class="form-control" placeholder="Zagara Kerrigan" @bind-Value="Request.SearchCmdrs"></InputText>
+                        </label>
+                    </div>
+                    <div class="col-auto align-self-center p-0">
+                        <span class="oi @(Request.LinkCmdrName ? "oi-link-intact" : "oi-link-broken") text-light"
+                              style="font-size: 1rem;"
+                              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Link cmdr and player"
+                          @onclick="SetLink">
+                        </span>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label">
+                            Search Names:
+                            <InputText class="form-control" placeholder="PAX Feralan" @bind-Value="Request.SearchNames"></InputText>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-auto">
+                <div class="form-check form-switch">
+                    <label class="form-check-label">
+                        WithoutLeavers
+                        <InputCheckbox class="form-check-input" @bind-Value="Request.WithoutLeavers">
+                        </InputCheckbox>
+                    </label>
+                </div>
+            </div>
+        }
         <div class="col-auto mt-3">
             <button type="button" class="btn btn-outline-primary" @onclick="Reset">Reset</button>
         </div>
@@ -119,6 +122,9 @@
 
     [Parameter]
     public EventCallback OnRequestChanged { get; set; }
+
+    [CascadingParameter]
+    public bool ShowReplays { get; set; }
 
     private EditContext editContext = null!;
 
