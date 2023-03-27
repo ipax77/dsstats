@@ -337,7 +337,7 @@ public class ImportTests
         Assert.Equal(918, replay?.Duration);
     }
 
-    [Fact]
+    [Fact(Skip = "special performance test only")]
     public void A6SpeedTest()
     {
         using var scope = serviceProvider.CreateScope();
@@ -354,7 +354,7 @@ public class ImportTests
         // string testFile1 = "/data/ds/replayblobs/00000000-0000-0000-0000-000000000000/20221205-033218.base64";
 
         string testFile1 = "D:\\backup\\sc2dsstats\\replayblobs\\c182f07b-9263-402f-b8e9-bbc0bcb75b4d\\20221125-045426.base64";
-        
+
 
         Assert.True(File.Exists(testFile1));
 

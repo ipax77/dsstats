@@ -5,6 +5,7 @@ namespace dsstats.import.api.Controllers
 {
     [ApiController]
     [Route("/api/v1/[controller]")]
+    [ServiceFilter(typeof(AuthenticationFilterAttribute))]
     public class ImportController
     {
         private readonly ImportService importService;

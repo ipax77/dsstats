@@ -1,9 +1,9 @@
 
-using dsstats.import.api.Services;
+using dsstats.ratings.api.Services;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 
-namespace dsstats.import.api;
+namespace dsstats.ratings.api;
 
 public class Program
 {
@@ -36,7 +36,7 @@ public class Program
         builder.Services.AddSwaggerGen();
 
         builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
-        builder.Services.AddSingleton<ImportService>();
+        builder.Services.AddSingleton<RatingsService>();
 
         var app = builder.Build();
 
