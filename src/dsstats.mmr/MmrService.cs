@@ -22,6 +22,8 @@ public static partial class MmrService
         public MmrOptions MmrOptions { get; set; } = new(true);
         public int ReplayRatingAppendId { get; set; }
         public int ReplayPlayerRatingAppendId { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
     }
 
     public static CalcRatingResult GeneratePlayerRatings(CalcRatingRequest request,

@@ -103,6 +103,7 @@ public partial class ImportService
 
     private async Task SaveReplay(Replay replay, ReplayContext context)
     {
+        replay.Imported = DateTime.UtcNow;
         context.Replays.Add(replay);
 
         await context.SaveChangesAsync();

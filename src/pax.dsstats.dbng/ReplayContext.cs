@@ -43,6 +43,7 @@ public class ReplayContext : DbContext
             entity.HasIndex(e => new { e.GameTime, e.GameMode, e.DefaultFilter });
             entity.HasIndex(e => new { e.GameTime, e.GameMode, e.WinnerTeam });
             entity.HasIndex(e => new { e.GameTime, e.GameMode, e.Maxleaver });
+            entity.HasIndex(e => e.Imported);
 
             entity.Property(p => p.ReplayHash)
                 .HasMaxLength(64)

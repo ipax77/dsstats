@@ -1,6 +1,9 @@
 ﻿using AutoMapper;
 using dsstats.mmr;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using MySqlConnector;
+using pax.dsstats.dbng;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Ratings;
 
@@ -34,34 +37,108 @@ public partial class RatingsService
 
         try
         {
-            MmrOptions mmrOptions = new(reCalc: true);
-            List<ReplayDsRDto> continueReplays = new();
-            int replayRatingAppendId = 0;
-            int replayPlayerRatingAppendId = 0;
-            DateTime latestReplay = DateTime.MinValue;
-
-            DateTime _startTime = new DateTime(2018, 1, 1);
-            DateTime _endTime = DateTime.Today.AddDays(2);
-
-            MmrService.CalcRatingRequest request = new()
+            var request = await GetCalcRatingRequest();
+            if (request == null)
             {
-                CmdrMmrDic = new(),
-                MmrIdRatings = await GetMmrIdRatings(mmrOptions, continueReplays),
-                MmrOptions = mmrOptions,
-                ReplayRatingAppendId = replayRatingAppendId,
-                ReplayPlayerRatingAppendId = replayPlayerRatingAppendId,
-            };
+                // nothing to do
+                return;
+            }
 
-            latestReplay = await GeneratePlayerRatings(request, _startTime, _endTime);
+            await GeneratePlayerRatings(request);
 
-            RatingsCsvService.CreatePlayerRatingCsv(request.MmrIdRatings);
+            if (request.MmrOptions.ReCalc)
+            {
+                RatingsCsvService.CreatePlayerRatingCsv(request.MmrIdRatings);
+            }
+            else
+            {
+                await UpdatePlayerRatings(request.MmrIdRatings);
+            }
 
-            await WriteCsvFilesToDatabase();
+            // if new ratings exist
+            if (File.Exists($"{RatingsCsvService.csvBasePath}/ReplayRatings.csv"))
+            {
+                await WriteCsvFilesToDatabase();
+                await SetPlayerRatingsPos();
+                await SetRatingChange();
+            }
         }
         finally
         {
             ratingSs.Release();
         }
+    }
+
+    private async Task<MmrService.CalcRatingRequest?> GetCalcRatingRequest()
+    {
+        MmrOptions mmrOptions = new(reCalc: true);
+
+        List<ReplayDsRDto> continueReplays = new();
+        int replayRatingAppendId = 0;
+        int replayPlayerRatingAppendId = 0;
+
+        DateTime startTime = new DateTime(2018, 1, 1);
+        DateTime endTime = DateTime.Today.AddDays(2);
+
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var latestRatingsProduced = await context.Replays
+            .Where(x => x.ReplayRatingInfo != null)
+            .OrderByDescending(o => o.GameTime)
+            .Select(s => s.GameTime)
+            .FirstOrDefaultAsync();
+        
+        if (latestRatingsProduced > DateTime.MinValue)
+        {
+            var importedReplaysQuery = context.Replays
+                .Where(x => x.Imported != null
+                    && x.Imported >= latestRatingsProduced
+                    && x.ReplayRatingInfo == null)
+                .Select(s => new { s.Imported, s.GameTime });
+
+            var count = await importedReplaysQuery.CountAsync();
+
+            if (count == 0)
+            {
+                return null;
+            }
+
+            if (count <= 100)
+            {
+                var importedReplays = await importedReplaysQuery.ToListAsync();
+
+                var oldestReplay = importedReplays.OrderBy(o => o.GameTime).First();
+               
+                if (oldestReplay.GameTime > latestRatingsProduced)
+                {
+                    mmrOptions.ReCalc = false;
+                    startTime = latestRatingsProduced;
+                    continueReplays = await GetReplayData(startTime, endTime);
+                    replayPlayerRatingAppendId = await context.RepPlayerRatings
+                        .OrderByDescending(o => o.RepPlayerRatingId)
+                        .Select(s => s.RepPlayerRatingId)
+                        .FirstOrDefaultAsync();
+                    replayRatingAppendId = await context.ReplayRatings
+                        .OrderByDescending(o => o.ReplayRatingId)
+                        .Select(s => s.ReplayRatingId)
+                        .FirstOrDefaultAsync();
+                }
+            }
+        }
+
+        MmrService.CalcRatingRequest request = new()
+        {
+            CmdrMmrDic = new(),
+            MmrIdRatings = await GetMmrIdRatings(mmrOptions, continueReplays),
+            MmrOptions = mmrOptions,
+            ReplayRatingAppendId = replayRatingAppendId,
+            ReplayPlayerRatingAppendId = replayPlayerRatingAppendId,
+            StartTime = startTime,
+            EndTime = endTime,
+        };
+
+        return request;
     }
 
     private async Task WriteCsvFilesToDatabase()
@@ -71,37 +148,43 @@ public partial class RatingsService
         await ReplayPlayerRatingsFromCsv2MySql(RatingsCsvService.csvBasePath);
     }
 
-    private async Task<DateTime> GeneratePlayerRatings(MmrService.CalcRatingRequest request,
-                                                       DateTime _startTime,
-                                                       DateTime _endTime)
+    private async Task GeneratePlayerRatings(MmrService.CalcRatingRequest request)
     {
-        DateTime latestReplay = DateTime.MinValue;
-        while (_startTime < _endTime)
+        // continue
+        if (request.ReplayDsRDtos.Any())
         {
-            var chunkEndTime = _startTime.AddYears(1);
-
-            if (chunkEndTime > _endTime)
-            {
-                chunkEndTime = _endTime;
-            }
-
-            request.ReplayDsRDtos = await GetReplayData(_startTime, chunkEndTime);
-
-            _startTime = _startTime.AddYears(1);
-
-            if (!request.ReplayDsRDtos.Any())
-            {
-                continue;
-            }
-
-            latestReplay = request.ReplayDsRDtos.Last().GameTime;
-
-            var calcResult = MmrService.GeneratePlayerRatings(request);
-
-            request.ReplayRatingAppendId = calcResult.ReplayRatingAppendId;
-            request.ReplayPlayerRatingAppendId = calcResult.ReplayPlayerRatingAppendId;
+            MmrService.GeneratePlayerRatings(request);
         }
-        return latestReplay;
+        // recalc
+        else
+        {
+            var _startTime = request.StartTime;
+            var _endTime = request.EndTime;
+
+            while (_startTime < _endTime)
+            {
+                var chunkEndTime = _startTime.AddYears(1);
+
+                if (chunkEndTime > _endTime)
+                {
+                    chunkEndTime = _endTime;
+                }
+
+                request.ReplayDsRDtos = await GetReplayData(_startTime, chunkEndTime);
+
+                _startTime = _startTime.AddYears(1);
+
+                if (!request.ReplayDsRDtos.Any())
+                {
+                    continue;
+                }
+
+                var calcResult = MmrService.GeneratePlayerRatings(request);
+
+                request.ReplayRatingAppendId = calcResult.ReplayRatingAppendId;
+                request.ReplayPlayerRatingAppendId = calcResult.ReplayPlayerRatingAppendId;
+            }
+        }
     }
 
     private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetMmrIdRatings(MmrOptions mmrOptions, List<ReplayDsRDto>? dependentReplays)
@@ -124,5 +207,25 @@ public partial class RatingsService
         {
             return await GetCalcRatings(dependentReplays);
         }
+    }
+    
+    private async Task SetPlayerRatingsPos()
+    {
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
+        await connection.OpenAsync();
+        var command = connection.CreateCommand();
+        command.CommandText = "CALL SetPlayerRatingPos();";
+        command.CommandTimeout = 120;
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private async Task SetRatingChange()
+    {
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
+        await connection.OpenAsync();
+        var command = connection.CreateCommand();
+        command.CommandText = "CALL SetRatingChange();";
+        command.CommandTimeout = 120;
+        await command.ExecuteNonQueryAsync();
     }
 }

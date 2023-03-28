@@ -13,7 +13,7 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
         builder.Configuration.AddJsonFile("/data/localserverconfig.json", optional: true, reloadOnChange: false);
 
-        var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 41));
+        var serverVersion = new MySqlServerVersion(new Version(5, 7, 41));
         var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
         var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"] ?? "";
 

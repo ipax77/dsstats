@@ -169,6 +169,8 @@ public class Replay
     public bool TournamentEdition { get; set; }
     [Precision(0)]
     public DateTime GameTime { get; set; }
+    [Precision(0)]
+    public DateTime? Imported { get; set; }
     public int Duration { get; set; }
     public int WinnerTeam { get; set; }
     public PlayerResult PlayerResult { get; set; }
