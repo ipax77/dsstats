@@ -33,8 +33,7 @@ public partial class RatingsService
             COLUMNS TERMINATED BY ','
             OPTIONALLY ENCLOSED BY '""'
             ESCAPED BY '""'
-            LINES TERMINATED BY '\n'
-            IGNORE 1 LINES;
+            LINES TERMINATED BY '\n';
         ";
         command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();

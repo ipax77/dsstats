@@ -1,32 +1,14 @@
-﻿using pax.dsstats.dbng;
-using pax.dsstats.shared;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 
-namespace dsstats.ratings.api.Services;
+namespace pax.dsstats.shared.Ratings;
 
-public partial class RatingsService
+public static class RatingsCsvService
 {
-    private static void CreatePlayerRatingCsv(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings, string csvBasePath)
+    public const string csvBasePath = "/data/mysqlfiles";
+    public static void CreatePlayerRatingCsv(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
     {
         StringBuilder sb = new();
-        sb.Append($"{nameof(PlayerRating.PlayerRatingId)},");
-        sb.Append($"{nameof(PlayerRating.RatingType)},");
-        sb.Append($"{nameof(PlayerRating.Rating)},");
-        sb.Append($"{nameof(PlayerRating.Games)},");
-        sb.Append($"{nameof(PlayerRating.Wins)},");
-        sb.Append($"{nameof(PlayerRating.Mvp)},");
-        sb.Append($"{nameof(PlayerRating.TeamGames)},");
-        sb.Append($"{nameof(PlayerRating.MainCount)},");
-        sb.Append($"{nameof(PlayerRating.Main)},");
-        sb.Append($"{nameof(PlayerRating.MmrOverTime)},");
-        sb.Append($"{nameof(PlayerRating.Consistency)},");
-        sb.Append($"{nameof(PlayerRating.Confidence)},");
-        sb.Append($"{nameof(PlayerRating.IsUploader)},");
-        sb.Append($"{nameof(PlayerRating.PlayerId)},");
-        sb.Append($"{nameof(PlayerRating.Pos)}");
-        sb.Append(Environment.NewLine);
-
         int i = 0;
         foreach (var ent in mmrIdRatings)
         {
@@ -57,10 +39,9 @@ public partial class RatingsService
         File.WriteAllText($"{csvBasePath}/PlayerRatings.csv", sb.ToString());
     }
 
-    private static (int, int) CreateOrAppendReplayAndReplayPlayerRatingsCsv(List<ReplayRatingDto> replayRatingDtos,
+    public static (int, int) CreateOrAppendReplayAndReplayPlayerRatingsCsv(List<ReplayRatingDto> replayRatingDtos,
                                                                            int replayAppendId,
-                                                                           int replayPlayerAppendId,
-                                                                           string csvBasePath)
+                                                                           int replayPlayerAppendId)
     {
         StringBuilder sbReplay = new();
         StringBuilder sbPlayer = new();

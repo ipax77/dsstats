@@ -1,6 +1,7 @@
 ﻿
 using dsstats.mmr.ProcessData;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Ratings;
 
 namespace dsstats.mmr;
 
@@ -23,8 +24,7 @@ public static partial class MmrService
         public int ReplayPlayerRatingAppendId { get; set; }
     }
 
-    public static async Task<CalcRatingResult> GeneratePlayerRatings(CalcRatingRequest request,
-                                                                    IRatingRepository ratingRepository,
+    public static CalcRatingResult GeneratePlayerRatings(CalcRatingRequest request,
                                                                     bool dry = false)
     {
         List<ReplayRatingDto> replayRatingDtos = new();
@@ -54,7 +54,9 @@ public static partial class MmrService
             if (!dry && replayRatingDtos.Count > 100000)
             {
                 (result.ReplayRatingAppendId, result.ReplayPlayerRatingAppendId)
-                    = await ratingRepository.UpdateMmrChanges(replayRatingDtos, result.ReplayRatingAppendId, result.ReplayPlayerRatingAppendId);
+                    = RatingsCsvService.CreateOrAppendReplayAndReplayPlayerRatingsCsv(replayRatingDtos,
+                                                                                      result.ReplayRatingAppendId,
+                                                                                      result.ReplayPlayerRatingAppendId);
                 replayRatingDtos.Clear();
                 replayRatingDtos = new List<ReplayRatingDto>();
             }
@@ -64,7 +66,9 @@ public static partial class MmrService
         if (!dry && replayRatingDtos.Any())
         {
             (result.ReplayRatingAppendId, result.ReplayPlayerRatingAppendId)
-                = await ratingRepository.UpdateMmrChanges(replayRatingDtos, result.ReplayRatingAppendId, result.ReplayPlayerRatingAppendId);
+                = RatingsCsvService.CreateOrAppendReplayAndReplayPlayerRatingsCsv(replayRatingDtos,
+                                                                                      result.ReplayRatingAppendId,
+                                                                                      result.ReplayPlayerRatingAppendId);
         }
 
         result.CalcRatings = request.MmrIdRatings;
