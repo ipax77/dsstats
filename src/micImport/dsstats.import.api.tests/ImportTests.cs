@@ -30,7 +30,7 @@ public class ImportTests
         var json = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText("/data/localserverconfig.json"));
         var config = json.GetProperty("ServerConfig");
         var connectionString = config.GetProperty("TestConnectionString").GetString();
-        var serverVersion = new MySqlServerVersion(new Version(5, 0, 41));
+        var serverVersion = new MySqlServerVersion(new Version(5, 7, 41));
 
         var services = new ServiceCollection();
 

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using dsstats.mmr;
+using Microsoft.Extensions.Options;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Ratings;
 
@@ -9,14 +10,19 @@ public partial class RatingsService
 {
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
+    private readonly IOptions<DbImportOptions> dbImportOptions;
     private readonly ILogger<RatingsService> logger;
 
     private SemaphoreSlim ratingSs;
 
-    public RatingsService(IServiceProvider serviceProvider, IMapper mapper, ILogger<RatingsService> logger)
+    public RatingsService(IServiceProvider serviceProvider,
+                          IMapper mapper,
+                          IOptions<DbImportOptions> dbImportOptions,
+                          ILogger<RatingsService> logger)
     {
         this.serviceProvider = serviceProvider;
         this.mapper = mapper;
+        this.dbImportOptions = dbImportOptions;
         this.logger = logger;
 
         ratingSs = new(1, 1);

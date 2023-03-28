@@ -1,6 +1,5 @@
 ﻿using MySqlConnector;
 using pax.dsstats.dbng;
-using pax.dsstats.shared;
 
 namespace dsstats.ratings.api.Services;
 
@@ -14,7 +13,7 @@ public partial class RatingsService
             return;
         }
 
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
@@ -57,7 +56,7 @@ public partial class RatingsService
             return;
         }
 
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
@@ -101,7 +100,7 @@ public partial class RatingsService
             return;
         }
 
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();

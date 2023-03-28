@@ -2,7 +2,6 @@
 using dsstats.ratings.api.Services;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
-using pax.dsstats.shared;
 using System.Diagnostics;
 
 namespace dsstats.ratings.api;
@@ -17,6 +16,9 @@ public class Program
         var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 41));
         var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
         var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"] ?? "";
+
+        builder.Services.AddOptions<DbImportOptions>()
+            .Configure(x => x.ImportConnectionString = importConnectionString);
 
         builder.Services.AddDbContext<ReplayContext>(options =>
         {
@@ -44,8 +46,6 @@ public class Program
 
         var app = builder.Build();
 
-        Data.MysqlConnectionString = importConnectionString;
-
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
@@ -71,4 +71,9 @@ public class Program
         app.Run();
 
     }
+}
+
+public record DbImportOptions
+{
+    public string ImportConnectionString { get; set; } = string.Empty;
 }
