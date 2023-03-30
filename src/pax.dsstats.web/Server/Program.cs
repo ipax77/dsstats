@@ -29,6 +29,9 @@ var importConnectionString = builder.Configuration["ServerConfig:ImportConnectio
 // var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
 // var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"];
 
+builder.Services.AddOptions<DbImportOptions>()
+    .Configure(x => x.ImportConnectionString = importConnectionString);
+
 builder.Services.AddDbContext<ReplayContext>(options =>
 {
     options.UseMySql(connectionString, serverVersion, p =>

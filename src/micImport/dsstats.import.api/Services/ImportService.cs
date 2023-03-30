@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Options;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
 using System.Collections.Concurrent;
@@ -12,13 +13,18 @@ public partial class ImportService
 {
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
+    private readonly IOptions<DbImportOptions> dbImportOptions;
     private readonly ILogger<ImportService> logger;
     private readonly SemaphoreSlim importSs;
 
-    public ImportService(IServiceProvider serviceProvider, IMapper mapper, ILogger<ImportService> logger)
+    public ImportService(IServiceProvider serviceProvider,
+                         IMapper mapper,
+                         IOptions<DbImportOptions> dbImportOptions,
+                         ILogger<ImportService> logger)
     {
         this.serviceProvider = serviceProvider;
         this.mapper = mapper;
+        this.dbImportOptions = dbImportOptions;
         this.logger = logger;
         importSs = new(1, 1);
         SeedImportCache();

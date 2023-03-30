@@ -2,6 +2,7 @@
 using dsstats.ratings.api.Services;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
+using pax.dsstats.shared;
 using System.Diagnostics;
 
 namespace dsstats.ratings.api;
@@ -71,9 +72,4 @@ public class Program
         app.Run();
 
     }
-}
-
-public record DbImportOptions
-{
-    public string ImportConnectionString { get; set; } = string.Empty;
 }

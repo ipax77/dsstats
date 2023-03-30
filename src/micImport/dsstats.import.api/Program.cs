@@ -2,6 +2,7 @@
 using dsstats.import.api.Services;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
+using pax.dsstats.shared;
 
 namespace dsstats.import.api;
 
@@ -14,7 +15,10 @@ public class Program
 
         var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 41));
         var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
-        var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"];
+        var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"] ?? "";
+
+        builder.Services.AddOptions<DbImportOptions>()
+            .Configure(x => x.ImportConnectionString = importConnectionString);
 
         builder.Services.AddDbContext<ReplayContext>(options =>
         {

@@ -15,20 +15,9 @@ namespace dsstats.import.api.Controllers
             this.importService = importService;
         }
 
-        [HttpGet]
-        public async Task<ActionResult> StartImportJob()
+        [HttpPost]
+        public async Task<ActionResult> StartImportJob([FromBody] ImportRequest request)
         {
-            //ImportRequest request = new()
-            //{
-            //    Replayblobs = new() { "/data/ds/replayblobs/42cd7b31-2e0b-4931-becf-bdbbef500848/20230103-190356.base64" },
-
-            //};
-
-            ImportRequest request = new()
-            {
-                Replayblobs = new() { "/data/ds/replayblobs/d0579fb3-5c5e-4cb0-86e6-4e23f0f66d05/20230103-181742.base64" }
-            };
-
             await importService.Import(request);
             return new OkResult();
         }
