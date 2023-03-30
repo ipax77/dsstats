@@ -20,7 +20,7 @@ builder.Host.ConfigureAppConfiguration((context, config) =>
 
 // Add services to the container.
 
-var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 40));
+var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 41));
 var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
 var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"];
 
@@ -76,12 +76,29 @@ builder.Services.AddTransient<BuildService>();
 builder.Services.AddTransient<CmdrsService>();
 builder.Services.AddTransient<TourneyService>();
 
-builder.Services.AddHostedService<CacheBackgroundService>();
+//builder.Services.AddHostedService<CacheBackgroundService>();
 builder.Services.AddHostedService<RatingsBackgroundService>();
+
+builder.Services.AddHttpClient("importClient")
+    .ConfigureHttpClient(options =>
+    {
+        options.BaseAddress = new Uri("http://localhost:5259");
+        options.DefaultRequestHeaders.Add("Accept", "application/json");
+        options.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue(builder.Configuration["ServerConfig:ImportAuthSecret"]);
+    });
+
+builder.Services.AddHttpClient("ratingsClient")
+    .ConfigureHttpClient(options =>
+    {
+        options.BaseAddress = new Uri("http://localhost:5153");
+        options.DefaultRequestHeaders.Add("Accept", "application/json");
+        options.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue(builder.Configuration["ServerConfig:ImportAuthSecret"]);
+    });
 
 var app = builder.Build();
 
-Data.MysqlConnectionString = importConnectionString;
 using var scope = app.Services.CreateScope();
 
 var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();

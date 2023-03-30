@@ -1,5 +1,6 @@
 ﻿using dsstats.import.api.Services;
 using Microsoft.AspNetCore.Mvc;
+using pax.dsstats.shared;
 
 namespace dsstats.import.api.Controllers
 {

@@ -9,6 +9,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.15" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="6.0.15" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.15" />
@@ -58,6 +59,9 @@
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="testdata\uploadtest2.base64">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="testdata\uploadtest3.base64">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>

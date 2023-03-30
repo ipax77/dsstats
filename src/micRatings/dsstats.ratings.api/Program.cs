@@ -50,13 +50,13 @@ public class Program
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
-            using var scope = app.Services.CreateScope();
-            var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+            // using var scope = app.Services.CreateScope();
+            // var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
 
-            Stopwatch sw = Stopwatch.StartNew();
-            ratingsService.ProduceRatings().Wait();
-            sw.Stop();
-            Console.WriteLine($"ratings produced in {sw.ElapsedMilliseconds} ms");
+            // Stopwatch sw = Stopwatch.StartNew();
+            // ratingsService.ProduceRatings().Wait();
+            // sw.Stop();
+            // Console.WriteLine($"ratings produced in {sw.ElapsedMilliseconds} ms");
 
             app.UseSwagger();
             app.UseSwaggerUI();

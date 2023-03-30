@@ -186,14 +186,3 @@ public record BlobCache
     public string Blob { get; init; } = string.Empty;
     public int Count { get; set; }
 }
-
-public record ImportRequest
-{
-    public List<string> Replayblobs { get; set; } = new();
-}
-
-public record ImportResult
-{
-
-}
-
