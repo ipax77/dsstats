@@ -76,7 +76,7 @@ builder.Services.AddTransient<BuildService>();
 builder.Services.AddTransient<CmdrsService>();
 builder.Services.AddTransient<TourneyService>();
 
-//builder.Services.AddHostedService<CacheBackgroundService>();
+builder.Services.AddHostedService<CacheBackgroundService>();
 builder.Services.AddHostedService<RatingsBackgroundService>();
 
 builder.Services.AddHttpClient("importClient")
