@@ -42,6 +42,9 @@ public partial class RatingsService
             SET FOREIGN_KEY_CHECKS = 0;
             RENAME TABLE {nameof(ReplayContext.PlayerRatings)} TO {nameof(ReplayContext.PlayerRatings)}_old, {tempTable} TO {nameof(ReplayContext.PlayerRatings)};
             DROP TABLE {nameof(ReplayContext.PlayerRatings)}_old;
+            ALTER TABLE {nameof(ReplayContext.PlayerRatingChanges)} DROP FOREIGN KEY FK_PlayerRatingChanges_PlayerRatings_PlayerRatingId;
+            ALTER TABLE {nameof(ReplayContext.PlayerRatingChanges)} ADD CONSTRAINT FK_PlayerRatingChanges_PlayerRatings_PlayerRatingId
+                FOREIGN KEY (PlayerRatingId) REFERENCES {nameof(ReplayContext.PlayerRatings)} (PlayerRatingId);
             SET FOREIGN_KEY_CHECKS = 1;
         ";
         await command.ExecuteNonQueryAsync();

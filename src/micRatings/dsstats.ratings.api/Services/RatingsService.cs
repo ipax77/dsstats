@@ -48,7 +48,17 @@ public partial class RatingsService
             if (request == null)
             {
                 // nothing to do
-                return;
+                logger.LogWarning("nothing to do2");
+
+                request = new()
+                { 
+                    MmrOptions = new(reCalc: true),
+                    MmrIdRatings = await GetMmrIdRatings(new(reCalc: true), null),
+                    StartTime = new DateTime(2023, 1, 22),
+                    EndTime = DateTime.Today.AddDays(2)
+                }; 
+
+                //return;
             }
 
             recalc = request.MmrOptions.ReCalc;
@@ -102,7 +112,8 @@ public partial class RatingsService
         int replayRatingAppendId = 0;
         int replayPlayerRatingAppendId = 0;
 
-        DateTime startTime = new DateTime(2018, 1, 1);
+        // DateTime startTime = new DateTime(2018, 1, 1);
+        DateTime startTime = new DateTime(2023, 1, 22);
         DateTime endTime = DateTime.Today.AddDays(2);
 
         using var scope = serviceProvider.CreateScope();
@@ -113,6 +124,7 @@ public partial class RatingsService
             .OrderByDescending(o => o.GameTime)
             .Select(s => s.GameTime)
             .FirstOrDefaultAsync();
+
         
         if (latestRatingsProduced > DateTime.MinValue)
         {

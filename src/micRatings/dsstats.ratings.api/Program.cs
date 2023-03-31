@@ -17,8 +17,10 @@ public class Program
         builder.Configuration.AddJsonFile("/data/localserverconfig.json", optional: true, reloadOnChange: false);
 
         var serverVersion = new MySqlServerVersion(new Version(5, 7, 41));
-        var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
-        var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"] ?? "";
+        // var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
+        // var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"] ?? "";
+        var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
+        var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"] ?? "";
 
         builder.Services.AddOptions<DbImportOptions>()
             .Configure(x => x.ImportConnectionString = importConnectionString);
@@ -52,13 +54,13 @@ public class Program
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
-            // using var scope = app.Services.CreateScope();
-            // var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+            using var scope = app.Services.CreateScope();
+            var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
 
-            // Stopwatch sw = Stopwatch.StartNew();
-            // ratingsService.ProduceRatings().Wait();
-            // sw.Stop();
-            // Console.WriteLine($"ratings produced in {sw.ElapsedMilliseconds} ms");
+            Stopwatch sw = Stopwatch.StartNew();
+            ratingsService.ProduceRatings().Wait();
+            sw.Stop();
+            Console.WriteLine($"ratings produced in {sw.ElapsedMilliseconds} ms");
 
             app.UseSwagger();
             app.UseSwaggerUI();
