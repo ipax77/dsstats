@@ -1,9 +1,11 @@
 
 using dsstats.ratings.api.Services;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
 using System.Diagnostics;
+using System.Threading.RateLimiting;
 
 namespace dsstats.ratings.api;
 
@@ -66,8 +68,25 @@ public class Program
 
         app.UseAuthorization();
 
+        app.UseRateLimiter(new RateLimiterOptions()
+            .AddConcurrencyLimiter(policyName: "default", options =>
+            {
+                options.PermitLimit = 2;
+                options.QueueLimit = 2;
+                options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            })
+            .AddTokenBucketLimiter(policyName: "tokenDefault", options =>
+            {
+                options.TokenLimit = 4;
+                options.QueueLimit = 1;
+                options.TokensPerPeriod = 1;
+                options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                options.ReplenishmentPeriod = TimeSpan.FromSeconds(20);
+                options.AutoReplenishment = true;
+            })
+        );
 
-        app.MapControllers();
+        app.MapControllers().RequireRateLimiting("tokenDefault");
 
         app.Run();
 
