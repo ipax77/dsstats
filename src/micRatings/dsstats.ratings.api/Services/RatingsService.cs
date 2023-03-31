@@ -6,6 +6,7 @@ using MySqlConnector;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Ratings;
+using System.Diagnostics;
 
 namespace dsstats.ratings.api.Services;
 
@@ -31,10 +32,16 @@ public partial class RatingsService
         ratingSs = new(1, 1);
     }
 
+    private const int ratingsCount = 10;
+    private Queue<RatingsReport> ratingsResults = new Queue<RatingsReport>(ratingsCount);
+
     public async Task ProduceRatings()
     {
         await ratingSs.WaitAsync();
 
+        Stopwatch sw = Stopwatch.StartNew();
+        int recalcCount = 0;
+        bool recalc = false;
         try
         {
             var request = await GetCalcRatingRequest();
@@ -43,6 +50,9 @@ public partial class RatingsService
                 // nothing to do
                 return;
             }
+
+            recalc = request.MmrOptions.ReCalc;
+            recalcCount = request.ReplayDsRDtos.Count;
 
             await GeneratePlayerRatings(request);
 
@@ -65,6 +75,21 @@ public partial class RatingsService
         }
         finally
         {
+            sw.Stop();
+
+            if (ratingsResults.Count >= ratingsCount)
+            {
+                ratingsResults.Dequeue();
+            }
+
+            ratingsResults.Enqueue(new()
+            {
+                Produced = DateTime.UtcNow,
+                ElapsedMs = (int)sw.ElapsedMilliseconds,
+                Recalc = recalc,
+                RecalcCount = recalcCount
+            });
+
             ratingSs.Release();
         }
     }

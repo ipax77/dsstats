@@ -88,7 +88,28 @@ public partial class ImportService
                             if (!blobCaches.Any())
                             {
                                 logger.LogInformation($"replays imported: {imports}, dups: {dups}, errors: {errors}");
-                                BlobsHandled(new());
+
+                                sw.Stop();
+
+                                if (stepQueue.Count > 4)
+                                {
+                                    stepQueue.Dequeue();
+                                }
+
+                                stepQueue.Enqueue(new()
+                                {
+                                    Imported = imports,
+                                    Duplicates = dups,
+                                    Errors = errors,
+                                    ElapsedMs = (int)sw.ElapsedMilliseconds
+                                });
+                                sw.Reset();
+
+                                imports = 0;
+                                dups = 0;
+                                errors = 0;
+
+                                // BlobsHandled(new());
                             }
                         }
                     }

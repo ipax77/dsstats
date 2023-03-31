@@ -1,5 +1,6 @@
 ﻿using dsstats.ratings.api.Services;
 using Microsoft.AspNetCore.Mvc;
+using pax.dsstats.shared;
 
 namespace dsstats.ratings.api.Controllers;
 
@@ -20,5 +21,12 @@ public class RatingsController
     {
         await ratingsService.ProduceRatings();
         return new OkResult();
+    }
+
+    [HttpGet]
+    [Route("reports")]
+    public ActionResult<List<RatingsReport>> GetRatingResults()
+    {
+        return ratingsService.GetResults();
     }
 }

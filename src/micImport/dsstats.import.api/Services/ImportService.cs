@@ -32,6 +32,7 @@ public partial class ImportService
 
     private DbImportCache dbCache = new();
     private ConcurrentDictionary<string, BlobCache> blobCaches = new();
+    private Queue<ImportStepInfo> stepQueue = new Queue<ImportStepInfo>(5);
     private Stopwatch sw = new();
 
     public EventHandler<EventArgs>? OnBlobsHandled { get; set; }
@@ -41,9 +42,7 @@ public partial class ImportService
         var handler = OnBlobsHandled;
         handler?.Invoke(this, e);
 
-        sw.Stop();
-        logger.LogWarning($"elapsed: {sw.ElapsedMilliseconds} ms");
-        sw.Reset();
+
     }
 
     private void SeedImportCache()
@@ -185,4 +184,12 @@ public record BlobCache
 {
     public string Blob { get; init; } = string.Empty;
     public int Count { get; set; }
+}
+
+public record ImportStepInfo
+{
+    public int Imported { get; init; }
+    public int Duplicates { get; init; }
+    public int Errors { get; init; }
+    public int ElapsedMs { get; set; }
 }

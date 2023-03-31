@@ -22,5 +22,11 @@ namespace dsstats.import.api.Controllers
             await importService.Import(request);
             return new OkResult();
         }
+
+        [HttpGet]
+        public ActionResult<ImportResult> GetImportResult()
+        {
+            return importService.GetImportResult();
+        }
     }
 }
