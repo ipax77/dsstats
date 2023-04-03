@@ -130,7 +130,7 @@ public record PlayerId
     public PlayerId( int regionId, int realmId, int profileId)
     {
         RegionId = regionId;
-        RegionId = realmId;
+        RealmId = realmId;
         ProfileId = profileId;
     }
     public int RegionId { get; set; }
