@@ -1,0 +1,139 @@
+﻿using dsstats.sc2arcade.api.Models;
+using System.Text;
+using System.Text.Json;
+
+namespace dsstats.sc2arcade.api.Services;
+
+public class CrawlerService
+{
+    private readonly IHttpClientFactory httpClientFactory;
+    private readonly ILogger<CrawlerService> logger;
+
+    public CrawlerService(IHttpClientFactory httpClientFactory, ILogger<CrawlerService> logger)
+    {
+        this.httpClientFactory = httpClientFactory;
+        this.logger = logger;
+    }
+
+    public async Task GetLobbyHistory()
+    {
+        var httpClient = httpClientFactory.CreateClient("sc2arcardeClient");
+
+        int waitTime = 40*1000 / 100; // 100 request per 40 sec
+
+        List<LobbyResult> results = new List<LobbyResult>();
+        string? next = null;
+        string? current = null;
+
+        for (int i = 0; i < 1000; i++)
+        {
+            try
+            {
+                var request = "lobbies/history?regionId=2&mapId=140436&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
+                if (!String.IsNullOrEmpty(next))
+                {
+                    request += $"&after={next}";
+                    if (next == current)
+                    {
+                        logger.LogError($"breaking bad");
+                        break;
+                    }
+                    current = next;
+                }
+
+                var result = await httpClient.GetFromJsonAsync<LobbyHistoryResponse>(request);
+                if (result != null)
+                {
+                    results.AddRange(result.Results);
+                    next = result.Page.Next;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"failed getting lobby result: {ex.Message}");
+                await Task.Delay(waitTime);
+            }
+            finally
+            {
+                await Task.Delay(waitTime);
+                logger.LogInformation($"{i}/100");
+            }
+        }
+
+        var json = JsonSerializer.Serialize(results, new JsonSerializerOptions() { WriteIndented = true });
+        File.WriteAllText("/data/ds/sc2arcardeLobbyResults.json", json);
+
+        logger.LogInformation($"job done.");
+    }
+
+    public void AnalyizeLobbyHistory(string jsonFile)
+    {
+        List<LobbyResult> results = JsonSerializer.Deserialize<List<LobbyResult>>(File.ReadAllText(jsonFile)) ?? new();
+
+        if (!results.Any())
+        {
+            return;
+        }
+
+        string gameMode = "3V3";
+
+        results = results.Where(x => x.Match != null && x.Match.ProfileMatches.Any() && x.MapVariantMode == gameMode).ToList();
+
+        DateTime endTime = results.First().CreatedAt;
+        DateTime startTime = results.Last().CreatedAt;
+
+        Dictionary<PlayerId, PlayerSuccess> playerResults = new();
+
+        for (int i = 0; i < results.Count; i++)
+        {
+            foreach (PlayerResult playerResult in results[i].Match.ProfileMatches)
+            {
+                PlayerId playerId = new(playerResult.Profile.RegionId, playerResult.Profile.RealmId, playerResult.Profile.ProfileId);
+
+                if (!playerResults.TryGetValue(playerId, out PlayerSuccess? playerSuccess))
+                {
+                    playerSuccess = new PlayerSuccess()
+                    {
+                        Name = playerResult.Profile.Name
+                    };
+                    playerResults[playerId] = playerSuccess;
+                }
+                playerSuccess.Games++;
+                if (playerResult.Decision == "win")
+                    playerSuccess.Wins++;
+            }
+        }
+
+        StringBuilder sb = new();
+        sb.AppendLine(gameMode);
+        sb.AppendLine($"{startTime.ToShortDateString()} - {endTime.ToShortDateString()} - {results.Count} games");
+        
+        foreach (var success in playerResults.OrderByDescending(o => o.Value.Winrate).Take(20))
+        {
+            sb.AppendLine($"{success.Value.Name} => {success.Value.Games} ({success.Value.Winrate}%)");
+        }
+
+        Console.WriteLine(sb.ToString());
+    }
+}
+
+public record PlayerSuccess
+{
+    public string Name { get; set; } = string.Empty;
+    public int Games { get; set; }
+    public int Wins { get; set; }
+    public double Winrate => Games == 0 ? 0 : Math.Round(Wins * 100.0 / (double)Games, 2);
+}
+
+public record PlayerId
+{
+    public PlayerId( int regionId, int realmId, int profileId)
+    {
+        RegionId = regionId;
+        RegionId = realmId;
+        ProfileId = profileId;
+    }
+    public int RegionId { get; set; }
+    public int RealmId { get; set; }
+    public int ProfileId { get; set; }
+}

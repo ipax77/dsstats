@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33513.286
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.sc2arcade.api", "dsstats.sc2arcade.api.csproj", "{7319E9ED-976E-4A63-BA28-422E5C27042D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7319E9ED-976E-4A63-BA28-422E5C27042D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7319E9ED-976E-4A63-BA28-422E5C27042D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7319E9ED-976E-4A63-BA28-422E5C27042D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7319E9ED-976E-4A63-BA28-422E5C27042D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {73007084-72F0-4581-9BDC-6CF0D7C755A0}
+	EndGlobalSection
+EndGlobal
