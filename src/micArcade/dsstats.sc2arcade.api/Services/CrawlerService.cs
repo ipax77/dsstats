@@ -4,13 +4,15 @@ using System.Text.Json;
 
 namespace dsstats.sc2arcade.api.Services;
 
-public class CrawlerService
+public partial class CrawlerService
 {
+    private readonly IServiceProvider serviceProvider;
     private readonly IHttpClientFactory httpClientFactory;
     private readonly ILogger<CrawlerService> logger;
 
-    public CrawlerService(IHttpClientFactory httpClientFactory, ILogger<CrawlerService> logger)
+    public CrawlerService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory, ILogger<CrawlerService> logger)
     {
+        this.serviceProvider = serviceProvider;
         this.httpClientFactory = httpClientFactory;
         this.logger = logger;
     }
@@ -25,8 +27,10 @@ public class CrawlerService
         string? next = null;
         string? current = null;
 
-        for (int i = 0; i < 1000; i++)
+        int i = 0;
+        while(true)
         {
+            i++;
             try
             {
                 var request = "lobbies/history?regionId=2&mapId=140436&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
@@ -56,12 +60,24 @@ public class CrawlerService
             finally
             {
                 await Task.Delay(waitTime);
-                logger.LogInformation($"{i}/100");
+                logger.LogWarning($"{i}/100");
+            }
+            if (results.Count > 10000)
+            {
+                await ImportArcadeReplays(results);
+
+                if (results.Last().CreatedAt < new DateTime(2021, 2, 1))
+                {
+                    break;
+                }
+                results.Clear();
             }
         }
 
-        var json = JsonSerializer.Serialize(results, new JsonSerializerOptions() { WriteIndented = true });
-        File.WriteAllText("/data/ds/sc2arcardeLobbyResults.json", json);
+        await ImportArcadeReplays(results);
+
+        //var json = JsonSerializer.Serialize(results, new JsonSerializerOptions() { WriteIndented = true });
+        //File.WriteAllText("/data/ds/sc2arcardeLobbyResults.json", json);
 
         logger.LogInformation($"job done.");
     }
@@ -77,7 +93,7 @@ public class CrawlerService
 
         string gameMode = "3V3";
 
-        results = results.Where(x => x.Match != null && x.Match.ProfileMatches.Any() && x.MapVariantMode == gameMode).ToList();
+        results = results.Where(x => x.Match != null && x.Match.ProfileMatches.Count != 0 && x.MapVariantMode == gameMode).ToList();
 
         DateTime endTime = results.First().CreatedAt;
         DateTime startTime = results.Last().CreatedAt;
@@ -86,6 +102,7 @@ public class CrawlerService
 
         for (int i = 0; i < results.Count; i++)
         {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             foreach (PlayerResult playerResult in results[i].Match.ProfileMatches)
             {
                 PlayerId playerId = new(playerResult.Profile.RegionId, playerResult.Profile.RealmId, playerResult.Profile.ProfileId);
@@ -102,6 +119,7 @@ public class CrawlerService
                 if (playerResult.Decision == "win")
                     playerSuccess.Wins++;
             }
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
         }
 
         StringBuilder sb = new();
@@ -127,12 +145,18 @@ public record PlayerSuccess
 
 public record PlayerId
 {
+    public PlayerId()
+    {
+
+    }
+
     public PlayerId( int regionId, int realmId, int profileId)
     {
         RegionId = regionId;
         RealmId = realmId;
         ProfileId = profileId;
     }
+
     public int RegionId { get; set; }
     public int RealmId { get; set; }
     public int ProfileId { get; set; }

@@ -27,6 +27,9 @@ public class ReplayContext : DbContext
     public virtual DbSet<CommanderMmr> CommanderMmrs { get; set; } = null!;
     public virtual DbSet<GroupByHelper> GroupByHelpers { get; set; } = null!;
     public virtual DbSet<FunStatsMemory> FunStatMemories { get; set; } = null!;
+    public virtual DbSet<ArcadeReplay> ArcadeReplays { get; set; } = null!;
+    public virtual DbSet<ArcadeReplayPlayer> ArcadeReplayPlayers { get; set; } = null!;
+    public virtual DbSet<ArcadePlayer> ArcadePlayers { get; set; } = null!;
 
     public ReplayContext(DbContextOptions<ReplayContext> options)
     : base(options)
@@ -114,6 +117,17 @@ public class ReplayContext : DbContext
         modelBuilder.Entity<PlayerRating>(entity =>
         {
             entity.HasIndex(e => e.RatingType);
+        });
+
+        modelBuilder.Entity<ArcadeReplay>(entity =>
+        {
+            entity.HasIndex(i => new { i.GameMode, i.CreatedAt });
+        });
+
+        modelBuilder.Entity<ArcadePlayer>(entity =>
+        {
+            entity.HasIndex(i => i.Name);
+            entity.HasIndex(i => new { i.RegionId, i.RealmId, i.ProfileId }).IsUnique();
         });
     }
 }

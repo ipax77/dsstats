@@ -1,6 +1,8 @@
 
 using dsstats.sc2arcade.api.Services;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Microsoft.EntityFrameworkCore;
+using pax.dsstats.dbng;
+using pax.dsstats.shared;
 
 namespace dsstats.sc2arcade.api
 {
@@ -9,13 +11,37 @@ namespace dsstats.sc2arcade.api
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.Configuration.AddJsonFile("/data/localserverconfig.json", optional: true, reloadOnChange: false);
 
-            // Add services to the container.
+            var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 41));
+            var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
+            var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"] ?? "";
+
+            builder.Services.AddOptions<DbImportOptions>()
+                .Configure(x => x.ImportConnectionString = importConnectionString);
+
+            builder.Services.AddDbContext<ReplayContext>(options =>
+            {
+                options.UseMySql(connectionString, serverVersion, p =>
+                {
+                    p.CommandTimeout(120);
+                    p.EnableRetryOnFailure();
+                    p.MigrationsAssembly("MysqlMigrations");
+                    p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
+                })
+                //.EnableDetailedErrors()
+                //.EnableSensitiveDataLogging()
+                ;
+            });
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            builder.Services.AddScoped<AuthenticationFilterAttribute>();
+
+            builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
             builder.Services.AddHttpClient("sc2arcardeClient")
                 .ConfigureHttpClient(options =>
@@ -28,16 +54,20 @@ namespace dsstats.sc2arcade.api
 
             var app = builder.Build();
 
+            using var scope = app.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+            context.Database.EnsureCreated();
+            context.Database.Migrate();
+
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
 
-                using var scope = app.Services.CreateScope();
                 var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
-                // crawlerService.GetLobbyHistory().Wait();
-                crawlerService.AnalyizeLobbyHistory("/data/ds/sc2arcardeLobbyResults.json");
+                crawlerService.GetLobbyHistory().Wait();
+                // crawlerService.AnalyizeLobbyHistory("/data/ds/sc2arcardeLobbyResults.json");
             }
 
             app.UseHttpsRedirection();
