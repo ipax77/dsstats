@@ -12,6 +12,7 @@ public static partial class MmrService
         public Dictionary<RatingType, Dictionary<int, CalcRating>> CalcRatings { get; set; } = new();
         public int ReplayRatingAppendId { get; set; }
         public int ReplayPlayerRatingAppendId { get; set; }
+        public List<ReplayRatingDto> replayRatingDtos { get; set; } = new();
     }
 
     public record CalcRatingRequest
@@ -74,6 +75,10 @@ public static partial class MmrService
         }
 
         result.CalcRatings = request.MmrIdRatings;
+        if (dry)
+        {
+            result.replayRatingDtos.AddRange(replayRatingDtos);
+        }
 
         return result;
     }

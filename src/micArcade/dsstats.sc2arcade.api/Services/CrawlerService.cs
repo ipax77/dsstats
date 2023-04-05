@@ -33,14 +33,14 @@ public partial class CrawlerService
             i++;
             try
             {
-                var request = "lobbies/history?regionId=2&mapId=140436&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
+                // var request = "lobbies/history?regionId=2&mapId=140436&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
+                var request = "lobbies/history?regionId=1&mapId=208271&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
                 if (!String.IsNullOrEmpty(next))
                 {
                     request += $"&after={next}";
                     if (next == current)
                     {
-                        logger.LogError($"breaking bad");
-                        break;
+                        await Task.Delay(waitTime);
                     }
                     current = next;
                 }
@@ -54,12 +54,12 @@ public partial class CrawlerService
             }
             catch (Exception ex)
             {
-                logger.LogError($"failed getting lobby result: {ex.Message}");
+                logger.LogError($"failed getting lobby result ({next}): {ex.Message}");
                 await Task.Delay(waitTime);
             }
             finally
             {
-                await Task.Delay(waitTime);
+                // await Task.Delay(waitTime);
                 logger.LogWarning($"{i}/100");
             }
             if (results.Count > 10000)

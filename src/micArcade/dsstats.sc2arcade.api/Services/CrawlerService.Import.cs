@@ -8,15 +8,22 @@ namespace dsstats.sc2arcade.api.Services;
 public partial class CrawlerService
 {
     public Dictionary<PlayerId, int> arcadePlayerIds = new();
+    public Dictionary<int, bool> arcadeReplayIds = new();
 
     public async Task ImportArcadeReplays(List<LobbyResult> results)
     {
         await SeedPlayerIds();
+        await SeedReplayIds();
 
         List<ArcadeReplay> replays = new();
 
         foreach (var result in results)
         {
+            if (arcadeReplayIds.ContainsKey(result.Id))
+            {
+                continue;
+            }
+
             if (result.SlotsHumansTaken != 6
                 || result.Match == null
                 || result.Match.ProfileMatches.Count == 0)
@@ -28,6 +35,7 @@ public partial class CrawlerService
             {
                 "3V3" => GameMode.Standard,
                 "3V3 Commanders" => GameMode.Commanders,
+                "Heroic Commanders" => GameMode.CommandersHeroic,
                 _ => GameMode.None
             };
 
@@ -98,6 +106,18 @@ public partial class CrawlerService
         await context.SaveChangesAsync();
     }
 
+    private async Task SeedReplayIds()
+    {
+        if (arcadeReplayIds.Any())
+        {
+            return;
+        }
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        arcadeReplayIds = (await context.ArcadeReplays.Select(s => s.Id).Distinct().ToListAsync()).ToDictionary(k => k, v => true);
+    }
+
     private async Task SeedPlayerIds()
     {
         if (arcadePlayerIds.Any())
@@ -118,5 +138,39 @@ public partial class CrawlerService
             }).ToListAsync();
         
         arcadePlayerIds = players.ToDictionary(k => new PlayerId(k.RegionId, k.RealmId, k.ProfileId), v => v.ArcadePlayerId);
+    }
+
+    public async Task DeleteDups()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var dups = from r in context.ArcadeReplays
+                   group r by r.Id into g
+                   where g.Count() > 1
+                   select new { Id = g.Key };
+        var dupsList = (await dups.ToListAsync()).Select(s => s.Id).ToList();
+
+        var dupReplays = await context.ArcadeReplays
+            .Include(i => i.ArcadeReplayPlayers)
+                .ThenInclude(i => i.ArcadePlayer)
+            .Where(x => dupsList.Contains(x.Id))
+            .ToListAsync();
+
+        var removeReplays = new List<ArcadeReplay>();
+        Dictionary<int, bool> ids = new();
+
+        foreach (var replay in dupReplays)
+        {
+            if (ids.ContainsKey(replay.Id))
+            {
+                continue;
+            }
+            ids.Add(replay.Id, true);
+            removeReplays.Add(replay);
+        }
+
+        context.ArcadeReplays.RemoveRange(removeReplays);
+        await context.SaveChangesAsync();
     }
 }

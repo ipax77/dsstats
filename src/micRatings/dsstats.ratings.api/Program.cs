@@ -17,10 +17,10 @@ public class Program
         builder.Configuration.AddJsonFile("/data/localserverconfig.json", optional: true, reloadOnChange: false);
 
         var serverVersion = new MySqlServerVersion(new Version(5, 7, 41));
-        // var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
-        // var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"] ?? "";
-        var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
-        var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"] ?? "";
+        var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
+        var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"] ?? "";
+        //var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
+        //var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"] ?? "";
 
         builder.Services.AddOptions<DbImportOptions>()
             .Configure(x => x.ImportConnectionString = importConnectionString);
@@ -48,6 +48,7 @@ public class Program
 
         builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
         builder.Services.AddSingleton<RatingsService>();
+        builder.Services.AddSingleton<ArcadeRatingsService>();
 
         var app = builder.Build();
 
@@ -55,10 +56,17 @@ public class Program
         if (app.Environment.IsDevelopment())
         {
             using var scope = app.Services.CreateScope();
-            var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+            //var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+
+            //Stopwatch sw = Stopwatch.StartNew();
+            //ratingsService.ProduceRatings().Wait();
 
             Stopwatch sw = Stopwatch.StartNew();
-            ratingsService.ProduceRatings().Wait();
+            var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
+            arcadeRatingsService.ProduceRatings().Wait();
+            arcadeRatingsService.PrintLadder("/data/ds/arcaderatingCmdr.json");
+            // arcadeRatingsService.PrintLadder("/data/ds/arcaderatingStd.json");
+
             sw.Stop();
             Console.WriteLine($"ratings produced in {sw.ElapsedMilliseconds} ms");
 
