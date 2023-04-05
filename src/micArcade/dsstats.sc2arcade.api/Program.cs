@@ -70,7 +70,8 @@ namespace dsstats.sc2arcade.api
                 // crawlerService.AnalyizeLobbyHistory("/data/ds/sc2arcardeLobbyResults.json");
                 // crawlerService.DEBUGJson("/data/ds/temp.json");
 
-                crawlerService.CheckPlayers().Wait();
+                // crawlerService.CheckPlayers().Wait();
+                crawlerService.CheckReplays().Wait();
             }
 
             app.UseHttpsRedirection();

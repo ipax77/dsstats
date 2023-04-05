@@ -27,7 +27,7 @@ public partial class MmrService
     {
         foreach (var playerData in teamData.Players)
         {
-            SetPlayerData(mmrIdRatings, playerData, mmrOptions);
+            SetPlayerData(mmrIdRatings, replayData, playerData, mmrOptions);
         }
 
         teamData.Confidence = teamData.Players.Sum(p => p.Confidence) / teamData.Players.Length;
@@ -54,22 +54,34 @@ public partial class MmrService
         replayData.LoserTeamData.ExpectedResult = (1 - replayData.WinnerTeamData.ExpectedResult);
     }
 
-    private static void SetPlayerData(Dictionary<int, CalcRating> mmrIdRatings, PlayerData playerData, MmrOptions mmrOptions)
+    private static void SetPlayerData(Dictionary<int, CalcRating> mmrIdRatings,
+                                      ReplayData replayData,
+                                      PlayerData playerData,
+                                      MmrOptions mmrOptions)
     {
-        if (!mmrIdRatings.TryGetValue(playerData.MmrId, out var plRating))
+        if (mmrOptions.ReCalc && !playerData.ReplayPlayer.IsUploader && (replayData.RatingType == RatingType.Cmdr || replayData.RatingType == RatingType.Std))
         {
-            plRating = mmrIdRatings[playerData.MmrId] = new CalcRating()
-            {
-                PlayerId = playerData.ReplayPlayer.Player.PlayerId,
-                Mmr = mmrOptions.StartMmr,
-                Consistency = 0,
-                Confidence = 0,
-                Games = 0,
-            };
+            playerData.Mmr = mmrOptions.GetInjectRating(replayData.RatingType,
+                                                        replayData.ReplayDsRDto.GameTime,
+                                                        playerData.ReplayPlayer.Player.ToonId);
         }
+        else
+        {
+            if (!mmrIdRatings.TryGetValue(playerData.MmrId, out var plRating))
+            {
+                plRating = mmrIdRatings[playerData.MmrId] = new CalcRating()
+                {
+                    PlayerId = playerData.ReplayPlayer.Player.PlayerId,
+                    Mmr = mmrOptions.StartMmr,
+                    Consistency = 0,
+                    Confidence = 0,
+                    Games = 0,
+                };
+            }
 
-        playerData.Mmr = plRating.Mmr;
-        playerData.Consistency = plRating.Consistency;
-        playerData.Confidence = plRating.Confidence;
+            playerData.Mmr = plRating.Mmr;
+            playerData.Consistency = plRating.Consistency;
+            playerData.Confidence = plRating.Confidence;
+        }
     }
 }

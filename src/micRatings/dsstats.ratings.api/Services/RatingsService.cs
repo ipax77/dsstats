@@ -164,6 +164,8 @@ public partial class RatingsService
             }
         }
 
+        mmrOptions.InjectDic = mmrOptions.ReCalc ? await GetArcadeInjectDic() : new();
+
         MmrService.CalcRatingRequest request = new()
         {
             CmdrMmrDic = new(),

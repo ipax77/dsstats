@@ -29,7 +29,7 @@ public class Program
         {
             options.UseMySql(connectionString, serverVersion, p =>
             {
-                p.CommandTimeout(120);
+                p.CommandTimeout(500);
                 p.EnableRetryOnFailure();
                 p.MigrationsAssembly("MysqlMigrations");
                 p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
@@ -60,14 +60,14 @@ public class Program
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
-            //var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
-
-            //Stopwatch sw = Stopwatch.StartNew();
-            //ratingsService.ProduceRatings().Wait();
+            var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
 
             Stopwatch sw = Stopwatch.StartNew();
-            var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
-            arcadeRatingsService.ProduceRatings().Wait();
+            ratingsService.ProduceRatings().Wait();
+
+            // Stopwatch sw = Stopwatch.StartNew();
+            // var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
+            // arcadeRatingsService.ProduceRatings().Wait();
             // arcadeRatingsService.PrintLadder("/data/ds/arcaderatingCmdr.json");
             // arcadeRatingsService.PrintLadder("/data/ds/arcaderatingStd.json");
 

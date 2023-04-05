@@ -61,6 +61,7 @@ public partial class ArcadeRatingsService
     {
         ArcadeRatingsCsvService.CreatePlayerRatingCsv(mmrIdRatings);
         await PlayerRatingsFromCsv2MySql(ArcadeRatingsCsvService.csvBasePath);
+        await ReplayRatingsFromCsv2MySql(ArcadeRatingsCsvService.csvBasePath);
         await ReplayPlayerRatingsFromCsv2MySql(ArcadeRatingsCsvService.csvBasePath);
     }
 

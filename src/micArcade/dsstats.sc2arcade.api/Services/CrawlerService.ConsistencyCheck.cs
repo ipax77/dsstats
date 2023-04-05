@@ -13,6 +13,7 @@ public partial class CrawlerService
         var players = await context.Players
             .OrderBy(o => o.PlayerId)
             .Take(100)
+            .AsNoTracking()
             .ToListAsync();
 
         int notFound = 0;
@@ -40,5 +41,49 @@ public partial class CrawlerService
         }
 
         logger.LogWarning($"Player check: NotFound: {notFound}, Multiple: {multiple}, Good: {good}");
+    }
+
+    public async Task CheckReplays()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var replays = await context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Player)
+            .Where(x => (x.GameMode == pax.dsstats.shared.GameMode.Commanders || x.GameMode == pax.dsstats.shared.GameMode.Standard) && x.Playercount == 6 && x.Duration > 300)
+            .OrderByDescending(o => o.GameTime)
+            .Take(3000)
+            .AsNoTracking()
+            .ToListAsync();
+
+        int good = 0;
+        int notFound = 0;
+        int multiple = 0;
+
+        foreach (var replay in replays)
+        {
+            var toonIds = replay.ReplayPlayers.Select(s => s.Player.ToonId).ToList();
+            
+            var arcadeReplays = await context.ArcadeReplays
+                .Where(x => x.GameMode == replay.GameMode)
+                .Where(x => x.CreatedAt > replay.GameTime.AddHours(-12) && x.CreatedAt < replay.GameTime.AddHours(12))
+                .Where(x => x.ArcadeReplayPlayers.All(a => toonIds.Contains(a.ArcadePlayer.ProfileId)))
+                .ToListAsync();
+
+            if (arcadeReplays.Count == 0)
+            {
+                notFound++;
+            }
+            else if (arcadeReplays.Count == 1)
+            {
+                good++;
+            }
+            else
+            {
+                multiple++;
+            }
+        }
+        logger.LogWarning($"Replay check: NotFound: {notFound}, Multiple: {multiple}, Good: {good}");
     }
 }

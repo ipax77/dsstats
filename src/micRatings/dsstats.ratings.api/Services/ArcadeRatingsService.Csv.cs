@@ -34,7 +34,7 @@ namespace dsstats.ratings.api.Services
             ESCAPED BY '""'
             LINES TERMINATED BY '\n';
         ";
-            command.CommandTimeout = 120;
+            command.CommandTimeout = 500;
             await command.ExecuteNonQueryAsync();
 
             // Rename temporary table to original table
@@ -80,7 +80,7 @@ namespace dsstats.ratings.api.Services
             ESCAPED BY '""'
             LINES TERMINATED BY '\n';
         ";
-            command.CommandTimeout = 120;
+            command.CommandTimeout = 500;
             await command.ExecuteNonQueryAsync();
 
             // Rename temporary table to original table
@@ -124,7 +124,7 @@ namespace dsstats.ratings.api.Services
             ESCAPED BY '""'
             LINES TERMINATED BY '\n';
         ";
-            command.CommandTimeout = 120;
+            command.CommandTimeout = 500;
             await command.ExecuteNonQueryAsync();
 
             // Rename temporary table to original table
