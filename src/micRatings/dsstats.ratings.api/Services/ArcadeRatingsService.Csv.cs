@@ -42,9 +42,9 @@ namespace dsstats.ratings.api.Services
             SET FOREIGN_KEY_CHECKS = 0;
             RENAME TABLE {nameof(ReplayContext.ArcadePlayerRatings)} TO {nameof(ReplayContext.ArcadePlayerRatings)}_old, {tempTable} TO {nameof(ReplayContext.ArcadePlayerRatings)};
             DROP TABLE {nameof(ReplayContext.ArcadePlayerRatings)}_old;
-            ALTER TABLE {nameof(ReplayContext.ArcadePlayerRatingChanges)} DROP FOREIGN KEY FK_PlayerRatingChanges_PlayerRatings_PlayerRatingId;
-            ALTER TABLE {nameof(ReplayContext.ArcadePlayerRatingChanges)} ADD CONSTRAINT FK_PlayerRatingChanges_PlayerRatings_PlayerRatingId
-                FOREIGN KEY (PlayerRatingId) REFERENCES {nameof(ReplayContext.ArcadePlayerRatings)} (PlayerRatingId);
+            ALTER TABLE {nameof(ReplayContext.ArcadePlayerRatingChanges)} DROP FOREIGN KEY `FK_ArcadePlayerRatingChanges_ArcadePlayerRatings_ArcadePlayerRa~`;
+            ALTER TABLE {nameof(ReplayContext.ArcadePlayerRatingChanges)} ADD CONSTRAINT `FK_ArcadePlayerRatingChanges_ArcadePlayerRatings_ArcadePlayerRa~`
+                FOREIGN KEY (ArcadePlayerRatingId) REFERENCES {nameof(ReplayContext.ArcadePlayerRatings)} (ArcadePlayerRatingId);
             SET FOREIGN_KEY_CHECKS = 1;
         ";
             await command.ExecuteNonQueryAsync();

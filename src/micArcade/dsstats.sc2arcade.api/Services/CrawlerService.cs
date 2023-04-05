@@ -24,7 +24,8 @@ public partial class CrawlerService
         int waitTime = 40*1000 / 100; // 100 request per 40 sec
 
         List<LobbyResult> results = new List<LobbyResult>();
-        string? next = null;
+        // string? next = null;
+        string? next = "WzMzMDkyODk1XQ==";
         string? current = null;
 
         int i = 0;
@@ -55,7 +56,15 @@ public partial class CrawlerService
             catch (Exception ex)
             {
                 logger.LogError($"failed getting lobby result ({next}): {ex.Message}");
-                await Task.Delay(waitTime);
+                if (results.Any())
+                {
+                    await ImportArcadeReplays(results);
+                    results.Clear();
+                }
+                else
+                {
+                    await Task.Delay(waitTime);
+                }
             }
             finally
             {
@@ -132,6 +141,19 @@ public partial class CrawlerService
         }
 
         Console.WriteLine(sb.ToString());
+    }
+
+    public void DEBUGJson(string jsonFile)
+    {
+        var data = File.ReadAllText(jsonFile);
+        try
+        {
+            var response = JsonSerializer.Deserialize<List<LobbyResult>>(data);
+        } catch (Exception ex)
+        {
+            logger.LogError($"{ex.Message}");
+        }
+        Console.WriteLine("indahouse");
     }
 }
 

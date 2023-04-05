@@ -66,8 +66,11 @@ namespace dsstats.sc2arcade.api
                 app.UseSwaggerUI();
 
                 var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
-                crawlerService.GetLobbyHistory().Wait();
+                // crawlerService.GetLobbyHistory().Wait();
                 // crawlerService.AnalyizeLobbyHistory("/data/ds/sc2arcardeLobbyResults.json");
+                // crawlerService.DEBUGJson("/data/ds/temp.json");
+
+                crawlerService.CheckPlayers().Wait();
             }
 
             app.UseHttpsRedirection();

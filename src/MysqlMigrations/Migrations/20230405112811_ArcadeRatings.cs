@@ -131,8 +131,7 @@ namespace MysqlMigrations.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_ArcadePlayerRatings_ArcadePlayerId",
                 table: "ArcadePlayerRatings",
-                column: "ArcadePlayerId",
-                unique: true);
+                column: "ArcadePlayerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ArcadeReplayPlayerRatings_ArcadeReplayPlayerId",

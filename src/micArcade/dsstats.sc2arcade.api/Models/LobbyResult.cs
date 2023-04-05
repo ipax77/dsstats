@@ -64,9 +64,9 @@ public record LobbyResult
 
     public Map Map { get; set; } = new();
 
-    public string? ExtMod { get; set; }
+    public object? ExtMod { get; set; }
 
-    public string? MultiMod { get; set; }
+    public object? MultiMod { get; set; }
 
     public List<Slot> Slots { get; set; } = new();
 }

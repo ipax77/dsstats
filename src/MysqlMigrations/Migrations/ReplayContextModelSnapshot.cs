@@ -116,8 +116,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasKey("ArcadePlayerRatingId");
 
-                    b.HasIndex("ArcadePlayerId")
-                        .IsUnique();
+                    b.HasIndex("ArcadePlayerId");
 
                     b.ToTable("ArcadePlayerRatings");
                 });
@@ -1206,8 +1205,8 @@ namespace MysqlMigrations.Migrations
             modelBuilder.Entity("pax.dsstats.dbng.ArcadePlayerRating", b =>
                 {
                     b.HasOne("pax.dsstats.dbng.ArcadePlayer", "ArcadePlayer")
-                        .WithOne("ArcadePlayerRating")
-                        .HasForeignKey("pax.dsstats.dbng.ArcadePlayerRating", "ArcadePlayerId")
+                        .WithMany("ArcadePlayerRatings")
+                        .HasForeignKey("ArcadePlayerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1451,7 +1450,7 @@ namespace MysqlMigrations.Migrations
 
             modelBuilder.Entity("pax.dsstats.dbng.ArcadePlayer", b =>
                 {
-                    b.Navigation("ArcadePlayerRating");
+                    b.Navigation("ArcadePlayerRatings");
 
                     b.Navigation("ArcadeReplayPlayers");
                 });

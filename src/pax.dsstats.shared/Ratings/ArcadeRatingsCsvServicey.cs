@@ -15,24 +15,23 @@ public static class ArcadeRatingsCsvService
             foreach (var entCalc in ent.Value.Values)
             {
                 i++;
-                var main = entCalc.CmdrCounts.OrderByDescending(o => o.Value).FirstOrDefault();
-                sb.Append($"{i},");
-                sb.Append($"{(int)ent.Key},");
-                sb.Append($"{entCalc.Mmr.ToString(CultureInfo.InvariantCulture)},");
+                // var main = entCalc.CmdrCounts.OrderByDescending(o => o.Value).FirstOrDefault();
+                var main = new KeyValuePair<Commander, int>(Commander.None, 0);
+                sb.Append($"{i},"); // Id
+                sb.Append($"{(int)ent.Key},"); // RatingType
+                sb.Append($"{entCalc.Mmr.ToString(CultureInfo.InvariantCulture)},"); // Rating
+                sb.Append($"0,"); // Pos
                 sb.Append($"{entCalc.Games},");
                 sb.Append($"{entCalc.Wins},");
-                sb.Append($"{entCalc.Mvp},");
-                sb.Append($"{entCalc.TeamGames},");
-                sb.Append($"{main.Value},");
-                sb.Append($"{(int)main.Key},");
-
+                sb.Append($"0,"); // Mvp
+                sb.Append($"0,"); // TeamGames
+                sb.Append($"0,"); // MainCount
+                sb.Append($"0,"); // Main
                 sb.Append($"\"{GetDbMmrOverTime(entCalc.MmrOverTime)}\",");
                 sb.Append($"{entCalc.Consistency.ToString(CultureInfo.InvariantCulture)},");
                 sb.Append($"{entCalc.Confidence.ToString(CultureInfo.InvariantCulture)},");
                 sb.Append($"{(entCalc.IsUploader ? 1 : 0)},");
-
-                sb.Append($"{entCalc.PlayerId},");
-                sb.Append($"0");
+                sb.Append($"{entCalc.PlayerId}");
                 sb.Append(Environment.NewLine);
             }
         }

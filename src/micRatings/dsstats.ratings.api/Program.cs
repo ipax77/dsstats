@@ -52,10 +52,14 @@ public class Program
 
         var app = builder.Build();
 
+        using var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        context.Database.EnsureCreated();
+        context.Database.Migrate();
+
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
-            using var scope = app.Services.CreateScope();
             //var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
 
             //Stopwatch sw = Stopwatch.StartNew();
@@ -64,7 +68,7 @@ public class Program
             Stopwatch sw = Stopwatch.StartNew();
             var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
             arcadeRatingsService.ProduceRatings().Wait();
-            arcadeRatingsService.PrintLadder("/data/ds/arcaderatingCmdr.json");
+            // arcadeRatingsService.PrintLadder("/data/ds/arcaderatingCmdr.json");
             // arcadeRatingsService.PrintLadder("/data/ds/arcaderatingStd.json");
 
             sw.Stop();

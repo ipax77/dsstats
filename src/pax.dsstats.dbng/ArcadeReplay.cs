@@ -48,6 +48,7 @@ public class ArcadePlayer
     public ArcadePlayer()
     {
         ArcadeReplayPlayers = new HashSet<ArcadeReplayPlayer>();
+        ArcadePlayerRatings = new HashSet<ArcadePlayerRating>();
     }
 
     [Key]
@@ -57,7 +58,7 @@ public class ArcadePlayer
     public int RegionId { get; set; }
     public int RealmId { get; set; }
     public int ProfileId { get; set; }
-    public ArcadePlayerRating? ArcadePlayerRating { get; set; }
+    public ICollection<ArcadePlayerRating> ArcadePlayerRatings { get; set; }
     public ICollection<ArcadeReplayPlayer> ArcadeReplayPlayers { get; set; }
 }
 
