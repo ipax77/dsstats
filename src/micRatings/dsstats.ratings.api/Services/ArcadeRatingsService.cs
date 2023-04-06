@@ -2,6 +2,7 @@
 using dsstats.mmr;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using MySqlConnector;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Ratings;
@@ -63,6 +64,8 @@ public partial class ArcadeRatingsService
         await PlayerRatingsFromCsv2MySql(ArcadeRatingsCsvService.csvBasePath);
         await ReplayRatingsFromCsv2MySql(ArcadeRatingsCsvService.csvBasePath);
         await ReplayPlayerRatingsFromCsv2MySql(ArcadeRatingsCsvService.csvBasePath);
+        await SetPlayerRatingsPos();
+        await SetRatingChange();
     }
 
     private void SaveRatings2Json(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
@@ -234,5 +237,25 @@ public partial class ArcadeRatingsService
             sb.AppendLine($"{name} => Games {rating.Games}, WR: {Math.Round(rating.Wins * 100.0 / rating.Games, 2)} Rating: {Math.Round(rating.Mmr, 2)}");
         }
         logger.LogWarning(sb.ToString());
+    }
+
+    private async Task SetPlayerRatingsPos()
+    {
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
+        await connection.OpenAsync();
+        var command = connection.CreateCommand();
+        command.CommandText = "CALL SetArcadePlayerRatingPos();";
+        command.CommandTimeout = 500;
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private async Task SetRatingChange()
+    {
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
+        await connection.OpenAsync();
+        var command = connection.CreateCommand();
+        command.CommandText = "CALL SetArcadeRatingChange();";
+        command.CommandTimeout = 500;
+        await command.ExecuteNonQueryAsync();
     }
 }

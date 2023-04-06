@@ -17,10 +17,10 @@ public class Program
         builder.Configuration.AddJsonFile("/data/localserverconfig.json", optional: true, reloadOnChange: false);
 
         var serverVersion = new MySqlServerVersion(new Version(5, 7, 41));
-        var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
-        var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"] ?? "";
-        //var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
-        //var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"] ?? "";
+        // var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
+        // var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"] ?? "";
+        var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
+        var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"] ?? "";
 
         builder.Services.AddOptions<DbImportOptions>()
             .Configure(x => x.ImportConnectionString = importConnectionString);
@@ -54,20 +54,20 @@ public class Program
 
         using var scope = app.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-        context.Database.EnsureCreated();
-        context.Database.Migrate();
+        // context.Database.EnsureCreated();
+        // context.Database.Migrate();
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
-            var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+            //var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+
+            //Stopwatch sw = Stopwatch.StartNew();
+            //ratingsService.ProduceRatings().Wait();
 
             Stopwatch sw = Stopwatch.StartNew();
-            ratingsService.ProduceRatings().Wait();
-
-            // Stopwatch sw = Stopwatch.StartNew();
-            // var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
-            // arcadeRatingsService.ProduceRatings().Wait();
+            var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
+            arcadeRatingsService.ProduceRatings().Wait();
             // arcadeRatingsService.PrintLadder("/data/ds/arcaderatingCmdr.json");
             // arcadeRatingsService.PrintLadder("/data/ds/arcaderatingStd.json");
 

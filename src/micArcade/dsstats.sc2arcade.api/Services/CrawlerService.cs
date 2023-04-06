@@ -17,74 +17,84 @@ public partial class CrawlerService
         this.logger = logger;
     }
 
-    public async Task GetLobbyHistory()
+    public async Task GetLobbyHistory(DateTime tillTime)
     {
         var httpClient = httpClientFactory.CreateClient("sc2arcardeClient");
 
         int waitTime = 40*1000 / 100; // 100 request per 40 sec
 
         List<LobbyResult> results = new List<LobbyResult>();
-        // string? next = null;
-        string? next = "WzMzMDkyODk1XQ==";
+        string? next = null;
         string? current = null;
 
-        int i = 0;
-        while(true)
+        var regions = new List<string>() { "NA", "EU" };
+
+        foreach (var region in regions)
         {
-            i++;
-            try
+            string baseRequest = region == "NA" ?
+                "lobbies/history?regionId=1&mapId=208271&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true"
+                : "lobbies/history?regionId=2&mapId=140436&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
+
+            int i = 0;
+            while (true)
             {
-                // var request = "lobbies/history?regionId=2&mapId=140436&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
-                var request = "lobbies/history?regionId=1&mapId=208271&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
-                if (!String.IsNullOrEmpty(next))
+                i++;
+                try
                 {
-                    request += $"&after={next}";
-                    if (next == current)
+                    var request = baseRequest;
+                    if (!String.IsNullOrEmpty(next))
+                    {
+                        request += $"&after={next}";
+                        if (next == current)
+                        {
+                            await Task.Delay(waitTime);
+                        }
+                        current = next;
+                    }
+
+                    var result = await httpClient.GetFromJsonAsync<LobbyHistoryResponse>(request);
+                    if (result != null)
+                    {
+                        results.AddRange(result.Results);
+                        next = result.Page.Next;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"failed getting lobby result ({next}): {ex.Message}");
+                    if (results.Any())
+                    {
+                        await ImportArcadeReplays(results);
+                        if (results.Last().CreatedAt < tillTime)
+                        {
+                            break;
+                        }
+                        results.Clear();
+                    }
+                    else
                     {
                         await Task.Delay(waitTime);
                     }
-                    current = next;
                 }
-
-                var result = await httpClient.GetFromJsonAsync<LobbyHistoryResponse>(request);
-                if (result != null)
+                finally
                 {
-                    results.AddRange(result.Results);
-                    next = result.Page.Next;
+                    // await Task.Delay(waitTime);
+                    logger.LogWarning($"{i}/100");
                 }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError($"failed getting lobby result ({next}): {ex.Message}");
-                if (results.Any())
+                if (results.Count > 10000)
                 {
                     await ImportArcadeReplays(results);
+
+                    if (results.Last().CreatedAt < tillTime)
+                    {
+                        break;
+                    }
                     results.Clear();
                 }
-                else
-                {
-                    await Task.Delay(waitTime);
-                }
             }
-            finally
-            {
-                // await Task.Delay(waitTime);
-                logger.LogWarning($"{i}/100");
-            }
-            if (results.Count > 10000)
-            {
-                await ImportArcadeReplays(results);
 
-                if (results.Last().CreatedAt < new DateTime(2021, 2, 1))
-                {
-                    break;
-                }
-                results.Clear();
-            }
+            await ImportArcadeReplays(results);
         }
-
-        await ImportArcadeReplays(results);
-
         //var json = JsonSerializer.Serialize(results, new JsonSerializerOptions() { WriteIndented = true });
         //File.WriteAllText("/data/ds/sc2arcardeLobbyResults.json", json);
 
@@ -112,7 +122,7 @@ public partial class CrawlerService
         for (int i = 0; i < results.Count; i++)
         {
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
-            foreach (PlayerResult playerResult in results[i].Match.ProfileMatches)
+            foreach (Models.PlayerResult playerResult in results[i].Match.ProfileMatches)
             {
                 PlayerId playerId = new(playerResult.Profile.RegionId, playerResult.Profile.RealmId, playerResult.Profile.ProfileId);
 

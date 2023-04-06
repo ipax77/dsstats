@@ -14,8 +14,11 @@ namespace dsstats.sc2arcade.api
             builder.Configuration.AddJsonFile("/data/localserverconfig.json", optional: true, reloadOnChange: false);
 
             var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 41));
-            var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
-            var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"] ?? "";
+            // var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
+            // var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"] ?? "";
+
+            var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
+            var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"] ?? "";
 
             builder.Services.AddOptions<DbImportOptions>()
                 .Configure(x => x.ImportConnectionString = importConnectionString);
@@ -66,12 +69,13 @@ namespace dsstats.sc2arcade.api
                 app.UseSwaggerUI();
 
                 var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
-                // crawlerService.GetLobbyHistory().Wait();
+                // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1)).Wait();
+                crawlerService.GetLobbyHistory(DateTime.Today.AddMonths(-1)).Wait();
                 // crawlerService.AnalyizeLobbyHistory("/data/ds/sc2arcardeLobbyResults.json");
                 // crawlerService.DEBUGJson("/data/ds/temp.json");
 
                 // crawlerService.CheckPlayers().Wait();
-                crawlerService.CheckReplays().Wait();
+                // crawlerService.CheckReplays().Wait();
             }
 
             app.UseHttpsRedirection();

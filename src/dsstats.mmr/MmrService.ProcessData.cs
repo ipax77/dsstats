@@ -59,29 +59,28 @@ public partial class MmrService
                                       PlayerData playerData,
                                       MmrOptions mmrOptions)
     {
+        if (!mmrIdRatings.TryGetValue(playerData.MmrId, out var plRating))
+        {
+            plRating = mmrIdRatings[playerData.MmrId] = new CalcRating()
+            {
+                PlayerId = playerData.ReplayPlayer.Player.PlayerId,
+                Mmr = mmrOptions.StartMmr,
+                Consistency = 0,
+                Confidence = 0,
+                Games = 0,
+            };
+        }
+
         if (mmrOptions.ReCalc && !playerData.ReplayPlayer.IsUploader && (replayData.RatingType == RatingType.Cmdr || replayData.RatingType == RatingType.Std))
         {
-            playerData.Mmr = mmrOptions.GetInjectRating(replayData.RatingType,
+            plRating.Mmr = mmrOptions.GetInjectRating(replayData.RatingType,
                                                         replayData.ReplayDsRDto.GameTime,
                                                         playerData.ReplayPlayer.Player.ToonId);
         }
-        else
-        {
-            if (!mmrIdRatings.TryGetValue(playerData.MmrId, out var plRating))
-            {
-                plRating = mmrIdRatings[playerData.MmrId] = new CalcRating()
-                {
-                    PlayerId = playerData.ReplayPlayer.Player.PlayerId,
-                    Mmr = mmrOptions.StartMmr,
-                    Consistency = 0,
-                    Confidence = 0,
-                    Games = 0,
-                };
-            }
 
-            playerData.Mmr = plRating.Mmr;
-            playerData.Consistency = plRating.Consistency;
-            playerData.Confidence = plRating.Confidence;
-        }
+        playerData.Mmr = plRating.Mmr;
+        playerData.Consistency = plRating.Consistency;
+        playerData.Confidence = plRating.Confidence;
     }
+}
 }

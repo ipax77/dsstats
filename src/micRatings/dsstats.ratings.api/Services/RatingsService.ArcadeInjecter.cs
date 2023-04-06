@@ -15,43 +15,53 @@ public partial class RatingsService
 
         var ratingTypes = new List<RatingType>() { RatingType.Cmdr, RatingType.Std };
 
-        foreach (var ratingType in ratingTypes)
+        DateTime startTime = new DateTime(2021, 1, 31);
+        DateTime endTime = DateTime.Today.AddDays(2);
+        DateTime stepTime = startTime;
+
+        while (stepTime < endTime)
         {
-            injectDic[ratingType] = new();
+            startTime = stepTime;
+            stepTime = stepTime.AddYears(1);
+            foreach (var ratingType in ratingTypes)
+            {
+                injectDic[ratingType] = new();
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
-            var replays = await context.ArcadeReplays
-                .Where(x => x.ArcadeReplayRating != null && x.ArcadeReplayRating.RatingType == ratingType)
-                .OrderBy(o => o.CreatedAt)
-                    .ThenBy(o => o.ArcadeReplayId)
-                .Select(s => new InjectReplay()
-                {
-                    CreatedAt = s.CreatedAt,
-                    ArcadeReplayPlayers = s.ArcadeReplayPlayers.Select(t => new InjectReplayPlayer()
+                var replays = await context.ArcadeReplays
+                    .Where(x => x.CreatedAt >= startTime && x.CreatedAt < endTime
+                        && x.ArcadeReplayRating != null && x.ArcadeReplayRating.RatingType == ratingType)
+                    .OrderBy(o => o.CreatedAt)
+                        .ThenBy(o => o.ArcadeReplayId)
+                    .Select(s => new InjectReplay()
                     {
-                        ArcadePlayer = new InjectPlayer()
+                        CreatedAt = s.CreatedAt,
+                        ArcadeReplayPlayers = s.ArcadeReplayPlayers.Select(t => new InjectReplayPlayer()
                         {
-                            ProfileId = t.ArcadePlayer.ProfileId
-                        },
-                        ArcadeReplayPlayerRating = new InjectReplayPlayerRating()
-                        {
-                            Rating = t.ArcadeReplayPlayerRating.Rating 
-                        }
-                    }).ToList()
-                })
-                .ToListAsync();
+                            ArcadePlayer = new InjectPlayer()
+                            {
+                                ProfileId = t.ArcadePlayer.ProfileId
+                            },
+                            ArcadeReplayPlayerRating = new InjectReplayPlayerRating()
+                            {
+                                Rating = t.ArcadeReplayPlayerRating.Rating
+                            }
+                        }).ToList()
+                    })
+                    .ToListAsync();
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
 
-            foreach (var replay in replays)
-            {
-                int dateInt = int.Parse(replay.CreatedAt.ToString(@"yyyyMMdd"));
-                foreach (var rp in replay.ArcadeReplayPlayers)
+                foreach (var replay in replays)
                 {
-                    if (!injectDic[ratingType].TryGetValue(rp.ArcadePlayer.ProfileId, out var plEnt))
+                    int dateInt = int.Parse(replay.CreatedAt.ToString(@"yyyyMMdd"));
+                    foreach (var rp in replay.ArcadeReplayPlayers)
                     {
-                        plEnt = injectDic[ratingType][rp.ArcadePlayer.ProfileId] = new();
+                        if (!injectDic[ratingType].TryGetValue(rp.ArcadePlayer.ProfileId, out var plEnt))
+                        {
+                            plEnt = injectDic[ratingType][rp.ArcadePlayer.ProfileId] = new();
+                        }
+                        plEnt[dateInt] = rp.ArcadeReplayPlayerRating.Rating;
                     }
-                    plEnt[dateInt] = rp.ArcadeReplayPlayerRating.Rating;
                 }
             }
         }
