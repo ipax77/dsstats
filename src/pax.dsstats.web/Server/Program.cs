@@ -9,6 +9,7 @@ using pax.dsstats.shared.Arcade;
 using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
+using pax.dsstats.web.Server.Services.Ratings;
 using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -63,9 +64,12 @@ builder.Services.AddResponseCompression(opts =>
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddSingleton<PickBanService>();
+builder.Services.AddSingleton<pax.dsstats.web.Server.Services.Import.ImportService>();
+builder.Services.AddSingleton<RatingsService>();
+builder.Services.AddSingleton<ArcadeRatingsService>();
 
 builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRepository>();
-builder.Services.AddScoped<ImportService>();
+// builder.Services.AddScoped<ImportService>();
 builder.Services.AddScoped<MmrProduceService>();
 builder.Services.AddScoped<CheatDetectService>();
 builder.Services.AddScoped<PlayerService>();

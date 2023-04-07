@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
+using pax.dsstats.web.Server.Services.Import;
 using System.IO.Compression;
 using System.Text;
 
@@ -73,7 +74,11 @@ public partial class UploadService
         };
         try
         {
-            await httpClient.PostAsJsonAsync<ImportRequest>("/api/v1/import", importRequest);
+            using var scope = serviceProvider.CreateScope();
+            var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+
+            await importService.Import(importRequest);
+            // await httpClient.PostAsJsonAsync<ImportRequest>("/api/v1/import", importRequest);
         }
         catch (Exception ex)
         {

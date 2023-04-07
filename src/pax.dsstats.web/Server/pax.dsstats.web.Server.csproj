@@ -20,5 +20,10 @@
     <ProjectReference Include="..\Shared\pax.dsstats.web.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\Import\" />
+    <Folder Include="Services\Ratings\" />
+  </ItemGroup>
+
 
 </Project>

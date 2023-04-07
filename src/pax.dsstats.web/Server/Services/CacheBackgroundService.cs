@@ -1,5 +1,6 @@
 ﻿using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
+using pax.dsstats.web.Server.Services.Ratings;
 
 namespace pax.dsstats.web.Server.Services;
 
@@ -31,10 +32,13 @@ public class CacheBackgroundService : IHostedService, IDisposable
         try
         {
             using var scope = serviceProvider.CreateScope();
-            var httpClientFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
-            var httpClient = httpClientFactory.CreateClient("ratingsClient");
+            //var httpClientFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
+            //var httpClient = httpClientFactory.CreateClient("ratingsClient");
 
-            await httpClient.GetAsync("/api/v1/ratings");
+            //await httpClient.GetAsync("/api/v1/ratings");
+
+            var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+            await ratingsService.ProduceRatings();
 
             var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
             statsService.ResetStatsCache();
