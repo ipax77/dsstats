@@ -5,9 +5,12 @@ using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
 using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
+using pax.dsstats.web.Server.Services.Ratings;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +30,9 @@ var importConnectionString = builder.Configuration["ServerConfig:ImportConnectio
 
 // var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
 // var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"];
+
+builder.Services.AddOptions<DbImportOptions>()
+    .Configure(x => x.ImportConnectionString = importConnectionString);
 
 builder.Services.AddDbContext<ReplayContext>(options =>
 {
@@ -58,10 +64,13 @@ builder.Services.AddResponseCompression(opts =>
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddSingleton<PickBanService>();
+builder.Services.AddSingleton<pax.dsstats.web.Server.Services.Import.ImportService>();
+builder.Services.AddSingleton<RatingsService>();
+builder.Services.AddSingleton<ArcadeRatingsService>();
 
 builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRepository>();
-builder.Services.AddScoped<ImportService>();
-builder.Services.AddScoped<MmrProduceService>();
+// builder.Services.AddScoped<ImportService>();
+// builder.Services.AddScoped<MmrProduceService>();
 builder.Services.AddScoped<CheatDetectService>();
 builder.Services.AddScoped<PlayerService>();
 
@@ -71,13 +80,31 @@ builder.Services.AddTransient<IStatsRepository, StatsRepository>();
 builder.Services.AddTransient<BuildService>();
 builder.Services.AddTransient<CmdrsService>();
 builder.Services.AddTransient<TourneyService>();
+builder.Services.AddTransient<IArcadeService, ArcadeService>();
 
 builder.Services.AddHostedService<CacheBackgroundService>();
 builder.Services.AddHostedService<RatingsBackgroundService>();
 
+builder.Services.AddHttpClient("importClient")
+    .ConfigureHttpClient(options =>
+    {
+        options.BaseAddress = new Uri("http://localhost:5259");
+        options.DefaultRequestHeaders.Add("Accept", "application/json");
+        options.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue(builder.Configuration["ServerConfig:ImportAuthSecret"]);
+    });
+
+builder.Services.AddHttpClient("ratingsClient")
+    .ConfigureHttpClient(options =>
+    {
+        options.BaseAddress = new Uri("http://localhost:5153");
+        options.DefaultRequestHeaders.Add("Accept", "application/json");
+        options.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue(builder.Configuration["ServerConfig:ImportAuthSecret"]);
+    });
+
 var app = builder.Build();
 
-Data.MysqlConnectionString = importConnectionString;
 using var scope = app.Services.CreateScope();
 
 var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
@@ -103,15 +130,20 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    // var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    // mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
+    var replays = context.Replays
+        .Include(i => i.ReplayPlayers)
+            .ThenInclude(i => i.Spawns)
+                .ThenInclude(i => i.Units)
+        .Include(i => i.ReplayRatingInfo)
+            .ThenInclude(i => i.RepPlayerRatings)
+        .OrderByDescending(o => o.GameTime)
+        .Take(2)
+        .ToList();
+    context.Replays.RemoveRange(replays);
+    context.SaveChanges();
 
-    // var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-    // var list = statsService.GetCmdrPlayerInfos(new()).GetAwaiter().GetResult();
-    // foreach (var l in list)
-    // {
-    //     Console.WriteLine(l);
-    // }
+    //var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+    //ratingsService.ProduceRatings().Wait();
 }
 
 // Configure the HTTP request pipeline.

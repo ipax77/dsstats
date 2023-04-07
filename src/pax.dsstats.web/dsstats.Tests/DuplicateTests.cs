@@ -51,9 +51,13 @@ public class DuplicateTest : IDisposable
         serviceCollection.AddTransient<IReplayRepository, ReplayRepository>();
         serviceCollection.AddAutoMapper(typeof(AutoMapperProfile));
         serviceCollection.AddLogging();
+        serviceCollection.AddHttpClient();
 
         var serviceProvider = serviceCollection.BuildServiceProvider();
-        uploadService = new UploadService(serviceProvider, mapper, NullLogger<UploadService>.Instance);
+
+        var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+
+        uploadService = new UploadService(serviceProvider, mapper, httpClientFactory, NullLogger<UploadService>.Instance);
     }
 
     ReplayContext CreateContext() => new ReplayContext(_contextOptions);

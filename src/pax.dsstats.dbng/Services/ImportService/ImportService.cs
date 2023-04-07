@@ -371,4 +371,35 @@ public partial class ImportService
         computerReplays.ForEach(f => f.GameMode = GameMode.Tutorial);
         context.SaveChanges();
     }
+
+    public void DEBUGCreateUnitUpgradesJson()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var units = context.Units
+            .AsNoTracking()
+            .ToList();
+
+        var upgrades = context.Upgrades
+            .AsNoTracking()
+            .ToList();
+
+        File.WriteAllText("/data/ds/units.json", JsonSerializer.Serialize(units));       
+        File.WriteAllText("/data/ds/upgrades.json", JsonSerializer.Serialize(upgrades));
+    }
+
+    public void DEBUGSeedUnitsUpgradesFromJson()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        List<Unit> units = JsonSerializer.Deserialize<List<Unit>>(File.ReadAllText("/data/ds/units.json")) ?? new();
+        context.Units.AddRange(units);
+        context.SaveChanges();
+
+        List<Upgrade> upgrades = JsonSerializer.Deserialize<List<Upgrade>>(File.ReadAllText("/data/ds/upgrades.json")) ?? new();
+        context.Upgrades.AddRange(upgrades);
+        context.SaveChanges();
+    }   
 }

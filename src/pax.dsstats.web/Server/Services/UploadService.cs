@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
+using pax.dsstats.web.Server.Services.Import;
 using System.IO.Compression;
 using System.Text;
 
@@ -11,18 +12,24 @@ public partial class UploadService
 {
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
+    private readonly IHttpClientFactory httpClientFactory;
     private readonly ILogger<UploadService> logger;
     private const string blobBaseDir = "/data/ds/replayblobs";
 
-    public UploadService(IServiceProvider serviceProvider, IMapper mapper, ILogger<UploadService> logger)
+    public UploadService(IServiceProvider serviceProvider,
+                         IMapper mapper,
+                         IHttpClientFactory httpClientFactory,
+                         ILogger<UploadService> logger)
     {
         this.serviceProvider = serviceProvider;
         this.mapper = mapper;
+        this.httpClientFactory = httpClientFactory;
         this.logger = logger;
     }
 
     public async Task<bool> ImportReplays(string gzipbase64String, Guid appGuid, DateTime latestReplay, bool dry = false)
     {
+        string blobFile = string.Empty;
         try
         {
 
@@ -42,7 +49,7 @@ public partial class UploadService
 
             if (!dry)
             {
-                await SaveBlob(gzipbase64String, appGuid);
+                blobFile = await SaveBlob(gzipbase64String, appGuid);
             }
 
             uploader.LatestUpload = DateTime.UtcNow;
@@ -56,11 +63,31 @@ public partial class UploadService
         }
 
         // _ = Produce(gzipbase64String, appGuid);
+        // var httpClient = httpClientFactory.CreateClient("importClient");
 
+        var importRequest = new ImportRequest()
+        {
+            Replayblobs = new()
+            {
+                blobFile
+            }
+        };
+        try
+        {
+            using var scope = serviceProvider.CreateScope();
+            var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+
+            importService.Import(importRequest);
+            // await httpClient.PostAsJsonAsync<ImportRequest>("/api/v1/import", importRequest);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"Failed posting importRequest: {ex.Message}");
+        }
         return true;
     }
 
-    private async Task SaveBlob(string gzipbase64String, Guid appGuid)
+    private async Task<string> SaveBlob(string gzipbase64String, Guid appGuid)
     {
         var appDir = Path.Combine(blobBaseDir, appGuid.ToString());
         if (!Directory.Exists(appDir))
@@ -78,13 +105,14 @@ public partial class UploadService
             if (fs > 5)
             {
                 logger.LogError($"can't find filename while saving replayblob {blobFilename}");
-                return;
+                return "";
             }
         }
 
         var tempBlobFilename = blobFilename + ".temp";
         await File.WriteAllTextAsync(tempBlobFilename, gzipbase64String);
         File.Move(tempBlobFilename, blobFilename);
+        return blobFilename;
     }
 
     public async Task<DateTime?> CreateOrUpdateUploader(UploaderDto uploader)

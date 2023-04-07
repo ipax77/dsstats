@@ -9,7 +9,7 @@ public partial class RatingRepository
 {
     private async Task<UpdateResult> MysqlUpdateRavenPlayers(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
     {
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         using var transaction = connection.BeginTransaction();
@@ -92,7 +92,7 @@ public partial class RatingRepository
 
     private async Task DeleteMyqlReplayPlayerRatingsTable()
     {
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         using var delCommand = new MySqlCommand("TRUNCATE ReplayPlayerRatings;", connection);

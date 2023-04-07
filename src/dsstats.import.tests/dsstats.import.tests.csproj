@@ -25,6 +25,7 @@
     <ProjectReference Include="..\pax.dsstats.dbng\pax.dsstats.dbng.csproj" />
     <ProjectReference Include="..\pax.dsstats.shared\pax.dsstats.shared.csproj" />
     <ProjectReference Include="..\SqliteMigrations\SqliteMigrations.csproj" />
+    <ProjectReference Include="..\MysqlMigrations\MysqlMigrations.csproj" />
   </ItemGroup>
 
 </Project>

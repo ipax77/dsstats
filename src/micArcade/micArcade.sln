@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.sc2arcade.api", "dsstats.sc2arcade.api\dsstats.sc2arcade.api.csproj", "{8D3F98F7-AAAD-4C59-B3FE-F5AF1214B87D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pax.dsstats.dbng", "..\pax.dsstats.dbng\pax.dsstats.dbng.csproj", "{418BB05E-7604-4F8A-ACC6-4035B6ECA32C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pax.dsstats.shared", "..\pax.dsstats.shared\pax.dsstats.shared.csproj", "{17475AA8-3E60-4D27-B434-BBC88925E4CF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MysqlMigrations", "..\MysqlMigrations\MysqlMigrations.csproj", "{6708B20C-7B61-4C0E-97A5-3E12DA81A5DC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8D3F98F7-AAAD-4C59-B3FE-F5AF1214B87D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D3F98F7-AAAD-4C59-B3FE-F5AF1214B87D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D3F98F7-AAAD-4C59-B3FE-F5AF1214B87D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D3F98F7-AAAD-4C59-B3FE-F5AF1214B87D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{418BB05E-7604-4F8A-ACC6-4035B6ECA32C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{418BB05E-7604-4F8A-ACC6-4035B6ECA32C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{418BB05E-7604-4F8A-ACC6-4035B6ECA32C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{418BB05E-7604-4F8A-ACC6-4035B6ECA32C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17475AA8-3E60-4D27-B434-BBC88925E4CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17475AA8-3E60-4D27-B434-BBC88925E4CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17475AA8-3E60-4D27-B434-BBC88925E4CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17475AA8-3E60-4D27-B434-BBC88925E4CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6708B20C-7B61-4C0E-97A5-3E12DA81A5DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6708B20C-7B61-4C0E-97A5-3E12DA81A5DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6708B20C-7B61-4C0E-97A5-3E12DA81A5DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6708B20C-7B61-4C0E-97A5-3E12DA81A5DC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

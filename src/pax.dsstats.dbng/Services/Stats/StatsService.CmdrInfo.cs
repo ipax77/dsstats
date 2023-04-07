@@ -29,7 +29,7 @@ public partial class StatsService
                     (request.MaxGap > 0 ? $@"having abs(avg(rpr1.Rating) - avg(rpr2.Rating)) < {request.MaxGap}" : "") +
         "   ) t;";
 
-        using MySqlConnection conn = new(Data.MysqlConnectionString);
+        using MySqlConnection conn = new(dbImportOptions.Value.ImportConnectionString);
         await conn.OpenAsync(token);
 
         using MySqlCommand cmd = new(sqlCommand, conn);
@@ -44,7 +44,7 @@ public partial class StatsService
         return infos;
     }
 
-    private static async Task<List<ReplayCmdrInfo>> ProduceCmdrReplayInfos(CmdrInfoRequest request, CancellationToken token)
+    private async Task<List<ReplayCmdrInfo>> ProduceCmdrReplayInfos(CmdrInfoRequest request, CancellationToken token)
     {
         (var fromDate, var toDate) = Data.TimeperiodSelected(request.TimePeriod);
 
@@ -74,7 +74,7 @@ public partial class StatsService
             offset {request.Skip};
         ";
 
-        using MySqlConnection conn = new(Data.MysqlConnectionString);
+        using MySqlConnection conn = new(dbImportOptions.Value.ImportConnectionString);
         await conn.OpenAsync(token);
 
         using MySqlCommand cmd = new(sqlCommand, conn);

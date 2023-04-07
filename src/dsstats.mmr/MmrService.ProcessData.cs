@@ -27,7 +27,7 @@ public partial class MmrService
     {
         foreach (var playerData in teamData.Players)
         {
-            SetPlayerData(mmrIdRatings, playerData, mmrOptions);
+            SetPlayerData(mmrIdRatings, replayData, playerData, mmrOptions);
         }
 
         teamData.Confidence = teamData.Players.Sum(p => p.Confidence) / teamData.Players.Length;
@@ -54,7 +54,10 @@ public partial class MmrService
         replayData.LoserTeamData.ExpectedResult = (1 - replayData.WinnerTeamData.ExpectedResult);
     }
 
-    private static void SetPlayerData(Dictionary<int, CalcRating> mmrIdRatings, PlayerData playerData, MmrOptions mmrOptions)
+    private static void SetPlayerData(Dictionary<int, CalcRating> mmrIdRatings,
+                                      ReplayData replayData,
+                                      PlayerData playerData,
+                                      MmrOptions mmrOptions)
     {
         if (!mmrIdRatings.TryGetValue(playerData.MmrId, out var plRating))
         {
@@ -66,6 +69,16 @@ public partial class MmrService
                 Confidence = 0,
                 Games = 0,
             };
+        }
+
+        if (mmrOptions.InjectDic.Any() 
+            && mmrOptions.ReCalc 
+            && !playerData.ReplayPlayer.IsUploader 
+            && (replayData.RatingType == RatingType.Cmdr || replayData.RatingType == RatingType.Std))
+        {
+            plRating.Mmr = mmrOptions.GetInjectRating(replayData.RatingType,
+                                                        replayData.ReplayDsRDto.GameTime,
+                                                        playerData.ReplayPlayer.Player.ToonId);
         }
 
         playerData.Mmr = plRating.Mmr;

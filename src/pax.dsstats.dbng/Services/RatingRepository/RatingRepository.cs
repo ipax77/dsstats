@@ -3,6 +3,7 @@ using dsstats.mmr;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng.Services;
@@ -11,12 +12,17 @@ public partial class RatingRepository : IRatingRepository
 {
     private readonly IServiceScopeFactory scopeFactory;
     private readonly IMapper mapper;
+    private readonly IOptions<DbImportOptions> dbImportOptions;
     private readonly ILogger<RatingRepository> logger;
 
-    public RatingRepository(IServiceScopeFactory scopeFactory, IMapper mapper, ILogger<RatingRepository> logger)
+    public RatingRepository(IServiceScopeFactory scopeFactory,
+                            IMapper mapper,
+                            IOptions<DbImportOptions> dbImportOptions,
+                            ILogger<RatingRepository> logger)
     {
         this.scopeFactory = scopeFactory;
         this.mapper = mapper;
+        this.dbImportOptions = dbImportOptions;
         this.logger = logger;
     }
 

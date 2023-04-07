@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
 
 namespace pax.dsstats.dbng
 {
@@ -107,6 +108,11 @@ namespace pax.dsstats.dbng
             CreateMap<Replay, ReplayCmdrListDto>(MemberList.Destination);
             CreateMap<ReplayRating, ReplayRatingCmdrDto>(MemberList.Destination);
             CreateMap<RepPlayerRating, RepPlayerRatingCmdrDto>(MemberList.Destination);
+
+            // Arcade
+            CreateMap<ArcadePlayerRating, ArcadePlayerRatingDto>(MemberList.Destination);
+            CreateMap<ArcadePlayer, ArcadePlayerRatingPlayerDto>(MemberList.Destination);
+            CreateMap<ArcadePlayerRatingChange, ArcadePlayerRatingChangeDto>(MemberList.Destination);
         }
     }
 }
