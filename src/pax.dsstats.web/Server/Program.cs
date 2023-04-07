@@ -70,7 +70,7 @@ builder.Services.AddSingleton<ArcadeRatingsService>();
 
 builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRepository>();
 // builder.Services.AddScoped<ImportService>();
-builder.Services.AddScoped<MmrProduceService>();
+// builder.Services.AddScoped<MmrProduceService>();
 builder.Services.AddScoped<CheatDetectService>();
 builder.Services.AddScoped<PlayerService>();
 
@@ -130,23 +130,20 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    // var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    // mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
+    var replays = context.Replays
+        .Include(i => i.ReplayPlayers)
+            .ThenInclude(i => i.Spawns)
+                .ThenInclude(i => i.Units)
+        .Include(i => i.ReplayRatingInfo)
+            .ThenInclude(i => i.RepPlayerRatings)
+        .OrderByDescending(o => o.GameTime)
+        .Take(2)
+        .ToList();
+    context.Replays.RemoveRange(replays);
+    context.SaveChanges();
 
-    // var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-    // var list = statsService.GetCmdrPlayerInfos(new()).GetAwaiter().GetResult();
-    // foreach (var l in list)
-    // {
-    //     Console.WriteLine(l);
-    // }
-
-    
-    // var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-    // importService.DEBUGSeedUnitsUpgradesFromJson();
-    // Stopwatch sw = Stopwatch.StartNew();
-    // var report = importService.ImportReplayBlobs().GetAwaiter().GetResult();
-    // sw.Stop();
-    // Console.WriteLine($"replays improted in {sw.ElapsedMilliseconds} ms. {report}");
+    //var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+    //ratingsService.ProduceRatings().Wait();
 }
 
 // Configure the HTTP request pipeline.

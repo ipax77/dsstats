@@ -139,7 +139,7 @@ public partial class MmrProduceService
             request.ReplayDsRDtos = replays;
 
 
-            var calcResult = MmrService.GeneratePlayerRatings(request);
+            var calcResult = MmrService.GeneratePlayerRatings(request, Data.IsMaui);
 
             request.ReplayRatingAppendId = calcResult.ReplayRatingAppendId;
             request.ReplayPlayerRatingAppendId = calcResult.ReplayPlayerRatingAppendId;

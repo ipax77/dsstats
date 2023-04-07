@@ -35,16 +35,23 @@ public partial class RatingsService
     private const int ratingsCount = 10;
     private Queue<RatingsReport> ratingsResults = new Queue<RatingsReport>(ratingsCount);
 
-    public async Task ProduceRatings()
+    public async Task ProduceRatings(bool recalc = false)
     {
         await ratingSs.WaitAsync();
 
         Stopwatch sw = Stopwatch.StartNew();
         int recalcCount = 0;
-        bool recalc = false;
         try
         {
-            var request = await GetCalcRatingRequest();
+            var request = recalc == false ? await GetCalcRatingRequest() :
+                new MmrService.CalcRatingRequest()
+                {
+                    MmrOptions = new(reCalc: true),
+                    MmrIdRatings = await GetMmrIdRatings(new(reCalc: true), null),
+                    StartTime = new DateTime(2018, 1, 1),
+                    EndTime = DateTime.Today.AddDays(2)
+                };
+
             if (request == null)
             {
                 // nothing to do
@@ -60,24 +67,22 @@ public partial class RatingsService
             if (request.MmrOptions.ReCalc)
             {
                 RatingsCsvService.CreatePlayerRatingCsv(request.MmrIdRatings);
+                await WriteCsvFilesToDatabase();
             }
             else
             {
                 await UpdatePlayerRatings(request.MmrIdRatings);
+                await ContinueReplayPlayerRatingsFromCsv2MySql(RatingsCsvService.csvBasePath);
+                await ContinueReplayRatingsFromCsv2MySql(RatingsCsvService.csvBasePath);
             }
 
-            // if new ratings exist
-            if (File.Exists($"{RatingsCsvService.csvBasePath}/ReplayRatings.csv"))
-            {
-                await WriteCsvFilesToDatabase();
-                await SetPlayerRatingsPos();
-                await SetRatingChange();
-            }
+            await SetPlayerRatingsPos();
+            await SetRatingChange();
         }
         finally
         {
             sw.Stop();
-            logger.LogWarning($"ratings produced in {sw.ElapsedMilliseconds} ms");
+            logger.LogWarning($"ratings produced in {sw.ElapsedMilliseconds} ms {recalc}/{recalcCount}");
 
             if (ratingsResults.Count >= ratingsCount)
             {

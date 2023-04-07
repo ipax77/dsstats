@@ -1,4 +1,5 @@
-﻿using MySqlConnector;
+﻿using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Ratings;
@@ -56,5 +57,61 @@ public partial class RatingsService
             }
         }
         await transaction.CommitAsync();
+    }
+
+    private async Task ContinueReplayRatingsFromCsv2MySql(string csvBasePath)
+    {
+        var csvFile = $"{csvBasePath}/ReplayRatings.csv";
+        if (!File.Exists(csvFile))
+        {
+            return;
+        }
+
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
+        await connection.OpenAsync();
+
+        var command = connection.CreateCommand();
+        command.CommandText =
+        $@"
+            SET FOREIGN_KEY_CHECKS = 0;
+            LOAD DATA INFILE '{csvFile}'
+            INTO TABLE {nameof(ReplayContext.ReplayRatings)}
+            COLUMNS TERMINATED BY ','
+            OPTIONALLY ENCLOSED BY '""'
+            ESCAPED BY '""'
+            LINES TERMINATED BY '\n';
+            SET FOREIGN_KEY_CHECKS = 1;
+        ";
+        command.CommandTimeout = 120;
+        await command.ExecuteNonQueryAsync();
+        File.Delete(csvFile);
+    }
+
+    private async Task ContinueReplayPlayerRatingsFromCsv2MySql(string csvBasePath)
+    {
+        var csvFile = $"{csvBasePath}/ReplayPlayerRatings.csv";
+        if (!File.Exists(csvFile))
+        {
+            return;
+        }
+
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
+        await connection.OpenAsync();
+
+        var command = connection.CreateCommand();
+        command.CommandText =
+        $@"
+            SET FOREIGN_KEY_CHECKS = 0;
+            LOAD DATA INFILE '{csvFile}'
+            INTO TABLE {nameof(ReplayContext.RepPlayerRatings)}
+            COLUMNS TERMINATED BY ','
+            OPTIONALLY ENCLOSED BY '""'
+            ESCAPED BY '""'
+            LINES TERMINATED BY '\n';
+            SET FOREIGN_KEY_CHECKS = 1;
+        ";
+        command.CommandTimeout = 120;
+        await command.ExecuteNonQueryAsync();
+        File.Delete(csvFile);
     }
 }

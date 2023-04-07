@@ -63,7 +63,7 @@ public partial class UploadService
         }
 
         // _ = Produce(gzipbase64String, appGuid);
-        var httpClient = httpClientFactory.CreateClient("importClient");
+        // var httpClient = httpClientFactory.CreateClient("importClient");
 
         var importRequest = new ImportRequest()
         {
@@ -77,7 +77,7 @@ public partial class UploadService
             using var scope = serviceProvider.CreateScope();
             var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
 
-            await importService.Import(importRequest);
+            importService.Import(importRequest);
             // await httpClient.PostAsJsonAsync<ImportRequest>("/api/v1/import", importRequest);
         }
         catch (Exception ex)
