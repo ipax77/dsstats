@@ -2,6 +2,7 @@
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 
@@ -11,12 +12,17 @@ public partial class ReplayRepository : IReplayRepository
 {
     private readonly ILogger<ReplayRepository> logger;
     private readonly ReplayContext context;
+    private readonly IOptions<DbImportOptions> dbImportOptions;
     private readonly IMapper mapper;
 
-    public ReplayRepository(ILogger<ReplayRepository> logger, ReplayContext context, IMapper mapper)
+    public ReplayRepository(ILogger<ReplayRepository> logger,
+                            ReplayContext context,
+                            IOptions<DbImportOptions> dbImportOptions,
+                            IMapper mapper)
     {
         this.logger = logger;
         this.context = context;
+        this.dbImportOptions = dbImportOptions;
         this.mapper = mapper;
     }
 

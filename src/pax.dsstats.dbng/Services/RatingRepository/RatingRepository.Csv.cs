@@ -202,7 +202,7 @@ public partial class RatingRepository
             return;
         }
 
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
@@ -231,7 +231,7 @@ public partial class RatingRepository
             return;
         }
 
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
@@ -260,7 +260,7 @@ public partial class RatingRepository
             return;
         }
 
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
@@ -289,7 +289,7 @@ public partial class RatingRepository
             return;
         }
 
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
@@ -317,7 +317,7 @@ public partial class RatingRepository
             return;
         }
 
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
@@ -339,7 +339,7 @@ public partial class RatingRepository
 
     private async Task SetPlayerRatingsPos()
     {
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
         var command = connection.CreateCommand();
         command.CommandText = "CALL SetPlayerRatingPos();";
@@ -349,7 +349,7 @@ public partial class RatingRepository
 
     private async Task SetRatingChange()
     {
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
         var command = connection.CreateCommand();
         command.CommandText = "CALL SetRatingChange();";

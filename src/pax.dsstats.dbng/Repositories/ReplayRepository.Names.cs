@@ -10,7 +10,7 @@ public partial class ReplayRepository
     public async Task FixPlayerNames()
     {
         Stopwatch sw = Stopwatch.StartNew();
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();

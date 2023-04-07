@@ -1,6 +1,6 @@
 ﻿using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
-using System.Diagnostics;
+using pax.dsstats.web.Server.Services.Ratings;
 
 namespace pax.dsstats.web.Server.Services;
 
@@ -28,56 +28,33 @@ public class CacheBackgroundService : IHostedService, IDisposable
     {
         await ss.WaitAsync();
 
-        CacheBackgroundStatus status = new();
 
         try
         {
             using var scope = serviceProvider.CreateScope();
-            var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+            //var httpClientFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
+            //var httpClient = httpClientFactory.CreateClient("ratingsClient");
 
-            Stopwatch sw = Stopwatch.StartNew();
+            //await httpClient.GetAsync("/api/v1/ratings");
 
-            var result = await importService.ImportReplayBlobs();
-            status.ImportDone = true;
+            var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+            await ratingsService.ProduceRatings();
 
-            if (result.SavedReplays > 0)
-            {
-                var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-                statsService.ResetStatsCache();
-                status.StatsReset = true;
+            var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+            statsService.ResetStatsCache();
 
-                await statsService.GetRequestStats(new shared.StatsRequest() { Uploaders = false });
-                status.StatsRebuilt = true;
-
-                var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-
-                if (result.ContinueReplays.Any())
-                {
-                    await mmrProduceService.ProduceRatings(new(false), result.LatestReplay, result.ContinueReplays);
-                }
-                else
-                {
-                    await mmrProduceService.ProduceRatings(new(true));
-                }
-                status.RatingsProduced = true;
-                logger.LogWarning($"Replays saved: {result.SavedReplays} ({result.ContinueReplays.Count}) - {result.LatestReplay}");
-            }
+            await statsService.GetRequestStats(new shared.StatsRequest() { Uploaders = false });
 
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
             await replayRepository.SetReplayViews();
-            status.ReplayViewsSet = true;
             await replayRepository.SetReplayDownloads();
-            status.ReplayDownloadsSet = true;
 
-            var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
-            await tourneyService.CollectTourneyReplays();
-
-            sw.Stop();
-            logger.LogWarning($"{DateTime.UtcNow.ToString(@"yyyy-MM-dd HH:mm:ss")} - Work done in {sw.ElapsedMilliseconds} ms");
+            //var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
+            //await tourneyService.CollectTourneyReplays();
         }
         catch (Exception ex)
         {
-            logger.LogError($"job failed: {ex.Message} - {status}");
+            logger.LogError($"job failed: {ex.Message}");
         }
         finally
         {

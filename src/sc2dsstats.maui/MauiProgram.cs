@@ -33,6 +33,9 @@ public static class MauiProgram
 
         var sqliteConnectionString = $"Data Source={Path.Combine(FileSystem.Current.AppDataDirectory, DbName)}";
 
+        builder.Services.AddOptions<DbImportOptions>()
+            .Configure(x => x.ImportConnectionString = sqliteConnectionString);
+
         builder.Services.AddDbContext<ReplayContext>(options => options
             .UseSqlite(sqliteConnectionString, sqlOptions =>
             {
@@ -110,7 +113,6 @@ public static class MauiProgram
         var build =  builder.Build();
 
         Data.IsMaui = true;
-        Data.SqliteConnectionString = sqliteConnectionString;
         var userSettingsService = build.Services.GetRequiredService<UserSettingsService>();
 
         if (!context.PlayerRatings.Any())

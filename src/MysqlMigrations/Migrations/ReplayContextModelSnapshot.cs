@@ -34,6 +34,261 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("UploaderReplays", (string)null);
                 });
 
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadePlayer", b =>
+                {
+                    b.Property<int>("ArcadePlayerId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<int>("ProfileId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RealmId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RegionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ArcadePlayerId");
+
+                    b.HasIndex("Name");
+
+                    b.HasIndex("RegionId", "RealmId", "ProfileId")
+                        .IsUnique();
+
+                    b.ToTable("ArcadePlayers");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadePlayerRating", b =>
+                {
+                    b.Property<int>("ArcadePlayerRatingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("ArcadePlayerId")
+                        .HasColumnType("int");
+
+                    b.Property<double>("Confidence")
+                        .HasColumnType("double");
+
+                    b.Property<double>("Consistency")
+                        .HasColumnType("double");
+
+                    b.Property<int>("Games")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsUploader")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("Main")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MainCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MmrOverTime")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("varchar(4000)");
+
+                    b.Property<int>("Mvp")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Pos")
+                        .HasColumnType("int");
+
+                    b.Property<double>("Rating")
+                        .HasColumnType("double");
+
+                    b.Property<int>("RatingType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TeamGames")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Wins")
+                        .HasColumnType("int");
+
+                    b.HasKey("ArcadePlayerRatingId");
+
+                    b.HasIndex("ArcadePlayerId");
+
+                    b.ToTable("ArcadePlayerRatings");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadePlayerRatingChange", b =>
+                {
+                    b.Property<int>("ArcadePlayerRatingChangeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("ArcadePlayerRatingId")
+                        .HasColumnType("int");
+
+                    b.Property<float>("Change10d")
+                        .HasColumnType("float");
+
+                    b.Property<float>("Change24h")
+                        .HasColumnType("float");
+
+                    b.Property<float>("Change30d")
+                        .HasColumnType("float");
+
+                    b.HasKey("ArcadePlayerRatingChangeId");
+
+                    b.HasIndex("ArcadePlayerRatingId")
+                        .IsUnique();
+
+                    b.ToTable("ArcadePlayerRatingChanges");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadeReplay", b =>
+                {
+                    b.Property<int>("ArcadeReplayId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<int>("Duration")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GameMode")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PlayerCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RegionId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("TournamentEdition")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("WinnerTeam")
+                        .HasColumnType("int");
+
+                    b.HasKey("ArcadeReplayId");
+
+                    b.HasIndex("GameMode", "CreatedAt");
+
+                    b.ToTable("ArcadeReplays");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadeReplayPlayer", b =>
+                {
+                    b.Property<int>("ArcadeReplayPlayerId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("ArcadePlayerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ArcadeReplayId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Discriminator")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<int>("PlayerResult")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SlotNumber")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Team")
+                        .HasColumnType("int");
+
+                    b.HasKey("ArcadeReplayPlayerId");
+
+                    b.HasIndex("ArcadePlayerId");
+
+                    b.HasIndex("ArcadeReplayId");
+
+                    b.ToTable("ArcadeReplayPlayers");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadeReplayPlayerRating", b =>
+                {
+                    b.Property<int>("ArcadeReplayPlayerRatingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("ArcadeReplayPlayerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ArcadeReplayRatingId")
+                        .HasColumnType("int");
+
+                    b.Property<float>("Confidence")
+                        .HasColumnType("float");
+
+                    b.Property<float>("Consistency")
+                        .HasColumnType("float");
+
+                    b.Property<int>("GamePos")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Games")
+                        .HasColumnType("int");
+
+                    b.Property<float>("Rating")
+                        .HasColumnType("float");
+
+                    b.Property<float>("RatingChange")
+                        .HasColumnType("float");
+
+                    b.HasKey("ArcadeReplayPlayerRatingId");
+
+                    b.HasIndex("ArcadeReplayPlayerId")
+                        .IsUnique();
+
+                    b.HasIndex("ArcadeReplayRatingId");
+
+                    b.ToTable("ArcadeReplayPlayerRatings");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadeReplayRating", b =>
+                {
+                    b.Property<int>("ArcadeReplayRatingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("ArcadeReplayId")
+                        .HasColumnType("int");
+
+                    b.Property<float>("ExpectationToWin")
+                        .HasColumnType("float");
+
+                    b.Property<int>("LeaverType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RatingType")
+                        .HasColumnType("int");
+
+                    b.HasKey("ArcadeReplayRatingId");
+
+                    b.HasIndex("ArcadeReplayId")
+                        .IsUnique();
+
+                    b.ToTable("ArcadeReplayRatings");
+                });
+
             modelBuilder.Entity("pax.dsstats.dbng.BattleNetInfo", b =>
                 {
                     b.Property<int>("BattleNetInfoId")
@@ -448,6 +703,10 @@ namespace MysqlMigrations.Migrations
                         .HasPrecision(0)
                         .HasColumnType("datetime(0)");
 
+                    b.Property<DateTime?>("Imported")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
                     b.Property<int>("Maxkillsum")
                         .HasColumnType("int");
 
@@ -507,6 +766,8 @@ namespace MysqlMigrations.Migrations
                     b.HasKey("ReplayId");
 
                     b.HasIndex("FileName");
+
+                    b.HasIndex("Imported");
 
                     b.HasIndex("Maxkillsum");
 
@@ -941,6 +1202,77 @@ namespace MysqlMigrations.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadePlayerRating", b =>
+                {
+                    b.HasOne("pax.dsstats.dbng.ArcadePlayer", "ArcadePlayer")
+                        .WithMany("ArcadePlayerRatings")
+                        .HasForeignKey("ArcadePlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ArcadePlayer");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadePlayerRatingChange", b =>
+                {
+                    b.HasOne("pax.dsstats.dbng.ArcadePlayerRating", "ArcadePlayerRating")
+                        .WithOne("ArcadePlayerRatingChange")
+                        .HasForeignKey("pax.dsstats.dbng.ArcadePlayerRatingChange", "ArcadePlayerRatingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ArcadePlayerRating");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadeReplayPlayer", b =>
+                {
+                    b.HasOne("pax.dsstats.dbng.ArcadePlayer", "ArcadePlayer")
+                        .WithMany("ArcadeReplayPlayers")
+                        .HasForeignKey("ArcadePlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("pax.dsstats.dbng.ArcadeReplay", "ArcadeReplay")
+                        .WithMany("ArcadeReplayPlayers")
+                        .HasForeignKey("ArcadeReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ArcadePlayer");
+
+                    b.Navigation("ArcadeReplay");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadeReplayPlayerRating", b =>
+                {
+                    b.HasOne("pax.dsstats.dbng.ArcadeReplayPlayer", "ReplayPlayer")
+                        .WithOne("ArcadeReplayPlayerRating")
+                        .HasForeignKey("pax.dsstats.dbng.ArcadeReplayPlayerRating", "ArcadeReplayPlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("pax.dsstats.dbng.ArcadeReplayRating", "ArcadeReplayRating")
+                        .WithMany("ArcadeReplayPlayerRatings")
+                        .HasForeignKey("ArcadeReplayRatingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ArcadeReplayRating");
+
+                    b.Navigation("ReplayPlayer");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadeReplayRating", b =>
+                {
+                    b.HasOne("pax.dsstats.dbng.ArcadeReplay", "ArcadeReplay")
+                        .WithOne("ArcadeReplayRating")
+                        .HasForeignKey("pax.dsstats.dbng.ArcadeReplayRating", "ArcadeReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ArcadeReplay");
+                });
+
             modelBuilder.Entity("pax.dsstats.dbng.BattleNetInfo", b =>
                 {
                     b.HasOne("pax.dsstats.dbng.Uploader", "Uploader")
@@ -1114,6 +1446,35 @@ namespace MysqlMigrations.Migrations
                     b.Navigation("Spawn");
 
                     b.Navigation("Unit");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadePlayer", b =>
+                {
+                    b.Navigation("ArcadePlayerRatings");
+
+                    b.Navigation("ArcadeReplayPlayers");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadePlayerRating", b =>
+                {
+                    b.Navigation("ArcadePlayerRatingChange");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadeReplay", b =>
+                {
+                    b.Navigation("ArcadeReplayPlayers");
+
+                    b.Navigation("ArcadeReplayRating");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadeReplayPlayer", b =>
+                {
+                    b.Navigation("ArcadeReplayPlayerRating");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.ArcadeReplayRating", b =>
+                {
+                    b.Navigation("ArcadeReplayPlayerRatings");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Event", b =>

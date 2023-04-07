@@ -61,9 +61,10 @@ public class MmrTests
         builder.Services.AddScoped<MmrProduceService>();
         builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
 
-        app = builder.Build();
+        builder.Services.AddOptions<DbImportOptions>()
+            .Configure(x => x.ImportConnectionString = importConnectionString);
 
-        Data.MysqlConnectionString = importConnectionString;
+        app = builder.Build();
     }
 
     [Fact]

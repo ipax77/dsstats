@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using pax.BlazorChartJs;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
 using pax.dsstats.web.Client;
 using pax.dsstats.web.Client.Services;
 
@@ -22,5 +23,6 @@ builder.Services.AddChartJs(options =>
 });
 
 builder.Services.AddTransient<IDataService, DataService>();
+builder.Services.AddTransient<IArcadeService, ArcadeService>();
 
 await builder.Build().RunAsync();
