@@ -146,19 +146,19 @@
                                             <span class="text-truncate text-warning" style="display: block; width: 40px;">@rating.Pos</span>
                                         </td>
                                         <td>
-                                            <span>@Data.GetRegionString(rating.Player.RegionId)</span>
+                                            <span>@Data.GetRegionString(rating.ArcadePlayer.RegionId)</span>
                                         </td>
-                                        <td><span class="text-truncate text-info" style="display: block; width: 130px;">@rating.Player.Name</span></td>
+                                        <td><span class="text-truncate text-info" style="display: block; width: 130px;">@rating.ArcadePlayer.Name</span></td>
                                         <td class="border-start">@rating.Games</td>
                                         <td class="text-warning">@rating.Rating.ToString("N2", CultureInfo.InvariantCulture)</td>
                                         <td>
-                                            @if (rating.PlayerRatingChange != null)
+                                            @if (rating.ArcadePlayerRatingChange != null)
                                             {
                                                 var ratingChange = RatingsRequest.TimePeriod switch
                                                 {
-                                                    RatingChangeTimePeriod.Past24h => rating.PlayerRatingChange.Change24h,
-                                                    RatingChangeTimePeriod.Past10Days => rating.PlayerRatingChange.Change10d,
-                                                    _ => rating.PlayerRatingChange.Change30d
+                                                    RatingChangeTimePeriod.Past24h => rating.ArcadePlayerRatingChange.Change24h,
+                                                    RatingChangeTimePeriod.Past10Days => rating.ArcadePlayerRatingChange.Change10d,
+                                                    _ => rating.ArcadePlayerRatingChange.Change30d
                                                 };
                                                 <span class="@(ratingChange >= 0 ? "oi oi-arrow-top text-success" : "oi oi-arrow-bottom text-danger")">
                                                     @ratingChange.ToString("N2", CultureInfo.InvariantCulture)

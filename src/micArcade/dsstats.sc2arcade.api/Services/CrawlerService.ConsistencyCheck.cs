@@ -10,9 +10,11 @@ public partial class CrawlerService
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
+        int total = 1000;
+
         var players = await context.Players
             .OrderBy(o => o.PlayerId)
-            .Take(100)
+            .Take(total)
             .AsNoTracking()
             .ToListAsync();
 
@@ -40,7 +42,7 @@ public partial class CrawlerService
             }
         }
 
-        logger.LogWarning($"Player check: NotFound: {notFound}, Multiple: {multiple}, Good: {good}");
+        logger.LogWarning($"Player check: NotFound: {notFound}/{total}, Multiple: {multiple}/{total}, Good: {good}/{total}");
     }
 
     public async Task CheckReplays()
@@ -48,12 +50,15 @@ public partial class CrawlerService
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
+        int total = 1000;
+
         var replays = await context.Replays
             .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Player)
             .Where(x => (x.GameMode == pax.dsstats.shared.GameMode.Commanders || x.GameMode == pax.dsstats.shared.GameMode.Standard) && x.Playercount == 6 && x.Duration > 300)
             .OrderByDescending(o => o.GameTime)
-            .Take(3000)
+            .Skip(5000)
+            .Take(total)
             .AsNoTracking()
             .ToListAsync();
 
@@ -84,6 +89,6 @@ public partial class CrawlerService
                 multiple++;
             }
         }
-        logger.LogWarning($"Replay check: NotFound: {notFound}, Multiple: {multiple}, Good: {good}");
+        logger.LogWarning($"Replay check: NotFound: {notFound}/{total}, Multiple: {multiple}/{total}, Good: {good}/{total}");
     }
 }

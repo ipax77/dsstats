@@ -6,8 +6,8 @@ public record ArcadePlayerRatingDto
     public int Pos { get; init; }
     public int Games { get; init; }
     public int Wins { get; init; }
-    public ArcadePlayerRatingPlayerDto Player { get; init; } = null!;
-    public ArcadePlayerRatingChangeDto? PlayerRatingChange { get; init; }
+    public ArcadePlayerRatingPlayerDto ArcadePlayer { get; init; } = null!;
+    public ArcadePlayerRatingChangeDto? ArcadePlayerRatingChange { get; init; }
 }
 
 public record ArcadePlayerRatingPlayerDto

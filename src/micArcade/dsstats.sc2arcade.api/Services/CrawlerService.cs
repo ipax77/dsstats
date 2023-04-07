@@ -98,7 +98,7 @@ public partial class CrawlerService
         //var json = JsonSerializer.Serialize(results, new JsonSerializerOptions() { WriteIndented = true });
         //File.WriteAllText("/data/ds/sc2arcardeLobbyResults.json", json);
 
-        logger.LogInformation($"job done.");
+        logger.LogWarning($"job done.");
     }
 
     public void AnalyizeLobbyHistory(string jsonFile)

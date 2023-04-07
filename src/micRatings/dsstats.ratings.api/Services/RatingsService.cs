@@ -54,11 +54,11 @@ public partial class RatingsService
                 { 
                     MmrOptions = new(reCalc: true),
                     MmrIdRatings = await GetMmrIdRatings(new(reCalc: true), null),
-                    StartTime = new DateTime(2023, 1, 22),
+                    StartTime = new DateTime(2021, 2, 1),
                     EndTime = DateTime.Today.AddDays(2)
-                }; 
+                };
 
-                //return;
+                request.MmrOptions.InjectDic = await GetArcadeInjectDic();
             }
 
             recalc = request.MmrOptions.ReCalc;
@@ -113,7 +113,7 @@ public partial class RatingsService
         int replayPlayerRatingAppendId = 0;
 
         // DateTime startTime = new DateTime(2018, 1, 1);
-        DateTime startTime = new DateTime(2023, 1, 22);
+        DateTime startTime = new DateTime(2021, 2, 1);
         DateTime endTime = DateTime.Today.AddDays(2);
 
         using var scope = serviceProvider.CreateScope();
@@ -164,7 +164,7 @@ public partial class RatingsService
             }
         }
 
-        mmrOptions.InjectDic = mmrOptions.ReCalc ? await GetArcadeInjectDic() : new();
+        // mmrOptions.InjectDic = mmrOptions.ReCalc ? await GetArcadeInjectDic() : new();
 
         MmrService.CalcRatingRequest request = new()
         {

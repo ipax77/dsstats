@@ -1,13 +1,23 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
+using System.Text.Json;
 
 namespace dsstats.ratings.api.Services;
 
 public partial class RatingsService
 {
+    private readonly string injectDicFile = "/data/ds/injectdic.json";
+
     public async Task<Dictionary<RatingType, Dictionary<int, Dictionary<int, double>>>> GetArcadeInjectDic()
     {
+        if (File.Exists(injectDicFile))
+        {
+            var injectDicFromJson = JsonSerializer
+                .Deserialize<Dictionary<RatingType, Dictionary<int, Dictionary<int, double>>>>(File.ReadAllText(injectDicFile));
+            return injectDicFromJson ?? new();
+        }
+
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
@@ -65,6 +75,10 @@ public partial class RatingsService
                 }
             }
         }
+
+        var json = JsonSerializer.Serialize(injectDic);
+        File.WriteAllText(injectDicFile, json);
+
         return injectDic;
     }
 }

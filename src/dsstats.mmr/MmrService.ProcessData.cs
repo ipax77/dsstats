@@ -71,7 +71,10 @@ public partial class MmrService
             };
         }
 
-        if (mmrOptions.ReCalc && !playerData.ReplayPlayer.IsUploader && (replayData.RatingType == RatingType.Cmdr || replayData.RatingType == RatingType.Std))
+        if (mmrOptions.InjectDic.Any() 
+            && mmrOptions.ReCalc 
+            && !playerData.ReplayPlayer.IsUploader 
+            && (replayData.RatingType == RatingType.Cmdr || replayData.RatingType == RatingType.Std))
         {
             plRating.Mmr = mmrOptions.GetInjectRating(replayData.RatingType,
                                                         replayData.ReplayDsRDto.GameTime,
@@ -82,5 +85,4 @@ public partial class MmrService
         playerData.Consistency = plRating.Consistency;
         playerData.Confidence = plRating.Confidence;
     }
-}
 }
