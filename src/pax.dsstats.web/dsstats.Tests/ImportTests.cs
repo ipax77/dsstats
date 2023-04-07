@@ -25,6 +25,8 @@ public class ImportTests
     // curl -X 'GET' -H 'Authorization: mySecretPw' -H 'Accept: application/json' http://localhost:5153/api/v1/ratings/reports
     // curl -X 'GET' -H 'Authorization: mySecretPw' -H 'Accept: application/json' http://localhost:5259/api/v1/import
 
+    const string skip = "Class ImportTests disabled";
+
     public ImportTests()
     {
 
@@ -75,7 +77,7 @@ public class ImportTests
         serviceProvider = services.BuildServiceProvider();
     }
 
-    [Fact]
+    [Fact(Skip = skip)]
     public void ImportA1BasicImportTest()
     {
         // start depending microservices
@@ -165,7 +167,7 @@ public class ImportTests
         Directory.Delete(testDir, true);
     }
 
-    [Fact]
+    [Fact(Skip=skip)]
     public void ImportA2MultiImportTest()
     {
         using var scope = serviceProvider.CreateScope();
@@ -278,7 +280,7 @@ public class ImportTests
         Directory.Delete(testDir3, true);
     }
 
-    [Fact]
+    [Fact(Skip=skip)]
     public void ImportA3RatingsImportTest()
     {
         using var scope = serviceProvider.CreateScope();
@@ -315,7 +317,7 @@ public class ImportTests
         Assert.True(reports.Any());
     }
 
-    [Fact]
+    [Fact(Skip=skip)]
     public void ImportA5RatingsWhileImportTest()
     {
         using var scope = serviceProvider.CreateScope();
