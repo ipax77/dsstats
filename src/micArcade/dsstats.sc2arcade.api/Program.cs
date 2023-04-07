@@ -62,15 +62,17 @@ namespace dsstats.sc2arcade.api
             // context.Database.EnsureCreated();
             // context.Database.Migrate();
 
+            var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
+            crawlerService.GetLobbyHistory(DateTime.Today.AddMonths(-1)).Wait();
+
+
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
 
-                var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
                 // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1)).Wait();
-                crawlerService.GetLobbyHistory(DateTime.Today.AddMonths(-1)).Wait();
                 // crawlerService.AnalyizeLobbyHistory("/data/ds/sc2arcardeLobbyResults.json");
                 // crawlerService.DEBUGJson("/data/ds/temp.json");
 
