@@ -34,6 +34,7 @@ public partial class ImportService
     private ConcurrentDictionary<string, BlobCache> blobCaches = new();
     private Queue<ImportStepInfo> stepQueue = new Queue<ImportStepInfo>(5);
     private Stopwatch sw = new();
+    private const string blobsDir = "/data/ds/replayblobs";
 
     public EventHandler<EventArgs>? OnBlobsHandled { get; set; }
 
@@ -73,6 +74,23 @@ public partial class ImportService
             .ToDictionary(k => k.LastSpawnHash, v => v.ReplayId);
 #pragma warning restore CS8619 // Nullability of reference types in value doesn't match target type.
 #pragma warning restore CS8714 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'notnull' constraint.
+    }
+
+    public void ImportInit()
+    {
+        var blobs = Directory.EnumerateFiles(blobsDir, "*base64", SearchOption.AllDirectories);
+
+        if (!blobs.Any())
+        {
+            return;
+        }
+
+        ImportRequest request = new()
+        {
+            Replayblobs = blobs.ToList()
+        };
+
+        Import(request);
     }
 
     public void Import(ImportRequest request)

@@ -125,22 +125,25 @@ if (app.Environment.IsProduction())
 
     var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
     tourneyService.CollectTourneyReplays().Wait();
+
+    var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
+    importService.ImportInit();
 }
 
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var replays = context.Replays
-        .Include(i => i.ReplayPlayers)
-            .ThenInclude(i => i.Spawns)
-                .ThenInclude(i => i.Units)
-        .Include(i => i.ReplayRatingInfo)
-            .ThenInclude(i => i.RepPlayerRatings)
-        .OrderByDescending(o => o.GameTime)
-        .Take(2)
-        .ToList();
-    context.Replays.RemoveRange(replays);
-    context.SaveChanges();
+    //var replays = context.Replays
+    //    .Include(i => i.ReplayPlayers)
+    //        .ThenInclude(i => i.Spawns)
+    //            .ThenInclude(i => i.Units)
+    //    .Include(i => i.ReplayRatingInfo)
+    //        .ThenInclude(i => i.RepPlayerRatings)
+    //    .OrderByDescending(o => o.GameTime)
+    //    .Take(2)
+    //    .ToList();
+    //context.Replays.RemoveRange(replays);
+    //context.SaveChanges();
 
     //var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
     //ratingsService.ProduceRatings().Wait();
