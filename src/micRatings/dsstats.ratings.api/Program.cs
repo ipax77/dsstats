@@ -57,6 +57,12 @@ public class Program
         // context.Database.EnsureCreated();
         // context.Database.Migrate();
 
+        var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
+        arcadeRatingsService.ProduceRatings().Wait();
+
+        var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+        ratingsService.GetArcadeInjectDic().Wait();
+
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
@@ -64,15 +70,6 @@ public class Program
 
             //Stopwatch sw = Stopwatch.StartNew();
             //ratingsService.ProduceRatings().Wait();
-
-            Stopwatch sw = Stopwatch.StartNew();
-            var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
-            arcadeRatingsService.ProduceRatings().Wait();
-            // arcadeRatingsService.PrintLadder("/data/ds/arcaderatingCmdr.json");
-            // arcadeRatingsService.PrintLadder("/data/ds/arcaderatingStd.json");
-
-            sw.Stop();
-            Console.WriteLine($"ratings produced in {sw.ElapsedMilliseconds} ms");
 
             app.UseSwagger();
             app.UseSwaggerUI();

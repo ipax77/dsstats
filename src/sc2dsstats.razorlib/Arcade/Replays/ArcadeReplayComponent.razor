@@ -1,0 +1,71 @@
+﻿@using pax.dsstats.shared.Arcade;
+@using pax.dsstats.shared;
+
+<div class="card" style="max-width: 600px;">
+    <div class="card-header">
+        <div class="row fw-bolder">
+            <div class="col">@Replay.CreatedAt.ToShortDateString()</div>
+            <div class="col">Duration @TimeSpan.FromSeconds(Replay.Duration).ToString(@"hh\:mm\:ss")</div>
+            <div class="col">@Data.GetRegionString(Replay.RegionId)</div>
+            <div class="col">@Replay.GameMode</div>
+            <div class="col-2"><span class="oi oi-x text-danger pointer" @onclick="e => OnCloseRequested.InvokeAsync()"></span></div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            @for (int i = 1; i <= 2; i++)
+            {
+                <div class="col-auto">
+                    <div>
+                        <span class="badge @(Replay.WinnerTeam == i ? "bg-success" : "bg-danger")">
+                            Team @i
+                        </span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped w-auto">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th>Disc</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var player in Replay.ArcadeReplayPlayers.Where(x => x.Team == i).OrderBy(o => o.SlotNumber))
+                                {
+                                    <tr>
+                                        <td>@player.SlotNumber</td>
+                                        <td>
+                                            <span @onclick:stopPropagation @onclick="e => ShowPlayerDetails(player.ArcadePlayerId)" class="d-inline-block text-truncate text-decoration-underline" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
+                                                @player.Name
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @player.Discriminator
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="card-footer">
+        <button type="button" class="btn btn-sm btn-danger" @onclick="e => OnCloseRequested.InvokeAsync()">Close</button>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ArcadeReplayDto Replay { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnCloseRequested { get; set; }
+
+    public void ShowPlayerDetails(int arcadePlayerId)
+    {
+
+    }
+}

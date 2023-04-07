@@ -94,6 +94,7 @@ public partial class CrawlerService
             }
 
             await ImportArcadeReplays(results);
+            results.Clear();
         }
         //var json = JsonSerializer.Serialize(results, new JsonSerializerOptions() { WriteIndented = true });
         //File.WriteAllText("/data/ds/sc2arcardeLobbyResults.json", json);

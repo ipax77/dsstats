@@ -126,6 +126,8 @@ public class ReplayContext : DbContext
         modelBuilder.Entity<ArcadeReplay>(entity =>
         {
             entity.HasIndex(i => new { i.GameMode, i.CreatedAt });
+            entity.HasIndex(i => new { i.RegionId, i.GameMode, i.CreatedAt });
+            entity.HasIndex(i => i.Id);
         });
 
         modelBuilder.Entity<ArcadePlayer>(entity =>

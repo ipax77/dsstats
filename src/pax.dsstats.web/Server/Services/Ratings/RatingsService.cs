@@ -82,7 +82,7 @@ public partial class RatingsService
         finally
         {
             sw.Stop();
-            logger.LogWarning($"ratings produced in {sw.ElapsedMilliseconds} ms {recalc}/{recalcCount}");
+            logger.LogWarning($"{DateTime.UtcNow.ToString(@"yyyy-MM-dd HH:mm:ss")}: ratings produced in {sw.ElapsedMilliseconds} ms {recalc}/{recalcCount}");
 
             if (ratingsResults.Count >= ratingsCount)
             {

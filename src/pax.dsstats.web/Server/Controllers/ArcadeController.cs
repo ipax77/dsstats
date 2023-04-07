@@ -35,4 +35,25 @@ public class ArcadeController
     {
         return await arcadeService.GetDistribution(request, token);
     }
+
+    [HttpPost]
+    [Route("replayscount")]
+    public async Task<ActionResult<int>> GetReplayCount(ArcadeReplaysRequest request, CancellationToken token)
+    {
+        return await arcadeService.GetReplayCount(request, token);
+    }
+
+    [HttpPost]
+    [Route("replays")]
+    public async Task<ActionResult<List<ArcadeReplayListDto>>> GetReplays(ArcadeReplaysRequest request, CancellationToken token)
+    {
+        return await arcadeService.GetArcadeReplays(request, token);
+    }
+
+    [HttpGet]
+    [Route("replay/{id:int}")]
+    public async Task<ArcadeReplayDto?> GetArcadeReplay(int id, CancellationToken token = default)
+    {
+        return await arcadeService.GetArcadeReplay(id, token);
+    }
 }
