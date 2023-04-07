@@ -84,4 +84,64 @@ public class ArcadeService : IArcadeService
         }
         return new();
     }
+
+    public async Task<int> GetReplayCount(ArcadeReplaysRequest request, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{arcadeController}replayscount", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<int>(cancellationToken: token);
+            }
+            else
+            {
+                logger.LogError($"failed getting replays count: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting replays count: {e.Message}");
+        }
+        return 0;
+    }
+
+    public async Task<List<ArcadeReplayListDto>> GetArcadeReplays(ArcadeReplaysRequest request, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{arcadeController}replays", request, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<List<ArcadeReplayListDto>>(cancellationToken: token) ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting replays: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting replays: {e.Message}");
+        }
+        return new();
+    }
+
+    public async Task<ArcadeReplayDto?> GetArcadeReplay(int id, CancellationToken token = default)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<ArcadeReplayDto>($"{arcadeController}replay/{id}");
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting replay {id}: {e.Message}");
+        }
+        return null;
+    }
 }

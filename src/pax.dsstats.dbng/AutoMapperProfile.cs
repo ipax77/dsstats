@@ -113,6 +113,14 @@ namespace pax.dsstats.dbng
             CreateMap<ArcadePlayerRating, ArcadePlayerRatingDto>(MemberList.Destination);
             CreateMap<ArcadePlayer, ArcadePlayerRatingPlayerDto>(MemberList.Destination);
             CreateMap<ArcadePlayerRatingChange, ArcadePlayerRatingChangeDto>(MemberList.Destination);
+
+            CreateMap<ArcadePlayerRating, ArcadePlayerRatingDetailDto>(MemberList.Destination);
+            CreateMap<ArcadePlayer, ArcadePlayerDto>(MemberList.Destination);
+            CreateMap<ArcadeReplayPlayerRating, ArcadeReplayPlayerRatingDto>(MemberList.Destination);
+            CreateMap<ArcadeReplayRating, ArcadeReplayRatingDto>(MemberList.Destination);
+            CreateMap<ArcadeReplayPlayer, ArcadeReplayPlayerDto>(MemberList.Destination);
+            CreateMap<ArcadeReplay, ArcadeReplayDto>(MemberList.Destination);
+            CreateMap<ArcadeReplay, ArcadeReplayListDto>(MemberList.Destination);
         }
     }
 }

@@ -1,0 +1,12 @@
+﻿@page "/arcadereplays"
+@using pax.dsstats.shared.Arcade;
+
+<PageTitle>Arcade Replays</PageTitle>
+
+<h2>Data from <a href="https://sc2arcade.com/">sc2arcade</a></h2>
+
+<sc2dsstats.razorlib.Arcade.Replays.ArcadeReplaysComponent replaysRequest="request" />
+
+@code {
+    ArcadeReplaysRequest request = new();
+}
