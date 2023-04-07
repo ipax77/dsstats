@@ -87,7 +87,7 @@ public partial class ImportService
 
                             if (!blobCaches.Any())
                             {
-                                logger.LogInformation($"replays imported: {imports}, dups: {dups}, errors: {errors}");
+                                logger.LogWarning($"replays imported: {imports}, dups: {dups}, errors: {errors}");
 
                                 sw.Stop();
 

@@ -118,10 +118,7 @@ public partial class ImportService
 
                 dbCache.Uploaders.TryGetValue(uploaderGuid, out int uploaderId);
                 
-                Stopwatch sw = Stopwatch.StartNew();
                 await MapPlayers(replays);
-                sw.Stop();
-                logger.LogWarning($"players mapped in {sw.ElapsedMilliseconds}");
 
                 foreach (var replay in replays)
                 {
