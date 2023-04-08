@@ -186,7 +186,8 @@ public class ArcadeService : IArcadeService
     {
         try
         {
-            var response = await httpClient.PostAsJsonAsync($"{arcadeController}moreplayerdetails/{(int)ratingType}", playerId, token);
+            var request = $"{arcadeController}moreplayerdetails/{(int)ratingType}";
+            var response = await httpClient.PostAsJsonAsync(request, playerId, token);
 
             if (response.IsSuccessStatusCode)
             {

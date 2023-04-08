@@ -45,8 +45,7 @@ public partial class ArcadeService
             PlayerRatings = await context.ArcadePlayerRatings
                 .Where(x => x.ArcadePlayerId == arcadePlayerId)
                 .ProjectTo<ArcadePlayerRatingDetailDto>(mapper.ConfigurationProvider)
-                .ToListAsync(token),
-            GameModes = await GetGameModes(arcadePlayerId, context, token)
+                .ToListAsync(token)
         };
     }
 
@@ -129,11 +128,11 @@ public partial class ArcadeService
                                     && rp.ArcadePlayer.RegionId == playerId.RegionId
                                     && rp.ArcadePlayer.RealmId == playerId.RealmId
                                     && t.Team == rp.Team
-                                group t by t.ArcadePlayer.ProfileId into g
+                                group t by new { t.ArcadePlayer.ProfileId, t.ArcadePlayer.RealmId, t.ArcadePlayer.RegionId } into g
                                 where g.Count() > 10
-                                select new PlayerTeamResultHelper()
+                                select new AracdePlayerTeamResultHelper()
                                 {
-                                    ToonId = g.Key,
+                                    PlayerId = new(g.Key.ProfileId, g.Key.RealmId, g.Key.RegionId),
                                     Count = g.Count(),
                                     Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
                                 }
@@ -144,11 +143,11 @@ public partial class ArcadeService
                                 && rp.ArcadePlayer.RegionId == playerId.RegionId
                                 && rp.ArcadePlayer.RealmId == playerId.RealmId
                                 && t.Team != rp.Team
-                              group t by t.ArcadePlayer.ProfileId into g
+                              group t by new { t.ArcadePlayer.ProfileId, t.ArcadePlayer.RealmId, t.ArcadePlayer.RegionId } into g
                               where g.Count() > 10
-                              select new PlayerTeamResultHelper()
+                              select new AracdePlayerTeamResultHelper()
                               {
-                                  ToonId = g.Key,
+                                  PlayerId = new(g.Key.ProfileId, g.Key.RealmId, g.Key.RegionId),
                                   Count = g.Count(),
                                   Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
                               };
@@ -156,16 +155,45 @@ public partial class ArcadeService
         var results = await teammateGroup
             .ToListAsync(token);
 
-        var rtoonIds = results.Select(s => s.ToonId).ToList();
-        var names = (await context.ArcadePlayers
-            .Where(x => rtoonIds.Contains(x.ProfileId))
-            .Select(s => new { s.ProfileId, s.Name })
-            .ToListAsync(token)).ToDictionary(k => k.ProfileId, v => v.Name);
+        var playerIds = results.Select(s => s.PlayerId).ToList();
+
+        Dictionary<ArcadePlayerId, string> names = new();
+        foreach (var plId in playerIds)
+        {
+            var name = await context.ArcadePlayers
+                .Where(x => x.ProfileId == plId.ProfileId
+                    && x.RealmId == plId.RealmId
+                    && x.RegionId == plId.RegionId)
+                .Select(x => x.Name)
+                .FirstOrDefaultAsync();
+            names.Add(plId, name ?? "");
+        }
+
+        //var names = await context.ArcadePlayers
+        //    .Where(x => playerIds.Contains(new ArcadePlayerId
+        //    {
+        //        ProfileId = x.ProfileId,
+        //        RealmId = x.RealmId,
+        //        RegionId = x.RegionId
+        //    }))
+        //    .Select(x => new
+        //    {
+        //        PlayerId = new ArcadePlayerId
+        //        {
+        //            ProfileId = x.ProfileId,
+        //            RealmId = x.RealmId,
+        //            RegionId = x.RegionId
+        //        },
+        //        Name = x.Name
+        //    })
+        //    .ToListAsync();
+
+        //Dictionary<ArcadePlayerId, string> nameDictionary = names.ToDictionary(x => x.PlayerId, x => x.Name ?? "");
 
         return results.Select(s => new PlayerTeamResult()
         {
-            Name = names[s.ToonId],
-            ToonId = s.ToonId,
+            Name = names[s.PlayerId],
+            ToonId = s.PlayerId.ProfileId,
             Count = s.Count,
             Wins = s.Wins
         }).ToList();
@@ -203,3 +231,9 @@ public partial class ArcadeService
     }
 }
 
+internal record AracdePlayerTeamResultHelper
+{
+    public ArcadePlayerId PlayerId { get; set; } = new();
+    public int Count { get; set; }
+    public int Wins { get; set; }
+}

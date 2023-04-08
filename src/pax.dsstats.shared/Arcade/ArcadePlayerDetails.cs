@@ -4,7 +4,6 @@ public record ArcadePlayerDetails
 {
     public ArcadePlayerDto? ArcadePlayer { get; set; }
     public List<ArcadePlayerRatingDetailDto> PlayerRatings { get; set; } = new();
-    public List<KeyValuePair<GameMode, int>> GameModes { get; set; } = new();
 }
 
 public record ArcadePlayerMoreDetails

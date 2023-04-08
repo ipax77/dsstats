@@ -99,7 +99,12 @@
 </div>
 
 <div>
-@if (replayDto != null)
+
+@if (interestPlayerId > 0)
+{
+    <sc2dsstats.razorlib.Arcade.PlayerDetails.ArcadePlayerDetailsComponent ArcadePlayerId="interestPlayerId" OnCloseRequested="ClosePlayerDetails" />   
+}
+else if (replayDto != null)
 {
     <ArcadeReplayComponent Replay="replayDto" OnCloseRequested="OnReplayClose" OnPlayerRequested="PlayerRequest" />
 }
@@ -121,6 +126,7 @@
     private int lastVisitId = 0;
     private bool replayLoading;
     private int replaysCount = 0;
+    private int interestPlayerId = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -228,9 +234,16 @@
         await InvokeAsync(() => StateHasChanged());
     }
 
-    private async void PlayerRequest(int arcadePlayerId)
+    private void PlayerRequest(int arcadePlayerId)
     {
-        
+        interestPlayerId = arcadePlayerId;
+        StateHasChanged();
+    }
+
+    private void ClosePlayerDetails()
+    {
+        interestPlayerId = 0;
+        StateHasChanged();
     }
 
     public void Dispose()

@@ -85,6 +85,7 @@ public record ArcadePlayerDto
 
 public record ArcadePlayerRatingDetailDto
 {
+    public RatingType RatingType { get; set; }
     public double Rating { get; set; }
     public int Pos { get; set; }
     public int Games { get; set; }

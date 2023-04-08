@@ -74,7 +74,7 @@ public class ArcadeController
     [HttpPost]
     [Route("moreplayerdetails/{ratingType:int}")]
     public async Task<ArcadePlayerMoreDetails> GetMorePlayerDatails([FromBody] ArcadePlayerId playerId,
-                                                                    [FromQuery] int ratingType,
+                                                                    int ratingType,
                                                                     CancellationToken token)
     {
         return await arcadeService.GetMorePlayerDatails(playerId, (RatingType)ratingType, token);
