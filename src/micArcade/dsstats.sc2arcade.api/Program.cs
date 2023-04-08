@@ -63,7 +63,7 @@ namespace dsstats.sc2arcade.api
             // context.Database.Migrate();
 
             var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
-            crawlerService.GetLobbyHistory(DateTime.Today.AddMonths(-1)).Wait();
+            crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-3)).Wait();
 
 
             // Configure the HTTP request pipeline.

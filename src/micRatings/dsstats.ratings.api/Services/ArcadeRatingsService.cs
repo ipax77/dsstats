@@ -252,11 +252,17 @@ public partial class ArcadeRatingsService
 
     private async Task SetRatingChange()
     {
-        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
-        await connection.OpenAsync();
-        var command = connection.CreateCommand();
-        command.CommandText = "CALL SetArcadeRatingChange();";
-        command.CommandTimeout = 500;
-        await command.ExecuteNonQueryAsync();
+        try
+        {
+            using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
+            await connection.OpenAsync();
+            var command = connection.CreateCommand();
+            command.CommandText = "CALL SetArcadeRatingChange();";
+            command.CommandTimeout = 500;
+            await command.ExecuteNonQueryAsync();
+        } catch (Exception ex)
+        {
+            logger.LogError($"failed SetRatingChange: {ex.Message}");
+        }
     }
 }
