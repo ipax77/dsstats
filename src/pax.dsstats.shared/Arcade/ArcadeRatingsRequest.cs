@@ -9,7 +9,7 @@ public record ArcadeRatingsRequest
     public int Take { get; set; }
     public List<TableOrder> Orders { get; set; } = new();
     public string? Search { get; set; }
-    public int? ProfileId { get; set; }
+    public int PlayerId { get; set; }
     [JsonIgnore]
     public RatingChangeTimePeriod TimePeriod { get; set; } = RatingChangeTimePeriod.Past10Days;
 }

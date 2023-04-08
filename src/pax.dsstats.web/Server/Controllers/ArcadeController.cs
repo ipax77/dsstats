@@ -56,4 +56,27 @@ public class ArcadeController
     {
         return await arcadeService.GetArcadeReplay(id, token);
     }
+
+    [HttpPost]
+    [Route("playerdetails")]
+    public async Task<ArcadePlayerDetails> GetPlayerDetails(ArcadePlayerId playerId, CancellationToken token)
+    {
+        return await arcadeService.GetPlayerDetails(playerId, token);
+    }
+
+    [HttpGet]
+    [Route("playerdetails/{arcadePlayerId:int}")]
+    public async Task<ArcadePlayerDetails> GetPlayerDetails(int arcadePlayerId, CancellationToken token)
+    {
+        return await arcadeService.GetPlayerDetails(arcadePlayerId, token);
+    }
+
+    [HttpPost]
+    [Route("moreplayerdetails/{ratingType:int}")]
+    public async Task<ArcadePlayerMoreDetails> GetMorePlayerDatails([FromBody] ArcadePlayerId playerId,
+                                                                    int ratingType,
+                                                                    CancellationToken token)
+    {
+        return await arcadeService.GetMorePlayerDatails(playerId, (RatingType)ratingType, token);
+    }
 }

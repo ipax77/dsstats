@@ -12,6 +12,7 @@ public record ArcadePlayerRatingDto
 
 public record ArcadePlayerRatingPlayerDto
 {
+    public int ArcadePlayerId { get; set; }
     public string Name { get; set; } = null!;
     public int ProfileId { get; set; }
     public int RegionId { get; set; }
@@ -76,6 +77,7 @@ public record ArcadeReplayPlayerRatingDto
 
 public record ArcadePlayerDto
 {
+    public int ArcadePlayerId { get; set; }
     public string Name { get; set; } = string.Empty;
     public int RegionId { get; set; }
     public int RealmId { get; set; }
@@ -85,6 +87,7 @@ public record ArcadePlayerDto
 
 public record ArcadePlayerRatingDetailDto
 {
+    public RatingType RatingType { get; set; }
     public double Rating { get; set; }
     public int Pos { get; set; }
     public int Games { get; set; }
@@ -92,4 +95,5 @@ public record ArcadePlayerRatingDetailDto
     public double Consistency { get; set; }
     public double Confidence { get; set; }
     public string MmrOverTime { get; set; } = string.Empty;
+    public ArcadePlayerRatingChangeDto? ArcadePlayerRatingChange { get; set; }
 }

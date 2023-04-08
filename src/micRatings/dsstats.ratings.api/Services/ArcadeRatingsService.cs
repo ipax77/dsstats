@@ -128,7 +128,8 @@ public partial class ArcadeRatingsService
             .Where(r => r.PlayerCount == 6
                 && r.Duration >= 300
                 && r.WinnerTeam > 0
-                && gameModes.Contains(r.GameMode));
+                && gameModes.Contains(r.GameMode)
+                && r.ArcadeReplayPlayers.All(a => a.ArcadePlayer.ProfileId > 0));
 
         if (startTime != DateTime.MinValue)
         {

@@ -8,4 +8,7 @@ public interface IArcadeService
     Task<List<ArcadeReplayListDto>> GetArcadeReplays(ArcadeReplaysRequest request, CancellationToken token);
     Task<int> GetReplayCount(ArcadeReplaysRequest request, CancellationToken token);
     Task<ArcadeReplayDto?> GetArcadeReplay(int id, CancellationToken token = default);
+    Task<ArcadePlayerDetails> GetPlayerDetails(ArcadePlayerId playerId, CancellationToken token);
+    Task<ArcadePlayerDetails> GetPlayerDetails(int arcadePlayerId, CancellationToken token);
+    Task<ArcadePlayerMoreDetails> GetMorePlayerDatails(ArcadePlayerId playerId, RatingType ratingType, CancellationToken token);
 }

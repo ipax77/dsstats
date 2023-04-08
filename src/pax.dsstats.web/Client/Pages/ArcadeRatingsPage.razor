@@ -1,11 +1,10 @@
-﻿@page "/arcaderatings"
+﻿@page "/arcade/ratings"
+@layout ArcadeLayout
 @using pax.dsstats.shared.Arcade;
 @using pax.dsstats.shared;
 @inject NavigationManager NavigationManager
 
 <PageTitle>Arcade Ratings</PageTitle>
-
-<h2>Ratings are produced with the amazing data from <a href="https://sc2arcade.com/">sc2arcade</a></h2>
 
 <sc2dsstats.razorlib.Arcade.Ratings.ArcadeRatingsComponent RatingsRequest="ratingsRequest" OnRatingsChanged="SetUrl" />
 
@@ -41,7 +40,7 @@
 
     private void SetRequest()
     {
-        ratingsRequest.ProfileId = Id;
+        ratingsRequest.PlayerId = Id ?? 0;
         if (!String.IsNullOrEmpty(Mode)
             && Enum.TryParse(typeof(RatingType), Mode, out var ratingTypeObject))
         {
@@ -56,9 +55,9 @@
     {
         Dictionary<string, object?> queryDic = new();
 
-        if (ratingsRequest.ProfileId != null && ratingsRequest.ProfileId > 0)
+        if (ratingsRequest.PlayerId > 0)
         {
-            queryDic.Add("Id", ratingsRequest.ProfileId.Value);
+            queryDic.Add("Id", ratingsRequest.PlayerId);
         }
         else
         {

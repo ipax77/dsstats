@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Components.Web.Virtualization;
 @using pax.dsstats.shared.Arcade;
 @using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
 @inject IArcadeService arcadeService
 @implements IDisposable
 
@@ -99,10 +100,17 @@
 </div>
 
 <div>
-@if (replayDto != null)
+
+@if (interestPlayerId > 0)
 {
-    
-    <ArcadeReplayComponent Replay="replayDto" OnCloseRequested="OnReplayClose" />
+    <sc2dsstats.razorlib.Arcade.PlayerDetails.ArcadePlayerDetailsComponent
+        ArcadePlayerId="interestPlayerId" 
+        OnCloseRequested="ClosePlayerDetails"
+        OnReplaysRequest="ReplaysRequest" />   
+}
+else if (replayDto != null)
+{
+    <ArcadeReplayComponent Replay="replayDto" OnCloseRequested="OnReplayClose" OnPlayerRequested="PlayerRequest" />
 }
 </div>
 
@@ -122,6 +130,7 @@
     private int lastVisitId = 0;
     private bool replayLoading;
     private int replaysCount = 0;
+    private int interestPlayerId = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -227,6 +236,30 @@
 
         replayDto = null;
         await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void PlayerRequest(int arcadePlayerId)
+    {
+        interestPlayerId = arcadePlayerId;
+        StateHasChanged();
+    }
+
+    private void ClosePlayerDetails()
+    {
+        interestPlayerId = 0;
+        StateHasChanged();
+    }
+
+    private void ReplaysRequest(ReplaysToonIdRequest request)
+    {
+        interestPlayerId = 0;
+        OnReplayClose();
+        replaysRequest.Search = request.Name;
+        replaysRequest.PlayerId = request.ToonId;
+        replaysRequest.PlayerIdWith = request.ToonIdWith;
+        replaysRequest.PlayerIdVs = request.ToonIdVs;
+        replaysRequest.ProfileName = request.ToonIdName;
+        _ = Reload();
     }
 
     public void Dispose()
