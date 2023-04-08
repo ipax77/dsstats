@@ -8,7 +8,17 @@
     <EditForm EditContext="editContext">
         <div class="row">
             <div class="col-auto">
-                <InputText class="form-control" placeholder="Name" @bind-Value="replaysRequest.Search"></InputText>
+                <div>
+                    <fieldset disabled="@(replaysRequest.PlayerId > 0)">
+                        <InputText class="form-control" placeholder="Name" @bind-Value="replaysRequest.Search"></InputText>
+                    </fieldset>
+                </div>
+                @if (!String.IsNullOrEmpty(replaysRequest.ProfileName))
+                {
+                    <div>
+                        <span class="small text-warning">@(replaysRequest.PlayerIdWith > 0 ? "with" : "vs") @replaysRequest.ProfileName</span>
+                    </div>
+                }
             </div>
             <div class="col-auto">
                 <InputSelect class="form-select" @bind-Value="replaysRequest.GameMode">
@@ -67,6 +77,11 @@
         replaysRequest.GameMode = GameMode.None;
         replaysRequest.RegionId = 0;
         replaysRequest.Orders = new List<TableOrder>() { new TableOrder() { Property = "CreatedAt" } };
+        replaysRequest.ReplayId = 0;
+        replaysRequest.PlayerId = 0;
+        replaysRequest.PlayerIdWith = 0;
+        replaysRequest.PlayerIdVs = 0;
+        replaysRequest.ProfileName = null;
         OnFieldChanged.InvokeAsync();
     }
 }

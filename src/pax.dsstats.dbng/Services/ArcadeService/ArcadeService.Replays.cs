@@ -65,38 +65,87 @@ public partial class ArcadeService
     {
         IQueryable<ArcadeReplay> replays;
 
-        var names = request.Search == null ? new()
-            : request.Search.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .Select(x => x.Trim())
-            .Distinct()
-            .ToList();
+        if (request.PlayerId == 0)
+        {
+            var names = request.Search == null ? new()
+                : request.Search.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .Distinct()
+                .ToList();
 
-        if (names.Count == 0)
-        {
-            replays = context.ArcadeReplays
-                .Where(x => x.CreatedAt > new DateTime(2021, 2, 1))
-                .AsNoTracking();
-        }
-        else if (names.Count == 1)
-        {
-            var name = names[0];
-            replays = from rp in context.ArcadeReplayPlayers
-                      where rp.ArcadeReplay.CreatedAt > new DateTime(2021, 2, 1)
-                        && rp.Name == name
-                      select rp.ArcadeReplay;
+            if (names.Count == 0)
+            {
+                replays = context.ArcadeReplays
+                    .Where(x => x.CreatedAt > new DateTime(2021, 2, 1))
+                    .AsNoTracking();
+            }
+            else if (names.Count == 1)
+            {
+                var name = names[0];
+                replays = from rp in context.ArcadeReplayPlayers
+                          where rp.ArcadeReplay.CreatedAt > new DateTime(2021, 2, 1)
+                            && rp.Name == name
+                          select rp.ArcadeReplay;
+            }
+            else
+            {
+                var name = names[0];
+                replays = from rp in context.ArcadeReplayPlayers
+                          where rp.ArcadeReplay.CreatedAt > new DateTime(2021, 2, 1)
+                            && rp.Name == name
+                          select rp.ArcadeReplay;
+                for (int i = 1; i < names.Count; i++)
+                {
+                    var iname = names[i];
+                    replays = replays.Where(x => x.ArcadeReplayPlayers.Any(a => a.Name == iname));
+                }
+            }
         }
         else
         {
-            var name = names[0];
-            replays = from rp in context.ArcadeReplayPlayers
-                      where rp.ArcadeReplay.CreatedAt > new DateTime(2021, 2, 1)
-                        && rp.Name == name
-                      select rp.ArcadeReplay;
-            for (int i = 1; i < names.Count; i++)
+            if (request.PlayerIdWith != 0)
             {
-                var iname = names[i];
-                replays = replays.Where(x => x.ArcadeReplayPlayers.Any(a => a.Name == iname));
+                replays = from rp in context.ArcadeReplayPlayers
+                          from rp1 in context.ArcadeReplayPlayers
+                          where rp.ArcadeReplay.CreatedAt > new DateTime(2021, 2, 1)
+                            && rp.ArcadePlayer.ArcadePlayerId == request.PlayerId
+                            && rp1.ArcadeReplayId == rp.ArcadeReplayId
+                            && rp1.Team == rp.Team
+                            && rp1.ArcadePlayer.ArcadePlayerId == request.PlayerIdWith
+                          select rp.ArcadeReplay;
             }
+            else if (request.PlayerIdVs != 0)
+            {
+                replays = from rp in context.ArcadeReplayPlayers
+                          from rp1 in context.ArcadeReplayPlayers
+                          where rp.ArcadeReplay.CreatedAt > new DateTime(2021, 2, 1)
+                            && rp.ArcadePlayer.ArcadePlayerId == request.PlayerId
+                            && rp1.ArcadeReplayId == rp.ArcadeReplayId
+                            && rp1.Team != rp.Team
+                            && rp1.ArcadePlayer.ArcadePlayerId == request.PlayerIdVs
+                          select rp.ArcadeReplay;
+            }
+            else
+            {
+
+                replays = from rp in context.ArcadeReplayPlayers
+                          where rp.ArcadeReplay.CreatedAt > new DateTime(2021, 2, 1)
+                            && rp.ArcadePlayer.ArcadePlayerId == request.PlayerId
+                          select rp.ArcadeReplay;
+            }
+
+            //if (!String.IsNullOrEmpty(request.Search))
+            //{
+            //    var names = request.Search.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            //        .Select(x => x.Trim())
+            //        .Distinct()
+            //        .ToList();
+
+            //    foreach (var name in names)
+            //    {
+            //        replays = replays.Where(x => x.ArcadeReplayPlayers.Any(a => a.Name == name));
+            //    }
+            //}
         }
 
         if (request.GameMode != GameMode.None)

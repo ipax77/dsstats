@@ -44,6 +44,12 @@
                 </select>
             </label>
         </div>
+        @if (playerDetails?.ArcadePlayer != null)
+        {
+            <div class="p-2">
+                <button type="button" class="btn btn-outline-light" @onclick="ShowReplays">Replays</button>
+            </div>
+        }
     </div>
     <div>
         @if (loading)
@@ -189,6 +195,9 @@
     [Parameter]
     public EventCallback OnCloseRequested { get; set; }
 
+    [Parameter]
+    public EventCallback<ReplaysToonIdRequest> OnReplaysRequest { get; set; }
+
     private CancellationTokenSource cts = new();
     private bool loading;
 
@@ -271,12 +280,50 @@
             };
     }
 
+    private void ShowReplays()
+    {
+        if (playerDetails?.ArcadePlayer == null)
+        {
+            return;
+        }
+
+        OnReplaysRequest.InvokeAsync(new()
+            {
+                Name = playerDetails.ArcadePlayer.Name,
+                ToonId = playerDetails.ArcadePlayer.ArcadePlayerId,
+            });
+    }
+
     private void ShowWithReplays(KeyValuePair<int, string?> playerInfo)
     {
+        if (playerDetails?.ArcadePlayer == null)
+        {
+            return;
+        }
+
+        OnReplaysRequest.InvokeAsync(new()
+            {
+                Name = playerDetails.ArcadePlayer.Name,
+                ToonId = playerDetails.ArcadePlayer.ArcadePlayerId,
+                ToonIdWith = playerInfo.Key,
+                ToonIdName = playerInfo.Value,
+            });
     }
 
     private void ShowVsReplays(KeyValuePair<int, string?> playerInfo)
     {
+        if (playerDetails?.ArcadePlayer == null)
+        {
+            return;
+        }
+
+        OnReplaysRequest.InvokeAsync(new()
+            {
+                Name = playerDetails.ArcadePlayer.Name,
+                ToonId = playerDetails.ArcadePlayer.ArcadePlayerId,
+                ToonIdVs = playerInfo.Key,
+                ToonIdName = playerInfo.Value,
+            });
     }
 
     public void Dispose()

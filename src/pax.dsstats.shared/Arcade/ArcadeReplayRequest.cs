@@ -10,4 +10,8 @@ public record ArcadeReplaysRequest
     public int Take { get; set; }
     public List<TableOrder> Orders { get; set; } = new List<TableOrder>() { new TableOrder() { Property = "CreatedAt" } };
     public int ReplayId { get; set; }
+    public int PlayerId { get; set; }
+    public int PlayerIdWith { get; set; }
+    public int PlayerIdVs { get; set; }
+    public string? ProfileName { get; set; }
 }

@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Components.Web.Virtualization;
 @using pax.dsstats.shared.Arcade;
 @using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
 @inject IArcadeService arcadeService
 @implements IDisposable
 
@@ -102,7 +103,10 @@
 
 @if (interestPlayerId > 0)
 {
-    <sc2dsstats.razorlib.Arcade.PlayerDetails.ArcadePlayerDetailsComponent ArcadePlayerId="interestPlayerId" OnCloseRequested="ClosePlayerDetails" />   
+    <sc2dsstats.razorlib.Arcade.PlayerDetails.ArcadePlayerDetailsComponent
+        ArcadePlayerId="interestPlayerId" 
+        OnCloseRequested="ClosePlayerDetails"
+        OnReplaysRequest="ReplaysRequest" />   
 }
 else if (replayDto != null)
 {
@@ -244,6 +248,18 @@ else if (replayDto != null)
     {
         interestPlayerId = 0;
         StateHasChanged();
+    }
+
+    private void ReplaysRequest(ReplaysToonIdRequest request)
+    {
+        interestPlayerId = 0;
+        OnReplayClose();
+        replaysRequest.Search = request.Name;
+        replaysRequest.PlayerId = request.ToonId;
+        replaysRequest.PlayerIdWith = request.ToonIdWith;
+        replaysRequest.PlayerIdVs = request.ToonIdVs;
+        replaysRequest.ProfileName = request.ToonIdName;
+        _ = Reload();
     }
 
     public void Dispose()

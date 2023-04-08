@@ -12,6 +12,7 @@ public record ArcadePlayerRatingDto
 
 public record ArcadePlayerRatingPlayerDto
 {
+    public int ArcadePlayerId { get; set; }
     public string Name { get; set; } = null!;
     public int ProfileId { get; set; }
     public int RegionId { get; set; }
@@ -76,6 +77,7 @@ public record ArcadeReplayPlayerRatingDto
 
 public record ArcadePlayerDto
 {
+    public int ArcadePlayerId { get; set; }
     public string Name { get; set; } = string.Empty;
     public int RegionId { get; set; }
     public int RealmId { get; set; }

@@ -6,6 +6,8 @@
 @using sc2dsstats.razorlib.Services;
 
 @inject IArcadeService arcadeService
+@inject NavigationManager NavigationManager
+
 @implements IDisposable
 
 <style>
@@ -41,7 +43,7 @@
     }
 </style>
 
-<div class="@(Interest == null ? "" : "visually-hidden")">
+<div class="@(RatingsRequest.PlayerId == 0 ? "" : "visually-hidden")">
     <div class="d-flex">
         <EditForm EditContext="editContext">
             <div class="row">
@@ -141,7 +143,7 @@
                         {
                             <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings" OverscanCount="10" ItemSize="41">
                                 <ItemContent>
-                                    <tr class="pointer" height="41px;" @onclick="e => RequestPlayerDetails(new(rating.ArcadePlayer.ProfileId, rating.ArcadePlayer.RealmId, rating.ArcadePlayer.RegionId))">
+                                    <tr class="pointer" height="41px;" @onclick="e => RequestPlayerDetails(rating.ArcadePlayer.ArcadePlayerId)">
                                         <td>
                                             <span class="text-truncate text-warning" style="display: block; width: 40px;">@rating.Pos</span>
                                         </td>
@@ -200,9 +202,13 @@
     </div>
 </div>
 
-@if (Interest != null)
+@if (RatingsRequest.PlayerId > 0)
 {
-    <sc2dsstats.razorlib.Arcade.PlayerDetails.ArcadePlayerDetailsComponent PlayerId="Interest" RatingType="RatingsRequest.Type" OnCloseRequested="PlayerDetailsClose" />
+    <sc2dsstats.razorlib.Arcade.PlayerDetails.ArcadePlayerDetailsComponent
+        ArcadePlayerId="RatingsRequest.PlayerId"
+        RatingType="RatingsRequest.Type"
+        OnCloseRequested="PlayerDetailsClose" 
+        OnReplaysRequest="ReplaysRequest" />
 }
 
 @code {
@@ -223,8 +229,6 @@
         {
             RatingType = RatingType.Cmdr
         };
-
-    private ArcadePlayerId? Interest = null;
 
     private string ratingChangeSort => RatingsRequest.TimePeriod switch
     {
@@ -327,16 +331,34 @@
         _ = Reload();
     }
 
-    private void RequestPlayerDetails(ArcadePlayerId playerId)
+    private void RequestPlayerDetails(int playerId)
     {
-        Interest = playerId;
+        RatingsRequest.PlayerId = playerId;
+        OnRatingsChanged.InvokeAsync();
         StateHasChanged();
     }
 
     private void PlayerDetailsClose()
     {
-        Interest = null;
+        RatingsRequest.PlayerId = 0;
+        OnRatingsChanged.InvokeAsync();
         StateHasChanged();
+    }
+
+    private void ReplaysRequest(ReplaysToonIdRequest request)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("arcade/replays",
+        new Dictionary<string, object?>()
+                {
+                    { "Search", request.Name },
+                    { "PlId", request.ToonId },
+                    { "PlIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
+                    { "PlIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
+                    { "Name", request.ToonIdName },
+                }
+    )
+    );
     }
 
     public void Dispose()

@@ -98,6 +98,7 @@ public partial class ArcadeService
                                        && rp.ArcadeReplay.ArcadeReplayRating.RatingType == ratingType
                                        && t != rp
                                        && t.Team == rp.Team
+                                       && t.ArcadePlayer.ProfileId > 0
                                    select t.ArcadeReplayPlayerRating
                                 : from p in context.ArcadePlayers
                                   from rp in p.ArcadeReplayPlayers
@@ -108,6 +109,7 @@ public partial class ArcadeService
                                        && rp.ArcadeReplay.ArcadeReplayRating != null
                                        && rp.ArcadeReplay.ArcadeReplayRating.RatingType == ratingType
                                        && t.Team != rp.Team
+                                       && t.ArcadePlayer.ProfileId > 0
                                   select t.ArcadeReplayPlayerRating;
 
         var avgRating = await teamRatings
@@ -127,13 +129,16 @@ public partial class ArcadeService
                                 where rp.ArcadePlayer.ProfileId == playerId.ProfileId
                                     && rp.ArcadePlayer.RegionId == playerId.RegionId
                                     && rp.ArcadePlayer.RealmId == playerId.RealmId
+                                    && t != rp
                                     && t.Team == rp.Team
-                                group t by new { t.ArcadePlayer.Name, t.ArcadePlayer.ProfileId, t.ArcadePlayer.RealmId, t.ArcadePlayer.RegionId } into g
+                                    && t.ArcadePlayer.ProfileId > 0
+                                group t by new { t.ArcadePlayer.Name, t.ArcadePlayer.ArcadePlayerId, t.ArcadePlayer.ProfileId, t.ArcadePlayer.RealmId, t.ArcadePlayer.RegionId } into g
                                 where g.Count() > 10
                                 select new AracdePlayerTeamResultHelper()
                                 {
                                     PlayerId = new(g.Key.ProfileId, g.Key.RealmId, g.Key.RegionId),
                                     Name = g.Key.Name,
+                                    ArcadePlayerId = g.Key.ArcadePlayerId,
                                     Count = g.Count(),
                                     Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
                                 }
@@ -144,12 +149,14 @@ public partial class ArcadeService
                                 && rp.ArcadePlayer.RegionId == playerId.RegionId
                                 && rp.ArcadePlayer.RealmId == playerId.RealmId
                                 && t.Team != rp.Team
-                              group t by new { t.ArcadePlayer.Name, t.ArcadePlayer.ProfileId, t.ArcadePlayer.RealmId, t.ArcadePlayer.RegionId } into g
+                                && t.ArcadePlayer.ProfileId > 0
+                              group t by new { t.ArcadePlayer.Name, t.ArcadePlayer.ArcadePlayerId, t.ArcadePlayer.ProfileId, t.ArcadePlayer.RealmId, t.ArcadePlayer.RegionId } into g
                               where g.Count() > 10
                               select new AracdePlayerTeamResultHelper()
                               {
                                   PlayerId = new(g.Key.ProfileId, g.Key.RealmId, g.Key.RegionId),
                                   Name = g.Key.Name,
+                                  ArcadePlayerId = g.Key.ArcadePlayerId,
                                   Count = g.Count(),
                                   Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
                               };
@@ -160,7 +167,7 @@ public partial class ArcadeService
         return results.Select(s => new PlayerTeamResult()
         {
             Name = s.Name,
-            ToonId = s.PlayerId.ProfileId,
+            ToonId = s.ArcadePlayerId,
             Count = s.Count,
             Wins = s.Wins
         }).ToList();
@@ -202,6 +209,7 @@ internal record AracdePlayerTeamResultHelper
 {
     public ArcadePlayerId PlayerId { get; set; } = new();
     public string Name { get; set; } = string.Empty;
+    public int ArcadePlayerId { get; set; }
     public int Count { get; set; }
     public int Wins { get; set; }
 }
