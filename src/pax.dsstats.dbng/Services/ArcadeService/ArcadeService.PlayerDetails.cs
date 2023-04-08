@@ -1,44 +1,134 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
 
 namespace pax.dsstats.dbng.Services;
 
 public partial class ArcadeService
 {
-    public async Task<PlayerDetailsResult> GetPlayerDetails(int profileId, int regionId, RatingType ratingType, CancellationToken token)
+    public async Task<ArcadePlayerDetails> GetPlayerDetails(ArcadePlayerId playerId, CancellationToken token)
+    {
+        var arcadePlayerId = await GetArcadePalyerId(playerId, token);
+        if (arcadePlayerId == 0)
+        {
+            return new();
+        }
+        return await GetPlayerDetails(arcadePlayerId, token);
+    }
+
+    private async Task<int> GetArcadePalyerId(ArcadePlayerId playerId, CancellationToken token = default)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return await context.ArcadePlayers
+            .Where(x => x.ProfileId == playerId.ProfileId
+                && x.RealmId == playerId.RealmId
+                && x.RegionId == playerId.RegionId)
+            .Select(s => s.ArcadePlayerId)
+            .FirstOrDefaultAsync(token);
+    }
+
+    public async Task<ArcadePlayerDetails> GetPlayerDetails(int arcadePlayerId, CancellationToken token)
     {
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         return new()
         {
-            GameModes = await GetGameModeCounts(profileId, regionId, context, token),
+            ArcadePlayer = await context.ArcadePlayers
+                .Where(x => x.ArcadePlayerId == arcadePlayerId)
+                .ProjectTo<ArcadePlayerDto>(mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync(),
+            PlayerRatings = await context.ArcadePlayerRatings
+                .Where(x => x.ArcadePlayerId == arcadePlayerId)
+                .ProjectTo<ArcadePlayerRatingDetailDto>(mapper.ConfigurationProvider)
+                .ToListAsync(token),
+            GameModes = await GetGameModes(arcadePlayerId, context, token)
         };
     }
 
-    public async Task<PlayerDetailsGroupResult> GetPlayerGroupDetails(int profileId,
-                                                                      int regionId,
-                                                                      RatingType ratingType,
-                                                                      ReplayContext context,
-                                                                      CancellationToken token)
+    private async Task<List<KeyValuePair<GameMode, int>>> GetGameModes(int arcadePlayerId, ReplayContext context, CancellationToken token)
     {
-        return new PlayerDetailsGroupResult()
+        var group = from p in context.ArcadePlayers
+                    from rp in p.ArcadeReplayPlayers
+                    where p.ArcadePlayerId == arcadePlayerId
+                    group rp.ArcadeReplay by rp.ArcadeReplay.GameMode into g
+                    select new
+                    {
+                        g.Key,
+                        Count = g.Count()
+                    };
+
+        var gamemodes = await group.ToListAsync(token);
+
+        if (gamemodes.Any())
         {
-            Teammates = await GetPlayerTeammates(profileId, regionId, ratingType, true, context, token),
-            Opponents = await GetPlayerTeammates(profileId, regionId, ratingType, false, context, token),
+            return gamemodes.Select(s => new KeyValuePair<GameMode, int>(s.Key, s.Count)).ToList();
+        }
+        else
+        {
+            return new();
+        }
+    }
+
+    public async Task<ArcadePlayerMoreDetails> GetMorePlayerDatails(ArcadePlayerId playerId, RatingType ratingType, CancellationToken token)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return new()
+        {
+            Teammates = await GetPlayerTeammates(playerId, ratingType, true, context, token),
+            Opponents = await GetPlayerTeammates(playerId, ratingType, false, context, token),
+            AvgTeamRating = await GetTeamRating(playerId, ratingType, true, context, token)
         };
     }
 
-    private async Task<List<PlayerTeamResult>> GetPlayerTeammates(int profileId, int regionId, RatingType ratingType, bool inTeam, ReplayContext context, CancellationToken token)
+    private async Task<double> GetTeamRating(ArcadePlayerId playerId, RatingType ratingType, bool inTeam, ReplayContext context, CancellationToken token)
+    {
+        var teamRatings = inTeam ? from p in context.ArcadePlayers
+                                   from rp in p.ArcadeReplayPlayers
+                                   from t in rp.ArcadeReplay.ArcadeReplayPlayers
+                                   where p.ProfileId == playerId.ProfileId
+                                       && p.RealmId == playerId.RealmId
+                                       && p.RegionId == playerId.RegionId
+                                       && rp.ArcadeReplay.ArcadeReplayRating != null
+                                       && rp.ArcadeReplay.ArcadeReplayRating.RatingType == ratingType
+                                       && t != rp
+                                       && t.Team == rp.Team
+                                   select t.ArcadeReplayPlayerRating
+                                : from p in context.ArcadePlayers
+                                  from rp in p.ArcadeReplayPlayers
+                                  from t in rp.ArcadeReplay.ArcadeReplayPlayers
+                                  where p.ProfileId == playerId.ProfileId
+                                       && p.RealmId == playerId.RealmId
+                                       && p.RegionId == playerId.RegionId
+                                       && rp.ArcadeReplay.ArcadeReplayRating != null
+                                       && rp.ArcadeReplay.ArcadeReplayRating.RatingType == ratingType
+                                       && t.Team != rp.Team
+                                  select t.ArcadeReplayPlayerRating;
+
+        var avgRating = await teamRatings
+            .Select(s => s.Rating)
+            .DefaultIfEmpty()
+            .AverageAsync(token);
+        return Math.Round(avgRating, 2);
+    }
+
+    private async Task<List<PlayerTeamResult>> GetPlayerTeammates(ArcadePlayerId playerId, RatingType ratingType, bool inTeam, ReplayContext context, CancellationToken token)
     {
         var replays = GetRatingReplays(context, ratingType);
         var teammateGroup = inTeam ?
                                 from r in replays
                                 from rp in r.ArcadeReplayPlayers
                                 from t in r.ArcadeReplayPlayers
-                                where rp.ArcadePlayer.ProfileId == profileId && rp.ArcadePlayer.RegionId == regionId
-                                where t.Team == rp.Team
+                                where rp.ArcadePlayer.ProfileId == playerId.ProfileId
+                                    && rp.ArcadePlayer.RegionId == playerId.RegionId
+                                    && rp.ArcadePlayer.RealmId == playerId.RealmId
+                                    && t.Team == rp.Team
                                 group t by t.ArcadePlayer.ProfileId into g
                                 where g.Count() > 10
                                 select new PlayerTeamResultHelper()
@@ -50,8 +140,10 @@ public partial class ArcadeService
                             : from r in replays
                               from rp in r.ArcadeReplayPlayers
                               from t in r.ArcadeReplayPlayers
-                              where rp.ArcadePlayer.ProfileId == profileId && rp.ArcadePlayer.RegionId == regionId
-                              where t.Team != rp.Team
+                              where rp.ArcadePlayer.ProfileId == playerId.ProfileId
+                                && rp.ArcadePlayer.RegionId == playerId.RegionId
+                                && rp.ArcadePlayer.RealmId == playerId.RealmId
+                                && t.Team != rp.Team
                               group t by t.ArcadePlayer.ProfileId into g
                               where g.Count() > 10
                               select new PlayerTeamResultHelper()
@@ -110,3 +202,4 @@ public partial class ArcadeService
         return await gameModeGroup.ToListAsync(token);
     }
 }
+

@@ -101,8 +101,7 @@
 <div>
 @if (replayDto != null)
 {
-    
-    <ArcadeReplayComponent Replay="replayDto" OnCloseRequested="OnReplayClose" />
+    <ArcadeReplayComponent Replay="replayDto" OnCloseRequested="OnReplayClose" OnPlayerRequested="PlayerRequest" />
 }
 </div>
 
@@ -227,6 +226,11 @@
 
         replayDto = null;
         await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async void PlayerRequest(int arcadePlayerId)
+    {
+        
     }
 
     public void Dispose()

@@ -144,4 +144,64 @@ public class ArcadeService : IArcadeService
         }
         return null;
     }
+
+    public async Task<ArcadePlayerDetails> GetPlayerDetails(ArcadePlayerId playerId, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{arcadeController}playerdetails", playerId, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ArcadePlayerDetails>(cancellationToken: token) ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting player details: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting player details: {e.Message}");
+        }
+        return new();
+    }
+
+    public async Task<ArcadePlayerDetails> GetPlayerDetails(int arcadePlayerId, CancellationToken token)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<ArcadePlayerDetails>($"{arcadeController}playerdetails/{arcadePlayerId}") ?? new();
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting replay {arcadePlayerId}: {e.Message}");
+        }
+        return new();
+    }
+
+    public async Task<ArcadePlayerMoreDetails> GetMorePlayerDatails(ArcadePlayerId playerId, RatingType ratingType, CancellationToken token)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{arcadeController}moreplayerdetails/{(int)ratingType}", playerId, token);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ArcadePlayerMoreDetails>(cancellationToken: token) ?? new();
+            }
+            else
+            {
+                logger.LogError($"failed getting more player details: {response.StatusCode}");
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception e)
+        {
+            logger.LogError($"failed getting more player details: {e.Message}");
+        }
+        return new();
+    }
 }
