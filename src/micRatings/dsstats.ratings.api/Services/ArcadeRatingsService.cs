@@ -92,7 +92,7 @@ public partial class ArcadeRatingsService
 
         while (_startTime < _endTime)
         {
-            var chunkEndTime = _startTime.AddYears(1);
+            var chunkEndTime = _startTime.AddMonths(3);
 
             if (chunkEndTime > _endTime)
             {
@@ -101,7 +101,7 @@ public partial class ArcadeRatingsService
 
             request.ReplayDsRDtos = await GetReplayData(_startTime, chunkEndTime);
 
-            _startTime = _startTime.AddYears(1);
+            _startTime = _startTime.AddMonths(3);
 
             if (!request.ReplayDsRDtos.Any())
             {
@@ -142,8 +142,7 @@ public partial class ArcadeRatingsService
         }
 
         var dsrReplays = from r in replays
-                         orderby r.CreatedAt 
-                         orderby r.ArcadeReplayId
+                         orderby r.CreatedAt, r.ArcadeReplayId
                          select new ReplayDsRDto()
                          {
                              ReplayId = r.ArcadeReplayId,

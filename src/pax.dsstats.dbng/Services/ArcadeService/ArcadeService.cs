@@ -83,6 +83,11 @@ public partial class ArcadeService : IArcadeService
             .Include(i => i.ArcadePlayer)
             .Where(x => x.Games > 20 && x.RatingType == request.Type);
 
+        if (request.RegionId > 0)
+        {
+            ratings = ratings.Where(x => x.ArcadePlayer.RegionId == request.RegionId);
+        }
+
         if (!String.IsNullOrEmpty(request.Search))
         {
             ratings = ratings.Where(x => x.ArcadePlayer.Name.ToUpper().Contains(request.Search.ToUpper()));
