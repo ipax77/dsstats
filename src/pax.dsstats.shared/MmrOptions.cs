@@ -1,4 +1,6 @@
-﻿namespace pax.dsstats.shared;
+﻿using pax.dsstats.shared.Arcade;
+
+namespace pax.dsstats.shared;
 
 public record MmrOptions
 {
@@ -41,11 +43,11 @@ public record MmrOptions
     public bool UseConfidence { get; init; }
 
     public bool ReCalc { get; set; }
-    public Dictionary<RatingType, Dictionary<int, Dictionary<int, double>>> InjectDic { get; set; } = new();
+    public Dictionary<RatingType, Dictionary<ArcadePlayerId, Dictionary<int, double>>> InjectDic { get; set; } = new();
 
-    public double GetInjectRating(RatingType ratingType, DateTime gameTime, int toonId)
+    public double GetInjectRating(RatingType ratingType, DateTime gameTime, ArcadePlayerId playerId)
     {
-        if (InjectDic[ratingType].TryGetValue(toonId, out var plEnt))
+        if (InjectDic[ratingType].TryGetValue(playerId, out var plEnt))
         {
             int dateInt = int.Parse(gameTime.ToString(@"yyyyMMdd"));
             if (plEnt.TryGetValue(dateInt, out double rating))

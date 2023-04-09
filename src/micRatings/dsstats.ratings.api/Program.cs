@@ -57,11 +57,12 @@ public class Program
         // context.Database.EnsureCreated();
         // context.Database.Migrate();
 
-        var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
-        arcadeRatingsService.ProduceRatings().Wait();
+        //var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
+        //arcadeRatingsService.ProduceRatings().Wait();
 
         var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
-        ratingsService.GetArcadeInjectDic().Wait();
+        ratingsService.ProduceRatings(true).Wait();
+        // ratingsService.GetArcadeInjectDic().Wait();
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())

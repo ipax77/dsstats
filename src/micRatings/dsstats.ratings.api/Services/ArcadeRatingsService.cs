@@ -163,7 +163,8 @@ public partial class ArcadeRatingsService
                                      PlayerId = s.ArcadePlayer.ArcadePlayerId,
                                      Name = s.ArcadePlayer.Name,
                                      ToonId = s.ArcadePlayer.ProfileId,
-                                     RegionId = s.ArcadePlayer.RegionId
+                                     RegionId = s.ArcadePlayer.RegionId,
+                                     RealmId = s.ArcadePlayer.RealmId,
                                  }
                              }).ToList()
                          };
