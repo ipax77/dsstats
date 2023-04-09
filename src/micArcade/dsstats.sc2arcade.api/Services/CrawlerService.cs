@@ -27,13 +27,20 @@ public partial class CrawlerService
         string? next = null;
         string? current = null;
 
-        var regions = new List<string>() { "NA", "EU" };
-
-        foreach (var region in regions)
+        Dictionary<int, int> mapRegions = new Dictionary<int, int>()
         {
-            string baseRequest = region == "NA" ?
-                "lobbies/history?regionId=1&mapId=208271&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true"
-                : "lobbies/history?regionId=2&mapId=140436&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
+             { 208271, 1 }, // NA
+             { 140436, 2 }, // EU
+             { 69942, 3 },  // As
+            // { 231019, 2 }, // TE EU
+            // { 327974, 1 }, // TE NA
+        };
+
+        foreach (var mapRegion in mapRegions)
+        {
+            string baseRequest =
+                $"lobbies/history?regionId={mapRegion.Value}&mapId={mapRegion.Key}&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
+                
 
             int i = 0;
             while (true)
@@ -64,7 +71,7 @@ public partial class CrawlerService
                     logger.LogError($"failed getting lobby result ({next}): {ex.Message}");
                     if (results.Any())
                     {
-                        await ImportArcadeReplays(results);
+                        await ImportArcadeReplays(results, (mapRegion.Key == 231019 || mapRegion.Key == 231019));
                         if (results.Last().CreatedAt < tillTime)
                         {
                             break;
@@ -83,7 +90,7 @@ public partial class CrawlerService
                 }
                 if (results.Count > 10000)
                 {
-                    await ImportArcadeReplays(results);
+                    await ImportArcadeReplays(results, (mapRegion.Key == 231019 || mapRegion.Key == 231019));
 
                     if (results.Last().CreatedAt < tillTime)
                     {
@@ -93,7 +100,7 @@ public partial class CrawlerService
                 }
             }
 
-            await ImportArcadeReplays(results);
+            await ImportArcadeReplays(results, (mapRegion.Key == 231019 || mapRegion.Key == 231019));
             results.Clear();
         }
         //var json = JsonSerializer.Serialize(results, new JsonSerializerOptions() { WriteIndented = true });

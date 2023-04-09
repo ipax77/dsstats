@@ -60,8 +60,8 @@ public class Program
         var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
         arcadeRatingsService.ProduceRatings().Wait();
 
-        // var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
-        // ratingsService.GetArcadeInjectDic().Wait();
+        var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+        ratingsService.GetArcadeInjectDic().Wait();
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())

@@ -10,7 +10,7 @@ public partial class CrawlerService
     public Dictionary<PlayerId, int> arcadePlayerIds = new();
     public Dictionary<int, bool> arcadeReplayIds = new();
 
-    public async Task ImportArcadeReplays(List<LobbyResult> results)
+    public async Task ImportArcadeReplays(List<LobbyResult> results, bool teMap)
     {
         await SeedPlayerIds();
         await SeedReplayIds();
@@ -36,6 +36,8 @@ public partial class CrawlerService
                 "3V3" => GameMode.Standard,
                 "3V3 Commanders" => GameMode.Commanders,
                 "Heroic Commanders" => GameMode.CommandersHeroic,
+                "Standard" => GameMode.Standard,
+                "Commanders" => GameMode.Commanders,
                 _ => GameMode.None
             };
 
@@ -68,6 +70,7 @@ public partial class CrawlerService
                 : Convert.ToInt32((result.Match.CompletedAt.Value - result.CreatedAt).TotalSeconds),
                 PlayerCount = 6,
                 WinnerTeam = winnerPlayer.Team.Value,
+                TournamentEdition = teMap,
                 ArcadeReplayPlayers = result.Slots.Select(s => new ArcadeReplayPlayer()
                 {
                     Name = s.Name,

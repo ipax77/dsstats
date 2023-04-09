@@ -10,6 +10,7 @@ public record ArcadeRatingsRequest
     public List<TableOrder> Orders { get; set; } = new();
     public string? Search { get; set; }
     public int PlayerId { get; set; }
+    public int RegionId { get; set; }
     [JsonIgnore]
     public RatingChangeTimePeriod TimePeriod { get; set; } = RatingChangeTimePeriod.Past10Days;
 }

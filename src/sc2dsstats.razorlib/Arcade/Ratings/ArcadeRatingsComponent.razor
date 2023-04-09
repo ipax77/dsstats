@@ -71,6 +71,17 @@
                 </div>
                 <div class="col-auto">
                     <label class="form-label">
+                        Region
+                        <InputSelect class="form-select" @bind-Value="RatingsRequest.RegionId">
+                            <option value="0">All</option>
+                            <option value="1">@Data.GetRegionString(1)</option>
+                            <option value="2">@Data.GetRegionString(2)</option>
+                            <option value="3">@Data.GetRegionString(3)</option>
+                        </InputSelect>
+                    </label>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">
                         Change
                         <InputSelect class="form-select" @bind-Value="RatingsRequest.TimePeriod">
                             <option value="@RatingChangeTimePeriod.Past24h">@RatingChangeTimePeriod.Past24h</option>
