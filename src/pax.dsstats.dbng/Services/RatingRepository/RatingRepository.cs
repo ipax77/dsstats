@@ -68,12 +68,7 @@ public partial class RatingRepository : IRatingRepository
 
         return await context.Players
             .Where(x => x.Name == name)
-            .Select(s => new RequestNames()
-            {
-                Name = s.Name,
-                ToonId = s.ToonId,
-                RegionId = s.RegionId
-            })
+            .Select(s => new RequestNames(s.Name, s.ToonId, s.RegionId, s.RealmId))
             .ToListAsync();
 
         //return RatingMemory.Values
@@ -178,12 +173,7 @@ public partial class RatingRepository : IRatingRepository
 
         return await context.Players
             .Where(x => x.ToonId == toonId)
-            .Select(s => new RequestNames()
-            {
-                Name = s.Name,
-                ToonId = toonId,
-                RegionId = s.RegionId,
-            })
+            .Select(s => new RequestNames(s.Name, s.ToonId, s.RegionId, s.RealmId))
             .FirstOrDefaultAsync();
     }
 
@@ -197,12 +187,7 @@ public partial class RatingRepository : IRatingRepository
                 && x.Games >= minGames)
             .OrderByDescending(o => o.Rating)
             .Take(5)
-            .Select(s => new RequestNames()
-            {
-                Name = s.Player.Name,
-                ToonId = s.Player.ToonId,
-                RegionId = s.Player.RegionId
-            })
+            .Select(s => new RequestNames(s.Player.Name, s.Player.ToonId, s.Player.RegionId, s.Player.RealmId))
             .ToListAsync();
     }
 

@@ -31,13 +31,14 @@ public partial class StatsService
                         && rp.Replay.GameTime >= fromDate
                         && rp.Replay.GameTime < toDate
                         && tm.ReplayPlayerId != rp.ReplayPlayerId
-                      group new { pr.Player, rp, rpr } by new { rp.Player.Name, rp.Player.ToonId, rp.Player.RegionId } into g
+                      group new { pr.Player, rp, rpr } by new { rp.Player.Name, rp.Player.ToonId, rp.Player.RegionId, rp.Player.RealmId } into g
                       where g.Count() >= limit
                       select new CmdrPlayerInfo()
                       {
                         Name = g.Key.Name,
                         ToonId = g.Key.ToonId,
                         RegionId = g.Key.RegionId,
+                        RealmId = g.Key.RealmId,
                         Count = g.Count(),
                         Wins = g.Count(c => c.rp.PlayerResult == PlayerResult.Win),
                         AvgRating = Math.Round(g.Average(s => s.rp.ReplayPlayerRatingInfo.Rating)),

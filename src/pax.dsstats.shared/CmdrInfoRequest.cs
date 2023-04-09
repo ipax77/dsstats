@@ -54,6 +54,7 @@ public record CmdrPlayerInfo
     public string Name { get; set; } = string.Empty;
     public int ToonId { get; set; }
     public int RegionId { get; set; }
+    public int RealmId { get; set; } = 1;
     public int Count { get; set; }
     public int Wins { get; set; }
     public double AvgGain { get; set; }

@@ -154,12 +154,7 @@
             return;
         }
 
-        var requestName = new RequestNames()
-            {
-                Name = player.Name,
-                ToonId = player.ToonId,
-                RegionId = player.RegionId
-            };
+        var requestName = new RequestNames(player.Name, player.ToonId, player.RegionId, player.RealmId);
         if (!requestNames.Contains(requestName))
         {
             requestNames.Add(requestName);
