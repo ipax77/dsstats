@@ -505,7 +505,10 @@ public partial class ReplayRepository : IReplayRepository
                 isComputer = true;
             }
 
-            var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == replayPlayer.Player.ToonId);
+            var dbPlayer = await context.Players.FirstOrDefaultAsync(f =>
+                f.ToonId == replayPlayer.Player.ToonId
+                && f.RealmId == replayPlayer.Player.RealmId
+                && f.RegionId == replayPlayer.Player.RegionId);
             if (dbPlayer == null)
             {
                 dbPlayer = new()
@@ -513,6 +516,7 @@ public partial class ReplayRepository : IReplayRepository
                     Name = replayPlayer.Player.Name,
                     ToonId = replayPlayer.Player.ToonId,
                     RegionId = replayPlayer.Player.RegionId,
+                    RealmId = replayPlayer.Player.RealmId,
                 };
                 context.Players.Add(dbPlayer);
                 try

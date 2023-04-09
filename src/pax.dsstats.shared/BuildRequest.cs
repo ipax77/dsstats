@@ -13,4 +13,5 @@ public record RequestNames
     public string Name { get; set; } = "";
     public int ToonId { get; init; }
     public int RegionId { get; set; }
+    public int RealmId { get; set; } = 1;
 }

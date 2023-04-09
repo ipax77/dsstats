@@ -176,7 +176,10 @@ public partial class UploadService
     {
         foreach (var player in playerUploadDtos)
         {
-            var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == player.ToonId);
+            var dbPlayer = await context.Players.FirstOrDefaultAsync(f =>
+                f.ToonId == player.ToonId
+                && f.RegionId == player.RegionId
+                && f.RealmId == player.RealmId);
             if (dbPlayer == null)
             {
                 dbPlayer = mapper.Map<Player>(player);

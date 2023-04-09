@@ -155,6 +155,7 @@ internal class UserSettingsService
                         var toonFolder = toonDir.Split(Path.DirectorySeparatorChar).Last();
                         int toonId = 0;
                         int regionId = 0;
+                        int realmId = 1;
                         var match = Regex.Match(toonFolder, @"\d+$");
                         if (match.Success)
                         {
@@ -171,7 +172,16 @@ internal class UserSettingsService
                                 regionId = tregionId;
                             }
                         }
-                        battleNetInfo.ToonIds.Add(new() { RegionId = regionId, ToonId = toonId });
+
+                        var realmMatch = Regex.Match(toonFolder, @"-(\d+)-");
+                        if (realmMatch.Success)
+                        {
+                            if (int.TryParse(realmMatch.Value, out int trealmId))
+                            {
+                                realmId = trealmId;
+                            }
+                        }
+                        battleNetInfo.ToonIds.Add(new() { RegionId = regionId, ToonId = toonId, RealmId = realmId });
                     }
                 }
                 battleNetInfos.Add(battleNetInfo);
@@ -326,4 +336,5 @@ public record ToonIdInfo
 {
     public int RegionId { get; set; }
     public int ToonId { get; set; }
+    public int RealmId { get; set; } = 1;
 }

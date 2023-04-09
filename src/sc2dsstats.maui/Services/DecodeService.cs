@@ -397,7 +397,10 @@ public class DecodeService : IDisposable
             for (int i = 0; i < replayDto.ReplayPlayers.Count; i++)
             {
                 var replayPlayer = replayDto.ReplayPlayers.ElementAt(i);
-                if (playerToonIds.Any(a => a.ToonId == replayPlayer.Player.ToonId))
+                if (playerToonIds.Any(a => 
+                    a.ToonId == replayPlayer.Player.ToonId
+                    && a.RealmId == replayPlayer.Player.RealmId
+                    && a.RegionId == replayPlayer.Player.RegionId))
                 {
                     replayPlayer.IsUploader = true;
                     replayDto.PlayerResult = replayPlayer.PlayerResult;

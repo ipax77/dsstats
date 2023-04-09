@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
@@ -58,8 +59,8 @@ public partial class ImportService
             .Select(s => new { s.Name, s.UpgradeId })
             .ToList().ToDictionary(k => k.Name, v => v.UpgradeId);
         dbCache.Players = context.Players
-            .Select(s => new { s.ToonId, s.PlayerId, s.RegionId })
-            .ToList().ToDictionary(k => k.ToonId, v => new KeyValuePair<int, int>(v.PlayerId, v.RegionId));
+            .Select(s => new { s.ToonId, s.PlayerId, s.RegionId, s.RealmId })
+            .ToList().ToDictionary(k => new PlayerId(k.ToonId, k.RealmId, k.RegionId), v => v.PlayerId);
         dbCache.Uploaders = context.Uploaders
             .Select(s => new { s.AppGuid, s.UploaderId })
             .ToList().ToDictionary(k => k.AppGuid, v => v.UploaderId);
@@ -194,7 +195,7 @@ public record DbImportCache
     public Dictionary<string, int> Units { get; set; } = new();
     public Dictionary<string, int> Upgrades { get; set; } = new();
     // ToonId => (PlayerId, RegionId)
-    public Dictionary<int, KeyValuePair<int, int>> Players { get; set; } = new();
+    public Dictionary<PlayerId, int> Players { get; set; } = new();
     public Dictionary<Guid, int> Uploaders { get; set; } = new();
     public Dictionary<string, int> ReplayHashes { get; set; } = new();
     public Dictionary<string, int> SpawnHashes { get; set; } = new();

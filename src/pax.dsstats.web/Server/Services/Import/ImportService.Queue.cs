@@ -201,7 +201,7 @@ public partial class ImportService
                 continue;
             }
 
-            if (!dbCache.Players.TryGetValue(replayPlayer.Player.ToonId, out var playerIdRegionId))
+            if (!dbCache.Players.TryGetValue(new(replayPlayer.Player.ToonId, replayPlayer.Player.RealmId, replayPlayer.Player.RegionId), out var playerId))
             {
                 var player = new Player()
                 {
@@ -211,10 +211,9 @@ public partial class ImportService
                 };
                 context.Players.Add(player);
                 await context.SaveChangesAsync();
-                playerIdRegionId = new(player.PlayerId, player.RegionId);
-                dbCache.Players[player.ToonId] = playerIdRegionId;
+                playerId = dbCache.Players[new(player.ToonId, player.RealmId, player.RegionId)] = player.PlayerId;
             }
-            replayPlayer.PlayerId = playerIdRegionId.Key;
+            replayPlayer.PlayerId = playerId;
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
             replayPlayer.Player = null;
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.

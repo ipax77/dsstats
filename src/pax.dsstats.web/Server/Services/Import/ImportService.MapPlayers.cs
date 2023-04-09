@@ -23,11 +23,11 @@ public partial class ImportService
                     continue;
                 }
 
-                var playerInfo = dbCache.Players[rp.Player.ToonId];
+                var playerId = dbCache.Players[new(rp.Player.ToonId, rp.Player.RealmId, rp.Player.RegionId)];
 
                 // todo: fix regionId !?
 
-                rp.PlayerId = playerInfo.Key;
+                rp.PlayerId = playerId;
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
                 rp.Player = null;
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -46,7 +46,7 @@ public partial class ImportService
         {
             foreach (var rp in replays[i].ReplayPlayers)
             {
-                if (!dbCache.Players.ContainsKey(rp.Player.ToonId))
+                if (!dbCache.Players.ContainsKey(new(rp.Player.ToonId, rp.Player.RealmId, rp.Player.RegionId)))
                 {
                     Player player = new()
                     {
@@ -60,13 +60,13 @@ public partial class ImportService
                     {
                         await context.SaveChangesAsync();
                     }
-                    dbCache.Players[rp.Player.ToonId] = new(0, 0);
+                    dbCache.Players[new(rp.Player.ToonId, rp.Player.RealmId, rp.Player.RegionId)] = 0;
                 }
             }
         }
 
         await context.SaveChangesAsync();
-        newPlayers.ForEach(f => dbCache.Players[f.ToonId] = new(f.PlayerId, f.RegionId));
+        newPlayers.ForEach(f => dbCache.Players[new(f.ToonId, f.RealmId, f.RegionId)] = f.PlayerId);
         return newPlayers.Count;
     }
 }

@@ -36,6 +36,7 @@ public record PlayerDsRDto
     public string Name { get; init; } = null!;
     public int ToonId { get; init; }
     public int RegionId { get; init; }
+    public int RealmId { get; init; }
     public int NotUploadCount { get; init; }
 }
 
