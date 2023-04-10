@@ -141,7 +141,7 @@ public class UploadService
 
             if (success)
             {
-                SetUploadedFlag(importedReplayHashes);
+                await SetUploadedFlag(importedReplayHashes);
                 OnUploadStateChanged(new() { UploadStatus = UploadStatus.Success });
             }
             else
