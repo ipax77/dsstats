@@ -119,14 +119,33 @@ public partial class ImportService
             .Where(x => x.ToonId == player.ToonId && x.RegionId == regionId)
             .AsNoTracking()
             .ToListAsync();
-        
+
+        int newPlayerId;
         if (!players.Any())
         {
-            logger.LogWarning($"dup replayPlayer not found: ReplayPlayerId {keepReplayPlayer.ReplayPlayerId}");
-            return;
+            var newPlayer = new Player() 
+            {
+                Name = player.Name,
+                ToonId = player.ToonId,
+                RegionId = regionId,
+                RealmId = player.RealmId
+            };
+
+            context.Players.Add(newPlayer);
+            await context.SaveChangesAsync();
+
+            newPlayerId = newPlayer.PlayerId;
+
+            if (!dbCache.Players.ContainsKey(new(newPlayer.ToonId, newPlayer.RealmId, newPlayer.RealmId)))
+            {
+                dbCache.Players.Add(new(newPlayer.ToonId, newPlayer.RealmId, newPlayer.RealmId), newPlayerId);
+            }
+        }
+        else
+        {
+            newPlayerId = players.First().PlayerId;
         }
 
-        var newPlayerId = players.First().PlayerId;
         logger.LogWarning($"fixing playerId for replayPlayer {keepReplayPlayer.ReplayPlayerId} from {keepReplayPlayer.PlayerId} to {newPlayerId}");
 
         keepReplayPlayer.PlayerId = newPlayerId;

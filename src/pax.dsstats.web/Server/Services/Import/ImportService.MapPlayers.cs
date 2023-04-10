@@ -46,6 +46,11 @@ public partial class ImportService
         {
             foreach (var rp in replays[i].ReplayPlayers)
             {
+                if (rp.Player.RealmId == 0)
+                {
+                    rp.Player.RealmId = 1;
+                }
+
                 if (!dbCache.Players.ContainsKey(new(rp.Player.ToonId, rp.Player.RealmId, rp.Player.RegionId)))
                 {
                     Player player = new()
