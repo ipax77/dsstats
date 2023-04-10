@@ -19,8 +19,16 @@ public class CacheBackgroundService : IHostedService, IDisposable
 
     public Task StartAsync(CancellationToken stoppingToken)
     {
-        _timer = new Timer(DoWork, null, new TimeSpan(0, 4, 0), new TimeSpan(1, 0, 0));
-        // _timer = new Timer(DoWork, null, new TimeSpan(0, 0, 4), new TimeSpan(0, 1, 0));
+        //_timer = new Timer(DoWork, null, new TimeSpan(0, 4, 0), new TimeSpan(1, 0, 0));
+        // return Task.CompletedTask;
+
+        // run every hour at the 30-minute mark
+        DateTime nowTime = DateTime.UtcNow;
+        DateTime startTime = new DateTime(nowTime.Year, nowTime.Month, nowTime.Day, nowTime.Hour, 30, 0);
+        if (nowTime.Minute >= 30)
+            startTime = startTime.AddHours(1);
+        TimeSpan waitTime = startTime - nowTime;
+        _timer = new Timer(DoWork, null, waitTime, TimeSpan.FromHours(1));
         return Task.CompletedTask;
     }
 
