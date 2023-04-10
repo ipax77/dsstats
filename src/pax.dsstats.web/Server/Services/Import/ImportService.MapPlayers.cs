@@ -53,6 +53,7 @@ public partial class ImportService
                         Name = rp.Player.Name,
                         ToonId = rp.Player.ToonId,
                         RegionId = rp.Player.RegionId,
+                        RealmId = rp.Player.RealmId,
                     };
                     context.Players.Add(player);
                     newPlayers.Add(player);

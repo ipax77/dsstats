@@ -87,6 +87,8 @@ public class UploadService
             }
             bool success = false;
 
+            List<string> importedReplayHashes = new();
+
             while (replays.Any())
             {
                 var myLatestReplayDate = replays.Last().GameTime.AddSeconds(10);
@@ -123,7 +125,7 @@ public class UploadService
 
                 if (response.IsSuccessStatusCode)
                 {
-                    await SetUploadedFlag(replays);
+                    importedReplayHashes.AddRange(replays.Select(s => s.ReplayHash));
                     success = true;
                 }
                 else
@@ -139,6 +141,7 @@ public class UploadService
 
             if (success)
             {
+                SetUploadedFlag(importedReplayHashes);
                 OnUploadStateChanged(new() { UploadStatus = UploadStatus.Success });
             }
             else
@@ -180,12 +183,12 @@ public class UploadService
             .ToListAsync();
     }
 
-    private async Task SetUploadedFlag(List<ReplayDto> replays)
+    private async Task SetUploadedFlag(List<string> importedReplayHashes)
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        string replayHashString = String.Join(", ", replays.Select(s => $"'{s.ReplayHash}'"));
+        string replayHashString = String.Join(", ", importedReplayHashes.Select(s => $"'{s}'"));
 
         string updateCommand = $"UPDATE {nameof(ReplayContext.Replays)} SET {nameof(Replay.Uploaded)} = 1 WHERE {nameof(Replay.ReplayHash)} IN ({replayHashString});";
 
