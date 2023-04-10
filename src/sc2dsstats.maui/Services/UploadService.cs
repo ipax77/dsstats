@@ -19,7 +19,7 @@ public class UploadService
     private readonly ILogger<UploadService> logger;
     private readonly SemaphoreSlim ss = new(1, 1);
 
-    private readonly string uploaderController = "api/v1/Upload";
+    private readonly string uploaderController = "api/Upload/";
 
     public UploadService(IServiceProvider serviceProvider, IMapper mapper, ILogger<UploadService> logger)
     {
@@ -80,6 +80,11 @@ public class UploadService
                 return;
             }
 
+            var latestReplayDate = await GetLastReplayDate();
+            if (latestReplayDate == null)
+            {
+                return;
+            }
             bool success = false;
 
             while (replays.Any())
@@ -157,12 +162,6 @@ public class UploadService
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        var latestReplayDate = await GetLastReplayDate(context);
-        if (latestReplayDate == null)
-        {
-            return new();
-        }
-
         return await context.Replays
             .Include(i => i.ReplayPlayers)
                 .ThenInclude(t => t.Spawns)
@@ -199,7 +198,7 @@ public class UploadService
         return Zip(json);
     }
 
-    private async Task<DateTime?> GetLastReplayDate(ReplayContext context)
+    private async Task<DateTime?> GetLastReplayDate()
     {
         UploaderDto uploaderDto = new()
         {
@@ -208,7 +207,7 @@ public class UploadService
             BattleNetInfos = UserSettingsService.UserSettings.BattleNetInfos?.Select(s => new BattleNetInfoDto()
             {
                 BattleNetId = s.BattleNetId,
-                PlayerUploadDtos = GetPlayerUploadDtos(context, s.ToonIds),
+                PlayerUploadDtos = GetPlayerUploadDtos(s.ToonIds),
             }).ToList() ?? new()
         };
 
@@ -244,9 +243,12 @@ public class UploadService
         return null;
     }
 
-    private List<PlayerUploadDto> GetPlayerUploadDtos(ReplayContext context, List<ToonIdInfo> toonIdInfos)
+    private List<PlayerUploadDto> GetPlayerUploadDtos(List<ToonIdInfo> toonIdInfos)
     {
         List<PlayerUploadDto> playerUploadDtos = new();
+
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         foreach (var info in toonIdInfos)
         {

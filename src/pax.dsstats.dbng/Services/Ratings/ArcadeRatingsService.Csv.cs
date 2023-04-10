@@ -1,13 +1,13 @@
 ﻿using MySqlConnector;
 using pax.dsstats.dbng;
 
-namespace pax.dsstats.web.Server.Services.Ratings;
+namespace pax.dsstats.dbng.Services.Ratings;
 
-public partial class RatingsService
+public partial class ArcadeRatingsService
 {
     private async Task PlayerRatingsFromCsv2MySql(string csvBasePath)
     {
-        var csvFile = $"{csvBasePath}/PlayerRatings.csv";
+        var csvFile = $"{csvBasePath}/ArcadePlayerRatings.csv";
         if (!File.Exists(csvFile))
         {
             return;
@@ -17,11 +17,11 @@ public partial class RatingsService
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
-        var tempTable = $"{nameof(ReplayContext.PlayerRatings)}_temp";
+        var tempTable = $"{nameof(ReplayContext.ArcadePlayerRatings)}_temp";
 
         // Create temporary table
         command.CommandText = $@"
-            CREATE TABLE IF NOT EXISTS {tempTable} LIKE {nameof(ReplayContext.PlayerRatings)};
+            CREATE TABLE IF NOT EXISTS {tempTable} LIKE {nameof(ReplayContext.ArcadePlayerRatings)};
         ";
         await command.ExecuteNonQueryAsync();
 
@@ -34,17 +34,17 @@ public partial class RatingsService
             ESCAPED BY '""'
             LINES TERMINATED BY '\n';
         ";
-        command.CommandTimeout = 120;
+        command.CommandTimeout = 500;
         await command.ExecuteNonQueryAsync();
 
         // Rename temporary table to original table
         command.CommandText = $@"
             SET FOREIGN_KEY_CHECKS = 0;
-            RENAME TABLE {nameof(ReplayContext.PlayerRatings)} TO {nameof(ReplayContext.PlayerRatings)}_old, {tempTable} TO {nameof(ReplayContext.PlayerRatings)};
-            DROP TABLE {nameof(ReplayContext.PlayerRatings)}_old;
-            ALTER TABLE {nameof(ReplayContext.PlayerRatingChanges)} DROP FOREIGN KEY FK_PlayerRatingChanges_PlayerRatings_PlayerRatingId;
-            ALTER TABLE {nameof(ReplayContext.PlayerRatingChanges)} ADD CONSTRAINT FK_PlayerRatingChanges_PlayerRatings_PlayerRatingId
-                FOREIGN KEY (PlayerRatingId) REFERENCES {nameof(ReplayContext.PlayerRatings)} (PlayerRatingId);
+            RENAME TABLE {nameof(ReplayContext.ArcadePlayerRatings)} TO {nameof(ReplayContext.ArcadePlayerRatings)}_old, {tempTable} TO {nameof(ReplayContext.ArcadePlayerRatings)};
+            DROP TABLE {nameof(ReplayContext.ArcadePlayerRatings)}_old;
+            ALTER TABLE {nameof(ReplayContext.ArcadePlayerRatingChanges)} DROP FOREIGN KEY `FK_ArcadePlayerRatingChanges_ArcadePlayerRatings_ArcadePlayerRa~`;
+            ALTER TABLE {nameof(ReplayContext.ArcadePlayerRatingChanges)} ADD CONSTRAINT `FK_ArcadePlayerRatingChanges_ArcadePlayerRatings_ArcadePlayerRa~`
+                FOREIGN KEY (ArcadePlayerRatingId) REFERENCES {nameof(ReplayContext.ArcadePlayerRatings)} (ArcadePlayerRatingId);
             SET FOREIGN_KEY_CHECKS = 1;
         ";
         await command.ExecuteNonQueryAsync();
@@ -53,7 +53,7 @@ public partial class RatingsService
 
     private async Task ReplayRatingsFromCsv2MySql(string csvBasePath)
     {
-        var csvFile = $"{csvBasePath}/ReplayRatings.csv";
+        var csvFile = $"{csvBasePath}/ArcadeReplayRatings.csv";
         if (!File.Exists(csvFile))
         {
             return;
@@ -63,11 +63,11 @@ public partial class RatingsService
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
-        var tempTable = $"{nameof(ReplayContext.ReplayRatings)}_temp";
+        var tempTable = $"{nameof(ReplayContext.ArcadeReplayRatings)}_temp";
 
         // Create temporary table
         command.CommandText = $@"
-            CREATE TABLE IF NOT EXISTS {tempTable} LIKE {nameof(ReplayContext.ReplayRatings)};
+            CREATE TABLE IF NOT EXISTS {tempTable} LIKE {nameof(ReplayContext.ArcadeReplayRatings)};
         ";
         await command.ExecuteNonQueryAsync();
 
@@ -80,14 +80,14 @@ public partial class RatingsService
             ESCAPED BY '""'
             LINES TERMINATED BY '\n';
         ";
-        command.CommandTimeout = 120;
+        command.CommandTimeout = 500;
         await command.ExecuteNonQueryAsync();
 
         // Rename temporary table to original table
         command.CommandText = $@"
             SET FOREIGN_KEY_CHECKS = 0;
-            RENAME TABLE {nameof(ReplayContext.ReplayRatings)} TO {nameof(ReplayContext.ReplayRatings)}_old, {tempTable} TO {nameof(ReplayContext.ReplayRatings)};
-            DROP TABLE {nameof(ReplayContext.ReplayRatings)}_old;
+            RENAME TABLE {nameof(ReplayContext.ArcadeReplayRatings)} TO {nameof(ReplayContext.ArcadeReplayRatings)}_old, {tempTable} TO {nameof(ReplayContext.ArcadeReplayRatings)};
+            DROP TABLE {nameof(ReplayContext.ArcadeReplayRatings)}_old;
             SET FOREIGN_KEY_CHECKS = 1;
         ";
         await command.ExecuteNonQueryAsync();
@@ -97,7 +97,7 @@ public partial class RatingsService
 
     private async Task ReplayPlayerRatingsFromCsv2MySql(string csvBasePath)
     {
-        var csvFile = $"{csvBasePath}/ReplayPlayerRatings.csv";
+        var csvFile = $"{csvBasePath}/ArcadeReplayPlayerRatings.csv";
         if (!File.Exists(csvFile))
         {
             return;
@@ -107,11 +107,11 @@ public partial class RatingsService
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
-        var tempTable = $"{nameof(ReplayContext.RepPlayerRatings)}_temp";
+        var tempTable = $"{nameof(ReplayContext.ArcadeReplayPlayerRatings)}_temp";
 
         // Create temporary table
         command.CommandText = $@"
-            CREATE TABLE IF NOT EXISTS {tempTable} LIKE {nameof(ReplayContext.RepPlayerRatings)};
+            CREATE TABLE IF NOT EXISTS {tempTable} LIKE {nameof(ReplayContext.ArcadeReplayPlayerRatings)};
         ";
         await command.ExecuteNonQueryAsync();
 
@@ -124,14 +124,14 @@ public partial class RatingsService
             ESCAPED BY '""'
             LINES TERMINATED BY '\n';
         ";
-        command.CommandTimeout = 120;
+        command.CommandTimeout = 500;
         await command.ExecuteNonQueryAsync();
 
         // Rename temporary table to original table
         command.CommandText = $@"
             SET FOREIGN_KEY_CHECKS = 0;
-            RENAME TABLE {nameof(ReplayContext.RepPlayerRatings)} TO {nameof(ReplayContext.RepPlayerRatings)}_old, {tempTable} TO {nameof(ReplayContext.RepPlayerRatings)};
-            DROP TABLE {nameof(ReplayContext.RepPlayerRatings)}_old;
+            RENAME TABLE {nameof(ReplayContext.ArcadeReplayPlayerRatings)} TO {nameof(ReplayContext.ArcadeReplayPlayerRatings)}_old, {tempTable} TO {nameof(ReplayContext.ArcadeReplayPlayerRatings)};
+            DROP TABLE {nameof(ReplayContext.ArcadeReplayPlayerRatings)}_old;
             SET FOREIGN_KEY_CHECKS = 1;
         ";
         await command.ExecuteNonQueryAsync();

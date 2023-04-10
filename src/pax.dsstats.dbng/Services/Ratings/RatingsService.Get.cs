@@ -1,12 +1,44 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using pax.dsstats.dbng;
 using pax.dsstats.shared;
 using System.Globalization;
 
-namespace pax.dsstats.dbng.Services;
+namespace pax.dsstats.dbng.Services.Ratings;
 
-public partial class MmrProduceService
+public partial class RatingsService
 {
+    private async Task<List<ReplayDsRDto>> GetReplayData(DateTime startTime, DateTime endTime)
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        List<GameMode> gameModes = new() { GameMode.Commanders, GameMode.Standard, GameMode.CommandersHeroic };
+
+        var replays = context.Replays
+            .Where(r => r.Playercount == 6
+                && r.Duration >= 300
+                && r.WinnerTeam > 0
+                && gameModes.Contains(r.GameMode));
+
+        if (startTime != DateTime.MinValue)
+        {
+            replays = replays.Where(x => x.GameTime > startTime);
+        }
+
+        if (endTime != DateTime.MinValue && endTime < DateTime.Today)
+        {
+            replays = replays.Where(x => x.GameTime < endTime);
+        }
+
+        return await replays
+            .OrderBy(o => o.GameTime)
+                .ThenBy(o => o.ReplayId)
+            .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
+            .ToListAsync();
+    }
+
     private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetCalcRatings(List<ReplayDsRDto> replayDsRDtos)
     {
         Dictionary<RatingType, Dictionary<int, CalcRating>> calcRatings = new();
@@ -59,7 +91,7 @@ public partial class MmrProduceService
         return calcRatings;
     }
 
-    public static int GetMmrId(Player player)
+    private static int GetMmrId(Player player)
     {
         return player.PlayerId; // todo
     }

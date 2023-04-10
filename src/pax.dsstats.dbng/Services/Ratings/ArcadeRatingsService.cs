@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using dsstats.mmr;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MySqlConnector;
 using pax.dsstats.dbng;
@@ -10,7 +12,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 
-namespace pax.dsstats.web.Server.Services.Ratings;
+namespace pax.dsstats.dbng.Services.Ratings;
 
 public partial class ArcadeRatingsService
 {

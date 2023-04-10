@@ -1,11 +1,12 @@
 ﻿@page "/ratings"
 @using pax.dsstats.dbng.Services
+@using pax.dsstats.dbng.Services.Ratings;
 @using pax.dsstats.shared;
 @using sc2dsstats.maui.Services;
 @inject IToastService ToastService
 @inject DecodeService DecodeService
 @inject IStatsService statsService
-@inject MmrProduceService mmrProduceService
+@inject RatingsService ratingsService
 @implements IDisposable
 
 <div class="d-flex mb-2">
@@ -76,7 +77,7 @@
 
         await Task.Run(async () =>
         {
-            await mmrProduceService.ProduceRatings(new(true)).ConfigureAwait(false);
+            await ratingsService.ProduceRatings(true);
         });
 
         isLoading = false;

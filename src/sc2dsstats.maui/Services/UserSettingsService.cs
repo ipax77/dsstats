@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Services;
+using pax.dsstats.dbng.Services.Ratings;
 using pax.dsstats.shared;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -301,8 +302,8 @@ internal class UserSettingsService
         }
 
         // recalculate ratings
-        var mmrService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-        mmrService.ProduceRatings(new(reCalc: true)).Wait();
+        var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+        ratingsService.ProduceRatings(true).Wait();
     }
 }
 

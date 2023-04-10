@@ -552,6 +552,7 @@ public partial class ReplayRepository : IReplayRepository
             dbReplay.GameMode = GameMode.Tutorial;
         }
 
+        dbReplay.Imported = DateTime.UtcNow;
         context.Replays.Add(dbReplay);
 
         try
