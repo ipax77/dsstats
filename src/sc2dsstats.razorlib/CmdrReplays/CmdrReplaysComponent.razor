@@ -469,7 +469,7 @@
     private async Task LoadPlayerInfos(CmdrInfosRequest request)
     {
         playerInfos = await dataService.GetCmdrPlayerInfos(new(request), cts.Token);
-        cmdrPlayerInfoComponent?.SetStrength(playerInfos, Request.ToonId);
+        cmdrPlayerInfoComponent?.SetStrength(playerInfos, Request.PlayerId);
     }
 
     private void ShowHideReplays(bool show)
@@ -506,7 +506,7 @@
         await ss.WaitAsync();
         lastVisitHash = null;
 
-        if (Request.ToonId == 0)
+        if (Request.PlayerId?.ToonId == 0)
         {
             ReplaysInterest = null;
         }
@@ -622,7 +622,7 @@
             showReplays = true;
         }
         ReplaysInterest = requestNames;
-        Request.ToonId = ReplaysInterest.ToonId;
+        Request.PlayerId = new(ReplaysInterest.ToonId, ReplaysInterest.RealmId, ReplaysInterest.RegionId);
         RequestChanged();
     }
 

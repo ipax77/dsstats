@@ -95,21 +95,22 @@ public partial class UploadService
             Directory.CreateDirectory(appDir);
         }
         var blobFilename = Path.Combine(appDir, DateTime.UtcNow.ToString(@"yyyyMMdd-HHmmss") + ".base64");
+        var tempBlobFilename = blobFilename + ".temp";
 
         int fs = 0;
-        while (File.Exists(blobFilename))
+        while (File.Exists(blobFilename) || File.Exists(tempBlobFilename))
         {
             await Task.Delay(1000);
             blobFilename = Path.Combine(appDir, DateTime.UtcNow.ToString(@"yyyyMMdd-HHmmss") + ".base64");
+            tempBlobFilename = blobFilename + ".temp";
             fs++;
-            if (fs > 5)
+            if (fs > 20)
             {
                 logger.LogError($"can't find filename while saving replayblob {blobFilename}");
                 return "";
             }
         }
-
-        var tempBlobFilename = blobFilename + ".temp";
+        
         await File.WriteAllTextAsync(tempBlobFilename, gzipbase64String);
         File.Move(tempBlobFilename, blobFilename);
         return blobFilename;
@@ -176,7 +177,10 @@ public partial class UploadService
     {
         foreach (var player in playerUploadDtos)
         {
-            var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == player.ToonId);
+            var dbPlayer = await context.Players.FirstOrDefaultAsync(f =>
+                f.ToonId == player.ToonId
+                && f.RegionId == player.RegionId
+                && f.RealmId == player.RealmId);
             if (dbPlayer == null)
             {
                 dbPlayer = mapper.Map<Player>(player);

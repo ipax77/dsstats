@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
+using pax.dsstats.dbng.Services.Ratings;
 using pax.dsstats.parser;
 using pax.dsstats.shared;
 using s2protocol.NET;
@@ -66,14 +67,12 @@ public class DecodeService : IDisposable
     private SemaphoreSlim semaphoreSlim = new(1, 1);
     private HashSet<Unit> Units = new();
     private HashSet<Upgrade> Upgrades = new();
-    private List<Replay> newReplays = new();
 
     private int decodeCounter;
     private int dbCounter;
     private int total;
     private int errorCounter;
     private DateTime startTime = DateTime.UtcNow;
-    private bool potentialMmrContinue;
     public List<int> LastReplayToonIds { get; private set; } = new();
 
     private object lockobject = new object();
@@ -117,8 +116,6 @@ public class DecodeService : IDisposable
         dbCounter = 0;
         errorReplays.Clear();
         errorCounter = 0;
-        newReplays.Clear();
-        potentialMmrContinue = false;
         LastReplayToonIds.Clear();
         DateTime latestReplay = DateTime.MinValue;
 
@@ -141,12 +138,6 @@ public class DecodeService : IDisposable
 
         total = replays.Count;
         startTime = DateTime.UtcNow;
-
-        if (total <= 100)
-        {
-            potentialMmrContinue = true;
-            latestReplay = await GetLatestReplayTime();
-        }
 
         decodeCts = new();
         notifyCts = new();
@@ -238,36 +229,12 @@ public class DecodeService : IDisposable
             await ScanForNewReplays();
 
             using var scope = serviceScopeFactory.CreateScope();
-            var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
+            var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
 
             var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
             statsService.ResetStatsCache();
 
-            if (potentialMmrContinue && newReplays.Any())
-            {
-                if (UserSettingsService.UserSettings.DoV1_1_2_Init)
-                {
-                    UserSettingsService.UserSettings.DoV1_1_2_Init = false;
-                    var userSettingsService = scope.ServiceProvider.GetRequiredService<UserSettingsService>();
-                    await userSettingsService.Save();
-
-                    await mmrProduceService.ProduceRatings(new(reCalc: true));
-                }
-                else
-                {
-                    var newReplaysDsRDto = newReplays.AsQueryable().ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider).ToList();
-                    await mmrProduceService.ProduceRatings(new(reCalc: false), latestReplay, newReplaysDsRDto);
-                    if (newReplays.Count == 1)
-                    {
-                        LastReplayToonIds = GetPlayerToonIds(newReplays.First());
-                    }
-                    newReplays = new();
-                }
-            }
-            else
-            {
-                await mmrProduceService.ProduceRatings(new(reCalc: true));
-            }
+            await ratingsService.ProduceRatings();
 
             notifyCts.Cancel();
 
@@ -397,7 +364,10 @@ public class DecodeService : IDisposable
             for (int i = 0; i < replayDto.ReplayPlayers.Count; i++)
             {
                 var replayPlayer = replayDto.ReplayPlayers.ElementAt(i);
-                if (playerToonIds.Any(a => a.ToonId == replayPlayer.Player.ToonId))
+                if (playerToonIds.Any(a => 
+                    a.ToonId == replayPlayer.Player.ToonId
+                    && a.RealmId == replayPlayer.Player.RealmId
+                    && a.RegionId == replayPlayer.Player.RegionId))
                 {
                     replayPlayer.IsUploader = true;
                     replayDto.PlayerResult = replayPlayer.PlayerResult;
@@ -442,11 +412,6 @@ public class DecodeService : IDisposable
 
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
             (Units, Upgrades, var replay) = await replayRepository.SaveReplay(replayDto, Units, Upgrades, null);
-
-            if (potentialMmrContinue)
-            {
-                newReplays.Add(replay);
-            }
 
             Interlocked.Increment(ref dbCounter);
         }

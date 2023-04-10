@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using dsstats.mmr;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MySqlConnector;
 using pax.dsstats.dbng;
@@ -8,7 +10,7 @@ using pax.dsstats.shared;
 using pax.dsstats.shared.Ratings;
 using System.Diagnostics;
 
-namespace pax.dsstats.web.Server.Services.Ratings;
+namespace pax.dsstats.dbng.Services.Ratings;
 
 public partial class RatingsService
 {
@@ -48,7 +50,7 @@ public partial class RatingsService
                 {
                     MmrOptions = new(reCalc: true),
                     MmrIdRatings = await GetMmrIdRatings(new(reCalc: true), null),
-                    StartTime = new DateTime(2018, 1, 1),
+                    StartTime = Data.IsMaui ? new DateTime(2018, 1, 1) : new DateTime(2021, 2, 1),
                     EndTime = DateTime.Today.AddDays(2)
                 };
 
@@ -64,20 +66,26 @@ public partial class RatingsService
 
             await GeneratePlayerRatings(request);
 
-            if (request.MmrOptions.ReCalc)
+            if (Data.IsMaui)
             {
-                RatingsCsvService.CreatePlayerRatingCsv(request.MmrIdRatings);
-                await WriteCsvFilesToDatabase();
+                await UpdateSqlitePlayers(request.MmrIdRatings);
             }
             else
             {
-                await UpdatePlayerRatings(request.MmrIdRatings);
-                await ContinueReplayPlayerRatingsFromCsv2MySql(RatingsCsvService.csvBasePath);
-                await ContinueReplayRatingsFromCsv2MySql(RatingsCsvService.csvBasePath);
+                if (request.MmrOptions.ReCalc)
+                {
+                    RatingsCsvService.CreatePlayerRatingCsv(request.MmrIdRatings);
+                    await WriteCsvFilesToDatabase();
+                }
+                else
+                {
+                    await UpdatePlayerRatings(request.MmrIdRatings);
+                    await ContinueReplayPlayerRatingsFromCsv2MySql(RatingsCsvService.csvBasePath);
+                    await ContinueReplayRatingsFromCsv2MySql(RatingsCsvService.csvBasePath);
+                }
+                await SetPlayerRatingsPos();
+                await SetRatingChange();
             }
-
-            await SetPlayerRatingsPos();
-            await SetRatingChange();
         }
         finally
         {
@@ -215,10 +223,18 @@ public partial class RatingsService
                     continue;
                 }
 
-                var calcResult = MmrService.GeneratePlayerRatings(request);
+                var calcResult = MmrService.GeneratePlayerRatings(request, Data.IsMaui);
 
-                request.ReplayRatingAppendId = calcResult.ReplayRatingAppendId;
-                request.ReplayPlayerRatingAppendId = calcResult.ReplayPlayerRatingAppendId;
+                if (Data.IsMaui)
+                {
+                    (request.ReplayRatingAppendId, request.ReplayPlayerRatingAppendId) =
+                        await UpdateSqliteMmrChanges(calcResult.replayRatingDtos, request.ReplayRatingAppendId, request.ReplayPlayerRatingAppendId);
+                }
+                else
+                {
+                    request.ReplayRatingAppendId = calcResult.ReplayRatingAppendId;
+                    request.ReplayPlayerRatingAppendId = calcResult.ReplayPlayerRatingAppendId;
+                }
             }
         }
     }

@@ -3,7 +3,7 @@ namespace pax.dsstats.shared;
 
 public record PlayerDetailRequest
 {
-    public RequestNames RequestNames { get; set; } = new();
+    public RequestNames RequestNames { get; set; } = new("", 0, 0, 1);
     public TimePeriod TimePeriod { get; set; }
     public RatingType RatingType { get; set; }
     public Commander Interest { get; set; }

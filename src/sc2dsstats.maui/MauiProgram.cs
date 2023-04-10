@@ -6,6 +6,7 @@ using pax.BlazorChartJs;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
+using pax.dsstats.dbng.Services.Ratings;
 using pax.dsstats.shared;
 using sc2dsstats.maui.Services;
 
@@ -63,7 +64,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<IFromServerSwitchService, FromServerSwitchService>();
 
         builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRepository>();
-        builder.Services.AddScoped<MmrProduceService>();
+        builder.Services.AddSingleton<RatingsService>();
+        //builder.Services.AddScoped<MmrProduceService>();
         builder.Services.AddScoped<PlayerService>();
 
         builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -127,8 +129,8 @@ public static class MauiProgram
             }
             context.SaveChanges();
 
-            var mmrProduceService = build.Services.GetRequiredService<MmrProduceService>();
-            mmrProduceService.ProduceRatings(new(true)).Wait();
+            var ratingsService = build.Services.GetRequiredService<RatingsService>();
+            ratingsService.ProduceRatings(true).Wait();
         }
         
         return build;

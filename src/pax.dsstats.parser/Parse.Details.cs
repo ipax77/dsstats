@@ -21,6 +21,7 @@ public static partial class Parse
                 Name = player.Name,
                 ToonId = player.Toon.Id,
                 RegionId = player.Toon.Region,
+                RealmId = player.Toon.Realm,
                 Clan = player.ClanName,
                 Race = player.Race,
                 Control = player.Control,

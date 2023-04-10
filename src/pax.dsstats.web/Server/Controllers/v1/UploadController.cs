@@ -3,11 +3,11 @@ using pax.dsstats.shared;
 using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Services;
 
-namespace pax.dsstats.web.Server.Controllers;
+namespace pax.dsstats.web.Server.Controllers.v1;
 
 [ServiceFilter(typeof(AuthenticationFilterAttribute))]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 public class UploadController : ControllerBase
 {
     private readonly UploadService uploadService;
@@ -61,6 +61,4 @@ public class UploadController : ControllerBase
     {
         return await uploadService.DeleteUploader(appGuid);
     }
-
-
 }

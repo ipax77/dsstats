@@ -41,19 +41,19 @@ public partial class ImportService
 
         if (!DuplicateIsPlausible(replay, dupReplay))
         {
-            return false;
+            return true;
         }
 
         if (dupReplay.Duration >= replay.Duration)
         {
-            SyncReplayPlayers(dupReplay.ReplayPlayers.ToList(), replay.ReplayPlayers.ToList());
+            await SyncReplayPlayers(dupReplay.ReplayPlayers.ToList(), replay.ReplayPlayers.ToList(), context);
             await context.SaveChangesAsync();
             
             return true;
         }
         else
         {
-            SyncReplayPlayers(replay.ReplayPlayers.ToList(), dupReplay.ReplayPlayers.ToList());
+            await SyncReplayPlayers(replay.ReplayPlayers.ToList(), dupReplay.ReplayPlayers.ToList(), context);
 
             var delReplay = await context.Replays
                 .Include(i => i.ReplayPlayers)
@@ -79,14 +79,14 @@ public partial class ImportService
             .FirstOrDefaultAsync(f => f.ReplayId == replayId);
     }
 
-    private void SyncReplayPlayers(List<ReplayPlayer> keepReplayPlayers, List<ReplayPlayer> replayPlayers)
+    private async Task SyncReplayPlayers(List<ReplayPlayer> keepReplayPlayers, List<ReplayPlayer> replayPlayers, ReplayContext context)
     {
         foreach (var keepReplayPlayer in keepReplayPlayers)
         {
             var replayPlayer = replayPlayers.FirstOrDefault(f => f.PlayerId == keepReplayPlayer.PlayerId);
             if (replayPlayer == null)
             {
-                logger.LogWarning($"dup replayPlayer not found: ReplayPlayerId {keepReplayPlayer.ReplayPlayerId}");
+                await TryFixDupPlayer(keepReplayPlayer, GetReplayRegion(keepReplayPlayers, replayPlayers), context);
                 continue;
             }
             
@@ -95,6 +95,90 @@ public partial class ImportService
                 keepReplayPlayer.IsUploader = true;
             }
         }
+    }
+
+    private async Task TryFixDupPlayer(ReplayPlayer keepReplayPlayer, int regionId, ReplayContext context)
+    {
+        if (regionId == 0)
+        {
+            logger.LogWarning($"dup replayPlayer not found: ReplayPlayerId {keepReplayPlayer.ReplayPlayerId}");
+            return;
+        }
+
+        var player = await context.Players
+            .AsNoTracking()
+            .FirstOrDefaultAsync(f => f.PlayerId == keepReplayPlayer.PlayerId);
+
+        if (player == null || player.RegionId == regionId)
+        {
+            logger.LogWarning($"dup replayPlayer not found: ReplayPlayerId {keepReplayPlayer.ReplayPlayerId}");
+            return;
+        }
+
+        var players = await context.Players
+            .Where(x => x.ToonId == player.ToonId && x.RegionId == regionId)
+            .AsNoTracking()
+            .ToListAsync();
+
+        int newPlayerId;
+        if (!players.Any())
+        {
+            var newPlayer = new Player() 
+            {
+                Name = player.Name,
+                ToonId = player.ToonId,
+                RegionId = regionId,
+                RealmId = player.RealmId
+            };
+
+            context.Players.Add(newPlayer);
+            await context.SaveChangesAsync();
+
+            newPlayerId = newPlayer.PlayerId;
+
+            if (!dbCache.Players.ContainsKey(new(newPlayer.ToonId, newPlayer.RealmId, newPlayer.RealmId)))
+            {
+                dbCache.Players.Add(new(newPlayer.ToonId, newPlayer.RealmId, newPlayer.RealmId), newPlayerId);
+            }
+        }
+        else
+        {
+            newPlayerId = players.First().PlayerId;
+        }
+
+        logger.LogWarning($"fixing playerId for replayPlayer {keepReplayPlayer.ReplayPlayerId} from {keepReplayPlayer.PlayerId} to {newPlayerId}");
+
+        keepReplayPlayer.PlayerId = newPlayerId;
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+        keepReplayPlayer.Player = null;
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+    }
+
+    private int GetReplayRegion(List<ReplayPlayer> keepReplayPlayers, List<ReplayPlayer> replayPlayers)
+    {
+        if (keepReplayPlayers.All(a => a.Player != null))
+        {
+            return MostFrequentNumber(keepReplayPlayers.Select(s => Math.Min(s.Player.RegionId, 3)).ToList());
+        }
+
+        if (replayPlayers.All(a => a.Player != null))
+        {
+            return MostFrequentNumber(replayPlayers.Select(s => Math.Min(s.Player.RealmId, 3)).ToList());
+        }
+
+        return 0;
+    }
+
+    public int MostFrequentNumber(List<int> numbers)
+    {
+        int[] frequency = new int[4];
+        foreach (int number in numbers)
+        {
+            frequency[number]++;
+        }
+        int maxFrequency = frequency.Max();
+        int mostFrequentNumber = frequency.ToList().IndexOf(maxFrequency);
+        return mostFrequentNumber;
     }
 
     private bool DuplicateIsPlausible(Replay replay, Replay dupReplay)

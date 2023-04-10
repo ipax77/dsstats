@@ -83,7 +83,7 @@ public class ReplayContext : DbContext
 
         modelBuilder.Entity<Player>(entity =>
         {
-            entity.HasIndex(e => e.ToonId).IsUnique();
+            entity.HasIndex(e => new { e.RegionId, e.RealmId, e.ToonId }).IsUnique();
         });
 
         modelBuilder.Entity<Uploader>(entity =>

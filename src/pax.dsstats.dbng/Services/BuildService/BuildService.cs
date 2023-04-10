@@ -1,8 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
 using System.Diagnostics;
 
 namespace pax.dsstats.dbng.Services;
@@ -11,13 +14,19 @@ public partial class BuildService
 {
     private readonly ReplayContext context;
     private readonly IMemoryCache memoryCache;
+    private readonly IMapper mapper;
     private readonly ILogger<BuildService> logger;
     private readonly IRatingRepository ratingRepository;
 
-    public BuildService(ReplayContext context, IMemoryCache memoryCache, ILogger<BuildService> logger, IRatingRepository ratingRepository)
+    public BuildService(ReplayContext context,
+                        IMemoryCache memoryCache,
+                        IMapper mapper,
+                        ILogger<BuildService> logger,
+                        IRatingRepository ratingRepository)
     {
         this.context = context;
         this.memoryCache = memoryCache;
+        this.mapper = mapper;
         this.logger = logger;
         this.ratingRepository = ratingRepository;
     }
@@ -96,7 +105,7 @@ public partial class BuildService
         }
 
 
-        var buildResults = GetBuildResultQuery(replays, request);
+        var buildResults = await GetBuildResultQuery(replays, request);
 
         var builds = await buildResults.AsSplitQuery().ToListAsync(token);
         var uniqueBuilds = builds.GroupBy(g => g.Id).Select(s => s.First()).ToList();
@@ -138,9 +147,9 @@ public partial class BuildService
         return response;
     }
 
-    private static IQueryable<BuildHelper> GetBuildResultQuery(IQueryable<Replay> replays, BuildRequest request)
+    private async Task<IQueryable<BuildHelper>> GetBuildResultQuery(IQueryable<Replay> replays, BuildRequest request)
     {
-        List<int> toonIds = request.PlayerNames.Select(s => s.ToonId).ToList();
+        var playerIds = await GetPlayerIdsFromRequestNames(request.PlayerNames, context);
 
         return (request.Versus == Commander.None, !request.PlayerNames.Any()) switch
         {
@@ -165,7 +174,7 @@ public partial class BuildService
                              from p in r.ReplayPlayers
                              from s in p.Spawns
                              from u in s.Units
-                             where p.Race == request.Interest && toonIds.Contains(p.Player.ToonId)
+                             where p.Race == request.Interest && playerIds.Contains(p.PlayerId)
                              select new BuildHelper()
                              {
                                  Id = r.ReplayId,
@@ -199,7 +208,7 @@ public partial class BuildService
                               from p in r.ReplayPlayers
                               from s in p.Spawns
                               from u in s.Units
-                              where p.Race == request.Interest && p.OppRace == request.Versus && toonIds.Contains(p.Player.ToonId)
+                              where p.Race == request.Interest && p.OppRace == request.Versus && playerIds.Contains(p.PlayerId)
                               select new BuildHelper()
                               {
                                   Id = r.ReplayId,
@@ -269,4 +278,31 @@ public partial class BuildService
         return name ?? "";
     }
 
+    public static async Task<List<int>> GetPlayerIdsFromRequestNames(List<RequestNames> requestNames, ReplayContext context)
+    {
+        List<int> toonIds = requestNames.Select(s => s.ToonId).ToList();
+        var playerIds = await context.Players.Where(x => toonIds.Contains(x.ToonId))
+            .Select(s => new {
+                s.PlayerId,
+                s.ToonId,
+                s.RealmId,
+                s.RegionId,
+            })
+            .ToListAsync();
+
+        List<int> results = new List<int>();
+        for (int i = 0; i < playerIds.Count; i++)
+        {
+            var playerId = playerIds[i];
+            var requestName = requestNames.FirstOrDefault(f =>
+                f.ToonId == playerId.ToonId
+                && f.RealmId == playerId.RealmId
+                && f.RegionId == playerId.RegionId);
+            if (requestName != null)
+            {
+                results.Add(playerId.PlayerId);
+            }
+        }
+        return results;
+    }
 }

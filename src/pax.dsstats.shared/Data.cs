@@ -157,10 +157,10 @@ public static class Data
     public static List<RequestNames> GetDefaultRequestNames()
     {
         return new() {
-                new() { Name = "PAX", ToonId = 226401, RegionId = 2 },
-                new() { Name = "PAX", ToonId = 10188255, RegionId = 1 },
-                new() { Name = "Feralan", ToonId = 8497675, RegionId = 1 },
-                new() { Name = "Feralan", ToonId = 1488340, RegionId = 2 }
+                new("PAX", 226401, 2, 1),
+                new("PAX", 10188255, 1, 1),
+                new("Feralan", 8497675, 1, 1),
+                new("Feralan", 1488340, 2, 1)
             };
     }
 
