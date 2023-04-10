@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MySqlConnector;
-using pax.dsstats.dbng;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Ratings;
 using System.Diagnostics;
@@ -56,6 +55,7 @@ public partial class ArcadeRatingsService
         finally
         {
             sw.Stop();
+            logger.LogWarning($"arcade ratings produced in {sw.ElapsedMilliseconds} ms");
             ratingSs.Release();
         }
     }
@@ -68,23 +68,6 @@ public partial class ArcadeRatingsService
         await ReplayPlayerRatingsFromCsv2MySql(ArcadeRatingsCsvService.csvBasePath);
         await SetPlayerRatingsPos();
         await SetRatingChange();
-    }
-
-    private void SaveRatings2Json(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
-    {
-        foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
-        {
-            if (ratingType == RatingType.None || !mmrIdRatings[ratingType].Any())
-            {
-                continue;
-            }
-
-            var values = mmrIdRatings[ratingType].Values.Where(x => x.Games >= 10).ToList();
-            values.ForEach(x => x.MmrOverTime.Clear());
-
-            var json = JsonSerializer.Serialize(values.OrderByDescending(o => o.Mmr), new JsonSerializerOptions() { WriteIndented = true });
-            File.WriteAllText($"/data/ds/arcaderating{ratingType}.json", json);
-        }
     }
 
     private async Task GeneratePlayerRatings(MmrService.CalcRatingRequest request)
