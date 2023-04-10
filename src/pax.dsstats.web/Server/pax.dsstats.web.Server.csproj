@@ -22,7 +22,6 @@
 
   <ItemGroup>
     <Folder Include="Services\Import\" />
-    <Folder Include="Services\Ratings\" />
   </ItemGroup>
 
 

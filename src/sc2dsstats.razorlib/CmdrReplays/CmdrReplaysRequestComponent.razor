@@ -71,12 +71,21 @@
         </div>
         @if (ShowReplays)
         {
-            <div class="col-auto">
-                <label class="form-label">
-                    ToonId
-                    <InputNumber class="form-control" @bind-Value="Request.ToonId" />
-                </label>
-            </div>
+@*            @if (Request.PlayerId != null)
+            {
+                <div class="col-auto">
+                    <label class="form-label">
+                        ToonId
+                        <InputNumber class="form-control" @bind-Value="Request.PlayerId.ToonId" />
+                    </label>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">
+                        RegionId
+                        <InputNumber class="form-control" @bind-Value="Request.PlayerId.RegionId" />
+                    </label>
+                </div>
+            }*@
             <div class="col-auto">
                 <div class="row">
                     <div class="col-auto">
@@ -169,7 +178,7 @@
         Request.TimePeriod = TimePeriod.Past90Days;
         Request.Interest = Commander.Abathur;
         Request.WithoutLeavers = false;
-        Request.ToonId = 0;
+        Request.PlayerId = null;
         Request.MinExp2Win = 0;
         Request.MaxExp2Win = 0;
         Request.SearchCmdrs = string.Empty;

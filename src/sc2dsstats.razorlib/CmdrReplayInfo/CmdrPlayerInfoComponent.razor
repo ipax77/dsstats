@@ -1,4 +1,5 @@
 @using pax.dsstats.shared
+@using pax.dsstats.shared.Arcade;
 @using sc2dsstats.razorlib.Services
 @using System.Globalization
 @using sc2dsstats.razorlib.Extensions
@@ -70,9 +71,9 @@
         <tbody>
             @foreach (var info in GetSortedList())
             {
-                <tr class="pointer @(interestToonId == info.ToonId ? "table-primary" : "")"
-                    @onclick="e => OnPlayerDetailsRequest.InvokeAsync(new() { Name = info.Name, ToonId = info.ToonId, RegionId = info.RegionId })">
-                    <td @onclick:stopPropagation @onclick="e => OnPlayerReplaysRequest.InvokeAsync(new() { Name = info.Name, ToonId = info.ToonId, RegionId = info.RegionId })">
+                <tr class="pointer @(interestPlayerId == new PlayerId(info.ToonId, info.RealmId, info.RegionId) ? "table-primary" : "")"
+                    @onclick="e => OnPlayerDetailsRequest.InvokeAsync(new(info.Name, info.ToonId, info.RegionId, info.RealmId))">
+                    <td @onclick:stopPropagation @onclick="e => OnPlayerReplaysRequest.InvokeAsync(new(info.Name, info.ToonId, info.RegionId, info.RealmId))">
                         <span class="oi oi-list text-primary"></span>
                     </td>
                     <td>@info.Pos</td>
@@ -123,7 +124,7 @@
         }
     };
 
-    private int interestToonId = 0;
+    private PlayerId? interestPlayerId = null;
     string searchName = string.Empty;
 
     protected override void OnInitialized()
@@ -133,10 +134,10 @@
     }
 
 
-    public void SetStrength(List<CmdrPlayerInfo> items, int toonId = 0)
+    public void SetStrength(List<CmdrPlayerInfo> items, PlayerId? playerId = null)
     {
         searchName = string.Empty;
-        interestToonId = toonId;
+        interestPlayerId = playerId;
         if (!items.Any())
         {
             return;

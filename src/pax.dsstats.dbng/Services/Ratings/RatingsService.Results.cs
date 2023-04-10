@@ -1,6 +1,6 @@
 ﻿using pax.dsstats.shared;
 
-namespace pax.dsstats.web.Server.Services.Ratings;
+namespace pax.dsstats.dbng.Services.Ratings;
 
 public partial class RatingsService
 {

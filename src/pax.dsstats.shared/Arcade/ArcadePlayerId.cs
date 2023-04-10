@@ -18,3 +18,22 @@ public record ArcadePlayerId
     public int RealmId { get; set; }
     public int RegionId { get; set; }
 }
+
+public record PlayerId
+{
+    public PlayerId()
+    {
+
+    }
+
+    public PlayerId(int toonId, int realmId, int regionId)
+    {
+        ToonId = toonId;
+        RealmId = realmId;
+        RegionId = regionId;
+    }
+
+    public int ToonId { get; set; }
+    public int RealmId { get; set; }
+    public int RegionId { get; set; }
+}

@@ -1,6 +1,6 @@
 ﻿using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
-using pax.dsstats.web.Server.Services.Ratings;
+using pax.dsstats.dbng.Services.Ratings;
 
 namespace pax.dsstats.web.Server.Services;
 

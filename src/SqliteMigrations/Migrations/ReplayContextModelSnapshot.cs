@@ -163,7 +163,11 @@ namespace SqliteMigrations.Migrations
 
                     b.HasKey("ArcadeReplayId");
 
+                    b.HasIndex("Id");
+
                     b.HasIndex("GameMode", "CreatedAt");
+
+                    b.HasIndex("RegionId", "GameMode", "CreatedAt");
 
                     b.ToTable("ArcadeReplays");
                 });
@@ -477,6 +481,9 @@ namespace SqliteMigrations.Migrations
                     b.Property<int>("RageQuitCount")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("RealmId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("RegionId")
                         .HasColumnType("INTEGER");
 
@@ -488,10 +495,10 @@ namespace SqliteMigrations.Migrations
 
                     b.HasKey("PlayerId");
 
-                    b.HasIndex("ToonId")
-                        .IsUnique();
-
                     b.HasIndex("UploaderId");
+
+                    b.HasIndex("RegionId", "RealmId", "ToonId")
+                        .IsUnique();
 
                     b.ToTable("Players");
                 });

@@ -18,4 +18,5 @@ public record PlayerUploadDto
     public string Name { get; init; } = null!;
     public int RegionId { get; init; }
     public int ToonId { get; init; }
+    public int RealmId { get; init; }
 }

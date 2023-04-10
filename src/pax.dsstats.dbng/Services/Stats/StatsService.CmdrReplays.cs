@@ -155,7 +155,7 @@ public partial class StatsService
 
     private IQueryable<Replay> GetCmdrInfosRequestReplays(CmdrInfosRequest request)
     {
-        if (request.ToonId > 0)
+        if (request.PlayerId != null)
         {
             return GetCmdrInfosRequestToonIdReplays(request);
         }
@@ -215,13 +215,17 @@ public partial class StatsService
                           where rp.Replay.ReplayRatingInfo.RatingType == request.RatingType
                             && rp.Replay.GameTime >= fromDate
                             && rp.Replay.GameTime < toDate
-                            && rp.Player.ToonId == request.ToonId
-                          select rp.Replay
+                            && rp.Player.ToonId == request.PlayerId.ToonId
+                            && rp.Player.RealmId == request.PlayerId.RealmId
+                            && rp.Player.RegionId == request.PlayerId.RegionId
+                         select rp.Replay
                         : from rp in context.ReplayPlayers
                           where rp.Replay.ReplayRatingInfo.RatingType == request.RatingType
                             && rp.Replay.GameTime >= fromDate
                             && rp.Replay.GameTime < toDate
-                            && rp.Player.ToonId == request.ToonId
+                            && rp.Player.ToonId == request.PlayerId.ToonId
+                            && rp.Player.RealmId == request.PlayerId.RealmId
+                            && rp.Player.RegionId == request.PlayerId.RegionId
                             && rp.Race == request.Interest
                           select rp.Replay;
 

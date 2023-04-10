@@ -35,34 +35,39 @@ public partial class RatingsService
     private const int ratingsCount = 10;
     private Queue<RatingsReport> ratingsResults = new Queue<RatingsReport>(ratingsCount);
 
-    public async Task ProduceRatings()
+    public async Task ProduceRatings(bool recalc = false)
     {
         await ratingSs.WaitAsync();
 
         Stopwatch sw = Stopwatch.StartNew();
         int recalcCount = 0;
-        bool recalc = false;
         try
         {
-            var request = await GetCalcRatingRequest();
+            var request = recalc == false ?
+                await GetCalcRatingRequest()
+                : new MmrService.CalcRatingRequest()
+                {
+                    MmrOptions = new(reCalc: true),
+                    MmrIdRatings = await GetMmrIdRatings(new(reCalc: true), null),
+                    // StartTime = new DateTime(2021, 2, 1),
+                    StartTime = new DateTime(2018, 1, 1),
+                    EndTime = DateTime.Today.AddDays(2)
+                };
+
             if (request == null)
             {
                 // nothing to do
                 logger.LogWarning("nothing to do2");
-
-                request = new()
-                { 
-                    MmrOptions = new(reCalc: true),
-                    MmrIdRatings = await GetMmrIdRatings(new(reCalc: true), null),
-                    StartTime = new DateTime(2021, 2, 1),
-                    EndTime = DateTime.Today.AddDays(2)
-                };
-
-                request.MmrOptions.InjectDic = await GetArcadeInjectDic();
+                return;
             }
 
             recalc = request.MmrOptions.ReCalc;
             recalcCount = request.ReplayDsRDtos.Count;
+
+            if (recalc)
+            {
+                request.MmrOptions.InjectDic = await GetArcadeInjectDic();
+            }
 
             await GeneratePlayerRatings(request);
 
@@ -86,6 +91,7 @@ public partial class RatingsService
         finally
         {
             sw.Stop();
+            logger.LogWarning($"{DateTime.UtcNow.ToString(@"yyyy-MM-dd HH:mm:ss")}: ratings produced in {sw.ElapsedMilliseconds} ms {recalc}/{recalcCount}");
 
             if (ratingsResults.Count >= ratingsCount)
             {

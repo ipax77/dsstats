@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.parser;
+using pax.dsstats.shared;
 using s2protocol.NET;
 using System.Reflection;
 
@@ -406,7 +408,10 @@ public class GameModeTests : TestWithSqlite
         });
         var mapper = mapperConfiguration.CreateMapper();
 
-        var replayRepository = new ReplayRepository(logger, DbContext, mapper);
+        DbImportOptions importOptions = new DbImportOptions() { ImportConnectionString = "" };
+        IOptions<DbImportOptions> optionsWrapper = Options.Create(importOptions);
+
+        var replayRepository = new ReplayRepository(logger, DbContext, optionsWrapper, mapper);
 
         await replayRepository.SaveReplay(replayDto, new(), new(), null);
 

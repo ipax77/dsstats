@@ -23,6 +23,14 @@
     [SupplyParameterFromQuery]
     public int? Id { get; set; }
 
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? Re { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? Rl { get; set; }
+
     CmdrInfosRequest request = new() 
     {
         RatingType = shared.RatingType.Cmdr,
@@ -65,9 +73,9 @@
             }
         }
 
-        if (Id != null)
+        if (Id != null && Re != null && Rl != null)
         {
-            request.ToonId = Id.Value;
+            request.PlayerId = new(Id.Value, Rl.Value, Re.Value);
         }
     }
     private void RequestChanged(CmdrInfosRequest request)
@@ -77,13 +85,17 @@
         queryDic.Add("Rt", request.RatingType.ToString());
         queryDic.Add("Tp", request.TimePeriod.ToString());
         queryDic.Add("Int", request.Interest.ToString());
-        if (request.ToonId > 0)
+        if (request.PlayerId != null)
         {
-            queryDic.Add("Id", request.ToonId);
+            queryDic.Add("Id", request.PlayerId.ToonId);
+            queryDic.Add("Re", request.PlayerId.RegionId);
+            queryDic.Add("Rl", request.PlayerId.RealmId);
         }
         else
         {
             queryDic.Add("Id", null);
+            queryDic.Add("Re", null);
+            queryDic.Add("Rl", null);
         }
 
         NavigationManager.NavigateTo(

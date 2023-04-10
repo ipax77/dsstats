@@ -1,4 +1,5 @@
 
+using pax.dsstats.shared.Arcade;
 using System.Text.Json.Serialization;
 
 namespace pax.dsstats.shared;
@@ -54,6 +55,7 @@ public record CmdrPlayerInfo
     public string Name { get; set; } = string.Empty;
     public int ToonId { get; set; }
     public int RegionId { get; set; }
+    public int RealmId { get; set; } = 1;
     public int Count { get; set; }
     public int Wins { get; set; }
     public double AvgGain { get; set; }
@@ -73,7 +75,7 @@ public record CmdrInfosRequest
     public int MinExp2Win { get; set; }
     public int MaxExp2Win { get; set; }
     public bool WithoutLeavers { get; set; }
-    public int ToonId { get; set; }
+    public PlayerId? PlayerId { get; set; }
     public int Skip { get; set; }
     public int Take { get; set; } = 20;
     public string SearchCmdrs { get; set; } = string.Empty;

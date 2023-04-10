@@ -78,7 +78,9 @@ public partial class MmrService
         {
             plRating.Mmr = mmrOptions.GetInjectRating(replayData.RatingType,
                                                         replayData.ReplayDsRDto.GameTime,
-                                                        playerData.ReplayPlayer.Player.ToonId);
+                                                        new(playerData.ReplayPlayer.Player.ToonId,
+                                                            playerData.ReplayPlayer.Player.RealmId,
+                                                            playerData.ReplayPlayer.Player.RegionId));
         }
 
         playerData.Mmr = plRating.Mmr;

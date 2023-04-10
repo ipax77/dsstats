@@ -4,13 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
+using pax.dsstats.dbng.Services.Ratings;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Arcade;
 using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
-using pax.dsstats.web.Server.Services.Ratings;
-using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 

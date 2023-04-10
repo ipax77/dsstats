@@ -21,6 +21,7 @@ public record PlayerRatingPlayerDto
     public string Name { get; set; } = null!;
     public int ToonId { get; set; }
     public int RegionId { get; set; }
+    public int RealmId { get; set; }
 }
 
 public record PlayerRatingDetailDto

@@ -75,6 +75,7 @@ public class Player
     public string Name { get; set; } = null!;
     public int ToonId { get; set; }
     public int RegionId { get; set; }
+    public int RealmId { get; set; }
     public int NotUploadCount { get; set; }
     public int DisconnectCount { get; set; }
     public int RageQuitCount { get; set; }

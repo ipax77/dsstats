@@ -109,6 +109,8 @@ namespace pax.dsstats.dbng
             CreateMap<ReplayRating, ReplayRatingCmdrDto>(MemberList.Destination);
             CreateMap<RepPlayerRating, RepPlayerRatingCmdrDto>(MemberList.Destination);
 
+            CreateMap<Player, PlayerId>(MemberList.Destination);
+
             // Arcade
             CreateMap<ArcadePlayerRating, ArcadePlayerRatingDto>(MemberList.Destination);
             CreateMap<ArcadePlayer, ArcadePlayerRatingPlayerDto>(MemberList.Destination);
