@@ -74,6 +74,7 @@ builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRe
 builder.Services.AddScoped<CheatDetectService>();
 builder.Services.AddScoped<PlayerService>();
 builder.Services.AddScoped<CrawlerService>();
+builder.Services.AddScoped<RatingsMergeService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -124,10 +125,10 @@ if (app.Environment.IsProduction())
 if (app.Environment.IsDevelopment())
 {
     //var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
-    //crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-3)).Wait();
+    //crawlerService.GetLobbyHistory(DateTime.Today.AddMonths(-1)).Wait();
 
-    //var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
-    //arcadeRatingsService.ProduceRatings().Wait();
+    var ratingsMergeService = scope.ServiceProvider.GetRequiredService<RatingsMergeService>();
+    ratingsMergeService.Merge().Wait();
 }
 
 // Configure the HTTP request pipeline.
