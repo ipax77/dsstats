@@ -126,8 +126,8 @@ if (app.Environment.IsDevelopment())
     //var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
     //crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-3)).Wait();
 
-    //var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
-    //arcadeRatingsService.ProduceRatings().Wait();
+    var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
+    arcadeRatingsService.ProduceRatings().Wait();
 }
 
 // Configure the HTTP request pipeline.

@@ -135,5 +135,10 @@ public class ReplayContext : DbContext
             entity.HasIndex(i => i.Name);
             entity.HasIndex(i => new { i.RegionId, i.RealmId, i.ProfileId }).IsUnique();
         });
+
+        modelBuilder.Entity<ArcadePlayerRating>(entity =>
+        {
+            entity.HasIndex(i => i.RatingType);
+        });
     }
 }
