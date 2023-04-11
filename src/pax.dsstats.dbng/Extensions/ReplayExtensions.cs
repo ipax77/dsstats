@@ -192,4 +192,16 @@ public static class ReplayExtensions
         }
         return sBuilder.ToString();
     }
+
+    public static string GetHash(this ReplayDsRDto replay)
+    {
+        StringBuilder sb = new();
+
+        sb.Append((int)replay.GameMode);
+        sb.Append(replay.Playercount);
+        sb.Append(replay.WinnerTeam);
+        sb.Append(replay.TournamentEdition);
+        sb.Append(String.Concat(replay.ReplayPlayers.OrderBy(o => o.GamePos).Select(s => $"{s.GamePos}{s.Player.ToonId}")));
+        return sb.ToString();
+    }
 }
