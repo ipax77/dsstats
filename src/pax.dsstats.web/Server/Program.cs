@@ -127,8 +127,8 @@ if (app.Environment.IsDevelopment())
     // var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
     // crawlerService.GetLobbyHistory(DateTime.Today.AddMonths(-3)).Wait();
 
-    var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
-    importService.ImportInit();
+    // var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
+    // importService.ImportInit();
 
     var ratingsMergeService = scope.ServiceProvider.GetRequiredService<RatingsMergeService>();
 
