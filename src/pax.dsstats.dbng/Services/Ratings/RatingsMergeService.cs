@@ -1,14 +1,13 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng.Services.Ratings;
 
-public class RatingsMergeService
+public partial class RatingsMergeService
 {
     private readonly ReplayContext context;
     private readonly IMapper mapper;
@@ -35,7 +34,10 @@ public class RatingsMergeService
 
         Dictionary<string, ReplayDsRDto> dsstatsDic = GetReplayDsRDtosHashDic(dsstatsReplays);
 
+        logger.LogWarning($"comparing arcde {arcadeReplays.Count} and dsstats {dsstatsReplays.Count}");
+
         int dsstatsDups = 0;
+        int deepDups = 0;
         foreach (var arcadeReplay in arcadeReplays)
         {
             if (dsstatsDic.TryGetValue(arcadeReplay.GetHash(), out var dsstatsReplay))
@@ -45,11 +47,38 @@ public class RatingsMergeService
             }
             mergedReplays.Add(arcadeReplay);
         }
-        mergedReplays.AddRange(dsstatsReplays);
 
-        logger.LogWarning($"dsstats dups found: {dsstatsDups}/{dsstatsDic.Count}");
+        foreach (var dsstatsReplay in dsstatsReplays)
+        {
+            if (DeepFindArcadeReplay(dsstatsReplay, arcadeReplays))
+            {
+                deepDups++;
+            }
+            mergedReplays.Add(dsstatsReplay);
+        }
+        // mergedReplays.AddRange(dsstatsReplays);
+
+        logger.LogWarning($"dsstats dups found: {dsstatsDups}/{dsstatsDic.Count} - deepDups: {deepDups}");
 
         return mergedReplays;
+    }
+
+    private bool DeepFindArcadeReplay(ReplayDsRDto dsstatsReplay, List<ReplayDsRDto> arcadeReplays)
+    {
+        List<int> playerToonIds = dsstatsReplay
+            .ReplayPlayers
+            .Select(s => s.Player.ToonId).Distinct().ToList();
+
+        var dupReplays = arcadeReplays.Where(x => x.ReplayPlayers.All(a => playerToonIds.Contains(a.Player.ToonId)));
+
+        if (dupReplays.Any())
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     private Dictionary<string, ReplayDsRDto> GetReplayDsRDtosHashDic(List<ReplayDsRDto> replays)
@@ -80,6 +109,7 @@ public class RatingsMergeService
             .Where(r => r.PlayerCount == 6
                 && r.Duration >= 300
                 && r.WinnerTeam > 0
+                && r.TournamentEdition == false
                 && gameModes.Contains(r.GameMode));
 
         if (startTime != DateTime.MinValue)
@@ -93,8 +123,9 @@ public class RatingsMergeService
         }
 
         var dsrReplays = from r in replays
-                         orderby r.CreatedAt
-                         orderby r.ArcadeReplayId
+                         where r.Duration >= 300
+                            && r.TournamentEdition == false
+                         orderby r.CreatedAt, r.ArcadeReplayId
                          select new ReplayDsRDto()
                          {
                              ReplayId = r.ArcadeReplayId,

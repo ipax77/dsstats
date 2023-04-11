@@ -124,11 +124,18 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    //var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
-    //crawlerService.GetLobbyHistory(DateTime.Today.AddMonths(-1)).Wait();
+    // var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
+    // crawlerService.GetLobbyHistory(DateTime.Today.AddMonths(-3)).Wait();
+
+    var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
+    importService.ImportInit();
 
     var ratingsMergeService = scope.ServiceProvider.GetRequiredService<RatingsMergeService>();
-    ratingsMergeService.Merge().Wait();
+
+    // ratingsMergeService.Merge().Wait();
+
+    ratingsMergeService.FixDsstatsReplayPlayersRegionId(true);
+    // ratingsMergeService.CheckReplays().Wait();
 }
 
 // Configure the HTTP request pipeline.
