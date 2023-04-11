@@ -14,6 +14,7 @@ public partial class ReplayRepository
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
+        command.CommandTimeout = 120;
         command.CommandText =
             $@"
                 UPDATE {nameof(ReplayContext.Players)} as p
