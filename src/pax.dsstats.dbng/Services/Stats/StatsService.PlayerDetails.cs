@@ -101,11 +101,12 @@ public partial class StatsService
                                 from t in r.ReplayPlayers
                                 where toonIds.Contains(rp.Player.ToonId)
                                 where t.Team == rp.Team
-                                group t by t.Player.ToonId into g
+                                group t by new { t.Player.ToonId, t.Player.Name } into g
                                 where g.Count() > 10
                                 select new PlayerTeamResultHelper()
                                 {
-                                    ToonId = g.Key,
+                                    ToonId = g.Key.ToonId,
+                                    Name = g.Key.Name,
                                     Count = g.Count(),
                                     Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
                                 }
@@ -114,11 +115,12 @@ public partial class StatsService
                               from t in r.ReplayPlayers
                               where toonIds.Contains(rp.Player.ToonId)
                               where t.Team != rp.Team
-                              group t by t.Player.ToonId into g
+                              group t by new { t.Player.ToonId, t.Player.Name } into g
                               where g.Count() > 10
                               select new PlayerTeamResultHelper()
                               {
-                                  ToonId = g.Key,
+                                  ToonId = g.Key.ToonId,
+                                  Name = g.Key.Name,
                                   Count = g.Count(),
                                   Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
                               };
@@ -126,15 +128,9 @@ public partial class StatsService
         var results = await teammateGroup
             .ToListAsync(token);
 
-        var rtoonIds = results.Select(s => s.ToonId).ToList();
-        var names = (await context.Players
-            .Where(x => rtoonIds.Contains(x.ToonId))
-            .Select(s => new { s.ToonId, s.Name })
-            .ToListAsync(token)).ToDictionary(k => k.ToonId, v => v.Name);
-
         return results.Select(s => new PlayerTeamResult()
         {
-            Name = names[s.ToonId],
+            Name = s.Name,
             ToonId = s.ToonId,
             Count = s.Count,
             Wins = s.Wins
@@ -208,6 +204,7 @@ public partial class StatsService
 internal record PlayerTeamResultHelper
 {
     public int ToonId { get; set; }
+    public string Name { get; set; } = string.Empty;
     public int Count { get; set; }
     public int Wins { get; set; }
 }
