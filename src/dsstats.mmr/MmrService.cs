@@ -93,11 +93,6 @@ public static partial class MmrService
         CalculateRatingsDeltas(replayData, replayData.WinnerTeamData, mmrOptions);
         CalculateRatingsDeltas(replayData, replayData.LoserTeamData, mmrOptions);
 
-        if (mmrOptions.UseEquality)
-        {
-            FixMmrEquality(replayData.WinnerTeamData, replayData.LoserTeamData);
-        }
-
         var mmrChanges1 = AddPlayersRankings(mmrIdRatings, replayData.WinnerTeamData, replayData.ReplayDsRDto.GameTime, replayData.ReplayDsRDto.Maxkillsum);
         var mmrChanges2 = AddPlayersRankings(mmrIdRatings, replayData.LoserTeamData, replayData.ReplayDsRDto.GameTime, replayData.ReplayDsRDto.Maxkillsum);
 
@@ -204,7 +199,7 @@ public static partial class MmrService
     }
 }
 
-public struct CmdrMmrKey
+public readonly struct CmdrMmrKey
 {
     public CmdrMmrKey(Commander race, Commander oppRace)
     {

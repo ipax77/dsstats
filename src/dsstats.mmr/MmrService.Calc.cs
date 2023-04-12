@@ -42,12 +42,6 @@ public static partial class MmrService
             {
                 SetLeaverPlayerDeltas(playerData, teamData, replayData, playerImpact, mmrOptions);
             }
-
-            //if (Math.Abs(playerData.Deltas.Mmr) > mmrOptions.EloK * teamData.Players.Length)
-            //{
-            //    // todo: no Exceptions prefered.
-            //    throw new Exception("MmrDelta is bigger than eloK");
-            //}
         }
     }
 
@@ -85,46 +79,6 @@ public static partial class MmrService
             * (mmrOptions.UseConfidence ? factor_confidence : 1.0);
     }
 
-    private static void FixMmrEquality(TeamData teamData, TeamData oppTeamData)
-    {
-        PlayerData[] posDeltaPlayers =
-            teamData.Players.Where(x => x.Deltas.Mmr >= 0).Concat(
-            oppTeamData.Players.Where(x => x.Deltas.Mmr >= 0)).ToArray();
-
-        PlayerData[] negPlayerDeltas =
-            teamData.Players.Where(x => x.Deltas.Mmr < 0).Concat(
-            oppTeamData.Players.Where(x => x.Deltas.Mmr < 0)).ToArray();
-
-        double absSumPosDeltas = Math.Abs(teamData.Players.Sum(x => Math.Max(0, x.Deltas.Mmr)) + oppTeamData.Players.Sum(x => Math.Max(0, x.Deltas.Mmr)));
-        double absSumNegDeltas = Math.Abs(teamData.Players.Sum(x => Math.Min(0, x.Deltas.Mmr)) + oppTeamData.Players.Sum(x => Math.Min(0, x.Deltas.Mmr)));
-        double absSumAllDeltas = absSumPosDeltas + absSumNegDeltas;
-
-        //if (teamData.Players.Length != oppTeamData.Players.Length)
-        //{
-        //    throw new Exception("Not same player amount.");
-        //}
-
-        if (absSumPosDeltas == 0 || absSumNegDeltas == 0)
-        {
-            foreach (var player in teamData.Players)
-            {
-                player.Deltas.Mmr = 0;
-            }
-            foreach (var player in oppTeamData.Players)
-            {
-                player.Deltas.Mmr = 0;
-            }
-            return;
-        }
-
-        foreach (var posDeltaPlayer in posDeltaPlayers)
-        {
-            posDeltaPlayer.Deltas.Mmr *= (absSumAllDeltas / (absSumPosDeltas * 2));
-        }
-        foreach (var negDeltaPlayer in negPlayerDeltas)
-        {
-            negDeltaPlayer.Deltas.Mmr *= (absSumAllDeltas / (absSumNegDeltas * 2));
-        }
     }
 
     private static List<RepPlayerRatingDto> AddPlayersRankings(Dictionary<int, CalcRating> mmrIdRatings,
