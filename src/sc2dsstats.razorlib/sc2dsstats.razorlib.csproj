@@ -15,8 +15,8 @@
     <PackageReference Include="Blazored.Toast" Version="4.1.0" />
     <PackageReference Include="Humanizer.Core" Version="2.14.1" />
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.15" />
-	<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.15" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.16" />
+	<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.16" />
 	<PackageReference Include="pax.BlazorChartJs" Version="0.5.0" />
   </ItemGroup>
 
