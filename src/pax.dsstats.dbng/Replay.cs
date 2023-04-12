@@ -98,8 +98,7 @@ public class PlayerRating
     public Commander Main { get; set; }
     [MaxLength(4000)]
     public string MmrOverTime { get; set; } = string.Empty;
-    public double Consistency { get; set; }
-    public double Confidence { get; set; }
+    public double Deviation { get; set; }
     public bool IsUploader { get; set; }
     public PlayerRatingChange? PlayerRatingChange { get; set; }
     public int PlayerId { get; set; }

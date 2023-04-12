@@ -48,7 +48,7 @@ public partial class MmrProduceService
                 TeamGames = rating.TeamGames,
                 Mmr = rating.Rating,
                 MmrOverTime = GetTimeRatings(rating.MmrOverTime),
-                Deviation = rating.Confidence,
+                Deviation = rating.Deviation,
                 IsUploader = rating.IsUploader,
                 CmdrCounts = GetFakeCmdrDic(rating.Main, rating.MainCount, rating.Games)
             };

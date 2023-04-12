@@ -19,8 +19,7 @@ public partial class RatingRepository
         sb.Append($"{nameof(PlayerRating.MainCount)},");
         sb.Append($"{nameof(PlayerRating.Main)},");
         sb.Append($"{nameof(PlayerRating.MmrOverTime)},");
-        sb.Append($"{nameof(PlayerRating.Consistency)},");
-        sb.Append($"{nameof(PlayerRating.Confidence)},");
+        sb.Append($"{nameof(PlayerRating.Deviation)},");
         sb.Append($"{nameof(PlayerRating.IsUploader)},");
         sb.Append($"{nameof(PlayerRating.PlayerId)},");
         sb.Append($"{nameof(PlayerRating.Pos)}");

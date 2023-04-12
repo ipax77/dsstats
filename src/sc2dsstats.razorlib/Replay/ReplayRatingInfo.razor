@@ -33,8 +33,7 @@ else
                                 <th class="text-info">Pre-Rating</th>
                                 <th>Change</th>
                                 <th>Games</th>
-                                <th>Consistency</th>
-                                <th>Confidence</th>
+                                <th>Uncertanity</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -52,8 +51,7 @@ else
                                         <span class="oi @(info.RatingChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">@info.RatingChange.ToString("N1", CultureInfo.InvariantCulture)</span>
                                     </td>
                                     <td>@info.Games</td>
-                                    <td>@info.Consistency.ToString("N2", CultureInfo.InvariantCulture)</td>
-                                    <td>@info.Confidence.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                    <td>@info.Deviation.ToString("N2", CultureInfo.InvariantCulture)</td>
                                 </tr>
                             }
                         </tbody>
