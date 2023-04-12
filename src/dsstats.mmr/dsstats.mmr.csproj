@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\FireMath.NET\src\FireMath.NET\FireMath.NET.csproj" />
     <ProjectReference Include="..\pax.dsstats.shared\pax.dsstats.shared.csproj" />
   </ItemGroup>
 

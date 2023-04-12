@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="FireMath.NET" Version="1.0.2.1" />
+  </ItemGroup>
+
 </Project>
