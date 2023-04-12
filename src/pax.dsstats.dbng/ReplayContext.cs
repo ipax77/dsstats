@@ -140,5 +140,10 @@ public class ReplayContext : DbContext
         {
             entity.HasIndex(i => i.RatingType);
         });
+
+        modelBuilder.Entity<ReplayRating>(entity =>
+        {
+            entity.HasIndex(i => i.RatingType);
+        });
     }
 }

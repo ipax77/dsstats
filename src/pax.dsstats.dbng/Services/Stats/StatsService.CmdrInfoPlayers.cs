@@ -30,6 +30,7 @@ public partial class StatsService
                         && rp.Race == request.Interest
                         && rp.Replay.GameTime >= fromDate
                         && rp.Replay.GameTime < toDate
+                        && rp.IsUploader
                         && tm.ReplayPlayerId != rp.ReplayPlayerId
                       group new { pr.Player, rp, rpr } by new { rp.Player.Name, rp.Player.ToonId, rp.Player.RegionId, rp.Player.RealmId } into g
                       where g.Count() >= limit
