@@ -1,4 +1,5 @@
 ﻿using pax.dsstats.shared.Arcade;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 
@@ -17,7 +18,7 @@ public partial class CrawlerService
         this.logger = logger;
     }
 
-    public async Task GetLobbyHistory(DateTime tillTime, int fsBreak = 10000)
+    public async Task GetLobbyHistory(DateTime tillTime, int fsBreak = 1000000)
     {
         var httpClient = httpClientFactory.CreateClient("sc2arcardeClient");
 
@@ -29,18 +30,22 @@ public partial class CrawlerService
 
         Dictionary<int, int> mapRegions = new Dictionary<int, int>()
         {
-             { 208271, 1 }, // NA
+             // { 208271, 1 }, // NA
              { 140436, 2 }, // EU
              { 69942, 3 },  // As
             // { 231019, 2 }, // TE EU
             // { 327974, 1 }, // TE NA
         };
+        // string handle = "2-S2-1-226401";
+        string handle = "1-S2-1-10188255";
 
         foreach (var mapRegion in mapRegions)
         {
             string baseRequest =
-                $"lobbies/history?regionId={mapRegion.Value}&mapId={mapRegion.Key}&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
-                
+                $"lobbies/history?regionId={mapRegion.Value}&mapId={mapRegion.Key}&profileHandle={handle}& orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
+            // $"lobbies/history?regionId={mapRegion.Value}&mapId={mapRegion.Key}&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
+            // $"lobbies/history?regionId={mapRegion.Value}&mapId={mapRegion.Key}&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
+
 
             int i = 0;
             while (true)

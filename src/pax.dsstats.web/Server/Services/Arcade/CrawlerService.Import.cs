@@ -8,7 +8,7 @@ namespace pax.dsstats.web.Server.Services.Arcade;
 public partial class CrawlerService
 {
     private Dictionary<PlayerId, int> arcadePlayerIds = new();
-    private Dictionary<int, bool> arcadeReplayIds = new();
+    private Dictionary<ArcadeReplayId, bool> arcadeReplayIds = new();
 
     private async Task ImportArcadeReplays(List<LobbyResult> results, bool teMap)
     {
@@ -19,7 +19,8 @@ public partial class CrawlerService
 
         foreach (var result in results)
         {
-            if (arcadeReplayIds.ContainsKey(result.Id))
+            ArcadeReplayId acradeReplayId = new(result.RegionId, result.BnetBucketId, result.BnetRecordId);
+            if (arcadeReplayIds.ContainsKey(acradeReplayId))
             {
                 continue;
             }
@@ -63,7 +64,8 @@ public partial class CrawlerService
             ArcadeReplay replay = new()
             {
                 RegionId = result.RegionId,
-                Id = result.Id,
+                BnetRecordId = result.BnetRecordId,
+                BnetBucketId = result.BnetBucketId,
                 GameMode = gameMode,
                 CreatedAt = result.CreatedAt,
                 Duration = result.Match.CompletedAt == null ? 0 
@@ -99,6 +101,7 @@ public partial class CrawlerService
             }
 
             replays.Add(replay);
+            arcadeReplayIds.Add(new(replay.RegionId, replay.BnetBucketId, replay.BnetRecordId), true);
         }
 
         await MapPlayers(replays);
@@ -118,7 +121,9 @@ public partial class CrawlerService
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        arcadeReplayIds = (await context.ArcadeReplays.Select(s => s.Id).Distinct().ToListAsync()).ToDictionary(k => k, v => true);
+        arcadeReplayIds = (await context.ArcadeReplays
+            .Select(s => new { s.RegionId, s.BnetBucketId, s.BnetRecordId }).Distinct().ToListAsync())
+        .ToDictionary(k => new ArcadeReplayId(k.RegionId, k.BnetBucketId, k.BnetRecordId), v => true);
     }
 
     private async Task SeedPlayerIds()
@@ -142,38 +147,17 @@ public partial class CrawlerService
         
         arcadePlayerIds = players.ToDictionary(k => new PlayerId(k.RegionId, k.RealmId, k.ProfileId), v => v.ArcadePlayerId);
     }
+}
 
-    public async Task DeleteDups()
+public record ArcadeReplayId
+{
+    public ArcadeReplayId(int regionId, long bnetBucketId, long bnetRecordId)
     {
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-        var dups = from r in context.ArcadeReplays
-                   group r by r.Id into g
-                   where g.Count() > 1
-                   select new { Id = g.Key };
-        var dupsList = (await dups.ToListAsync()).Select(s => s.Id).ToList();
-
-        var dupReplays = await context.ArcadeReplays
-            .Include(i => i.ArcadeReplayPlayers)
-                .ThenInclude(i => i.ArcadePlayer)
-            .Where(x => dupsList.Contains(x.Id))
-            .ToListAsync();
-
-        var removeReplays = new List<ArcadeReplay>();
-        Dictionary<int, bool> ids = new();
-
-        foreach (var replay in dupReplays)
-        {
-            if (ids.ContainsKey(replay.Id))
-            {
-                continue;
-            }
-            ids.Add(replay.Id, true);
-            removeReplays.Add(replay);
-        }
-
-        context.ArcadeReplays.RemoveRange(removeReplays);
-        await context.SaveChangesAsync();
+        RegionId = regionId;
+        BnetBucketId = bnetBucketId;
+        BnetRecordId = bnetRecordId;
     }
+    public int RegionId { get; init; }
+    public long BnetBucketId { get; init; }
+    public long BnetRecordId { get; init; }
 }

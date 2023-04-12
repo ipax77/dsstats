@@ -81,7 +81,7 @@
                 {
                     <Virtualize @ref="virtualizeComponent" Context="replay" ItemsProvider="LoadReplays" ItemSize="47">
                         <ItemContent>
-                            <tr height="47px" class="pointer @(lastVisitId == replay.Id ? "table-primary" : "")" @onclick="e => ShowReplay(replay.Id)">
+                            <tr height="47px" class="pointer @(lastVisitId == replay.ArcadeReplayId ? "table-primary" : "")" @onclick="e => ShowReplay(replay.ArcadeReplayId)">
                                 <td>@Data.GetRegionString(replay.RegionId)</td>
                                 <td>@replay.CreatedAt.ToString(@"yyyy-MM-dd")</td>
                                 <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>

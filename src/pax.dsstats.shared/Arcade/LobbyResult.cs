@@ -32,9 +32,9 @@ public record LobbyResult
 
     public int RegionId { get; set; }
 
-    public int BnetBucketId { get; set; }
+    public long BnetBucketId { get; set; }
 
-    public int BnetRecordId { get; set; }
+    public long BnetRecordId { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

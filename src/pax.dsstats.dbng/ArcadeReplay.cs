@@ -14,7 +14,8 @@ public class ArcadeReplay
     [Key]
     public int ArcadeReplayId { get; set; }
     public int RegionId { get; set; }
-    public int Id { get; set; }
+    public long BnetBucketId { get; set; }
+    public long BnetRecordId { get; set; }
     public GameMode GameMode { get; set; }
     [Precision(0)]
     public DateTime CreatedAt { get; set; }
