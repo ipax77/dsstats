@@ -108,9 +108,6 @@ context.Database.Migrate();
 // SEED
 if (app.Environment.IsProduction())
 {
-    // var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-    // mmrProduceService.ProduceRatings(new(true)).GetAwaiter().GetResult();
-
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
 
@@ -124,17 +121,20 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
+    var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+    ratingsService.ProduceRatings(true).Wait();
+
     // var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
     // crawlerService.GetLobbyHistory(DateTime.Today.AddMonths(-3)).Wait();
 
     // var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
     // importService.ImportInit();
 
-    var ratingsMergeService = scope.ServiceProvider.GetRequiredService<RatingsMergeService>();
+    // var ratingsMergeService = scope.ServiceProvider.GetRequiredService<RatingsMergeService>();
 
     // ratingsMergeService.Merge().Wait();
 
-    ratingsMergeService.FixDsstatsReplayPlayersRegionId(true);
+    // ratingsMergeService.FixDsstatsReplayPlayersRegionId(true);
     // ratingsMergeService.CheckReplays().Wait();
 }
 

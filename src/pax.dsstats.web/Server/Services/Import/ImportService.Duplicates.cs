@@ -101,7 +101,7 @@ public partial class ImportService
     {
         if (regionId == 0)
         {
-            logger.LogWarning($"dup replayPlayer not found: ReplayPlayerId {keepReplayPlayer.ReplayPlayerId}");
+            logger.LogWarning($"dup replayPlayer not found 1: ReplayPlayerId {keepReplayPlayer.ReplayPlayerId}");
             return;
         }
 
@@ -111,7 +111,7 @@ public partial class ImportService
 
         if (player == null || player.RegionId == regionId)
         {
-            logger.LogWarning($"dup replayPlayer not found: ReplayPlayerId {keepReplayPlayer.ReplayPlayerId}");
+            logger.LogWarning($"dup replayPlayer not found 2: ReplayPlayerId {keepReplayPlayer.ReplayPlayerId}");
             return;
         }
 
