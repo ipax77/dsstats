@@ -1,0 +1,107 @@
+@page "/cmdrreplays"
+@using pax.dsstats.shared
+@inject NavigationManager NavigationManager
+
+<PageTitle>Cmdr Infos</PageTitle>
+
+<sc2dsstats.razorlib.CmdrReplays.CmdrReplaysComponent Request="request" OnRequestChanged="RequestChanged" />
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Rt { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Tp { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Int { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? Id { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? Re { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? Rl { get; set; }
+
+    CmdrInfosRequest request = new() 
+    {
+        RatingType = shared.RatingType.Cmdr,
+        TimePeriod = shared.TimePeriod.Past90Days,
+        Interest = Commander.Abathur,
+    };
+
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }    
+
+    private void SetRequest()
+    {
+        if (!String.IsNullOrEmpty(Rt)
+            && Enum.TryParse(typeof(RatingType), Rt, out object? ratingTypeObj)
+            && ratingTypeObj is RatingType ratingType)
+        {
+            request.RatingType = ratingType;
+        }
+
+        if (!String.IsNullOrEmpty(Tp)
+            && Enum.TryParse(typeof(TimePeriod), Tp, out var timePeriodObj)
+            && timePeriodObj is TimePeriod timePeriod)
+        {
+            if ((int)timePeriod <= 4 || timePeriod == shared.TimePeriod.Patch2_71)
+            {
+                request.TimePeriod = timePeriod;
+            }
+        }
+
+        if (!String.IsNullOrEmpty(Int)
+            && Enum.TryParse(typeof(Commander), Int, out var interestObj)
+            && interestObj is Commander interest)
+        {
+            if (interest != Commander.None)
+            {
+                request.Interest = interest;
+            }
+        }
+
+        if (Id != null && Re != null && Rl != null)
+        {
+            request.PlayerId = new(Id.Value, Rl.Value, Re.Value);
+        }
+    }
+    private void RequestChanged(CmdrInfosRequest request)
+    {
+        Dictionary<string, object?> queryDic = new();
+
+        queryDic.Add("Rt", request.RatingType.ToString());
+        queryDic.Add("Tp", request.TimePeriod.ToString());
+        queryDic.Add("Int", request.Interest.ToString());
+        if (request.PlayerId != null)
+        {
+            queryDic.Add("Id", request.PlayerId.ToonId);
+            queryDic.Add("Re", request.PlayerId.RegionId);
+            queryDic.Add("Rl", request.PlayerId.RealmId);
+        }
+        else
+        {
+            queryDic.Add("Id", null);
+            queryDic.Add("Re", null);
+            queryDic.Add("Rl", null);
+        }
+
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters(
+                new Dictionary<string, object?>(queryDic)
+            )
+        );
+    }  
+}

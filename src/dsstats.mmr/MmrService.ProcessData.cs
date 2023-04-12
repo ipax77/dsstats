@@ -52,7 +52,10 @@ public partial class MmrService
         replayData.LoserTeamData.ExpectedResult = (1 - winnerPlayersExpectationToWin);
     }
 
-    private static void SetPlayerData(Dictionary<int, CalcRating> mmrIdRatings, ReplayData replayData, PlayerData playerData, MmrOptions mmrOptions)
+    private static void SetPlayerData(Dictionary<int, CalcRating> mmrIdRatings,
+                                      ReplayData replayData,
+                                      PlayerData playerData,
+                                      MmrOptions mmrOptions)
     {
         if (!mmrIdRatings.TryGetValue(playerData.MmrId, out var plRating))
         {
@@ -63,6 +66,18 @@ public partial class MmrService
                 Deviation = mmrOptions.StandardMatchDeviation,
                 Games = 0,
             };
+        }
+
+        if (mmrOptions.InjectDic.Any() 
+            && mmrOptions.ReCalc 
+            && !playerData.ReplayPlayer.IsUploader 
+            && (replayData.RatingType == RatingType.Cmdr || replayData.RatingType == RatingType.Std))
+        {
+            plRating.Mmr = mmrOptions.GetInjectRating(replayData.RatingType,
+                                                        replayData.ReplayDsRDto.GameTime,
+                                                        new(playerData.ReplayPlayer.Player.ToonId,
+                                                            playerData.ReplayPlayer.Player.RealmId,
+                                                            playerData.ReplayPlayer.Player.RegionId));
         }
 
         playerData.Mmr = plRating.Mmr;

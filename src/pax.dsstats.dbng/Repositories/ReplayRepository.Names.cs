@@ -10,10 +10,11 @@ public partial class ReplayRepository
     public async Task FixPlayerNames()
     {
         Stopwatch sw = Stopwatch.StartNew();
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
+        command.CommandTimeout = 120;
         command.CommandText =
             $@"
                 UPDATE {nameof(ReplayContext.Players)} as p

@@ -22,11 +22,6 @@
     [SupplyParameterFromQuery]
     public string? Versus { get; set; }
 
-    [Parameter]
-    [SupplyParameterFromQuery]
-    public string? PlayerNames { get; set; }
-
-
     private BuildRequest buildRequest = new()
     {
         PlayerNames = Data.GetDefaultRequestNames(),
@@ -63,28 +58,6 @@
                 buildRequest.Versus = versus;
             }
         }
-
-        if (!string.IsNullOrEmpty(PlayerNames))
-        {
-            var toonIdStrs = PlayerNames.Split('x', StringSplitOptions.RemoveEmptyEntries).ToList();
-            List<KeyValuePair<int, string>> toonIds = new();
-            foreach (var toonIdstr in toonIdStrs)
-            {
-                var ent = toonIdstr.Split('|', StringSplitOptions.RemoveEmptyEntries);
-                if (ent.Length == 2)
-                {
-                    if (int.TryParse(ent[0], out int toonId))
-                    {
-                        toonIds.Add(new KeyValuePair<int, string>(toonId, ent[1]));
-                        if (toonIds.Count >= 10)
-                        {
-                            break;
-                        }
-                    }
-                }
-            }
-            buildRequest.PlayerNames = toonIds.Select(s => new RequestNames() { Name = s.Value, ToonId = s.Key }).ToList();
-        }
     }
 
     private void RequestChanged()
@@ -94,7 +67,6 @@
         queryDic.Add("Timespan", buildRequest.Timespan.ToString());
         queryDic.Add("Interest", buildRequest.Interest.ToString());
         queryDic.Add("Versus", buildRequest.Versus.ToString());
-        queryDic.Add("PlayerNames", string.Join('x', buildRequest.PlayerNames.Select(s => $"{s.ToonId}|{s.Name}")));
 
         NavigationManager.NavigateTo(
             NavigationManager.GetUriWithQueryParameters(

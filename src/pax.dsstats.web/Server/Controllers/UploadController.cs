@@ -61,4 +61,6 @@ public class UploadController : ControllerBase
     {
         return await uploadService.DeleteUploader(appGuid);
     }
+
+
 }

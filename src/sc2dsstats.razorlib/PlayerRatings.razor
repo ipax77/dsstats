@@ -413,14 +413,14 @@
     {
         if (RatingsRequest.ToonId != null && RatingsRequest.ToonId > 0)
         {
-            Interest = new() { Name = "", ToonId = RatingsRequest.ToonId.Value };
+            Interest = new("", RatingsRequest.ToonId.Value, RatingsRequest.RegionId, RatingsRequest.RealmId);
             await InvokeAsync(() => StateHasChanged());
         }
     }
 
     private void LoadPlayerChart(PlayerRatingPlayerDto playerDto)
     {
-        Interest = new() { Name = playerDto.Name, ToonId = playerDto.ToonId, RegionId = playerDto.RegionId };
+        Interest = new(playerDto.Name, playerDto.ToonId, playerDto.RegionId, playerDto.RealmId);
         RatingsRequest.ToonId = playerDto.ToonId;
         StateHasChanged();
         OnRatingsChanged.InvokeAsync();

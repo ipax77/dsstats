@@ -323,7 +323,7 @@
 
     private void ShowPlayerDetails(PlayerDto player)
     {
-        Interest = new() { Name = player.Name, ToonId = player.ToonId };
+        Interest = new(player.Name, player.ToonId, player.RegionId, player.RealmId);
         InvokeAsync(() => StateHasChanged());
     }
 

@@ -1,0 +1,485 @@
+@using pax.dsstats.shared
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using System.Globalization
+@inject IDataService dataService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<style>
+    .tableFixHead {
+        overflow-y: auto;
+        overflow-x: auto;
+        height: 800px;
+    }
+
+    .tableFixHead thead th {
+        position: sticky;
+        top: 0;
+    }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th,
+    td {
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+
+    .tablebackground {
+        position: absolute;
+        z-index: -1;
+        opacity: 0.15;
+    }
+
+    .preload-terran {
+        background-image: url("/_content/sc2dsstats.razorlib/images/terran-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-protoss {
+        background-image: url("/_content/sc2dsstats.razorlib/images/protoss-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-zerg {
+        background-image: url("/_content/sc2dsstats.razorlib/images/zerg-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-abathur {
+        background-image: url("/_content/sc2dsstats.razorlib/images/abathur-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-alarak {
+        background-image: url("/_content/sc2dsstats.razorlib/images/alarak-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-artanis {
+        background-image: url("/_content/sc2dsstats.razorlib/images/artanis-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-dehaka {
+        background-image: url("/_content/sc2dsstats.razorlib/images/dehaka-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-fenix {
+        background-image: url("/_content/sc2dsstats.razorlib/images/fenix-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-horner {
+        background-image: url("/_content/sc2dsstats.razorlib/images/horner-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-karax {
+        background-image: url("/_content/sc2dsstats.razorlib/images/karax-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-kerrigan {
+        background-image: url("/_content/sc2dsstats.razorlib/images/kerrigan-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-mengsk {
+        background-image: url("/_content/sc2dsstats.razorlib/images/mengsk-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-nova {
+        background-image: url("/_content/sc2dsstats.razorlib/images/nova-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-raynor {
+        background-image: url("/_content/sc2dsstats.razorlib/images/raynor-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-stetmann {
+        background-image: url("/_content/sc2dsstats.razorlib/images/stetmann-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-stukov {
+        background-image: url("/_content/sc2dsstats.razorlib/images/stukov-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-swann {
+        background-image: url("/_content/sc2dsstats.razorlib/images/swann-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-tychus {
+        background-image: url("/_content/sc2dsstats.razorlib/images/tychus-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-vorazun {
+        background-image: url("/_content/sc2dsstats.razorlib/images/vorazun-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-zagara {
+        background-image: url("/_content/sc2dsstats.razorlib/images/zagara-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-zeratul {
+        background-image: url("/_content/sc2dsstats.razorlib/images/zeratul-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+</style>
+
+<div class="@(replayDto != null || Interest != null ? "visually-hidden" : "")">
+    <div>
+        <CmdrReplayInfoRequestComponent Request="Request" OnRequestChanged="RequestChanged" />
+    </div>
+    <div class="row mt-2">
+        <div class="col-auto">
+            @if (replaysCount > 0)
+            {
+                <div class="d-flex" style="max-width: 850px;">
+                    <div>
+                        <h4>Replays with team ratings and AvgGain for <span class="text-warning">@Request.Interest</span></h4>
+                    </div>
+                    <div class="ms-auto">
+                        #@replaysCount
+                        <span class="oi oi-reload text-primary pointer ms-2" style="font-size: 1rem;"
+                            @onclick="RequestChanged"></span>
+                    </div>
+                    @if (isLoading)
+                    {
+                        <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    }
+                </div>
+                <div class="table-responsive tableFixHead">
+                    <table class="table table-dark table-hover w-auto">
+                        <thead class="user-select-none">
+                            <tr>
+                                <th>GameTime</th>
+                                <th>Duration</th>
+                                <th>Team1</th>
+                                <th>Team2</th>
+                                <th>Win</th>
+                                <th class="text-warning">Rating1</th>
+                                <th class="text-warning">Rating2</th>
+                                <th style="z-index: 1;">AvgGain</th>
+                                <th>Leaver</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <Virtualize @ref="virtualizeComponent" Context="replay" ItemsProvider="LoadReplays"
+                                ItemSize="47">
+                                <ItemContent>
+                                    <tr class="pointer @(lastVisitHash == replay.ReplayHash ? "table-primary" : "")"
+                                        @onclick="e => ShowReplay(replay.ReplayHash)">
+                                        <td>@replay.GameTime.ToString(@"yyyy-MM-dd")</td>
+                                        <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+                                        <td>
+                                            <div class="d-flex">
+                                                @foreach (var cmdr in replay.Cmdrs1)
+                                                {
+                                                    <div class="preload-@(cmdr.ToString().ToLower())"
+                                                        style="width: 30px; height: 30px;"></div>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td>
+
+                                            <div class="d-flex">
+                                                @foreach (var cmdr in replay.Cmdrs2)
+                                                {
+                                                    <div class="preload-@(cmdr.ToString().ToLower())"
+                                                        style="width: 30px; height: 30px;"></div>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td>@replay.WinnerTeam</td>
+                                        <td class="text-warning">@replay.Rating1</td>
+                                        <td class="text-warning">@replay.Rating2</td>
+                                        <td class="@(replay.AvgGain < 0 ? "text-danger" : "text-success")">
+                                            <span class="@(replay.AvgGain >= 0 ? "oi oi-arrow-top" : "oi oi-arrow-bottom")"></span>
+                                            @replay.AvgGain.ToString("N2", CultureInfo.InvariantCulture)
+                                        </td>
+                                        <td>@TimeSpan.FromSeconds(replay.Maxleaver).ToString(@"mm\:ss")</td>
+                                    </tr>
+                                </ItemContent>
+                                <Placeholder>
+                                    <tr height="47px">
+                                        <td colspan="9">Loading ...</td>
+                                    </tr>
+                                </Placeholder>
+                            </Virtualize>
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                @if (isLoading)
+                {
+                    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                }
+                else
+                {
+                    <p>
+                        No data available.
+                    </p>
+                }
+            }
+        </div>
+        <div class="col-auto">
+            <div class="d-flex" style="max-width: 675px;">
+                <div>
+                    <h4>
+                        Players who played 
+                        <span class="text-warning">@Request.Interest </span>
+                        and their success 
+                        <span class="text-light" style="font-size: 1rem;"> (Games >= 10)</span>
+                    </h4>
+                </div>                
+                <div class="ms-auto">
+                    &Oslash;
+                    <span class="@(avgGain < 0 ? "text-danger" : "text-success")">
+                        @avgGain.ToString("N2", CultureInfo.InvariantCulture)
+                    </span>
+                </div>
+            </div>
+            <CmdrPlayerInfoComponent 
+                @ref="cmdrPlayerInfoComponent"
+                CmdrPlayerInfos="playerInfos"
+                OnPlayerDetailsRequest="PlayerDetailsRequest" />
+        </div>
+    </div>
+    <div class="col-auto">
+        <div class="ms-2 mt-2 p-2 bg-dark" style="max-width: 1000px;">
+            <p>
+                The <b>Strength</b> value is a measure of a players's overall effectiveness at playing <span class="text-warning">@Request.Interest</span>, calculated based on factors such as their win rate, average rating, and matchup frequency. It gives an indication of how well a player is performing with the commander, with higher values indicating greater strength.
+            </p>
+        </div>
+    </div>
+</div>
+
+@if (replayDto != null)
+{
+    <sc2dsstats.razorlib.Replay.ReplayComponent @ref="replayComponent" replayDto="replayDto"
+        OnCloseRequested="OnReplayClose" ReplaysRequest="ReplaysToonIdRequest" />
+}
+
+@if (Interest != null)
+{
+    <sc2dsstats.razorlib.PlayerDetailsNg.PlayerDetailsSummary RequestNames="Interest"
+                                                            OnCloseRequested="DetailsClose"
+                                                            RatingType="Request.RatingType"
+                                                            ReplaysRequest="ReplaysToonIdRequest" />
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public CmdrInfoRequest Request { get; set; } = default!;
+    [Parameter]
+    public EventCallback<CmdrInfoRequest> OnRequestChanged { get; set; }
+
+    CancellationTokenSource cts = new();
+    SemaphoreSlim ss = new(1, 1);
+
+    bool isLoading = false;
+    int replaysCount = 0;
+
+    private Virtualize<ReplayCmdrInfo>? virtualizeComponent;
+
+    ReplayDetailsDto? replayDto = null;
+    Replay.ReplayComponent? replayComponent;
+    string? lastVisitHash = null;
+
+    List<CmdrPlayerInfo> playerInfos = new();
+    double avgGain => !playerInfos.Any() ? 0 : Math.Round(playerInfos.Average(a => a.AvgGain), 2);
+
+    private RequestNames? Interest;
+
+    CmdrPlayerInfoComponent? cmdrPlayerInfoComponent;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SetCount(Request);
+        await base.OnInitializedAsync();
+    }
+
+    private async Task SetCount(CmdrInfoRequest request)
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        replaysCount = await dataService.GetCmdrReplayInfosCount(request, cts.Token);
+        isLoading = false;
+        playerInfos = await dataService.GetCmdrPlayerInfos(request, cts.Token);
+        cmdrPlayerInfoComponent?.SetStrength(playerInfos);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async ValueTask<ItemsProviderResult<ReplayCmdrInfo>> LoadReplays(ItemsProviderRequest prRequest)
+    {
+        Request.Skip = prRequest.StartIndex;
+        Request.Take = Math.Min(prRequest.Count, replaysCount - prRequest.StartIndex);
+
+        var replays = await dataService.GetCmdrReplayInfos(Request, prRequest.CancellationToken);
+
+        return new ItemsProviderResult<ReplayCmdrInfo>(replays ?? new List<ReplayCmdrInfo>(), replaysCount);
+    }
+
+
+    public async void RequestChanged()
+    {
+        await ss.WaitAsync();
+        try
+        {
+            await SetCount(Request);
+            if (virtualizeComponent != null)
+            {
+                await InvokeAsync(async () =>
+                {
+                    await virtualizeComponent.RefreshDataAsync();
+                    StateHasChanged();
+                });
+            }
+            await OnRequestChanged.InvokeAsync(Request);
+        }
+        finally
+        {
+            ss.Release();
+        }
+    }
+
+    public void PlayerDetailsRequest(RequestNames requestNames)
+    {
+        Interest = requestNames;
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    public void DetailsClose()
+    {
+        Interest = null;
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    public async Task ShowReplay(string replayHash)
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        await OnRequestChanged.InvokeAsync(Request);
+
+        replayDto = await dataService.GetDetailReplay(replayHash);
+        lastVisitHash = replayDto?.ReplayHash;
+        if (replayDto != null)
+        {
+            replayComponent?.Init(replayDto);
+        }
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async void OnReplayClose()
+    {
+        replayDto = null;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void ReplaysToonIdRequest(Services.ReplaysToonIdRequest request)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("replays",
+                new Dictionary<string, object?>()
+                            {
+                    { "Players", request.Name },
+                    { "ToonId", request.ToonId },
+                    { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
+                    { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
+                    { "ToonIdName", request.ToonIdName },
+                            }
+            )
+        );
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+        ss.Dispose();
+    }
+}

@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.shared;
@@ -17,6 +18,7 @@ public partial class StatsService : IStatsService
     private readonly IMapper mapper;
     private readonly IRatingRepository ratingRepository;
     private readonly IReplayRepository replayRepository;
+    private readonly IOptions<DbImportOptions> dbImportOptions;
     private readonly ILogger<StatsService> logger;
 
     public StatsService(IMemoryCache memoryCache,
@@ -24,6 +26,7 @@ public partial class StatsService : IStatsService
                         IMapper mapper,
                         IRatingRepository ratingRepository,
                         IReplayRepository replayRepository,
+                        IOptions<DbImportOptions> dbImportOptions,
                         ILogger<StatsService> logger)
     {
         this.memoryCache = memoryCache;
@@ -31,6 +34,7 @@ public partial class StatsService : IStatsService
         this.mapper = mapper;
         this.ratingRepository = ratingRepository;
         this.replayRepository = replayRepository;
+        this.dbImportOptions = dbImportOptions;
         this.logger = logger;
     }
 

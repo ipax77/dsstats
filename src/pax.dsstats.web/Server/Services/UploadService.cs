@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
+using pax.dsstats.web.Server.Services.Import;
 using System.IO.Compression;
 using System.Text;
 
@@ -11,18 +12,24 @@ public partial class UploadService
 {
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
+    private readonly IHttpClientFactory httpClientFactory;
     private readonly ILogger<UploadService> logger;
     private const string blobBaseDir = "/data/ds/replayblobs";
 
-    public UploadService(IServiceProvider serviceProvider, IMapper mapper, ILogger<UploadService> logger)
+    public UploadService(IServiceProvider serviceProvider,
+                         IMapper mapper,
+                         IHttpClientFactory httpClientFactory,
+                         ILogger<UploadService> logger)
     {
         this.serviceProvider = serviceProvider;
         this.mapper = mapper;
+        this.httpClientFactory = httpClientFactory;
         this.logger = logger;
     }
 
     public async Task<bool> ImportReplays(string gzipbase64String, Guid appGuid, DateTime latestReplay, bool dry = false)
     {
+        string blobFile = string.Empty;
         try
         {
 
@@ -42,7 +49,7 @@ public partial class UploadService
 
             if (!dry)
             {
-                await SaveBlob(gzipbase64String, appGuid);
+                blobFile = await SaveBlob(gzipbase64String, appGuid);
             }
 
             uploader.LatestUpload = DateTime.UtcNow;
@@ -56,11 +63,31 @@ public partial class UploadService
         }
 
         // _ = Produce(gzipbase64String, appGuid);
+        // var httpClient = httpClientFactory.CreateClient("importClient");
 
+        var importRequest = new ImportRequest()
+        {
+            Replayblobs = new()
+            {
+                blobFile
+            }
+        };
+        try
+        {
+            using var scope = serviceProvider.CreateScope();
+            var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+
+            importService.Import(importRequest);
+            // await httpClient.PostAsJsonAsync<ImportRequest>("/api/v1/import", importRequest);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"Failed posting importRequest: {ex.Message}");
+        }
         return true;
     }
 
-    private async Task SaveBlob(string gzipbase64String, Guid appGuid)
+    private async Task<string> SaveBlob(string gzipbase64String, Guid appGuid)
     {
         var appDir = Path.Combine(blobBaseDir, appGuid.ToString());
         if (!Directory.Exists(appDir))
@@ -68,23 +95,25 @@ public partial class UploadService
             Directory.CreateDirectory(appDir);
         }
         var blobFilename = Path.Combine(appDir, DateTime.UtcNow.ToString(@"yyyyMMdd-HHmmss") + ".base64");
+        var tempBlobFilename = blobFilename + ".temp";
 
         int fs = 0;
-        while (File.Exists(blobFilename))
+        while (File.Exists(blobFilename) || File.Exists(tempBlobFilename))
         {
             await Task.Delay(1000);
             blobFilename = Path.Combine(appDir, DateTime.UtcNow.ToString(@"yyyyMMdd-HHmmss") + ".base64");
+            tempBlobFilename = blobFilename + ".temp";
             fs++;
-            if (fs > 5)
+            if (fs > 20)
             {
                 logger.LogError($"can't find filename while saving replayblob {blobFilename}");
-                return;
+                return "";
             }
         }
-
-        var tempBlobFilename = blobFilename + ".temp";
+        
         await File.WriteAllTextAsync(tempBlobFilename, gzipbase64String);
         File.Move(tempBlobFilename, blobFilename);
+        return blobFilename;
     }
 
     public async Task<DateTime?> CreateOrUpdateUploader(UploaderDto uploader)
@@ -148,7 +177,10 @@ public partial class UploadService
     {
         foreach (var player in playerUploadDtos)
         {
-            var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == player.ToonId);
+            var dbPlayer = await context.Players.FirstOrDefaultAsync(f =>
+                f.ToonId == player.ToonId
+                && f.RegionId == player.RegionId
+                && f.RealmId == player.RealmId);
             if (dbPlayer == null)
             {
                 dbPlayer = mapper.Map<Player>(player);

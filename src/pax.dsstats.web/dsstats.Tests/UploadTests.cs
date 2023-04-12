@@ -3,6 +3,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
 using pax.dsstats.web.Server.Services;
@@ -49,8 +50,16 @@ public class UploadTests : IDisposable
         serviceCollection
             .AddDbContext<ReplayContext>(options => options.UseSqlite(_connection),
                 ServiceLifetime.Transient);
+
+        serviceCollection.AddOptions<DbImportOptions>()
+            .Configure(x => x.ImportConnectionString = "Filename=:memory:");
+        serviceCollection.AddHttpClient();
         var serviceProvider = serviceCollection.BuildServiceProvider();
-        uploadService = new UploadService(serviceProvider, mapper, NullLogger<UploadService>.Instance);
+        
+        var dbImportOptions = serviceProvider.GetRequiredService<IOptions<DbImportOptions>>();
+        var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+
+        uploadService = new UploadService(serviceProvider, mapper, httpClientFactory, NullLogger<UploadService>.Instance);
         this.mapper = mapper;
     }
 

@@ -2,6 +2,7 @@
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 
@@ -11,12 +12,17 @@ public partial class ReplayRepository : IReplayRepository
 {
     private readonly ILogger<ReplayRepository> logger;
     private readonly ReplayContext context;
+    private readonly IOptions<DbImportOptions> dbImportOptions;
     private readonly IMapper mapper;
 
-    public ReplayRepository(ILogger<ReplayRepository> logger, ReplayContext context, IMapper mapper)
+    public ReplayRepository(ILogger<ReplayRepository> logger,
+                            ReplayContext context,
+                            IOptions<DbImportOptions> dbImportOptions,
+                            IMapper mapper)
     {
         this.logger = logger;
         this.context = context;
+        this.dbImportOptions = dbImportOptions;
         this.mapper = mapper;
     }
 
@@ -499,7 +505,10 @@ public partial class ReplayRepository : IReplayRepository
                 isComputer = true;
             }
 
-            var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == replayPlayer.Player.ToonId);
+            var dbPlayer = await context.Players.FirstOrDefaultAsync(f =>
+                f.ToonId == replayPlayer.Player.ToonId
+                && f.RealmId == replayPlayer.Player.RealmId
+                && f.RegionId == replayPlayer.Player.RegionId);
             if (dbPlayer == null)
             {
                 dbPlayer = new()
@@ -507,6 +516,7 @@ public partial class ReplayRepository : IReplayRepository
                     Name = replayPlayer.Player.Name,
                     ToonId = replayPlayer.Player.ToonId,
                     RegionId = replayPlayer.Player.RegionId,
+                    RealmId = replayPlayer.Player.RealmId,
                 };
                 context.Players.Add(dbPlayer);
                 try
@@ -542,6 +552,7 @@ public partial class ReplayRepository : IReplayRepository
             dbReplay.GameMode = GameMode.Tutorial;
         }
 
+        dbReplay.Imported = DateTime.UtcNow;
         context.Replays.Add(dbReplay);
 
         try

@@ -11,7 +11,14 @@ public static class HelperService
 
     public static string GetBigNumberString(int num)
     {
-        return (num / 1000.0).ToString("N2", CultureInfo.InvariantCulture) + "k";
+        if (num > 1000)
+        {
+            return (num / 1000.0).ToString("N2", CultureInfo.InvariantCulture) + "k";
+        }
+        else
+        {
+            return num.ToString();
+        }
     }
 
     public static string GetPercentageString(int? wins, int? games)

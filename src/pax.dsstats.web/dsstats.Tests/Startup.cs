@@ -17,4 +17,9 @@ public class Startup
     {
         return Path.Combine(assemblyPath, "testdata", fileName);
     }
+
+    public static string GetCmdFilePath()
+    {
+        return Path.Combine(assemblyPath, "cmd.bat");
+    }
 }

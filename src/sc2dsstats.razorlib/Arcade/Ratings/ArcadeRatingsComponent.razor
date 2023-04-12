@@ -1,0 +1,380 @@
+﻿@using Microsoft.AspNetCore.Components.Forms;
+@using Microsoft.AspNetCore.Components.Web.Virtualization;
+@using System.Globalization;
+@using pax.dsstats.shared.Arcade;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
+
+@inject IArcadeService arcadeService
+@inject NavigationManager NavigationManager
+
+@implements IDisposable
+
+<style>
+    .tableFixHead {
+        overflow-y: auto;
+        overflow-x: auto;
+        height: 800px;
+    }
+
+        .tableFixHead thead th {
+            position: sticky;
+            top: 0;
+        }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+
+    th {
+        background: purple;
+    }
+
+    .tablebackground {
+        position: absolute;
+        z-index: -1;
+        opacity: 0.15;
+    }
+</style>
+
+<div class="@(RatingsRequest.PlayerId == 0 ? "" : "visually-hidden")">
+    <div class="d-flex">
+        <EditForm EditContext="editContext">
+            <div class="row">
+                <div class="col-auto">
+                    <label class="form-label">
+                        Search:
+                        <InputText class="form-control" @bind-Value="RatingsRequest.Search"></InputText>
+                    </label>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">
+                        Rating Type
+                        <span class="oi oi-info pointer ms-2" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/Mmr-calculation#rating-types'"></span>
+                        <InputSelect class="form-select" @bind-Value="RatingsRequest.Type">
+                            @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+                            {
+                                @if (ratingType == RatingType.None)
+                                {
+                                    continue;
+                                }
+                                <option value="@ratingType">@Data.GetRatingTypeLongName(ratingType)</option>
+                            }
+                        </InputSelect>
+                    </label>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">
+                        Region
+                        <InputSelect class="form-select" @bind-Value="RatingsRequest.RegionId">
+                            <option value="0">All</option>
+                            <option value="1">@Data.GetRegionString(1)</option>
+                            <option value="2">@Data.GetRegionString(2)</option>
+                            <option value="3">@Data.GetRegionString(3)</option>
+                        </InputSelect>
+                    </label>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">
+                        Change
+                        <InputSelect class="form-select" @bind-Value="RatingsRequest.TimePeriod">
+                            <option value="@RatingChangeTimePeriod.Past24h">@RatingChangeTimePeriod.Past24h</option>
+                            <option value="@RatingChangeTimePeriod.Past10Days">@RatingChangeTimePeriod.Past10Days</option>
+                            <option value="@RatingChangeTimePeriod.Past30Days">@RatingChangeTimePeriod.Past30Days</option>
+                        </InputSelect>
+                    </label>
+                </div>
+            </div>
+        </EditForm>
+        <div class="align-self-center ms-2">
+            <span class="oi oi-x text-danger pointer" @onclick="ResetSearch"></span>
+        </div>
+        <div class="ms-3 align-self-center">
+            <a href="https://github.com/ipax77/dsstats/wiki/Mmr-calculation"><span class="oi oi-info me-1"></span>Calculation</a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-auto">
+            <div class="d-flex" style="max-width: 750px;">
+                <p class="ms-auto p-0 m-0"><small class="text-primary">min 20 games</small> #@ratingsCount</p>
+            </div>
+            <div class="tableFixHead">
+                <table class="table table-dark table-hover table-striped">
+                    <thead style="user-select: none;">
+                        <CascadingValue Value="RatingsRequest.Orders">
+                            <tr>
+                                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Pos"))">
+                                    <SortArrow Property="Pos">
+                                        #
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "ArcadePlayer.RegionId"))">
+                                    <SortArrow Property="ArcadePlayer.RegionId">
+                                        <div class="text-center">
+                                            <span class="oi oi-globe rounded-circle bg-primary p-1"></span>
+                                        </div>
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer text-info" @onclick="@(e => SortList(e, "ArcadePlayer.Name"))">
+                                    <SortArrow Property="ArcadePlayer.Name">
+                                        Name
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Games"))">
+                                    <SortArrow Property="Games">
+                                        Games
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer text-warning" @onclick="@(e => SortList(e, "Rating"))">
+                                    <SortArrow Property="Rating">
+                                        Rating
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer" style="z-index: 1;" @onclick="@(e => SortList(e, ratingChangeSort))">
+                                    <SortArrow Property="@ratingChangeSort">
+                                        Change
+                                    </SortArrow>
+                                </th>
+                                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Wins"))">
+                                    <SortArrow Property="Wins">
+                                        Winrate
+                                    </SortArrow>
+                                </th>
+                            </tr>
+                        </CascadingValue>
+                    </thead>
+                    <tbody>
+                        @if (ratingsCount > 0)
+                        {
+                            <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings" OverscanCount="10" ItemSize="41">
+                                <ItemContent>
+                                    <tr class="pointer" height="41px;" @onclick="e => RequestPlayerDetails(rating.ArcadePlayer.ArcadePlayerId)">
+                                        <td>
+                                            <span class="text-truncate text-warning" style="display: block; width: 40px;">@rating.Pos</span>
+                                        </td>
+                                        <td>
+                                            <span>@Data.GetRegionString(rating.ArcadePlayer.RegionId)</span>
+                                        </td>
+                                        <td><span class="text-truncate text-info" style="display: block; width: 130px;">@rating.ArcadePlayer.Name</span></td>
+                                        <td class="border-start">@rating.Games</td>
+                                        <td class="text-warning">@rating.Rating.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                        <td>
+                                            @if (rating.ArcadePlayerRatingChange != null)
+                                            {
+                                                var ratingChange = RatingsRequest.TimePeriod switch
+                                                {
+                                                    RatingChangeTimePeriod.Past24h => rating.ArcadePlayerRatingChange.Change24h,
+                                                    RatingChangeTimePeriod.Past10Days => rating.ArcadePlayerRatingChange.Change10d,
+                                                    _ => rating.ArcadePlayerRatingChange.Change30d
+                                                };
+                                                <span class="@(ratingChange >= 0 ? "oi oi-arrow-top text-success" : "oi oi-arrow-bottom text-danger")">
+                                                    @ratingChange.ToString("N2", CultureInfo.InvariantCulture)
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>@HelperService.GetPercentageString(rating.Wins, rating.Games)</td>
+                                    </tr>
+                                </ItemContent>
+                                <Placeholder>
+                                    <tr height="41px"><td colspan="7">Loading ...</td></tr>
+                                </Placeholder>
+                            </Virtualize>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-auto" style="min-width: 600px; width: 32vw; min-height: 500px; height: calc(32vw * 0.5);">
+            <div class="mt-2">
+                <button class="btn btn-sm btn-outline-light"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#Distribution"
+                        aria-expanded="false"
+                        aria-controls="Distribution"
+                        @onclick="e => showDistribution = !showDistribution">
+                    <span class="oi @(showDistribution ? "oi-caret-bottom" : "oi-caret-top")"></span>
+                    Distribution
+                </button>
+            </div>
+            <div class="collapse mt-2 w-100 h-100" id="Distribution">
+                @if (showDistribution)
+                {
+                    <ArcadeRatingsDistributionComponent Request="distributionRequest" />
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (RatingsRequest.PlayerId > 0)
+{
+    <sc2dsstats.razorlib.Arcade.PlayerDetails.ArcadePlayerDetailsComponent
+        ArcadePlayerId="RatingsRequest.PlayerId"
+        RatingType="RatingsRequest.Type"
+        OnCloseRequested="PlayerDetailsClose" 
+        OnReplaysRequest="ReplaysRequest" />
+}
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public ArcadeRatingsRequest RatingsRequest { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRatingsChanged { get; set; }
+
+    private int ratingsCount;
+    private Virtualize<ArcadePlayerRatingDto>? virtualize;
+    private CancellationTokenSource cts = new();
+
+    private EditContext editContext = null!;
+    private bool showDistribution;
+    private DistributionRequest distributionRequest = new()
+        {
+            RatingType = RatingType.Cmdr
+        };
+
+    private string ratingChangeSort => RatingsRequest.TimePeriod switch
+    {
+        RatingChangeTimePeriod.Past24h => "ArcadePlayerRatingChange.Change24h",
+        RatingChangeTimePeriod.Past10Days => "ArcadePlayerRatingChange.Change10d",
+        _ => "ArcadePlayerRatingChange.Change30d"
+    };
+
+    protected override void OnInitialized()
+    {
+        _ = SetRatingsCount();
+        editContext = new EditContext(RatingsRequest);
+        editContext.OnFieldChanged += FieldChanged;
+
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        if (e.FieldIdentifier.FieldName == "TimePeriod")
+        {
+            if (RatingsRequest.Orders.Any(a => a.Property.StartsWith("ArcadePlayerRatingChange.")))
+            {
+                RatingsRequest.Orders
+                    .Where(x => x.Property.StartsWith("ArcadePlayerRatingChange."))
+                    .ToList()
+                    .ForEach(f => f.Property = ratingChangeSort);
+                _ = Reload();
+            }
+        }
+        else
+        {
+            _ = Reload();
+        }
+        OnRatingsChanged.InvokeAsync();
+    }
+
+    private async Task SetRatingsCount()
+    {
+        ratingsCount = await arcadeService.GetRatingsCount(RatingsRequest, cts.Token);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public async Task Reload()
+    {
+        await SetRatingsCount();
+        if (virtualize != null)
+        {
+            await virtualize.RefreshDataAsync();
+        }
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = RatingsRequest.Orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                RatingsRequest.Orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            RatingsRequest.Orders.Clear();
+            RatingsRequest.Orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+        await Reload();
+    }
+
+    private async ValueTask<ItemsProviderResult<ArcadePlayerRatingDto>> LoadRatings(ItemsProviderRequest request)
+    {
+        var numRatings = Math.Min(request.Count, ratingsCount - request.StartIndex);
+        RatingsRequest.Skip = request.StartIndex;
+        RatingsRequest.Take = numRatings;
+
+        if (RatingsRequest.Skip < 0 || RatingsRequest.Take < 0)
+        {
+            return new ItemsProviderResult<ArcadePlayerRatingDto>();
+        }
+        var result = await arcadeService.GetRatings(RatingsRequest, request.CancellationToken);
+        return new ItemsProviderResult<ArcadePlayerRatingDto>(result, ratingsCount);
+    }
+
+    private void ResetSearch()
+    {
+        RatingsRequest.Search = null;
+        _ = Reload();
+    }
+
+    private void RequestPlayerDetails(int playerId)
+    {
+        RatingsRequest.PlayerId = playerId;
+        OnRatingsChanged.InvokeAsync();
+        StateHasChanged();
+    }
+
+    private void PlayerDetailsClose()
+    {
+        RatingsRequest.PlayerId = 0;
+        OnRatingsChanged.InvokeAsync();
+        StateHasChanged();
+    }
+
+    private void ReplaysRequest(ReplaysToonIdRequest request)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("arcade/replays",
+        new Dictionary<string, object?>()
+                {
+                    { "Search", request.Name },
+                    { "PlId", request.ToonId },
+                    { "PlIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
+                    { "PlIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
+                    { "Name", request.ToonIdName },
+                }
+    )
+    );
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

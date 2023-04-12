@@ -1,0 +1,272 @@
+﻿@using pax.dsstats.shared
+@using pax.BlazorChartJs
+@using pax.dsstats.shared.Arcade;
+@using sc2dsstats.razorlib.Distribution
+@inject IArcadeService arcadeService
+@implements IDisposable
+
+<div>
+    <CascadingValue Value="Request">
+        <DistributionRequestComponent OnRequestChanged="LoadData"></DistributionRequestComponent>
+    </CascadingValue>
+</div>
+@*<div style="min-width: 600px; width: 50vw; min-height: 300px; height: calc(50vw * 0.5);">*@
+<div class="w-100 h-100">
+    <ChartComponent ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered"></ChartComponent>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public DistributionRequest Request { get; set; } = default!;
+
+    private DistributionResponse? response;
+    private CancellationTokenSource cts = new();
+    private ChartJsConfig chartConfig = null!;
+    private bool chartReady;
+    private bool dataReady;
+    private readonly string mainColor = "#3F5FFA";
+
+    protected override void OnInitialized()
+    {
+        chartConfig = GetChartConfig();
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        response = await arcadeService.GetDistribution(Request, cts.Token);
+        dataReady = true;
+        if (chartReady && dataReady)
+        {
+            SetupChart();
+        }
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void ChartEventTriggered(ChartJsEvent chartJsEvent)
+    {
+        if (chartJsEvent is ChartJsInitEvent initEvent)
+        {
+            chartReady = true;
+            if (chartReady && dataReady)
+            {
+                SetupChart();
+            }
+        }
+    }
+
+    private void SetupChart()
+    {
+        if (response == null)
+        {
+            return;
+        }
+
+        if (chartConfig.Options?.Plugins?.Title != null)
+        {
+            chartConfig.Options.Plugins.Title.Text 
+                = new IndexableOption<string>($"{Request.RatingType} distribution");
+            chartConfig.UpdateChartOptions();
+        }
+
+        if (chartConfig.Data.Datasets.Any())
+        {
+            chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
+        }
+
+        chartConfig.SetLabels(response.MmrDevs.Select(s => s.Mmr.ToString()).ToList());
+
+        List<int> ratings = new();
+        List<int> counts = new();
+
+        int count = 0;
+        for (int i = 0; i < response.MmrDevs.Count; i++)
+        {
+            var mmrDev = response.MmrDevs[i];
+            ratings.Add(mmrDev.Count);
+            count += mmrDev.Count;
+            counts.Add(count);
+        }
+
+        chartConfig.AddDataset(GetLineDataset(ratings));
+        chartConfig.AddDataset(GetSumLineDataset(counts));
+    }
+
+    private LineDataset GetLineDataset(List<int> ratings)
+    {
+        return new()
+        {
+            Label = "",
+            Data = new List<object>(ratings.Cast<object>()),
+            BackgroundColor = "#4E58A066",
+            BorderColor = "#4E58A0",
+            BorderWidth = 4,
+            Fill = true,
+            PointBackgroundColor = new IndexableOption<string>("blue"),
+            PointBorderColor = new IndexableOption<string>("blue"),
+            PointRadius = new IndexableOption<double>(1),
+            PointBorderWidth = new IndexableOption<double>(1),
+            PointHitRadius = new IndexableOption<double>(1),
+            Tension = 0.4,
+            YAxisID = "y"
+        };
+    }
+
+    private LineDataset GetSumLineDataset(List<int> counts)
+    {
+        return new()
+            {
+                Label = "",
+                Data = new List<object>(counts.Cast<object>()),
+                BackgroundColor = "yellow",
+                BorderColor = "yellow",
+                BorderWidth = 2,
+                Fill = false,
+                PointBackgroundColor = new IndexableOption<string>("yellow"),
+                PointBorderColor = new IndexableOption<string>("yellow"),
+                PointRadius = new IndexableOption<double>(0),
+                PointBorderWidth = new IndexableOption<double>(0),
+                PointHitRadius = new IndexableOption<double>(0),
+                BorderDash = new List<double>() { 10, 5 },
+                Tension = 0.2,
+                YAxisID = "y1"
+            };
+    }
+
+    private ChartJsConfig GetChartConfig()
+    {
+        return new()
+            {
+                Type = ChartType.line,
+                Data = new ChartJsData()
+                {
+                    Labels = new List<string>()
+                    {
+                    },
+                    Datasets = new List<ChartJsDataset>()
+                    {
+                    }
+                },
+                Options = new ChartJsOptions()
+                {
+                    Responsive = true,
+                    MaintainAspectRatio = true,
+                    Plugins = new Plugins()
+                    {
+                        ArbitraryLines = new List<ArbitraryLineConfig>(),
+                        Title = new Title()
+                        {
+                            Display = true,
+                            Text = new IndexableOption<string>($"{Request.RatingType} distribution"),
+                            Color = "#CED0DD",
+                            Font = new()
+                            {
+                                Size = 16,
+                            }
+                        },
+                        Legend = new Legend()
+                        {
+                            Display = false,
+                            Labels = new Labels()
+                            {
+                                Color = "#CED0DD",
+                                BoxHeight = 0,
+                                BoxWidth = 0
+                            }
+                        }
+                    },
+                    Interaction = new Interactions()
+                    {
+                        Intersect = false,
+                        Mode = "index"
+                    },
+                    Scales = new ChartJsOptionsScales()
+                    {
+                        X = new LinearAxis()
+                        {
+                            Display = true,
+                            Title = new Title()
+                            {
+                                Display = true,
+                                Text = new IndexableOption<string>("Rating"),
+                                Color = "#4E58A0"
+                            },
+                            Ticks = new LinearAxisTick()
+                            {
+                                Color = mainColor,
+                            },
+                            Grid = new ChartJsGrid()
+                            {
+                                Display = true,
+                                Color = "rgba(113, 116, 143, 0.25)",
+                                TickColor = "rgba(113, 116, 143, 0.75)",
+                                Z = -1
+                            },
+                            Border = new ChartJsAxisBorder()
+                            {
+                                Display = true,
+                                Color = "rgba(113, 116, 143)",
+                                Dash = new List<double>() { 2, 4 }
+                            }
+                        },
+                        Y = new LinearAxis()
+                        {
+                            Display = true,
+                            Type = "linear",
+                            Position = "left",
+                            Title = new Title()
+                            {
+                                Display = true,
+                                Text = new IndexableOption<string>("Players"),
+                                Color = "#4E58A0"
+                            },
+                            Ticks = new LinearAxisTick()
+                            {
+                                Color = mainColor,
+                            },
+                            Grid = new ChartJsGrid()
+                            {
+                                Display = true,
+                                Color = "rgba(113, 116, 143, 0.25)",
+                                TickColor = "rgba(113, 116, 143, 0.75)",
+                                Z = -1
+                            },
+                            Border = new ChartJsAxisBorder()
+                            {
+                                Display = true,
+                                Color = "rgba(113, 116, 143)",
+                                Dash = new List<double>() { 2, 4 }
+                            }
+                        },
+                        Y1 = new LinearAxis()
+                        {
+                            Display = true,
+                            Title = new Title()
+                            {
+                                Display = true,
+                                Text = new IndexableOption<string>("Sum"),
+                                Color = "yellow"
+                            },
+                            Type = "linear",
+                            Position = "right",
+                            Ticks = new LinearAxisTick()
+                            {
+                                Color = "yellow",
+                            },
+                            Grid = new ChartJsGrid()
+                            {
+                                DrawOnChartArea = false
+                            }
+                        }
+                    }
+                }
+            };
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

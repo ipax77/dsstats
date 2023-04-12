@@ -1,6 +1,6 @@
 ﻿using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
-using System.Diagnostics;
+using pax.dsstats.dbng.Services.Ratings;
 
 namespace pax.dsstats.web.Server.Services;
 
@@ -19,51 +19,46 @@ public class CacheBackgroundService : IHostedService, IDisposable
 
     public Task StartAsync(CancellationToken stoppingToken)
     {
-        _timer = new Timer(DoWork, null, new TimeSpan(0, 4, 0), new TimeSpan(1, 0, 0));
-        // _timer = new Timer(DoWork, null, new TimeSpan(0, 0, 4), new TimeSpan(0, 1, 0));
+        //_timer = new Timer(DoWork, null, new TimeSpan(0, 4, 0), new TimeSpan(1, 0, 0));
+        // return Task.CompletedTask;
+
+        // run every hour at the 30-minute mark
+        DateTime nowTime = DateTime.UtcNow;
+        DateTime startTime = new DateTime(nowTime.Year, nowTime.Month, nowTime.Day, nowTime.Hour, 30, 0);
+        if (nowTime.Minute >= 30)
+            startTime = startTime.AddHours(1);
+        TimeSpan waitTime = startTime - nowTime;
+        _timer = new Timer(DoWork, null, waitTime, TimeSpan.FromHours(1));
         return Task.CompletedTask;
     }
 
     private async void DoWork(object? state)
     {
         await ss.WaitAsync();
+
+
         try
         {
             using var scope = serviceProvider.CreateScope();
-            var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+            //var httpClientFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
+            //var httpClient = httpClientFactory.CreateClient("ratingsClient");
 
-            Stopwatch sw = Stopwatch.StartNew();
+            //await httpClient.GetAsync("/api/v1/ratings");
 
-            var result = await importService.ImportReplayBlobs();
+            var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+            await ratingsService.ProduceRatings();
 
-            if (result.SavedReplays > 0)
-            {
-                var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
-                statsService.ResetStatsCache();
-                await statsService.GetRequestStats(new shared.StatsRequest() { Uploaders = false });
+            var statsService = scope.ServiceProvider.GetRequiredService<IStatsService>();
+            statsService.ResetStatsCache();
 
-                var mmrProduceService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-
-                if (result.ContinueReplays.Any())
-                {
-                    await mmrProduceService.ProduceRatings(new(false), result.LatestReplay, result.ContinueReplays);
-                }
-                else
-                {
-                    await mmrProduceService.ProduceRatings(new(true));
-                }
-                logger.LogWarning($"Replays saved: {result.SavedReplays} ({result.ContinueReplays.Count}) - {result.LatestReplay}");
-            }
+            await statsService.GetRequestStats(new shared.StatsRequest() { Uploaders = false });
 
             var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
             await replayRepository.SetReplayViews();
             await replayRepository.SetReplayDownloads();
 
-            var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
-            await tourneyService.CollectTourneyReplays();
-
-            sw.Stop();
-            logger.LogWarning($"{DateTime.UtcNow.ToString(@"yyyy-MM-dd HH:mm:ss")} - Work done in {sw.ElapsedMilliseconds} ms");
+            //var tourneyService = scope.ServiceProvider.GetRequiredService<TourneyService>();
+            //await tourneyService.CollectTourneyReplays();
         }
         catch (Exception ex)
         {
@@ -87,3 +82,12 @@ public class CacheBackgroundService : IHostedService, IDisposable
     }
 }
 
+internal record CacheBackgroundStatus
+{
+    public bool ImportDone { get; set; }
+    public bool StatsReset { get; set; }
+    public bool StatsRebuilt { get; set; }
+    public bool RatingsProduced { get; set; }
+    public bool ReplayViewsSet { get; set; }
+    public bool ReplayDownloadsSet { get; set; }
+}

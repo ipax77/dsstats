@@ -1,0 +1,194 @@
+@using Microsoft.AspNetCore.Components.Forms;
+@using pax.dsstats.shared;
+@implements IDisposable
+
+<EditForm EditContext="editContext">
+    <div class="row">
+        <div class="col-auto">
+            <label class="form-label">
+                Rating Type
+                <span class="oi oi-info pointer ms-2" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/Mmr-calculation#rating-types'"></span>
+                <InputSelect class="form-select" @bind-Value="Request.RatingType">
+                    @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+                    {
+                        @if (ratingType == RatingType.None)
+                        {
+                            continue;
+                        }
+                        <option value="@ratingType">@Data.GetRatingTypeLongName(ratingType)</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Time Period
+                <InputSelect class="form-select" @bind-Value="Request.TimePeriod">
+                    @foreach (TimePeriod time in Data.GetTimePeriods(Data.TimePeriodGet.NoNone))
+                    {
+                        if ((int)time > 4)
+                        {
+                            continue;
+                        }
+                        <option value="@time">@Data.GetTimePeriodLongName(time)</option>
+                    }
+                    <option value="@TimePeriod.Patch2_71">@Data.GetTimePeriodLongName(TimePeriod.Patch2_71)</option>
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Commander
+                <InputSelect class="form-select" @bind-Value="Request.Interest">
+                    @if (Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)
+                    {
+                        @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                        {
+                            @if ((int)cmdr > 3)
+                            {
+                                continue;
+                            }
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                    else if (Request.RatingType == RatingType.Cmdr || Request.RatingType == RatingType.CmdrTE)
+                    {
+                        @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                        {
+                            @if (cmdr == Commander.Protoss || cmdr == Commander.Terran || cmdr == Commander.Zerg)
+                            {
+                                continue;
+                            }
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                    else
+                    {
+                        <option value="@Commander.None">@Commander.None</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        @if (ShowReplays)
+        {
+@*            @if (Request.PlayerId != null)
+            {
+                <div class="col-auto">
+                    <label class="form-label">
+                        ToonId
+                        <InputNumber class="form-control" @bind-Value="Request.PlayerId.ToonId" />
+                    </label>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">
+                        RegionId
+                        <InputNumber class="form-control" @bind-Value="Request.PlayerId.RegionId" />
+                    </label>
+                </div>
+            }*@
+            <div class="col-auto">
+                <div class="row">
+                    <div class="col-auto">
+                        <label class="form-label">
+                            Search Cmdrs:
+                            <InputText class="form-control" placeholder="Zagara Kerrigan" @bind-Value="Request.SearchCmdrs"></InputText>
+                        </label>
+                    </div>
+                    <div class="col-auto align-self-center p-0">
+                        <span class="oi @(Request.LinkCmdrName ? "oi-link-intact" : "oi-link-broken") text-light"
+                              style="font-size: 1rem;"
+                              data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Link cmdr and player"
+                          @onclick="SetLink">
+                        </span>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label">
+                            Search Names:
+                            <InputText class="form-control" placeholder="PAX Feralan" @bind-Value="Request.SearchNames"></InputText>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-auto">
+                <div class="form-check form-switch">
+                    <label class="form-check-label">
+                        WithoutLeavers
+                        <InputCheckbox class="form-check-input" @bind-Value="Request.WithoutLeavers">
+                        </InputCheckbox>
+                    </label>
+                </div>
+            </div>
+        }
+        <div class="col-auto mt-3">
+            <button type="button" class="btn btn-outline-primary" @onclick="Reset">Reset</button>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public pax.dsstats.shared.CmdrInfosRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    [CascadingParameter]
+    public bool ShowReplays { get; set; }
+
+    private EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(Request);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        if (e.FieldIdentifier.FieldName == "RatingType")
+        {
+            if (Request.RatingType == RatingType.Cmdr || Request.RatingType == RatingType.CmdrTE)
+            {
+                if ((int)Request.Interest <= 3)
+                {
+                    Request.Interest = Commander.Abathur;
+                }
+            }
+            else
+            {
+                if ((int)Request.Interest > 3)
+                {
+                    Request.Interest = Commander.Terran;
+                }
+            }
+        }
+        OnRequestChanged.InvokeAsync();
+    }
+
+    private void SetLink()
+    {
+        Request.LinkCmdrName = !Request.LinkCmdrName;
+        OnRequestChanged.InvokeAsync();
+    }
+
+    private void Reset()
+    {
+        Request.RatingType = RatingType.Cmdr;
+        Request.TimePeriod = TimePeriod.Past90Days;
+        Request.Interest = Commander.Abathur;
+        Request.WithoutLeavers = false;
+        Request.PlayerId = null;
+        Request.MinExp2Win = 0;
+        Request.MaxExp2Win = 0;
+        Request.SearchCmdrs = string.Empty;
+        Request.SearchNames = string.Empty;
+        Request.LinkCmdrName = false;
+        OnRequestChanged.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}

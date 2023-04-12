@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Services;
+using pax.dsstats.dbng.Services.Ratings;
 using pax.dsstats.shared;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -155,6 +156,7 @@ internal class UserSettingsService
                         var toonFolder = toonDir.Split(Path.DirectorySeparatorChar).Last();
                         int toonId = 0;
                         int regionId = 0;
+                        int realmId = 1;
                         var match = Regex.Match(toonFolder, @"\d+$");
                         if (match.Success)
                         {
@@ -171,7 +173,16 @@ internal class UserSettingsService
                                 regionId = tregionId;
                             }
                         }
-                        battleNetInfo.ToonIds.Add(new() { RegionId = regionId, ToonId = toonId });
+
+                        var realmMatch = Regex.Match(toonFolder, @"-(\d+)-");
+                        if (realmMatch.Success)
+                        {
+                            if (int.TryParse(realmMatch.Value, out int trealmId))
+                            {
+                                realmId = trealmId;
+                            }
+                        }
+                        battleNetInfo.ToonIds.Add(new() { RegionId = regionId, ToonId = toonId, RealmId = realmId });
                     }
                 }
                 battleNetInfos.Add(battleNetInfo);
@@ -291,8 +302,8 @@ internal class UserSettingsService
         }
 
         // recalculate ratings
-        var mmrService = scope.ServiceProvider.GetRequiredService<MmrProduceService>();
-        mmrService.ProduceRatings(new(reCalc: true)).Wait();
+        var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+        ratingsService.ProduceRatings(true).Wait();
     }
 }
 
@@ -326,4 +337,5 @@ public record ToonIdInfo
 {
     public int RegionId { get; set; }
     public int ToonId { get; set; }
+    public int RealmId { get; set; } = 1;
 }

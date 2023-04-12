@@ -25,5 +25,10 @@ namespace pax.dsstats.dbng.Services
         Task<CmdrStrengthResult> GetCmdrStrengthResults(CmdrStrengthRequest request, CancellationToken token);
         Task<FunStatsResult> GetFunStats(FunStatsRequest request, CancellationToken token = default);
         Task SeedFunStats();
+        Task<int> GetCmdrReplayInfosCount(CmdrInfoRequest request, CancellationToken token = default);
+        Task<List<ReplayCmdrInfo>> GetCmdrReplayInfos(CmdrInfoRequest request, CancellationToken token);
+        Task<List<CmdrPlayerInfo>> GetCmdrPlayerInfos(CmdrInfoRequest request, CancellationToken token = default);
+        Task<int> GetCmdrReplaysCount(CmdrInfosRequest request, CancellationToken token = default);
+        Task<List<ReplayCmdrListDto>> GetCmdrReplays(CmdrInfosRequest request, CancellationToken token = default);
     }
 }

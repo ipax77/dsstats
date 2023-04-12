@@ -72,7 +72,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Blazored.Toast" Version="4.0.0" />
+		<PackageReference Include="Blazored.Toast" Version="4.1.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="6.*" />
 		<PackageReference Include="System.Drawing.Common" Version="7.0.0" />
 	</ItemGroup>

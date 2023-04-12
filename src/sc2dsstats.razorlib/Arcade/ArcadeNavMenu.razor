@@ -1,0 +1,35 @@
+﻿@using Microsoft.AspNetCore.Components.Routing
+@inject NavigationManager NavigationManager
+
+<nav class="navbar navbar-expand-lg bg-dark p-1">
+    <div class="container-fluid">
+        <a class="navbar-brand text-light" href="arcade/ratings">SC2Arcade data</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="align-self-center ms-2">
+                    <a href="https://github.com/ipax77/dsstats/wiki/SC2Arcade"><span class="oi oi-info"></span></a>
+                </li>
+                <li class="align-self-center me-2">
+                    Data powered by <a class="bg-light p-2 border rounded" href="https://sc2arcade.com/">SC2Arcade</a>
+                </li>
+                <li class="nav-item px-1">
+                    <NavLink class="nav-link" href="arcade/ratings">
+                        <span class="oi oi-people" arie-hidden="true"></span> Ratings
+                    </NavLink>
+                </li>
+                <li class="nav-item px-1">
+                    <NavLink class="nav-link" href="arcade/replays">
+                        <span class="oi oi-list" arie-hidden="true"></span> Replays
+                    </NavLink>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+</nav>
+
+@code {
+}

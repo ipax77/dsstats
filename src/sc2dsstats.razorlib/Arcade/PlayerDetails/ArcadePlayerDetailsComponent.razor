@@ -1,0 +1,334 @@
+﻿@using System.Globalization;
+@using pax.dsstats.shared.Arcade;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.PlayerDetails;
+@using sc2dsstats.razorlib.Services;
+@inject IArcadeService arcadeService
+@implements IDisposable
+
+<div>
+    <div class="row bg-secondary p-2">
+        <div class="col-auto">
+            <span class="oi oi-x text-danger pointer" style="font-size: 2rem; z-index: 1000;"
+                  @onclick="(() => OnCloseRequested.InvokeAsync())"></span>
+        </div>
+        <div class="col-auto align-self-center border p-1">
+            <span>@Data.GetRegionString(playerDetails?.ArcadePlayer?.RegionId)</span>
+        </div>
+        <div class="col-auto align-self-center">
+            <h3 class="text-warning fw-bold">@playerDetails?.ArcadePlayer?.Name Player Details</h3>
+        </div>
+        @if (playerDetails != null)
+        {
+            @foreach (var rating in playerDetails.PlayerRatings)
+            {
+                <div class="col-auto align-self-center">
+                    <span class="badge bg-primary ms-3" style="font-size: 1.2rem;">
+                        <span class="small">@rating.RatingType Rating</span>
+                        <br />
+                        <span class="text-warning">
+                            <span class="small text-danger">#@rating.Pos </span>
+                            @rating.Rating.ToString("N2", CultureInfo.InvariantCulture)
+                        </span>
+                    </span>
+                </div>
+            }
+        }
+        <div class="col-auto align-self-center">
+            <label class="form-label">
+                Rating Type
+                <span class="oi oi-info pointer ms-2" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/Mmr-calculation#rating-types'"></span>
+                <select class="form-select" @onchange="RatingTypeChange">
+                    <option selected="@(RatingType.Cmdr == RatingType)" value="@RatingType.Cmdr">@RatingType.Cmdr</option>
+                    <option selected="@(RatingType.Std == RatingType)" value="@RatingType.Std">@RatingType.Std</option>
+                </select>
+            </label>
+        </div>
+        @if (playerDetails?.ArcadePlayer != null)
+        {
+            <div class="p-2">
+                <button type="button" class="btn btn-outline-light" @onclick="ShowReplays">Replays</button>
+            </div>
+        }
+    </div>
+    <div>
+        @if (loading)
+        {
+            <div class="col-auto spinner-border spinner-border-sm text-light" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        }
+    </div>
+    @if (playerDetails != null)
+    {
+        <PlayerDetailsRatingCharts @ref="playerDetailsRatingCharts" PlayerRatings="playerDetails.PlayerRatings.Select(s => MapPlayerRating(s)).ToList()"></PlayerDetailsRatingCharts>
+        <div class="row mt-2">
+            @if (InterestRating != null)
+            {
+                <div class="col-auto">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4><span class="text-warning">Rating Info</span></h4>
+                            <small>@Data.GetRatingTypeLongName(InterestRating.RatingType)</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-dark table-striped">
+                                    <tbody>
+                                        <tr>
+                                            <td>Rating games</td>
+                                            <td colspan="2">@InterestRating.Games</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Winrate</td>
+                                            <td colspan="2">@HelperService.GetPercentageString(InterestRating.Wins, InterestRating.Games)</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Consistency</td>
+                                            <td colspan="2">@InterestRating.Consistency.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Confidence</td>
+                                            <td colspan="2">@InterestRating.Confidence.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                Rating Change
+                                                <br />
+                                                <small class="text-white-50">past 30 days</small>
+                                            </td>
+                                            <td colspan="2">
+                                                @if (InterestRating.ArcadePlayerRatingChange != null)
+                                                {
+                                                    <span class="@(InterestRating.ArcadePlayerRatingChange.Change30d >= 0 ? "oi oi-arrow-top text-success" : "oi oi-arrow-bottom text-danger")">
+                                                        @InterestRating.ArcadePlayerRatingChange.Change30d.ToString("N2", CultureInfo.InvariantCulture)
+                                                    </span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    @if (playerMoreDetails != null)
+    {
+        <div class="row mt-1">
+            @if (playerMoreDetails.Teammates.Any())
+            {
+                <div class="col-auto mt-1">
+                    <div class="card" style="max-width: 600px;">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4><span class="text-warning">Teammates</span>  <small class="text-light">AvgRating @playerMoreDetails.AvgTeamRating.ToString("N2", CultureInfo.InvariantCulture)</small></h4>
+                                </div>
+                                <div>
+                                    <span class="text-info">min 10 games</span>
+                                </div>
+                            </div>
+                            <small>@Data.GetRatingTypeLongName(RatingType)</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+                                <TeamTable TeamResults="playerMoreDetails.Teammates" ShowReplays="ShowWithReplays"></TeamTable>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (playerMoreDetails.Opponents.Any())
+            {
+                <div class="col-auto mt-1">
+                    <div class="card" style="max-width: 600px;">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4><span class="text-warning">Opponents</span> <small>and their winrate</small></h4>
+                                </div>
+                                <div>
+                                    <span class="text-info">min 10 games</span>
+                                </div>
+                            </div>
+                            <small>@Data.GetRatingTypeLongName(RatingType)</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
+                                <TeamTable TeamResults="playerMoreDetails.Opponents" ShowReplays="ShowVsReplays"></TeamTable>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="col-auto">
+            @if (loading)
+            {
+            }
+            else
+            {
+                <div class="btn-group mt-2">
+                    <button type="button" class="btn btn-outline-warning" @onclick="LoadMoreData">More Details ..</button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public ArcadePlayerId? PlayerId { get; set; }
+
+    [Parameter]
+    public int ArcadePlayerId { get; set; }
+
+    [Parameter]
+    public RatingType RatingType { get; set; } = RatingType.Cmdr;
+
+    [Parameter]
+    public EventCallback OnCloseRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<ReplaysToonIdRequest> OnReplaysRequest { get; set; }
+
+    private CancellationTokenSource cts = new();
+    private bool loading;
+
+    private ArcadePlayerDetails? playerDetails = null;
+    private ArcadePlayerMoreDetails? playerMoreDetails = null;
+
+    private PlayerDetailsRatingCharts? playerDetailsRatingCharts;
+    private ArcadePlayerRatingDetailDto? InterestRating
+        => playerDetails?.PlayerRatings.FirstOrDefault(f => f.RatingType == RatingType);
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        await InvokeAsync(() => StateHasChanged());
+        if (PlayerId != null)
+        {
+            playerDetails = await arcadeService.GetPlayerDetails(PlayerId, cts.Token);
+        }
+        else
+        {
+            playerDetails = await arcadeService.GetPlayerDetails(ArcadePlayerId, cts.Token);
+        }
+        loading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task LoadMoreData()
+    {
+        if (playerDetails?.ArcadePlayer == null)
+        {
+            return;
+        }
+        loading = true;
+        await InvokeAsync(() => StateHasChanged());
+
+        playerMoreDetails =
+            await arcadeService
+                .GetMorePlayerDatails(new(playerDetails.ArcadePlayer.ProfileId,
+                    playerDetails.ArcadePlayer.RealmId,
+                    playerDetails.ArcadePlayer.RegionId), RatingType, cts.Token);
+        loading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async void RatingTypeChange(ChangeEventArgs e)
+    {
+        if (e.Value is string value)
+        {
+            if (Enum.TryParse(typeof(RatingType), value, out var ratingTypeObj)
+                && ratingTypeObj is RatingType ratingTypeValue)
+            {
+                RatingType = ratingTypeValue;
+                await LoadMoreData();
+            }
+        }
+    }
+
+    public PlayerRatingDetailDto MapPlayerRating(ArcadePlayerRatingDetailDto playerRating)
+    {
+        return new()
+            {
+                RatingType = playerRating.RatingType,
+                Rating = playerRating.Rating,
+                Pos = playerRating.Pos,
+                Games = playerRating.Games,
+                Wins = playerRating.Wins,
+                Consistency = playerRating.Consistency,
+                Confidence = playerRating.Confidence,
+                MmrOverTime = playerRating.MmrOverTime,
+                Player = new()
+                {
+                    Name = playerDetails?.ArcadePlayer?.Name ?? ""
+                }
+            };
+    }
+
+    private void ShowReplays()
+    {
+        if (playerDetails?.ArcadePlayer == null)
+        {
+            return;
+        }
+
+        OnReplaysRequest.InvokeAsync(new()
+            {
+                Name = playerDetails.ArcadePlayer.Name,
+                ToonId = playerDetails.ArcadePlayer.ArcadePlayerId,
+            });
+    }
+
+    private void ShowWithReplays(KeyValuePair<int, string?> playerInfo)
+    {
+        if (playerDetails?.ArcadePlayer == null)
+        {
+            return;
+        }
+
+        OnReplaysRequest.InvokeAsync(new()
+            {
+                Name = playerDetails.ArcadePlayer.Name,
+                ToonId = playerDetails.ArcadePlayer.ArcadePlayerId,
+                ToonIdWith = playerInfo.Key,
+                ToonIdName = playerInfo.Value,
+            });
+    }
+
+    private void ShowVsReplays(KeyValuePair<int, string?> playerInfo)
+    {
+        if (playerDetails?.ArcadePlayer == null)
+        {
+            return;
+        }
+
+        OnReplaysRequest.InvokeAsync(new()
+            {
+                Name = playerDetails.ArcadePlayer.Name,
+                ToonId = playerDetails.ArcadePlayer.ArcadePlayerId,
+                ToonIdVs = playerInfo.Key,
+                ToonIdName = playerInfo.Value,
+            });
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

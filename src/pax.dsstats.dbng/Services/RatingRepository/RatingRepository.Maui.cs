@@ -9,7 +9,7 @@ public partial class RatingRepository
 {
     private async Task<UpdateResult> MauiUpdateRavenPlayers(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
     {
-        using var connection = new SqliteConnection(Data.SqliteConnectionString);
+        using var connection = new SqliteConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         using var transaction = connection.BeginTransaction();
@@ -60,9 +60,9 @@ public partial class RatingRepository
         return new();
     }
 
-    private static async Task SetPlayerRatingPos()
+    private async Task SetPlayerRatingPos()
     {
-        using var connection = new SqliteConnection(Data.SqliteConnectionString);
+        using var connection = new SqliteConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
@@ -166,7 +166,7 @@ public partial class RatingRepository
         }
     }
 
-    private static async Task<(int, int)> MauiUpdateMmrChanges(List<ReplayRatingDto> replayRatingDtos, int replayAppendId, int playerAppendId)
+    private async Task<(int, int)> MauiUpdateMmrChanges(List<ReplayRatingDto> replayRatingDtos, int replayAppendId, int playerAppendId)
     {
         var newReplayAppendId = await MauiUpdateReplayRatings(replayRatingDtos, replayAppendId);
         playerAppendId = await MauiUpdateRepPlayerRatings(replayRatingDtos, replayAppendId, playerAppendId);
@@ -174,14 +174,14 @@ public partial class RatingRepository
         return(newReplayAppendId, playerAppendId);
     }
 
-    private static async Task<int> MauiUpdateReplayRatings(List<ReplayRatingDto> replayRatingDtos, int replayRatingAppendId)
+    private async Task<int> MauiUpdateReplayRatings(List<ReplayRatingDto> replayRatingDtos, int replayRatingAppendId)
     {
         if (replayRatingAppendId == 0)
         {
             await DeleteReplayRatingsTable();
         }
 
-        using var connection = new SqliteConnection(Data.SqliteConnectionString);
+        using var connection = new SqliteConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         using var transaction = connection.BeginTransaction();
@@ -189,12 +189,12 @@ public partial class RatingRepository
 
         command.CommandText =
             $@"
-                INSERT INTO {nameof(ReplayContext.ReplayRatings)} ({nameof(ReplayRating.ReplayRatingId)}, {nameof(ReplayRating.RatingType)},{nameof(ReplayRating.LeaverType)},{nameof(ReplayRating.ReplayId)})
-                VALUES ($value1,$value2,$value3,$value4)
+                INSERT INTO {nameof(ReplayContext.ReplayRatings)} ({nameof(ReplayRating.ReplayRatingId)}, {nameof(ReplayRating.RatingType)},{nameof(ReplayRating.LeaverType)},{nameof(ReplayRating.ExpectationToWin)},{nameof(ReplayRating.ReplayId)})
+                VALUES ($value1,$value2,$value3,$value4,$value5)
             ";
 
         List<SqliteParameter> parameters = new List<SqliteParameter>();
-        for (int i = 1; i <= 4; i++)
+        for (int i = 1; i <= 5; i++)
         {
             var parameter = command.CreateParameter();
             parameter.ParameterName = $"$value{i}";
@@ -210,7 +210,8 @@ public partial class RatingRepository
             parameters[0].Value = replayRatingAppendId;
             parameters[1].Value = (int)replayRatingDto.RatingType;
             parameters[2].Value = (int)replayRatingDto.LeaverType;
-            parameters[3].Value = replayRatingDto.ReplayId;
+            parameters[3].Value = replayRatingDto.ExpectationToWin;
+            parameters[4].Value = replayRatingDto.ReplayId;
             await command.ExecuteNonQueryAsync();
         }
         await transaction.CommitAsync();
@@ -218,9 +219,9 @@ public partial class RatingRepository
         return replayRatingAppendId;
     }
 
-    private static async Task<int> MauiUpdateRepPlayerRatings(List<ReplayRatingDto> replayRatingDtos, int replayRatingAppendId, int repPlayerRatingAppendId)
+    private async Task<int> MauiUpdateRepPlayerRatings(List<ReplayRatingDto> replayRatingDtos, int replayRatingAppendId, int repPlayerRatingAppendId)
     {
-        using var connection = new SqliteConnection(Data.SqliteConnectionString);
+        using var connection = new SqliteConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         using var transaction = connection.BeginTransaction();
@@ -267,27 +268,27 @@ public partial class RatingRepository
         return repPlayerRatingAppendId;
     }
 
-    private static async Task DeleteReplayPlayerRatingsTable()
+    private async Task DeleteReplayPlayerRatingsTable()
     {
-        using var connection = new SqliteConnection(Data.SqliteConnectionString);
+        using var connection = new SqliteConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         using var delCommand = new SqliteCommand($"DELETE FROM {nameof(ReplayContext.RepPlayerRatings)};", connection);
         await delCommand.ExecuteNonQueryAsync();
     }
 
-    private static async Task DeleteReplayRatingsTable()
+    private async Task DeleteReplayRatingsTable()
     {
-        using var connection = new SqliteConnection(Data.SqliteConnectionString);
+        using var connection = new SqliteConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         using var delCommand = new SqliteCommand($"DELETE FROM {nameof(ReplayContext.ReplayRatings)};", connection);
         await delCommand.ExecuteNonQueryAsync();
     }
 
-    private static async Task DeletePlayerRatingChangesTable()
+    private async Task DeletePlayerRatingChangesTable()
     {
-        using var connection = new SqliteConnection(Data.SqliteConnectionString);
+        using var connection = new SqliteConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         using var delCommand = new SqliteCommand($"DELETE FROM {nameof(ReplayContext.PlayerRatingChanges)};", connection);

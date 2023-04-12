@@ -221,11 +221,12 @@ public partial class PlayerService
                                     && rp.Replay.ReplayRatingInfo != null
                                     && rp.Replay.ReplayRatingInfo.RatingType == ratingType
                                 where t != rp && t.Team == rp.Team
-                                group t by t.Player.ToonId into g
+                                group t by new { t.Player.ToonId, t.Player.Name } into g
                                 where g.Count() > 10
                                 select new PlayerTeamResultHelper()
                                 {
-                                    ToonId = g.Key,
+                                    ToonId = g.Key.ToonId,
+                                    Name = g.Key.Name,
                                     Count = g.Count(),
                                     Wins = g.Count(c => c.PlayerResult == PlayerResult.Win),
                                 }
@@ -236,11 +237,12 @@ public partial class PlayerService
                                   && rp.Replay.ReplayRatingInfo != null
                                   && rp.Replay.ReplayRatingInfo.RatingType == ratingType
                               where t.Team != rp.Team
-                              group t by t.Player.ToonId into g
+                              group t by new { t.Player.ToonId, t.Player.Name } into g
                               where g.Count() > 10
                               select new PlayerTeamResultHelper()
                               {
-                                  ToonId = g.Key,
+                                  ToonId = g.Key.ToonId,
+                                  Name = g.Key.Name,
                                   Count = g.Count(),
                                   Wins = g.Count(c => c.PlayerResult == PlayerResult.Win),
                               };
@@ -248,15 +250,10 @@ public partial class PlayerService
         var results = await teammateGroup
             .ToListAsync(token);
 
-        var rtoonIds = results.Select(s => s.ToonId).ToList();
-        var names = (await context.Players
-            .Where(x => rtoonIds.Contains(x.ToonId))
-            .Select(s => new { s.ToonId, s.Name })
-            .ToListAsync(token)).ToDictionary(k => k.ToonId, v => v.Name);
 
         return results.Select(s => new PlayerTeamResult()
         {
-            Name = names[s.ToonId],
+            Name = s.Name,
             ToonId = s.ToonId,
             Count = s.Count,
             Wins = s.Wins,

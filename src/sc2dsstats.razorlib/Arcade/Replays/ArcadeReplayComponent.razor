@@ -1,0 +1,126 @@
+﻿@using System.Globalization;
+@using pax.dsstats.shared.Arcade;
+@using pax.dsstats.shared;
+
+<div class="card" style="max-width: 900px; min-width: 500px;">
+    <div class="card-header">
+        <div class="row fw-bolder">
+            <div class="col">@Replay.CreatedAt.ToShortDateString()</div>
+            <div class="col">Duration @TimeSpan.FromSeconds(Replay.Duration).ToString(@"hh\:mm\:ss")</div>
+            <div class="col">Region @Data.GetRegionString(Replay.RegionId)</div>
+            <div class="col">Mode @Replay.GameMode</div>
+            <div class="col-2"><span class="oi oi-x text-danger pointer" @onclick="e => OnCloseRequested.InvokeAsync()"></span></div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            @for (int i = 1; i <= 2; i++)
+            {
+                <div class="col-auto">
+                    <div class="d-flex">
+                        @if (Replay.WinnerTeam == i)
+                        {
+                            <div>
+                                <span class="badge bg-success" style="font-size: 1.1rem;">
+                                    Team @i
+                                </span>
+                            </div>
+                            @if (Replay.ArcadeReplayRating != null)
+                            {
+                                <div class="ms-2">
+                                    <span class="badge bg-secondary" style="font-size: 1.1rem;">
+                                        <small>Expectation to win</small>
+                                        <span class="fw-bold @(Replay.ArcadeReplayRating.ExpectationToWin > 0.5 ? "text-success" : "text-danger")">
+                                            @Replay.ArcadeReplayRating.ExpectationToWin.ToString("P0", CultureInfo.InvariantCulture)
+                                        </span>
+                                    </span>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div>
+                                <span class="badge bg-danger" style="font-size: 1.2rem;">
+                                    Team @i
+                                </span>
+                            </div>
+                            @if (Replay.ArcadeReplayRating != null)
+                            {
+                                <div class="ms-2">
+                                    <span class="badge bg-secondary" style="font-size: 1.2rem;">
+                                        <small>Expectation to win</small>
+                                        <span class="fw-bold @(Replay.ArcadeReplayRating.ExpectationToWin < 0.5 ? "text-success" : "text-danger")">
+                                            @((1 - Replay.ArcadeReplayRating.ExpectationToWin).ToString("P0", CultureInfo.InvariantCulture))
+                                        </span>
+                                    </span>
+                                </div>
+                            }
+                        }
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped w-auto">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Change</th>
+                                    <th>Name</th>
+                                    <th>Rating</th>
+                                    <th>Games</th>
+                                    <th>Disc</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var player in Replay.ArcadeReplayPlayers.Where(x => x.Team == i).OrderBy(o => o.SlotNumber))
+                                {
+                                    var plRating = Replay.ArcadeReplayRating?.ArcadeReplayPlayerRatings.FirstOrDefault(f => f.GamePos == player.SlotNumber);
+                                    <tr class="pointer" @onclick="e => OnPlayerRequested.InvokeAsync(player.ArcadePlayerId)">
+                                        <td>@player.SlotNumber</td>
+                                        <td>
+                                            @if (plRating != null)
+                                            {
+                                                <span class="oi @(plRating.RatingChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">
+                                                    @plRating.RatingChange.ToString("N1", CultureInfo.InvariantCulture)
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="d-inline-block text-truncate text-decoration-underline" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
+                                                @player.Name
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (plRating != null)
+                                            {
+                                                <span class="text-warning">@plRating.Rating.ToString("N2", CultureInfo.InvariantCulture)</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @plRating?.Games
+                                        </td>
+                                        <td>
+                                            @player.Discriminator
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="card-footer">
+        <button type="button" class="btn btn-sm btn-danger" @onclick="e => OnCloseRequested.InvokeAsync()">Close</button>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ArcadeReplayDto Replay { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnCloseRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnPlayerRequested { get; set; }
+}

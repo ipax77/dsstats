@@ -1,5 +1,6 @@
 @using System.Globalization;
 @using pax.dsstats.shared
+@using sc2dsstats.razorlib.Replay;
 @using sc2dsstats.razorlib.Services;
 @using Humanizer;
 @using Humanizer.Localisation;
@@ -36,7 +37,7 @@ else
                 </div>
                 <div class="card-body">
                     @* <span class="fw-bold">@TimeSpan.FromSeconds(funStats.TotalTimePlayed).ToString("c", CultureInfo.InvariantCulture)</span> *@
-                    <span class="fw-bold">@TimeSpan.FromSeconds(funStats.TotalTimePlayed).Humanize(10,  minUnit: TimeUnit.Day, maxUnit: TimeUnit.Year)</span>
+                    <span class="fw-bold">@TimeSpan.FromSeconds(funStats.TotalTimePlayed).Humanize(10, culture: CultureInfo.InvariantCulture,  minUnit: TimeUnit.Day, maxUnit: TimeUnit.Year)</span>
                 </div>
             </div>
             <div class="card">
@@ -45,7 +46,7 @@ else
                 </div>
                 <div class="card-body">
                     @* <span class="fw-bold">@TimeSpan.FromSeconds(funStats.AvgGameDuration).ToString(@"hh\:mm\:ss")</span> *@
-                    <span class="fw-bold">@TimeSpan.FromSeconds(funStats.AvgGameDuration).Humanize(10,  minUnit: TimeUnit.Minute, maxUnit: TimeUnit.Hour)</span>
+                    <span class="fw-bold">@TimeSpan.FromSeconds(funStats.AvgGameDuration).Humanize(10, culture: CultureInfo.InvariantCulture,  minUnit: TimeUnit.Minute, maxUnit: TimeUnit.Hour)</span>
                 </div>
             </div>
         </div>
@@ -68,7 +69,7 @@ else
             </div>
         </div>
         <div class="col-auto">
-            <span class="small">created @((DateTime.UtcNow - @funStats.Created).Humanize()) ago</span>
+            <span class="small">created @((DateTime.UtcNow - @funStats.Created).Humanize(culture: CultureInfo.InvariantCulture)) ago</span>
         </div>
         @if (funStats.FirstReplay != null)
         {
@@ -78,7 +79,7 @@ else
                         <h3 class="text-warning">First Replay - @funStats.FirstReplay.GameTime.ToShortDateString()</h3>
                     </div>
                     <div class="card-body">
-                        <sc2dsstats.razorlib.Replay.ReplayComponent HideCloseButton="true" replayDto="funStats.FirstReplay" />
+                        <sc2dsstats.razorlib.Replay.ReplayComponent @ref="fiRc" HideCloseButton="true" replayDto="funStats.FirstReplay" />
                     </div>
                 </div>
             </div>
@@ -91,7 +92,7 @@ else
                         <h3 class="text-warning">Greatest Army Replay - @HelperService.GetBigNumberString(funStats.GreatestArmyReplay.ReplayPlayers.OrderByDescending(o => o.Army).FirstOrDefault()?.Army ?? 0)</h3>
                     </div>
                     <div class="card-body">
-                        <sc2dsstats.razorlib.Replay.ReplayComponent HideCloseButton="true" replayDto="funStats.GreatestArmyReplay" />
+                        <sc2dsstats.razorlib.Replay.ReplayComponent @ref="gaRc" HideCloseButton="true" replayDto="funStats.GreatestArmyReplay" />
                     </div>
                 </div>
             </div>
@@ -104,7 +105,7 @@ else
                         <h3 class="text-warning">Most Upgrades Replay - @HelperService.GetBigNumberString(funStats.MostUpgradesReplay.ReplayPlayers.OrderByDescending(o => o.UpgradesSpent).FirstOrDefault()?.UpgradesSpent ?? 0)</h3>
                     </div>
                     <div class="card-body">
-                        <sc2dsstats.razorlib.Replay.ReplayComponent HideCloseButton="true" replayDto="funStats.MostUpgradesReplay" />
+                        <sc2dsstats.razorlib.Replay.ReplayComponent @ref="muRc" HideCloseButton="true" replayDto="funStats.MostUpgradesReplay" />
                     </div>
                 </div>
             </div>
@@ -117,7 +118,7 @@ else
                         <h3 class="text-warning">Most Competitive Replay - Middle changes: @funStats.MostCompetitiveReplay.Middle.Split('|').Length</h3>
                     </div>
                     <div class="card-body">
-                        <sc2dsstats.razorlib.Replay.ReplayComponent HideCloseButton="true" replayDto="funStats.MostCompetitiveReplay" />
+                        <sc2dsstats.razorlib.Replay.ReplayComponent @ref="mcRc" HideCloseButton="true" replayDto="funStats.MostCompetitiveReplay" />
                     </div>
                 </div>
             </div>
@@ -130,7 +131,7 @@ else
                         <h3 class="text-warning">Greatest Comeback Replay</h3>
                     </div>
                     <div class="card-body">
-                        <sc2dsstats.razorlib.Replay.ReplayComponent HideCloseButton="true" replayDto="funStats.GreatestComebackReplay" />
+                        <sc2dsstats.razorlib.Replay.ReplayComponent @ref="gcRc" HideCloseButton="true" replayDto="funStats.GreatestComebackReplay" />
                     </div>
                 </div>
             </div>
@@ -150,6 +151,12 @@ else
     private CancellationTokenSource cts = new();
     bool isLoading;
 
+    ReplayComponent? fiRc;
+    ReplayComponent? gaRc;
+    ReplayComponent? muRc;
+    ReplayComponent? mcRc;
+    ReplayComponent? gcRc;
+
     protected override void OnAfterRender(bool firstRender)
     {
         if (firstRender)
@@ -164,6 +171,18 @@ else
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
         funStats = await dataService.GetFunStats(Request, cts.Token);
+
+        if (funStats.FirstReplay != null)
+            fiRc?.Init(funStats.FirstReplay);
+        if (funStats.GreatestArmyReplay != null)
+            gaRc?.Init(funStats.GreatestArmyReplay);
+        if (funStats.MostUpgradesReplay != null)
+            muRc?.Init(funStats.MostUpgradesReplay);
+        if (funStats.MostCompetitiveReplay != null)
+            mcRc?.Init(funStats.MostCompetitiveReplay);
+        if (funStats.GreatestComebackReplay != null)
+            gcRc?.Init(funStats.GreatestComebackReplay);
+
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
         if (!first)

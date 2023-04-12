@@ -97,17 +97,13 @@ public partial class RatingRepository
                          {
                              rpr.ReplayPlayer.Player.ToonId,
                              rpr.ReplayPlayer.Player.Name,
-                             rpr.ReplayPlayer.Player.RegionId
+                             rpr.ReplayPlayer.Player.RegionId,
+                             rpr.ReplayPlayer.Player.RealmId,
                          } into g
                          where g.Count() > GetRatingChangeLimit(request.TimePeriod)
                          select new PlayerRatingStat
                          {
-                             RequestNames = new()
-                             {
-                                 Name = g.Key.Name,
-                                 ToonId = g.Key.ToonId,
-                                 RegionId = g.Key.RegionId,
-                             },
+                             RequestNames = new(g.Key.Name, g.Key.ToonId, g.Key.RegionId, g.Key.RealmId),
                              Games = g.Count(),
                              RatingChange = MathF.Round(g.Sum(s => s.rpr.RatingChange), 2)
                          };

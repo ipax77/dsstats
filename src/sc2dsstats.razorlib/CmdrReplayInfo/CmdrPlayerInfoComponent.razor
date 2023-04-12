@@ -1,0 +1,262 @@
+@using pax.dsstats.shared
+@using pax.dsstats.shared.Arcade;
+@using sc2dsstats.razorlib.Services
+@using System.Globalization
+@using sc2dsstats.razorlib.Extensions
+
+<div class="table-responsive tableFixHead">
+    <table class="table table-dark table-striped table-hover w-auto">
+        <thead class="user-select-none">
+            <CascadingValue Value="orders">
+                <tr>
+                    <th></th>
+                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.Pos)))">
+                        <SortArrow Property="@nameof(CmdrPlayerInfo.Pos)">
+                            #
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.RegionId)))">
+                        <SortArrow Property="@nameof(CmdrPlayerInfo.RegionId)">
+                            <div class="text-center">
+                                <span class="oi oi-globe rounded-circle bg-primary p-1"></span>
+                            </div>
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer"
+                        @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.Name)))">
+                        <SortArrow Property="@nameof(CmdrPlayerInfo.Name)">
+                            Name
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer text-info"
+                        @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.Strength)))">
+                        <SortArrow Property="@nameof(CmdrPlayerInfo.Strength)">
+                            Strength
+                        </SortArrow>
+                    </th>                    
+                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.Count)))">
+                        <SortArrow Property="@nameof(CmdrPlayerInfo.Count)">
+                            Games
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Winrate"))">
+                        <SortArrow Property="Winrate">
+                            Winrate
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer text-warning"
+                        @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.AvgRating)))">
+                        <SortArrow Property="@nameof(CmdrPlayerInfo.AvgRating)">
+                            <span data-bs-toggle="tooltip" data-bs-placement="top"
+                                  data-bs-title="Average rating over all replays with the selected commander">Rating</span>
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" style="z-index: 1;"
+                        @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.AvgGain)))">
+                        <SortArrow Property="@nameof(CmdrPlayerInfo.AvgGain)">
+                            <span data-bs-toggle="tooltip" data-bs-placement="top"
+                                  data-bs-title="Average gain in rating over all replays with the selected commander">AvgGain</span>
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" style="z-index: 1;"
+                        @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.TeamRating)))">
+                        <SortArrow Property="@nameof(CmdrPlayerInfo.TeamRating)">
+                            <span data-bs-toggle="tooltip" data-bs-placement="top"
+                                  data-bs-title="Average teammates rating over all replays with the selected commander">Team</span>
+                        </SortArrow>
+                    </th>
+                </tr>
+            </CascadingValue>
+        </thead>
+        <tbody>
+            @foreach (var info in GetSortedList())
+            {
+                <tr class="pointer @(interestPlayerId == new PlayerId(info.ToonId, info.RealmId, info.RegionId) ? "table-primary" : "")"
+                    @onclick="e => OnPlayerDetailsRequest.InvokeAsync(new(info.Name, info.ToonId, info.RegionId, info.RealmId))">
+                    <td @onclick:stopPropagation @onclick="e => OnPlayerReplaysRequest.InvokeAsync(new(info.Name, info.ToonId, info.RegionId, info.RealmId))">
+                        <span class="oi oi-list text-primary"></span>
+                    </td>
+                    <td>@info.Pos</td>
+                    <td>@Data.GetRegionString(info.RegionId)</td>
+                    <td>
+                        <span class="text-truncate fw-bold" style="display: block; width: 110px;">
+                            @if (string.IsNullOrEmpty(searchName))
+                            {
+                                @info.Name
+                            }
+                            else
+                            {
+                                <StringHighlight Text="@info.Name" SearchString="@searchName" />
+                            }
+                        </span>
+                    </td>
+                    <td class="text-info">@info.Strength.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td>@info.Count</td>
+                    <td>@HelperService.GetPercentageString(info.Wins, info.Count)</td>
+                    <td class="text-warning">@info.AvgRating</td>
+                    <td class="@(info.AvgGain >= 0 ? "text-success" : "text-danger")">
+                        <span class="@(info.AvgGain >= 0 ? "oi oi-arrow-top" : "oi oi-arrow-bottom")"></span>
+                        @info.AvgGain.ToString("N2", CultureInfo.InvariantCulture)
+                    </td>
+                    <td>@info.TeamRating</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public List<CmdrPlayerInfo> CmdrPlayerInfos { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<RequestNames> OnPlayerDetailsRequest { get; set; }
+
+    [Parameter]
+    public EventCallback<RequestNames> OnPlayerReplaysRequest { get; set; }
+
+    private List<TableOrder> orders = new()
+    {
+        new TableOrder()
+        {
+            Property = nameof(CmdrPlayerInfo.Strength)
+        }
+    };
+
+    private PlayerId? interestPlayerId = null;
+    string searchName = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        SetStrength(CmdrPlayerInfos);
+        base.OnInitialized();
+    }
+
+
+    public void SetStrength(List<CmdrPlayerInfo> items, PlayerId? playerId = null)
+    {
+        searchName = string.Empty;
+        interestPlayerId = playerId;
+        if (!items.Any())
+        {
+            return;
+        }
+
+        double weightMatchups = 1;
+        double weightWinrate = 5;
+        double weightRating = 8;
+        double weightGain = 8;
+
+        double minMatchups = items.Min(m => m.Count);
+        double maxMatchups = items.Max(m => m.Count);
+
+        var winrates = items.Select(s => s.Wins * 100.0 / (double)s.Count).ToList();
+        double minWinrate = winrates.Min();
+        double maxWinrate = winrates.Max();
+
+        double minRating = items.Min(m => m.AvgRating);
+        double maxRating = items.Max(m => m.AvgRating);
+
+        double minGain = items.Min(m => m.AvgGain);
+        double maxGain = items.Max(m => m.AvgGain);
+
+        foreach (var item in items)
+        {
+            var normalizedMatchups = (item.Count - minMatchups) / (maxMatchups - minMatchups);
+            var normalizedWinrate = (item.Wins * 100.0 / (double)item.Count - minWinrate) / (maxWinrate - minWinrate);
+            var normalizedRating = (item.AvgRating - minRating) / (maxRating - minRating);
+            var normalizedGain = (item.AvgGain - minGain) / (maxGain - minGain);
+
+            double p = item.Wins / (double)item.Count;
+            double stdErr = Math.Sqrt(p * (1 - p) / item.Count);
+
+            item.Strength =
+                  weightMatchups * normalizedMatchups
+                + weightWinrate * normalizedWinrate
+                + weightRating * normalizedRating
+                + weightGain * normalizedGain;
+
+        }
+
+        int i = 1;
+        foreach (var item in items.OrderByDescending(o => o.Strength))
+        {
+            item.Pos = i++;
+        }
+    }    
+
+    private void SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            orders.Clear();
+            orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+    }
+
+    public void SetSearch(string searchName)
+    {
+        this.searchName = searchName;
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    private List<CmdrPlayerInfo> GetSortedList()
+    {
+        var list = CmdrPlayerInfos.AsQueryable();
+        foreach (var order in orders)
+        {
+            if (order.Property == "Winrate")
+            {
+                if (order.Ascending)
+                {
+                    list = list.OrderBy(o => o.Count == 0 ? 0 : o.Wins * 100.0 / o.Count);
+                }
+                else
+                {
+                    list = list.OrderByDescending(o => o.Count == 0 ? 0 : o.Wins * 100.0 / o.Count);
+                }
+            }
+            else
+            {
+                if (order.Ascending)
+                {
+                    list = list.AppendOrderBy(order.Property);
+                }
+                else
+                {
+                    list = list.AppendOrderByDescending(order.Property);
+                }
+            }
+        }
+        if (string.IsNullOrEmpty(searchName))
+        {
+            return list.ToList();
+        }
+        else
+        {
+            return list
+                .Where(x => x.Name.ToUpper().Contains(searchName.ToUpper()))
+                .ToList();
+        }
+    }
+}

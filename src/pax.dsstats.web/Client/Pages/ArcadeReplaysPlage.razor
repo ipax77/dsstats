@@ -1,0 +1,142 @@
+﻿@page "/arcade/replays"
+@layout ArcadeLayout
+@using pax.dsstats.shared.Arcade;
+@inject NavigationManager NavigationManager
+
+<PageTitle>Arcade Replays</PageTitle>
+
+<sc2dsstats.razorlib.Arcade.Replays.ArcadeReplaysComponent replaysRequest="request" OnRequestChanged="SetUrl" />
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Search { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? RepId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? PlId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? PlIdWith { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? PlIdVs { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Name { get; set; }
+
+    ArcadeReplaysRequest request = new();
+    private object lockobject = new();
+    private bool jobDone = true;
+
+    protected override void OnParametersSet()
+    {
+        lock (lockobject)
+        {
+            if (jobDone)
+            {
+                jobDone = false;
+            }
+            else
+            {
+                SetRequest();
+            }
+        }
+        base.OnParametersSet();
+    }
+
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }
+
+    private void SetRequest()
+    {
+        request = new()
+        {
+            Search = Search,
+            ReplayId = RepId ?? 0,
+            PlayerId = PlId ?? 0,
+            PlayerIdVs = PlIdVs ?? 0,
+            PlayerIdWith = PlIdWith ?? 0,
+            ProfileName = Name
+        };
+    }
+
+    private void SetUrl(ArcadeReplaysRequest request)
+    {
+        Dictionary<string, object?> queryDic = new();
+
+        if (!String.IsNullOrEmpty(request.Search))
+        {
+            queryDic.Add("Search", request.Search);
+        }
+        else
+        {
+            queryDic.Add("Search", null);
+        }
+
+        if (request.ReplayId > 0)
+        {
+            queryDic.Add("RepId", request.ReplayId);
+        }
+        else
+        {
+            queryDic.Add("RepId", null);
+        }
+
+        if (request.PlayerId > 0)
+        {
+            queryDic.Add("PlId", request.PlayerId);
+        }
+        else
+        {
+            queryDic.Add("PlId", null);
+        }
+
+        if (request.PlayerIdVs > 0)
+        {
+            queryDic.Add("PlIdVs", request.PlayerIdVs);
+        }
+        else
+        {
+            queryDic.Add("PlIdVs", null);
+        }
+
+        if (request.PlayerIdWith > 0)
+        {
+            queryDic.Add("PlIdWith", request.PlayerIdWith);
+        }
+        else
+        {
+            queryDic.Add("ProfileIdWith", null);
+        }
+
+        if (!String.IsNullOrEmpty(request.ProfileName))
+        {
+            queryDic.Add("Name", request.ProfileName);
+        }
+        else
+        {
+            queryDic.Add("Name", null);
+        }
+
+        lock (lockobject)
+        {
+            jobDone = true;
+            NavigationManager.NavigateTo(
+                NavigationManager.GetUriWithQueryParameters(
+                    new Dictionary<string, object?>(queryDic)
+                )
+            );
+        }
+    }
+}

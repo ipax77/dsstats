@@ -1,0 +1,88 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using pax.dsstats.shared
+@using pax.dsstats.shared.Arcade;
+@inject IArcadeService arcadeService
+
+<div>
+    <EditForm EditContext="editContext">
+        <div class="row">
+            <div class="col-auto">
+                <div>
+                    <fieldset disabled="@(replaysRequest.PlayerId > 0)">
+                        <InputText class="form-control" placeholder="Name" @bind-Value="replaysRequest.Search"></InputText>
+                    </fieldset>
+                </div>
+                @if (!String.IsNullOrEmpty(replaysRequest.ProfileName))
+                {
+                    <div>
+                        <span class="small text-warning">@(replaysRequest.PlayerIdWith > 0 ? "with" : "vs") @replaysRequest.ProfileName</span>
+                    </div>
+                }
+            </div>
+            <div class="col-auto">
+                <InputSelect class="form-select" @bind-Value="replaysRequest.GameMode">
+                    <option value="@GameMode.None">All Gamemodes</option>
+                    <option value="@GameMode.Commanders">Commanders</option>
+                    <option value="@GameMode.Standard">Standard</option>
+                    <option value="@GameMode.CommandersHeroic">Heroic Commanders</option>
+                </InputSelect>
+            </div>
+            <div class="col-auto">
+                <InputSelect class="form-select" @bind-Value="replaysRequest.RegionId">
+                    <option value="0">All Regions</option>
+                    <option value="1">NA</option>
+                    <option value="2">EU</option>
+                    <option value="3">AS</option>
+                </InputSelect>
+            </div>
+            <div class="col-auto mt-3">
+                <button type="button" class="btn btn-outline-primary" @onclick="Reset">Reset</button>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [CascadingParameter]
+    [EditorRequired]
+    public ArcadeReplaysRequest replaysRequest { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnFieldChanged { get; set; }
+
+    [Parameter]
+    public bool WithMmrChange { get; set; }
+
+    private List<string> tournaments = new();
+    private EditContext editContext = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        editContext = new EditContext(replaysRequest);
+        editContext.OnFieldChanged += FieldChanged;
+
+        //tournaments = await dataService.GetTournaments();
+
+        await base.OnInitializedAsync();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        OnFieldChanged.InvokeAsync();
+    }
+
+    private void Reset()
+    {
+        replaysRequest.Search = null;
+        replaysRequest.GameMode = GameMode.None;
+        replaysRequest.RegionId = 0;
+        replaysRequest.Orders = new List<TableOrder>() { new TableOrder() { Property = "CreatedAt" } };
+        replaysRequest.ReplayId = 0;
+        replaysRequest.PlayerId = 0;
+        replaysRequest.PlayerIdWith = 0;
+        replaysRequest.PlayerIdVs = 0;
+        replaysRequest.ProfileName = null;
+        OnFieldChanged.InvokeAsync();
+    }
+}

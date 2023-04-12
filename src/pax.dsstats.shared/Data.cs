@@ -157,10 +157,10 @@ public static class Data
     public static List<RequestNames> GetDefaultRequestNames()
     {
         return new() {
-                new() { Name = "PAX", ToonId = 226401, RegionId = 2 },
-                new() { Name = "PAX", ToonId = 10188255, RegionId = 1 },
-                new() { Name = "Feralan", ToonId = 8497675, RegionId = 1 },
-                new() { Name = "Feralan", ToonId = 1488340, RegionId = 2 }
+                new("PAX", 226401, 2, 1),
+                new("PAX", 10188255, 1, 1),
+                new("Feralan", 8497675, 1, 1),
+                new("Feralan", 1488340, 2, 1)
             };
     }
 
@@ -259,11 +259,19 @@ public static class Data
     public static int MauiWidth { get; set; }
     public static int MauiHeight { get; set; }
     public static RequestNames? MauiRequestNames { get; set; }
-    public static string SqliteConnectionString { get; set; } = string.Empty;
-    public static string MysqlConnectionString { get; set; } = string.Empty;
+    //public static string SqliteConnectionString { get; set; } = string.Empty;
+    //public static string MysqlConnectionString { get; set; } = string.Empty;
+
+    public const string ReplayBlobDir = "/data/ds/replayblobs";
+    public const string MysqlFilesDir = "/data/mysqlfiles";
 }
 
 public class LatestReplayEventArgs : EventArgs
 {
     public ReplayDetailsDto? LatestReplay { get; init; }
+}
+
+public record DbImportOptions
+{
+    public string ImportConnectionString { get; set; } = string.Empty;
 }

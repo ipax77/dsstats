@@ -1,4 +1,4 @@
-﻿@using Humanizer;
+﻿@using System.Globalization;
 @using pax.dsstats.shared;
 @using sc2dsstats.razorlib.Services;
 @inject IDataService dataService
@@ -44,10 +44,10 @@ else
                 <span class="badge bg-primary ms-3" style="font-size: 1.2rem;"><span class="small">∅ Winrate</span><br /><span class="text-warning">@cmdrResult.Winrate</span></span>
             </div>
             <div class="align-self-center">
-                <span class="badge bg-primary ms-3" style="font-size: 1.2rem;"><span class="small">Played</span><br /><span class="text-warning">@cmdrResult.Played.Per % (@cmdrResult.Played.Matchups.ToMetric())</span></span>
+                <span class="badge bg-primary ms-3" style="font-size: 1.2rem;"><span class="small">Played</span><br /><span class="text-warning">@cmdrResult.Played.Per % (@HelperService.GetBigNumberString(cmdrResult.Played.Matchups))</span></span>
             </div>
             <div class="align-self-center">
-                <span class="badge bg-primary ms-3" style="font-size: 1.2rem;"><span class="small">∅ Duration</span><br /><span class="text-warning">@TimeSpan.FromSeconds(cmdrResult.AvgDuration).Humanize()</span></span>
+                <span class="badge bg-primary ms-3" style="font-size: 1.2rem;"><span class="small">∅ Duration</span><br /><span class="text-warning">@TimeSpan.FromSeconds(cmdrResult.AvgDuration).ToString(@"mm\:ss")</span></span>
             </div>
         </div>
 
@@ -74,12 +74,12 @@ else
         <div class="row">
             <div class="col-auto mt-2">
                 <CmdrsCard Cmdr="cmdrResult.BestMatchup?.Cmdr" Desc="Best Matchup">
-                    WR @Math.Round(cmdrResult.BestMatchup?.Winrate ?? 0, 2) % (@cmdrResult.BestMatchup?.Matchups.ToMetric())
+                    WR @Math.Round(cmdrResult.BestMatchup?.Winrate ?? 0, 2) % (@HelperService.GetBigNumberString(cmdrResult.BestMatchup?.Matchups ?? 0))
                 </CmdrsCard>
             </div>
             <div class="col-auto mt-2">
                 <CmdrsCard Cmdr="cmdrResult.WorstMatchup?.Cmdr" Desc="Worst Matchup">
-                    WR @Math.Round(cmdrResult.WorstMatchup?.Winrate ?? 0, 2) % (@cmdrResult.WorstMatchup?.Matchups.ToMetric())
+                    WR @Math.Round(cmdrResult.WorstMatchup?.Winrate ?? 0, 2) % (@HelperService.GetBigNumberString(cmdrResult.WorstMatchup?.Matchups ?? 0))
                 </CmdrsCard>
             </div>
             <div class="col-auto mt-2">

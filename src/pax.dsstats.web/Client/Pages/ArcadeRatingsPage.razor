@@ -1,0 +1,82 @@
+﻿@page "/arcade/ratings"
+@layout ArcadeLayout
+@using pax.dsstats.shared.Arcade;
+@using pax.dsstats.shared;
+@inject NavigationManager NavigationManager
+
+<PageTitle>Arcade Ratings</PageTitle>
+
+<sc2dsstats.razorlib.Arcade.Ratings.ArcadeRatingsComponent RatingsRequest="ratingsRequest" OnRatingsChanged="SetUrl" />
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? Id { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Mode { get; set; }
+
+    private ArcadeRatingsRequest ratingsRequest = new()
+        {
+            Type = shared.RatingType.Cmdr,
+            Skip = 0,
+            Take = 20,
+            Orders = new()
+            {
+                new()
+                {
+                    Property = "Rating",
+                    Ascending = false
+                },
+            },
+        };
+
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }
+
+    private void SetRequest()
+    {
+        ratingsRequest.PlayerId = Id ?? 0;
+        if (!String.IsNullOrEmpty(Mode)
+            && Enum.TryParse(typeof(RatingType), Mode, out var ratingTypeObject))
+        {
+            if (ratingTypeObject is RatingType ratingType)
+            {
+                ratingsRequest.Type = ratingType;
+            }
+        }
+    }
+
+    private void SetUrl()
+    {
+        Dictionary<string, object?> queryDic = new();
+
+        if (ratingsRequest.PlayerId > 0)
+        {
+            queryDic.Add("Id", ratingsRequest.PlayerId);
+        }
+        else
+        {
+            queryDic.Add("Id", null);
+        }
+
+        if (ratingsRequest.Type != shared.RatingType.Cmdr)
+        {
+            queryDic.Add("Mode", ratingsRequest.Type.ToString());
+        }
+        else
+        {
+            queryDic.Add("Mode", null);
+        }
+
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters(
+                new Dictionary<string, object?>(queryDic)
+            )
+        );
+    }
+}

@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
 
 namespace pax.dsstats.dbng
 {
@@ -103,6 +104,25 @@ namespace pax.dsstats.dbng
 
             CreateMap<PlayerRating, PlayerRatingReplayCalcDto>(MemberList.Destination);
             CreateMap<Player, PlayerReplayCalcDto>(MemberList.Destination);
+
+            CreateMap<Replay, ReplayCmdrListDto>(MemberList.Destination);
+            CreateMap<ReplayRating, ReplayRatingCmdrDto>(MemberList.Destination);
+            CreateMap<RepPlayerRating, RepPlayerRatingCmdrDto>(MemberList.Destination);
+
+            CreateMap<Player, PlayerId>(MemberList.Destination);
+
+            // Arcade
+            CreateMap<ArcadePlayerRating, ArcadePlayerRatingDto>(MemberList.Destination);
+            CreateMap<ArcadePlayer, ArcadePlayerRatingPlayerDto>(MemberList.Destination);
+            CreateMap<ArcadePlayerRatingChange, ArcadePlayerRatingChangeDto>(MemberList.Destination);
+
+            CreateMap<ArcadePlayerRating, ArcadePlayerRatingDetailDto>(MemberList.Destination);
+            CreateMap<ArcadePlayer, ArcadePlayerDto>(MemberList.Destination);
+            CreateMap<ArcadeReplayPlayerRating, ArcadeReplayPlayerRatingDto>(MemberList.Destination);
+            CreateMap<ArcadeReplayRating, ArcadeReplayRatingDto>(MemberList.Destination);
+            CreateMap<ArcadeReplayPlayer, ArcadeReplayPlayerDto>(MemberList.Destination);
+            CreateMap<ArcadeReplay, ArcadeReplayDto>(MemberList.Destination);
+            CreateMap<ArcadeReplay, ArcadeReplayListDto>(MemberList.Destination);
         }
     }
 }

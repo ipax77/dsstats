@@ -73,6 +73,7 @@ public partial class RatingRepository
             sbReplay.Append($"{replayAppendId},");
             sbReplay.Append($"{(int)replayRatingDto.RatingType},");
             sbReplay.Append($"{(int)replayRatingDto.LeaverType},");
+            sbReplay.Append($"{replayRatingDto.ExpectationToWin.ToString(CultureInfo.InvariantCulture)},");
             sbReplay.Append($"{replayRatingDto.ReplayId}");
             sbReplay.Append(Environment.NewLine);
 
@@ -198,7 +199,7 @@ public partial class RatingRepository
             return;
         }
 
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
@@ -227,7 +228,7 @@ public partial class RatingRepository
             return;
         }
 
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
@@ -256,7 +257,7 @@ public partial class RatingRepository
             return;
         }
 
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
@@ -285,7 +286,7 @@ public partial class RatingRepository
             return;
         }
 
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
@@ -313,7 +314,7 @@ public partial class RatingRepository
             return;
         }
 
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
         var command = connection.CreateCommand();
@@ -335,19 +336,21 @@ public partial class RatingRepository
 
     private async Task SetPlayerRatingsPos()
     {
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
         var command = connection.CreateCommand();
         command.CommandText = "CALL SetPlayerRatingPos();";
+        command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
     }
 
     private async Task SetRatingChange()
     {
-        using var connection = new MySqlConnection(Data.MysqlConnectionString);
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
         var command = connection.CreateCommand();
         command.CommandText = "CALL SetRatingChange();";
+        command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
     }
 }

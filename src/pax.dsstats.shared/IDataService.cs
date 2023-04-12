@@ -46,4 +46,9 @@ public interface IDataService
     Task<PlayerRatingDetails> GetPlayerRatingDetails(int toonId, RatingType ratingType, CancellationToken token = default);
     Task<List<PlayerCmdrAvgGain>> GetPlayerCmdrAvgGain(int toonId, RatingType ratingType, TimePeriod timePeriod, CancellationToken token = default);
     Task<FunStatsResult> GetFunStats(FunStatsRequest request, CancellationToken token);
+    Task<int> GetCmdrReplayInfosCount(CmdrInfoRequest request, CancellationToken token = default);
+    Task<List<ReplayCmdrInfo>> GetCmdrReplayInfos(CmdrInfoRequest request, CancellationToken token);
+    Task<List<CmdrPlayerInfo>> GetCmdrPlayerInfos(CmdrInfoRequest request, CancellationToken token = default);
+    Task<int> GetCmdrReplaysCount(CmdrInfosRequest request, CancellationToken token = default);
+    Task<List<ReplayCmdrListDto>> GetCmdrReplays(CmdrInfosRequest request, CancellationToken token = default);
 }

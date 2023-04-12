@@ -376,4 +376,34 @@ public partial class DataService : IDataService
     {
         return await Task.FromResult(new BuildRatingResponse());
     }
+
+    public Task<FunStatsResult> GetFunStats(FunStatsRequest request, CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<int> GetCmdrReplayInfosCount(CmdrInfoRequest request, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<List<ReplayCmdrInfo>> GetCmdrReplayInfos(CmdrInfoRequest request, CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<List<CmdrPlayerInfo>> GetCmdrPlayerInfos(CmdrInfoRequest request, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<int> GetCmdrReplaysCount(CmdrInfosRequest request, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<List<ReplayCmdrListDto>> GetCmdrReplays(CmdrInfosRequest request, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
 }
