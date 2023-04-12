@@ -27,7 +27,7 @@ public partial class CrawlerService
 
         Dictionary<int, int> mapRegions = new Dictionary<int, int>()
         {
-             { 208271, 1 }, // NA
+             // { 208271, 1 }, // NA
              { 140436, 2 }, // EU
              { 69942, 3 },  // As
              { 231019, 2 }, // TE EU
