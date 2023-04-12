@@ -1,4 +1,6 @@
 ﻿using dsstats.mmr.ProcessData;
+using FireMath.NET;
+using FireMath.NET.Distributions;
 using pax.dsstats.shared;
 
 using TeamData = dsstats.mmr.ProcessData.TeamData;
@@ -16,7 +18,7 @@ public partial class MmrService
         SetTeamData(mmrIdRatings, replayData, replayData.LoserTeamData, cmdrDic, mmrOptions);
         SetExpectationsToWin(replayData, mmrOptions);
 
-        replayData.Confidence = (replayData.WinnerTeamData.Confidence + replayData.LoserTeamData.Confidence) / 2;
+        replayData.Confidence = Gaussian.GetPrecision(replayData.WinnerTeamData.Deviation + replayData.LoserTeamData.Deviation);
     }
 
     private static void SetTeamData(Dictionary<int, CalcRating> mmrIdRatings,
@@ -25,36 +27,32 @@ public partial class MmrService
                                     Dictionary<CmdrMmrKey, CmdrMmrValue> cmdrDic,
                                     MmrOptions mmrOptions)
     {
+        Gaussian summedDistributions = Gaussian.ByMeanDeviation(0, 0);
         foreach (var playerData in teamData.Players)
         {
-            SetPlayerData(mmrIdRatings, playerData, mmrOptions);
+            SetPlayerData(mmrIdRatings, replayData, playerData, mmrOptions);
+
+            summedDistributions += playerData.Distribution;
         }
 
-        teamData.Confidence = teamData.Players.Sum(p => p.Confidence) / teamData.Players.Length;
-        teamData.Mmr = teamData.Players.Sum(p => p.Mmr) / teamData.Players.Length;
-
-        if (mmrOptions.UseCommanderMmr
-            && (replayData.ReplayDsRDto.GameMode == GameMode.Commanders || replayData.ReplayDsRDto.GameMode == GameMode.CommandersHeroic))
-        {
-            teamData.CmdrComboMmr = GetCommandersComboMmr(replayData, teamData, cmdrDic);
-        }
+        teamData.Distribution = Gaussian.ByMeanDeviation(summedDistributions.Mean, summedDistributions.Deviation);
     }
 
     private static void SetExpectationsToWin(ReplayData replayData, MmrOptions mmrOptions)
     {
-        double winnerPlayersExpectationToWin = EloExpectationToWin(replayData.WinnerTeamData.Mmr, replayData.LoserTeamData.Mmr, mmrOptions.Clip);
+        var (winnerPlayersExpectationToWin, match) = GaussianElo.PredictMatch(
+            replayData.WinnerTeamData.Distribution,
+            replayData.LoserTeamData.Distribution,
+            mmrOptions.StandardMatchDeviation);
+        
+        replayData.WinnerTeamData.Prediction = match;
+        replayData.LoserTeamData.Prediction = Gaussian.ByMeanDeviation(-match.Mean, match.Deviation);
+
         replayData.WinnerTeamData.ExpectedResult = winnerPlayersExpectationToWin;
-
-        if (mmrOptions.UseCommanderMmr)
-        {
-            double winnerCmdrExpectationToWin = EloExpectationToWin(replayData.WinnerTeamData.CmdrComboMmr, replayData.LoserTeamData.CmdrComboMmr, mmrOptions.Clip);
-            replayData.WinnerTeamData.ExpectedResult = (winnerPlayersExpectationToWin + winnerCmdrExpectationToWin) / 2;
-        }
-
-        replayData.LoserTeamData.ExpectedResult = (1 - replayData.WinnerTeamData.ExpectedResult);
+        replayData.LoserTeamData.ExpectedResult = (1 - winnerPlayersExpectationToWin);
     }
 
-    private static void SetPlayerData(Dictionary<int, CalcRating> mmrIdRatings, PlayerData playerData, MmrOptions mmrOptions)
+    private static void SetPlayerData(Dictionary<int, CalcRating> mmrIdRatings, ReplayData replayData, PlayerData playerData, MmrOptions mmrOptions)
     {
         if (!mmrIdRatings.TryGetValue(playerData.MmrId, out var plRating))
         {
@@ -62,14 +60,28 @@ public partial class MmrService
             {
                 PlayerId = playerData.ReplayPlayer.Player.PlayerId,
                 Mmr = mmrOptions.StartMmr,
-                Consistency = 0,
-                Confidence = 0,
+                Deviation = mmrOptions.StandardMatchDeviation,
                 Games = 0,
             };
         }
 
         playerData.Mmr = plRating.Mmr;
-        playerData.Consistency = plRating.Consistency;
-        playerData.Confidence = plRating.Confidence;
+        playerData.Deviation = plRating.Deviation;
+
+        if (plRating.MmrOverTime.Any())
+        {
+            var lastGameString = plRating.MmrOverTime.Last().Date;
+
+            int year = int.Parse(lastGameString.Substring(0, 4));
+            int month = int.Parse(lastGameString.Substring(4, 2));
+            int day = int.Parse(lastGameString.Substring(6, 2));
+
+            var lastGame = new DateTime(year, month, day);
+            playerData.TimeSinceLastGame = replayData.ReplayDsRDto.GameTime - lastGame;
+        }
+        else
+        {
+            playerData.TimeSinceLastGame = new TimeSpan(0);
+        }
     }
 }

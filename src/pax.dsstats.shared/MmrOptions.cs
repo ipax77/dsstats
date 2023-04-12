@@ -1,4 +1,6 @@
-﻿namespace pax.dsstats.shared;
+﻿using FireMath.NET;
+
+namespace pax.dsstats.shared;
 
 public record MmrOptions
 {
@@ -13,7 +15,7 @@ public record MmrOptions
     public const double ownMatchupPercentage = 1.0 / 3;
     public const double matesMatchupsPercentage = (1 - ownMatchupPercentage) / 2;
 
-    public MmrOptions(bool reCalc, double eloK = 168, double clip = 1600)
+    public MmrOptions(bool reCalc)
     {
         ReCalc = reCalc;
 
@@ -24,14 +26,14 @@ public record MmrOptions
         UseFactorToTeamMates = false;
         UseConfidence = true;
 
+        StandardPlayerDeviation = 400;
+        StandardMatchDeviation = ((3 + 3) * StandardPlayerDeviation.Pow()).Sqrt();
         StartMmr = 1000;
-        EloK = eloK;
-        Clip = clip;
     }
 
+    public double StandardPlayerDeviation { get; init; } // default 800
+    public double StandardMatchDeviation { get; init; }
     public double StartMmr { get; init; } // default 1000
-    public double EloK { get; init; } // default 32
-    public double Clip { get; init; } // default 400
 
     public bool UseEquality { get; init; }
 

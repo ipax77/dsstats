@@ -1,3 +1,4 @@
+using FireMath.NET.Distributions;
 using pax.dsstats.shared;
 
 namespace dsstats.mmr.ProcessData;
@@ -17,9 +18,13 @@ public record TeamData
     public bool IsWinner { get; init; }
     public int ActualResult { get; init; }
 
-    public double Mmr { get; set; }
-    public double Confidence { get; set; }
-    public double CmdrComboMmr { get; set; }
+    public double Mmr => Distribution.Mean;
+    public double Deviation => Distribution.Deviation;
+    public double Confidence => Distribution.Precision;
+    //public double CmdrComboMmr { get; set; }
+
+    public Gaussian Distribution { get; set; }
+    public Gaussian Prediction { get; set; }
 
     public double ExpectedResult { get; set; }
 }
