@@ -9,10 +9,6 @@ namespace dsstats.mmr;
 
 public static partial class MmrService
 {
-    const double consistencyBeforePercentage = 0.99;
-    const double confidenceBeforePercentage = 0.99;
-
-
     private static void CalculateRatingsDeltas(ReplayData replayData,
                                                TeamData teamData,
                                                MmrOptions mmrOptions)
@@ -84,7 +80,6 @@ public static partial class MmrService
             double confidenceAfter = player.Deviation + player.Deltas.Deviation;
 
             var currentPlayerRating = mmrIdRatings[player.MmrId];
-
             ratings.Add(new()
             {
                 GamePos = player.ReplayPlayer.GamePos,
