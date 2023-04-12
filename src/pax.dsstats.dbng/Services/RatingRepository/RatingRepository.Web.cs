@@ -53,8 +53,7 @@ public partial class RatingRepository
                 parameters[6].Value = main.Value;
                 parameters[7].Value = (int)main.Key;
                 parameters[8].Value = GetDbMmrOverTime(calcEnt.MmrOverTime);
-                parameters[9].Value = calcEnt.Consistency;
-                parameters[10].Value = calcEnt.Confidence;
+                parameters[10].Value = calcEnt.Deviation;
                 parameters[11].Value = calcEnt.IsUploader;
                 parameters[12].Value = calcEnt.PlayerId;
                 await command.ExecuteNonQueryAsync();

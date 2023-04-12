@@ -173,8 +173,7 @@ public partial class RatingRepository
                 PlayerId = replayPlayer.Player.ToonId,
                 Games = calcDto?.Games ?? 0,
                 Mmr = calcDto?.Rating ?? 1000.0,
-                Consistency = calcDto?.Consistency ?? 0,
-                Confidence = calcDto?.Confidence ?? 0,
+                Deviation = calcDto?.Deviation ?? 0,
                 IsUploader = replayPlayer.IsUploader
             };
             calcRatings[replayPlayer.Player.ToonId] = calcRating;

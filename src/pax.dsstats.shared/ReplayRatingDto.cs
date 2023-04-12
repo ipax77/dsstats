@@ -14,7 +14,6 @@ public record RepPlayerRatingDto
     public float Rating { get; init; }
     public float RatingChange { get; init; }
     public int Games { get; init; }
-    public float Consistency { get; init; }
-    public float Confidence { get; init; }
+    public float Deviation { get; init; }
     public int ReplayPlayerId { get; init; }
 }

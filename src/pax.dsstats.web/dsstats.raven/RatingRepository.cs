@@ -202,8 +202,7 @@ public partial class RatingRepository
             Mvp = v.Mvp,
             TeamGames = v.TeamGames,
             Mmr = v.Mmr,
-            Consistency = v.Consistency,
-            Confidence = v.Confidence,
+            Deviation = v.Deviation,
             MmrOverTime = GetTimeRatings(v.MmrOverTime),
             CmdrCounts = GetFakeCmdrDic(v.Main, v.MainPercentage, v.Games)
         });

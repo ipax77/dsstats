@@ -45,8 +45,7 @@ public partial class RatingRepository
                 parameters[6].Value = main.Value;
                 parameters[7].Value = (int)main.Key;
                 parameters[8].Value = GetDbMmrOverTime(calcEnt.MmrOverTime);
-                parameters[9].Value = calcEnt.Consistency;
-                parameters[10].Value = calcEnt.Confidence;
+                parameters[10].Value = calcEnt.Deviation;
                 parameters[11].Value = calcEnt.IsUploader;
                 parameters[12].Value = calcEnt.PlayerId;
                 await command.ExecuteNonQueryAsync();
@@ -257,8 +256,7 @@ public partial class RatingRepository
                 parameters[2].Value = repPlayerRatingDto.Rating;
                 parameters[3].Value = repPlayerRatingDto.RatingChange;
                 parameters[4].Value = repPlayerRatingDto.Games;
-                parameters[5].Value = repPlayerRatingDto.Consistency;
-                parameters[6].Value = repPlayerRatingDto.Confidence;
+                parameters[6].Value = repPlayerRatingDto.Deviation;
                 parameters[7].Value = repPlayerRatingDto.ReplayPlayerId;
                 parameters[8].Value = replayRatingAppendId;
                 await command.ExecuteNonQueryAsync();

@@ -86,8 +86,7 @@ public record RavenRating
     public double MainPercentage { get; set; }
     public double Mmr { get; set; }
     public string? MmrOverTime { get; set; }
-    public double Consistency { get; set; }
-    public double Confidence { get; set; }
+    public double Deviation { get; set; }
 }
 
 public record CalcRating
@@ -100,8 +99,7 @@ public record CalcRating
 
     public double Mmr { get; set; }
     public List<TimeRating> MmrOverTime { get; set; } = new();
-    public double Consistency { get; set; }
-    public double Confidence { get; set; }
+    public double Deviation { get; set; }
     public bool IsUploader { get; set; }
     public Dictionary<Commander, int> CmdrCounts { get; set; } = new();
 }

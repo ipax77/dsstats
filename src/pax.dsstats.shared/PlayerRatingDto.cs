@@ -70,8 +70,7 @@ public record PlayerRatingReplayCalcDto
 {
     public double Rating { get; init; }
     public int Games { get; init; }
-    public double Consistency { get; init; }
-    public double Confidence { get; init; }
+    public double Deviation { get; init; }
     public PlayerReplayCalcDto Player { get; init; } = null!;
 }
 
