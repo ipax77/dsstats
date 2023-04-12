@@ -1,7 +1,4 @@
 ﻿using pax.dsstats.shared.Arcade;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Text.Json;
 
 namespace pax.dsstats.web.Server.Services.Arcade;
 
@@ -30,17 +27,19 @@ public partial class CrawlerService
 
         Dictionary<int, int> mapRegions = new Dictionary<int, int>()
         {
-             // { 208271, 1 }, // NA
+             { 208271, 1 }, // NA
              { 140436, 2 }, // EU
              { 69942, 3 },  // As
-            // { 231019, 2 }, // TE EU
-            // { 327974, 1 }, // TE NA
+             { 231019, 2 }, // TE EU
+             { 327974, 1 }, // TE NA
         };
-        // string handle = "2-S2-1-226401";
-        string handle = "1-S2-1-10188255";
+        string euHandle = "2-S2-1-226401";
+        string naHandle = "1-S2-1-10188255";
 
         foreach (var mapRegion in mapRegions)
         {
+            var handle = mapRegion.Key == 1 ? naHandle : euHandle;
+
             string baseRequest =
                 $"lobbies/history?regionId={mapRegion.Value}&mapId={mapRegion.Key}&profileHandle={handle}& orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
             // $"lobbies/history?regionId={mapRegion.Value}&mapId={mapRegion.Key}&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
@@ -64,24 +63,59 @@ public partial class CrawlerService
                         current = next;
                     }
 
-                    var result = await httpClient.GetFromJsonAsync<LobbyHistoryResponse>(request);
-                    if (result != null)
+                    var response = await httpClient.GetAsync(request);
+                    if (response.IsSuccessStatusCode)
                     {
-                        results.AddRange(result.Results);
-                        next = result.Page.Next;
+                        var result = await response.Content.ReadFromJsonAsync<LobbyHistoryResponse>();
+                        if (result != null)
+                        {
+                            results.AddRange(result.Results);
+                            next = result.Page.Next;
+                        }
+                        int responseWaitTime = GetWaitTime(response);
+                        if (responseWaitTime > 0)
+                        {
+                            int wait = 0;
+                            if (results.Any())
+                            {
+                                wait = await Import(results, mapRegion.Key, tillTime);
+                                results.Clear();
+                                if (wait < 0)
+                                {
+                                    break;
+                                }
+                            }
+                            responseWaitTime -= wait;
+                            if (responseWaitTime > 0)
+                            {
+                                await Task.Delay(responseWaitTime);
+                            }
+                        }
+                    }
+                    else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                    {
+                        int responseWaitTime = GetWaitTime(response);
+                        if (responseWaitTime > 0)
+                        {
+                            await Task.Delay(responseWaitTime);
+                        }
+                    }
+                    else
+                    {
+                        logger.LogError($"failed getting lobby result ({next}): {response.StatusCode}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    logger.LogInformation($"failed getting lobby result ({next}): {ex.Message}");
+                    logger.LogError($"failed getting lobby result ({next}): {ex.Message}");
                     if (results.Any())
                     {
-                        await ImportArcadeReplays(results, (mapRegion.Key == 231019 || mapRegion.Key == 231019));
-                        if (results.Last().CreatedAt < tillTime)
+                        int wait = await Import(results, mapRegion.Key, tillTime);
+                        results.Clear();
+                        if (wait < 0)
                         {
                             break;
                         }
-                        results.Clear();
                     }
                     else
                     {
@@ -95,13 +129,12 @@ public partial class CrawlerService
                 }
                 if (results.Count > 10000)
                 {
-                    await ImportArcadeReplays(results, (mapRegion.Key == 231019 || mapRegion.Key == 231019));
-
-                    if (results.Last().CreatedAt < tillTime || i > fsBreak)
+                    int wait = await Import(results, mapRegion.Key, tillTime);
+                    results.Clear();
+                    if (wait < 0)
                     {
                         break;
                     }
-                    results.Clear();
                 }
             }
 
@@ -110,6 +143,34 @@ public partial class CrawlerService
         }
 
         logger.LogWarning($"job done.");
+    }
+
+    private async Task<int> Import(List<LobbyResult> results, int regionKey, DateTime tillTime)
+    {
+        var start = DateTime.UtcNow;
+        await ImportArcadeReplays(results, (regionKey == 231019 || regionKey == 231019));
+        if (results.Last().CreatedAt < tillTime)
+        {
+            return -1;
+        }
+        return (int)(DateTime.UtcNow - start).TotalMilliseconds;
+    }
+
+    private static int GetWaitTime(HttpResponseMessage response)
+    {
+        // Get the rate limit headers
+        // int rateLimit = int.Parse(response.Headers.GetValues("x-ratelimit-limit").FirstOrDefault() ?? "0");
+        int rateLimitRemaining = int.Parse(response.Headers.GetValues("x-ratelimit-remaining").FirstOrDefault() ?? "0");
+        int rateLimitReset = int.Parse(response.Headers.GetValues("x-ratelimit-reset").FirstOrDefault() ?? "0");
+
+        if (rateLimitRemaining > 0)
+        {
+            return 0;
+        }
+        else
+        {
+            return Math.Max(rateLimitReset * 1000, 1000);
+        }
     }
 }
 
