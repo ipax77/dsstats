@@ -136,7 +136,7 @@ public partial class ImportService
                 context.Players.Add(newPlayer);
                 await context.SaveChangesAsync();
 
-                playerId = dbCache.Players[new(newPlayer.ToonId, newPlayer.RealmId, newPlayer.RealmId)]] = newPlayerId;
+                playerId = dbCache.Players[new(newPlayer.ToonId, newPlayer.RealmId, newPlayer.RealmId)] = newPlayer.PlayerId;
             }
             newPlayerId = playerId;
         }
