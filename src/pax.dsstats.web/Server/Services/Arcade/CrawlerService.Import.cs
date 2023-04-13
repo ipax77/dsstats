@@ -66,6 +66,18 @@ public partial class CrawlerService
                 continue;
             }
 
+            if (result.Match.ProfileMatches.Any(a => a.Profile.ProfileId == 0))
+            {
+                logger.LogError($"replay with MatchProfiles ProfileId == 0: RegionId {crawlInfo.RegionId}, BnetBucketId {result.BnetBucketId}, BnetRecordId {result.BnetRecordId}");
+                continue;
+            }
+
+            if (result.Slots.Any(a => a.Profile?.ProfileId == 0))
+            {
+                logger.LogError($"replay with SlotsProfiles ProfileId == 0: RegionId {crawlInfo.RegionId}, BnetBucketId {result.BnetBucketId}, BnetRecordId {result.BnetRecordId}");
+                continue;
+            }
+
             ArcadeReplay replay = new()
             {
                 RegionId = result.RegionId,
@@ -86,22 +98,28 @@ public partial class CrawlerService
                     ArcadePlayer = new()
                     {
                         Name = s.Name,
+                        RegionId = s.Profile?.RegionId ?? 0,
+                        RealmId = s.Profile?.RealmId ?? 0,
+                        ProfileId = s.Profile?.ProfileId ?? 0
                     }
                 }).ToList(),
             };
 
             foreach (var rp in replay.ArcadeReplayPlayers)
             {
-                var matchPlayer = result.Match.ProfileMatches.FirstOrDefault(f => f.Profile.Name ==  rp.Name);
+                var matchPlayer = result.Match.ProfileMatches.FirstOrDefault(f => 
+                    f.Profile.RegionId == winner.Profile.RegionId
+                    && f.Profile.ProfileId == winner.Profile.ProfileId
+                    && f.Profile.RealmId == winner.Profile.RealmId
+                );
                 if (matchPlayer == null)
                 {
+                    logger.LogError($"player match profile not found: RegionId {replay.RegionId}, BnetBucketId {replay.BnetBucketId}, BnetRecordId {replay.BnetRecordId}");
                     continue; 
                 }
                 rp.Discriminator = matchPlayer.Profile.Discriminator;
-                rp.ArcadePlayer.RegionId = matchPlayer.Profile.RegionId;
-                rp.ArcadePlayer.RealmId = matchPlayer.Profile.RealmId;
-                rp.ArcadePlayer.ProfileId = matchPlayer.Profile.ProfileId;
-                rp.PlayerResult = matchPlayer.Decision == "win" ? pax.dsstats.shared.PlayerResult.Win
+                rp.PlayerResult = matchPlayer.Decision == "win" ? 
+                    pax.dsstats.shared.PlayerResult.Win
                     : pax.dsstats.shared.PlayerResult.Los;
             }
 
