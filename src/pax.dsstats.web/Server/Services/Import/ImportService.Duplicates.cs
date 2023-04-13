@@ -123,7 +123,7 @@ public partial class ImportService
         int newPlayerId;
         if (!players.Any())
         {
-            if (!dbCache.Players.TryGetValue(new(player.ToonId, player.RealmId, player.RealmId), out int playerId))
+            if (!dbCache.Players.TryGetValue(new(player.ToonId, player.RealmId, regionId), out int playerId))
             {
                 var newPlayer = new Player()
                 {
@@ -136,7 +136,7 @@ public partial class ImportService
                 context.Players.Add(newPlayer);
                 await context.SaveChangesAsync();
 
-                playerId = dbCache.Players[new(newPlayer.ToonId, newPlayer.RealmId, newPlayer.RealmId)] = newPlayer.PlayerId;
+                playerId = dbCache.Players[new(newPlayer.ToonId, newPlayer.RealmId, newPlayer.RegionId)] = newPlayer.PlayerId;
             }
             newPlayerId = playerId;
         }
