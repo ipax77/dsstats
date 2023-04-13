@@ -48,7 +48,7 @@ public partial class ImportService
         {
             await SyncReplayPlayers(dupReplay.ReplayPlayers.ToList(), replay.ReplayPlayers.ToList(), context);
             await context.SaveChangesAsync();
-            
+
             return true;
         }
         else
@@ -64,7 +64,7 @@ public partial class ImportService
                 .FirstAsync(f => f.ReplayId == dupReplay.ReplayId);
 
             context.Replays.Remove(delReplay);
-            
+
             await context.SaveChangesAsync();
 
             return false;
@@ -89,7 +89,7 @@ public partial class ImportService
                 await TryFixDupPlayer(keepReplayPlayer, GetReplayRegion(keepReplayPlayers, replayPlayers), context);
                 continue;
             }
-            
+
             if (replayPlayer.IsUploader)
             {
                 keepReplayPlayer.IsUploader = true;
@@ -123,23 +123,22 @@ public partial class ImportService
         int newPlayerId;
         if (!players.Any())
         {
-            var newPlayer = new Player() 
+            if (!dbCache.Players.TryGetValue(new(player.ToonId, player.RealmId, player.RealmId), out int playerId))
             {
-                Name = player.Name,
-                ToonId = player.ToonId,
-                RegionId = regionId,
-                RealmId = player.RealmId
-            };
+                var newPlayer = new Player()
+                {
+                    Name = player.Name,
+                    ToonId = player.ToonId,
+                    RegionId = regionId,
+                    RealmId = player.RealmId
+                };
 
-            context.Players.Add(newPlayer);
-            await context.SaveChangesAsync();
+                context.Players.Add(newPlayer);
+                await context.SaveChangesAsync();
 
-            newPlayerId = newPlayer.PlayerId;
-
-            if (!dbCache.Players.ContainsKey(new(newPlayer.ToonId, newPlayer.RealmId, newPlayer.RealmId)))
-            {
-                dbCache.Players.Add(new(newPlayer.ToonId, newPlayer.RealmId, newPlayer.RealmId), newPlayerId);
+                playerId = dbCache.Players[new(newPlayer.ToonId, newPlayer.RealmId, newPlayer.RealmId)]] = newPlayerId;
             }
+            newPlayerId = playerId;
         }
         else
         {
