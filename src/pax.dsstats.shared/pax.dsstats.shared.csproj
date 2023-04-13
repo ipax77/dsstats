@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FireMath.NET" Version="1.0.2.1" />
+    <PackageReference Include="FireMath.NET" Version="1.0.4" />
   </ItemGroup>
 
 </Project>
