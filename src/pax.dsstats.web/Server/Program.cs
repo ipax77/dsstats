@@ -124,9 +124,9 @@ if (app.Environment.IsDevelopment())
     //var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
     //ratingsService.ProduceRatings(true).Wait();
 
-    var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
+    // var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
     // crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-6)).Wait();
-    crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1)).Wait();
+    // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1)).Wait();
 
     //var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
     //arcadeRatingsService.ProduceRatings().Wait();

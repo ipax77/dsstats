@@ -53,7 +53,8 @@ class Program
         {
             tillDate = DateTime.Today.AddDays(days * -1);
         }
-
+        Console.WriteLine($"Crawling lobby histories from today till {tillDate.ToShortDateString()}");
         crawlerService.GetLobbyHistory(tillDate).Wait();
+        Console.WriteLine($"jon done.");
     }
 }
