@@ -15,7 +15,7 @@ public record MmrOptions
 
         UseCommanderMmr = false;
 
-        StandardPlayerDeviation = 400;
+        StandardPlayerDeviation = 800;
         StandardMatchDeviation = Math.Sqrt((3 + 3) * Math.Pow(StandardPlayerDeviation, 2));
         StartMmr = 1000;
     }
