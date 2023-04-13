@@ -25,23 +25,30 @@ public partial class CrawlerService
         string? next = null;
         string? current = null;
 
-        Dictionary<int, int> mapRegions = new Dictionary<int, int>()
-        {
-             { 208271, 1 }, // NA
-             { 140436, 2 }, // EU
-             { 69942, 3 },  // As
-             { 231019, 2 }, // TE EU
-             { 327974, 1 }, // TE NA
-        };
-        string euHandle = "2-S2-1-226401";
-        string naHandle = "1-S2-1-10188255";
+        // List<CrawlInfo> crawlInfos = new() 
+        // {
+        //     new(regionId: 1, mapId: 208271, handle: "1-S2-1-10188255", teMap: false),
+        //     new(2, 140436, "2-S2-1-226401", false),
+        //     new(3, 69942, "3-S2-1-6360070", false),
+        //     new(1, 327974, "1-S2-1-10188255", true),
+        //     new(2, 231019, "2-S2-1-226401", true),
+        // };
 
-        foreach (var mapRegion in mapRegions)
+        List<CrawlInfo> crawlInfos = new() 
         {
-            var handle = mapRegion.Key == 1 ? naHandle : euHandle;
+            new(regionId: 1, mapId: 208271, handle: "2-S2-1-226401", teMap: false),
+            new(2, 140436, "1-S2-1-10188255", false),
+            new(3, 69942, "2-S2-1-226401", false),
+            new(1, 327974, "2-S2-1-226401", true),
+            new(2, 231019, "1-S2-1-10188255", true),
+        };        
 
+        foreach (var crawlInfo in crawlInfos)
+        {
+            // &includeSlotsProfile=true
             string baseRequest =
-                $"lobbies/history?regionId={mapRegion.Value}&mapId={mapRegion.Key}&profileHandle={handle}& orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
+                $"lobbies/history?regionId={crawlInfo.RegionId}&mapId={crawlInfo.MapId}&profileHandle={crawlInfo.Handle}&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeSlotsProfile=true&includeMatchResult=true&includeMatchPlayers=true";
+            // $"lobbies/history?regionId={crawlInfo.RegionId}&mapId={crawlInfo.MapId}&profileHandle={crawlInfo.Handle}&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
             // $"lobbies/history?regionId={mapRegion.Value}&mapId={mapRegion.Key}&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
             // $"lobbies/history?regionId={mapRegion.Value}&mapId={mapRegion.Key}&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
 
@@ -78,7 +85,7 @@ public partial class CrawlerService
                             int wait = 0;
                             if (results.Any())
                             {
-                                wait = await Import(results, mapRegion.Key, tillTime);
+                                wait = await Import(results, crawlInfo, tillTime);
                                 results.Clear();
                                 if (wait < 0)
                                 {
@@ -110,7 +117,7 @@ public partial class CrawlerService
                     logger.LogError($"failed getting lobby result ({next}): {ex.Message}");
                     if (results.Any())
                     {
-                        int wait = await Import(results, mapRegion.Key, tillTime);
+                        int wait = await Import(results, crawlInfo, tillTime);
                         results.Clear();
                         if (wait < 0)
                         {
@@ -129,7 +136,7 @@ public partial class CrawlerService
                 }
                 if (results.Count > 10000)
                 {
-                    int wait = await Import(results, mapRegion.Key, tillTime);
+                    int wait = await Import(results, crawlInfo, tillTime);
                     results.Clear();
                     if (wait < 0)
                     {
@@ -137,18 +144,22 @@ public partial class CrawlerService
                     }
                 }
             }
-
-            await ImportArcadeReplays(results, (mapRegion.Key == 231019 || mapRegion.Key == 231019));
+            await ImportArcadeReplays(results, crawlInfo);
             results.Clear();
+        }
+
+        foreach (var crawlInfo in crawlInfos)
+        {
+            logger.LogWarning($"{crawlInfo}");
         }
 
         logger.LogWarning($"job done.");
     }
 
-    private async Task<int> Import(List<LobbyResult> results, int regionKey, DateTime tillTime)
+    private async Task<int> Import(List<LobbyResult> results, CrawlInfo crawlInfo, DateTime tillTime)
     {
         var start = DateTime.UtcNow;
-        await ImportArcadeReplays(results, (regionKey == 231019 || regionKey == 231019));
+        await ImportArcadeReplays(results, crawlInfo);
         if (results.Last().CreatedAt < tillTime)
         {
             return -1;
@@ -172,6 +183,24 @@ public partial class CrawlerService
             return Math.Max(rateLimitReset * 1000, 1000);
         }
     }
+}
+
+public record CrawlInfo
+{
+    public CrawlInfo(int regionId, int mapId, string handle, bool teMap)
+    {
+        RegionId = regionId;
+        MapId = mapId;
+        Handle = handle;
+        TeMap = teMap;
+    }
+    public int RegionId { get; init; }
+    public int MapId { get; init; }
+    public string Handle { get; init; }
+    public bool TeMap { get; init; }
+    public int Dups { get; set; }
+    public int Imports { get; set; }
+    public int Errors { get; set; }
 }
 
 public record PlayerSuccess

@@ -10,7 +10,7 @@ public partial class CrawlerService
     private Dictionary<PlayerId, int> arcadePlayerIds = new();
     private Dictionary<ArcadeReplayId, bool> arcadeReplayIds = new();
 
-    private async Task ImportArcadeReplays(List<LobbyResult> results, bool teMap)
+    private async Task ImportArcadeReplays(List<LobbyResult> results, CrawlInfo crawlInfo)
     {
         await SeedPlayerIds();
         await SeedReplayIds();
@@ -22,6 +22,7 @@ public partial class CrawlerService
             ArcadeReplayId acradeReplayId = new(result.RegionId, result.BnetBucketId, result.BnetRecordId);
             if (arcadeReplayIds.ContainsKey(acradeReplayId))
             {
+                crawlInfo.Dups++;
                 continue;
             }
 
@@ -54,10 +55,14 @@ public partial class CrawlerService
                 continue;
             }
 
-            var winnerPlayer = result.Slots.FirstOrDefault(f => f.Name == winner.Profile.Name);
+            var winnerPlayer = result.Slots.FirstOrDefault(f => 
+                f.Profile?.RegionId == winner.Profile.RegionId
+                && f.Profile?.ProfileId == winner.Profile.ProfileId
+                && f.Profile?.RealmId == winner.Profile.RealmId);
 
             if (winnerPlayer == null || winnerPlayer.Team == null)
             { 
+                crawlInfo.Errors++;
                 continue;
             }
 
@@ -72,7 +77,7 @@ public partial class CrawlerService
                 : Convert.ToInt32((result.Match.CompletedAt.Value - result.CreatedAt).TotalSeconds),
                 PlayerCount = 6,
                 WinnerTeam = winnerPlayer.Team.Value,
-                TournamentEdition = teMap,
+                TournamentEdition = crawlInfo.TeMap,
                 ArcadeReplayPlayers = result.Slots.Select(s => new ArcadeReplayPlayer()
                 {
                     Name = s.Name,
@@ -102,6 +107,7 @@ public partial class CrawlerService
 
             replays.Add(replay);
             arcadeReplayIds.Add(new(replay.RegionId, replay.BnetBucketId, replay.BnetRecordId), true);
+            crawlInfo.Imports++;
         }
 
         await MapPlayers(replays);
