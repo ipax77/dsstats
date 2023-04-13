@@ -19,7 +19,7 @@ public partial class RatingsService
 
         command.CommandText =
             $@"
-                INSERT OR REPLACE INTO PlayerRatings ({nameof(PlayerRating.PlayerRatingId)},{nameof(PlayerRating.RatingType)},{nameof(PlayerRating.Rating)},{nameof(PlayerRating.Games)},{nameof(PlayerRating.Wins)},{nameof(PlayerRating.Mvp)},{nameof(PlayerRating.TeamGames)},{nameof(PlayerRating.MainCount)},{nameof(PlayerRating.Main)},{nameof(PlayerRating.MmrOverTime)},{nameof(PlayerRating.Consistency)},{nameof(PlayerRating.Confidence)},{nameof(PlayerRating.IsUploader)},{nameof(PlayerRating.PlayerId)})
+                INSERT OR REPLACE INTO PlayerRatings ({nameof(PlayerRating.PlayerRatingId)},{nameof(PlayerRating.RatingType)},{nameof(PlayerRating.Rating)},{nameof(PlayerRating.Games)},{nameof(PlayerRating.Wins)},{nameof(PlayerRating.Mvp)},{nameof(PlayerRating.TeamGames)},{nameof(PlayerRating.MainCount)},{nameof(PlayerRating.Main)},{nameof(PlayerRating.MmrOverTime)},{nameof(PlayerRating.Deviation)},{nameof(PlayerRating.IsUploader)},{nameof(PlayerRating.PlayerId)})
                 VALUES ((SELECT {nameof(PlayerRating.PlayerRatingId)} from PlayerRatings where {nameof(PlayerRating.RatingType)} = $value1 AND {nameof(PlayerRating.PlayerId)} = $value13),$value1,$value2,$value3,$value4,$value5,$value6,$value7,$value8,$value9,$value10,$value11,$value12,$value13)
             ";
 
@@ -47,8 +47,7 @@ public partial class RatingsService
                 parameters[6].Value = main.Value;
                 parameters[7].Value = (int)main.Key;
                 parameters[8].Value = RatingsCsvService.GetDbMmrOverTime(calcEnt.MmrOverTime);
-                parameters[9].Value = calcEnt.Consistency;
-                parameters[10].Value = calcEnt.Confidence;
+                parameters[10].Value = calcEnt.Deviation;
                 parameters[11].Value = calcEnt.IsUploader;
                 parameters[12].Value = calcEnt.PlayerId;
                 await command.ExecuteNonQueryAsync();
@@ -232,7 +231,7 @@ public partial class RatingsService
 
         command.CommandText =
             $@"
-                INSERT INTO {nameof(ReplayContext.RepPlayerRatings)} ({nameof(RepPlayerRating.RepPlayerRatingId)},{nameof(RepPlayerRating.GamePos)},{nameof(RepPlayerRating.Rating)},{nameof(RepPlayerRating.RatingChange)},{nameof(RepPlayerRating.Games)},{nameof(RepPlayerRating.Consistency)},{nameof(RepPlayerRating.Confidence)},{nameof(RepPlayerRating.ReplayPlayerId)},{nameof(RepPlayerRating.ReplayRatingInfoId)})
+                INSERT INTO {nameof(ReplayContext.RepPlayerRatings)} ({nameof(RepPlayerRating.RepPlayerRatingId)},{nameof(RepPlayerRating.GamePos)},{nameof(RepPlayerRating.Rating)},{nameof(RepPlayerRating.RatingChange)},{nameof(RepPlayerRating.Games)},{nameof(RepPlayerRating.Deviation)},{nameof(RepPlayerRating.ReplayPlayerId)},{nameof(RepPlayerRating.ReplayRatingInfoId)})
                 VALUES ($value1,$value2,$value3,$value4,$value5,$value6,$value7,$value8,$value9)
             ";
 
@@ -260,8 +259,7 @@ public partial class RatingsService
                 parameters[2].Value = repPlayerRatingDto.Rating;
                 parameters[3].Value = repPlayerRatingDto.RatingChange;
                 parameters[4].Value = repPlayerRatingDto.Games;
-                parameters[5].Value = repPlayerRatingDto.Consistency;
-                parameters[6].Value = repPlayerRatingDto.Confidence;
+                parameters[6].Value = repPlayerRatingDto.Deviation;
                 parameters[7].Value = repPlayerRatingDto.ReplayPlayerId;
                 parameters[8].Value = replayRatingAppendId;
                 await command.ExecuteNonQueryAsync();
