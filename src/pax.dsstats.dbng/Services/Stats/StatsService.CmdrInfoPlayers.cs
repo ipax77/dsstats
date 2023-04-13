@@ -14,10 +14,10 @@ public partial class StatsService
             toDate = toDate.AddDays(2);
         }
 
-        int limit = 10;
+        int limit = 10 * 2;
         if (request.RatingType == RatingType.CmdrTE)
         {
-            limit = 2;
+            limit = 2 * 2;
         }
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.        
@@ -40,8 +40,8 @@ public partial class StatsService
                         ToonId = g.Key.ToonId,
                         RegionId = g.Key.RegionId,
                         RealmId = g.Key.RealmId,
-                        Count = g.Count(),
-                        Wins = g.Count(c => c.rp.PlayerResult == PlayerResult.Win),
+                        Count = g.Count() / 2,
+                        Wins = g.Count(c => c.rp.PlayerResult == PlayerResult.Win) / 2,
                         AvgRating = Math.Round(g.Average(s => s.rp.ReplayPlayerRatingInfo.Rating)),
                         AvgGain = Math.Round(g.Average(a => a.rp.ReplayPlayerRatingInfo.RatingChange), 2),
                         TeamRating = Math.Round(g.Average(a => a.rpr.Rating))
