@@ -1,11 +1,11 @@
 using dsstats.mmr.Extensions;
 using dsstats.mmr.ProcessData;
-using FireMath.NET.Distributions;
 using pax.dsstats.shared;
 
 using TeamData = dsstats.mmr.ProcessData.TeamData;
 
 namespace dsstats.mmr;
+using Maths;
 
 public static partial class MmrService
 {

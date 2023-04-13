@@ -1,7 +1,7 @@
-using FireMath.NET.Distributions;
 using pax.dsstats.shared;
 
 namespace dsstats.mmr.ProcessData;
+using Maths;
 
 public record TeamData
 {
