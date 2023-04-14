@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using pax.dsstats.dbng;
 
@@ -10,9 +11,10 @@ using pax.dsstats.dbng;
 namespace MysqlMigrations.Migrations
 {
     [DbContext(typeof(ReplayContext))]
-    partial class ReplayContextModelSnapshot : ModelSnapshot
+    [Migration("20230412084225_ArcadeReplayBNet")]
+    partial class ArcadeReplayBNet
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -171,20 +173,11 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("GameMode")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("Imported")
-                        .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
-
                     b.Property<int>("PlayerCount")
                         .HasColumnType("int");
 
                     b.Property<int>("RegionId")
                         .HasColumnType("int");
-
-                    b.Property<string>("ReplayHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("varchar(64)");
 
                     b.Property<bool>("TournamentEdition")
                         .HasColumnType("tinyint(1)");
@@ -193,8 +186,6 @@ namespace MysqlMigrations.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("ArcadeReplayId");
-
-                    b.HasIndex("ReplayHash");
 
                     b.HasIndex("GameMode", "CreatedAt");
 

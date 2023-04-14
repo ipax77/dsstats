@@ -32,9 +32,9 @@ public record LobbyResult
 
     public int RegionId { get; set; }
 
-    public int BnetBucketId { get; set; }
+    public long BnetBucketId { get; set; }
 
-    public int BnetRecordId { get; set; }
+    public long BnetRecordId { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
@@ -80,6 +80,7 @@ public record Slot
     public string Kind { get; set; } = string.Empty;
 
     public string Name { get; set; } = string.Empty;
+    public PlayerProfile? Profile { get; set; }
 }
 
 public record Match
