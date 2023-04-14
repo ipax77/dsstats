@@ -23,13 +23,13 @@ builder.Host.ConfigureAppConfiguration((context, config) =>
 // Add services to the container.
 
 var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 41));
-var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
-var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"];
+// var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
+// var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"];
 
 // var connectionString = builder.Configuration["ServerConfig:DsstatsProdConnectionString"];
 
-// var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
-// var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"];
+var connectionString = builder.Configuration["ServerConfig:TestConnectionString"];
+var importConnectionString = builder.Configuration["ServerConfig:ImportTestConnectionString"];
 
 builder.Services.AddOptions<DbImportOptions>()
     .Configure(x => x.ImportConnectionString = importConnectionString);
@@ -121,8 +121,8 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
-    ratingsService.ProduceRatings(true).Wait();
+    // var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+    // ratingsService.ProduceRatings(true).Wait();
 
     // var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
     // crawlerService.GetLobbyHistory(DateTime.Today.AddMonths(-3)).Wait();
