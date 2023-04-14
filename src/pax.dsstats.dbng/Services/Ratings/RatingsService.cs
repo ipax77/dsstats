@@ -50,7 +50,8 @@ public partial class RatingsService
                 {
                     MmrOptions = new(reCalc: true),
                     MmrIdRatings = await GetMmrIdRatings(new(reCalc: true), null),
-                    StartTime = Data.IsMaui ? new DateTime(2018, 1, 1) : new DateTime(2021, 2, 1),
+                    // StartTime = Data.IsMaui ? new DateTime(2018, 1, 1) : new DateTime(2021, 2, 1),
+                    StartTime = new DateTime(2018, 1, 1),
                     EndTime = DateTime.Today.AddDays(2)
                 };
 
