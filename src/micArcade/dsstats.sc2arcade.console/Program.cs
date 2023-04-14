@@ -26,7 +26,8 @@ class Program
 
         services.AddLogging(options =>
         {
-            options.SetMinimumLevel(LogLevel.Warning);
+            options.SetMinimumLevel(LogLevel.Information);
+            options.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
             options.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
             options.AddConsole();
         });

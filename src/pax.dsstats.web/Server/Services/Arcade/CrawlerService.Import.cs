@@ -10,14 +10,14 @@ public partial class CrawlerService
     private Dictionary<PlayerId, int> arcadePlayerIds = new();
     private Dictionary<ArcadeReplayId, bool> arcadeReplayIds = new();
 
-    private async Task ImportArcadeReplays(List<LobbyResult> results, CrawlInfo crawlInfo)
+    private async Task ImportArcadeReplays(CrawlInfo crawlInfo)
     {
         await SeedPlayerIds();
         await SeedReplayIds();
 
         List<ArcadeReplay> replays = new();
 
-        foreach (var result in results)
+        foreach (var result in crawlInfo.Results)
         {
             ArcadeReplayId acradeReplayId = new(result.RegionId, result.BnetBucketId, result.BnetRecordId);
             if (arcadeReplayIds.ContainsKey(acradeReplayId))
