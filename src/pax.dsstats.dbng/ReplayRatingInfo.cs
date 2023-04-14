@@ -24,8 +24,7 @@ public class RepPlayerRating
     public float Rating { get; set; }
     public float RatingChange { get; set; }
     public int Games { get; set; }
-    public float Consistency { get; set; }
-    public float Confidence { get; set; }
+    public float Deviation { get; set; }
     public int ReplayPlayerId { get; set; }
     public ReplayPlayer ReplayPlayer { get; set; } = null!;
     public int ReplayRatingInfoId { get; set; }

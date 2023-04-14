@@ -166,12 +166,8 @@
                                         <td colspan="2">@HelperService.GetPercentageString(playerRatingDetailsDto.Mvp, playerRatingDetailsDto.Games)</td>
                                     </tr>
                                     <tr>
-                                        <td>Consistency</td>
-                                        <td colspan="2">@playerRatingDetailsDto.Consistency.ToString("N2", CultureInfo.InvariantCulture)</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Confidence</td>
-                                        <td colspan="2">@playerRatingDetailsDto.Confidence.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                        <td>Uncertanity</td>
+                                        <td colspan="2">@playerRatingDetailsDto.Deviation.ToString("N2", CultureInfo.InvariantCulture)</td>
                                     </tr>
                                     <tr>
                                         <td>

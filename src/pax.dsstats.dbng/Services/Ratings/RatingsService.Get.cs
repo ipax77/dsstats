@@ -80,8 +80,7 @@ public partial class RatingsService
                 TeamGames = rating.TeamGames,
                 Mmr = rating.Rating,
                 MmrOverTime = GetTimeRatings(rating.MmrOverTime),
-                Consistency = rating.Consistency,
-                Confidence = rating.Confidence,
+                Deviation = rating.Deviation,
                 IsUploader = rating.IsUploader,
                 CmdrCounts = GetFakeCmdrDic(rating.Main, rating.MainCount, rating.Games)
             };

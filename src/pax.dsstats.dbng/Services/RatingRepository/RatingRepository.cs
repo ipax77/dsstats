@@ -31,8 +31,7 @@ public partial class RatingRepository : IRatingRepository
         return new CalcRating()
         {
             IsUploader = ravenPlayer.IsUploader,
-            Confidence = ravenRating?.Confidence ?? 0,
-            Consistency = ravenRating?.Consistency ?? 0,
+            Deviation = ravenRating?.Deviation ?? 0,
             Games = ravenRating?.Games ?? 0,
             TeamGames = ravenRating?.TeamGames ?? 0,
             Wins = ravenRating?.Wins ?? 0,

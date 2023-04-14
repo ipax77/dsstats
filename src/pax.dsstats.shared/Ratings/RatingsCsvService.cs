@@ -27,8 +27,7 @@ public static class RatingsCsvService
                 sb.Append($"{(int)main.Key},");
 
                 sb.Append($"\"{GetDbMmrOverTime(entCalc.MmrOverTime)}\",");
-                sb.Append($"{entCalc.Consistency.ToString(CultureInfo.InvariantCulture)},");
-                sb.Append($"{entCalc.Confidence.ToString(CultureInfo.InvariantCulture)},");
+                sb.Append($"{entCalc.Deviation.ToString(CultureInfo.InvariantCulture)},");
                 sb.Append($"{(entCalc.IsUploader ? 1 : 0)},");
 
                 sb.Append($"{entCalc.PlayerId},");
@@ -72,8 +71,7 @@ public static class RatingsCsvService
                 sbPlayer.Append($"{rpr.Rating.ToString(CultureInfo.InvariantCulture)},");
                 sbPlayer.Append($"{rpr.RatingChange.ToString(CultureInfo.InvariantCulture)},");
                 sbPlayer.Append($"{rpr.Games},");
-                sbPlayer.Append($"{rpr.Consistency.ToString(CultureInfo.InvariantCulture)},");
-                sbPlayer.Append($"{rpr.Confidence.ToString(CultureInfo.InvariantCulture)},");
+                sbPlayer.Append($"{rpr.Deviation.ToString(CultureInfo.InvariantCulture)},");
                 sbPlayer.Append($"{rpr.ReplayPlayerId},");
                 sbPlayer.Append($"{replayAppendId}");
                 sbPlayer.Append(Environment.NewLine);

@@ -33,8 +33,7 @@ else
                                 <th class="text-info">Pre-Rating</th>
                                 <th>Change</th>
                                 <th>Games</th>
-                                <th>Consistency</th>
-                                <th>Confidence</th>
+                                <th>Uncertanity</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -52,8 +51,7 @@ else
                                         <span class="oi @(info.RatingChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">@info.RatingChange.ToString("N1", CultureInfo.InvariantCulture)</span>
                                     </td>
                                     <td>@info.Games</td>
-                                    <td>@info.Consistency.ToString("N2", CultureInfo.InvariantCulture)</td>
-                                    <td>@info.Confidence.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                    <td>@info.Deviation.ToString("N2", CultureInfo.InvariantCulture)</td>
                                 </tr>
                             }
                         </tbody>
@@ -85,6 +83,9 @@ else
     [Parameter, EditorRequired]
     public ReplayRatingDto? ReplayRatingDto { get; set; }
 
+    [Parameter, EditorRequired]
+    public int WinnerTeam { get; set; }
+
     double Team1Mmr => ReplayRatingDto == null ? 0 : ReplayRatingDto.RepPlayerRatings
         .Where(x => x.GamePos <= 3)
         .Sum(s => s.Rating - s.RatingChange);
@@ -93,10 +94,8 @@ else
         .Where(x => x.GamePos > 3)
         .Sum(s => s.Rating - s.RatingChange);
 
-    double Team1ExpectationToWin => ReplayRatingDto == null ? 0 : EloExpectationToWin(Team1Mmr, Team2Mmr);
-
-    public static double EloExpectationToWin(double ratingOne, double ratingTwo, double clip = 1600)
-    {
-        return 1.0 / (1.0 + Math.Pow(10.0, (2.0 / clip) * (ratingTwo - ratingOne)));
-    }
+    double Team1ExpectationToWin => ReplayRatingDto == null ? 0 : 
+        WinnerTeam == 1 ? 
+            ReplayRatingDto.ExpectationToWin 
+            : 1 - ReplayRatingDto.ExpectationToWin;
 }

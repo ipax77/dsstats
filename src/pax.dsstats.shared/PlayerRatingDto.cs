@@ -35,8 +35,7 @@ public record PlayerRatingDetailDto
     public int TeamGames { get; init; }
     public int MainCount { get; init; }
     public Commander Main { get; init; }
-    public double Consistency { get; set; }
-    public double Confidence { get; set; }
+    public double Deviation { get; set; }
     public bool IsUploader { get; set; }
     public string MmrOverTime { get; set; } = "";
     public PlayerRatingPlayerDto Player { get; init; } = null!;
@@ -71,8 +70,7 @@ public record PlayerRatingReplayCalcDto
 {
     public double Rating { get; init; }
     public int Games { get; init; }
-    public double Consistency { get; init; }
-    public double Confidence { get; init; }
+    public double Deviation { get; init; }
     public PlayerReplayCalcDto Player { get; init; } = null!;
 }
 
