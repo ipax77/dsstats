@@ -14,7 +14,8 @@ public class ArcadeReplay
     [Key]
     public int ArcadeReplayId { get; set; }
     public int RegionId { get; set; }
-    public int Id { get; set; }
+    public long BnetBucketId { get; set; }
+    public long BnetRecordId { get; set; }
     public GameMode GameMode { get; set; }
     [Precision(0)]
     public DateTime CreatedAt { get; set; }
@@ -22,6 +23,10 @@ public class ArcadeReplay
     public int PlayerCount { get; set; }
     public bool TournamentEdition { get; set; }
     public int WinnerTeam { get; set; }
+    [Precision(0)]
+    public DateTime Imported { get; set; }
+    [StringLength(64)]
+    public string ReplayHash { get; set; } = string.Empty;
     public ArcadeReplayRating? ArcadeReplayRating { get; set; }
     public ICollection<ArcadeReplayPlayer> ArcadeReplayPlayers { get; set; }
 }

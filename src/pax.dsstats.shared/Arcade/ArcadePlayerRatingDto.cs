@@ -28,7 +28,7 @@ public record ArcadePlayerRatingChangeDto
 
 public record ArcadeReplayListDto
 {
-    public int Id { get; set; }
+    public int ArcadeReplayId { get; set; }
     public DateTime CreatedAt { get; set; }
     public GameMode GameMode { get; set; }
     public int RegionId { get; set; }
@@ -39,7 +39,7 @@ public record ArcadeReplayListDto
 
 public record ArcadeReplayDto
 {
-    public int Id { get; set; }
+    public int ArcadeReplayId { get; set; }
     public DateTime CreatedAt { get; set; }
     public GameMode GameMode { get; set; }
     public int RegionId { get; set; }
