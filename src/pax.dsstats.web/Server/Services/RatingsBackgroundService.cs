@@ -47,6 +47,8 @@ public class RatingsBackgroundService : IHostedService, IDisposable
         var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
         await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-3));
 
+        await crawlerService.FixPlayerNames();
+
         var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
         await arcadeRatingsService.ProduceRatings();
 
