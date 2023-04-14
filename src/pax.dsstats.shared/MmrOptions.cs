@@ -1,4 +1,3 @@
-using FireMath.NET;
 using pax.dsstats.shared.Arcade;
 
 namespace pax.dsstats.shared;
@@ -16,8 +15,8 @@ public record MmrOptions
 
         UseCommanderMmr = false;
 
-        StandardPlayerDeviation = 400;
-        StandardMatchDeviation = ((3 + 3) * StandardPlayerDeviation.Pow()).Sqrt();
+        StandardPlayerDeviation = 800;
+        StandardMatchDeviation = Math.Sqrt((3 + 3) * Math.Pow(StandardPlayerDeviation, 2));
         StartMmr = 1000;
     }
 
