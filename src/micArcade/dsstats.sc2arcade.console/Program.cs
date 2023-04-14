@@ -74,6 +74,16 @@ class Program
             var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
             crawlerService.SetReplaysHash();
         }
+        if (args.Length > 0 && args[0] == "test")
+        {
+            // var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+            // context.Database.Migrate();
+
+            Console.WriteLine($"testing players and replays");
+            var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
+            crawlerService.CheckPlayers().Wait();
+            crawlerService.CheckReplays().Wait();
+        }        
         else
         {
             if (args.Length > 0 && int.TryParse(args[0], out int days))

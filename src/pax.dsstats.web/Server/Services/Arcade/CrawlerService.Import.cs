@@ -110,9 +110,9 @@ public partial class CrawlerService
             foreach (var rp in replay.ArcadeReplayPlayers)
             {
                 var matchPlayer = result.Match.ProfileMatches.FirstOrDefault(f => 
-                    f.Profile.RegionId == winner.Profile.RegionId
-                    && f.Profile.ProfileId == winner.Profile.ProfileId
-                    && f.Profile.RealmId == winner.Profile.RealmId
+                    f.Profile.RegionId == rp.ArcadePlayer.RegionId
+                    && f.Profile.ProfileId == rp.ArcadePlayer.ProfileId
+                    && f.Profile.RealmId == rp.ArcadePlayer.RealmId
                 );
                 if (matchPlayer == null)
                 {

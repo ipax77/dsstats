@@ -26,7 +26,9 @@ public partial class CrawlerService
         foreach (var player in players)
         {
             var arcadePlayers = await context.ArcadePlayers
-                .Where(x => x.ProfileId == player.ToonId)
+                .Where(x => x.ProfileId == player.ToonId
+                    && x.RealmId == player.RealmId
+                    && x.RegionId == player.RegionId)
                 .ToListAsync();
 
             if (arcadePlayers.Count == 0)
@@ -66,6 +68,7 @@ public partial class CrawlerService
         int good = 0;
         int notFound = 0;
         int multiple = 0;
+        List<int> diff = new();
 
         foreach (var replay in replays)
         {
@@ -84,6 +87,8 @@ public partial class CrawlerService
             else if (arcadeReplays.Count == 1)
             {
                 good++;
+                var arcadeReplay = arcadeReplays.First();
+                diff.Add((int)(replay.GameTime - arcadeReplay.CreatedAt.AddSeconds(arcadeReplay.Duration)).TotalSeconds);
             }
             else
             {
@@ -91,6 +96,7 @@ public partial class CrawlerService
             }
         }
         logger.LogWarning($"Replay check: NotFound: {notFound}/{total}, Multiple: {multiple}/{total}, Good: {good}/{total}");
+        logger.LogWarning($"diff: {diff.Average()} - max {diff.Max()} min: {diff.Min()}");
     }
 
     public void SetReplaysHash()
