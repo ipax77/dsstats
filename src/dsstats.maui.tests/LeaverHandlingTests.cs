@@ -56,8 +56,7 @@ public class LeaverHandlingTests : TestWithSqlite
             {
                 PlayerId = i,
                 Mmr = mmrOptions.StartMmr + (i * 200),
-                Consistency = 0,
-                Confidence = 0,
+                Deviation = 0,
                 Games = 0,
             });
         }

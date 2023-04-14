@@ -12,7 +12,6 @@ public record PlayerRatingCalcDto
     public int MainCount { get; init; }
     public Commander Main { get; init; }
     public string MmrOverTime { get; init; } = string.Empty;
-    public double Consistency { get; init; }
-    public double Confidence { get; init; }
+    public double Deviation { get; init; }
     public bool IsUploader { get; init; }
 }
