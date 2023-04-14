@@ -204,4 +204,26 @@ public static class ReplayExtensions
         sb.Append(String.Concat(replay.ReplayPlayers.OrderBy(o => o.GamePos).Select(s => $"{s.GamePos}{s.Player.ToonId}")));
         return sb.ToString();
     }
+
+    public static void GenHash(this ArcadeReplay replay, MD5 md5)
+    {
+        StringBuilder sb = new();
+        sb.Append((int)replay.GameMode);
+        sb.Append(replay.PlayerCount);
+        sb.Append(replay.RegionId);
+        sb.Append(replay.TournamentEdition);
+        sb.Append(String.Concat(replay.ArcadeReplayPlayers.OrderBy(o => o.ArcadePlayer.ProfileId).Select(s => $"{s.ArcadePlayer.ProfileId}|")));
+        replay.ReplayHash = GetMd5Hash(md5, sb.ToString());
+    }
+
+    public static string GenArcadeHash(this ReplayDsRDto replay, MD5 md5)
+    {        
+        StringBuilder sb = new();
+        sb.Append((int)replay.GameMode);
+        sb.Append(replay.Playercount);
+        sb.Append(replay.ReplayPlayers.FirstOrDefault()?.Player.RegionId ?? 0);
+        sb.Append(replay.TournamentEdition);
+        sb.Append(String.Concat(replay.ReplayPlayers.OrderBy(o => o.Player.ToonId).Select(s => $"{s.Player.ToonId}|")));
+        return GetMd5Hash(md5, sb.ToString());
+    }
 }

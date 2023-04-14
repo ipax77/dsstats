@@ -1,6 +1,7 @@
-﻿using pax.dsstats.shared.Arcade;
-using System.Text;
-using System.Text.Json;
+﻿using System.Security.Cryptography;
+using Microsoft.Extensions.Options;
+using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
 
 namespace pax.dsstats.web.Server.Services.Arcade;
 
@@ -8,104 +9,182 @@ public partial class CrawlerService
 {
     private readonly IServiceProvider serviceProvider;
     private readonly IHttpClientFactory httpClientFactory;
+    private readonly IOptions<DbImportOptions> dbImportOptions;
     private readonly ILogger<CrawlerService> logger;
-
-    public CrawlerService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory, ILogger<CrawlerService> logger)
+    private readonly MD5 md5;
+    
+    
+    public CrawlerService(IServiceProvider serviceProvider,
+                          IHttpClientFactory httpClientFactory,
+                          IOptions<DbImportOptions> dbImportOptions,
+                          ILogger<CrawlerService> logger)
     {
         this.serviceProvider = serviceProvider;
         this.httpClientFactory = httpClientFactory;
+        this.dbImportOptions = dbImportOptions;
         this.logger = logger;
+        md5 = MD5.Create();
     }
 
-    public async Task GetLobbyHistory(DateTime tillTime, int fsBreak = 10000)
+    public async Task GetLobbyHistory(DateTime tillTime, int fsBreak = 1000)
     {
         var httpClient = httpClientFactory.CreateClient("sc2arcardeClient");
 
-        int waitTime = 40*1000 / 100; // 100 request per 40 sec
+        int waitTime = 40 * 1000 / 100; // 100 request per 40 sec
 
-        List<LobbyResult> results = new List<LobbyResult>();
-        string? next = null;
         string? current = null;
 
-        Dictionary<int, int> mapRegions = new Dictionary<int, int>()
+        List<CrawlInfo> crawlInfos = new()
         {
-             { 208271, 1 }, // NA
-             { 140436, 2 }, // EU
-             { 69942, 3 },  // As
-            // { 231019, 2 }, // TE EU
-            // { 327974, 1 }, // TE NA
+            new(regionId: 1, mapId: 208271, handle: "2-S2-1-226401", teMap: false),
+            new(2, 140436, "2-S2-1-226401", false),
+            new(3, 69942, "2-S2-1-226401", false),
+            new(1, 327974, "2-S2-1-226401", true),
+            new(2, 231019, "2-S2-1-226401", true),
         };
 
-        foreach (var mapRegion in mapRegions)
+        foreach (var crawlInfo in crawlInfos)
         {
+
+            // &includeSlotsProfile=true
             string baseRequest =
-                $"lobbies/history?regionId={mapRegion.Value}&mapId={mapRegion.Key}&profileHandle=PAX&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeMatchResult=true&includeMatchPlayers=true";
-                
+                $"lobbies/history?regionId={crawlInfo.RegionId}&mapId={crawlInfo.MapId}&profileHandle={crawlInfo.Handle}&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeSlotsProfile=true&includeMatchResult=true&includeMatchPlayers=true";
 
             int i = 0;
-            while (true)
+            while (!crawlInfo.Done)
             {
                 i++;
                 try
                 {
                     var request = baseRequest;
-                    if (!String.IsNullOrEmpty(next))
+                    if (!String.IsNullOrEmpty(crawlInfo.Next))
                     {
-                        request += $"&after={next}";
-                        if (next == current)
+                        request += $"&after={crawlInfo.Next}";
+                        if (crawlInfo.Next == current)
                         {
                             await Task.Delay(waitTime);
                         }
-                        current = next;
+                        current = crawlInfo.Next;
                     }
 
-                    var result = await httpClient.GetFromJsonAsync<LobbyHistoryResponse>(request);
-                    if (result != null)
+                    var response = await httpClient.GetAsync(request);
+                    if (response.IsSuccessStatusCode)
                     {
-                        results.AddRange(result.Results);
-                        next = result.Page.Next;
+                        var result = await response.Content.ReadFromJsonAsync<LobbyHistoryResponse>();
+                        if (result != null)
+                        {
+                            crawlInfo.Results.AddRange(result.Results);
+                            crawlInfo.Next = result.Page.Next;
+                        }
+                        int responseWaitTime = GetWaitTime(response);
+                        if (responseWaitTime > 0)
+                        {
+                            int wait = await Import(crawlInfo, tillTime);
+                            responseWaitTime -= wait;
+                            if (responseWaitTime > 0)
+                            {
+                                await Task.Delay(responseWaitTime);
+                            }
+                        }
+                    }
+                    else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                    {
+                        int responseWaitTime = GetWaitTime(response);
+                        if (responseWaitTime > 0)
+                        {
+                            await Task.Delay(responseWaitTime);
+                        }
+                    }
+                    else
+                    {
+                        logger.LogError($"failed getting lobby result ({crawlInfo.Next}): {response.StatusCode}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    logger.LogInformation($"failed getting lobby result ({next}): {ex.Message}");
-                    if (results.Any())
-                    {
-                        await ImportArcadeReplays(results, (mapRegion.Key == 231019 || mapRegion.Key == 231019));
-                        if (results.Last().CreatedAt < tillTime)
-                        {
-                            break;
-                        }
-                        results.Clear();
-                    }
-                    else
-                    {
-                        await Task.Delay(waitTime);
-                    }
+                    logger.LogError($"failed getting lobby result ({crawlInfo.Next}): {ex.Message}");
+                    await Import(crawlInfo, tillTime);
                 }
-                finally
-                {
-                    // await Task.Delay(waitTime);
-                    logger.LogInformation($"{i}/100");
-                }
-                if (results.Count > 10000)
-                {
-                    await ImportArcadeReplays(results, (mapRegion.Key == 231019 || mapRegion.Key == 231019));
 
-                    if (results.Last().CreatedAt < tillTime || i > fsBreak)
-                    {
-                        break;
-                    }
-                    results.Clear();
+                logger.LogInformation($"{i} => {crawlInfo.Results.Count}, {crawlInfo.Next}");
+
+                if (crawlInfo.Results.Count > 10000)
+                {
+                    await Import(crawlInfo, tillTime);
+                }
+
+                if (crawlInfo.Next == null)
+                {
+                    await Import(crawlInfo, tillTime);
+                    logger.LogInformation($"breaking {crawlInfo}");
+                    break;
                 }
             }
+            await Import(crawlInfo, tillTime);
+        }
 
-            await ImportArcadeReplays(results, (mapRegion.Key == 231019 || mapRegion.Key == 231019));
-            results.Clear();
+        foreach (var crawlInfo in crawlInfos)
+        {
+            logger.LogWarning($"{crawlInfo}");
         }
 
         logger.LogWarning($"job done.");
     }
+
+    private async Task<int> Import(CrawlInfo crawlInfo, DateTime tillTime)
+    {
+        if (!crawlInfo.Results.Any())
+        {
+            return 0;
+        }
+
+        var start = DateTime.UtcNow;
+        if (crawlInfo.Results.Last().CreatedAt < tillTime)
+        {
+            crawlInfo.Done = true;
+        }
+        await ImportArcadeReplays(crawlInfo);
+        crawlInfo.Results.Clear();
+        return (int)(DateTime.UtcNow - start).TotalMilliseconds;
+    }
+
+    private static int GetWaitTime(HttpResponseMessage response)
+    {
+        // Get the rate limit headers
+        // int rateLimit = int.Parse(response.Headers.GetValues("x-ratelimit-limit").FirstOrDefault() ?? "0");
+        int rateLimitRemaining = int.Parse(response.Headers.GetValues("x-ratelimit-remaining").FirstOrDefault() ?? "0");
+        int rateLimitReset = int.Parse(response.Headers.GetValues("x-ratelimit-reset").FirstOrDefault() ?? "0");
+
+        if (rateLimitRemaining > 0)
+        {
+            return 0;
+        }
+        else
+        {
+            return Math.Max(rateLimitReset * 1000, 1000);
+        }
+    }
+}
+
+public record CrawlInfo
+{
+    public CrawlInfo(int regionId, int mapId, string handle, bool teMap)
+    {
+        RegionId = regionId;
+        MapId = mapId;
+        Handle = handle;
+        TeMap = teMap;
+    }
+    public int RegionId { get; init; }
+    public int MapId { get; init; }
+    public string Handle { get; init; }
+    public bool TeMap { get; init; }
+    public int Dups { get; set; }
+    public int Imports { get; set; }
+    public int Errors { get; set; }
+    public string? Next { get; set; }
+    public List<LobbyResult> Results { get; set; } = new();
+    public bool Done { get; set; }
 }
 
 public record PlayerSuccess
@@ -123,7 +202,7 @@ public record PlayerId
 
     }
 
-    public PlayerId( int regionId, int realmId, int profileId)
+    public PlayerId(int regionId, int realmId, int profileId)
     {
         RegionId = regionId;
         RealmId = realmId;

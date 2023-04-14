@@ -15,7 +15,7 @@ public partial class ArcadeService
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         return await context.ArcadeReplays
-            .Where(x => x.Id == id)
+            .Where(x => x.ArcadeReplayId == id)
             .ProjectTo<ArcadeReplayDto>(mapper.ConfigurationProvider)
             .FirstOrDefaultAsync(token);
     }
