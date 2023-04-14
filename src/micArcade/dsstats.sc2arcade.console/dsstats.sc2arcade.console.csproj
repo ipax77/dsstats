@@ -4,6 +4,7 @@
     <ProjectReference Include="..\..\pax.dsstats.dbng\pax.dsstats.dbng.csproj" />
     <ProjectReference Include="..\..\pax.dsstats.shared\pax.dsstats.shared.csproj" />
     <ProjectReference Include="..\..\pax.dsstats.web\Server\pax.dsstats.web.Server.csproj" />
+    <ProjectReference Include="..\..\MysqlMigrations\MysqlMigrations.csproj" />
   </ItemGroup>
 
   <ItemGroup>

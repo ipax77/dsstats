@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
+using pax.dsstats.dbng.Extensions;
 
 namespace pax.dsstats.web.Server.Services.Arcade;
 
@@ -90,5 +91,37 @@ public partial class CrawlerService
             }
         }
         logger.LogWarning($"Replay check: NotFound: {notFound}/{total}, Multiple: {multiple}/{total}, Good: {good}/{total}");
+    }
+
+    public void SetReplaysHash()
+    {
+        DateTime startDate = new DateTime(2021, 1, 1);
+        DateTime endDate = startDate.AddMonths(3);
+
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        while (endDate < DateTime.Today.AddDays(2))
+        {
+            var replays = context.ArcadeReplays
+                .Include(i => i.ArcadeReplayPlayers)
+                    .ThenInclude(i => i.ArcadePlayer)
+                .OrderBy(o => o.CreatedAt)
+                    .ThenBy(o => o.ArcadeReplayId)
+                .Where(x => x.CreatedAt >= startDate && x.CreatedAt < endDate)
+                .ToList();
+
+            foreach (var replay in replays)
+            {
+                replay.GenHash(md5);
+            }
+
+            context.SaveChanges();
+
+            startDate = endDate;
+            endDate = endDate.AddMonths(3);
+
+            logger.LogInformation($"Settings hashes for {startDate.ToShortDateString()} - {endDate.ToShortDateString()}");
+        }
     }
 }

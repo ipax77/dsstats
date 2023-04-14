@@ -36,7 +36,8 @@ class Program
         {
             options.UseMySql(connectionString, serverVersion, p =>
             {
-                p.CommandTimeout(120);
+                p.CommandTimeout(600);
+                p.MigrationsAssembly("MysqlMigrations");
                 p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
             });
         });
@@ -64,6 +65,15 @@ class Program
             var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
             arcadeRatingsService.ProduceRatings().Wait();
         }
+        if (args.Length > 0 && args[0] == "sethash")
+        {
+            // var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+            // context.Database.Migrate();
+
+            Console.WriteLine($"setting arcadeReplays hash");
+            var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
+            crawlerService.SetReplaysHash();
+        }
         else
         {
             if (args.Length > 0 && int.TryParse(args[0], out int days))
@@ -73,7 +83,7 @@ class Program
             var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
             Console.WriteLine($"Crawling lobby histories from today till {tillDate.ToShortDateString()}");
             crawlerService.GetLobbyHistory(tillDate).Wait();
-            Console.WriteLine($"jon done.");
         }
+        Console.WriteLine($"jon done.");
     }
 }

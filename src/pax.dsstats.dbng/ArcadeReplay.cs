@@ -23,6 +23,10 @@ public class ArcadeReplay
     public int PlayerCount { get; set; }
     public bool TournamentEdition { get; set; }
     public int WinnerTeam { get; set; }
+    [Precision(0)]
+    public DateTime Imported { get; set; }
+    [StringLength(64)]
+    public string ReplayHash { get; set; } = string.Empty;
     public ArcadeReplayRating? ArcadeReplayRating { get; set; }
     public ICollection<ArcadeReplayPlayer> ArcadeReplayPlayers { get; set; }
 }

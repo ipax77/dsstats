@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Security.Cryptography;
+using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
+using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Arcade;
 
@@ -122,6 +124,9 @@ public partial class CrawlerService
                     pax.dsstats.shared.PlayerResult.Win
                     : pax.dsstats.shared.PlayerResult.Los;
             }
+
+            replay.Imported = DateTime.UtcNow;
+            replay.GenHash(md5);
 
             replays.Add(replay);
             arcadeReplayIds.Add(new(replay.RegionId, replay.BnetBucketId, replay.BnetRecordId), true);

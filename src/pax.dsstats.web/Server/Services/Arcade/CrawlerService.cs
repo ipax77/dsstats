@@ -1,4 +1,5 @@
-﻿using pax.dsstats.shared.Arcade;
+﻿using System.Security.Cryptography;
+using pax.dsstats.shared.Arcade;
 
 namespace pax.dsstats.web.Server.Services.Arcade;
 
@@ -7,12 +8,14 @@ public partial class CrawlerService
     private readonly IServiceProvider serviceProvider;
     private readonly IHttpClientFactory httpClientFactory;
     private readonly ILogger<CrawlerService> logger;
-
+    private readonly MD5 md5;
+    
     public CrawlerService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory, ILogger<CrawlerService> logger)
     {
         this.serviceProvider = serviceProvider;
         this.httpClientFactory = httpClientFactory;
         this.logger = logger;
+        md5 = MD5.Create();
     }
 
     public async Task GetLobbyHistory(DateTime tillTime, int fsBreak = 1000)
@@ -105,7 +108,7 @@ public partial class CrawlerService
                 if (crawlInfo.Next == null)
                 {
                     await Import(crawlInfo, tillTime);
-                    logger.LogWarning($"breaking {crawlInfo}");
+                    logger.LogInformation($"breaking {crawlInfo}");
                     break;
                 }
             }
