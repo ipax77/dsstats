@@ -57,7 +57,6 @@ class Program
 
         using var scope = serviceProvider.CreateScope();
 
-        var tillDate = new DateTime(2021, 02, 01);
 
         if (args.Length > 0 && args[0] == "ratings")
         {
@@ -65,7 +64,7 @@ class Program
             var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
             arcadeRatingsService.ProduceRatings().Wait();
         }
-        if (args.Length > 0 && args[0] == "sethash")
+        else if (args.Length > 0 && args[0] == "sethash")
         {
             // var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
             // context.Database.Migrate();
@@ -74,7 +73,16 @@ class Program
             var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
             crawlerService.SetReplaysHash();
         }
-        if (args.Length > 0 && args[0] == "test")
+        else if (args.Length > 0 && args[0] == "fixplayerresult")
+        {
+            // var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+            // context.Database.Migrate();
+
+            Console.WriteLine($"fixing player results");
+            var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
+            crawlerService.FixPlayerResults();
+        }
+        else if (args.Length > 0 && args[0] == "test")
         {
             // var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
             // context.Database.Migrate();
@@ -83,9 +91,20 @@ class Program
             var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
             crawlerService.CheckPlayers().Wait();
             crawlerService.CheckReplays().Wait();
-        }        
+        } 
+        else if (args.Length > 0 && args[0] == "fixnames")
+        {
+            // var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+            // context.Database.Migrate();
+
+            Console.WriteLine($"fixing player names");
+            var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
+            crawlerService.FixPlayerNames().Wait();
+        }                 
         else
         {
+            var tillDate = new DateTime(2021, 02, 01);
+
             if (args.Length > 0 && int.TryParse(args[0], out int days))
             {
                 tillDate = DateTime.Today.AddDays(days * -1);

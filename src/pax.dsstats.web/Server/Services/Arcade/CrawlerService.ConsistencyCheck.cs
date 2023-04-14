@@ -1,6 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Diagnostics;
+using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Extensions;
+using pax.dsstats.shared;
 
 namespace pax.dsstats.web.Server.Services.Arcade;
 
@@ -12,16 +15,28 @@ public partial class CrawlerService
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         int total = 1000;
+        Random random = new();
 
-        var players = await context.Players
+        var gameModes = new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic, GameMode.Standard };
+
+        var playersQuery = from r in context.Replays
+                           from rp in r.ReplayPlayers
+                           where gameModes.Contains(r.GameMode)
+                            && r.Playercount == 6
+                            && r.Duration > 300
+                            && r.WinnerTeam > 0
+                           select rp.Player;
+
+        var players = await playersQuery
+            .Distinct()
             .OrderBy(o => o.PlayerId)
-            .Take(total)
-            .AsNoTracking()
+            .Skip(random.Next(1000, 10000))
+            .Take(1000)
             .ToListAsync();
 
         int notFound = 0;
         int good = 0;
-        int multiple = 0;
+        int verygood = 0;
 
         foreach (var player in players)
         {
@@ -35,23 +50,28 @@ public partial class CrawlerService
             {
                 notFound++;
             }
-            else if (arcadePlayers.Count == 1 && arcadePlayers.First().RegionId == player.RegionId)
+            else if (arcadePlayers.Count == 1)
             {
-                good++;
-            }
-            else
-            {
-                multiple++;
+                if (player.Name == arcadePlayers.First().Name)
+                {
+                    verygood++;
+                }
+                else
+                {
+                    good++;
+                }
             }
         }
 
-        logger.LogWarning($"Player check: NotFound: {notFound}/{total}, Multiple: {multiple}/{total}, Good: {good}/{total}");
+        logger.LogWarning($"Player check: NotFound: {notFound}/{total}, verygood: {verygood}/{total}, Good: {good}/{total}");
     }
 
     public async Task CheckReplays()
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        Random random = new();
 
         int total = 1000;
 
@@ -60,7 +80,7 @@ public partial class CrawlerService
                 .ThenInclude(i => i.Player)
             .Where(x => (x.GameMode == pax.dsstats.shared.GameMode.Commanders || x.GameMode == pax.dsstats.shared.GameMode.Standard) && x.Playercount == 6 && x.Duration > 300)
             .OrderByDescending(o => o.GameTime)
-            .Skip(5000)
+            .Skip(random.Next(1000, 10000))
             .Take(total)
             .AsNoTracking()
             .ToListAsync();
@@ -73,10 +93,10 @@ public partial class CrawlerService
         foreach (var replay in replays)
         {
             var toonIds = replay.ReplayPlayers.Select(s => s.Player.ToonId).ToList();
-            
+
             var arcadeReplays = await context.ArcadeReplays
                 .Where(x => x.GameMode == replay.GameMode)
-                .Where(x => x.CreatedAt > replay.GameTime.AddHours(-12) && x.CreatedAt < replay.GameTime.AddHours(12))
+                .Where(x => x.CreatedAt > replay.GameTime.AddHours(-6) && x.CreatedAt < replay.GameTime.AddHours(6))
                 .Where(x => x.ArcadeReplayPlayers.All(a => toonIds.Contains(a.ArcadePlayer.ProfileId)))
                 .ToListAsync();
 
@@ -101,6 +121,47 @@ public partial class CrawlerService
 
     public void SetReplaysHash()
     {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        int skip = 0;
+        int take = 10000;
+
+        var replays = context.ArcadeReplays
+                .Include(i => i.ArcadeReplayPlayers)
+                    .ThenInclude(i => i.ArcadePlayer)
+                .OrderBy(o => o.CreatedAt)
+                    .ThenBy(o => o.ArcadeReplayId)
+                .Where(x => String.IsNullOrEmpty(x.ReplayHash))
+                .Skip(skip)
+                .Take(take)
+                .ToList();
+
+        while (replays.Any())
+        {
+            foreach (var replay in replays)
+            {
+                replay.GenHash(md5);
+                Console.WriteLine($"hash: {replay.ReplayHash}");
+            }
+            context.SaveChanges();
+
+            skip += take;
+
+            replays = context.ArcadeReplays
+                            .Include(i => i.ArcadeReplayPlayers)
+                                .ThenInclude(i => i.ArcadePlayer)
+                            .OrderBy(o => o.CreatedAt)
+                                .ThenBy(o => o.ArcadeReplayId)
+                            .Where(x => String.IsNullOrEmpty(x.ReplayHash))
+                            .Skip(skip)
+                            .Take(take)
+                            .ToList();
+        }
+    }
+
+    public void FixPlayerResults()
+    {
         DateTime startDate = new DateTime(2021, 1, 1);
         DateTime endDate = startDate.AddMonths(3);
 
@@ -111,7 +172,6 @@ public partial class CrawlerService
         {
             var replays = context.ArcadeReplays
                 .Include(i => i.ArcadeReplayPlayers)
-                    .ThenInclude(i => i.ArcadePlayer)
                 .OrderBy(o => o.CreatedAt)
                     .ThenBy(o => o.ArcadeReplayId)
                 .Where(x => x.CreatedAt >= startDate && x.CreatedAt < endDate)
@@ -119,7 +179,10 @@ public partial class CrawlerService
 
             foreach (var replay in replays)
             {
-                replay.GenHash(md5);
+                foreach (var rp in replay.ArcadeReplayPlayers.Where(x => x.Team != replay.WinnerTeam))
+                {
+                    rp.PlayerResult = PlayerResult.Los;
+                }
             }
 
             context.SaveChanges();
@@ -127,7 +190,46 @@ public partial class CrawlerService
             startDate = endDate;
             endDate = endDate.AddMonths(3);
 
-            logger.LogInformation($"Settings hashes for {startDate.ToShortDateString()} - {endDate.ToShortDateString()}");
+            logger.LogInformation($"Fixing playerresults for {startDate.ToShortDateString()} - {endDate.ToShortDateString()}");
         }
+    }
+
+    public async Task FixPlayerNames()
+    {
+        Stopwatch sw = Stopwatch.StartNew();
+        using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
+        await connection.OpenAsync();
+
+        var command = connection.CreateCommand();
+        command.CommandTimeout = 500;
+        command.CommandText =
+            $@"
+                UPDATE {nameof(ReplayContext.ArcadePlayers)} as p
+                SET Name = (
+                        SELECT rp.{nameof(ArcadeReplayPlayer.Name)}
+                        FROM {nameof(ReplayContext.ArcadeReplayPlayers)} as rp
+                        INNER JOIN {nameof(ReplayContext.ArcadeReplays)} AS r on r.{nameof(ArcadeReplay.ArcadeReplayId)} = rp.{nameof(ArcadeReplayPlayer.ArcadeReplayId)}
+                        WHERE p.{nameof(ArcadePlayer.ArcadePlayerId)} = rp.{nameof(ArcadeReplayPlayer.ArcadePlayerId)}
+                        ORDER BY r.{nameof(ArcadeReplay.CreatedAt)} DESC
+                        LIMIT 1
+                 )
+                WHERE EXISTS(
+                    SELECT rp.{nameof(ArcadeReplayPlayer.ArcadeReplayPlayerId)}
+                    FROM {nameof(ReplayContext.ArcadeReplayPlayers)} as rp
+                    WHERE rp.{nameof(ArcadeReplayPlayer.ArcadePlayerId)} = p.{nameof(ArcadePlayer.ArcadePlayerId)}
+                );
+            ";
+
+        int affectedRows = 0;
+        try
+        {
+            affectedRows = await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed fixing PlayerNames: {ex.Message}");
+        }
+        sw.Stop();
+        logger.LogWarning($"Player names fixed in {sw.ElapsedMilliseconds} ms ({affectedRows})");
     }
 }

@@ -1,4 +1,6 @@
 ﻿using System.Security.Cryptography;
+using Microsoft.Extensions.Options;
+using pax.dsstats.shared;
 using pax.dsstats.shared.Arcade;
 
 namespace pax.dsstats.web.Server.Services.Arcade;
@@ -7,13 +9,19 @@ public partial class CrawlerService
 {
     private readonly IServiceProvider serviceProvider;
     private readonly IHttpClientFactory httpClientFactory;
+    private readonly IOptions<DbImportOptions> dbImportOptions;
     private readonly ILogger<CrawlerService> logger;
     private readonly MD5 md5;
     
-    public CrawlerService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory, ILogger<CrawlerService> logger)
+    
+    public CrawlerService(IServiceProvider serviceProvider,
+                          IHttpClientFactory httpClientFactory,
+                          IOptions<DbImportOptions> dbImportOptions,
+                          ILogger<CrawlerService> logger)
     {
         this.serviceProvider = serviceProvider;
         this.httpClientFactory = httpClientFactory;
+        this.dbImportOptions = dbImportOptions;
         this.logger = logger;
         md5 = MD5.Create();
     }
