@@ -46,9 +46,8 @@ namespace MysqlMigrations.Migrations
                 newName: "Deviation");
 
             var sp2 = @"
-               DROP PROCEDURE IF EXISTS PROC_DROP_FOREIGN_KEY;
-                DELIMITER $$
-                CREATE PROCEDURE PROC_DROP_FOREIGN_KEY(IN tableName VARCHAR(64), IN constraintName VARCHAR(64))
+                DROP PROCEDURE IF EXISTS PROC_DROP_FOREIGN_KEY;
+                CREATE PROCEDURE PROC_DROP_FOREIGN_KEY(IN tableName VARCHAR(65), IN constraintName VARCHAR(65))
                 BEGIN
                     IF EXISTS(
                         SELECT * FROM information_schema.table_constraints
@@ -63,8 +62,7 @@ namespace MysqlMigrations.Migrations
                         EXECUTE stmt; 
                         DEALLOCATE PREPARE stmt; 
                     END IF; 
-                END$$
-                DELIMITER ;
+                END
             ";
             migrationBuilder.Sql(sp2);
         }
