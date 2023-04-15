@@ -81,8 +81,7 @@ public class ArcadePlayerRating
     public Commander Main { get; set; }
     [MaxLength(4000)]
     public string MmrOverTime { get; set; } = string.Empty;
-    public double Consistency { get; set; }
-    public double Confidence { get; set; }
+    public double Deviation { get; set; }
     public bool IsUploader { get; set; }
     public ArcadePlayerRatingChange? ArcadePlayerRatingChange { get; set; }
     public int ArcadePlayerId { get; set; }
@@ -121,8 +120,7 @@ public class ArcadeReplayPlayerRating
     public float Rating { get; set; }
     public float RatingChange { get; set; }
     public int Games { get; set; }
-    public float Consistency { get; set; }
-    public float Confidence { get; set; }
+    public float Deviation { get; set; }
     public int ArcadeReplayPlayerId { get; set; }
     public ArcadeReplayPlayer ReplayPlayer { get; set; } = null!;
     public int ArcadeReplayRatingId { get; set; }

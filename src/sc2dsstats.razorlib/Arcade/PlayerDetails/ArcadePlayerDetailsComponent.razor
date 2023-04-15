@@ -84,12 +84,8 @@
                                             <td colspan="2">@HelperService.GetPercentageString(InterestRating.Wins, InterestRating.Games)</td>
                                         </tr>
                                         <tr>
-                                            <td>Consistency</td>
-                                            <td colspan="2">@InterestRating.Consistency.ToString("N2", CultureInfo.InvariantCulture)</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Confidence</td>
-                                            <td colspan="2">@InterestRating.Confidence.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                            <td>Deviation</td>
+                                            <td colspan="2">@InterestRating.Deviation.ToString("N2", CultureInfo.InvariantCulture)</td>
                                         </tr>
                                         <tr>
                                             <td>
@@ -270,7 +266,7 @@
                 Pos = playerRating.Pos,
                 Games = playerRating.Games,
                 Wins = playerRating.Wins,
-                Deviation = playerRating.Confidence,
+                Deviation = playerRating.Deviation,
                 MmrOverTime = playerRating.MmrOverTime,
                 Player = new()
                 {

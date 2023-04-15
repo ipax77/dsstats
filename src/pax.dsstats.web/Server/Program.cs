@@ -121,14 +121,17 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
-    importService.ImportInit();
+    //var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
+    //importService.ImportInit();
 
     //var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
     //ratingsService.ProduceRatings(true).Wait();
 
-    //var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
-    //arcadeRatingsService.ProduceRatings().Wait();
+    var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
+    crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-2)).Wait();
+
+    var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
+    arcadeRatingsService.ProduceRatings(recalc: false).Wait();
 
     // var ratingsMergeService = scope.ServiceProvider.GetRequiredService<RatingsMergeService>();
     // ratingsMergeService.Merge().Wait();

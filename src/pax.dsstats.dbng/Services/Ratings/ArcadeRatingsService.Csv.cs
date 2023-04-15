@@ -1,5 +1,7 @@
-﻿using MySqlConnector;
+﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using MySqlConnector;
 using pax.dsstats.dbng;
+using System.Diagnostics.Metrics;
 
 namespace pax.dsstats.dbng.Services.Ratings;
 
@@ -38,11 +40,15 @@ public partial class ArcadeRatingsService
         await command.ExecuteNonQueryAsync();
 
         // Rename temporary table to original table
+        // ALTER TABLE { nameof(ReplayContext.ArcadePlayerRatingChanges)}
+        // DROP FOREIGN KEY `FK_ArcadePlayerRatingChanges_ArcadePlayerRatings_ArcadePlayerRa~`;
+        // https://stackoverflow.com/questions/17161496/drop-foreign-key-only-if-it-exists
+
         command.CommandText = $@"
             SET FOREIGN_KEY_CHECKS = 0;
             RENAME TABLE {nameof(ReplayContext.ArcadePlayerRatings)} TO {nameof(ReplayContext.ArcadePlayerRatings)}_old, {tempTable} TO {nameof(ReplayContext.ArcadePlayerRatings)};
             DROP TABLE {nameof(ReplayContext.ArcadePlayerRatings)}_old;
-            ALTER TABLE {nameof(ReplayContext.ArcadePlayerRatingChanges)} DROP FOREIGN KEY `FK_ArcadePlayerRatingChanges_ArcadePlayerRatings_ArcadePlayerRa~`;
+            CALL PROC_DROP_FOREIGN_KEY('{nameof(ReplayContext.ArcadePlayerRatingChanges)}', 'FK_ArcadePlayerRatingChanges_ArcadePlayerRatings_ArcadePlayerRa~');
             ALTER TABLE {nameof(ReplayContext.ArcadePlayerRatingChanges)} ADD CONSTRAINT `FK_ArcadePlayerRatingChanges_ArcadePlayerRatings_ArcadePlayerRa~`
                 FOREIGN KEY (ArcadePlayerRatingId) REFERENCES {nameof(ReplayContext.ArcadePlayerRatings)} (ArcadePlayerRatingId);
             SET FOREIGN_KEY_CHECKS = 1;
