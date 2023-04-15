@@ -50,6 +50,7 @@ public class DuplicateTest : IDisposable
 
         serviceCollection.AddTransient<IReplayRepository, ReplayRepository>();
         serviceCollection.AddAutoMapper(typeof(AutoMapperProfile));
+        serviceCollection.AddSingleton<pax.dsstats.web.Server.Services.Import.ImportService>();
         serviceCollection.AddLogging();
         serviceCollection.AddHttpClient();
 

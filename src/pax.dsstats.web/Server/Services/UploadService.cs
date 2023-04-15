@@ -183,15 +183,13 @@ public partial class UploadService
                 && f.RealmId == player.RealmId);
             if (dbPlayer == null)
             {
-                dbPlayer = mapper.Map<Player>(player);
-                dbPlayer.Uploader = dbUploader;
-                context.Players.Add(dbPlayer);
+                using var scope = serviceProvider.CreateScope();
+                var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+                int playerId = await importService.CreatePlayer(mapper.Map<PlayerUploadDto, Player>(player));
+                dbPlayer = await context.Players.FirstAsync(f => f.PlayerId == playerId);
             }
-            else
-            {
-                dbPlayer.Uploader = dbUploader;
-                dbUploader.Players.Add(dbPlayer);
-            }
+            dbPlayer.Uploader = dbUploader;
+            dbUploader.Players.Add(dbPlayer);
         }
         await context.SaveChangesAsync();
     }
