@@ -1,12 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
-using MySqlConnector;
-using pax.dsstats.dbng;
-using pax.dsstats.shared;
+﻿using MySqlConnector;
 using pax.dsstats.shared.Ratings;
+using pax.dsstats.shared;
+using Microsoft.Extensions.Logging;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using System.Globalization;
 
 namespace pax.dsstats.dbng.Services.Ratings;
 
-public partial class RatingsService
+public partial class ArcadeRatingsService
 {
     private async Task UpdatePlayerRatings(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
     {
@@ -18,10 +19,11 @@ public partial class RatingsService
 
         command.CommandText =
             $@"
-                INSERT INTO PlayerRatings ({nameof(PlayerRating.PlayerRatingId)},{nameof(PlayerRating.RatingType)},{nameof(PlayerRating.Rating)},{nameof(PlayerRating.Games)},{nameof(PlayerRating.Wins)},{nameof(PlayerRating.Mvp)},{nameof(PlayerRating.TeamGames)},{nameof(PlayerRating.MainCount)},{nameof(PlayerRating.Main)},{nameof(PlayerRating.MmrOverTime)},{nameof(PlayerRating.Deviation)},{nameof(PlayerRating.IsUploader)},{nameof(PlayerRating.PlayerId)})
-                VALUES ((SELECT t.{nameof(PlayerRating.PlayerRatingId)} FROM (SELECT * from PlayerRatings where {nameof(PlayerRating.RatingType)} = @value1 AND {nameof(PlayerRating.PlayerId)} = @value12) as t),@value1,@value2,@value3,@value4,@value5,@value6,@value7,@value8,@value9,@value10,@value11,@value12)
-                ON DUPLICATE KEY UPDATE {nameof(PlayerRating.Rating)}=@value2,{nameof(PlayerRating.Games)}=@value3,{nameof(PlayerRating.Wins)}=@value4,{nameof(PlayerRating.Mvp)}=@value5,{nameof(PlayerRating.TeamGames)}=@value6,{nameof(PlayerRating.MainCount)}=@value7,{nameof(PlayerRating.Main)}=@value8,{nameof(PlayerRating.MmrOverTime)}=@value9,{nameof(PlayerRating.Deviation)}=@value10,{nameof(PlayerRating.IsUploader)}=@value11
+                INSERT INTO {nameof(ReplayContext.ArcadePlayerRatings)} ({nameof(ArcadePlayerRating.ArcadePlayerRatingId)},{nameof(ArcadePlayerRating.RatingType)},{nameof(ArcadePlayerRating.Pos)},{nameof(ArcadePlayerRating.Rating)},{nameof(ArcadePlayerRating.Games)},{nameof(ArcadePlayerRating.Wins)},{nameof(ArcadePlayerRating.Mvp)},{nameof(ArcadePlayerRating.TeamGames)},{nameof(ArcadePlayerRating.MainCount)},{nameof(ArcadePlayerRating.Main)},{nameof(ArcadePlayerRating.MmrOverTime)},{nameof(ArcadePlayerRating.Deviation)},{nameof(ArcadePlayerRating.IsUploader)},{nameof(ArcadePlayerRating.ArcadePlayerId)})
+                VALUES ((SELECT t.{nameof(ArcadePlayerRating.ArcadePlayerRatingId)} FROM (SELECT * from {nameof(ReplayContext.ArcadePlayerRatings)} where {nameof(ArcadePlayerRating.RatingType)} = @value1 AND {nameof(ArcadePlayerRating.ArcadePlayerId)} = @value12) as t),@value1,@value2,0,@value3,@value4,@value5,@value6,@value7,@value8,@value9,@value10,@value11,@value12)
+                ON DUPLICATE KEY UPDATE {nameof(ArcadePlayerRating.Rating)}=@value2,{nameof(ArcadePlayerRating.Games)}=@value3,{nameof(ArcadePlayerRating.Wins)}=@value4,{nameof(ArcadePlayerRating.Mvp)}=@value5,{nameof(ArcadePlayerRating.TeamGames)}=@value6,{nameof(ArcadePlayerRating.MainCount)}=@value7,{nameof(ArcadePlayerRating.Main)}=@value8,{nameof(ArcadePlayerRating.MmrOverTime)}=@value9,{nameof(ArcadePlayerRating.Deviation)}=@value10,{nameof(ArcadePlayerRating.IsUploader)}=@value11
             ";
+
         command.Transaction = transaction;
 
         List<MySqlParameter> parameters = new List<MySqlParameter>();
@@ -37,30 +39,41 @@ public partial class RatingsService
         {
             foreach (var calcEnt in ent.Value.Values)
             {
-                var main = calcEnt.CmdrCounts.OrderByDescending(o => o.Value).FirstOrDefault();
-
                 parameters[0].Value = (int)ent.Key;
                 parameters[1].Value = calcEnt.Mmr;
                 parameters[2].Value = calcEnt.Games;
                 parameters[3].Value = calcEnt.Wins;
                 parameters[4].Value = calcEnt.Mvp;
                 parameters[5].Value = calcEnt.TeamGames;
-                parameters[6].Value = main.Value;
-                parameters[7].Value = (int)main.Key;
+                parameters[6].Value = 0;
+                parameters[7].Value = 0;
                 parameters[8].Value = RatingsCsvService.GetDbMmrOverTime(calcEnt.MmrOverTime);
                 parameters[9].Value = calcEnt.Deviation;
-                parameters[10].Value = calcEnt.IsUploader;
+                parameters[10].Value = 0;
                 parameters[11].Value = calcEnt.PlayerId;
                 command.CommandTimeout = 120;
+
                 await command.ExecuteNonQueryAsync();
             }
         }
         await transaction.CommitAsync();
     }
 
+    public void LogCommand(MySqlCommand cmd)
+    {
+        string cmdText = cmd.CommandText;
+
+        foreach (MySqlParameter p in cmd.Parameters)
+        {
+            cmdText = cmdText.Replace(p.ParameterName, Convert.ToString(p.Value, CultureInfo.InvariantCulture));
+        }
+
+        logger.LogWarning($"{cmdText}");
+    }
+
     private async Task ContinueReplayRatingsFromCsv2MySql(string csvBasePath)
     {
-        var csvFile = $"{csvBasePath}/ReplayRatings.csv";
+        var csvFile = $"{csvBasePath}/ArcadeReplayRatings.csv";
         if (!File.Exists(csvFile))
         {
             return;
@@ -74,7 +87,7 @@ public partial class RatingsService
         $@"
             SET FOREIGN_KEY_CHECKS = 0;
             LOAD DATA INFILE '{csvFile}'
-            INTO TABLE {nameof(ReplayContext.ReplayRatings)}
+            INTO TABLE {nameof(ReplayContext.ArcadeReplayRatings)}
             COLUMNS TERMINATED BY ','
             OPTIONALLY ENCLOSED BY '""'
             ESCAPED BY '""'
@@ -88,7 +101,7 @@ public partial class RatingsService
 
     private async Task ContinueReplayPlayerRatingsFromCsv2MySql(string csvBasePath)
     {
-        var csvFile = $"{csvBasePath}/ReplayPlayerRatings.csv";
+        var csvFile = $"{csvBasePath}/ArcadeReplayPlayerRatings.csv";
         if (!File.Exists(csvFile))
         {
             return;
@@ -102,7 +115,7 @@ public partial class RatingsService
         $@"
             SET FOREIGN_KEY_CHECKS = 0;
             LOAD DATA INFILE '{csvFile}'
-            INTO TABLE {nameof(ReplayContext.RepPlayerRatings)}
+            INTO TABLE {nameof(ReplayContext.ArcadeReplayRatings)}
             COLUMNS TERMINATED BY ','
             OPTIONALLY ENCLOSED BY '""'
             ESCAPED BY '""'

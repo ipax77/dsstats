@@ -71,8 +71,7 @@ public record ArcadeReplayPlayerRatingDto
     public float Rating { get; set; }
     public float RatingChange { get; set; }
     public int Games { get; set; }
-    public float Consistency { get; set; }
-    public float Confidence { get; set; }
+    public float Deviation { get; set; }
 }
 
 public record ArcadePlayerDto
@@ -92,8 +91,7 @@ public record ArcadePlayerRatingDetailDto
     public int Pos { get; set; }
     public int Games { get; set; }
     public int Wins { get; set; }
-    public double Consistency { get; set; }
-    public double Confidence { get; set; }
+    public double Deviation { get; set; }
     public string MmrOverTime { get; set; } = string.Empty;
     public ArcadePlayerRatingChangeDto? ArcadePlayerRatingChange { get; set; }
 }

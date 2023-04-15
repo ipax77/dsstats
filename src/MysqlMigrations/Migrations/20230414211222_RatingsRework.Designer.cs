@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using pax.dsstats.dbng;
 
@@ -10,9 +11,10 @@ using pax.dsstats.dbng;
 namespace MysqlMigrations.Migrations
 {
     [DbContext(typeof(ReplayContext))]
-    partial class ReplayContextModelSnapshot : ModelSnapshot
+    [Migration("20230414211222_RatingsRework")]
+    partial class RatingsRework
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -73,7 +75,10 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("ArcadePlayerId")
                         .HasColumnType("int");
 
-                    b.Property<double>("Deviation")
+                    b.Property<double>("Confidence")
+                        .HasColumnType("double");
+
+                    b.Property<double>("Consistency")
                         .HasColumnType("double");
 
                     b.Property<int>("Games")
@@ -253,7 +258,10 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("ArcadeReplayRatingId")
                         .HasColumnType("int");
 
-                    b.Property<float>("Deviation")
+                    b.Property<float>("Confidence")
+                        .HasColumnType("float");
+
+                    b.Property<float>("Consistency")
                         .HasColumnType("float");
 
                     b.Property<int>("GamePos")

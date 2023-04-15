@@ -8,8 +8,6 @@ using MySqlConnector;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Ratings;
 using System.Diagnostics;
-using System.Text;
-using System.Text.Json;
 
 namespace pax.dsstats.dbng.Services.Ratings;
 
@@ -39,8 +37,7 @@ public partial class ArcadeRatingsService
         await ratingSs.WaitAsync();
 
         Stopwatch sw = Stopwatch.StartNew();
-        int recalcCount = 0;
-        
+
         try
         {
             var request = recalc == false ?
@@ -48,7 +45,7 @@ public partial class ArcadeRatingsService
                 new MmrService.CalcRatingRequest()
                 {
                     CmdrMmrDic = new(),
-                    MmrIdRatings = GetMmrIdRatings(), // todo: continue
+                    MmrIdRatings = await GetMmrIdRatings(null), // todo: continue
                     MmrOptions = new(reCalc: true),
                     StartTime = new(2021, 2, 1),
                     EndTime = DateTime.Today.AddDays(2),
@@ -62,16 +59,23 @@ public partial class ArcadeRatingsService
             }
 
             recalc = request.MmrOptions.ReCalc;
-            recalcCount = request.ReplayDsRDtos.Count;
 
-            await GeneratePlayerRatings(request);
-
-            await SaveRatings(request.MmrIdRatings);
+            if (recalc)
+            {
+                await GeneratePlayerRatings(request);
+                await SaveRatings(request.MmrIdRatings);
+            }
+            else
+            {
+                await UpdatePlayerRatings(request.MmrIdRatings);
+                await ContinueReplayRatingsFromCsv2MySql(ArcadeRatingsCsvService.csvBasePath);
+                await ContinueReplayPlayerRatingsFromCsv2MySql(ArcadeRatingsCsvService.csvBasePath);
+            }
         }
         finally
         {
             sw.Stop();
-            logger.LogWarning($"Arcade Ratings produced in {sw.ElapsedMilliseconds} ms");
+            logger.LogWarning($"Arcade Ratings produced ({recalc}) in {sw.ElapsedMilliseconds} ms ({sw.Elapsed.ToString(@"mm\:ss")} mins)");
             ratingSs.Release();
         }
     }
@@ -89,7 +93,7 @@ public partial class ArcadeRatingsService
     private async Task GeneratePlayerRatings(MmrService.CalcRatingRequest request)
     {
         int skip = 0;
-        int take = 100000;
+        int take = 200000;
 
         request.ReplayDsRDtos = await GetReplayData(request.StartTime, skip, take);
 
@@ -115,11 +119,12 @@ public partial class ArcadeRatingsService
         var replays = context.ArcadeReplays
             .Include(i => i.ArcadeReplayPlayers)
                 .ThenInclude(i => i.ArcadePlayer)
-            .Where(r => 
+            .Where(r =>
                 r.CreatedAt >= startTime
                 && r.PlayerCount == 6
                 && r.Duration >= 300
                 && r.WinnerTeam > 0
+                && r.ArcadeReplayRating == null // ??
                 && gameModes.Contains(r.GameMode));
 
         var dsrReplays = from r in replays
@@ -183,47 +188,26 @@ public partial class ArcadeRatingsService
             .OrderByDescending(o => o.CreatedAt)
             .Select(s => s.CreatedAt)
             .FirstOrDefaultAsync();
-        List<ReplayDsRDto> continueReplays = new();
 
         if (latestRatingsProduced > DateTime.MinValue)
         {
-            var importedReplaysQuery = context.ArcadeReplays
-                .Where(x => x.Imported >= latestRatingsProduced
-                    && x.ArcadeReplayRating == null)
-                .Select(s => new { s.Imported, s.CreatedAt });
+            mmrOptions.ReCalc = false;
+            startTime = latestRatingsProduced;
 
-            var count = await importedReplaysQuery.CountAsync();
-
-            if (count == 0)
-            {
-                return null;
-            }
-
-            var importedReplays = await importedReplaysQuery.ToListAsync();
-
-            var oldestReplay = importedReplays.OrderBy(o => o.CreatedAt).First();
-            
-            if (oldestReplay.CreatedAt > latestRatingsProduced)
-            {
-                mmrOptions.ReCalc = false;
-                startTime = latestRatingsProduced;
-                continueReplays = await GetReplayData(startTime, 0, count);
-
-                replayPlayerRatingAppendId = await context.RepPlayerRatings
-                    .OrderByDescending(o => o.RepPlayerRatingId)
-                    .Select(s => s.RepPlayerRatingId)
-                    .FirstOrDefaultAsync();
-                replayRatingAppendId = await context.ReplayRatings
-                    .OrderByDescending(o => o.ReplayRatingId)
-                    .Select(s => s.ReplayRatingId)
-                    .FirstOrDefaultAsync();
-            }
-        }        
+            replayPlayerRatingAppendId = await context.RepPlayerRatings
+                .OrderByDescending(o => o.RepPlayerRatingId)
+                .Select(s => s.RepPlayerRatingId)
+                .FirstOrDefaultAsync();
+            replayRatingAppendId = await context.ReplayRatings
+                .OrderByDescending(o => o.ReplayRatingId)
+                .Select(s => s.ReplayRatingId)
+                .FirstOrDefaultAsync();
+        }
 
         MmrService.CalcRatingRequest request = new()
         {
             CmdrMmrDic = new(),
-            MmrIdRatings = GetMmrIdRatings(), // todo: continue
+            MmrIdRatings = await GetMmrIdRatings(mmrOptions.ReCalc ? null : startTime),
             MmrOptions = mmrOptions,
             ReplayRatingAppendId = replayRatingAppendId,
             ReplayPlayerRatingAppendId = replayPlayerRatingAppendId,
@@ -234,10 +218,30 @@ public partial class ArcadeRatingsService
         return request;
     }
 
-    private Dictionary<RatingType, Dictionary<int, CalcRating>> GetMmrIdRatings()
+    private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetMmrIdRatings(DateTime? fromDate)
+    {
+        if (fromDate == null)
+        {
+            Dictionary<RatingType, Dictionary<int, CalcRating>> calcRatings = new();
+            foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+            {
+                if (ratingType == RatingType.None)
+                {
+                    continue;
+                }
+                calcRatings[ratingType] = new();
+            }
+            return calcRatings;
+        }
+        else
+        {
+            return await GetCalcRatings(fromDate.Value);
+        }
+    }
+
+    private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetCalcRatings(DateTime fromDate)
     {
         Dictionary<RatingType, Dictionary<int, CalcRating>> calcRatings = new();
-
         foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
         {
             if (ratingType == RatingType.None)
@@ -246,26 +250,44 @@ public partial class ArcadeRatingsService
             }
             calcRatings[ratingType] = new();
         }
-        return calcRatings;
-    }
-
-    public void PrintLadder(string dsrFile)
-    {
-        List<CalcRating> calcRatings = JsonSerializer.Deserialize<List<CalcRating>>(File.ReadAllText(dsrFile)) ?? new();
 
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        StringBuilder sb = new StringBuilder();
-        foreach (var rating in calcRatings.Take(50))
+        var playersRatingsQuery = from r in context.ArcadeReplays
+                                  from rp in r.ArcadeReplayPlayers
+                                  from pr in rp.ArcadePlayer.ArcadePlayerRatings
+                                  where r.CreatedAt >= fromDate
+                                   && r.ArcadeReplayRating == null
+                                  select pr;
+        var playerRatings = await playersRatingsQuery
+            .Distinct()
+            .Select(s => new
+            {
+                s.ArcadePlayerId,
+                s.Games,
+                s.Wins,
+                s.MmrOverTime,
+                s.Deviation,
+                s.RatingType,
+                s.Rating
+            })
+            .ToListAsync();
+
+        foreach (var pr in playerRatings)
         {
-            string? name = context.ArcadePlayers
-                .Where(x => x.ArcadePlayerId == rating.PlayerId)
-                .Select(x => x.Name)
-                .FirstOrDefault();
-            sb.AppendLine($"{name} => Games {rating.Games}, WR: {Math.Round(rating.Wins * 100.0 / rating.Games, 2)} Rating: {Math.Round(rating.Mmr, 2)}");
+            calcRatings[pr.RatingType][pr.ArcadePlayerId] = new()
+            {
+                PlayerId = pr.ArcadePlayerId,
+                Games = pr.Games,
+                Wins = pr.Wins,
+                Mmr = pr.Rating,
+                MmrOverTime = RatingsService.GetTimeRatings(pr.MmrOverTime),
+                Deviation = pr.Deviation
+            };
         }
-        logger.LogWarning(sb.ToString());
+
+        return calcRatings;
     }
 
     private async Task SetPlayerRatingsPos()
