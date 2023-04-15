@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using pax.dsstats.dbng;
+using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using pax.dsstats.web.Server.Services;
 using System.Data.Common;
@@ -54,6 +55,8 @@ public class UploadTests : IDisposable
         serviceCollection.AddOptions<DbImportOptions>()
             .Configure(x => x.ImportConnectionString = "Filename=:memory:");
         serviceCollection.AddHttpClient();
+        serviceCollection.AddAutoMapper(typeof(AutoMapperProfile));
+        serviceCollection.AddSingleton<pax.dsstats.web.Server.Services.Import.ImportService>();
         var serviceProvider = serviceCollection.BuildServiceProvider();
         
         var dbImportOptions = serviceProvider.GetRequiredService<IOptions<DbImportOptions>>();

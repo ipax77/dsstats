@@ -121,8 +121,11 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
-    ratingsService.ProduceRatings(true).Wait();
+    var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
+    importService.ImportInit();
+
+    //var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+    //ratingsService.ProduceRatings(true).Wait();
 
     //var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
     //arcadeRatingsService.ProduceRatings().Wait();
