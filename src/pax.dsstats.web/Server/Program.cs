@@ -128,7 +128,7 @@ if (app.Environment.IsDevelopment())
     //ratingsService.ProduceRatings(true).Wait();
 
     var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
-    crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-2)).Wait();
+    crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-1)).Wait();
 
     var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
     arcadeRatingsService.ProduceRatings(recalc: false).Wait();
