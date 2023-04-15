@@ -1,14 +1,11 @@
-﻿using dsstats.mmr.ProcessData;
-using pax.dsstats.shared;
+﻿using pax.dsstats.shared;
 
 namespace dsstats.mmr;
 
 public partial class MmrService
 {
-    private static double GetDecayFactor(TimeSpan timeSpan)
+    private static double GetDecayFactor(TimeSpan timeSpan, MmrOptions mmrOptions)
     {
-        double doubleAtDays = 240; // after x days without playing, the decayFactor = * 2.0
-
-        return 1 + (timeSpan.TotalDays / doubleAtDays);
+        return 1 + (timeSpan.TotalDays / mmrOptions.DoubleAtDays);
     }
 }

@@ -42,7 +42,7 @@ public partial class MmrService
         var (winnerPlayersExpectationToWin, match) = GaussianElo.PredictMatch(
             replayData.WinnerTeamData.Distribution,
             replayData.LoserTeamData.Distribution,
-            mmrOptions.StandardMatchDeviation);
+            mmrOptions.BalanceDeviationOffset);
         
         replayData.WinnerTeamData.Prediction = match;
         replayData.LoserTeamData.Prediction = Gaussian.ByMeanDeviation(-match.Mean, match.Deviation);

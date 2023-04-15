@@ -1,4 +1,6 @@
-﻿namespace dsstats.mmr.Maths;
+﻿using pax.dsstats.shared;
+
+namespace dsstats.mmr.Maths;
 
 public static class GaussianElo
 {
@@ -6,16 +8,13 @@ public static class GaussianElo
                                           int actualResult,
                                           double prediction,
                                           Gaussian matchDist,
-                                          double standardPlayerDeviation,
-                                          double standardMatchDeviation,
-                                          double playerImpact)
+                                          double playerImpact,
+                                          MmrOptions mmrOptions)
     {
-        double delta = (actualResult - prediction) * standardMatchDeviation * playerImpact;// * rating.Deviation * (standardMatchDeviation / (matchDist.Deviation - standardPlayerDeviation));
+        double delta = (actualResult - prediction) * mmrOptions.EloK * playerImpact;
 
         var info = Gaussian.ByMeanDeviation(rating.Mean + delta, matchDist.Deviation);
         var ratingAfter = rating * info;
-
-        //ratingAfter = Gaussian.ByMeanDeviation(ratingAfter.Mean, System.Math.Min(standardPlayerDeviation, ratingAfter.Deviation));
 
         return ratingAfter;
     }

@@ -15,14 +15,21 @@ public record MmrOptions
 
         UseCommanderMmr = false;
 
-        StandardPlayerDeviation = 800;
-        StandardMatchDeviation = Math.Sqrt((3 + 3) * Math.Pow(StandardPlayerDeviation, 2));
+        DoubleAtDays = 440;
+
         StartMmr = 1000;
+        StandardPlayerDeviation = StartMmr / 3;
+        StandardMatchDeviation = Math.Sqrt((3 + 3)/*Depends on player amount!*/ * Math.Pow(StandardPlayerDeviation, 2));
+        BalanceDeviationOffset = StandardMatchDeviation * 0.05;
+        EloK = StandardPlayerDeviation * 0.75;
     }
 
-    public double StandardPlayerDeviation { get; init; } // default 800
+    public double StartMmr { get; init; }
+    public double StandardPlayerDeviation { get; init; }
     public double StandardMatchDeviation { get; init; }
-    public double StartMmr { get; init; } // default 1000
+    public double BalanceDeviationOffset { get; init; }
+    public double EloK { get; init; }
+    public double DoubleAtDays { get; init; } // after x days without playing, the decayFactor = * 2.0
 
     public bool UseCommanderMmr { get; init; }
 
