@@ -79,9 +79,6 @@ public partial class MmrService
                                                             playerData.ReplayPlayer.Player.RegionId));
         }
 
-        playerData.Mmr = plRating.Mmr;
-        playerData.Deviation = plRating.Deviation;
-
         if (plRating.MmrOverTime.Any())
         {
             var lastGameString = plRating.MmrOverTime.Last().Date;
@@ -97,5 +94,11 @@ public partial class MmrService
         {
             playerData.TimeSinceLastGame = new TimeSpan(0);
         }
+
+        playerData.Mmr = plRating.Mmr;
+        playerData.Deviation = plRating.Deviation;
+
+        var decayFactor = GetDecayFactor(playerData.TimeSinceLastGame, mmrOptions);
+        playerData.Deviation = Math.Min(mmrOptions.StandardPlayerDeviation, playerData.Deviation * decayFactor);
     }
 }

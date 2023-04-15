@@ -32,17 +32,13 @@ public static partial class MmrService
 
     private static void SetPlayerDeltas(PlayerData playerData, TeamData teamData, double playerImpact, MmrOptions mmrOptions)
     {
-        var decayFactor = GetDecayFactor(playerData.TimeSinceLastGame);
-        playerData.Deviation = Math.Min(mmrOptions.StandardPlayerDeviation, playerData.Deviation * decayFactor);
-
         var ratingAfter = GaussianElo.GetRatingAfter(
             playerData.Distribution,
             teamData.ActualResult,
             teamData.ExpectedResult,
             teamData.Prediction,
-            mmrOptions.StandardPlayerDeviation,
-            mmrOptions.StandardMatchDeviation,
-            playerImpact
+            playerImpact,
+            mmrOptions
             );
 
         playerData.Deltas.Mmr = ratingAfter.Mean - playerData.Mmr;
@@ -51,17 +47,13 @@ public static partial class MmrService
 
     private static void SetLeaverPlayerDeltas(PlayerData playerData, TeamData teamData, double playerImpact, MmrOptions mmrOptions)
     {
-        var decayFactor = GetDecayFactor(playerData.TimeSinceLastGame);
-        playerData.Deviation = Math.Min(mmrOptions.StandardPlayerDeviation, playerData.Deviation * decayFactor);
-
         var ratingAfter = GaussianElo.GetRatingAfter(
             playerData.Distribution,
             0,
             teamData.ExpectedResult,
             teamData.Prediction,
-            mmrOptions.StandardPlayerDeviation,
-            mmrOptions.StandardMatchDeviation,
-            playerImpact
+            playerImpact,
+            mmrOptions
             );
 
         playerData.Deltas.Mmr = ratingAfter.Mean - playerData.Mmr;
