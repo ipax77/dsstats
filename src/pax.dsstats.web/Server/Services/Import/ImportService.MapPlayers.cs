@@ -86,6 +86,20 @@ public partial class ImportService
         return newPlayers.Count;
     }
 
+    public async Task<int> CreatePlayer(Player player)
+    {
+        if (!dbCache.Players.TryGetValue(new(player.ToonId, player.RealmId, player.RegionId), out int playerId))
+        {
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+            context.Players.Add(player);
+            await context.SaveChangesAsync();
+            playerId = dbCache.Players[new(player.ToonId, player.RealmId, player.RegionId)] = player.PlayerId;
+        }
+        return playerId;
+    }
+
     public int GetReplayRegion(Replay replay)
     {
         Dictionary<int, int> regionCounts = new()
