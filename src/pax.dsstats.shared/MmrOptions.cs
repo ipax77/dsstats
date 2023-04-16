@@ -18,9 +18,9 @@ public record MmrOptions
         DoubleAtDays = 440;
 
         StartMmr = 1000;
-        BalanceDeviationOffset = StandardMatchDeviation * 0.05;
         StandardPlayerDeviation = StartMmr / 3/*zScore*/;
         StandardMatchDeviation = Math.Sqrt(6/*totalPlayerAmount*/ * Math.Pow(StandardPlayerDeviation, 2));
+        BalanceDeviationOffset = StandardMatchDeviation * 0.0033;
         EloK = StandardPlayerDeviation * 0.75;
     }
 
