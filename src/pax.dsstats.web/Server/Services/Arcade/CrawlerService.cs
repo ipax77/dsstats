@@ -114,6 +114,7 @@ public partial class CrawlerService
                 }
             }
             await Import(crawlInfo, tillTime);
+            await Task.Delay(3000);
         }
 
         foreach (var crawlInfo in crawlInfos)

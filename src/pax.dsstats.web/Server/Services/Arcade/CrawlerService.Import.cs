@@ -96,7 +96,7 @@ public partial class CrawlerService
             {
                 crawlInfo.Errors++;
                 logger.LogError($"could not determine winnerteam: BnetBucketId {result.BnetBucketId}, BnetRecordId {result.BnetRecordId}");
-                continue;
+                // continue;
             }
 
             if (result.Match.ProfileMatches.Any(a => a.Profile.ProfileId == 0))
@@ -152,12 +152,12 @@ public partial class CrawlerService
                 }
                 rp.Discriminator = matchPlayer.Profile.Discriminator;
                 rp.PlayerResult = GetPlayerResult(matchPlayer.Decision);
-                if (rp.PlayerResult == PlayerResult.Win && rp.Team != winnerTeam)
+                if (winnerTeam > 0 && rp.PlayerResult == PlayerResult.Win && rp.Team != winnerTeam)
                 {
                     logger.LogWarning($"correction player result due to loser team BnetBucketId {replay.BnetBucketId}, BnetRecordId {replay.BnetRecordId}");
                     rp.PlayerResult = PlayerResult.Los;
                 }
-                else if (rp.PlayerResult == PlayerResult.Los && rp.Team == winnerTeam)
+                else if (winnerTeam > 0 && rp.PlayerResult == PlayerResult.Los && rp.Team == winnerTeam)
                 {
                     logger.LogWarning($"correction player result due to winner team BnetBucketId {replay.BnetBucketId}, BnetRecordId {replay.BnetRecordId}");
                     rp.PlayerResult = PlayerResult.Win;
