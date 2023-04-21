@@ -13,7 +13,8 @@ public record PlayerData
 
         IsLeaver = replayPlayer.Duration < replay.Duration - 90
             || (replayPlayer.IsUploader && replay.ResultCorrected)
-            || replayPlayer.PlayerResult == PlayerResult.None;
+            // || replayPlayer.PlayerResult == PlayerResult.None
+            ;
     }
 
     public ReplayPlayerDsRDto ReplayPlayer { get; init; }
