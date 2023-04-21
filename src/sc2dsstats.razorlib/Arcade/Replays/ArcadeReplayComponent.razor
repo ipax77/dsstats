@@ -73,7 +73,7 @@
                                 @foreach (var player in Replay.ArcadeReplayPlayers.Where(x => x.Team == i).OrderBy(o => o.SlotNumber))
                                 {
                                     var plRating = Replay.ArcadeReplayRating?.ArcadeReplayPlayerRatings.FirstOrDefault(f => f.GamePos == player.SlotNumber);
-                                    <tr class="pointer" @onclick="e => OnPlayerRequested.InvokeAsync(player.ArcadePlayerId)">
+                                    <tr class="pointer @(player.PlayerResult == PlayerResult.None ? "table-danger" : "")" @onclick="e => OnPlayerRequested.InvokeAsync(player.ArcadePlayerId)">
                                         <td>@player.SlotNumber</td>
                                         <td>
                                             @if (plRating != null)

@@ -50,21 +50,52 @@ public partial class CrawlerService
                 continue;
             }
 
-            var winner = result.Match.ProfileMatches.FirstOrDefault(f => f.Decision == "win");
+            var winners = result.Match.ProfileMatches.Where(f => f.Decision == "win").ToList();
+            var losers = result.Match.ProfileMatches.Except(winners).ToList();
 
-            if (winner == null)
+            if (!winners.Any())
             {
                 continue;
             }
 
-            var winnerPlayer = result.Slots.FirstOrDefault(f => 
-                f.Profile?.RegionId == winner.Profile.RegionId
-                && f.Profile?.ProfileId == winner.Profile.ProfileId
-                && f.Profile?.RealmId == winner.Profile.RealmId);
+            var winnerPlayers = new List<Slot>();
 
-            if (winnerPlayer == null || winnerPlayer.Team == null)
-            { 
+            int team1Winners = 0;
+            int team2Winners = 0;
+
+            foreach (var winner in winners)
+            {
+                var slot = result.Slots.FirstOrDefault(f => f.Profile?.ProfileId == winner.Profile.ProfileId
+                    && f.Profile.RealmId == winner.Profile.RealmId
+                    && f.Profile.RegionId == winner.Profile.RegionId);
+                if (slot != null)
+                {
+                    winnerPlayers.Add(slot);
+                    if (slot.Team == 1)
+                    {
+                        team1Winners++;
+                    }
+                    if (slot.Team == 2)
+                    {
+                        team2Winners++;
+                    }
+                }
+            }
+
+            int winnerTeam = 0;
+
+            if (team1Winners > team2Winners)
+            {
+                winnerTeam = 1;
+            }
+            else if (team2Winners > team1Winners)
+            {
+                winnerTeam = 2;
+            }
+            else
+            {
                 crawlInfo.Errors++;
+                logger.LogError($"could not determine winnerteam: BnetBucketId {result.BnetBucketId}, BnetRecordId {result.BnetRecordId}");
                 continue;
             }
 
@@ -87,10 +118,10 @@ public partial class CrawlerService
                 BnetBucketId = result.BnetBucketId,
                 GameMode = gameMode,
                 CreatedAt = result.CreatedAt,
-                Duration = result.Match.CompletedAt == null ? 0 
-                : Convert.ToInt32((result.Match.CompletedAt.Value - result.CreatedAt).TotalSeconds),
+                Duration = result.Match.CompletedAt == null || result.ClosedAt == null ? 0 
+                : Convert.ToInt32((result.Match.CompletedAt.Value - result.ClosedAt.Value).TotalSeconds),
                 PlayerCount = 6,
-                WinnerTeam = winnerPlayer.Team.Value,
+                WinnerTeam = winnerTeam,
                 TournamentEdition = crawlInfo.TeMap,
                 ArcadeReplayPlayers = result.Slots.Select(s => new ArcadeReplayPlayer()
                 {
@@ -120,9 +151,17 @@ public partial class CrawlerService
                     continue; 
                 }
                 rp.Discriminator = matchPlayer.Profile.Discriminator;
-                rp.PlayerResult = matchPlayer.Decision == "win" ? 
-                    pax.dsstats.shared.PlayerResult.Win
-                    : pax.dsstats.shared.PlayerResult.Los;
+                rp.PlayerResult = GetPlayerResult(matchPlayer.Decision);
+                if (rp.PlayerResult == PlayerResult.Win && rp.Team != winnerTeam)
+                {
+                    logger.LogWarning($"correction player result due to loser team BnetBucketId {replay.BnetBucketId}, BnetRecordId {replay.BnetRecordId}");
+                    rp.PlayerResult = PlayerResult.Los;
+                }
+                else if (rp.PlayerResult == PlayerResult.Los && rp.Team == winnerTeam)
+                {
+                    logger.LogWarning($"correction player result due to winner team BnetBucketId {replay.BnetBucketId}, BnetRecordId {replay.BnetRecordId}");
+                    rp.PlayerResult = PlayerResult.Win;
+                }
             }
 
             replay.Imported = DateTime.UtcNow;
@@ -139,6 +178,16 @@ public partial class CrawlerService
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         context.ArcadeReplays.AddRange(replays);
         await context.SaveChangesAsync();
+    }
+
+    private static PlayerResult GetPlayerResult(string decision)
+    {
+        return decision switch 
+        {
+            "win" => PlayerResult.Win,
+            "loss" => PlayerResult.Los,
+            _ => PlayerResult.None
+        };
     }
 
     private async Task SeedReplayIds()

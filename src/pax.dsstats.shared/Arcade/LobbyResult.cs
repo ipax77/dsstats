@@ -62,7 +62,7 @@ public record LobbyResult
 
     public Match? Match { get; set; }
 
-    public Map Map { get; set; } = new();
+    // public Map? Map { get; set; } = new();
 
     public object? ExtMod { get; set; }
 

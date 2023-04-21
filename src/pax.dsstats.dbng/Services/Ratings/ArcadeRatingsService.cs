@@ -89,7 +89,7 @@ public partial class ArcadeRatingsService
     private async Task GeneratePlayerRatings(MmrService.CalcRatingRequest request)
     {
         int skip = 0;
-        int take = 100000;
+        int take = 200000;
 
         request.ReplayDsRDtos = await GetReplayData(request.StartTime, skip, take);
 
