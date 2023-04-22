@@ -189,42 +189,21 @@ public partial class ArcadeRatingsService
             .OrderByDescending(o => o.CreatedAt)
             .Select(s => s.CreatedAt)
             .FirstOrDefaultAsync();
-        List<ReplayDsRDto> continueReplays = new();
 
         if (latestRatingsProduced > DateTime.MinValue)
         {
-            var importedReplaysQuery = context.ArcadeReplays
-                .Where(x => x.Imported >= latestRatingsProduced
-                    && x.ArcadeReplayRating == null)
-                .Select(s => new { s.Imported, s.CreatedAt });
+            mmrOptions.ReCalc = false;
+            startTime = latestRatingsProduced;
 
-            var count = await importedReplaysQuery.CountAsync();
-
-            if (count == 0)
-            {
-                return null;
-            }
-
-            var importedReplays = await importedReplaysQuery.ToListAsync();
-
-            var oldestReplay = importedReplays.OrderBy(o => o.CreatedAt).First();
-            
-            if (oldestReplay.CreatedAt > latestRatingsProduced)
-            {
-                mmrOptions.ReCalc = false;
-                startTime = latestRatingsProduced;
-                continueReplays = await GetReplayData(startTime, 0, count);
-
-                replayPlayerRatingAppendId = await context.RepPlayerRatings
-                    .OrderByDescending(o => o.RepPlayerRatingId)
-                    .Select(s => s.RepPlayerRatingId)
-                    .FirstOrDefaultAsync();
-                replayRatingAppendId = await context.ReplayRatings
-                    .OrderByDescending(o => o.ReplayRatingId)
-                    .Select(s => s.ReplayRatingId)
-                    .FirstOrDefaultAsync();
-            }
-        }        
+            replayPlayerRatingAppendId = await context.RepPlayerRatings
+                .OrderByDescending(o => o.RepPlayerRatingId)
+                .Select(s => s.RepPlayerRatingId)
+                .FirstOrDefaultAsync();
+            replayRatingAppendId = await context.ReplayRatings
+                .OrderByDescending(o => o.ReplayRatingId)
+                .Select(s => s.ReplayRatingId)
+                .FirstOrDefaultAsync();
+        }
 
         MmrService.CalcRatingRequest request = new()
         {
