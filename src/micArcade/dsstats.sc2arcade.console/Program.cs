@@ -52,13 +52,19 @@ class Program
         services.AddAutoMapper(typeof(AutoMapperProfile));
         services.AddScoped<CrawlerService>();
         services.AddScoped<ArcadeRatingsService>();
+        services.AddScoped<RatingsService>();
 
         var serviceProvider = services.BuildServiceProvider();
 
         using var scope = serviceProvider.CreateScope();
 
-
-        if (args.Length > 0 && args[0] == "ratings")
+        if (args.Length > 0 && args[0] == "dsratings")
+        {
+            Console.WriteLine($"producing dsstats ratings");
+            var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+            ratingsService.ProduceRatings(recalc: true).Wait();
+        }
+        else if (args.Length > 0 && args[0] == "ratings")
         {
             Console.WriteLine($"producing arcade ratings");
             var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();

@@ -9,7 +9,7 @@ namespace pax.dsstats.dbng.Services.Ratings;
 
 public partial class RatingsService
 {
-    private async Task<List<ReplayDsRDto>> GetReplayData(DateTime startTime, DateTime endTime)
+    private async Task<List<ReplayDsRDto>> GetReplayData(DateTime startTime, int skip, int take)
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -27,14 +27,11 @@ public partial class RatingsService
             replays = replays.Where(x => x.GameTime > startTime);
         }
 
-        if (endTime != DateTime.MinValue && endTime < DateTime.Today)
-        {
-            replays = replays.Where(x => x.GameTime < endTime);
-        }
-
         return await replays
             .OrderBy(o => o.GameTime)
                 .ThenBy(o => o.ReplayId)
+            .Skip(skip)
+            .Take(take)
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
             .ToListAsync();
     }

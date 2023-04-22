@@ -48,7 +48,7 @@ public class RatingsBackgroundService : IHostedService, IDisposable
         await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-3));
 
         var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
-        await arcadeRatingsService.ProduceRatings();
+        await arcadeRatingsService.ProduceRatings(DateTime.Today.Day == 1);
 
         sw.Stop();
         logger.LogWarning($"{DateTime.UtcNow.ToString(@"yyyy-MM-dd HH:mm:ss")} - Work done in {sw.ElapsedMilliseconds} ms");
