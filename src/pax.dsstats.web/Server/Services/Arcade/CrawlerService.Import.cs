@@ -1,5 +1,4 @@
-﻿using System.Security.Cryptography;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
@@ -95,19 +94,19 @@ public partial class CrawlerService
             else
             {
                 crawlInfo.Errors++;
-                logger.LogError($"could not determine winnerteam: BnetBucketId {result.BnetBucketId}, BnetRecordId {result.BnetRecordId}");
+                logger.LogInformation($"could not determine winnerteam: BnetBucketId {result.BnetBucketId}, BnetRecordId {result.BnetRecordId}");
                 // continue;
             }
 
             if (result.Match.ProfileMatches.Any(a => a.Profile.ProfileId == 0))
             {
-                logger.LogError($"replay with MatchProfiles ProfileId == 0: RegionId {crawlInfo.RegionId}, BnetBucketId {result.BnetBucketId}, BnetRecordId {result.BnetRecordId}");
+                logger.LogInformation($"replay with MatchProfiles ProfileId == 0: RegionId {crawlInfo.RegionId}, BnetBucketId {result.BnetBucketId}, BnetRecordId {result.BnetRecordId}");
                 continue;
             }
 
             if (result.Slots.Any(a => a.Profile?.ProfileId == 0))
             {
-                logger.LogError($"replay with SlotsProfiles ProfileId == 0: RegionId {crawlInfo.RegionId}, BnetBucketId {result.BnetBucketId}, BnetRecordId {result.BnetRecordId}");
+                logger.LogInformation($"replay with SlotsProfiles ProfileId == 0: RegionId {crawlInfo.RegionId}, BnetBucketId {result.BnetBucketId}, BnetRecordId {result.BnetRecordId}");
                 continue;
             }
 
@@ -147,19 +146,19 @@ public partial class CrawlerService
                 );
                 if (matchPlayer == null)
                 {
-                    logger.LogError($"player match profile not found: RegionId {replay.RegionId}, BnetBucketId {replay.BnetBucketId}, BnetRecordId {replay.BnetRecordId}");
+                    logger.LogInformation($"player match profile not found: RegionId {replay.RegionId}, BnetBucketId {replay.BnetBucketId}, BnetRecordId {replay.BnetRecordId}");
                     continue; 
                 }
                 rp.Discriminator = matchPlayer.Profile.Discriminator;
                 rp.PlayerResult = GetPlayerResult(matchPlayer.Decision);
                 if (winnerTeam > 0 && rp.PlayerResult == PlayerResult.Win && rp.Team != winnerTeam)
                 {
-                    logger.LogWarning($"correction player result due to loser team BnetBucketId {replay.BnetBucketId}, BnetRecordId {replay.BnetRecordId}");
+                    logger.LogInformation($"correction player result due to loser team BnetBucketId {replay.BnetBucketId}, BnetRecordId {replay.BnetRecordId}");
                     rp.PlayerResult = PlayerResult.Los;
                 }
                 else if (winnerTeam > 0 && rp.PlayerResult == PlayerResult.Los && rp.Team == winnerTeam)
                 {
-                    logger.LogWarning($"correction player result due to winner team BnetBucketId {replay.BnetBucketId}, BnetRecordId {replay.BnetRecordId}");
+                    logger.LogInformation($"correction player result due to winner team BnetBucketId {replay.BnetBucketId}, BnetRecordId {replay.BnetRecordId}");
                     rp.PlayerResult = PlayerResult.Win;
                 }
             }

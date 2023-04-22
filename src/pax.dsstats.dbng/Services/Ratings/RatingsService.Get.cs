@@ -93,7 +93,7 @@ public partial class RatingsService
         return player.PlayerId; // todo
     }
 
-    private List<TimeRating> GetTimeRatings(string? mmrOverTime)
+    public static List<TimeRating> GetTimeRatings(string? mmrOverTime)
     {
         if (string.IsNullOrEmpty(mmrOverTime))
         {
