@@ -133,7 +133,10 @@
         @if (playerRatingDetailsDto != null)
         {
             <div class="col-auto">
-                <PlayerRatingChart @ref="playerRatingChart" PlayerRating="playerRatingDetailsDto"></PlayerRatingChart>
+                @*<PlayerRatingChart @ref="playerRatingChart" PlayerRating="playerRatingDetailsDto"></PlayerRatingChart>*@
+                <PlayerRatingDetailChart 
+                    PlayerId="new pax.dsstats.shared.Arcade.PlayerId(RequestNames.ToonId, RequestNames.RealmId, RequestNames.RegionId)" 
+                    RatingType="playerRatingDetailsDto.RatingType" />
             </div>
             <div class="col-auto">
                 <div class="card">

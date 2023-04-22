@@ -2,6 +2,7 @@
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
 
 namespace pax.dsstats.dbng.Services;
 
@@ -198,6 +199,39 @@ public partial class StatsService
             && r.TournamentEdition == te
             && gameModes.Contains(r.GameMode))
         .AsNoTracking();
+    }
+
+    public async Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId, RatingType ratingType)
+    {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+        var replaysQuery = from p in context.Players
+                           from rp in p.ReplayPlayers
+                           where p.ToonId == playerId.ToonId
+                            && p.RegionId == playerId.RegionId
+                            && p.RealmId == playerId.RealmId
+                            && rp.Replay.ReplayRatingInfo != null
+                            && rp.Replay.ReplayRatingInfo.RatingType == ratingType
+                           group rp by new { rp.Replay.GameTime.Year, rp.Replay.GameTime.Month } into g
+                           //select new
+                           //{
+                           //    g.Key.,
+                           //    Rating = g.Average(a => a.ReplayPlayerRatingInfo.Rating),
+                           //    Games = g.Max(m => m.ReplayPlayerRatingInfo.Games)
+                           //};
+                           select new ReplayPlayerChartDto()
+                           {
+                               Replay = new ReplayChartDto()
+                               {
+                                   GameTime = new DateTime(g.Key.Year, g.Key.Month, 15),
+                               },
+                               ReplayPlayerRatingInfo = new RepPlayerRatingChartDto()
+                               {
+                                   Rating = g.Average(a => a.ReplayPlayerRatingInfo.Rating),
+                                   Games = g.Max(m => m.ReplayPlayerRatingInfo.Games)
+                               }
+                           };
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+        return await replaysQuery.ToListAsync();
     }
 }
 
