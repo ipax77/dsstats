@@ -46,8 +46,8 @@
         </div>
         @if (playerDetails?.ArcadePlayer != null)
         {
-            <div class="p-2">
-                <button type="button" class="btn btn-outline-light" @onclick="ShowReplays">Replays</button>
+            <div class="col-auto align-self-center">
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="ShowReplays">Replays</button>
             </div>
         }
     </div>
@@ -61,8 +61,17 @@
     </div>
     @if (playerDetails != null)
     {
-        <PlayerDetailsRatingCharts @ref="playerDetailsRatingCharts" PlayerRatings="playerDetails.PlayerRatings.Select(s => MapPlayerRating(s)).ToList()"></PlayerDetailsRatingCharts>
         <div class="row mt-2">
+            <div class="col-auto">
+                <div style="width: 40vw; min-width: 500px; height: calc(40vw * 0.6); min-height: 300px;">
+                    @if (PlayerId != null)
+                    {
+                        <ArcadePlayerDetailsChart @ref="arcadePlayerDetailsChart"
+                                                 PlayerId="new pax.dsstats.shared.Arcade.PlayerId(PlayerId.ProfileId, PlayerId.RealmId, PlayerId.RegionId)"
+                                                 RatingType="RatingType" />
+                    }
+                </div>
+            </div>
             @if (InterestRating != null)
             {
                 <div class="col-auto">
@@ -204,7 +213,7 @@
     private ArcadePlayerDetails? playerDetails = null;
     private ArcadePlayerMoreDetails? playerMoreDetails = null;
 
-    private PlayerDetailsRatingCharts? playerDetailsRatingCharts;
+    private ArcadePlayerDetailsChart? arcadePlayerDetailsChart;
     private ArcadePlayerRatingDetailDto? InterestRating
         => playerDetails?.PlayerRatings.FirstOrDefault(f => f.RatingType == RatingType);
 
@@ -225,6 +234,10 @@
         else
         {
             playerDetails = await arcadeService.GetPlayerDetails(ArcadePlayerId, cts.Token);
+            if (playerDetails?.ArcadePlayer != null)
+            {
+                PlayerId = new(playerDetails.ArcadePlayer.ProfileId, playerDetails.ArcadePlayer.RealmId, playerDetails.ArcadePlayer.RegionId);
+            }
         }
         loading = false;
         await InvokeAsync(() => StateHasChanged());
@@ -256,6 +269,7 @@
                 && ratingTypeObj is RatingType ratingTypeValue)
             {
                 RatingType = ratingTypeValue;
+                arcadePlayerDetailsChart?.Update(RatingType);
                 await LoadMoreData();
             }
         }

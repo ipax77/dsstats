@@ -133,10 +133,11 @@
         @if (playerRatingDetailsDto != null)
         {
             <div class="col-auto">
-                @*<PlayerRatingChart @ref="playerRatingChart" PlayerRating="playerRatingDetailsDto"></PlayerRatingChart>*@
-                <PlayerRatingDetailChart 
-                    PlayerId="new pax.dsstats.shared.Arcade.PlayerId(RequestNames.ToonId, RequestNames.RealmId, RequestNames.RegionId)" 
-                    RatingType="playerRatingDetailsDto.RatingType" />
+                <div style="width: 40vw; min-width: 500px; height: calc(40vw * 0.6); min-height: 300px;">
+                    <PlayerRatingDetailChart @ref="playerRatingDetailChart"
+                        PlayerId="new pax.dsstats.shared.Arcade.PlayerId(RequestNames.ToonId, RequestNames.RealmId, RequestNames.RegionId)" 
+                        RatingType="playerRatingDetailsDto.RatingType" />
+                </div>
             </div>
             <div class="col-auto">
                 <div class="card">
@@ -271,7 +272,7 @@
     PlayerDetailSummary? playerSummary;
     PlayerRatingDetails? ratingDetails;
     PlayerRatingDetailDto? playerRatingDetailsDto;
-    PlayerRatingChart? playerRatingChart;
+    PlayerRatingDetailChart? playerRatingDetailChart;
     PlayerCmdrChart? playerCmdrChart;
 
     PlayerCmdrsAvgGainComponent? playerCmdrsAvgGainComponent;
@@ -325,7 +326,10 @@
         if (!dry)
         {
             playerRatingDetailsDto = playerSummary?.Ratings.FirstOrDefault(f => f.RatingType == RatingType);
-            playerRatingChart?.UpdateChart(playerRatingDetailsDto);
+            if (playerRatingDetailsDto != null)
+            {
+                playerRatingDetailChart?.Update(playerRatingDetailsDto.RatingType);
+            }
         }
         playerCmdrsAvgGainComponent?.Update(ratingDetails.CmdrsAvgGain);
         isLoading = false;
@@ -349,7 +353,6 @@
         {
             playerRatingDetailsDto = null;
         }
-        playerRatingChart?.UpdateChart(playerRatingDetailsDto);
         playerCmdrChart?.SetupChart(playerSummary.Commanders);
         await InvokeAsync(() => StateHasChanged());
     }

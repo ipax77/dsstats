@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Arcade;
 
@@ -78,5 +79,12 @@ public class ArcadeController
                                                                     CancellationToken token)
     {
         return await arcadeService.GetMorePlayerDatails(playerId, (RatingType)ratingType, token);
+    }
+
+    [HttpPost]
+    [Route("playerratingchartdata/{ratingType:int}")]
+    public async Task<ActionResult<List<ReplayPlayerChartDto>>> GetPlayerRatingChartData([FromBody] PlayerId playerId, int ratingType)
+    {
+        return await arcadeService.GetPlayerRatingChartData(playerId, (RatingType)ratingType);
     }
 }

@@ -2,7 +2,7 @@
 @using pax.BlazorChartJs
 @using pax.dsstats.shared.Arcade;
 @using pax.dsstats.shared;
-@inject IDataService dataService
+@inject IArcadeService arcadeService
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
@@ -49,7 +49,7 @@
 
     private async Task LoadData()
     {
-        rpChartDtos[RatingType] = await dataService.GetPlayerRatingChartData(PlayerId, RatingType);
+        rpChartDtos[RatingType] = await arcadeService.GetPlayerRatingChartData(PlayerId, RatingType);
         dataReady = true;
         SetupChart();
     }

@@ -119,6 +119,6 @@ class Program
             Console.WriteLine($"Crawling lobby histories from today till {tillDate.ToShortDateString()}");
             crawlerService.GetLobbyHistory(tillDate).Wait();
         }
-        Console.WriteLine($"jon done.");
+        Console.WriteLine($"job done.");
     }
 }
