@@ -1,7 +1,6 @@
 ﻿using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using pax.dsstats.dbng;
 using pax.dsstats.shared;
 using System.Globalization;
 
@@ -36,10 +35,9 @@ public partial class RatingsService
             .ToListAsync();
     }
 
-    private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetCalcRatings(List<ReplayDsRDto> replayDsRDtos)
+    private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetCalcRatings(DateTime fromDate)
     {
         Dictionary<RatingType, Dictionary<int, CalcRating>> calcRatings = new();
-
         foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
         {
             if (ratingType == RatingType.None)
@@ -49,40 +47,42 @@ public partial class RatingsService
             calcRatings[ratingType] = new();
         }
 
-        var playerIds = replayDsRDtos
-            .SelectMany(s => s.ReplayPlayers)
-            .Select(s => s.Player.PlayerId)
-            .Distinct()
-            .ToList();
-
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        var playerRatings = await context.PlayerRatings
-            .Include(i => i.Player)
-            .Where(x => playerIds.Contains(x.PlayerId))
-            .AsNoTracking()
+        var playersRatingsQuery = from r in context.Replays
+                                  from rp in r.ReplayPlayers
+                                  from pr in rp.Player.PlayerRatings
+                                  where r.GameTime >= fromDate
+                                   && r.ReplayRatingInfo == null
+                                  select pr;
+        var playerRatings = await playersRatingsQuery
+            .Distinct()
+            .Select(s => new
+            {
+                s.PlayerId,
+                s.Games,
+                s.Wins,
+                s.MmrOverTime,
+                s.Consistency,
+                s.Confidence,
+                s.RatingType,
+                s.Rating
+            })
             .ToListAsync();
 
-        for (int i = 0; i < playerRatings.Count; i++)
+        foreach (var pr in playerRatings)
         {
-            var rating = playerRatings[i];
-
-            CalcRating calcRating = new()
+            calcRatings[pr.RatingType][pr.PlayerId] = new()
             {
-                PlayerId = rating.PlayerId,
-                Games = rating.Games,
-                Wins = rating.Wins,
-                Mvp = rating.Mvp,
-                TeamGames = rating.TeamGames,
-                Mmr = rating.Rating,
-                MmrOverTime = GetTimeRatings(rating.MmrOverTime),
-                Consistency = rating.Consistency,
-                Confidence = rating.Confidence,
-                IsUploader = rating.IsUploader,
-                CmdrCounts = GetFakeCmdrDic(rating.Main, rating.MainCount, rating.Games)
+                PlayerId = pr.PlayerId,
+                Games = pr.Games,
+                Wins = pr.Wins,
+                Mmr = pr.Rating,
+                MmrOverTime = RatingsService.GetTimeRatings(pr.MmrOverTime),
+                Consistency = pr.Consistency,
+                Confidence = pr.Confidence,
             };
-            calcRatings[rating.RatingType].Add(GetMmrId(rating.Player), calcRating);
         }
 
         return calcRatings;

@@ -113,7 +113,6 @@ public partial class RatingsService
     {
         MmrOptions mmrOptions = new(reCalc: true);
 
-        List<ReplayDsRDto> continueReplays = new();
         int replayRatingAppendId = 0;
         int replayPlayerRatingAppendId = 0;
 
@@ -167,7 +166,7 @@ public partial class RatingsService
         MmrService.CalcRatingRequest request = new()
         {
             CmdrMmrDic = new(),
-            MmrIdRatings = await GetMmrIdRatings(mmrOptions, continueReplays),
+            MmrIdRatings = await GetMmrIdRatings(mmrOptions, mmrOptions.ReCalc ? null : startTime),
             MmrOptions = mmrOptions,
             ReplayRatingAppendId = replayRatingAppendId,
             ReplayPlayerRatingAppendId = replayPlayerRatingAppendId,
@@ -217,9 +216,9 @@ public partial class RatingsService
         }
     }
 
-    private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetMmrIdRatings(MmrOptions mmrOptions, List<ReplayDsRDto>? dependentReplays)
+    private async Task<Dictionary<RatingType, Dictionary<int, CalcRating>>> GetMmrIdRatings(MmrOptions mmrOptions, DateTime? startTime)
     {
-        if (mmrOptions.ReCalc || dependentReplays == null)
+        if (mmrOptions.ReCalc || startTime == null)
         {
             Dictionary<RatingType, Dictionary<int, CalcRating>> calcRatings = new();
 
@@ -235,7 +234,7 @@ public partial class RatingsService
         }
         else
         {
-            return await GetCalcRatings(dependentReplays);
+            return await GetCalcRatings(startTime.Value);
         }
     }
 
