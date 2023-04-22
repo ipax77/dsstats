@@ -129,8 +129,8 @@ if (app.Environment.IsDevelopment())
     // crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-3)).Wait();
     // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1)).Wait();
 
-    var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
-    arcadeRatingsService.ProduceRatings(recalc: false).Wait();
+    //var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
+    //arcadeRatingsService.ProduceRatings(recalc: false).Wait();
 
     // var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
     // importService.ImportInit();

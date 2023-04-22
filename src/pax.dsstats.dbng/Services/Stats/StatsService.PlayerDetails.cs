@@ -212,12 +212,6 @@ public partial class StatsService
                             && rp.Replay.ReplayRatingInfo != null
                             && rp.Replay.ReplayRatingInfo.RatingType == ratingType
                            group rp by new { rp.Replay.GameTime.Year, rp.Replay.GameTime.Month } into g
-                           //select new
-                           //{
-                           //    g.Key.,
-                           //    Rating = g.Average(a => a.ReplayPlayerRatingInfo.Rating),
-                           //    Games = g.Max(m => m.ReplayPlayerRatingInfo.Games)
-                           //};
                            select new ReplayPlayerChartDto()
                            {
                                Replay = new ReplayChartDto()
@@ -226,7 +220,7 @@ public partial class StatsService
                                },
                                ReplayPlayerRatingInfo = new RepPlayerRatingChartDto()
                                {
-                                   Rating = g.Average(a => a.ReplayPlayerRatingInfo.Rating),
+                                   Rating = MathF.Round(g.Average(a => a.ReplayPlayerRatingInfo.Rating)),
                                    Games = g.Max(m => m.ReplayPlayerRatingInfo.Games)
                                }
                            };

@@ -226,7 +226,7 @@ public partial class ArcadeService
                                },
                                ReplayPlayerRatingInfo = new RepPlayerRatingChartDto()
                                {
-                                   Rating = g.Average(a => a.ArcadeReplayPlayerRating.Rating),
+                                   Rating = MathF.Round(g.Average(a => a.ArcadeReplayPlayerRating.Rating)),
                                    Games = g.Max(m => m.ArcadeReplayPlayerRating.Games)
                                }
                            };
