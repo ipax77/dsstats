@@ -205,4 +205,29 @@ public class ArcadeService : IArcadeService
         }
         return new();
     }
+
+    public async Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId, RatingType ratingType)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{arcadeController}playerratingchartdata/{(int)ratingType}", playerId);
+            if (response.IsSuccessStatusCode)
+            {
+                var data = await response.Content.ReadFromJsonAsync<List<ReplayPlayerChartDto>>();
+                if (data != null)
+                {
+                    return data;
+                }
+            }
+            else
+            {
+                logger.LogError($"failed getting playerchartdata: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting playerchartdata: {ex.Message}");
+        }
+        return new();
+    }
 }

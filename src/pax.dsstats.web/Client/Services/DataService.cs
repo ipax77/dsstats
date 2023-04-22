@@ -1,4 +1,6 @@
 ﻿using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
+using System.ComponentModel.DataAnnotations;
 using System.Net.Http.Json;
 
 namespace pax.dsstats.web.Client.Services;
@@ -925,5 +927,30 @@ public class DataService : IDataService
             logger.LogError($"failed getting CmdrReplays: {e.Message}");
         }
         return new();
-    }          
+    }
+
+    public async Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId, RatingType ratingType)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{statsController}playerratingchartdata/{(int)ratingType}", playerId);
+            if (response.IsSuccessStatusCode)
+            {
+                var data = await response.Content.ReadFromJsonAsync<List<ReplayPlayerChartDto>>();
+                if (data != null)
+                {
+                    return data;
+                }
+            }
+            else
+            {
+                logger.LogError($"failed getting playerchartdata: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting playerchartdata: {ex.Message}");
+        }
+        return new();
+    }
 }

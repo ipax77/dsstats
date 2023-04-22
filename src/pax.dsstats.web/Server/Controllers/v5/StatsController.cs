@@ -2,6 +2,7 @@
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
 
 namespace pax.dsstats.web.Server.Controllers.v5
 {
@@ -255,7 +256,7 @@ namespace pax.dsstats.web.Server.Controllers.v5
         [Route("GetFunStats")]
         public async Task<ActionResult<FunStatsResult>> GetFunStats(FunStatsRequest request, CancellationToken token)
         {
-            try 
+            try
             {
                 return await statsService.GetFunStats(request, token);
             }
@@ -267,19 +268,19 @@ namespace pax.dsstats.web.Server.Controllers.v5
         [Route("GetCmdrReplayInfosCount")]
         public async Task<int> GetCmdrReplayInfosCount(CmdrInfoRequest request, CancellationToken token)
         {
-            try 
+            try
             {
                 return await statsService.GetCmdrReplayInfosCount(request, token);
             }
             catch (OperationCanceledException) { }
             return 0;
-        }        
+        }
 
         [HttpPost]
         [Route("GetCmdrReplayInfos")]
         public async Task<ActionResult<List<ReplayCmdrInfo>>> GetCmdrReplayInfos(CmdrInfoRequest request, CancellationToken token)
         {
-            try 
+            try
             {
                 return await statsService.GetCmdrReplayInfos(request, token);
             }
@@ -291,19 +292,19 @@ namespace pax.dsstats.web.Server.Controllers.v5
         [Route("GetCmdrPlayerInfos")]
         public async Task<ActionResult<List<CmdrPlayerInfo>>> GetCmdrPlayerInfos(CmdrInfoRequest request, CancellationToken token)
         {
-            try 
+            try
             {
                 return await statsService.GetCmdrPlayerInfos(request, token);
             }
             catch (OperationCanceledException) { }
             return NoContent();
-        }  
+        }
 
         [HttpPost]
         [Route("GetCmdrReplaysCount")]
         public async Task<ActionResult<int>> GetCmdrReplaysCount(CmdrInfosRequest request, CancellationToken token)
         {
-            try 
+            try
             {
                 return await statsService.GetCmdrReplaysCount(request, token);
             }
@@ -315,12 +316,19 @@ namespace pax.dsstats.web.Server.Controllers.v5
         [Route("GetCmdrReplays")]
         public async Task<ActionResult<List<ReplayCmdrListDto>>> GetCmdrReplays(CmdrInfosRequest request, CancellationToken token)
         {
-            try 
+            try
             {
                 return await statsService.GetCmdrReplays(request, token);
             }
             catch (OperationCanceledException) { }
             return NoContent();
-        }               
+        }
+
+        [HttpPost]
+        [Route("playerratingchartdata/{ratingType:int}")]
+        public async Task<ActionResult<List<ReplayPlayerChartDto>>> GetPlayerRatingChartData([FromBody] PlayerId playerId, int ratingType)
+        {
+            return await statsService.GetPlayerRatingChartData(playerId, (RatingType)ratingType);
+        }
     }
 }

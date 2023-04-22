@@ -49,3 +49,20 @@ public record PlayerMatchupInfo
     public int Count { get; init; }
     public int Wins { get; init; }
 }
+
+public record ReplayPlayerChartDto
+{
+    public ReplayChartDto Replay { get; set; } = new();
+    public RepPlayerRatingChartDto? ReplayPlayerRatingInfo { get; set; }
+}
+
+public record ReplayChartDto
+{
+    public DateTime GameTime { get; set; }
+}
+
+public record RepPlayerRatingChartDto
+{
+    public float Rating { get; set; }
+    public int Games { get; set; }
+}

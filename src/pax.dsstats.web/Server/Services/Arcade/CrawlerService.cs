@@ -30,9 +30,7 @@ public partial class CrawlerService
     {
         var httpClient = httpClientFactory.CreateClient("sc2arcardeClient");
 
-        int waitTime = 40 * 1000 / 100; // 100 request per 40 sec
-
-        string? current = null;
+        // int waitTime = 40 * 1000 / 100; // 100 request per 40 sec
 
         List<CrawlInfo> crawlInfos = new()
         {
@@ -48,7 +46,7 @@ public partial class CrawlerService
 
             // &includeSlotsProfile=true
             string baseRequest =
-                $"lobbies/history?regionId={crawlInfo.RegionId}&mapId={crawlInfo.MapId}&profileHandle={crawlInfo.Handle}&orderDirection=desc&includeMapInfo=true&includeSlots=true&includeSlotsProfile=true&includeMatchResult=true&includeMatchPlayers=true";
+                $"lobbies/history?regionId={crawlInfo.RegionId}&mapId={crawlInfo.MapId}&profileHandle={crawlInfo.Handle}&orderDirection=desc&includeMapInfo=false&includeSlots=true&includeSlotsProfile=true&includeMatchResult=true&includeMatchPlayers=true";
 
             int i = 0;
             while (!crawlInfo.Done)
@@ -60,11 +58,6 @@ public partial class CrawlerService
                     if (!String.IsNullOrEmpty(crawlInfo.Next))
                     {
                         request += $"&after={crawlInfo.Next}";
-                        if (crawlInfo.Next == current)
-                        {
-                            await Task.Delay(waitTime);
-                        }
-                        current = crawlInfo.Next;
                     }
 
                     var response = await httpClient.GetAsync(request);
@@ -121,6 +114,7 @@ public partial class CrawlerService
                 }
             }
             await Import(crawlInfo, tillTime);
+            await Task.Delay(3000);
         }
 
         foreach (var crawlInfo in crawlInfos)

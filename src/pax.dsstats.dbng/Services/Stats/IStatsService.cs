@@ -1,4 +1,5 @@
 ﻿using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
 
 namespace pax.dsstats.dbng.Services
 {
@@ -30,5 +31,6 @@ namespace pax.dsstats.dbng.Services
         Task<List<CmdrPlayerInfo>> GetCmdrPlayerInfos(CmdrInfoRequest request, CancellationToken token = default);
         Task<int> GetCmdrReplaysCount(CmdrInfosRequest request, CancellationToken token = default);
         Task<List<ReplayCmdrListDto>> GetCmdrReplays(CmdrInfosRequest request, CancellationToken token = default);
+        Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId, RatingType ratingType);
     }
 }

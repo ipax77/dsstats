@@ -11,7 +11,10 @@ public record PlayerData
 
         MmrId = MmrService.GetMmrId(replayPlayer.Player);
 
-        IsLeaver = replayPlayer.Duration < replay.Duration - 90 || (replayPlayer.IsUploader && replay.ResultCorrected);
+        IsLeaver = replayPlayer.Duration < replay.Duration - 90
+            || (replayPlayer.IsUploader && replay.ResultCorrected)
+            // || replayPlayer.PlayerResult == PlayerResult.None
+            ;
     }
 
     public ReplayPlayerDsRDto ReplayPlayer { get; init; }

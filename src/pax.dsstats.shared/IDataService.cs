@@ -1,4 +1,6 @@
-﻿namespace pax.dsstats.shared;
+﻿using pax.dsstats.shared.Arcade;
+
+namespace pax.dsstats.shared;
 public interface IDataService
 {
     void SetFromServer(bool fromServer);
@@ -51,4 +53,5 @@ public interface IDataService
     Task<List<CmdrPlayerInfo>> GetCmdrPlayerInfos(CmdrInfoRequest request, CancellationToken token = default);
     Task<int> GetCmdrReplaysCount(CmdrInfosRequest request, CancellationToken token = default);
     Task<List<ReplayCmdrListDto>> GetCmdrReplays(CmdrInfosRequest request, CancellationToken token = default);
+    Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId, RatingType ratingType);
 }

@@ -203,6 +203,36 @@ public partial class ArcadeService
                             };
         return await gameModeGroup.ToListAsync(token);
     }
+
+    public async Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId, RatingType ratingType)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+        var replaysQuery = from p in context.ArcadePlayers
+                           from rp in p.ArcadeReplayPlayers
+                           where p.ProfileId == playerId.ToonId
+                            && p.RegionId == playerId.RegionId
+                            && p.RealmId == playerId.RealmId
+                            && rp.ArcadeReplay.ArcadeReplayRating != null
+                            && rp.ArcadeReplay.ArcadeReplayRating.RatingType == ratingType
+                           group rp by new { rp.ArcadeReplay.CreatedAt.Year, rp.ArcadeReplay.CreatedAt.Month } into g
+                           select new ReplayPlayerChartDto()
+                           {
+                               Replay = new ReplayChartDto()
+                               {
+                                   GameTime = new DateTime(g.Key.Year, g.Key.Month, 15),
+                               },
+                               ReplayPlayerRatingInfo = new RepPlayerRatingChartDto()
+                               {
+                                   Rating = g.Average(a => a.ArcadeReplayPlayerRating.Rating),
+                                   Games = g.Max(m => m.ArcadeReplayPlayerRating.Games)
+                               }
+                           };
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+        return await replaysQuery.ToListAsync();
+    }
 }
 
 internal record AracdePlayerTeamResultHelper
