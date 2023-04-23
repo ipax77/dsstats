@@ -39,7 +39,6 @@ public partial class RatingRepository : IRatingRepository
             Mvp = ravenRating?.Mvp ?? 0,
 
             Mmr = ravenRating?.Mmr ?? mmrOptions.StartMmr,
-            MmrOverTime = GetTimeRatings(ravenRating?.MmrOverTime),
 
             CmdrCounts = new(), // ToDo ???
         };
@@ -114,8 +113,7 @@ public partial class RatingRepository : IRatingRepository
                 TeamGames = rating.TeamGames,
                 Main = rating.Main,
                 MainPercentage = rating.Games == 0 ? 0 : Math.Round(rating.MainCount * 100.0 / rating.Games, 2),
-                Mmr = rating.Rating,
-                MmrOverTime = rating.MmrOverTime,
+                Mmr = rating.Rating
             });
         }
         return dto;
@@ -235,33 +233,6 @@ public partial class RatingRepository : IRatingRepository
             await SetRatingChange();
         }
         return new();
-    }
-
-    private static List<TimeRating> GetTimeRatings(string? mmrOverTime)
-    {
-        if (string.IsNullOrEmpty(mmrOverTime))
-        {
-            return new();
-        }
-
-        List<TimeRating> timeRatings = new();
-
-        foreach (var ent in mmrOverTime.Split('|', StringSplitOptions.RemoveEmptyEntries))
-        {
-            var timeMmr = ent.Split(',');
-            if (timeMmr.Length == 2)
-            {
-                if (double.TryParse(timeMmr[0], out double mmr))
-                {
-                    timeRatings.Add(new TimeRating()
-                    {
-                        Mmr = mmr,
-                        Date = timeMmr[1]
-                    });
-                }
-            }
-        }
-        return timeRatings;
     }
 }
 

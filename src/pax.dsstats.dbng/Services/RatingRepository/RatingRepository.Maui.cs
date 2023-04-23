@@ -17,12 +17,12 @@ public partial class RatingRepository
 
         command.CommandText =
             $@"
-                INSERT OR REPLACE INTO PlayerRatings ({nameof(PlayerRating.PlayerRatingId)},{nameof(PlayerRating.RatingType)},{nameof(PlayerRating.Rating)},{nameof(PlayerRating.Games)},{nameof(PlayerRating.Wins)},{nameof(PlayerRating.Mvp)},{nameof(PlayerRating.TeamGames)},{nameof(PlayerRating.MainCount)},{nameof(PlayerRating.Main)},{nameof(PlayerRating.MmrOverTime)},{nameof(PlayerRating.Consistency)},{nameof(PlayerRating.Confidence)},{nameof(PlayerRating.IsUploader)},{nameof(PlayerRating.PlayerId)})
-                VALUES ((SELECT {nameof(PlayerRating.PlayerRatingId)} from PlayerRatings where {nameof(PlayerRating.RatingType)} = $value1 AND {nameof(PlayerRating.PlayerId)} = $value13),$value1,$value2,$value3,$value4,$value5,$value6,$value7,$value8,$value9,$value10,$value11,$value12,$value13)
+                INSERT OR REPLACE INTO PlayerRatings ({nameof(PlayerRating.PlayerRatingId)},{nameof(PlayerRating.RatingType)},{nameof(PlayerRating.Rating)},{nameof(PlayerRating.Games)},{nameof(PlayerRating.Wins)},{nameof(PlayerRating.Mvp)},{nameof(PlayerRating.TeamGames)},{nameof(PlayerRating.MainCount)},{nameof(PlayerRating.Main)},{nameof(PlayerRating.Consistency)},{nameof(PlayerRating.Confidence)},{nameof(PlayerRating.IsUploader)},{nameof(PlayerRating.PlayerId)})
+                VALUES ((SELECT {nameof(PlayerRating.PlayerRatingId)} from PlayerRatings where {nameof(PlayerRating.RatingType)} = $value1 AND {nameof(PlayerRating.PlayerId)} = $value13),$value1,$value2,$value3,$value4,$value5,$value6,$value7,$value8,$value9,$value10,$value11,$value12)
             ";
 
         List<SqliteParameter> parameters = new List<SqliteParameter>();
-        for (int i = 1; i <= 13; i++)
+        for (int i = 1; i <= 12; i++)
         {
             var parameter = command.CreateParameter();
             parameter.ParameterName = $"$value{i}";
@@ -44,11 +44,10 @@ public partial class RatingRepository
                 parameters[5].Value = calcEnt.TeamGames;
                 parameters[6].Value = main.Value;
                 parameters[7].Value = (int)main.Key;
-                parameters[8].Value = GetDbMmrOverTime(calcEnt.MmrOverTime);
-                parameters[9].Value = calcEnt.Consistency;
-                parameters[10].Value = calcEnt.Confidence;
-                parameters[11].Value = calcEnt.IsUploader;
-                parameters[12].Value = calcEnt.PlayerId;
+                parameters[8].Value = calcEnt.Consistency;
+                parameters[9].Value = calcEnt.Confidence;
+                parameters[10].Value = calcEnt.IsUploader;
+                parameters[11].Value = calcEnt.PlayerId;
                 await command.ExecuteNonQueryAsync();
             }
         }

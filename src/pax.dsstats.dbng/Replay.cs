@@ -97,8 +97,6 @@ public class PlayerRating
     public int TeamGames { get; set; }
     public int MainCount { get; set; }
     public Commander Main { get; set; }
-    [MaxLength(4000)]
-    public string MmrOverTime { get; set; } = string.Empty;
     public double Consistency { get; set; }
     public double Confidence { get; set; }
     public bool IsUploader { get; set; }

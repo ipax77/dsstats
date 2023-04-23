@@ -268,7 +268,6 @@ public partial class ArcadeRatingsService
                 s.ArcadePlayerId,
                 s.Games,
                 s.Wins,
-                s.MmrOverTime,
                 s.Consistency,
                 s.Confidence,
                 s.RatingType,
@@ -284,7 +283,6 @@ public partial class ArcadeRatingsService
                 Games = pr.Games,
                 Wins = pr.Wins,
                 Mmr = pr.Rating,
-                MmrOverTime = RatingsService.GetTimeRatings(pr.MmrOverTime),
                 Consistency = pr.Consistency,
                 Confidence = pr.Confidence,
             };

@@ -55,7 +55,6 @@ public partial class RatingRepository
                 Main = cmdrRating.Main,
                 MainPercentage = cmdrRating.MainPercentage,
                 Mmr = cmdrRating.Mmr,
-                MmrOverTime = cmdrRating.MmrOverTime,
             });
         }
 
@@ -71,7 +70,6 @@ public partial class RatingRepository
                 Main = stdRating.Main,
                 MainPercentage = stdRating.MainPercentage,
                 Mmr = stdRating.Mmr,
-                MmrOverTime = stdRating.MmrOverTime,
             });
         }
         return dto;
@@ -204,36 +202,8 @@ public partial class RatingRepository
             Mmr = v.Mmr,
             Consistency = v.Consistency,
             Confidence = v.Confidence,
-            MmrOverTime = GetTimeRatings(v.MmrOverTime),
             CmdrCounts = GetFakeCmdrDic(v.Main, v.MainPercentage, v.Games)
         });
-    }
-
-    private List<TimeRating> GetTimeRatings(string? mmrOverTime)
-    {
-        if (string.IsNullOrEmpty(mmrOverTime))
-        {
-            return new();
-        }
-
-        List<TimeRating> timeRatings = new();
-
-        foreach (var ent in mmrOverTime.Split('|', StringSplitOptions.RemoveEmptyEntries))
-        {
-            var timeMmr = ent.Split(',');
-            if (timeMmr.Length == 2)
-            {
-                if (double.TryParse(timeMmr[0], out double mmr))
-                {
-                    timeRatings.Add(new TimeRating()
-                    {
-                        Mmr = mmr,
-                        Date = timeMmr[1]
-                    });
-                }
-            }
-        }
-        return timeRatings;
     }
 
     private Dictionary<Commander, int> GetFakeCmdrDic(Commander main, double mainPercentage, int games)

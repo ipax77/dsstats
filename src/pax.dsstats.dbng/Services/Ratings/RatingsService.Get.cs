@@ -63,7 +63,6 @@ public partial class RatingsService
                 s.PlayerId,
                 s.Games,
                 s.Wins,
-                s.MmrOverTime,
                 s.Consistency,
                 s.Confidence,
                 s.RatingType,
@@ -79,7 +78,6 @@ public partial class RatingsService
                 Games = pr.Games,
                 Wins = pr.Wins,
                 Mmr = pr.Rating,
-                MmrOverTime = RatingsService.GetTimeRatings(pr.MmrOverTime),
                 Consistency = pr.Consistency,
                 Confidence = pr.Confidence,
             };
@@ -91,46 +89,6 @@ public partial class RatingsService
     private static int GetMmrId(Player player)
     {
         return player.PlayerId; // todo
-    }
-
-    public static List<TimeRating> GetTimeRatings(string? mmrOverTime)
-    {
-        if (string.IsNullOrEmpty(mmrOverTime))
-        {
-            return new();
-        }
-
-        List<TimeRating> timeRatings = new();
-
-        foreach (var ent in mmrOverTime.Split('|', StringSplitOptions.RemoveEmptyEntries))
-        {
-            var timeMmr = ent.Split(',');
-            if (timeMmr.Length == 2)
-            {
-                if (double.TryParse(timeMmr[0], NumberStyles.Any, CultureInfo.InvariantCulture, out double mmr))
-                {
-                    timeRatings.Add(new TimeRating()
-                    {
-                        Mmr = mmr,
-                        Date = timeMmr[1]
-                    });
-                }
-            }
-            else if (timeMmr.Length == 3)
-            {
-                if (double.TryParse(timeMmr[0], NumberStyles.Any, CultureInfo.InvariantCulture, out double mmr))
-                {
-                    timeRatings.Add(new TimeRating()
-                    {
-                        Mmr = mmr,
-                        Date = timeMmr[1],
-                        Count = int.Parse(timeMmr[2])
-                    });
-                }
-            }
-
-        }
-        return timeRatings;
     }
 
     private Dictionary<Commander, int> GetFakeCmdrDic(Commander main, int mainCount, int games)

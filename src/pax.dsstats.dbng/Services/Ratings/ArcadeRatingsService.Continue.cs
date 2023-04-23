@@ -18,15 +18,15 @@ public partial class ArcadeRatingsService
 
         command.CommandText =
             $@"
-                INSERT INTO {nameof(ReplayContext.ArcadePlayerRatings)} ({nameof(ArcadePlayerRating.ArcadePlayerRatingId)},{nameof(ArcadePlayerRating.RatingType)},{nameof(ArcadePlayerRating.Pos)},{nameof(ArcadePlayerRating.Rating)},{nameof(ArcadePlayerRating.Games)},{nameof(ArcadePlayerRating.Wins)},{nameof(ArcadePlayerRating.Mvp)},{nameof(ArcadePlayerRating.TeamGames)},{nameof(ArcadePlayerRating.MainCount)},{nameof(ArcadePlayerRating.Main)},{nameof(ArcadePlayerRating.MmrOverTime)},{nameof(ArcadePlayerRating.Consistency)},{nameof(ArcadePlayerRating.Confidence)},{nameof(ArcadePlayerRating.IsUploader)},{nameof(ArcadePlayerRating.ArcadePlayerId)})
+                INSERT INTO {nameof(ReplayContext.ArcadePlayerRatings)} ({nameof(ArcadePlayerRating.ArcadePlayerRatingId)},{nameof(ArcadePlayerRating.RatingType)},{nameof(ArcadePlayerRating.Pos)},{nameof(ArcadePlayerRating.Rating)},{nameof(ArcadePlayerRating.Games)},{nameof(ArcadePlayerRating.Wins)},{nameof(ArcadePlayerRating.Mvp)},{nameof(ArcadePlayerRating.TeamGames)},{nameof(ArcadePlayerRating.MainCount)},{nameof(ArcadePlayerRating.Main)},{nameof(ArcadePlayerRating.Consistency)},{nameof(ArcadePlayerRating.Confidence)},{nameof(ArcadePlayerRating.IsUploader)},{nameof(ArcadePlayerRating.ArcadePlayerId)})
                 VALUES ((SELECT t.{nameof(ArcadePlayerRating.ArcadePlayerRatingId)} FROM (SELECT * from {nameof(ReplayContext.ArcadePlayerRatings)} where {nameof(ArcadePlayerRating.RatingType)} = @value1 AND {nameof(ArcadePlayerRating.ArcadePlayerId)} = @value12) as t),@value1,@value2,0,@value3,@value4,@value5,@value6,@value7,@value8,@value9,@value10,@value11,@value12,@value13)
-                ON DUPLICATE KEY UPDATE {nameof(ArcadePlayerRating.Rating)}=@value2,{nameof(ArcadePlayerRating.Games)}=@value3,{nameof(ArcadePlayerRating.Wins)}=@value4,{nameof(ArcadePlayerRating.Mvp)}=@value5,{nameof(ArcadePlayerRating.TeamGames)}=@value6,{nameof(ArcadePlayerRating.MainCount)}=@value7,{nameof(ArcadePlayerRating.Main)}=@value8,{nameof(ArcadePlayerRating.MmrOverTime)}=@value9,{nameof(ArcadePlayerRating.Consistency)}=@value10,{nameof(ArcadePlayerRating.Confidence)}=@value11,{nameof(ArcadePlayerRating.IsUploader)}=@value12
+                ON DUPLICATE KEY UPDATE {nameof(ArcadePlayerRating.Rating)}=@value2,{nameof(ArcadePlayerRating.Games)}=@value3,{nameof(ArcadePlayerRating.Wins)}=@value4,{nameof(ArcadePlayerRating.Mvp)}=@value5,{nameof(ArcadePlayerRating.TeamGames)}=@value6,{nameof(ArcadePlayerRating.MainCount)}=@value7,{nameof(ArcadePlayerRating.Main)}=@value8,{nameof(ArcadePlayerRating.Consistency)}=@value10,{nameof(ArcadePlayerRating.Confidence)}=@value11,{nameof(ArcadePlayerRating.IsUploader)}=@value12
             ";
 
         command.Transaction = transaction;
 
         List<MySqlParameter> parameters = new List<MySqlParameter>();
-        for (int i = 1; i <= 13; i++)
+        for (int i = 1; i <= 12; i++)
         {
             var parameter = command.CreateParameter();
             parameter.ParameterName = $"@value{i}";
@@ -46,11 +46,10 @@ public partial class ArcadeRatingsService
                 parameters[5].Value = calcEnt.TeamGames;
                 parameters[6].Value = 0;
                 parameters[7].Value = 0;
-                parameters[8].Value = RatingsCsvService.GetDbMmrOverTime(calcEnt.MmrOverTime);
-                parameters[9].Value = calcEnt.Consistency;
-                parameters[10].Value = calcEnt.Confidence;
-                parameters[11].Value = 0;
-                parameters[12].Value = calcEnt.PlayerId;
+                parameters[8].Value = calcEnt.Consistency;
+                parameters[9].Value = calcEnt.Confidence;
+                parameters[10].Value = 0;
+                parameters[11].Value = calcEnt.PlayerId;
                 command.CommandTimeout = 120;
 
                 await command.ExecuteNonQueryAsync();
