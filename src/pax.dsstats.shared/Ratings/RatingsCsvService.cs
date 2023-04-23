@@ -26,7 +26,6 @@ public static class RatingsCsvService
                 sb.Append($"{main.Value},");
                 sb.Append($"{(int)main.Key},");
 
-                sb.Append($"\"{GetDbMmrOverTime(entCalc.MmrOverTime)}\",");
                 sb.Append($"{entCalc.Consistency.ToString(CultureInfo.InvariantCulture)},");
                 sb.Append($"{entCalc.Confidence.ToString(CultureInfo.InvariantCulture)},");
                 sb.Append($"{(entCalc.IsUploader ? 1 : 0)},");
@@ -91,76 +90,5 @@ public static class RatingsCsvService
             File.AppendAllText($"{csvBasePath}/ReplayPlayerRatings.csv", sbPlayer.ToString());
         }
         return (replayAppendId, replayPlayerAppendId);
-    }
-
-    public static string GetDbMmrOverTime(List<TimeRating> timeRatings)
-    {
-        if (!timeRatings.Any())
-        {
-            return "";
-        }
-
-        if (timeRatings.Count == 1)
-        {
-            return $"{Math.Round(timeRatings[0].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings[0].Date)},{timeRatings[0].Count}";
-        }
-
-        StringBuilder sb = new();
-        sb.Append($"{Math.Round(timeRatings[0].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings[0].Date)},{timeRatings[0].Count}");
-
-        if (timeRatings.Count > 2)
-        {
-            string timeStr = GetShortDateString(timeRatings[0].Date);
-            for (int i = 1; i < timeRatings.Count - 1; i++)
-            {
-                string currentTimeStr = GetShortDateString(timeRatings[i].Date);
-                if (currentTimeStr != timeStr)
-                {
-                    sb.Append('|');
-                    sb.Append($"{Math.Round(timeRatings[i].Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings[i].Date)},{timeRatings[i].Count}");
-                }
-                timeStr = currentTimeStr;
-            }
-        }
-
-        sb.Append('|');
-        sb.Append($"{Math.Round(timeRatings.Last().Mmr, 1).ToString(CultureInfo.InvariantCulture)},{GetShortDateString(timeRatings.Last().Date)},{timeRatings.Last().Count}");
-
-        if (sb.Length > 3999)
-        {
-            return GetShortenedMmrOverTime(sb);
-        }
-
-        return sb.ToString();
-    }
-
-    private static string GetShortenedMmrOverTime(StringBuilder sb)
-    {
-        var mmrString = sb.ToString();
-        while (mmrString.Length > 3999)
-        {
-            int index = mmrString.IndexOf('|');
-            if (index == -1)
-            {
-                return "";
-            }
-            else
-            {
-                mmrString = mmrString[(index + 1)..];
-            }
-        }
-        return mmrString;
-    }
-
-    private static string GetShortDateString(string date)
-    {
-        if (date.Length >= 6)
-        {
-            return date[2..6];
-        }
-        else
-        {
-            return date;
-        }
     }
 }

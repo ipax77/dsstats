@@ -15,7 +15,7 @@ namespace SqliteMigrations.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "6.0.15");
+            modelBuilder.HasAnnotation("ProductVersion", "6.0.16");
 
             modelBuilder.Entity("pax.dsstats.dbng.ArcadePlayer", b =>
                 {
@@ -74,11 +74,6 @@ namespace SqliteMigrations.Migrations
                     b.Property<int>("MainCount")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("MmrOverTime")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("TEXT");
-
                     b.Property<int>("Mvp")
                         .HasColumnType("INTEGER");
 
@@ -100,6 +95,8 @@ namespace SqliteMigrations.Migrations
                     b.HasKey("ArcadePlayerRatingId");
 
                     b.HasIndex("ArcadePlayerId");
+
+                    b.HasIndex("RatingType");
 
                     b.ToTable("ArcadePlayerRatings");
                 });
@@ -136,6 +133,12 @@ namespace SqliteMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<long>("BnetBucketId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("BnetRecordId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasPrecision(0)
                         .HasColumnType("TEXT");
@@ -146,14 +149,20 @@ namespace SqliteMigrations.Migrations
                     b.Property<int>("GameMode")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("Id")
-                        .HasColumnType("INTEGER");
+                    b.Property<DateTime>("Imported")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("PlayerCount")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("RegionId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReplayHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("TournamentEdition")
                         .HasColumnType("INTEGER");
@@ -163,9 +172,12 @@ namespace SqliteMigrations.Migrations
 
                     b.HasKey("ArcadeReplayId");
 
-                    b.HasIndex("Id");
+                    b.HasIndex("ReplayHash");
 
                     b.HasIndex("GameMode", "CreatedAt");
+
+                    b.HasIndex("RegionId", "BnetBucketId", "BnetRecordId")
+                        .IsUnique();
 
                     b.HasIndex("RegionId", "GameMode", "CreatedAt");
 
@@ -526,11 +538,6 @@ namespace SqliteMigrations.Migrations
 
                     b.Property<int>("MainCount")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("MmrOverTime")
-                        .IsRequired()
-                        .HasMaxLength(4000)
-                        .HasColumnType("TEXT");
 
                     b.Property<int>("Mvp")
                         .HasColumnType("INTEGER");
@@ -927,6 +934,8 @@ namespace SqliteMigrations.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("ReplayRatingId");
+
+                    b.HasIndex("RatingType");
 
                     b.HasIndex("ReplayId")
                         .IsUnique();

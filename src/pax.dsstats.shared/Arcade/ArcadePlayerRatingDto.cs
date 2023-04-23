@@ -94,6 +94,5 @@ public record ArcadePlayerRatingDetailDto
     public int Wins { get; set; }
     public double Consistency { get; set; }
     public double Confidence { get; set; }
-    public string MmrOverTime { get; set; } = string.Empty;
     public ArcadePlayerRatingChangeDto? ArcadePlayerRatingChange { get; set; }
 }

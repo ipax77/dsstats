@@ -1,14 +1,13 @@
-﻿using MathNet.Numerics.Financial;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace pax.dsstats.web.Server.Controllers;
+namespace pax.dsstats.web.Server.Controllers.v1;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 public class RatingsController
 {
     private readonly IRatingRepository ratingRepository;
@@ -109,10 +108,9 @@ public class RatingsController
 
     [HttpGet]
     [Route("GetPlayerDatailSummary/{toonId}")]
-    public async Task<PlayerDetailSummaryV5> GetPlayerSummary(int toonId, CancellationToken token = default)
+    public async Task<PlayerDetailSummary> GetPlayerSummary(int toonId, CancellationToken token = default)
     {
-        var summary = await playerService.GetPlayerSummary(toonId, token);
-        return new(summary);
+        return await playerService.GetPlayerSummary(toonId, token);
     }
 
     [HttpGet]
@@ -130,59 +128,3 @@ public class RatingsController
     }
 }
 
-
-public record PlayerDetailSummaryV5
-{
-    public PlayerDetailSummaryV5(PlayerDetailSummary detailSummary)
-    {
-        GameModesPlayed = detailSummary.GameModesPlayed;
-        Ratings = detailSummary.Ratings.Select(s => new PlayerRatingDetailDtoV5(s)).ToList();
-        Commanders = detailSummary.Commanders;
-    }
-
-    public List<PlayerGameModeResult> GameModesPlayed { get; set; } = new();
-    public List<PlayerRatingDetailDtoV5> Ratings { get; set; } = new();
-    public List<CommanderInfo> Commanders { get; set; } = new();
-}
-
-public record PlayerRatingDetailDtoV5
-{
-    public PlayerRatingDetailDtoV5(PlayerRatingDetailDto playerRatingDto)
-    {
-        RatingType = playerRatingDto.RatingType;
-        Rating = playerRatingDto.Rating;
-        Pos = playerRatingDto.Pos;
-        Games = playerRatingDto.Games;
-        Wins = playerRatingDto.Wins;
-        Mvp = playerRatingDto.Mvp;
-        TeamGames = playerRatingDto.TeamGames;
-        MainCount = playerRatingDto.MainCount;
-        Main = playerRatingDto.Main;
-        Consistency = playerRatingDto.Consistency;
-        Confidence = playerRatingDto.Confidence;
-        IsUploader = playerRatingDto.IsUploader;
-        MmrOverTime = "";
-        Player = playerRatingDto.Player;
-        PlayerRatingChange = playerRatingDto.PlayerRatingChange;
-    }
-
-    public RatingType RatingType { get; init; }
-    public double Rating { get; init; }
-    public int Pos { get; init; }
-    public int Games { get; init; }
-    public int Wins { get; init; }
-    public int Mvp { get; init; }
-    public int TeamGames { get; init; }
-    public int MainCount { get; init; }
-    public Commander Main { get; init; }
-    public double Consistency { get; set; }
-    public double Confidence { get; set; }
-    public bool IsUploader { get; set; }
-    public string MmrOverTime { get; set; } = "";
-    public PlayerRatingPlayerDto Player { get; init; } = null!;
-    public PlayerRatingChangeDto? PlayerRatingChange { get; init; }
-    [NotMapped]
-    public double MmrChange { get; set; }
-    [NotMapped]
-    public double FakeDiff { get; set; }
-}

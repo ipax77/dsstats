@@ -1,15 +1,16 @@
 ﻿
 using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
 using System.Net.Http.Json;
 
 namespace sc2dsstats.maui.Services;
 
 public partial class DataService
 {
-    private readonly string statsController = "api/v5/Stats/";
+    private readonly string statsController = "api/v6/Stats/";
     private readonly string buildsController = "api/v2/Builds/";
-    private readonly string ratingController = "api/Ratings/";
+    private readonly string ratingController = "api/v1/Ratings/";
 
     public async Task<ReplayDetailsDto?> ServerGetDetailReplay(string replayHash, CancellationToken token = default)
     {
@@ -505,6 +506,28 @@ public partial class DataService
         catch (Exception ex)
         {
             logger.LogError($"failed getting player cmdr avg gain: {ex.Message}");
+        }
+        return new();
+    }
+
+    public async Task<List<ReplayPlayerChartDto>> ServerGetPlayerRatingChartData(PlayerId playerId, RatingType ratingType)
+    {
+        try
+        {
+            var result = await httpClient.PostAsJsonAsync($"{statsController}playerratingchartdata/{(int)ratingType}", playerId);
+            if (result.IsSuccessStatusCode)
+            {
+                var chartresult = await result.Content.ReadFromJsonAsync<List<ReplayPlayerChartDto>>();
+                if (chartresult != null)
+                {
+                    return chartresult;
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting player rating chart data: {ex.Message}");
         }
         return new();
     }

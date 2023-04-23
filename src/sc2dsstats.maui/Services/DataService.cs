@@ -2,6 +2,7 @@
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
 
 namespace sc2dsstats.maui.Services;
 
@@ -405,5 +406,17 @@ public partial class DataService : IDataService
     public Task<List<ReplayCmdrListDto>> GetCmdrReplays(CmdrInfosRequest request, CancellationToken token = default)
     {
         throw new NotImplementedException();
+    }
+
+    public async Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId, RatingType ratingType)
+    {
+        if (fromServerSwitchService.GetFromServer())
+        {
+            return await ServerGetPlayerRatingChartData(playerId, ratingType);
+        }
+        else
+        {
+            return await statsService.GetPlayerRatingChartData(playerId, ratingType);
+        }
     }
 }

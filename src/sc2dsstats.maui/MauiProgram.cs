@@ -1,7 +1,6 @@
 ﻿using Blazored.Toast;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.UI.Windowing;
 using pax.BlazorChartJs;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
@@ -65,7 +64,6 @@ public static class MauiProgram
 
         builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRepository>();
         builder.Services.AddSingleton<RatingsService>();
-        //builder.Services.AddScoped<MmrProduceService>();
         builder.Services.AddScoped<PlayerService>();
 
         builder.Services.AddTransient<IReplayRepository, ReplayRepository>();

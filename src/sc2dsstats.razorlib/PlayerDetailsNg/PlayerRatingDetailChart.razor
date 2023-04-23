@@ -34,9 +34,15 @@
         _ = LoadData();
     }
 
-    public void Update(RatingType ratingType)
+    public void Update(RatingType ratingType, bool force = false)
     {
         RatingType = ratingType;
+
+        if (force)
+        {
+            rpChartDtos.Clear();
+        }
+
         if (rpChartDtos.ContainsKey(ratingType))
         {
             SetupChart();

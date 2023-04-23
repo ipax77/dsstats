@@ -18,14 +18,14 @@ public partial class RatingsService
 
         command.CommandText =
             $@"
-                INSERT INTO PlayerRatings ({nameof(PlayerRating.PlayerRatingId)},{nameof(PlayerRating.RatingType)},{nameof(PlayerRating.Rating)},{nameof(PlayerRating.Games)},{nameof(PlayerRating.Wins)},{nameof(PlayerRating.Mvp)},{nameof(PlayerRating.TeamGames)},{nameof(PlayerRating.MainCount)},{nameof(PlayerRating.Main)},{nameof(PlayerRating.MmrOverTime)},{nameof(PlayerRating.Consistency)},{nameof(PlayerRating.Confidence)},{nameof(PlayerRating.IsUploader)},{nameof(PlayerRating.PlayerId)})
-                VALUES ((SELECT t.{nameof(PlayerRating.PlayerRatingId)} FROM (SELECT * from PlayerRatings where {nameof(PlayerRating.RatingType)} = @value1 AND {nameof(PlayerRating.PlayerId)} = @value13) as t),@value1,@value2,@value3,@value4,@value5,@value6,@value7,@value8,@value9,@value10,@value11,@value12,@value13)
-                ON DUPLICATE KEY UPDATE {nameof(PlayerRating.Rating)}=@value2,{nameof(PlayerRating.Games)}=@value3,{nameof(PlayerRating.Wins)}=@value4,{nameof(PlayerRating.Mvp)}=@value5,{nameof(PlayerRating.TeamGames)}=@value6,{nameof(PlayerRating.MainCount)}=@value7,{nameof(PlayerRating.Main)}=@value8,{nameof(PlayerRating.MmrOverTime)}=@value9,{nameof(PlayerRating.Consistency)}=@value10,{nameof(PlayerRating.Confidence)}=@value11,{nameof(PlayerRating.IsUploader)}=@value12
+                INSERT INTO PlayerRatings ({nameof(PlayerRating.PlayerRatingId)},{nameof(PlayerRating.RatingType)},{nameof(PlayerRating.Rating)},{nameof(PlayerRating.Games)},{nameof(PlayerRating.Wins)},{nameof(PlayerRating.Mvp)},{nameof(PlayerRating.TeamGames)},{nameof(PlayerRating.MainCount)},{nameof(PlayerRating.Main)},{nameof(PlayerRating.Consistency)},{nameof(PlayerRating.Confidence)},{nameof(PlayerRating.IsUploader)},{nameof(PlayerRating.PlayerId)})
+                VALUES ((SELECT t.{nameof(PlayerRating.PlayerRatingId)} FROM (SELECT * from PlayerRatings where {nameof(PlayerRating.RatingType)} = @value1 AND {nameof(PlayerRating.PlayerId)} = @value12) as t),@value1,@value2,@value3,@value4,@value5,@value6,@value7,@value8,@value9,@value10,@value11,@value12)
+                ON DUPLICATE KEY UPDATE {nameof(PlayerRating.Rating)}=@value2,{nameof(PlayerRating.Games)}=@value3,{nameof(PlayerRating.Wins)}=@value4,{nameof(PlayerRating.Mvp)}=@value5,{nameof(PlayerRating.TeamGames)}=@value6,{nameof(PlayerRating.MainCount)}=@value7,{nameof(PlayerRating.Main)}=@value8,{nameof(PlayerRating.Consistency)}=@value9,{nameof(PlayerRating.Confidence)}=@value10,{nameof(PlayerRating.IsUploader)}=@value11
             ";
         command.Transaction = transaction;
 
         List<MySqlParameter> parameters = new List<MySqlParameter>();
-        for (int i = 1; i <= 13; i++)
+        for (int i = 1; i <= 12; i++)
         {
             var parameter = command.CreateParameter();
             parameter.ParameterName = $"@value{i}";
@@ -47,11 +47,10 @@ public partial class RatingsService
                 parameters[5].Value = calcEnt.TeamGames;
                 parameters[6].Value = main.Value;
                 parameters[7].Value = (int)main.Key;
-                parameters[8].Value = RatingsCsvService.GetDbMmrOverTime(calcEnt.MmrOverTime);
-                parameters[9].Value = calcEnt.Consistency;
-                parameters[10].Value = calcEnt.Confidence;
-                parameters[11].Value = calcEnt.IsUploader;
-                parameters[12].Value = calcEnt.PlayerId;
+                parameters[8].Value = calcEnt.Consistency;
+                parameters[9].Value = calcEnt.Confidence;
+                parameters[10].Value = calcEnt.IsUploader;
+                parameters[11].Value = calcEnt.PlayerId;
                 command.CommandTimeout = 120;
                 await command.ExecuteNonQueryAsync();
             }

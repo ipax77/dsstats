@@ -122,13 +122,46 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
+    //var replays = context.Replays
+    //    .Include(i => i.ReplayRatingInfo)
+    //        .ThenInclude(i => i.RepPlayerRatings)
+    //    .Where(x => x.GameTime > new DateTime(2023, 3, 23, 07, 00, 00))
+    //    .ToList();
+
+    //foreach (var replay in replays)
+    //{
+    //    if (replay.ReplayRatingInfo != null)
+    //    {
+    //        context.ReplayRatings.Remove(replay.ReplayRatingInfo);
+    //        replay.ReplayRatingInfo = null;
+    //    }
+    //}
+    //context.SaveChanges();
+
+
     //var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
-    //ratingsService.ProduceRatings(true).Wait();
+    //ratingsService.ProduceRatings(recalc: false).Wait();
 
     // var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
     //crawlerService.CheckPlayerReplays().Wait();
     // crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-1)).Wait();
     // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1)).Wait();
+
+    //var replays = context.ArcadeReplays
+    //    .Include(i => i.ArcadeReplayRating)
+    //        .ThenInclude(i => i.ArcadeReplayPlayerRatings)
+    //    .Where(x => x.CreatedAt > new DateTime(2023, 4, 23, 07, 00, 00))
+    //    .ToList();
+
+    //foreach (var replay in replays)
+    //{
+    //    if (replay.ArcadeReplayRating != null)
+    //    {
+    //        context.ArcadeReplayRatings.Remove(replay.ArcadeReplayRating);
+    //        replay.ArcadeReplayRating = null;
+    //    }
+    //}
+    //context.SaveChanges();
 
     //var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
     //arcadeRatingsService.ProduceRatings(recalc: false).Wait();
