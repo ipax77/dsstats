@@ -22,7 +22,7 @@ builder.Host.ConfigureAppConfiguration((context, config) =>
 
 // Add services to the container.
 
-var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 41));
+var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 42));
 var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
 var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"];
 
@@ -124,13 +124,13 @@ if (app.Environment.IsDevelopment())
     //var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
     //ratingsService.ProduceRatings(true).Wait();
 
-    // var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
+    var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
     //crawlerService.CheckPlayerReplays().Wait();
-    // crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-3)).Wait();
+    crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-1)).Wait();
     // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1)).Wait();
 
-    //var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
-    //arcadeRatingsService.ProduceRatings(recalc: false).Wait();
+    var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
+    arcadeRatingsService.ProduceRatings(recalc: false).Wait();
 
     // var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
     // importService.ImportInit();

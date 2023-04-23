@@ -61,10 +61,10 @@ public partial class ArcadeRatingsService
             }
 
             recalc = request.MmrOptions.ReCalc;
+            await GeneratePlayerRatings(request);
 
             if (recalc)
             {
-                await GeneratePlayerRatings(request);
                 await SaveRatings(request.MmrIdRatings);
             }
             else
@@ -122,7 +122,7 @@ public partial class ArcadeRatingsService
             .Include(i => i.ArcadeReplayPlayers)
                 .ThenInclude(i => i.ArcadePlayer)
             .Where(r => 
-                r.CreatedAt >= startTime
+                r.CreatedAt > startTime
                 && r.PlayerCount == 6
                 && r.Duration >= 300
                 && r.WinnerTeam > 0
@@ -195,13 +195,13 @@ public partial class ArcadeRatingsService
             mmrOptions.ReCalc = false;
             startTime = latestRatingsProduced;
 
-            replayPlayerRatingAppendId = await context.RepPlayerRatings
-                .OrderByDescending(o => o.RepPlayerRatingId)
-                .Select(s => s.RepPlayerRatingId)
+            replayPlayerRatingAppendId = await context.ArcadeReplayPlayerRatings
+                .OrderByDescending(o => o.ArcadeReplayPlayerRatingId)
+                .Select(s => s.ArcadeReplayPlayerRatingId)
                 .FirstOrDefaultAsync();
-            replayRatingAppendId = await context.ReplayRatings
-                .OrderByDescending(o => o.ReplayRatingId)
-                .Select(s => s.ReplayRatingId)
+            replayRatingAppendId = await context.ArcadeReplayRatings
+                .OrderByDescending(o => o.ArcadeReplayRatingId)
+                .Select(s => s.ArcadeReplayRatingId)
                 .FirstOrDefaultAsync();
         }
 
