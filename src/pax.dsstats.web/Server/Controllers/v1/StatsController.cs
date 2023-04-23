@@ -129,11 +129,12 @@ namespace pax.dsstats.web.Server.Controllers.v1
 
         [HttpGet]
         [Route("GetPlayerDetailsNg/{toonId}/{rating}")]
-        public async Task<ActionResult<PlayerDetailsResult>> GetPlayerDetailsNg(int toonId, int rating, CancellationToken token)
+        public async Task<ActionResult<PlayerDetailsResultV5>> GetPlayerDetailsNg(int toonId, int rating, CancellationToken token)
         {
             try
             {
-                return await statsService.GetPlayerDetails(toonId, (RatingType)rating, token);
+                var result = await statsService.GetPlayerDetails(toonId, (RatingType)rating, token);
+                return Ok(new PlayerDetailsResultV5(result));
             }
             catch (OperationCanceledException) { }
             return NoContent();

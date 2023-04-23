@@ -8,9 +8,9 @@ namespace sc2dsstats.maui.Services;
 
 public partial class DataService
 {
-    private readonly string statsController = "api/v5/Stats/";
+    private readonly string statsController = "api/v6/Stats/";
     private readonly string buildsController = "api/v2/Builds/";
-    private readonly string ratingController = "api/Ratings/";
+    private readonly string ratingController = "api/v1/Ratings/";
 
     public async Task<ReplayDetailsDto?> ServerGetDetailReplay(string replayHash, CancellationToken token = default)
     {
