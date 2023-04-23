@@ -18,9 +18,9 @@ public partial class ArcadeRatingsService
 
         command.CommandText =
             $@"
-                INSERT INTO {nameof(ReplayContext.ArcadePlayerRatings)} ({nameof(ArcadePlayerRating.ArcadePlayerRatingId)},{nameof(ArcadePlayerRating.RatingType)},{nameof(ArcadePlayerRating.Pos)},{nameof(ArcadePlayerRating.Rating)},{nameof(ArcadePlayerRating.Games)},{nameof(ArcadePlayerRating.Wins)},{nameof(ArcadePlayerRating.Mvp)},{nameof(ArcadePlayerRating.TeamGames)},{nameof(ArcadePlayerRating.MainCount)},{nameof(ArcadePlayerRating.Main)},{nameof(ArcadePlayerRating.MmrOverTime)},{nameof(ArcadePlayerRating.Consistency)},{nameof(ArcadePlayerRating.Confidence)},{nameof(ArcadePlayerRating.IsUploader)},{nameof(ArcadePlayerRating.ArcadePlayerId)})
-                VALUES ((SELECT t.{nameof(ArcadePlayerRating.ArcadePlayerRatingId)} FROM (SELECT * from {nameof(ReplayContext.ArcadePlayerRatings)} where {nameof(ArcadePlayerRating.RatingType)} = @value1 AND {nameof(ArcadePlayerRating.ArcadePlayerId)} = @value12) as t),@value1,@value2,0,@value3,@value4,@value5,@value6,@value7,@value8,@value9,@value10,@value11,@value12,@value13)
-                ON DUPLICATE KEY UPDATE {nameof(ArcadePlayerRating.Rating)}=@value2,{nameof(ArcadePlayerRating.Games)}=@value3,{nameof(ArcadePlayerRating.Wins)}=@value4,{nameof(ArcadePlayerRating.Mvp)}=@value5,{nameof(ArcadePlayerRating.TeamGames)}=@value6,{nameof(ArcadePlayerRating.MainCount)}=@value7,{nameof(ArcadePlayerRating.Main)}=@value8,{nameof(ArcadePlayerRating.MmrOverTime)}=@value9,{nameof(ArcadePlayerRating.Consistency)}=@value10,{nameof(ArcadePlayerRating.Confidence)}=@value11,{nameof(ArcadePlayerRating.IsUploader)}=@value12
+                INSERT INTO {nameof(ReplayContext.ArcadePlayerRatings)} ({nameof(ArcadePlayerRating.ArcadePlayerRatingId)},{nameof(ArcadePlayerRating.RatingType)},{nameof(ArcadePlayerRating.Pos)},{nameof(ArcadePlayerRating.Rating)},{nameof(ArcadePlayerRating.Games)},{nameof(ArcadePlayerRating.Wins)},{nameof(ArcadePlayerRating.Mvp)},{nameof(ArcadePlayerRating.TeamGames)},{nameof(ArcadePlayerRating.MainCount)},{nameof(ArcadePlayerRating.Main)},{nameof(ArcadePlayerRating.Consistency)},{nameof(ArcadePlayerRating.Confidence)},{nameof(ArcadePlayerRating.IsUploader)},{nameof(ArcadePlayerRating.ArcadePlayerId)})
+                VALUES ((SELECT t.{nameof(ArcadePlayerRating.ArcadePlayerRatingId)} FROM (SELECT * from {nameof(ReplayContext.ArcadePlayerRatings)} where {nameof(ArcadePlayerRating.RatingType)} = @value1 AND {nameof(ArcadePlayerRating.ArcadePlayerId)} = @value13) as t),@value1,@value2,@value3,@value4,@value5,@value6,@value7,@value8,@value9,@value10,@value11,@value12,@value13)
+                ON DUPLICATE KEY UPDATE {nameof(ArcadePlayerRating.Rating)}=@value2,{nameof(ArcadePlayerRating.Games)}=@value3,{nameof(ArcadePlayerRating.Wins)}=@value4,{nameof(ArcadePlayerRating.Mvp)}=@value5,{nameof(ArcadePlayerRating.TeamGames)}=@value6,{nameof(ArcadePlayerRating.MainCount)}=@value7,{nameof(ArcadePlayerRating.Main)}=@value8,{nameof(ArcadePlayerRating.Consistency)}=@value10,{nameof(ArcadePlayerRating.Confidence)}=@value11
             ";
 
         command.Transaction = transaction;
@@ -39,14 +39,14 @@ public partial class ArcadeRatingsService
             foreach (var calcEnt in ent.Value.Values)
             {
                 parameters[0].Value = (int)ent.Key;
-                parameters[1].Value = calcEnt.Mmr;
-                parameters[2].Value = calcEnt.Games;
-                parameters[3].Value = calcEnt.Wins;
-                parameters[4].Value = calcEnt.Mvp;
-                parameters[5].Value = calcEnt.TeamGames;
-                parameters[6].Value = 0;
+                parameters[1].Value = 0; // Pos
+                parameters[2].Value = calcEnt.Mmr;
+                parameters[3].Value = calcEnt.Games;
+                parameters[4].Value = calcEnt.Wins;
+                parameters[5].Value = calcEnt.Mvp;
+                parameters[6].Value = calcEnt.TeamGames;
                 parameters[7].Value = 0;
-                parameters[8].Value = RatingsCsvService.GetDbMmrOverTime(calcEnt.MmrOverTime);
+                parameters[8].Value = 0;
                 parameters[9].Value = calcEnt.Consistency;
                 parameters[10].Value = calcEnt.Confidence;
                 parameters[11].Value = 0;

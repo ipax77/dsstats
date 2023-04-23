@@ -173,7 +173,7 @@ public static partial class MmrService
             }
 
             currentPlayerRating.SetCmdr(player.ReplayPlayer.Race);
-            currentPlayerRating.SetMmr(mmrAfter, gameTime);
+            currentPlayerRating.Mmr = mmrAfter;
         }
         return ratings;
     }

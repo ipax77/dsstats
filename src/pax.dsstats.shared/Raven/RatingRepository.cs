@@ -21,7 +21,6 @@ public record RavenRatingDetailsDto
     public Commander Main { get; init; }
     public double MainPercentage { get; init; }
     public double Mmr { get; init; }
-    public string? MmrOverTime { get; init; }
 }
 
 public record RavenPlayerDto
@@ -85,7 +84,6 @@ public record RavenRating
     public Commander Main { get; set; }
     public double MainPercentage { get; set; }
     public double Mmr { get; set; }
-    public string? MmrOverTime { get; set; }
     public double Consistency { get; set; }
     public double Confidence { get; set; }
 }
@@ -99,7 +97,6 @@ public record CalcRating
     public int TeamGames { get; set; }
 
     public double Mmr { get; set; }
-    public List<TimeRating> MmrOverTime { get; set; } = new();
     public double Consistency { get; set; }
     public double Confidence { get; set; }
     public bool IsUploader { get; set; }

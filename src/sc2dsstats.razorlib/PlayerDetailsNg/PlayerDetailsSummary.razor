@@ -326,10 +326,7 @@
         if (!dry)
         {
             playerRatingDetailsDto = playerSummary?.Ratings.FirstOrDefault(f => f.RatingType == RatingType);
-            if (playerRatingDetailsDto != null)
-            {
-                playerRatingDetailChart?.Update(playerRatingDetailsDto.RatingType);
-            }
+            playerRatingDetailChart?.Update(RatingType, Data.IsMaui);
         }
         playerCmdrsAvgGainComponent?.Update(ratingDetails.CmdrsAvgGain);
         isLoading = false;
@@ -354,6 +351,7 @@
             playerRatingDetailsDto = null;
         }
         playerCmdrChart?.SetupChart(playerSummary.Commanders);
+        playerRatingDetailChart?.Update(RatingType, Data.IsMaui);
         await InvokeAsync(() => StateHasChanged());
     }
 

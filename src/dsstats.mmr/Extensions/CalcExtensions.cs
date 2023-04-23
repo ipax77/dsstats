@@ -4,17 +4,6 @@ namespace dsstats.mmr.Extensions;
 
 internal static class CalcExtensions
 {
-    public static void SetMmr(this CalcRating calcRating, double mmr, DateTime gametime)
-    {
-        calcRating.Mmr = mmr;
-        calcRating.MmrOverTime.Add(new()
-        {
-            Date = gametime.ToString(@"yyyyMMdd"),
-            Mmr = mmr,
-            Count = calcRating.Games
-        });
-    }
-
     public static void SetCmdr(this CalcRating calcRating, Commander cmdr)
     {
         if (calcRating.CmdrCounts.ContainsKey(cmdr))
