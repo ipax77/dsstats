@@ -1,5 +1,4 @@
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using Blazored.Toast.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
