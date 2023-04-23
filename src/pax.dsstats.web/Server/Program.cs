@@ -11,6 +11,7 @@ using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
 using pax.dsstats.web.Server.Services.Arcade;
+using System.Net.NetworkInformation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -124,13 +125,13 @@ if (app.Environment.IsDevelopment())
     //var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
     //ratingsService.ProduceRatings(true).Wait();
 
-    var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
+    // var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
     //crawlerService.CheckPlayerReplays().Wait();
-    crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-1)).Wait();
+    // crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-1)).Wait();
     // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1)).Wait();
 
-    var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
-    arcadeRatingsService.ProduceRatings(recalc: false).Wait();
+    //var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
+    //arcadeRatingsService.ProduceRatings(recalc: false).Wait();
 
     // var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
     // importService.ImportInit();

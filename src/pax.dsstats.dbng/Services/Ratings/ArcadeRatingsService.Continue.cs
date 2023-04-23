@@ -2,7 +2,6 @@
 using pax.dsstats.shared.Ratings;
 using pax.dsstats.shared;
 using Microsoft.Extensions.Logging;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 using System.Globalization;
 
 namespace pax.dsstats.dbng.Services.Ratings;
@@ -116,7 +115,7 @@ public partial class ArcadeRatingsService
         $@"
             SET FOREIGN_KEY_CHECKS = 0;
             LOAD DATA INFILE '{csvFile}'
-            INTO TABLE {nameof(ReplayContext.ArcadeReplayRatings)}
+            INTO TABLE {nameof(ReplayContext.ArcadeReplayPlayerRatings)}
             COLUMNS TERMINATED BY ','
             OPTIONALLY ENCLOSED BY '""'
             ESCAPED BY '""'
