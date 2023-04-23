@@ -15,6 +15,9 @@
     [Parameter, EditorRequired]
     public RatingType RatingType { get; set; }
 
+    [Parameter, EditorRequired]
+    public double CurrentRating { get; set; }
+
     Dictionary<RatingType, List<ReplayPlayerChartDto>> rpChartDtos = new();
 
     bool dataReady;
@@ -111,10 +114,13 @@
 
     private LineDataset GetLineDataset(List<ReplayPlayerChartDto> data)
     {
+        var chartData = data.Select(s => (object)new { X = s.Replay.GameTime.ToString("yyyy-MM-dd"), Y = s.ReplayPlayerRatingInfo?.Rating }).ToList();
+        chartData.Add((object)(new { X = DateTime.Today.ToString("yyyy-MM-dd"), Y = CurrentRating }));
+
         return new()
             {
                 Label = "Rating",
-                Data = data.Select(s => (object)new { X = s.Replay.GameTime.ToString("yyyy-MM-dd"), Y = s.ReplayPlayerRatingInfo?.Rating }).ToList(),
+                Data = chartData,
                 BackgroundColor = "#4E58A0",
                 BorderColor = "#4E58A0",
                 BorderWidth = 4,
