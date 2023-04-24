@@ -111,10 +111,6 @@
         var lastDto = chartDtos.Last();
 
         DateTime lastDate = lastDto.Replay.GameTime.AddDays(7);
-        if (lastDate > DateTime.Today)
-        {
-            lastDate = DateTime.Today;
-        }
 
         ratingData.Add(new ChartRatingData() { X = lastDate.ToString("yyyy-MM-dd"), Y = (float)CurrentRating });
         gamesData.Add(new ChartGamesData() { X = lastDate.ToString("yyyy-MM-dd"), Y = lastDto.ReplayPlayerRatingInfo?.Games ?? 0 });

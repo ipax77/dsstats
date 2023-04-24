@@ -204,7 +204,7 @@ public partial class StatsService
 
     public async Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId, RatingType ratingType)
     {
-        if (context.Database.IsRelational())
+        if (!Data.IsMaui)
         {
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
             var replaysQuery = from p in context.Players
@@ -234,7 +234,7 @@ public partial class StatsService
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
             return await replaysQuery.ToListAsync();
         } 
-        else if (context.Database.IsSqlite())
+        else
         {
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
             var replaysQuery = from p in context.Players
@@ -246,7 +246,7 @@ public partial class StatsService
                                 && rp.Replay.ReplayRatingInfo != null
                                 && rp.Replay.ReplayRatingInfo.RatingType == ratingType
                                //group rp by new { rp.Replay.GameTime.Year, rp.Replay.GameTime.Month } into g
-                               group rp by new { Year = rp.Replay.GameTime.Year, Week = context.Strftime("%W", rp.Replay.GameTime) } into g
+                               group rp by new { Year = rp.Replay.GameTime.Year, Week = context.Strftime("'%W'", rp.Replay.GameTime) } into g
                                select new ReplayPlayerChartDto()
                                {
                                    Replay = new ReplayChartDto()
@@ -263,10 +263,6 @@ public partial class StatsService
                                };
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
             return await replaysQuery.ToListAsync();
-        }
-        else
-        {
-            return new();
         }
     }
 }
