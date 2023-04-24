@@ -89,15 +89,12 @@
             return;
         }
 
-        var orderdData = rpChartDtos[RatingType].OrderBy(o => o.Replay.GameTime).ToList();
+        (var ratingData, var gamesData) = GetChartData(rpChartDtos[RatingType]);
 
-        chartConfig.SetLabels(orderdData
-            .Select(s => s.Replay.GameTime
-                .ToString("yyyy-MM-dd"))
-            .ToList());
+        chartConfig.SetLabels(ratingData.Select(s => s.X).ToList());
 
-        var lineDataset = GetLineDataset(orderdData);
-        var countDataset = GetCountDataset(orderdData);
+        var lineDataset = GetLineDataset(ratingData);
+        var countDataset = GetCountDataset(gamesData);
 
         chartConfig.AddDatasets(new List<ChartJsDataset>()
         {
@@ -106,45 +103,61 @@
         });
     }
 
-    private LineDataset GetLineDataset(List<ReplayPlayerChartDto> data)
+    private (List<ChartRatingData>, List<ChartGamesData>) GetChartData(List<ReplayPlayerChartDto> chartDtos)
     {
-        var chartData = data.Select(s => (object)new { X = s.Replay.GameTime.ToString("yyyy-MM-dd"), Y = s.ReplayPlayerRatingInfo?.Rating }).ToList();
-        chartData.Add((object)(new { X = DateTime.Today.ToString("yyyy-MM-dd"), Y = CurrentRating }));
+        var ratingData = chartDtos.Select(s => new ChartRatingData() { X = s.Replay.GameTime.ToString("yyyy-MM-dd"), Y = s.ReplayPlayerRatingInfo?.Rating ?? 0 }).ToList();
+        var gamesData = chartDtos.Select(s => new ChartGamesData() { X = s.Replay.GameTime.ToString("yyyy-MM-dd"), Y = s.ReplayPlayerRatingInfo?.Games ?? 0 }).ToList();
 
+        var lastDto = chartDtos.Last();
+
+        DateTime lastDate = lastDto.Replay.GameTime.AddDays(7);
+        if (lastDate > DateTime.Today)
+        {
+            lastDate = DateTime.Today;
+        }
+
+        ratingData.Add(new ChartRatingData() { X = lastDate.ToString("yyyy-MM-dd"), Y = (float)CurrentRating });
+        gamesData.Add(new ChartGamesData() { X = lastDate.ToString("yyyy-MM-dd"), Y = lastDto.ReplayPlayerRatingInfo?.Games ?? 0 });
+
+        return (ratingData, gamesData);
+    }
+
+    private LineDataset GetLineDataset(List<ChartRatingData> data)
+    {
         return new()
             {
                 Label = "Rating",
-                Data = chartData,
+                Data = data.Cast<object>().ToList(),
                 BackgroundColor = "#4E58A0",
                 BorderColor = "#4E58A0",
                 BorderWidth = 4,
                 Fill = false,
                 PointBackgroundColor = new IndexableOption<string>("blue"),
                 PointBorderColor = new IndexableOption<string>("blue"),
-                PointRadius = new IndexableOption<double>(1),
-                PointBorderWidth = new IndexableOption<double>(1),
+                PointRadius = new IndexableOption<double>(0),
+                PointBorderWidth = new IndexableOption<double>(0),
                 PointHitRadius = new IndexableOption<double>(1),
                 Tension = 0,
                 YAxisID = "y"
             };
     }
 
-    private LineDataset GetCountDataset(List<ReplayPlayerChartDto> data)
+    private LineDataset GetCountDataset(List<ChartGamesData> data)
     {
         return new()
             {
                 Label = "Games",
-                Data = data.Select(s => (object)new { X = s.Replay.GameTime.ToString("yyyy-MM-dd"), Y = s.ReplayPlayerRatingInfo?.Games }).ToList(),
+                Data = data.Cast<object>().ToList(),
                 BackgroundColor = "grey",
                 BorderColor = "grey",
                 BorderWidth = 2,
                 Fill = false,
                 PointBackgroundColor = new IndexableOption<string>("grey"),
                 PointBorderColor = new IndexableOption<string>("grey"),
-                PointRadius = new IndexableOption<double>(1),
-                PointBorderWidth = new IndexableOption<double>(1),
+                PointRadius = new IndexableOption<double>(0),
+                PointBorderWidth = new IndexableOption<double>(0),
                 PointHitRadius = new IndexableOption<double>(1),
-                BorderDash = new List<double>() { 10, 5 },
+                // BorderDash = new List<double>() { 10, 5 },
                 Tension = 0,
                 YAxisID = "y1"
             };
@@ -169,8 +182,8 @@
                         Type = "time",
                         Time = new TimeCartesianAxisTime()
                         {
-                            Unit = "month",
-                            DisplayFormats = new { Month = "yyyy-MM" }
+                            Unit = "week",
+                            DisplayFormats = new { Week = "yyyy-MM" }
                         },
                         Ticks = new TimeCartesianAxisTicks()
                         {

@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Globalization;
+using System;
+using System.Text.Json.Serialization;
 
 namespace pax.dsstats.shared;
 
@@ -58,11 +60,43 @@ public record ReplayPlayerChartDto
 
 public record ReplayChartDto
 {
-    public DateTime GameTime { get; set; }
+    public DateTime GameTime => GetDateTime();
+    public int Year { get; set; }
+    public int Week { get; set; }
+
+    private DateTime GetDateTime()
+    {
+        DayOfWeek dayOfWeek = DayOfWeek.Monday;
+
+        DateTime dateOfMonday = new DateTime(Year, 1, 1)
+            .AddDays((Week - 1) * 7)
+            .AddDays(-(int)(new GregorianCalendar().GetDayOfWeek(new DateTime(Year, 1, 1))) + (int)dayOfWeek + 7);
+
+        if (dateOfMonday.Year < Year)
+        {
+            dateOfMonday = dateOfMonday.AddDays(7);
+        }
+
+        DateTime startOfWeek = dateOfMonday;
+
+        return startOfWeek;
+    }
 }
 
 public record RepPlayerRatingChartDto
 {
     public float Rating { get; set; }
     public int Games { get; set; }
+}
+
+public record ChartRatingData
+{
+    public string X { get; set; } = string.Empty;
+    public float Y { get; set; }
+}
+
+public record ChartGamesData
+{
+    public string X { get; set; } = string.Empty;
+    public int Y { get; set; }
 }

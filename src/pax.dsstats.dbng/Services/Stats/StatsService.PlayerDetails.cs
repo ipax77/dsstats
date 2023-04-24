@@ -3,6 +3,7 @@ using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Arcade;
+using System.Globalization;
 
 namespace pax.dsstats.dbng.Services;
 
@@ -203,29 +204,70 @@ public partial class StatsService
 
     public async Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId, RatingType ratingType)
     {
+        if (context.Database.IsRelational())
+        {
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
-        var replaysQuery = from p in context.Players
-                           from rp in p.ReplayPlayers
-                           where p.ToonId == playerId.ToonId
-                            && p.RegionId == playerId.RegionId
-                            && p.RealmId == playerId.RealmId
-                            && rp.Replay.ReplayRatingInfo != null
-                            && rp.Replay.ReplayRatingInfo.RatingType == ratingType
-                           group rp by new { rp.Replay.GameTime.Year, rp.Replay.GameTime.Month } into g
-                           select new ReplayPlayerChartDto()
-                           {
-                               Replay = new ReplayChartDto()
+            var replaysQuery = from p in context.Players
+                               from rp in p.ReplayPlayers
+                               orderby rp.Replay.GameTime
+                               where p.ToonId == playerId.ToonId
+                                && p.RegionId == playerId.RegionId
+                                && p.RealmId == playerId.RealmId
+                                && rp.Replay.ReplayRatingInfo != null
+                                && rp.Replay.ReplayRatingInfo.RatingType == ratingType
+                               //group rp by new { rp.Replay.GameTime.Year, rp.Replay.GameTime.Month } into g
+                               group rp by new { Year = rp.Replay.GameTime.Year, Week = context.Week(rp.Replay.GameTime) } into g
+                               select new ReplayPlayerChartDto()
                                {
-                                   GameTime = new DateTime(g.Key.Year, g.Key.Month, 15),
-                               },
-                               ReplayPlayerRatingInfo = new RepPlayerRatingChartDto()
-                               {
-                                   Rating = MathF.Round(g.Average(a => a.ReplayPlayerRatingInfo.Rating)),
-                                   Games = g.Max(m => m.ReplayPlayerRatingInfo.Games)
-                               }
-                           };
+                                   Replay = new ReplayChartDto()
+                                   {
+                                       //GameTime = new DateTime(g.Key.Year, g.Key.Month, 1),
+                                       Year = g.Key.Year,
+                                       Week = g.Key.Week
+                                   },
+                                   ReplayPlayerRatingInfo = new RepPlayerRatingChartDto()
+                                   {
+                                       Rating = MathF.Round(g.Average(a => a.ReplayPlayerRatingInfo.Rating)),
+                                       Games = g.Max(m => m.ReplayPlayerRatingInfo.Games)
+                                   }
+                               };
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
-        return await replaysQuery.ToListAsync();
+            return await replaysQuery.ToListAsync();
+        } 
+        else if (context.Database.IsSqlite())
+        {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+            var replaysQuery = from p in context.Players
+                               from rp in p.ReplayPlayers
+                               orderby rp.Replay.GameTime
+                               where p.ToonId == playerId.ToonId
+                                && p.RegionId == playerId.RegionId
+                                && p.RealmId == playerId.RealmId
+                                && rp.Replay.ReplayRatingInfo != null
+                                && rp.Replay.ReplayRatingInfo.RatingType == ratingType
+                               //group rp by new { rp.Replay.GameTime.Year, rp.Replay.GameTime.Month } into g
+                               group rp by new { Year = rp.Replay.GameTime.Year, Week = context.Strftime("%W", rp.Replay.GameTime) } into g
+                               select new ReplayPlayerChartDto()
+                               {
+                                   Replay = new ReplayChartDto()
+                                   {
+                                       //GameTime = new DateTime(g.Key.Year, g.Key.Month, 1),
+                                       Year = g.Key.Year,
+                                       Week = g.Key.Week
+                                   },
+                                   ReplayPlayerRatingInfo = new RepPlayerRatingChartDto()
+                                   {
+                                       Rating = MathF.Round(g.Average(a => a.ReplayPlayerRatingInfo.Rating)),
+                                       Games = g.Max(m => m.ReplayPlayerRatingInfo.Games)
+                                   }
+                               };
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+            return await replaysQuery.ToListAsync();
+        }
+        else
+        {
+            return new();
+        }
     }
 }
 
