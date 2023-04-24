@@ -37,9 +37,9 @@ public partial class RatingsService
             foreach (var calcEnt in ent.Value.Values)
             {
                 var main = calcEnt.CmdrCounts.OrderByDescending(o => o.Value).FirstOrDefault();
-
-                parameters[0].Value = (int)ent.Key;
-                parameters[1].Value = 0;
+                
+                parameters[0].Value = 0;
+                parameters[1].Value = (int)ent.Key;
                 parameters[2].Value = calcEnt.Mmr;
                 parameters[3].Value = calcEnt.Games;
                 parameters[4].Value = calcEnt.Wins;

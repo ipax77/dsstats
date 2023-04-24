@@ -212,17 +212,20 @@ public partial class ArcadeService
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
         var replaysQuery = from p in context.ArcadePlayers
                            from rp in p.ArcadeReplayPlayers
+                           orderby rp.ArcadeReplay.CreatedAt
                            where p.ProfileId == playerId.ToonId
                             && p.RegionId == playerId.RegionId
                             && p.RealmId == playerId.RealmId
                             && rp.ArcadeReplay.ArcadeReplayRating != null
                             && rp.ArcadeReplay.ArcadeReplayRating.RatingType == ratingType
-                           group rp by new { rp.ArcadeReplay.CreatedAt.Year, rp.ArcadeReplay.CreatedAt.Month } into g
+                           group rp by new { Year = rp.ArcadeReplay.CreatedAt.Year, Week = context.Week(rp.ArcadeReplay.CreatedAt) } into g
                            select new ReplayPlayerChartDto()
                            {
                                Replay = new ReplayChartDto()
                                {
-                                   GameTime = new DateTime(g.Key.Year, g.Key.Month, 15),
+                                   // GameTime = new DateTime(g.Key.Year, g.Key.Month, 1),
+                                   Year = g.Key.Year,
+                                   Week = g.Key.Week,
                                },
                                ReplayPlayerRatingInfo = new RepPlayerRatingChartDto()
                                {

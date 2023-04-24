@@ -136,7 +136,8 @@
                 <div style="width: 40vw; min-width: 500px; height: calc(40vw * 0.6); min-height: 300px;">
                     <PlayerRatingDetailChart @ref="playerRatingDetailChart"
                         PlayerId="new pax.dsstats.shared.Arcade.PlayerId(RequestNames.ToonId, RequestNames.RealmId, RequestNames.RegionId)" 
-                        RatingType="playerRatingDetailsDto.RatingType" />
+                        RatingType="playerRatingDetailsDto.RatingType"
+                        CurrentRating="playerRatingDetailsDto.Rating" />
                 </div>
             </div>
             <div class="col-auto">

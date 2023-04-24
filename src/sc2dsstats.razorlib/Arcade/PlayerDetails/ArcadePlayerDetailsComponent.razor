@@ -64,11 +64,12 @@
         <div class="row mt-2">
             <div class="col-auto">
                 <div style="width: 40vw; min-width: 500px; height: calc(40vw * 0.6); min-height: 300px;">
-                    @if (PlayerId != null)
+                    @if (PlayerId != null && InterestRating != null)
                     {
                         <ArcadePlayerDetailsChart @ref="arcadePlayerDetailsChart"
                                                  PlayerId="new pax.dsstats.shared.Arcade.PlayerId(PlayerId.ProfileId, PlayerId.RealmId, PlayerId.RegionId)"
-                                                 RatingType="RatingType" />
+                                                 RatingType="RatingType"
+                                                 CurrentRating="InterestRating.Rating" />
                     }
                 </div>
             </div>
