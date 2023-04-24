@@ -108,12 +108,8 @@
         var ratingData = chartDtos.Select(s => new ChartRatingData() { X = s.Replay.GameTime.ToString("yyyy-MM-dd"), Y = s.ReplayPlayerRatingInfo?.Rating ?? 0 }).ToList();
         var gamesData = chartDtos.Select(s => new ChartGamesData() { X = s.Replay.GameTime.ToString("yyyy-MM-dd"), Y = s.ReplayPlayerRatingInfo?.Games ?? 0 }).ToList();
 
-        var lastDto = chartDtos.Last();
-
-        DateTime lastDate = lastDto.Replay.GameTime.AddDays(7);
-
-        ratingData.Add(new ChartRatingData() { X = lastDate.ToString("yyyy-MM-dd"), Y = (float)CurrentRating });
-        gamesData.Add(new ChartGamesData() { X = lastDate.ToString("yyyy-MM-dd"), Y = lastDto.ReplayPlayerRatingInfo?.Games ?? 0 });
+        ratingData.Last().Y = MathF.Round((float)CurrentRating);
+        gamesData.Last().Y += 1;
 
         return (ratingData, gamesData);
     }
