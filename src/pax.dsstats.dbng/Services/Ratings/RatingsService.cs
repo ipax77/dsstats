@@ -68,7 +68,7 @@ public partial class RatingsService
 
             if (Data.IsMaui)
             {
-                await UpdateSqlitePlayers(request.MmrIdRatings);
+                await UpdateSqlitePlayers(request.MmrIdRatings, request.MmrOptions.ReCalc);
             }
             else
             {

@@ -79,34 +79,8 @@ public static class MauiProgram
 
         // DEBUG
 
-        //foreach (var replay in context.Replays.Include(i => i.ReplayPlayers))
-        //{
-        //    int playerPos = replay.ReplayPlayers.FirstOrDefault(f => f.IsUploader)?.GamePos ?? 0;
-        //    if (playerPos > 0)
-        //    {
-        //        replay.PlayerPos = playerPos;
-        //    }
-        //}
-        //context.SaveChanges();
-
-        //var uploadService = scope.ServiceProvider.GetRequiredService<UploadService>();
-        //uploadService.ProduceMauiTestData();
-
-        //var replays = context.Replays
-        //    .Include(i => i.ReplayPlayers)
-        //        .ThenInclude(i => i.Spawns)
-        //            .ThenInclude(i => i.Units)
-        //    .Include(i => i.ReplayPlayers)
-        //        .ThenInclude(i => i.Upgrades)
-        //    .OrderByDescending(o => o.GameTime)
-        //    .Take(4)
-        //    .ToList();
-
-        //context.Replays.RemoveRange(replays);
-        //context.SaveChanges();
-
-        //OcrService ocrService = new();
-        //ocrService.GetTextFromOcr().Wait();
+        var uploadService = scope.ServiceProvider.GetRequiredService<UploadService>();
+        uploadService.ProduceMauiTestData();
 
         // END DEBUG
 

@@ -3,14 +3,18 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using pax.dsstats.shared;
-using pax.dsstats.shared.Ratings;
 
 namespace pax.dsstats.dbng.Services.Ratings;
 
 public partial class RatingsService
 {
-    private async Task<UpdateResult> UpdateSqlitePlayers(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
+    private async Task<UpdateResult> UpdateSqlitePlayers(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings, bool recalc)
     {
+        if (recalc)
+        {
+            await DeletePlayerRatingsTable();
+        }
+
         using var connection = new SqliteConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
 
@@ -19,8 +23,25 @@ public partial class RatingsService
 
         command.CommandText =
             $@"
-                INSERT OR REPLACE INTO PlayerRatings ({nameof(PlayerRating.PlayerRatingId)},{nameof(PlayerRating.Pos)},{nameof(PlayerRating.RatingType)},{nameof(PlayerRating.Rating)},{nameof(PlayerRating.Games)},{nameof(PlayerRating.Wins)},{nameof(PlayerRating.Mvp)},{nameof(PlayerRating.TeamGames)},{nameof(PlayerRating.MainCount)},{nameof(PlayerRating.Main)},{nameof(PlayerRating.Consistency)},{nameof(PlayerRating.Confidence)},{nameof(PlayerRating.IsUploader)},{nameof(PlayerRating.PlayerId)})
-                VALUES ((SELECT {nameof(PlayerRating.PlayerRatingId)} from PlayerRatings where {nameof(PlayerRating.RatingType)} = $value1 AND {nameof(PlayerRating.PlayerId)} = $value13),$value1,$value2,$value3,$value4,$value5,$value6,$value7,$value8,$value9,$value10,$value11,$value12,$value13)
+                INSERT OR REPLACE INTO {nameof(ReplayContext.PlayerRatings)} 
+                    ({nameof(PlayerRating.PlayerRatingId)},
+                     {nameof(PlayerRating.RatingType)},
+                     {nameof(PlayerRating.Pos)},
+                     {nameof(PlayerRating.Rating)},
+                     {nameof(PlayerRating.Games)},
+                     {nameof(PlayerRating.Wins)},
+                     {nameof(PlayerRating.Mvp)},
+                     {nameof(PlayerRating.TeamGames)},
+                     {nameof(PlayerRating.MainCount)},
+                     {nameof(PlayerRating.Main)},
+                     {nameof(PlayerRating.Consistency)},
+                     {nameof(PlayerRating.Confidence)},
+                     {nameof(PlayerRating.IsUploader)},
+                     {nameof(PlayerRating.PlayerId)})
+                VALUES (
+                    (SELECT {nameof(PlayerRating.PlayerRatingId)} from {nameof(ReplayContext.PlayerRatings)}
+                     where {nameof(PlayerRating.RatingType)} = $value1 AND {nameof(PlayerRating.PlayerId)} = $value13),
+                     $value1,$value2,$value3,$value4,$value5,$value6,$value7,$value8,$value9,$value10,$value11,$value12,$value13)
             ";
 
         List<SqliteParameter> parameters = new List<SqliteParameter>();
@@ -38,8 +59,8 @@ public partial class RatingsService
             {
                 var main = calcEnt.CmdrCounts.OrderByDescending(o => o.Value).FirstOrDefault();
                 
-                parameters[0].Value = 0;
-                parameters[1].Value = (int)ent.Key;
+                parameters[0].Value = (int)ent.Key; // Rating
+                parameters[1].Value = 0;            // Pos
                 parameters[2].Value = calcEnt.Mmr;
                 parameters[3].Value = calcEnt.Games;
                 parameters[4].Value = calcEnt.Wins;
@@ -270,6 +291,15 @@ public partial class RatingsService
         await transaction.CommitAsync();
 
         return repPlayerRatingAppendId;
+    }
+
+    private async Task DeletePlayerRatingsTable()
+    {
+        using var connection = new SqliteConnection(dbImportOptions.Value.ImportConnectionString);
+        await connection.OpenAsync();
+
+        using var delCommand = new SqliteCommand($"DELETE FROM {nameof(ReplayContext.PlayerRatings)};", connection);
+        await delCommand.ExecuteNonQueryAsync();
     }
 
     private async Task DeleteReplayRatingsTable()
