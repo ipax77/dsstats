@@ -97,7 +97,7 @@ public partial class ArcadeRatingsService
         int skip = 0;
         int take = 200000;
 
-        request.ReplayDsRDtos = await GetReplayData(request.StartTime, skip, take);
+        request.ReplayDsRDtos = await GetReplayData(request.StartTime, skip, take, request.MmrOptions.ReCalc);
 
         while (request.ReplayDsRDtos.Any())
         {
@@ -107,11 +107,11 @@ public partial class ArcadeRatingsService
                 .CreateOrAppendReplayAndReplayPlayerRatingsCsv(calcResult.replayRatingDtos, calcResult.ReplayRatingAppendId, calcResult.ReplayPlayerRatingAppendId);
 
             skip += take;
-            request.ReplayDsRDtos = await GetReplayData(request.StartTime, skip, take);
+            request.ReplayDsRDtos = await GetReplayData(request.StartTime, skip, take, request.MmrOptions.ReCalc);
         }
     }
 
-    private async Task<List<ReplayDsRDto>> GetReplayData(DateTime startTime, int skip, int take)
+    private async Task<List<ReplayDsRDto>> GetReplayData(DateTime startTime, int skip, int take, bool recalc)
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -122,11 +122,16 @@ public partial class ArcadeRatingsService
             .Include(i => i.ArcadeReplayPlayers)
                 .ThenInclude(i => i.ArcadePlayer)
             .Where(r => 
-                r.CreatedAt > startTime
+                r.CreatedAt >= startTime
                 && r.PlayerCount == 6
                 && r.Duration >= 300
                 && r.WinnerTeam > 0
                 && gameModes.Contains(r.GameMode));
+
+        if (!recalc)
+        {
+            replays = replays.Where(x => x.ArcadeReplayRating == null);
+        }
 
         var dsrReplays = from r in replays
                          orderby r.CreatedAt, r.ArcadeReplayId
