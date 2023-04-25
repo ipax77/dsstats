@@ -11,6 +11,11 @@ public partial class CrawlerService
     private Dictionary<PlayerId, int> arcadePlayerIds = new();
     private Dictionary<ArcadeReplayId, bool> arcadeReplayIds = new();
 
+    public async Task TestImportArcadeReplays(CrawlInfo crawlInfo)
+    {
+        await ImportArcadeReplays(crawlInfo);
+    }
+
     private async Task ImportArcadeReplays(CrawlInfo crawlInfo)
     {
         await SeedPlayerIds();

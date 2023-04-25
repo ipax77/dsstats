@@ -162,6 +162,8 @@ public partial class CrawlerService
 
 public record CrawlInfo
 {
+    public CrawlInfo() { }
+
     public CrawlInfo(int regionId, int mapId, string handle, bool teMap)
     {
         RegionId = regionId;
@@ -171,7 +173,7 @@ public record CrawlInfo
     }
     public int RegionId { get; init; }
     public int MapId { get; init; }
-    public string Handle { get; init; }
+    public string Handle { get; init; } = string.Empty;
     public bool TeMap { get; init; }
     public int Dups { get; set; }
     public int Imports { get; set; }

@@ -8,7 +8,7 @@ namespace pax.dsstats.dbng.Services.Ratings;
 
 public partial class RatingsService
 {
-    private async Task<List<ReplayDsRDto>> GetReplayData(DateTime startTime, int skip, int take)
+    private async Task<List<ReplayDsRDto>> GetReplayData(DateTime startTime, int skip, int take, bool recalc)
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -19,11 +19,12 @@ public partial class RatingsService
             .Where(r => r.Playercount == 6
                 && r.Duration >= 300
                 && r.WinnerTeam > 0
+                && r.GameTime >= startTime
                 && gameModes.Contains(r.GameMode));
 
-        if (startTime != DateTime.MinValue)
+        if (!recalc)
         {
-            replays = replays.Where(x => x.GameTime > startTime);
+            replays = replays.Where(x => x.ReplayRatingInfo == null);
         }
 
         return await replays

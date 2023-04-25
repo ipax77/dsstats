@@ -189,7 +189,7 @@ public partial class RatingsService
         int skip = 0;
         int take = 100000;
 
-        request.ReplayDsRDtos = await GetReplayData(request.StartTime, skip, take);
+        request.ReplayDsRDtos = await GetReplayData(request.StartTime, skip, take, request.MmrOptions.ReCalc);
 
         while (request.ReplayDsRDtos.Any())
         {
@@ -212,7 +212,7 @@ public partial class RatingsService
             }
 
             skip += take;
-            request.ReplayDsRDtos = await GetReplayData(request.StartTime, skip, take);
+            request.ReplayDsRDtos = await GetReplayData(request.StartTime, skip, take, request.MmrOptions.ReCalc);
         }
     }
 
