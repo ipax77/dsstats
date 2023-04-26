@@ -14,6 +14,15 @@
 
     [Parameter]
     [SupplyParameterFromQuery]
+    public int? RlId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? RgId { get; set; }
+
+
+    [Parameter]
+    [SupplyParameterFromQuery]
     public string? Mode { get; set; }
 
     private RatingsRequest ratingsRequest = new()
@@ -41,6 +50,10 @@
     private void SetRequest()
     {
         ratingsRequest.ToonId = ToonId;
+
+        ratingsRequest.RealmId = RlId ?? 0;
+        ratingsRequest.RegionId = RgId ?? 0;
+
         if (!String.IsNullOrEmpty(Mode) 
             && Enum.TryParse(typeof(RatingType), Mode, out var ratingTypeObject))
         {
@@ -58,10 +71,14 @@
         if (ratingsRequest.ToonId != null && ratingsRequest.ToonId > 0)
         {
             queryDic.Add("ToonId", ratingsRequest.ToonId.Value);
+            queryDic.Add("RlId", ratingsRequest.RealmId);
+            queryDic.Add("RgId", ratingsRequest.RegionId);
         }
         else
         {
             queryDic.Add("ToonId", null);
+            queryDic.Add("RlId", null);
+            queryDic.Add("RgId", null);
         }
 
         if (ratingsRequest.Type != shared.RatingType.Cmdr)

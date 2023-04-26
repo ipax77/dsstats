@@ -422,6 +422,8 @@
     {
         Interest = new(playerDto.Name, playerDto.ToonId, playerDto.RegionId, playerDto.RealmId);
         RatingsRequest.ToonId = playerDto.ToonId;
+        RatingsRequest.RealmId = playerDto.RealmId;
+        RatingsRequest.RegionId = playerDto.RegionId;
         StateHasChanged();
         OnRatingsChanged.InvokeAsync();
     }

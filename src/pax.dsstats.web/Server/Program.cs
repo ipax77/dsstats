@@ -122,8 +122,7 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var crawlService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
-    crawlService.CreateTestData().Wait();
+
 }
 
 // Configure the HTTP request pipeline.

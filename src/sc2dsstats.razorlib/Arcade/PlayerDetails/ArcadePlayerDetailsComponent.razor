@@ -3,6 +3,7 @@
 @using pax.dsstats.shared;
 @using sc2dsstats.razorlib.PlayerDetails;
 @using sc2dsstats.razorlib.Services;
+@using sc2dsstats.razorlib.PlayerDetailsNg
 @inject IArcadeService arcadeService
 @implements IDisposable
 
@@ -66,10 +67,11 @@
                 <div style="width: 40vw; min-width: 500px; height: calc(40vw * 0.6); min-height: 300px;">
                     @if (PlayerId != null && InterestRating != null)
                     {
-                        <ArcadePlayerDetailsChart @ref="arcadePlayerDetailsChart"
+                        <PlayerRatingDetailChart @ref="arcadePlayerDetailsChart"
                                                  PlayerId="new pax.dsstats.shared.Arcade.PlayerId(PlayerId.ProfileId, PlayerId.RealmId, PlayerId.RegionId)"
                                                  RatingType="RatingType"
-                                                 CurrentRating="InterestRating.Rating" />
+                                                 CurrentRating="InterestRating.Rating"
+                                                 IsArcade="true"/>
                     }
                 </div>
             </div>
@@ -214,7 +216,7 @@
     private ArcadePlayerDetails? playerDetails = null;
     private ArcadePlayerMoreDetails? playerMoreDetails = null;
 
-    private ArcadePlayerDetailsChart? arcadePlayerDetailsChart;
+    private PlayerRatingDetailChart? arcadePlayerDetailsChart;
     private ArcadePlayerRatingDetailDto? InterestRating
         => playerDetails?.PlayerRatings.FirstOrDefault(f => f.RatingType == RatingType);
 
@@ -270,7 +272,7 @@
                 && ratingTypeObj is RatingType ratingTypeValue)
             {
                 RatingType = ratingTypeValue;
-                arcadePlayerDetailsChart?.Update(RatingType);
+                arcadePlayerDetailsChart?.Update(RatingType, InterestRating?.Rating ?? 0);
                 await LoadMoreData();
             }
         }

@@ -1,0 +1,71 @@
+﻿@using System.Globalization;
+@using sc2dsstats.maui.Services;
+@inject DecodeService decodeService
+
+<div>
+    <div class="row">
+        <div class="col-auto" style="width: 20px;">
+            @if (isLoading)
+            {
+                <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            }
+        </div>
+        <div class="col-auto">
+            <h3 class="text-warning p-2 bg-secondary">Session Progress</h3>
+        </div>
+    </div>
+    @if (sessionProgress != null)
+    {
+        <div>
+
+        </div>        
+        <div class="table-responsive">
+            <table class="table table-dark table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var info in sessionProgress.SessionGames)
+                    {
+                        <tr>
+                            <td>
+                                @info.Commander
+                            </td>
+                            <td>@info.GameMode</td>
+                            <td class="table-dark">
+                                <span class="oi @(info.RatingGain < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">@info.RatingGain.ToString("N1", CultureInfo.InvariantCulture)</span>
+                            </td>
+                            <td>
+                                @TimeSpan.FromSeconds(info.Duration).ToString(@"hh\:mm\:ss")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    SessionProgress? sessionProgress;
+    bool isLoading;
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    public async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        sessionProgress = await decodeService.GetSessionProgress();
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+}
