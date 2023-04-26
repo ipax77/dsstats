@@ -100,7 +100,7 @@ public partial class TopRow : ComponentBase, IDisposable
         {
             ToastService.ShowSuccess("Decoding finished");
             eta = TimeSpan.Zero;
-            topRowRatings?.UpdateFakeData(e.ToonIds);
+            // topRowRatings?.UpdateFakeData(e.ToonIds);
             CheckUpload();
         }
 

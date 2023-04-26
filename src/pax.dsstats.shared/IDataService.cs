@@ -53,5 +53,9 @@ public interface IDataService
     Task<List<CmdrPlayerInfo>> GetCmdrPlayerInfos(CmdrInfoRequest request, CancellationToken token = default);
     Task<int> GetCmdrReplaysCount(CmdrInfosRequest request, CancellationToken token = default);
     Task<List<ReplayCmdrListDto>> GetCmdrReplays(CmdrInfosRequest request, CancellationToken token = default);
+    Task<PlayerDetailResponse> GetIdPlayerDetails(PlayerDetailRequest request, CancellationToken token);
+    Task<PlayerDetailSummary> GetIdPlayerSummary(PlayerId playerId, CancellationToken token = default);
+    Task<PlayerRatingDetails> GetIdPlayerRatingDetails(PlayerId playerId, RatingType ratingType, CancellationToken token = default);
+    Task<List<PlayerCmdrAvgGain>> GetIdPlayerCmdrAvgGain(PlayerId playerId, RatingType ratingType, TimePeriod timePeriod, CancellationToken token = default);
     Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId, RatingType ratingType);
 }

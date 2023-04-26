@@ -1,4 +1,6 @@
-﻿namespace pax.dsstats.shared;
+﻿using pax.dsstats.shared.Arcade;
+
+namespace pax.dsstats.shared;
 
 public record ReplaysRequest
 {

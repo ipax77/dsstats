@@ -15,7 +15,7 @@ using System.Reflection;
 
 namespace sc2dsstats.maui.Services;
 
-public class DecodeService : IDisposable
+public partial class DecodeService : IDisposable
 {
     public DecodeService(ILogger<DecodeService> logger, IMapper mapper, IServiceScopeFactory serviceScopeFactory)
     {
@@ -72,7 +72,6 @@ public class DecodeService : IDisposable
     private int total;
     private int errorCounter;
     private DateTime startTime = DateTime.UtcNow;
-    public List<int> LastReplayToonIds { get; private set; } = new();
 
     private object lockobject = new object();
 
@@ -115,7 +114,6 @@ public class DecodeService : IDisposable
         dbCounter = 0;
         errorReplays.Clear();
         errorCounter = 0;
-        LastReplayToonIds.Clear();
         DateTime latestReplay = DateTime.MinValue;
 
         var replays = await ScanForNewReplays(true);
@@ -286,7 +284,6 @@ public class DecodeService : IDisposable
             Error = errorCounter,
             Saved = dbCounter,
             Done = true,
-            ToonIds = LastReplayToonIds
         });
 
         notifyCts?.Dispose();
@@ -530,5 +527,4 @@ public class DecodeEventArgs : EventArgs
     public int Error { get; set; }
     public int Saved { get; set; }
     public bool Done { get; set; }
-    public List<int> ToonIds { get; set; } = new();
 }

@@ -3,6 +3,7 @@
 @using pax.dsstats.shared.Arcade;
 @using pax.dsstats.shared;
 @inject IDataService dataService
+@inject IArcadeService arcadeService
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
@@ -17,6 +18,10 @@
 
     [Parameter, EditorRequired]
     public double CurrentRating { get; set; }
+
+    [Parameter, EditorRequired]
+    public bool IsArcade { get; set; }
+
 
     Dictionary<RatingType, List<ReplayPlayerChartDto>> rpChartDtos = new();
 
@@ -37,9 +42,10 @@
         _ = LoadData();
     }
 
-    public void Update(RatingType ratingType, bool force = false)
+    public void Update(RatingType ratingType, double currentRating, bool force = false)
     {
         RatingType = ratingType;
+        CurrentRating = currentRating;
 
         if (force)
         {
@@ -58,7 +64,14 @@
 
     private async Task LoadData()
     {
-        rpChartDtos[RatingType] = await dataService.GetPlayerRatingChartData(PlayerId, RatingType);
+        if (IsArcade)
+        {
+            rpChartDtos[RatingType] = await arcadeService.GetPlayerRatingChartData(PlayerId, RatingType);
+        }
+        else
+        {
+            rpChartDtos[RatingType] = await dataService.GetPlayerRatingChartData(PlayerId, RatingType);
+        }
         dataReady = true;
         SetupChart();
     }
@@ -114,7 +127,10 @@
         var ratingData = chartDtos.Select(s => new ChartRatingData() { X = s.Replay.GameTime.ToString("yyyy-MM-dd"), Y = s.ReplayPlayerRatingInfo?.Rating ?? 0 }).ToList();
         var gamesData = chartDtos.Select(s => new ChartGamesData() { X = s.Replay.GameTime.ToString("yyyy-MM-dd"), Y = s.ReplayPlayerRatingInfo?.Games ?? 0 }).ToList();
 
-        ratingData.Last().Y = MathF.Round((float)CurrentRating);
+        if (CurrentRating != 0)
+        {
+            ratingData.Last().Y = MathF.Round((float)CurrentRating);
+        }
         gamesData.Last().Y += 1;
 
         return (ratingData, gamesData);
@@ -135,7 +151,7 @@
                 PointRadius = new IndexableOption<double>(0),
                 PointBorderWidth = new IndexableOption<double>(0),
                 PointHitRadius = new IndexableOption<double>(1),
-                Tension = 0,
+                Tension = 0.2,
                 YAxisID = "y"
             };
     }

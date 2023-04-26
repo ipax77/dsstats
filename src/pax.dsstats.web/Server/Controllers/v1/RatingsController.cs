@@ -126,5 +126,33 @@ public class RatingsController
     {
         return await playerService.GetPlayerCmdrAvgGain(toonId, (RatingType)ratingType, (TimePeriod)timePeriod, token);
     }
+
+    [HttpPost]
+    [Route("GetIdPlayerDetails")]
+    public async Task<PlayerDetailResponse> GetIdPlayerDetails(PlayerDetailRequest request, CancellationToken token)
+    {
+        return await playerService.GetPlayerIdPlayerDetails(request, token);
+    }
+
+    [HttpGet]
+    [Route("GetIdPlayerDatailSummary/{toonId}/{regionId}/{realmId}")]
+    public async Task<PlayerDetailSummary> GetIdPlayerSummary(int toonId, int regionId, int realmId, CancellationToken token = default)
+    {
+        return await playerService.GetPlayerPlayerIdSummary(new(toonId, realmId, regionId), token);
+    }
+
+    [HttpGet]
+    [Route("GetIdPlayerRatingDetails/{toonId}/{regionId}/{realmId}/{ratingType}")]
+    public async Task<PlayerRatingDetails> GetIdPlayerRatingDetails(int toonId, int regionId, int realmId, int ratingType, CancellationToken token = default)
+    {
+        return await playerService.GetPlayerIdPlayerRatingDetails(new(toonId, realmId, regionId), (RatingType)ratingType, token);
+    }
+
+    [HttpGet]
+    [Route("GetIdPlayerCmdrAvgGain/{toonId}/{regionId}/{realmId}/{ratingType}/{timePeriod}")]
+    public async Task<List<PlayerCmdrAvgGain>> GetIdPlayerCmdrAvgGain(int toonId, int regionId, int realmId, int ratingType, int timePeriod, CancellationToken token)
+    {
+        return await playerService.GetPlayerIdPlayerCmdrAvgGain(new(toonId, realmId, regionId), (RatingType)ratingType, (TimePeriod)timePeriod, token);
+    }
 }
 

@@ -137,7 +137,8 @@
                     <PlayerRatingDetailChart @ref="playerRatingDetailChart"
                         PlayerId="new pax.dsstats.shared.Arcade.PlayerId(RequestNames.ToonId, RequestNames.RealmId, RequestNames.RegionId)" 
                         RatingType="playerRatingDetailsDto.RatingType"
-                        CurrentRating="playerRatingDetailsDto.Rating" />
+                        CurrentRating="playerRatingDetailsDto.Rating"
+                        IsArcade="false"/>
                 </div>
             </div>
             <div class="col-auto">
@@ -311,7 +312,15 @@
         }
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
-        var cmdrsAvgGain = await dataService.GetPlayerCmdrAvgGain(RequestNames.ToonId, RatingType, timePeriod, cts.Token);
+        List<PlayerCmdrAvgGain> cmdrsAvgGain;
+        if (RequestNames.RegionId == 0)
+        {
+            cmdrsAvgGain = await dataService.GetPlayerCmdrAvgGain(RequestNames.ToonId, RatingType, timePeriod, cts.Token);
+        } else
+        {
+            cmdrsAvgGain = await dataService
+                .GetIdPlayerCmdrAvgGain(new(RequestNames.ToonId, RequestNames.RealmId, RequestNames.RegionId), RatingType, timePeriod, cts.Token);
+        }
         ratingDetails.CmdrsAvgGain.Clear();
         ratingDetails.CmdrsAvgGain.AddRange(cmdrsAvgGain);
         isLoading = false;
@@ -323,11 +332,18 @@
     {
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
-        ratingDetails = await dataService.GetPlayerRatingDetails(RequestNames.ToonId, RatingType, cts.Token);
+        if (RequestNames.RegionId == 0)
+        {
+            ratingDetails = await dataService.GetPlayerRatingDetails(RequestNames.ToonId, RatingType, cts.Token);
+        } else
+        {
+            ratingDetails = await dataService
+                .GetIdPlayerRatingDetails(new(RequestNames.ToonId, RequestNames.RealmId, RequestNames.RegionId), RatingType, cts.Token);
+        }
         if (!dry)
         {
             playerRatingDetailsDto = playerSummary?.Ratings.FirstOrDefault(f => f.RatingType == RatingType);
-            playerRatingDetailChart?.Update(RatingType, Data.IsMaui);
+            playerRatingDetailChart?.Update(RatingType, playerRatingDetailsDto?.Rating ?? 0, Data.IsMaui);
         }
         playerCmdrsAvgGainComponent?.Update(ratingDetails.CmdrsAvgGain);
         isLoading = false;
@@ -338,7 +354,14 @@
     {
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
-        playerSummary = await dataService.GetPlayerSummary(RequestNames.ToonId, cts.Token);
+        if (RequestNames.RegionId == 0)
+        {
+            playerSummary = await dataService.GetPlayerSummary(RequestNames.ToonId, cts.Token);
+        } else
+        {
+            playerSummary = await dataService
+                .GetIdPlayerSummary(new(RequestNames.ToonId, RequestNames.RealmId, RequestNames.RegionId), cts.Token);
+        }
         isLoading = false;
         if (playerSummary.Ratings.Any())
         {
@@ -352,7 +375,7 @@
             playerRatingDetailsDto = null;
         }
         playerCmdrChart?.SetupChart(playerSummary.Commanders);
-        playerRatingDetailChart?.Update(RatingType, Data.IsMaui);
+        playerRatingDetailChart?.Update(RatingType, playerRatingDetailsDto?.Rating ?? 0, Data.IsMaui);
         await InvokeAsync(() => StateHasChanged());
     }
 

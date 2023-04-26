@@ -31,11 +31,28 @@
 
     [Parameter]
     [SupplyParameterFromQuery]
+    public int? RlId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? RgId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
     public int? ToonIdWith { get; set; }
 
     [Parameter]
     [SupplyParameterFromQuery]
     public int? ToonIdVs { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? ARlId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? ARgId { get; set; }
+
 
     [Parameter]
     [SupplyParameterFromQuery]

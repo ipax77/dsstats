@@ -110,7 +110,7 @@
 
     private void LoadPlayerChart(PlayerRatingPlayerDto playerDto)
     {
-        NavigationManager.NavigateTo($"/ratings?ToonId={playerDto.ToonId}&Mode={RatingType}");
+        NavigationManager.NavigateTo($"/ratings?ToonId={playerDto.ToonId}&RlId={playerDto.RealmId}&RgId={playerDto.RegionId}&Mode={RatingType}");
     }
 
     public void Dispose()
