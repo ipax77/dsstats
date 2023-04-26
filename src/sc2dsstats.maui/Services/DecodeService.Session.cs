@@ -54,6 +54,7 @@ public partial class DecodeService
             ReplayHash = replay.ReplayHash,
             GameTime = replay.GameTime,
             GameMode = replay.GameMode,
+            RatingType = replay.ReplayRatingInfo?.RatingType ?? RatingType.None,
             RequestNames = playerReplayPlayer == null ? null
                 : new(playerReplayPlayer.Name,
                     playerReplayPlayer.Player.ToonId,
@@ -95,6 +96,7 @@ public record SessionGameInfo
     public string ReplayHash { get; set; } = string.Empty;
     public DateTime GameTime { get; set; }
     public GameMode GameMode { get; set; }
+    public RatingType RatingType { get; set; }
     public RequestNames? RequestNames { get; set; }
     public Commander Commander { get; set; }
     public PlayerResult PlayerResult { get; set; }
@@ -106,4 +108,15 @@ public record SessionProgress
 {
     public DateTime SessionStart { get; set; }
     public List<SessionGameInfo> SessionGames { get; set; } = new();
+}
+
+public record SessionSummary
+{
+    public RatingType RatingType { get; set; }
+    public GameMode GameMode { get; set; }
+    public RequestNames? RequestNames { get; set; }
+    public List<float> Gains { get; set; } = new();
+    public int Games { get; set; }
+    public int Wins { get; set; }
+    public int Duration { get; set; }
 }
