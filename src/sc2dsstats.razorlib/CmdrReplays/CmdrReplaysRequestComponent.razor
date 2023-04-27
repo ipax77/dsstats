@@ -69,6 +69,15 @@
                 </InputSelect>
             </label>
         </div>
+        <div class="col-auto align-self-center">
+            <div class="form-check form-switch">
+                <label class="form-check-label">
+                    Uploaders
+                    <InputCheckbox class="form-check-input" @bind-Value="Request.Uploaders">
+                    </InputCheckbox>
+                </label>
+            </div>
+        </div>
         @if (ShowReplays)
         {
 @*            @if (Request.PlayerId != null)
@@ -184,6 +193,7 @@
         Request.SearchCmdrs = string.Empty;
         Request.SearchNames = string.Empty;
         Request.LinkCmdrName = false;
+        Request.Uploaders = true;
         OnRequestChanged.InvokeAsync();
     }
 
