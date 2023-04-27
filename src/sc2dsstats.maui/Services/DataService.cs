@@ -419,4 +419,24 @@ public partial class DataService : IDataService
             return await statsService.GetPlayerRatingChartData(playerId, ratingType);
         }
     }
+
+    public async Task<PlayerDetailResponse> GetIdPlayerDetails(PlayerDetailRequest request, CancellationToken token)
+    {
+        return await GetPlayerDetails(request, token);
+    }
+
+    public async Task<PlayerDetailSummary> GetIdPlayerSummary(PlayerId playerId, CancellationToken token = default)
+    {
+        return await GetPlayerSummary(playerId.ToonId, token);
+    }
+
+    public async Task<PlayerRatingDetails> GetIdPlayerRatingDetails(PlayerId playerId, RatingType ratingType, CancellationToken token = default)
+    {
+        return await GetPlayerRatingDetails(playerId.ToonId, ratingType, token);
+    }
+
+    public async Task<List<PlayerCmdrAvgGain>> GetIdPlayerCmdrAvgGain(PlayerId playerId, RatingType ratingType, TimePeriod timePeriod, CancellationToken token = default)
+    {
+        return await GetPlayerCmdrAvgGain(playerId.ToonId, ratingType, timePeriod, token);
+    }
 }

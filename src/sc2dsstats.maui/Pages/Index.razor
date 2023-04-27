@@ -56,12 +56,22 @@
             </div>
         </div>
     </div>
-    <div class="mt-3">
-        <SessionProgressComponent></SessionProgressComponent>
+    <div class="btn-group mt-3">
+        <button type="button" class="btn btn-outline-light" @onclick="e => sessionDetails = !sessionDetails">Details</button>
+        <button type="button" class="btn btn-outline-warning" @onclick="e => sessionDetails = !sessionDetails">Session</button>
     </div>
-    <div class="mt-3">
-        <FrontPageDetails @ref="frontPageDetails" LatestReplay="latestReplay" />
-    </div>
+    @if (sessionDetails)
+    {
+        <div class="mt-1">
+            <SessionProgressComponent></SessionProgressComponent>
+        </div>
+    }
+    else
+    {
+        <div class="mt-1">
+            <FrontPageDetails @ref="frontPageDetails" LatestReplay="latestReplay" />
+        </div>
+    }
 }
 
 @*<div class="btn-group">
@@ -78,6 +88,8 @@
     FrontPageDetails? frontPageDetails;
 
     private bool DEBUG = false;
+
+    bool sessionDetails;
 
     protected override void OnInitialized()
     {
