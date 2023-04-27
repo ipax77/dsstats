@@ -17,6 +17,7 @@ public record CmdrInfoRequest
         TimePeriod = request.TimePeriod;
         Interest = request.Interest;
         WithoutLeavers = request.WithoutLeavers;
+        Uploaders = request.Uploaders;
     }
 
     public RatingType RatingType { get; set; }
@@ -26,6 +27,7 @@ public record CmdrInfoRequest
     public int MinRating { get; set; }
     public int MaxRating { get; set; }
     public bool WithoutLeavers { get; set; }
+    public bool Uploaders { get; set; }
     public int Skip { get; set; }
     public int Take { get; set; } = 20;
 }
@@ -72,6 +74,7 @@ public record CmdrInfosRequest
     public RatingType RatingType { get; set; }
     public TimePeriod TimePeriod { get; set; }
     public Commander Interest { get; set; }
+    public bool Uploaders { get; set; }
     public int MinExp2Win { get; set; }
     public int MaxExp2Win { get; set; }
     public bool WithoutLeavers { get; set; }
