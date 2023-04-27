@@ -43,8 +43,6 @@
 		<GenerateTestArtifacts>True</GenerateTestArtifacts>
 
 		<HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
-
-		<DefaultLanguage>en</DefaultLanguage>
 	</PropertyGroup>
 
 	<!--<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows' and '$(Configuration)' == 'Release'">
