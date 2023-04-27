@@ -40,6 +40,8 @@ public partial class DecodeService : IDisposable
             WatchService.WatchForNewReplays();
             WatchService.NewFileDetected += WatchService_NewFileDetected;
         }
+
+        SetSessionStart();
     }
 
     private void WatchService_NewFileDetected(object? sender, ReplayDetectedEventArgs e)

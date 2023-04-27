@@ -60,18 +60,13 @@
         <button type="button" class="btn btn-outline-light" @onclick="e => sessionDetails = !sessionDetails">Details</button>
         <button type="button" class="btn btn-outline-warning" @onclick="e => sessionDetails = !sessionDetails">Session</button>
     </div>
-    @if (sessionDetails)
-    {
-        <div class="mt-1">
-            <SessionProgressComponent></SessionProgressComponent>
-        </div>
-    }
-    else
-    {
-        <div class="mt-1">
-            <FrontPageDetails @ref="frontPageDetails" LatestReplay="latestReplay" />
-        </div>
-    }
+    <div class="mt-1 @(sessionDetails ? "" : "visually-hidden")">
+        <SessionProgressComponent @ref="sessionProgressComponent"></SessionProgressComponent>
+    </div>
+
+    <div class="mt-1 @(!sessionDetails ? "" : "visually-hidden")">
+        <FrontPageDetails @ref="frontPageDetails" LatestReplay="latestReplay" />
+    </div>
 }
 
 @*<div class="btn-group">
@@ -86,6 +81,7 @@
     TimeSpan elapsed = TimeSpan.Zero;
     ReplayComponent? replayComponent;
     FrontPageDetails? frontPageDetails;
+    SessionProgressComponent? sessionProgressComponent;
 
     private bool DEBUG = false;
 
@@ -111,6 +107,7 @@
         if (e.Done == true)
         {
             _ = LoadLatestReplay();
+            sessionProgressComponent?.LoadData();
         }
     }
 

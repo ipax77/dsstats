@@ -30,7 +30,14 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v1.2.0</summary>
+<details open="open"><summary>v1.2.1</summary>
+
+>- s2protocol.NET v0.6.11 - sc2 protocol 90136
+>- MAUI progress information
+
+</details>
+
+<details><summary>v1.2.0</summary>
 
 >- Players with RealmId
 >- Replay Upload impoved
