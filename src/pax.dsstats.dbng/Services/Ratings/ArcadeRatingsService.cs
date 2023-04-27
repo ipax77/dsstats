@@ -73,6 +73,8 @@ public partial class ArcadeRatingsService
                 await ContinueReplayRatingsFromCsv2MySql(ArcadeRatingsCsvService.csvBasePath);
                 await ContinueReplayPlayerRatingsFromCsv2MySql(ArcadeRatingsCsvService.csvBasePath);
             }
+            await SetPlayerRatingsPos();
+            await SetRatingChange();
         }
         finally
         {
@@ -88,8 +90,6 @@ public partial class ArcadeRatingsService
         await PlayerRatingsFromCsv2MySql(ArcadeRatingsCsvService.csvBasePath);
         await ReplayRatingsFromCsv2MySql(ArcadeRatingsCsvService.csvBasePath);
         await ReplayPlayerRatingsFromCsv2MySql(ArcadeRatingsCsvService.csvBasePath);
-        await SetPlayerRatingsPos();
-        await SetRatingChange();
     }
 
     private async Task GeneratePlayerRatings(MmrService.CalcRatingRequest request)
