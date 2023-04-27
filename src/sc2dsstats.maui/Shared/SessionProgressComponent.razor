@@ -38,7 +38,12 @@
                                     <img src="@($"_content/sc2dsstats.razorlib/images/{info.Commander.ToString().ToLower()}-min.png")" alt="@info.Commander" height="30" width="30" />
                                 </td>
                                 <td class="table-dark">
-                                    <span class="oi @(info.RatingGain < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">@info.RatingGain.ToString("N1", CultureInfo.InvariantCulture)</span>
+                                    @if (info.RatingType != RatingType.None)
+                                    {
+                                        <span class="oi @(info.RatingGain < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">
+                                            @info.RatingGain.ToString("N1", CultureInfo.InvariantCulture)
+                                        </span>
+                                    }
                                 </td>
                                 <td>@info.GameMode</td>
                                 <td>
@@ -54,24 +59,24 @@
                     <thead>
                         <tr>
                             <th>Player</th>
-                            <th>AvgGain</th>
+                            <th>&sum; Gain</th>
                             <th>Mode</th>
                             <th>Games</th>
                             <th>Winrate</th>
-                            <th>Playtime</th>
+                            <th>Play time</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var sum in summaries.OrderByDescending(o => o.RatingType))
                         {
-                            var avgGain = Math.Round(sum.Gains.Average(), 2);
+                            var sumGain = Math.Round(sum.Gains.Sum(), 2);
                             <tr>
                                 <td>@sum.RequestNames?.Name <small>@Data.GetRegionString(sum.RequestNames?.RegionId)</small></td>
                                 <td>
                                     @if (sum.RatingType != RatingType.None)
                                     {
-                                        <span class="oi @(avgGain < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">
-                                            @avgGain.ToString("N1", CultureInfo.InvariantCulture)
+                                        <span class="oi @(sumGain < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">
+                                            @sumGain.ToString("N1", CultureInfo.InvariantCulture)
                                         </span>
                                     }
                                 </td>
@@ -94,10 +99,12 @@
 
     List<SessionSummary> summaries = new();
 
-    protected override void OnInitialized()
+    protected override void OnAfterRender(bool firstRender)
     {
-        _ = LoadData();
-        base.OnInitialized();
+        if (firstRender)
+        {
+            _ = LoadData();
+        }
     }
 
     public async Task LoadData()

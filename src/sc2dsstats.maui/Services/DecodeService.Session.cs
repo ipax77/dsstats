@@ -6,7 +6,8 @@ namespace sc2dsstats.maui.Services;
 
 public partial class DecodeService
 {
-    private DateTime sessionStart = new DateTime(2023, 04, 24);
+    // private DateTime sessionStart = new DateTime(2023, 04, 24);
+    private DateTime sessionStart = DateTime.MinValue;
 
     public void SetSessionStart()
     {
