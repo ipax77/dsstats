@@ -81,9 +81,6 @@ public static class MauiProgram
 
         // DEBUG
 
-        var uploadService = scope.ServiceProvider.GetRequiredService<UploadService>();
-        uploadService.ProduceMauiTestData();
-
         // END DEBUG
 
         var build =  builder.Build();
