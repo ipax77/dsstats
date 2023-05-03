@@ -21,6 +21,9 @@
     [SupplyParameterFromQuery]
     public string? Interest { get; set; }
 
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Team { get; set; }
 
     private CmdrStrengthRequest request = new()
     {
@@ -56,6 +59,13 @@
         {
             request.Interest = interest;
         }
+
+        if (!String.IsNullOrEmpty(Team)
+            && Enum.TryParse(typeof(TeamRequest), Team, out var teamObj)
+            && teamObj is TeamRequest team)
+        {
+            request.Team = team;
+        }
     }
 
     private void RequestChanged(CmdrStrengthRequest request)
@@ -64,7 +74,24 @@
 
         queryDic.Add("RatingType", request.RatingType.ToString());
         queryDic.Add("TimePeriod", request.TimePeriod.ToString());
-        queryDic.Add("Interest", request.Interest.ToString());
+
+        if (request.Interest == Commander.None)
+        {
+            queryDic.Add("Interest", null);
+        }
+        else
+        {
+            queryDic.Add("Interest", request.Interest.ToString());    
+        }
+
+        if (request.Team == TeamRequest.None)
+        {
+            queryDic.Add("Team", null);
+        }
+        else
+        {
+            queryDic.Add("Team", request.Team.ToString());
+        }
 
         NavigationManager.NavigateTo(
             NavigationManager.GetUriWithQueryParameters(

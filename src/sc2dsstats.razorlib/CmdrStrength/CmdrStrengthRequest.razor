@@ -1,5 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms;
+@using Microsoft.JSInterop;
 @using pax.dsstats.shared;
+@inject IJSRuntime jsRuntime
 @implements IDisposable
 
 <EditForm EditContext="editContext">
@@ -64,6 +66,16 @@
                 </InputSelect>
             </label>
         </div>
+        <div class="col-auto">
+            <label class="form-label">
+                <span data-bs-toggle="tooltip" data-bs-title="Team Filter - Team1 has the most uploaders and 2/3 stacks">Team <span class="oi oi-info"></span></span>
+                <InputSelect class="form-select" @bind-Value="Request.Team">
+                    <option value="@TeamRequest.None">All</option>
+                    <option value="@TeamRequest.Team1">Team1</option>
+                    <option value="@TeamRequest.Team2">Team2</option>
+                </InputSelect>
+            </label>
+        </div>
     </div>
 </EditForm>
 
@@ -81,6 +93,14 @@
         editContext = new EditContext(Request);
         editContext.OnFieldChanged += FieldChanged;
         base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            jsRuntime.InvokeVoidAsync("enableTooltips");
+        }
     }
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)

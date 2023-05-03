@@ -33,11 +33,23 @@ public partial class StatsService
             replays = replays.Where(x => x.GameTime < endDate);
         }
 
+        var replayPlayers = replays.SelectMany(s => s.ReplayPlayers);
+
+        if (request.Team == TeamRequest.Team1)
+        {
+            replayPlayers = replayPlayers.Where(x => x.GamePos < 4);
+        }
+        else if (request.Team == TeamRequest.Team2)
+        {
+            replayPlayers = replayPlayers.Where(x => x.GamePos > 3);
+        }
+
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
-        var group = request.Interest == Commander.None 
+        var group = request.Interest == Commander.None
                     ?
-                        from r in replays
-                        from rp in r.ReplayPlayers
+                        //from r in replays
+                        //from rp in r.ReplayPlayers
+                        from rp in replayPlayers
                         group rp by  rp.Race into g
                         select new CmdrStrengthItem()
                         {
@@ -45,11 +57,12 @@ public partial class StatsService
                             Matchups = g.Count(),
                             AvgRating = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.Rating), 2),
                             AvgRatingGain = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.RatingChange), 2),
-                            Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
+                            Wins = g.Sum(c => c.PlayerResult == PlayerResult.Win ? 1 : 0)
                         }
                     :
-                        from r in replays
-                        from rp in r.ReplayPlayers
+                        //from r in replays
+                        //from rp in r.ReplayPlayers
+                        from rp in replayPlayers
                         where rp.Race == request.Interest
                         group rp by rp.OppRace into g
                         select new CmdrStrengthItem()
@@ -58,7 +71,7 @@ public partial class StatsService
                             Matchups = g.Count(),
                             AvgRating = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.Rating), 2),
                             AvgRatingGain = Math.Round(g.Average(a => a.ReplayPlayerRatingInfo.RatingChange), 2),
-                            Wins = g.Count(c => c.PlayerResult == PlayerResult.Win)
+                            Wins = g.Sum(c => c.PlayerResult == PlayerResult.Win ? 1 : 0)
                         }
            ;
 
