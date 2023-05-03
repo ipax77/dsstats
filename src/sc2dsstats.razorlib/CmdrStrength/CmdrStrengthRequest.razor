@@ -64,6 +64,16 @@
                 </InputSelect>
             </label>
         </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Team
+                <InputSelect class="form-select" @bind-Value="Request.Team">
+                    <option value="@TeamRequest.None">All</option>
+                    <option value="@TeamRequest.Team1">Team1</option>
+                    <option value="@TeamRequest.Team2">Team2</option>
+                </InputSelect>
+            </label>
+        </div>
     </div>
 </EditForm>
 

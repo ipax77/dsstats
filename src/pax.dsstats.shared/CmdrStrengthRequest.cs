@@ -7,6 +7,7 @@ public record CmdrStrengthRequest
     public RatingType RatingType { get; set; }
     public TimePeriod TimePeriod { get; set; }
     public Commander Interest { get; set; }
+    public TeamRequest Team { get; set; }
 }
 
 public record CmdrStrengthResult

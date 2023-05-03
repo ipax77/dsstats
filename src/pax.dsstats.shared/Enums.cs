@@ -96,3 +96,10 @@ public enum RatingChangeTimePeriod
     Past10Days = 2,
     Past30Days = 3
 }
+
+public enum TeamRequest
+{
+    None = 0,
+    Team1 = 1,
+    Team2 = 2
+}
