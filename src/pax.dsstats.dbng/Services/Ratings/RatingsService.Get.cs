@@ -64,10 +64,13 @@ public partial class RatingsService
                 s.PlayerId,
                 s.Games,
                 s.Wins,
+                s.Mvp,
                 s.Consistency,
                 s.Confidence,
                 s.RatingType,
-                s.Rating
+                s.Rating,
+                s.Main,
+                s.MainCount
             })
             .ToListAsync();
 
@@ -79,8 +82,10 @@ public partial class RatingsService
                 Games = pr.Games,
                 Wins = pr.Wins,
                 Mmr = pr.Rating,
+                Mvp = pr.Mvp,
                 Consistency = pr.Consistency,
                 Confidence = pr.Confidence,
+                CmdrCounts = GetFakeCmdrDic(pr.Main, pr.MainCount, pr.Games)
             };
         }
 
