@@ -11,7 +11,11 @@ public static class HelperService
 
     public static string GetBigNumberString(int num)
     {
-        if (num > 1000)
+        if (num > 1000000)
+        {
+            return (num / 1000000.0).ToString("N2", CultureInfo.InvariantCulture) + "m";
+        }
+        else if (num > 1000)
         {
             return (num / 1000.0).ToString("N2", CultureInfo.InvariantCulture) + "k";
         }
