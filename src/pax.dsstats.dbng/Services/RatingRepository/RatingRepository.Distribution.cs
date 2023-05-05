@@ -32,7 +32,7 @@ public partial class RatingRepository
                         Mmr = s.Key
                     })
                     .OrderBy(o => o.Mmr)
-                    .ToListAsync();
+                    .ToListAsync(token);
             }
             else
             {
@@ -45,7 +45,7 @@ public partial class RatingRepository
                         Mmr = s.Key
                     })
                     .OrderBy(o => o.Mmr)
-                    .ToListAsync();
+                    .ToListAsync(token);
             }
 
             response = new()

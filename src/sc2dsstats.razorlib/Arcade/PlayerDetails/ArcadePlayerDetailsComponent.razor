@@ -1,7 +1,6 @@
 ﻿@using System.Globalization;
 @using pax.dsstats.shared.Arcade;
 @using pax.dsstats.shared;
-@using sc2dsstats.razorlib.PlayerDetails;
 @using sc2dsstats.razorlib.Services;
 @using sc2dsstats.razorlib.PlayerDetailsNg
 @inject IArcadeService arcadeService
@@ -62,6 +61,33 @@
     </div>
     @if (playerDetails != null)
     {
+        <div class="p-2">
+            @foreach (var rating in playerDetails.PlayerRatings)
+            {
+                @if (rating.RatingType == RatingType.Cmdr
+               && playerDetails.CmdrPercentileRank != null
+               && playerDetails.CmdrPercentileRank != 0
+               && playerDetails.CmdrPercentileRank > 20)
+                {
+                    <div>
+                        <span class="p-1" style="font-size: 1.3rem;">
+                            Better than <span class="text-warning">@playerDetails.CmdrPercentileRank%</span> of all <span class="text-warning">Comanders</span> players
+                        </span>
+                    </div>
+                }
+                else if (rating.RatingType == RatingType.Std
+                && playerDetails.StdPercentileRank != null
+                && playerDetails.StdPercentileRank != 0
+                && playerDetails.StdPercentileRank > 20)
+                {
+                    <div>
+                        <span class="p-1" style="font-size: 1.3rem;">
+                            Better than <span class="text-warning">@playerDetails.StdPercentileRank%</span> of all <span class="text-warning">Standard</span> players
+                        </span>
+                    </div>
+                }
+            }
+        </div>
         <div class="row mt-2">
             <div class="col-auto">
                 <div style="width: 40vw; min-width: 500px; height: calc(40vw * 0.6); min-height: 300px;">

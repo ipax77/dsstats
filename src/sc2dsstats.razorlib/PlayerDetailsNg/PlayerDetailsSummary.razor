@@ -60,8 +60,36 @@
                             <span class="small text-danger">#@interestRating.Pos </span>
                             @interestRating.Rating.ToString("N2", CultureInfo.InvariantCulture)
                         </span>
+
                     </span>
                 </div>
+            }
+        </div>
+        <div class="p-2">
+            @foreach (var interestRating in playerSummary.Ratings.OrderBy(o => o.RatingType))
+            {
+                @if (interestRating.RatingType == RatingType.Cmdr 
+                    && playerSummary.CmdrPercentileRank != null
+                    && playerSummary.CmdrPercentileRank != 0
+                    && playerSummary.CmdrPercentileRank > 20)
+                {
+                    <div>
+                        <span class="p-1" style="font-size: 1.3rem;">
+                            Better than <span class="text-warning">@playerSummary.CmdrPercentileRank%</span> of all <span class="text-warning">Comanders</span> players
+                        </span>
+                    </div>
+                }
+                else if (interestRating.RatingType == RatingType.Std
+                    && playerSummary.StdPercentileRank != null
+                    && playerSummary.StdPercentileRank != 0
+                    && playerSummary.StdPercentileRank > 20)
+                {
+                    <div>
+                        <span class="p-1" style="font-size: 1.3rem;">
+                            Better than <span class="text-warning">@playerSummary.StdPercentileRank%</span> of all <span class="text-warning">Standard</span> players
+                        </span>
+                    </div>
+                }
             }
         </div>
         <div class="row mt-2">
