@@ -26,12 +26,19 @@ public partial class PlayerService
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        return new()
+        PlayerDetailSummary summary = new()
         {
             GameModesPlayed = await GetGameModeCounts(context, toonId, token),
             Ratings = await GetRatings(context, toonId, token),
             Commanders = await GetCommandersPlayed(context, toonId, token),
         };
+
+        (summary.CmdrPercentileRank, summary.StdPercentileRank) =
+            await GetPercentileRank(
+                summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType.Cmdr)?.Pos ?? 0,
+                summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType.Std)?.Pos ?? 0);
+        
+        return summary;
     }
 
 

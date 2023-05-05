@@ -20,6 +20,8 @@ public record PlayerDetailSummary
     public List<PlayerGameModeResult> GameModesPlayed { get; set; } = new();
     public List<PlayerRatingDetailDto> Ratings { get; set; } = new();
     public List<CommanderInfo> Commanders { get; set; } = new();
+    public double? CmdrPercentileRank { get; set; }
+    public double? StdPercentileRank { get; set; }
 }
 
 public record CommanderInfo

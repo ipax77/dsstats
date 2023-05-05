@@ -4,6 +4,8 @@ public record ArcadePlayerDetails
 {
     public ArcadePlayerDto? ArcadePlayer { get; set; }
     public List<ArcadePlayerRatingDetailDto> PlayerRatings { get; set; } = new();
+    public double? CmdrPercentileRank { get; set; }
+    public double? StdPercentileRank { get; set; }
 }
 
 public record ArcadePlayerMoreDetails

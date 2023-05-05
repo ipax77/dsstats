@@ -1,5 +1,6 @@
 ﻿using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Arcade;
@@ -15,7 +16,12 @@ public partial class ArcadeService
         {
             return new();
         }
-        return await GetPlayerDetails(arcadePlayerId, token);
+        var details = await GetPlayerDetails(arcadePlayerId, token);
+        (details.CmdrPercentileRank, details.StdPercentileRank) = await GetPercentileRank(
+            details.PlayerRatings.FirstOrDefault(f => f.RatingType == RatingType.Cmdr)?.Pos ?? 0,
+            details.PlayerRatings.FirstOrDefault(f => f.RatingType == RatingType.Std)?.Pos ?? 0
+        );
+        return details;
     }
 
     private async Task<int> GetArcadePalyerId(ArcadePlayerId playerId, CancellationToken token = default)
@@ -36,7 +42,7 @@ public partial class ArcadeService
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        return new()
+        ArcadePlayerDetails details = new()
         {
             ArcadePlayer = await context.ArcadePlayers
                 .Where(x => x.ArcadePlayerId == arcadePlayerId)
@@ -47,6 +53,12 @@ public partial class ArcadeService
                 .ProjectTo<ArcadePlayerRatingDetailDto>(mapper.ConfigurationProvider)
                 .ToListAsync(token)
         };
+
+        (details.CmdrPercentileRank, details.StdPercentileRank) = await GetPercentileRank(
+            details.PlayerRatings.FirstOrDefault(f => f.RatingType == RatingType.Cmdr)?.Pos ?? 0,
+            details.PlayerRatings.FirstOrDefault(f => f.RatingType == RatingType.Std)?.Pos ?? 0
+        );
+        return details;
     }
 
     private async Task<List<KeyValuePair<GameMode, int>>> GetGameModes(int arcadePlayerId, ReplayContext context, CancellationToken token)
@@ -235,6 +247,64 @@ public partial class ArcadeService
                            };
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
         return await replaysQuery.ToListAsync();
+    }
+
+    private async Task<(double cmdrRank, double stdRank)> GetPercentileRank(int cmdrPos, int stdPos)
+    {
+        double cmdrRank = 0;
+        double stdRank = 0;
+
+        if (cmdrPos != 0)
+        {
+            var maxPos = await GetMaxPos(RatingType.Cmdr);
+            cmdrRank = CalculatePercentileRank(maxPos, cmdrPos);
+        }
+
+        if (stdPos != 0)
+        {
+            var maxPos = await GetMaxPos(RatingType.Std);
+            stdRank = CalculatePercentileRank(maxPos, stdPos);
+        }
+
+        return (Math.Round(cmdrRank, 2), Math.Round(stdRank, 2));
+    }
+
+    private static double CalculatePercentileRank(int maxPos, int playerPos)
+    {
+        if (maxPos == 0)
+        {
+            return 0;
+        }
+
+        int totalPlayers = maxPos;
+        int lowerPlayers = maxPos - playerPos;
+
+        return (double)lowerPlayers / totalPlayers * 100;
+    }
+
+    private async Task<int> GetMaxPos(RatingType ratingType)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var memeoryCache = scope.ServiceProvider.GetRequiredService<IMemoryCache>();
+
+        var memKey = $"ArcadeMaxPos{ratingType}";
+
+        if (!memeoryCache.TryGetValue(memKey, out int maxPos))
+        {
+            var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+            maxPos = await context.ArcadePlayerRatings
+                .Where(x => x.RatingType == ratingType)
+                .OrderByDescending(o => o.Pos)
+                .Select(s => s.Pos)
+                .FirstOrDefaultAsync();
+
+            if (maxPos > 0)
+            {
+                memeoryCache.Set(memKey, maxPos, TimeSpan.FromHours(24));
+            }
+        }
+        return maxPos;
     }
 }
 
