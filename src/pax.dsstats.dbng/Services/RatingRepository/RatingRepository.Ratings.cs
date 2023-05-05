@@ -98,12 +98,12 @@ public partial class RatingRepository
 
         if (request.Uploaders && !Data.IsMaui)
         {
-            ratings = ratings.Where(x => x.IsUploader);
+            ratings = ratings.Where(x => x.Player.UploaderId != null);
         }
 
         if (!String.IsNullOrEmpty(request.Search))
         {
-            ratings = ratings.Where(x => x.Player.Name.ToUpper().Contains(request.Search.ToUpper()));
+            ratings = ratings.Where(x => x.Player.Name.ToUpper().Contains(request.Search.Trim().ToUpper()));
         }
 
         return ratings;
