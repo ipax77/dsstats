@@ -1,0 +1,53 @@
+﻿@using pax.dsstats.shared.Interfaces;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
+@inject IServerStatsService serverStatsService
+
+<h3>Server Stats</h3>
+<p class="text-warning">
+    Stats for gamemode Commanders, CommandersHeroic and Standard with player count 6 (3v3)
+</p>
+
+<div>
+    @if (isLoading)
+    {
+        <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
+    @if (Results.Any())
+    {
+        <div class="border rounded border-secondary mt-2" style="min-width: 550px; width: 66vw; height: calc(66vw * 0.5); min-height: 275px;">
+            <ServerStatsChart Results="Results" Title="@($"SC2Arcade ∑{HelperService.GetBigNumberString(Results.Sum(s => s.Count))}")" />
+        </div>
+    }
+    @if (DsResults.Any())
+    {
+        <div class="border rounded border-secondary ms-2" style="min-width: 550px; width: 66vw; height: calc(66vw * 0.5); min-height: 275px;">
+            <ServerStatsChart Results="DsResults" Title="@($"dsstats ∑{HelperService.GetBigNumberString(DsResults.Sum(s => s.Count))}")" />
+        </div>
+    }
+</div>
+
+@code {
+    List<ServerStatsResult> Results = new();
+    List<ServerStatsResult> DsResults = new();
+
+    bool isLoading;
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        Results = await serverStatsService.GetSc2ArcadeStats();
+        DsResults = await serverStatsService.GetDsstatsStats();
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+}

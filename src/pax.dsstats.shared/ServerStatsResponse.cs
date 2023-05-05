@@ -11,3 +11,11 @@ public record PlayerRatingStat
     public float RatingChange { get; set; }
     public int Games { get; set; }
 }
+
+public record ServerStatsResult
+{
+    public DateTime Date { get; set; }
+    public GameMode GameMode { get; set; }
+    public int RegionId { get; set; }
+    public int Count { get; set; }
+}

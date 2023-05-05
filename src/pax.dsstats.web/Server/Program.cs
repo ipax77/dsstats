@@ -5,8 +5,10 @@ using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.dbng.Services.Ratings;
+using pax.dsstats.dbng.Services.ServerStats;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Arcade;
+using pax.dsstats.shared.Interfaces;
 using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
@@ -76,6 +78,7 @@ builder.Services.AddScoped<CheatDetectService>();
 builder.Services.AddScoped<PlayerService>();
 builder.Services.AddScoped<CrawlerService>();
 builder.Services.AddScoped<RatingsMergeService>();
+builder.Services.AddScoped<IServerStatsService, ServerStatsService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();

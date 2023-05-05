@@ -1,0 +1,143 @@
+﻿@using pax.BlazorChartJs
+@using pax.dsstats.shared;
+
+<ChartComponent ChartJsConfig="chartConfig" OnEventTriggered="EventTriggered"></ChartComponent>
+
+@code {
+    [Parameter, EditorRequired]
+    public List<ServerStatsResult> Results { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    ChartJsConfig chartConfig = null!;
+    bool chartReady;
+
+    protected override void OnInitialized()
+    {
+        chartConfig = GetChartConfig();
+        base.OnInitialized();
+    }
+
+    private void EventTriggered(ChartJsEvent chartJsEvent)
+    {
+        if (chartJsEvent is ChartJsInitEvent initEvent)
+        {
+            chartReady = true;
+            SetupChart(Results, Title);
+        }
+    }
+
+    public void SetupChart(List<ServerStatsResult> results, string title)
+    {
+        if (chartConfig.Data.Datasets.Any())
+        {
+            chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
+        }
+
+        if (!results.Any())
+        {
+            return;
+        }
+
+        Dictionary<GameMode, List<int>> chartData = new();
+        HashSet<string> labels = new();
+
+        foreach (var result in Results.OrderBy(o => o.Date))
+        {
+            if (!chartData.TryGetValue(result.GameMode, out var list))
+            {
+                list = chartData[result.GameMode] = new();
+            }
+            list.Add(result.Count);
+            labels.Add(result.Date.ToString("yyyy-MM-dd"));
+        }
+
+        if (chartConfig.Options?.Plugins?.Title != null)
+        {
+            chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>(title);
+            chartConfig.UpdateChartOptions();
+        }
+
+        chartConfig.SetLabels(labels.ToList());
+
+        List<ChartJsDataset> datasets = new();
+        foreach (var data in chartData.OrderBy(o => o.Key))
+        {
+            datasets.Add(GetDataset(data.Key, data.Value));
+        }
+        chartConfig.AddDatasets(datasets);
+    }
+
+    private ChartJsDataset GetDataset(GameMode gameMode, List<int> data)
+    {
+        (var bgColor, var boColor) = GetColors(gameMode);
+
+        return new BarDataset()
+            {
+                Label = gameMode.ToString(),
+                Data = data.Cast<object>().ToList(),
+                BackgroundColor = new IndexableOption<string>(bgColor),
+                BorderColor = new IndexableOption<string>(boColor),
+                BorderWidth = new IndexableOption<double>(1)
+            };
+    }
+
+    private (string bgColor, string boColor) GetColors(GameMode gameMode)
+    {
+        return gameMode switch
+        {
+            GameMode.Commanders => ("rgba(255, 99, 132, 0.2)", "rgba(255, 99, 132, 1)"),
+            GameMode.Standard => ("rgba(54, 162, 235, 0.2)", "rgba(54, 162, 235, 1)"),
+            GameMode.CommandersHeroic => ("rgba(255, 206, 86, 0.2)", "rgba(255, 206, 86, 1)"),
+            _ => ("white", "white")
+        };
+    }
+
+    private ChartJsConfig GetChartConfig()
+    {
+        return new()
+            {
+                Type = ChartType.bar,
+                Data = new ChartJsData(),
+                Options = new ChartJsOptions()
+                {
+                    //IndexAxis = "y",
+                    Plugins = new Plugins()
+                    {
+                        Legend = new Legend()
+                        {
+                            Position = "right"
+                        },
+                        Title = new Title()
+                        {
+                            Display = true,
+                            Font = new Font()
+                            {
+                                Size = 20,
+                            },
+                            Text = new IndexableOption<string>("Server Stats"),
+                            Color = "white"
+                        }
+                    },
+                    Scales = new ChartJsOptionsScales()
+                    {
+                        X = new LinearAxis()
+                        {
+                            BeginAtZero = true,
+                            Stacked = true,
+                            Ticks = new LinearAxisTick()
+                            {
+                                Display = true,
+                            }
+                        },
+                        Y = new LinearAxis()
+                        {
+                            Stacked = true,
+                            Display = true,
+                        }
+                    },
+                }
+            };
+    }
+}
