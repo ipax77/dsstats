@@ -177,7 +177,7 @@ public class ReplayContext : DbContext
                     new SqlFunctionExpression("strftime",
                         new[]
                         {
-                            new SqlFragmentExpression((args.ToArray()[0] as SqlConstantExpression).Value.ToString()),
+                            new SqlFragmentExpression((args.ToArray()[0] as SqlConstantExpression)?.Value?.ToString() ?? string.Empty),
                             args.ToArray()[1]
                         },
                         true,

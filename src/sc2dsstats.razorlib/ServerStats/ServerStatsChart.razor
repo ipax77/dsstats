@@ -11,7 +11,6 @@
     public string Title { get; set; } = string.Empty;
 
     ChartJsConfig chartConfig = null!;
-    bool chartReady;
 
     protected override void OnInitialized()
     {
@@ -23,7 +22,6 @@
     {
         if (chartJsEvent is ChartJsInitEvent initEvent)
         {
-            chartReady = true;
             SetupChart(Results, Title);
         }
     }

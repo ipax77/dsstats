@@ -56,7 +56,7 @@
                                 {
                                     <button class="btn btn-sm btn-danger"><b>@(@replayDto.ReplayEvent != null ? replayDto.ReplayEvent.RunnerTeam : $"Team {i}")</b></button>
                                 }
-                                <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => showMiddleChart = !showMiddleChart)">Middle @(i == 1 ? mid1 : mid2)%</button>
+                                <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => showMiddleChart = !showMiddleChart)">Middle Control @(i == 1 ? mid1 : mid2)%</button>
                             </div>
                             <div class="table-responsive" style="max-width: 560px;">
                                 <table class="table table-sm table-hover table-dark pointer">
@@ -136,8 +136,7 @@
                         <div class="ms-5 form-check form-switch align-self-center">
                             <label class="form-check-label">
                                 Online Rating (expected)
-                                <input type="checkbox" class="form-check-input" @onchange="ToggleOnlineRating">
-                                </input>
+                                <input type="checkbox" class="form-check-input" @onchange="ToggleOnlineRating" />
                             </label>
                         </div>
                     }
@@ -495,7 +494,7 @@
                         Title = new Title()
                         {
                             Display = true,
-                            Text = new IndexableOption<string>("Middle"),
+                            Text = new IndexableOption<string>($"Middle - {gameloops.Length} changes"),
                             Color = "yellow",
                             Font = new Font()
                             {
