@@ -31,6 +31,11 @@ public partial class ArcadeService
 
     public async Task<List<ArcadeReplayListDto>> GetArcadeReplays(ArcadeReplaysRequest request, CancellationToken token)
     {
+        if (request.Skip < 0 || request.Take < 0)
+        {
+            return new();
+        }
+
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
@@ -38,12 +43,63 @@ public partial class ArcadeService
 
         replays = SortReplays(request, replays);
 
-        return await replays
-            .Skip(request.Skip)
-            .Take(request.Take)
-            .ProjectTo<ArcadeReplayListDto>(mapper.ConfigurationProvider)
-            .ToListAsync();
+        if (request.PlayerId == 0)
+        {
+            return await replays
+                .Skip(request.Skip)
+                .Take(request.Take)
+                .ProjectTo<ArcadeReplayListDto>(mapper.ConfigurationProvider)
+                .ToListAsync(token);
+        }
+        else
+        {
+            return await GetRatingArcadeReplays(request, replays, token);
+        }
     }
+
+    private async Task<List<ArcadeReplayListDto>> GetRatingArcadeReplays(ArcadeReplaysRequest request,
+                                                                         IQueryable<ArcadeReplay> replays,
+                                                                         CancellationToken token)
+    {
+            var pageReplays = await replays
+                .Skip(request.Skip)
+                .Take(request.Take)
+                .ProjectTo<ArcadeReplayListRatingDto>(mapper.ConfigurationProvider)
+                .ToListAsync(token);
+
+            for (int i = 0; i < pageReplays.Count; i++)
+            {
+                var replay = pageReplays[i];
+                if (replay.ArcadeReplayRating == null)
+                {
+                    continue;
+                }
+                var pl = replay.ArcadeReplayPlayers
+                    .FirstOrDefault(f => f.ArcadePlayer.ArcadePlayerId == request.PlayerId);
+
+                if (pl == null)
+                {
+                    continue;
+                }
+
+                var rating = replay.ArcadeReplayRating.ArcadeReplayPlayerRatings
+                    .FirstOrDefault(f => f.GamePos == pl.SlotNumber);
+
+                if (rating == null)
+                {
+                    continue;
+                }
+
+                replay.MmrChange = rating.RatingChange;
+            }
+            pageReplays.ForEach(f =>
+            {
+                f.ArcadeReplayPlayers.Clear();
+                f.ArcadeReplayRating = null;
+            });
+            return pageReplays.Cast<ArcadeReplayListDto>().ToList();
+    }
+
 
     private IQueryable<ArcadeReplay> SortReplays(ArcadeReplaysRequest request, IQueryable<ArcadeReplay> replays)
     {

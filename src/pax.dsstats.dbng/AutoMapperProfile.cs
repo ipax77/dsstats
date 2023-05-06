@@ -122,7 +122,15 @@ namespace pax.dsstats.dbng
             CreateMap<ArcadeReplayRating, ArcadeReplayRatingDto>(MemberList.Destination);
             CreateMap<ArcadeReplayPlayer, ArcadeReplayPlayerDto>(MemberList.Destination);
             CreateMap<ArcadeReplay, ArcadeReplayDto>(MemberList.Destination);
-            CreateMap<ArcadeReplay, ArcadeReplayListDto>(MemberList.Destination);
+            CreateMap<ArcadeReplay, ArcadeReplayListDto>(MemberList.Destination)
+                .ForMember(x => x.MmrChange, opt => opt.Ignore());
+
+            CreateMap<ArcadeReplay, ArcadeReplayListRatingDto>(MemberList.Destination)
+                .ForMember(x => x.MmrChange, opt => opt.Ignore());
+            CreateMap<ArcadeReplayPlayer, ArcadeReplayPlayerListDto>(MemberList.Destination);
+            CreateMap<ArcadePlayer, ArcadePlayerListDto>(MemberList.Destination);
+            CreateMap<ArcadeReplayRating, ArcadeReplayRatingListDto>(MemberList.Destination);
+            CreateMap<ArcadeReplayPlayerRating, ArcadeReplayPlayerRatingListDto>(MemberList.Destination);
         }
     }
 }
