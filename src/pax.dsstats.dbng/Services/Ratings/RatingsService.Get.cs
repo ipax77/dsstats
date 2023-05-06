@@ -70,7 +70,8 @@ public partial class RatingsService
                 s.RatingType,
                 s.Rating,
                 s.Main,
-                s.MainCount
+                s.MainCount,
+                s.IsUploader
             })
             .ToListAsync();
 
@@ -83,6 +84,7 @@ public partial class RatingsService
                 Wins = pr.Wins,
                 Mmr = pr.Rating,
                 Mvp = pr.Mvp,
+                IsUploader = pr.IsUploader,
                 Consistency = pr.Consistency,
                 Confidence = pr.Confidence,
                 CmdrCounts = GetFakeCmdrDic(pr.Main, pr.MainCount, pr.Games)
