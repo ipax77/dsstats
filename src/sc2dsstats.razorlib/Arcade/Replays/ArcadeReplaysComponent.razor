@@ -2,6 +2,7 @@
 @using pax.dsstats.shared.Arcade;
 @using pax.dsstats.shared;
 @using sc2dsstats.razorlib.Services;
+@using System.Globalization;
 @inject IArcadeService arcadeService
 @implements IDisposable
 
@@ -46,6 +47,12 @@
             <thead class="user-select-none">
                 <CascadingValue Value="replaysRequest.Orders">
                     <tr>
+                        @if (replaysRequest.PlayerId > 0)
+                        {
+                            <th scope="col" style="z-index: 1;">
+                                Mmr
+                            </th>
+                        }
                         <th scope="col" class="pointer" @onclick="@(e => SortList(e, "RegionId"))">
                             <SortArrow Property="RegionId">
                                 <div class="text-center">
@@ -82,6 +89,16 @@
                     <Virtualize @ref="virtualizeComponent" Context="replay" ItemsProvider="LoadReplays" ItemSize="47">
                         <ItemContent>
                             <tr height="47px" class="pointer @(lastVisitId == replay.ArcadeReplayId ? "table-primary" : "")" @onclick="e => ShowReplay(replay.ArcadeReplayId)">
+                                @if (replaysRequest.PlayerId > 0)
+                                {
+                                    <td>
+                                        <div style="width: 40px;">
+                                            <span class="oi @(replay.MmrChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success") d-block">
+                                                @replay.MmrChange.ToString("N1", CultureInfo.InvariantCulture)
+                                            </span>
+                                        </div>
+                                    </td>
+                                }                                
                                 <td>@Data.GetRegionString(replay.RegionId)</td>
                                 <td>@replay.CreatedAt.ToString(@"yyyy-MM-dd")</td>
                                 <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
@@ -90,7 +107,7 @@
                             </tr>
                         </ItemContent>
                         <Placeholder>
-                            <tr height="47px"><td colspan="5">Loading ...</td></tr>
+                            <tr height="47px"><td colspan="@(replaysRequest.PlayerId > 0 ? "6" : "5")">Loading ...</td></tr>
                         </Placeholder>
                     </Virtualize>
                 }
