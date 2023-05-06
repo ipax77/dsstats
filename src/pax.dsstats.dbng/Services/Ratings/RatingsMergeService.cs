@@ -22,8 +22,11 @@ public partial class RatingsMergeService
 
     public async Task Merge()
     {
-        var dsstatsReplays = await GetDsstatsReplayData(DateTime.Today.AddDays(-20),  DateTime.Today.AddDays(2));
-        var arcadeReplays = await GetArcadeReplayData(DateTime.Today.AddDays(-20), DateTime.Today.AddDays(2));
+        int skip = 0;
+        int take = 1000;
+
+        var dsstatsReplays = await GetDsstatsReplayData(DateTime.Today.AddDays(-20),  skip, take);
+        var arcadeReplays = await GetArcadeReplayData(DateTime.Today.AddDays(-20), skip, take);
 
         var mergedReplays = GetMergedReplayData(dsstatsReplays, arcadeReplays);
     }
@@ -99,28 +102,19 @@ public partial class RatingsMergeService
         return replaysDic;
     }
 
-    private async Task<List<ReplayDsRDto>> GetArcadeReplayData(DateTime startTime, DateTime endTime)
+    private async Task<List<ReplayDsRDto>> GetArcadeReplayData(DateTime startTime, int skip, int take)
     {
         List<GameMode> gameModes = new() { GameMode.Commanders, GameMode.Standard, GameMode.CommandersHeroic };
 
         var replays = context.ArcadeReplays
             .Include(i => i.ArcadeReplayPlayers)
                 .ThenInclude(i => i.ArcadePlayer)
-            .Where(r => r.PlayerCount == 6
+            .Where(r => r.CreatedAt >= startTime
+                && r.PlayerCount == 6
                 && r.Duration >= 300
                 && r.WinnerTeam > 0
                 && r.TournamentEdition == false
                 && gameModes.Contains(r.GameMode));
-
-        if (startTime != DateTime.MinValue)
-        {
-            replays = replays.Where(x => x.CreatedAt > startTime);
-        }
-
-        if (endTime != DateTime.MinValue && endTime < DateTime.Today)
-        {
-            replays = replays.Where(x => x.CreatedAt < endTime);
-        }
 
         var dsrReplays = from r in replays
                          where r.Duration >= 300
@@ -151,7 +145,10 @@ public partial class RatingsMergeService
                              }).ToList()
                          };
 
-        var dsrReplaysList = await dsrReplays.ToListAsync();
+        var dsrReplaysList = await dsrReplays
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync();
 
         foreach (var replay in dsrReplaysList)
         {
@@ -163,30 +160,21 @@ public partial class RatingsMergeService
         return dsrReplaysList;
     }
 
-    private async Task<List<ReplayDsRDto>> GetDsstatsReplayData(DateTime startTime, DateTime endTime)
+    private async Task<List<ReplayDsRDto>> GetDsstatsReplayData(DateTime startTime, int skip, int take)
     {
         List<GameMode> gameModes = new() { GameMode.Commanders, GameMode.Standard, GameMode.CommandersHeroic };
 
-        var replays = context.Replays
-            .Where(r => r.Playercount == 6
+        return await context.Replays
+            .Where(r => r.GameTime >= startTime
+                && r.Playercount == 6
                 && r.Duration >= 300
                 && r.WinnerTeam > 0
-                && gameModes.Contains(r.GameMode));
-
-        if (startTime != DateTime.MinValue)
-        {
-            replays = replays.Where(x => x.GameTime > startTime);
-        }
-
-        if (endTime != DateTime.MinValue && endTime < DateTime.Today)
-        {
-            replays = replays.Where(x => x.GameTime < endTime);
-        }
-
-        return await replays
+                && gameModes.Contains(r.GameMode))
             .OrderBy(o => o.GameTime)
                 .ThenBy(o => o.ReplayId)
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
+            .Skip(skip)
+            .Take(take)
             .ToListAsync();
     }
 }

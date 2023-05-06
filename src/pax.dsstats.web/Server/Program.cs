@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
+using pax.dsstats.dbng.Services.MergeService;
 using pax.dsstats.dbng.Services.Ratings;
 using pax.dsstats.dbng.Services.ServerStats;
 using pax.dsstats.shared;
@@ -13,7 +14,6 @@ using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
 using pax.dsstats.web.Server.Services.Arcade;
-using System.Net.NetworkInformation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,8 +77,8 @@ builder.Services.AddScoped<IRatingRepository, pax.dsstats.dbng.Services.RatingRe
 builder.Services.AddScoped<CheatDetectService>();
 builder.Services.AddScoped<PlayerService>();
 builder.Services.AddScoped<CrawlerService>();
-builder.Services.AddScoped<RatingsMergeService>();
 builder.Services.AddScoped<IServerStatsService, ServerStatsService>();
+builder.Services.AddScoped<ReplaysMergeService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -125,6 +125,12 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
+    // var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
+    // importService.ImportInit();
+
+    var replaysMergeService = scope.ServiceProvider.GetRequiredService<ReplaysMergeService>();
+    replaysMergeService.MergeReplays(new pax.dsstats.shared.Arcade.PlayerId(226401, 1, 2)).Wait(); // PAX
+    // replaysMergeService.MergeReplays(new pax.dsstats.shared.Arcade.PlayerId(7827332, 1, 1)).Wait(); // Radialus
 }
 
 // Configure the HTTP request pipeline.
