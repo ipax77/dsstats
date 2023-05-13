@@ -12,4 +12,5 @@ public interface IArcadeService
     Task<ArcadePlayerDetails> GetPlayerDetails(int arcadePlayerId, CancellationToken token);
     Task<ArcadePlayerMoreDetails> GetMorePlayerDatails(ArcadePlayerId playerId, RatingType ratingType, CancellationToken token);
     Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId, RatingType ratingType);
+    Task<RequestNames?> GetRequetNamesFromId(int playerId, CancellationToken token = default);
 }

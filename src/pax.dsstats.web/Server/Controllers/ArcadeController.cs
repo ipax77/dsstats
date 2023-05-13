@@ -87,4 +87,19 @@ public class ArcadeController
     {
         return await arcadeService.GetPlayerRatingChartData(playerId, (RatingType)ratingType);
     }
+
+    [HttpGet]
+    [Route("getrequestnames/{playerId:int}")]
+    public async Task<ActionResult<RequestNames>> GetRequetNamesFromId(int playerId, CancellationToken token = default)
+    {
+        var requestNames = await arcadeService.GetRequetNamesFromId(playerId, token);
+        if (requestNames == null)
+        {
+            return new NotFoundResult();
+        }
+        else
+        {
+            return requestNames;
+        }
+    }
 }
