@@ -21,10 +21,16 @@ public class ReplaysMergeService
         this.logger = logger;
     }
 
-    public async Task<MergeResult> MergeReplays(PlayerId playerId)
+    public async Task<MergeResultReplays> GetMergeResultReplay(PlayerId playerId, CancellationToken token)
     {
-        var arReplays = await GetArcadeReplayData(playerId, RatingType.Cmdr);
-        var dsReplays = await GetDsstatsReplayData(playerId, RatingType.Cmdr);
+        var mergeResult = await MergeReplays(playerId, token);
+        return await GetMergeResultReplays(mergeResult, token);
+    }
+
+    private async Task<MergeResult> MergeReplays(PlayerId playerId, CancellationToken token)
+    {
+        var arReplays = await GetArcadeReplayData(playerId, RatingType.Cmdr, token);
+        var dsReplays = await GetDsstatsReplayData(playerId, RatingType.Cmdr, token);
 
         var mergeResult = new MergeResult()
         {
@@ -32,7 +38,7 @@ public class ReplaysMergeService
             DsCount = dsReplays.Count,
         };
 
-        foreach (var dsReplay in  dsReplays)
+        foreach (var dsReplay in dsReplays)
         {
             bool foundMatch = false;
 
@@ -71,7 +77,7 @@ public class ReplaysMergeService
                 if (compareResult == ReplayCompareResult.Equal)
                 {
                     mergeResult.DsAndAr.Add(new KeyValuePair<int, int>(dsReplay.ReplayId, arReplay.ReplayId));
-                    foundMatch = true; 
+                    foundMatch = true;
                     break;
                 }
             }
@@ -90,76 +96,53 @@ public class ReplaysMergeService
         return mergeResult;
     }
 
-
-    public async Task<MergeResult> MergeReplays_old(PlayerId playerId)
+    private async Task<MergeResultReplays> GetMergeResultReplays(MergeResult mergeResult, CancellationToken token)
     {
-        var arReplays = await GetArcadeReplayData(playerId, RatingType.Cmdr);
-        var dsReplays = await GetDsstatsReplayData(playerId, RatingType.Cmdr);
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        var mergeResult = new MergeResult()
+        var dsIds = mergeResult.DsAndAr.Select(s => s.Key).ToList();
+        var arIds = mergeResult.DsAndAr.Select(s => s.Value).ToList();
+
+        var dss = (await context.Replays
+            .Where(x => dsIds.Contains(x.ReplayId))
+            .ProjectTo<ReplayListDto>(mapper.ConfigurationProvider)
+            .ToListAsync(token)).ToDictionary(k => k.ReplayId, v => v);
+
+        var ars = (await context.ArcadeReplays
+            .Where(x => arIds.Contains(x.ArcadeReplayId))
+            .ProjectTo<ArcadeReplayListDto>(mapper.ConfigurationProvider)
+            .ToListAsync(token)).ToDictionary(k => k.ArcadeReplayId, v => v);
+
+        return new MergeResultReplays()
         {
-            ArCount = arReplays.Count,
-            DsCount = dsReplays.Count,
+            DsOnly = await context.Replays
+                        .Where(x => mergeResult.DsOnly.Contains(x.ReplayId))
+                        .ProjectTo<ReplayListDto>(mapper.ConfigurationProvider)
+                        .ToListAsync(token),
+            ArOnly = await context.ArcadeReplays
+                        .Where(x => mergeResult.ArOnly.Contains(x.ArcadeReplayId))
+                        .ProjectTo<ArcadeReplayListDto>(mapper.ConfigurationProvider)
+                        .ToListAsync(token),
+            DsAndAr = mergeResult.DsAndAr.Select(s => 
+                    new KeyValuePair<ReplayListDto, ArcadeReplayListDto>(dss[s.Key], ars[s.Value]))
+                .ToList()
         };
-
-        int arIndex = 0;
-        int dsIndex = 0;
-
-        while (arIndex < arReplays.Count && dsIndex < dsReplays.Count)
-        {
-            var compareResult = Compare(dsReplays[dsIndex], arReplays[arIndex]);
-
-            if (compareResult == ReplayCompareResult.Equal)
-            {
-                mergeResult.DsAndAr.Add(new KeyValuePair<int, int>(dsReplays[dsIndex].ReplayId, arReplays[arIndex].ReplayId));
-                arIndex++;
-                dsIndex++;
-            }
-            else if (compareResult == ReplayCompareResult.DsGreater)
-            {
-                mergeResult.DsOnly.Add(dsReplays[dsIndex].ReplayId);
-                dsIndex++;
-            }
-            else if (compareResult == ReplayCompareResult.ArGreater)
-            {
-                mergeResult.ArOnly.Add(arReplays[arIndex].ReplayId);
-                arIndex++;
-            }
-        }
-
-        while (dsIndex < dsReplays.Count)
-        {
-            mergeResult.DsOnly.Add(dsReplays[dsIndex].ReplayId);
-            dsIndex++;
-        }
-
-        while (arIndex < arReplays.Count)
-        {
-            mergeResult.ArOnly.Add(arReplays[arIndex].ReplayId);
-            arIndex++;
-        }
-
-        logger.LogWarning($"merge result: ds: {mergeResult.DsCount} ar: {mergeResult.ArCount}");
-        logger.LogWarning($"equal {mergeResult.DsAndAr.Count}");
-        logger.LogWarning($"dsOnly {mergeResult.DsOnly.Count}");
-        logger.LogWarning($"arOnly {mergeResult.ArOnly.Count}");
-
-        return mergeResult;
     }
 
-    public ReplayCompareResult Compare(ReplayDsRDto dsReplay, ReplayDsRDto arReplay)
+    private static ReplayCompareResult Compare(ReplayDsRDto dsReplay, ReplayDsRDto arReplay)
     {
         int equalScore = 0;
 
         var timeDifference = (dsReplay.GameTime - arReplay.GameTime).Duration();
 
-        if (timeDifference.TotalHours > 2)
+        if (timeDifference.TotalHours > 4)
         {
             return ReplayCompareResult.None;
         }
         else
         {
-            equalScore++;    
+            equalScore++;
         }
 
         var dsToonIds = dsReplay.ReplayPlayers.Select(s => s.Player.ToonId).OrderBy(o => o).ToList();
@@ -200,7 +183,9 @@ public class ReplaysMergeService
         return ReplayCompareResult.None;
     }
 
-    private async Task<List<ReplayDsRDto>> GetArcadeReplayData(PlayerId playerId, RatingType ratingType)
+    private async Task<List<ReplayDsRDto>> GetArcadeReplayData(PlayerId playerId,
+                                                               RatingType ratingType,
+                                                               CancellationToken token)
     {
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -244,7 +229,7 @@ public class ReplaysMergeService
                          };
 
         var dsrReplaysList = await dsrReplays
-            .ToListAsync();
+            .ToListAsync(token);
 
         foreach (var replay in dsrReplaysList)
         {
@@ -256,7 +241,9 @@ public class ReplaysMergeService
         return dsrReplaysList;
     }
 
-    private async Task<List<ReplayDsRDto>> GetDsstatsReplayData(PlayerId playerId, RatingType ratingType)
+    private async Task<List<ReplayDsRDto>> GetDsstatsReplayData(PlayerId playerId,
+                                                                RatingType ratingType,
+                                                                CancellationToken token)
     {
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -275,18 +262,11 @@ public class ReplaysMergeService
         return await query
             .OrderBy(o => o.GameTime)
             .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
-            .ToListAsync();
+            .ToListAsync(token);
     }
 }
 
-public record MergeResult
-{
-    public int DsCount { get; set; }
-    public int ArCount { get; set; }
-    public List<int> DsOnly { get; set; } = new();
-    public List<int> ArOnly { get; set; } = new();
-    public List<KeyValuePair<int, int>> DsAndAr { get; set; } = new();
-}
+
 
 public enum ReplayCompareResult
 {

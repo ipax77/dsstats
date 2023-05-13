@@ -156,10 +156,16 @@
 
 @if (Interest != null)
 {
-    <sc2dsstats.razorlib.PlayerDetailsNg.PlayerDetailsSummary RequestNames="Interest"
+@*    <sc2dsstats.razorlib.PlayerDetailsNg.PlayerDetailsSummary RequestNames="Interest"
                                                           RatingType="@(replayDto.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr)"
                                                           OnCloseRequested="DetailsClose"
-                                                          ReplaysRequest="ReplaysRequest" />
+                                                          ReplaysRequest="ReplaysRequest" />*@
+    <sc2dsstats.razorlib.PlayerDetailsNg.ComboPlayerDetails RequestNames="Interest"
+                                                        OnCloseRequested="DetailsClose"
+                                                        RatingType="@(replayDto.GameMode == GameMode.Standard ? RatingType.Std : RatingType.Cmdr)"
+                                                        OnReplaysRequest="OnReplaysRequest"
+                                                        OnArcadeReplaysRequest="OnArcadeReplaysRequest"
+                                                        ArcadeDetails="false" />
 }
 
 @if (showBuilds.Where(x => x).Any())
@@ -201,7 +207,10 @@
     public EventCallback OnCloseRequested { get; set; }
 
     [Parameter]
-    public EventCallback<ReplaysToonIdRequest> ReplaysRequest { get; set; }
+    public EventCallback<ReplaysToonIdRequest> OnReplaysRequest { get; set; }
+
+    [Parameter]
+    public EventCallback<ReplaysToonIdRequest> OnArcadeReplaysRequest { get; set; }
 
     [Parameter]
     public bool HideCloseButton { get; set; }

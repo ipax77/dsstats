@@ -250,10 +250,16 @@
 
 @if (Interest != null)
 {
-    <sc2dsstats.razorlib.PlayerDetailsNg.PlayerDetailsSummary RequestNames="Interest"
+@*    <sc2dsstats.razorlib.PlayerDetailsNg.PlayerDetailsSummary RequestNames="Interest"
                                                             OnCloseRequested="DetailsClose"
                                                             RatingType="RatingsRequest.Type"
-                                                            ReplaysRequest="ReplaysToonIdRequest" />
+                                                            ReplaysRequest="ReplaysToonIdRequest" />*@
+    <sc2dsstats.razorlib.PlayerDetailsNg.ComboPlayerDetails RequestNames="Interest"
+                                                                     OnCloseRequested="DetailsClose"
+                                                                     RatingType="RatingsRequest.Type"
+                                                                     OnReplaysRequest="ReplaysToonIdRequest"
+                                                                     OnArcadeReplaysRequest="ArcadeReplaysRequest"
+                                                                     ArcadeDetails="false"/>
 }
 
 
@@ -408,6 +414,22 @@
             )
         );
     }
+
+    private void ArcadeReplaysRequest(ReplaysToonIdRequest request)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("arcade/replays",
+                new Dictionary<string, object?>()
+                        {
+                            { "Search", request.Name },
+                            { "PlId", request.ToonId },
+                            { "PlIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
+                            { "PlIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
+                            { "Name", request.ToonIdName },
+                        }
+            )
+        );
+    }    
 
     private async Task LoadInitialPlayerInfo()
     {

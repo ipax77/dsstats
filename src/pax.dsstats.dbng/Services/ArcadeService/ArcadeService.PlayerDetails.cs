@@ -9,6 +9,23 @@ namespace pax.dsstats.dbng.Services;
 
 public partial class ArcadeService
 {
+    public async Task<RequestNames?> GetRequetNamesFromId(int playerId, CancellationToken token = default)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        return await context.ArcadePlayers
+            .Where(x => x.ArcadePlayerId == playerId)
+            .Select(s => new RequestNames()
+            {
+                Name = s.Name,
+                ToonId = s.ProfileId,
+                RealmId = s.RealmId,
+                RegionId = s.RegionId
+            })
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<ArcadePlayerDetails> GetPlayerDetails(ArcadePlayerId playerId, CancellationToken token)
     {
         var arcadePlayerId = await GetArcadePalyerId(playerId, token);

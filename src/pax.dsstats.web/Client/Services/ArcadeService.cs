@@ -230,4 +230,17 @@ public class ArcadeService : IArcadeService
         }
         return new();
     }
+
+    public async Task<RequestNames?> GetRequetNamesFromId(int playerId, CancellationToken token = default)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<RequestNames>($"{arcadeController}getrequestnames/{playerId}");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting requestNames: {ex.Message}");
+        }
+        return null;
+    }
 }

@@ -6,6 +6,7 @@
 @using sc2dsstats.razorlib.Services
 @inject IDataService dataService
 @inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
 @inject ILogger<ReplaysComponent> logger
 @implements IDisposable
 
@@ -141,7 +142,8 @@
         @ref="replayComponent"
         replayDto="replayDto"
         OnCloseRequested="OnReplayClose" 
-        ReplaysRequest="ReplaysToonIdRequest" />
+        OnReplaysRequest="ReplaysToonIdRequest"
+        OnArcadeReplaysRequest="ArcadeReplaysRequest" />
 }
 
 @code {
@@ -341,6 +343,22 @@
         replaysRequest.ToonIdVs = request.ToonIdVs;
         replaysRequest.ToonIdName = request.ToonIdName;
         _ = Reload();
+    }
+
+    private void ArcadeReplaysRequest(ReplaysToonIdRequest request)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("arcade/replays",
+                new Dictionary<string, object?>()
+                            {
+                            { "Search", request.Name },
+                            { "PlId", request.ToonId },
+                            { "PlIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
+                            { "PlIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
+                            { "Name", request.ToonIdName },
+                            }
+            )
+        );
     }
 
     private string GetRowCssColorClass(ReplayListDto replay)

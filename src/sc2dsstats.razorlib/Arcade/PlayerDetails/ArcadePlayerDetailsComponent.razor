@@ -17,7 +17,8 @@
             <span>@Data.GetRegionString(playerDetails?.ArcadePlayer?.RegionId)</span>
         </div>
         <div class="col-auto align-self-center">
-            <h3 class="text-warning fw-bold">@playerDetails?.ArcadePlayer?.Name Player Details</h3>
+            @*<h3 class="text-warning fw-bold">@playerDetails?.ArcadePlayer?.Name Player Details</h3>*@
+            <h3 class="text-warning fw-bold">@RequestNames.Name</h3>
         </div>
         @if (playerDetails != null)
         {
@@ -92,10 +93,10 @@
         <div class="row mt-2">
             <div class="col-auto">
                 <div style="width: 40vw; min-width: 500px; height: calc(40vw * 0.6); min-height: 300px;">
-                    @if (PlayerId != null && InterestRating != null)
+                    @if (InterestRating != null)
                     {
                         <PlayerRatingDetailChart @ref="arcadePlayerDetailsChart"
-                                                 PlayerId="new pax.dsstats.shared.Arcade.PlayerId(PlayerId.ProfileId, PlayerId.RealmId, PlayerId.RegionId)"
+                                         PlayerId="new pax.dsstats.shared.Arcade.PlayerId(RequestNames.ToonId, RequestNames.RealmId, RequestNames.RegionId)"
                                                  RatingType="RatingType"
                                                  CurrentRating="InterestRating.Rating"
                                                  IsArcade="true"/>
@@ -223,10 +224,7 @@
 
 @code {
     [Parameter]
-    public ArcadePlayerId? PlayerId { get; set; }
-
-    [Parameter]
-    public int ArcadePlayerId { get; set; }
+    public RequestNames RequestNames { get; set; } = default!;
 
     [Parameter]
     public RatingType RatingType { get; set; } = RatingType.Cmdr;
@@ -257,18 +255,10 @@
     {
         loading = true;
         await InvokeAsync(() => StateHasChanged());
-        if (PlayerId != null)
-        {
-            playerDetails = await arcadeService.GetPlayerDetails(PlayerId, cts.Token);
-        }
-        else
-        {
-            playerDetails = await arcadeService.GetPlayerDetails(ArcadePlayerId, cts.Token);
-            if (playerDetails?.ArcadePlayer != null)
-            {
-                PlayerId = new(playerDetails.ArcadePlayer.ProfileId, playerDetails.ArcadePlayer.RealmId, playerDetails.ArcadePlayer.RegionId);
-            }
-        }
+        playerDetails = await arcadeService
+            .GetPlayerDetails(new ArcadePlayerId(RequestNames.ToonId, RequestNames.RealmId,
+                RequestNames.RegionId), cts.Token);
+
         loading = false;
         await InvokeAsync(() => StateHasChanged());
     }

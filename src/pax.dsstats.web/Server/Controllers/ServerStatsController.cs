@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using pax.dsstats.dbng.Services.MergeService;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
 using pax.dsstats.shared.Interfaces;
 
 namespace pax.dsstats.web.Server.Controllers;
@@ -9,10 +11,12 @@ namespace pax.dsstats.web.Server.Controllers;
 public class ServerStatsController : Controller
 {
     private readonly IServerStatsService serverStatsService;
+    private readonly ReplaysMergeService replaysMergeService;
 
-    public ServerStatsController(IServerStatsService serverStatsService)
+    public ServerStatsController(IServerStatsService serverStatsService, ReplaysMergeService replaysMergeService)
     {
         this.serverStatsService = serverStatsService;
+        this.replaysMergeService = replaysMergeService;
     }
 
     [HttpGet]
@@ -27,5 +31,13 @@ public class ServerStatsController : Controller
     public async Task<ActionResult<List<ServerStatsResult>>> GetDsstatsStats()
     {
         return await serverStatsService.GetDsstatsStats();
+    }
+
+    [HttpPost]
+    [Route("mergeresult")]
+    public async Task<ActionResult<MergeResultReplays>> GetMergeResultReplays(PlayerId playerId,
+                                                                              CancellationToken token)
+    {
+        return await replaysMergeService.GetMergeResultReplay(playerId, token);        
     }
 }

@@ -43,7 +43,7 @@
     }
 </style>
 
-<div class="@(RatingsRequest.PlayerId == 0 ? "" : "visually-hidden")">
+<div class="@(requestNames == null ? "" : "visually-hidden")">
     <div class="d-flex">
         <EditForm EditContext="editContext">
             <div class="row">
@@ -213,13 +213,19 @@
     </div>
 </div>
 
-@if (RatingsRequest.PlayerId > 0)
+@if (requestNames != null)
 {
-    <sc2dsstats.razorlib.Arcade.PlayerDetails.ArcadePlayerDetailsComponent
-        ArcadePlayerId="RatingsRequest.PlayerId"
+@*    <sc2dsstats.razorlib.Arcade.PlayerDetails.ArcadePlayerDetailsComponent
+        RequestNames="requestNames"
         RatingType="RatingsRequest.Type"
         OnCloseRequested="PlayerDetailsClose" 
-        OnReplaysRequest="ReplaysRequest" />
+        OnReplaysRequest="ReplaysRequest" />*@
+    <sc2dsstats.razorlib.PlayerDetailsNg.ComboPlayerDetails RequestNames="requestNames"
+                                                        OnCloseRequested="PlayerDetailsClose"
+                                                        RatingType="RatingType.Cmdr"
+                                                        OnReplaysRequest="DsstatsReplaysRequest"
+                                                        OnArcadeReplaysRequest="ReplaysRequest"
+                                                        ArcadeDetails="true" />
 }
 
 @code {
@@ -241,6 +247,8 @@
             RatingType = RatingType.Cmdr
         };
 
+    private RequestNames? requestNames = null;
+
     private string ratingChangeSort => RatingsRequest.TimePeriod switch
     {
         RatingChangeTimePeriod.Past24h => "ArcadePlayerRatingChange.Change24h",
@@ -253,6 +261,11 @@
         _ = SetRatingsCount();
         editContext = new EditContext(RatingsRequest);
         editContext.OnFieldChanged += FieldChanged;
+
+        if (RatingsRequest.PlayerId > 0)
+        {
+            _ = SetRequestNames(RatingsRequest.PlayerId);
+        }
 
         base.OnInitialized();
     }
@@ -275,6 +288,12 @@
             _ = Reload();
         }
         OnRatingsChanged.InvokeAsync();
+    }
+
+    private async Task SetRequestNames(int playerId)
+    {
+        requestNames = await arcadeService.GetRequetNamesFromId(playerId);
+        await InvokeAsync(() => StateHasChanged());
     }
 
     private async Task SetRatingsCount()
@@ -346,12 +365,13 @@
     {
         RatingsRequest.PlayerId = playerId;
         OnRatingsChanged.InvokeAsync();
-        StateHasChanged();
+        _ = SetRequestNames(RatingsRequest.PlayerId);
     }
 
     private void PlayerDetailsClose()
     {
         RatingsRequest.PlayerId = 0;
+        requestNames = null;
         OnRatingsChanged.InvokeAsync();
         StateHasChanged();
     }
@@ -370,6 +390,22 @@
                 }
     )
     );
+    }
+
+    private void DsstatsReplaysRequest(ReplaysToonIdRequest request)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("replays",
+                new Dictionary<string, object?>()
+                                {
+                    { "Players", request.Name },
+                    { "ToonId", request.ToonId },
+                    { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
+                    { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
+                    { "ToonIdName", request.ToonIdName },
+                                }
+            )
+        );
     }
 
     public void Dispose()

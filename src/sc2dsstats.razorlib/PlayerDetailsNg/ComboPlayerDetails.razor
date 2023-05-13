@@ -1,0 +1,60 @@
+@using pax.dsstats.shared;
+@using pax.dsstats.shared.Arcade;
+@using sc2dsstats.razorlib.Services;
+
+<style>
+    .tabactive {
+      border-color: #FF0000;
+      box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(255, 0, 0, 0.6);
+    }
+</style>
+
+<ul class="nav nav-tabs">
+    <li class="nav-item">
+        <div class="nav-link pointer fw-bold bg-dark @(ArcadeDetails ? "" : "tabactive")" @onclick="e => ArcadeDetails = false">dsstats</div>
+    </li>
+    <li class="nav-item">
+        <div class="nav-link pointer fw-bold bg-dark @(!ArcadeDetails ? "" : "tabactive")" @onclick="e => ArcadeDetails = true">SC2Arcade</div>
+    </li>
+</ul>
+<div class="tab-content">
+    <div id="dsstatsdetails">
+        @if (ArcadeDetails)
+        {
+
+            <sc2dsstats.razorlib.Arcade.PlayerDetails.ArcadePlayerDetailsComponent RequestNames="RequestNames"
+                                                                                   RatingType="RatingType"
+                                                                                   OnCloseRequested="OnCloseRequested"
+                                                                                   OnReplaysRequest="OnArcadeReplaysRequest" />
+
+        }
+    </div>
+    <div id="arcadedetails">
+        @if (!ArcadeDetails)
+        {
+            <sc2dsstats.razorlib.PlayerDetailsNg.PlayerDetailsSummary RequestNames="RequestNames"
+                                                                      OnCloseRequested="OnCloseRequested"
+                                                                      RatingType="RatingType"
+                                                                      ReplaysRequest="OnReplaysRequest" />
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public RequestNames RequestNames { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public bool ArcadeDetails { get; set; }
+
+    [Parameter]
+    public RatingType RatingType { get; set; } = RatingType.Cmdr;
+
+    [Parameter]
+    public EventCallback OnCloseRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<ReplaysToonIdRequest> OnReplaysRequest { get; set; }
+    [Parameter]
+    public EventCallback<ReplaysToonIdRequest> OnArcadeReplaysRequest { get; set; }
+}

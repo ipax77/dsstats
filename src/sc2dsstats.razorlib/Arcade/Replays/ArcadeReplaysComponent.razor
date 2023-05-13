@@ -4,6 +4,7 @@
 @using sc2dsstats.razorlib.Services;
 @using System.Globalization;
 @inject IArcadeService arcadeService
+@inject NavigationManager NavigationManager
 @implements IDisposable
 
 <style>
@@ -118,12 +119,19 @@
 
 <div>
 
-@if (interestPlayerId > 0)
+@if (requestNames != null)
 {
-    <sc2dsstats.razorlib.Arcade.PlayerDetails.ArcadePlayerDetailsComponent
-        ArcadePlayerId="interestPlayerId" 
+@*    <sc2dsstats.razorlib.Arcade.PlayerDetails.ArcadePlayerDetailsComponent
+        RequestNames="requestNames" 
         OnCloseRequested="ClosePlayerDetails"
         OnReplaysRequest="ReplaysRequest" />   
+*@
+        <sc2dsstats.razorlib.PlayerDetailsNg.ComboPlayerDetails RequestNames="requestNames"
+                                                            OnCloseRequested="ClosePlayerDetails"
+                                                            RatingType="@(replayDto?.ArcadeReplayRating?.RatingType ?? RatingType.Cmdr)"
+                                                            OnReplaysRequest="DsstatsReplaysRequest"
+                                                            OnArcadeReplaysRequest="ReplaysRequest"
+                                                            ArcadeDetails="true" />
 }
 else if (replayDto != null)
 {
@@ -147,7 +155,7 @@ else if (replayDto != null)
     private int lastVisitId = 0;
     private bool replayLoading;
     private int replaysCount = 0;
-    private int interestPlayerId = 0;
+    private RequestNames? requestNames = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -255,21 +263,21 @@ else if (replayDto != null)
         await InvokeAsync(() => StateHasChanged());
     }
 
-    private void PlayerRequest(int arcadePlayerId)
+    private async void PlayerRequest(int arcadePlayerId)
     {
-        interestPlayerId = arcadePlayerId;
-        StateHasChanged();
+        requestNames = await arcadeService.GetRequetNamesFromId(arcadePlayerId, cts.Token);
+        await InvokeAsync(() => StateHasChanged());
     }
 
     private void ClosePlayerDetails()
     {
-        interestPlayerId = 0;
+        requestNames = null;
         StateHasChanged();
     }
 
     private void ReplaysRequest(ReplaysToonIdRequest request)
     {
-        interestPlayerId = 0;
+        requestNames = null;
         OnReplayClose();
         replaysRequest.Search = request.Name;
         replaysRequest.PlayerId = request.ToonId;
@@ -277,6 +285,22 @@ else if (replayDto != null)
         replaysRequest.PlayerIdVs = request.ToonIdVs;
         replaysRequest.ProfileName = request.ToonIdName;
         _ = Reload();
+    }
+
+    private void DsstatsReplaysRequest(ReplaysToonIdRequest request)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("replays",
+                new Dictionary<string, object?>()
+                                {
+                    { "Players", request.Name },
+                    { "ToonId", request.ToonId },
+                    { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
+                    { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
+                    { "ToonIdName", request.ToonIdName },
+                                }
+            )
+        );
     }
 
     public void Dispose()

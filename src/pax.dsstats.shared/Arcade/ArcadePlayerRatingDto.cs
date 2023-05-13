@@ -62,6 +62,7 @@ public record ArcadeReplayPlayerDto
 
 public record ArcadeReplayRatingDto
 {
+    public RatingType RatingType { get; set; }
     public float ExpectationToWin { get; set; }
     public List<ArcadeReplayPlayerRatingDto> ArcadeReplayPlayerRatings { get; set; } = new();
 }

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
 using pax.dsstats.shared.Interfaces;
 
 namespace pax.dsstats.dbng.Services.ServerStats;
@@ -57,6 +58,11 @@ public class ServerStatsService : IServerStatsService
                     };
 
         return await query.ToListAsync();
+    }
+
+    public Task<MergeResultReplays> GetMergeResultReplays(PlayerId playerId, CancellationToken token)
+    {
+        throw new NotImplementedException();
     }
 }
 

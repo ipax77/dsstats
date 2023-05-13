@@ -128,9 +128,6 @@ if (app.Environment.IsDevelopment())
     // var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
     // importService.ImportInit();
 
-    var replaysMergeService = scope.ServiceProvider.GetRequiredService<ReplaysMergeService>();
-    replaysMergeService.MergeReplays(new pax.dsstats.shared.Arcade.PlayerId(226401, 1, 2)).Wait(); // PAX
-    // replaysMergeService.MergeReplays(new pax.dsstats.shared.Arcade.PlayerId(7827332, 1, 1)).Wait(); // Radialus
 }
 
 // Configure the HTTP request pipeline.
