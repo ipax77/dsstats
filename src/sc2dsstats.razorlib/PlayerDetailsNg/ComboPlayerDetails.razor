@@ -9,14 +9,17 @@
     }
 </style>
 
-<ul class="nav nav-tabs">
-    <li class="nav-item">
-        <div class="nav-link pointer fw-bold bg-dark @(ArcadeDetails ? "" : "tabactive")" @onclick="e => ArcadeDetails = false">dsstats</div>
-    </li>
-    <li class="nav-item">
-        <div class="nav-link pointer fw-bold bg-dark @(!ArcadeDetails ? "" : "tabactive")" @onclick="e => ArcadeDetails = true">SC2Arcade</div>
-    </li>
-</ul>
+@if (!Data.IsMaui)
+{
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <div class="nav-link pointer fw-bold bg-dark @(ArcadeDetails ? "" : "tabactive")" @onclick="e => ArcadeDetails = false">dsstats</div>
+        </li>
+        <li class="nav-item">
+            <div class="nav-link pointer fw-bold bg-dark @(!ArcadeDetails ? "" : "tabactive")" @onclick="e => ArcadeDetails = true">SC2Arcade</div>
+        </li>
+    </ul>
+}
 <div class="tab-content">
     <div id="dsstatsdetails">
         @if (ArcadeDetails)

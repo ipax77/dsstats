@@ -142,10 +142,12 @@
 </div>
 @if (Interest != null)
 {
-    <sc2dsstats.razorlib.PlayerDetails.PlayerDetailsNgComponent RequestNames="Interest"
+    <sc2dsstats.razorlib.PlayerDetailsNg.ComboPlayerDetails RequestNames="Interest"
+                                                            ArcadeDetails="false"
                                                             RatingType="Request.RatingType"
                                                             OnCloseRequested="DetailsClose"
-                                                            ReplaysRequest="ReplaysToonIdRequest" />
+                                                            OnReplaysRequest="ReplaysToonIdRequest"
+                />
 }
 
 @code {
