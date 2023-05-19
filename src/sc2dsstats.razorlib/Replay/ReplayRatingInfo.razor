@@ -85,6 +85,12 @@ else
     [Parameter, EditorRequired]
     public ReplayRatingDto? ReplayRatingDto { get; set; }
 
+    public void Update(ReplayRatingDto? replayRatingDto)
+    {
+        ReplayRatingDto = replayRatingDto;
+        InvokeAsync(() => StateHasChanged());
+    }
+
     double Team1Mmr => ReplayRatingDto == null ? 0 : ReplayRatingDto.RepPlayerRatings
         .Where(x => x.GamePos <= 3)
         .Sum(s => s.Rating - s.RatingChange);

@@ -27,7 +27,7 @@ public interface IDataService
     Task<PlayerDetailsGroupResult> GetPlayerGroupDetails(int toonId, int rating, CancellationToken token);
     Task<List<PlayerMatchupInfo>> GetPlayerMatchups(int toonId, int ratingType, CancellationToken token);
     Task<List<PlayerRatingReplayCalcDto>> GetPlayerIdCalcRatings(PlayerIdRatingRequest request, CancellationToken token);
-    ReplayRatingDto? GetOnlineRating(ReplayDetailsDto replayDto, List<PlayerRatingReplayCalcDto> calcDtos);
+    Task<ReplayRatingDto?> GetOnlineRating(ReplayDetailsDto replayDto);
     Task<DistributionResponse> GetDistribution(DistributionRequest request, CancellationToken token = default);
 
     //Task<List<RavenPlayerDto>> GetPlayerRatings(int toonId);

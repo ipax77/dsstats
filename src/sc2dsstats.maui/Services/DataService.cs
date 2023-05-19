@@ -14,6 +14,7 @@ public partial class DataService : IDataService
     private readonly IRatingRepository ratingRepository;
     private readonly IFromServerSwitchService fromServerSwitchService;
     private readonly PlayerService playerService;
+    private readonly DecodeService decodeService;
     private readonly ILogger<DataService> logger;
     private readonly HttpClient httpClient;
 
@@ -23,6 +24,7 @@ public partial class DataService : IDataService
                        IRatingRepository ratingRepository,
                        IFromServerSwitchService fromServerSwitchService,
                        PlayerService playerService,
+                       DecodeService decodeService,
                        ILogger<DataService> logger)
     {
         this.replayRepository = replayRepository;
@@ -31,6 +33,7 @@ public partial class DataService : IDataService
         this.ratingRepository = ratingRepository;
         this.fromServerSwitchService = fromServerSwitchService;
         this.playerService = playerService;
+        this.decodeService = decodeService;
         this.logger = logger;
         httpClient = new HttpClient();
         // httpClient.BaseAddress = new Uri("https://localhost:7174");
@@ -301,9 +304,9 @@ public partial class DataService : IDataService
         return await ServerGetPlayerIdCalcRatings(request, token);
     }
 
-    public ReplayRatingDto? GetOnlineRating(ReplayDetailsDto replayDto, List<PlayerRatingReplayCalcDto> calcDtos)
+    public async Task<ReplayRatingDto?> GetOnlineRating(ReplayDetailsDto replayDto)
     {
-        return ratingRepository.GetOnlineRating(replayDto, calcDtos);
+        return await decodeService.GetOnlineRating(replayDto);
     }
 
     public async Task<CmdrStrengthResult> GetCmdrStrengthResults(CmdrStrengthRequest request, CancellationToken token)

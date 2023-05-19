@@ -233,6 +233,8 @@
     private CancellationTokenSource cts = new();
     private SemaphoreSlim ss = new(1, 1);
     private ReplayRatingDto? mauiRating;
+    private ReplayRatingInfo? replayRatingInfo;
+    bool onlineRating;
 
     protected override void OnInitialized()
     {
@@ -256,6 +258,7 @@
     public async void Init(ReplayDetailsDto replay)
     {
         showRatingInfo = false;
+
         if (showMiddleChart)
         {
             showMiddleChart = false;
@@ -278,6 +281,16 @@
                 var plRating = replay.ReplayRatingInfo.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
                 player.MmrChange = plRating?.RatingChange ?? 0;
             }
+        }
+
+        mauiRating = replay.ReplayRatingInfo;
+        if (onlineRating)
+        {
+            await SetOnlineRatings();
+        }
+        else
+        {
+            SetMauiRatings();
         }
 
         await InvokeAsync(() => StateHasChanged());
@@ -336,23 +349,27 @@
         InvokeAsync(() => StateHasChanged());
     }
 
-    private async Task ToggleOnlineRating()
+    private async Task ToggleOnlineRating(ChangeEventArgs e)
     {
-        await ss.WaitAsync();
-        try
+        if (e.Value is bool boolValue)
         {
-            if (mauiRating == null)
+            await ss.WaitAsync();
+            onlineRating = boolValue;
+            try
             {
-                await SetOnlineRatings();
+                if (onlineRating)
+                {
+                    await SetOnlineRatings();
+                }
+                else
+                {
+                    SetMauiRatings();
+                }
             }
-            else
+            finally
             {
-                SetMauiRatings();
+                ss.Release();
             }
-        }
-        finally
-        {
-            ss.Release();
         }
     }
 
@@ -363,34 +380,43 @@
             return;
         }
 
-        PlayerIdRatingRequest request = new()
-            {
-                RatingType = replayDto.ReplayRatingInfo.RatingType,
-                PlayerIds = replayDto.ReplayPlayers.Select(s => new PlayerId(s.Player.ToonId, s.Player.RealmId, s.Player.RegionId)).ToList()
-            };
+        replayDto.ReplayRatingInfo = await dataService.GetOnlineRating(replayDto);
 
-        List<PlayerRatingReplayCalcDto> playerCalcRatings = await dataService.GetPlayerIdCalcRatings(request, cts.Token);
-
-        if (mauiRating == null)
+        if (replayDto.ReplayRatingInfo != null)
         {
-            mauiRating = replayDto.ReplayRatingInfo;
+            foreach (var replayPlayer in replayDto.ReplayPlayers)
+            {
+                var replayPlayerRating = replayDto.ReplayRatingInfo.RepPlayerRatings
+                    .FirstOrDefault(f => f.GamePos == replayPlayer.GamePos);
+
+                if (replayPlayerRating == null)
+                {
+                    continue;
+                }
+                replayPlayer.MmrChange = replayPlayerRating.RatingChange;
+            }
         }
-        replayDto.ReplayRatingInfo = dataService.GetOnlineRating(replayDto, playerCalcRatings);
-        await InvokeAsync(() => StateHasChanged());
+        replayRatingInfo?.Update(replayDto.ReplayRatingInfo);
     }
 
     private void SetMauiRatings()
     {
         replayDto.ReplayRatingInfo = mauiRating;
 
-        if (mauiRating == null)
+        if (replayDto.ReplayRatingInfo == null)
         {
+            return;
+        }
+
+        if (replayDto.ReplayRatingInfo == null)
+        {
+            replayRatingInfo?.Update(replayDto.ReplayRatingInfo);
             return;
         }
 
         foreach (var replayPlayer in replayDto.ReplayPlayers)
         {
-            var replayPlayerRating = mauiRating.RepPlayerRatings
+            var replayPlayerRating = replayDto.ReplayRatingInfo.RepPlayerRatings
                 .FirstOrDefault(f => f.GamePos == replayPlayer.GamePos);
 
             if (replayPlayerRating == null)
@@ -400,7 +426,7 @@
 
             replayPlayer.MmrChange = replayPlayerRating.RatingChange;
         }
-        mauiRating = null;
+        replayRatingInfo?.Update(replayDto.ReplayRatingInfo);
     }
 
     private void DetailsClose()
