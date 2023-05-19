@@ -2,6 +2,7 @@
 @using System.Globalization;
 @using pax.BlazorChartJs
 @using pax.dsstats.shared
+@using pax.dsstats.shared.Arcade;
 @using sc2dsstats.razorlib.Services
 @inject IJSRuntime JSRuntime
 @inject IDataService dataService
@@ -362,13 +363,13 @@
             return;
         }
 
-        ToonIdRatingRequest request = new()
+        PlayerIdRatingRequest request = new()
             {
                 RatingType = replayDto.ReplayRatingInfo.RatingType,
-                ToonIds = replayDto.ReplayPlayers.Select(s => s.Player.ToonId).ToList()
+                PlayerIds = replayDto.ReplayPlayers.Select(s => new PlayerId(s.Player.ToonId, s.Player.RealmId, s.Player.RegionId)).ToList()
             };
 
-        List<PlayerRatingReplayCalcDto> playerCalcRatings = await dataService.GetToonIdCalcRatings(request, cts.Token);
+        List<PlayerRatingReplayCalcDto> playerCalcRatings = await dataService.GetPlayerIdCalcRatings(request, cts.Token);
 
         if (mauiRating == null)
         {

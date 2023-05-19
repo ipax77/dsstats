@@ -78,4 +78,6 @@ public record PlayerRatingReplayCalcDto
 public record PlayerReplayCalcDto
 {
     public int ToonId { get; init; }
+    public int RealmId { get; init; }
+    public int RegionId { get; init; }
 }

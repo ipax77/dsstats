@@ -19,6 +19,8 @@ public interface IRatingRepository
     List<int> GetNameToonIds(string name);
     Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token);
     Task<List<PlayerRatingReplayCalcDto>> GetToonIdCalcRatings(ToonIdRatingRequest request, CancellationToken token);
+    Task<ToonIdRatingResponse> GetPlayerIdRatings(PlayerIdRatingRequest request, CancellationToken token);
+    Task<List<PlayerRatingReplayCalcDto>> GetPlayerIdCalcRatings(PlayerIdRatingRequest request, CancellationToken token);
     Task<int> GetRatingChangesCount(RatingChangesRequest request, CancellationToken token);
     Task<RatingChangesResult> GetRatingChanges(RatingChangesRequest request, CancellationToken token);
     Task SeedRatingChanges();

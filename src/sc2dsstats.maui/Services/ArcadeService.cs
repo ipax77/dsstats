@@ -54,4 +54,9 @@ public class ArcadeService : IArcadeService
     {
         throw new NotImplementedException();
     }
+
+    public Task<RequestNames?> GetRequetNamesFromId(int playerId, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
 }
