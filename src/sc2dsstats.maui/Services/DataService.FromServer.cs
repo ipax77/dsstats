@@ -393,11 +393,11 @@ public partial class DataService
         return new();
     }
 
-    public async Task<ToonIdRatingResponse> ServerGetToonIdRatings(ToonIdRatingRequest request, CancellationToken token)
+    public async Task<ToonIdRatingResponse> ServerGetPlayerIdRatings(PlayerIdRatingRequest request, CancellationToken token)
     {
         try
         {
-            var result = await httpClient.PostAsJsonAsync($"{ratingController}GetToonIdRatings", request);
+            var result = await httpClient.PostAsJsonAsync($"{ratingController}GetPlayerIdRatings", request);
             if (result.IsSuccessStatusCode)
             {
                 var toonIdRatingResponse = await result.Content.ReadFromJsonAsync<ToonIdRatingResponse>();
@@ -410,16 +410,16 @@ public partial class DataService
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            logger.LogError($"failed getting toonIdRatings: {ex.Message}");
+            logger.LogError($"failed getting playerIdRatings: {ex.Message}");
         }
         return new();
     }
 
-    public async Task<List<PlayerRatingReplayCalcDto>> ServerGetToonIdCalcRatings(ToonIdRatingRequest request, CancellationToken token)
+    public async Task<List<PlayerRatingReplayCalcDto>> ServerGetPlayerIdCalcRatings(PlayerIdRatingRequest request, CancellationToken token)
     {
         try
         {
-            var result = await httpClient.PostAsJsonAsync($"{ratingController}GetToonIdCalcRatings", request);
+            var result = await httpClient.PostAsJsonAsync($"{ratingController}GetPlayerIdCalcRatings", request);
             if (result.IsSuccessStatusCode)
             {
                 var toonIdRatingResponse = await result.Content.ReadFromJsonAsync<List<PlayerRatingReplayCalcDto>>();
@@ -432,7 +432,7 @@ public partial class DataService
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            logger.LogError($"failed getting toonIdCalcRatings: {ex.Message}");
+            logger.LogError($"failed getting playerIdCalcRatings: {ex.Message}");
         }
         return new();
     }

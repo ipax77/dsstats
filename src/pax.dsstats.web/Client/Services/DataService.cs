@@ -498,11 +498,11 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token)
+    public async Task<ToonIdRatingResponse> GetPlayerIdRatings(PlayerIdRatingRequest request, CancellationToken token)
     {
         try
         {
-            var result = await httpClient.PostAsJsonAsync($"{ratingController}GetToonIdRatings", request);
+            var result = await httpClient.PostAsJsonAsync($"{ratingController}GetPlayerIdRatings", request);
             if (result.IsSuccessStatusCode)
             {
                 var toonIdRatingResponse = await result.Content.ReadFromJsonAsync<ToonIdRatingResponse>();
@@ -515,7 +515,7 @@ public class DataService : IDataService
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            logger.LogError($"failed getting toonIdRatings: {ex.Message}");
+            logger.LogError($"failed getting playerIdRatings: {ex.Message}");
         }
         return new();
     }
@@ -637,7 +637,7 @@ public class DataService : IDataService
         return new();
     }
 
-    public async Task<List<PlayerRatingReplayCalcDto>> GetToonIdCalcRatings(ToonIdRatingRequest request, CancellationToken token)
+    public async Task<List<PlayerRatingReplayCalcDto>> GetPlayerIdCalcRatings(PlayerIdRatingRequest request, CancellationToken token)
     {
         return await Task.FromResult(new List<PlayerRatingReplayCalcDto>());
     }

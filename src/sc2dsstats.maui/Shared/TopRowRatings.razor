@@ -1,6 +1,7 @@
 ﻿@using System.Globalization;
 @using pax.dsstats.dbng.Repositories;
 @using pax.dsstats.shared
+@using pax.dsstats.shared.Arcade;
 @using sc2dsstats.maui.Services
 @inject IDataService dataService
 @inject IRatingRepository ratingRepository
@@ -112,24 +113,24 @@
 
     private async Task LoadData()
     {
-        var toonIds = UserSettingsService.UserSettings.BattleNetInfos
+        var playerIds = UserSettingsService.UserSettings.BattleNetInfos
             .SelectMany(s => s.ToonIds)
-            .Select(s => s.ToonId)
+            .Select(s => new PlayerId(s.ToonId, s.RealmId, s.RegionId))
             .Distinct()
             .ToList();
 
-        var toonIdRatingResponse = await dataService.GetToonIdRatings(new ToonIdRatingRequest()
+        var toonIdRatingResponse = await dataService.GetPlayerIdRatings(new PlayerIdRatingRequest()
             {
                 RatingType = pax.dsstats.shared.RatingType.None,
-                ToonIds = toonIds
+                PlayerIds = playerIds
             }, cts.Token);
 
         serverRatings = toonIdRatingResponse.Ratings;
 
-        var response = await ratingRepository.GetToonIdRatings(new ToonIdRatingRequest()
+        var response = await ratingRepository.GetPlayerIdRatings(new PlayerIdRatingRequest()
             {
                 RatingType = pax.dsstats.shared.RatingType.None,
-                ToonIds = toonIds
+                PlayerIds = playerIds
             }, cts.Token);
 
         localRatings = response.Ratings;

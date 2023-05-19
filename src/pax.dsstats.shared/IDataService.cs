@@ -26,7 +26,7 @@ public interface IDataService
     Task<PlayerDetailsResult> GetPlayerDetailsNg(int toonId, int rating, CancellationToken token);
     Task<PlayerDetailsGroupResult> GetPlayerGroupDetails(int toonId, int rating, CancellationToken token);
     Task<List<PlayerMatchupInfo>> GetPlayerMatchups(int toonId, int ratingType, CancellationToken token);
-    Task<List<PlayerRatingReplayCalcDto>> GetToonIdCalcRatings(ToonIdRatingRequest request, CancellationToken token);
+    Task<List<PlayerRatingReplayCalcDto>> GetPlayerIdCalcRatings(PlayerIdRatingRequest request, CancellationToken token);
     ReplayRatingDto? GetOnlineRating(ReplayDetailsDto replayDto, List<PlayerRatingReplayCalcDto> calcDtos);
     Task<DistributionResponse> GetDistribution(DistributionRequest request, CancellationToken token = default);
 
@@ -37,7 +37,7 @@ public interface IDataService
     Task<CmdrResult> GetCmdrInfo(CmdrRequest request, CancellationToken token = default);
     Task<CrossTableResponse> GetCrossTable(CrossTableRequest request, CancellationToken token = default);
     Task<List<BuildResponseReplay>> GetTeamReplays(CrossTableReplaysRequest request, CancellationToken token);
-    Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token);
+    Task<ToonIdRatingResponse> GetPlayerIdRatings(PlayerIdRatingRequest request, CancellationToken token);
     Task<FunStats> GetFunStats(List<int> toonIds);
     Task<StatsUpgradesResponse> GetUpgradeStats(BuildRequest buildRequest, CancellationToken token);
     Task<GameInfoResult> GetGameInfo(GameInfoRequest request, CancellationToken token);

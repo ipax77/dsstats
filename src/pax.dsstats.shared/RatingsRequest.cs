@@ -1,3 +1,4 @@
+using pax.dsstats.shared.Arcade;
 using System.Text.Json.Serialization;
 
 namespace pax.dsstats.shared;
@@ -32,3 +33,10 @@ public record ToonIdRatingResponse
 {
     public List<PlayerRatingDetailDto> Ratings { get; set; } = new();
 }
+
+public record PlayerIdRatingRequest
+{
+    public RatingType RatingType { get; set; }
+    public List<PlayerId> PlayerIds { get; set; } = new();
+}
+

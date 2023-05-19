@@ -239,9 +239,9 @@ public partial class DataService : IDataService
         return await Task.FromResult(new List<BuildResponseReplay>());
     }
 
-    public async Task<ToonIdRatingResponse> GetToonIdRatings(ToonIdRatingRequest request, CancellationToken token)
+    public async Task<ToonIdRatingResponse> GetPlayerIdRatings(PlayerIdRatingRequest request, CancellationToken token)
     {
-        return await ServerGetToonIdRatings(request, token);
+        return await ServerGetPlayerIdRatings(request, token);
     }
 
     public async Task<int> GetEventReplaysCount(ReplaysRequest request, CancellationToken token = default)
@@ -296,9 +296,9 @@ public partial class DataService : IDataService
         return await Task.FromResult(new RatingChangesResult());
     }
 
-    public async Task<List<PlayerRatingReplayCalcDto>> GetToonIdCalcRatings(ToonIdRatingRequest request, CancellationToken token)
+    public async Task<List<PlayerRatingReplayCalcDto>> GetPlayerIdCalcRatings(PlayerIdRatingRequest request, CancellationToken token)
     {
-        return await ServerGetToonIdCalcRatings(request, token);
+        return await ServerGetPlayerIdCalcRatings(request, token);
     }
 
     public ReplayRatingDto? GetOnlineRating(ReplayDetailsDto replayDto, List<PlayerRatingReplayCalcDto> calcDtos)
