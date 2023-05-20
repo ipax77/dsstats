@@ -213,16 +213,20 @@ public partial class UploadService
 
         if (uploaderPlayers != null && uploaderPlayers.Any())
         {
-
             for (int i = 0; i < uploaderPlayers.Count; i++)
             {
-                var dbuploaderPlayer = dbUploader.Players.FirstOrDefault(f => f.ToonId == uploaderPlayers.ElementAt(i).ToonId);
+                var uploaderPlayer = uploaderPlayers[i];
+                var dbuploaderPlayer = dbUploader.Players.FirstOrDefault(f => f.ToonId == uploaderPlayer.ToonId
+                                                                             && f.RealmId == uploaderPlayer.RealmId
+                                                                             && f.RegionId == uploaderPlayer.RegionId);
                 if (dbuploaderPlayer == null)
                 {
-                    var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == uploaderPlayers.ElementAt(i).ToonId);
+                    var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == uploaderPlayer.ToonId
+                                                                                  && f.RealmId == uploaderPlayer.RealmId
+                                                                                  && f.RegionId == uploaderPlayer.RegionId);
                     if (dbPlayer == null)
                     {
-                        var dbAddPlayer = mapper.Map<Player>(uploaderPlayers.ElementAt(i));
+                        var dbAddPlayer = mapper.Map<Player>(uploaderPlayer);
                         dbAddPlayer.Uploader = dbUploader;
                         dbUploader.Players.Add(dbAddPlayer);
                     }

@@ -17,7 +17,7 @@ public partial class UploadService
             using var scope = serviceProvider.CreateScope();
             using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-            if (!playersDic.Any())
+            if (playersDic.Count == 0)
             {
                 await InitPlayerDic(context);
             }
