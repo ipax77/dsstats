@@ -25,38 +25,6 @@ public partial class UploadService
         this.logger = logger;
     }
 
-    public void ImportInit()
-    {
-        var blobs = Directory.EnumerateFiles(blobBaseDir, "*base64", SearchOption.AllDirectories);
-
-        if (!blobs.Any())
-        {
-            return;
-        }
-
-        List<Task> importTasks = new List<Task>();
-        foreach (var blob in blobs)
-        {
-            if (!File.Exists(blob))
-            {
-                continue;
-            }
-
-            var blobDir = new DirectoryInfo(Path.GetDirectoryName(blob) ?? "").Name;
-
-            if (!Guid.TryParse(blobDir, out Guid uploaderGuid))
-            {
-                continue;
-            }
-
-            var gzipbase64String = File.ReadAllText(blob);
-            var importTask = ImportReplays(gzipbase64String, uploaderGuid, DateTime.UtcNow, true);
-            importTasks.Add(importTask);
-        }
-
-        Task.WaitAll(importTasks.ToArray());
-    }
-
     public async Task<bool> ImportReplays(string gzipbase64String, Guid appGuid, DateTime latestReplay, bool dry = false)
     {
         string blobFile = string.Empty;
@@ -91,9 +59,6 @@ public partial class UploadService
             logger.LogError($"Failed updating uploader: {ex.Message}");
             return false;
         }
-
-        // _ = Produce(gzipbase64String, appGuid);
-        // var httpClient = httpClientFactory.CreateClient("importClient");
 
         var importRequest = new ImportRequest()
         {

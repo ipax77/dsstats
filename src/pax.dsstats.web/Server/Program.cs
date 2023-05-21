@@ -125,8 +125,6 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var uploadService = scope.ServiceProvider.GetRequiredService<UploadService>();
-    uploadService.ImportInit();
 }
 
 // Configure the HTTP request pipeline.
