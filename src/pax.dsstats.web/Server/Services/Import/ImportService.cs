@@ -158,7 +158,7 @@ public partial class ImportService
         }
         catch (Exception ex)
         {
-            logger.LogError($"faild importing replayblobs: {ex.Message}");
+            logger.LogError($"failed importing replayblobs: {ex.Message}");
         }
         finally
         {

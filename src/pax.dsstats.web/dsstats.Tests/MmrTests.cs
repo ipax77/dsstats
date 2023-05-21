@@ -425,4 +425,86 @@ public class MmrTests
 
         Assert.False(context.ReplayRatings.Where(x => x.IsPreRating).Any());
     }
+
+    [Fact]
+    public void A8PreRatingsWhileCalculatingTest()
+    {
+        // prepare data
+        using var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+
+       
+
+        var testDir = "/data/temp";
+        var testFile = Startup.GetTestFilePath("uploadtest5.base64");
+        Guid testGuid = Guid.NewGuid();
+
+        var memStream = ImportService.UnzipAsync(File.ReadAllText(testFile)).GetAwaiter().GetResult();
+
+        var testReplays = JsonSerializer.Deserialize<List<ReplayDto>>(memStream);
+
+        Assert.NotNull(testReplays);
+        Assert.NotEmpty(testReplays);
+
+        if (testReplays == null || testReplays.Count == 0)
+        {
+            return;
+        }
+
+        var replays = testReplays.Select(s => s with { GameTime = DateTime.UtcNow }).ToList();
+
+        var testPath = Path.Combine(testDir, testGuid.ToString());
+        var testFileName = $"{DateTime.UtcNow.ToString(@"yyyyMMdd-HHmmss")}.base64";
+        var testFilePath = Path.Combine(testPath, testFileName);
+
+        if (!Directory.Exists(testPath))
+        {
+            Directory.CreateDirectory(testPath);
+        }
+        var json = JsonSerializer.Serialize(replays);
+        File.WriteAllText(testFilePath, ImportService.Zip(json));
+
+        // cleanup
+        var replay = context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Spawns)
+                    .ThenInclude(i => i.Units)
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Upgrades)
+            .Include(i => i.ReplayRatingInfo)
+                .ThenInclude(i => i.RepPlayerRatings)
+            .FirstOrDefault(f => f.ReplayHash == "1271fcd4a8a5b0156f4e255ea80132c3");
+
+        if (replay != null)
+        {
+            context.Replays.Remove(replay);
+            context.SaveChanges();
+        }
+
+        // execute
+
+        ImportRequest importRequest = new()
+        {
+            Replayblobs = new() { Path.Combine(testPath, testFileName) }
+        };
+
+        var are = new AutoResetEvent(false);
+        importService.OnBlobsHandled += (s, e) => { are.Set(); };
+
+        var ratingsTask = ratingsService.ProduceRatings(true);
+        Task.Delay(2).Wait();
+        var importTask = importService.ImportTask(importRequest);
+        Task.WaitAll(new Task[2] { ratingsTask, importTask });
+
+        var importFinished = are.WaitOne(TimeSpan.FromSeconds(60));
+
+        // assert
+        Assert.True(importFinished);
+        Assert.True(context.ReplayRatings.Where(x => x.IsPreRating).Any());
+
+        // cleanup
+        Directory.Delete(testPath, true);
+    }
 }
