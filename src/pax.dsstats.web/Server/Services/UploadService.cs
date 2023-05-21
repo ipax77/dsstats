@@ -12,7 +12,6 @@ public partial class UploadService
 {
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
-    private readonly IHttpClientFactory httpClientFactory;
     private readonly ILogger<UploadService> logger;
     private const string blobBaseDir = "/data/ds/replayblobs";
 
@@ -23,7 +22,6 @@ public partial class UploadService
     {
         this.serviceProvider = serviceProvider;
         this.mapper = mapper;
-        this.httpClientFactory = httpClientFactory;
         this.logger = logger;
     }
 
@@ -62,9 +60,6 @@ public partial class UploadService
             return false;
         }
 
-        // _ = Produce(gzipbase64String, appGuid);
-        // var httpClient = httpClientFactory.CreateClient("importClient");
-
         var importRequest = new ImportRequest()
         {
             Replayblobs = new()
@@ -78,11 +73,10 @@ public partial class UploadService
             var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
 
             importService.Import(importRequest);
-            // await httpClient.PostAsJsonAsync<ImportRequest>("/api/v1/import", importRequest);
         }
         catch (Exception ex)
         {
-            logger.LogError($"Failed posting importRequest: {ex.Message}");
+            logger.LogError($"Failed starting Import: {ex.Message}");
         }
         return true;
     }
@@ -213,16 +207,20 @@ public partial class UploadService
 
         if (uploaderPlayers != null && uploaderPlayers.Any())
         {
-
             for (int i = 0; i < uploaderPlayers.Count; i++)
             {
-                var dbuploaderPlayer = dbUploader.Players.FirstOrDefault(f => f.ToonId == uploaderPlayers.ElementAt(i).ToonId);
+                var uploaderPlayer = uploaderPlayers[i];
+                var dbuploaderPlayer = dbUploader.Players.FirstOrDefault(f => f.ToonId == uploaderPlayer.ToonId
+                                                                             && f.RealmId == uploaderPlayer.RealmId
+                                                                             && f.RegionId == uploaderPlayer.RegionId);
                 if (dbuploaderPlayer == null)
                 {
-                    var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == uploaderPlayers.ElementAt(i).ToonId);
+                    var dbPlayer = await context.Players.FirstOrDefaultAsync(f => f.ToonId == uploaderPlayer.ToonId
+                                                                                  && f.RealmId == uploaderPlayer.RealmId
+                                                                                  && f.RegionId == uploaderPlayer.RegionId);
                     if (dbPlayer == null)
                     {
-                        var dbAddPlayer = mapper.Map<Player>(uploaderPlayers.ElementAt(i));
+                        var dbAddPlayer = mapper.Map<Player>(uploaderPlayer);
                         dbAddPlayer.Uploader = dbUploader;
                         dbUploader.Players.Add(dbAddPlayer);
                     }

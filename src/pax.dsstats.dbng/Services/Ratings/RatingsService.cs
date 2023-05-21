@@ -18,7 +18,7 @@ public partial class RatingsService
     private readonly IOptions<DbImportOptions> dbImportOptions;
     private readonly ILogger<RatingsService> logger;
 
-    private SemaphoreSlim ratingSs;
+    public SemaphoreSlim ratingSs;
 
     public RatingsService(IServiceProvider serviceProvider,
                           IMapper mapper,
@@ -44,6 +44,8 @@ public partial class RatingsService
         int recalcCount = 0;
         try
         {
+            await CleanupPreRatings();
+
             var request = recalc == false ? await GetCalcRatingRequest() :
                 new MmrService.CalcRatingRequest()
                 {
@@ -107,6 +109,25 @@ public partial class RatingsService
 
             ratingSs.Release();
         }
+    }
+
+    private async Task CleanupPreRatings()
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var preRatings = await context.ReplayRatings
+            .Include(i => i.RepPlayerRatings)
+            .Where(x => x.IsPreRating)
+            .ToListAsync();
+
+        if (preRatings.Count == 0)
+        {
+            return;
+        }
+
+        context.ReplayRatings.RemoveRange(preRatings);
+        await context.SaveChangesAsync();
     }
 
     private async Task<MmrService.CalcRatingRequest?> GetCalcRatingRequest()

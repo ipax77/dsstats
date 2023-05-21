@@ -109,7 +109,7 @@ public partial class ImportService
                                 dups = 0;
                                 errors = 0;
 
-                                // BlobsHandled(new());
+                                BlobsHandled(new());
                             }
                         }
                     }
@@ -128,8 +128,12 @@ public partial class ImportService
         context.Replays.Add(replay);
 
         await context.SaveChangesAsync();
-        await CheatDetectService.AdjustReplay(context, replay, new());
-        await context.SaveChangesAsync();
+        var adjusted = await CheatDetectService.AdjustReplay(context, replay, new());
+        if (adjusted)
+        {
+            await context.SaveChangesAsync();
+        }
+        await SetPreRatings(replay);
 
         dbCache.ReplayHashes[replay.ReplayHash] = replay.ReplayId;
         foreach (var replayPlayer in replay.ReplayPlayers)

@@ -125,9 +125,6 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    // var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
-    // importService.ImportInit();
-
 }
 
 // Configure the HTTP request pipeline.

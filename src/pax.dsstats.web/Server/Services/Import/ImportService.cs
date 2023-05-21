@@ -6,6 +6,7 @@ using pax.dsstats.shared.Arcade;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Text;
 using System.Text.Json;
 
 namespace pax.dsstats.web.Server.Services.Import;
@@ -176,7 +177,7 @@ public partial class ImportService
              .ToList();
     }
 
-    private static async Task<MemoryStream> UnzipAsync(string base64string)
+    public static async Task<MemoryStream> UnzipAsync(string base64string)
     {
         var bytes = Convert.FromBase64String(base64string);
         using var msi = new MemoryStream(bytes);
@@ -187,6 +188,21 @@ public partial class ImportService
         }
         mso.Position = 0;
         return mso;
+    }
+
+    public static string Zip(string str)
+    {
+        var bytes = Encoding.UTF8.GetBytes(str);
+
+        using (var msi = new MemoryStream(bytes))
+        using (var mso = new MemoryStream())
+        {
+            using (var gs = new GZipStream(mso, CompressionMode.Compress))
+            {
+                msi.CopyTo(gs);
+            }
+            return Convert.ToBase64String(mso.ToArray());
+        }
     }
 }
 

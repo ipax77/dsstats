@@ -14,6 +14,7 @@ public class ReplayRating
     public float ExpectationToWin { get; set; } // WinnerTeam
     public int ReplayId { get; set; }
     public Replay Replay { get; set; } = null!;
+    public bool IsPreRating { get; set; }
     public virtual ICollection<RepPlayerRating> RepPlayerRatings { get; set; }
 }
 

@@ -132,6 +132,12 @@
                             Rating Info
                         </button>
                     </div>
+                    @if (replayDto.ReplayRatingInfo?.IsPreRating ?? false)
+                    {
+                        <div class="ms-5">
+                            <span class="text-warning" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Expected Rating Changes - the actual calculation takes place every hour at 30 minutes">PreRating*</span>
+                        </div>
+                    }
                     @if (Data.IsMaui && (DateTime.UtcNow - replayDto.GameTime) < TimeSpan.FromHours(24))
                     {
                         <div class="ms-5 form-check form-switch align-self-center">
@@ -143,7 +149,7 @@
                     }
                 </div>
                 <div class="collapse" id="ReplayRatingInfo">
-                    <ReplayRatingInfo ReplayRatingDto="replayDto.ReplayRatingInfo"></ReplayRatingInfo>
+                    <ReplayRatingInfo @ref="replayRatingInfo" ReplayRatingDto="replayDto.ReplayRatingInfo"></ReplayRatingInfo>
                 </div>
             </div>
             <div class="card-footer">
