@@ -10,6 +10,8 @@ using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.dbng.Services.Ratings;
 using pax.dsstats.shared;
+using pax.dsstats.web.Server.Services.Import;
+using System.Net.Mime;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -69,6 +71,9 @@ public class MmrTests
         builder.Services.AddOptions<DbImportOptions>()
             .Configure(x => x.ImportConnectionString = importConnectionString);
 
+        builder.Services.AddSingleton<ImportService>();
+        builder.Services.AddSingleton<RatingsService>();
+
         app = builder.Build();
     }
 
@@ -96,16 +101,24 @@ public class MmrTests
         File.Copy(testFile, testFilePath);
 
         // prepare services
-        var serviceProvider = scope.ServiceProvider;
-        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<ImportService>>();
-        var importService = new ImportService(serviceProvider, mapper, logger, testDir);
+        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
 
         // execute
-        var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
+
+        ImportRequest importRequest = new()
+        {
+            Replayblobs = new() { Path.Combine(testPath, testFileName) }
+        };
+
+        var are = new AutoResetEvent(false);
+        importService.OnBlobsHandled += (s, e) => { are.Set(); };
+        importService.ImportTask(importRequest).GetAwaiter().GetResult();
+
+        var importFinished = are.WaitOne(TimeSpan.FromSeconds(60));
 
         // assert
-        Assert.True(result.ContinueReplays.Any());
+        Assert.True(importFinished);
+        Assert.True(context.Replays.Any());
 
         // cleanup
         Directory.Delete(testPath, true);
@@ -139,13 +152,8 @@ public class MmrTests
         // prepare services
         using var scope = app.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<RatingsService>>();
-        var dbImportOptions = scope.ServiceProvider.GetRequiredService<IOptions<DbImportOptions>>();
-        var ratingsService = new RatingsService(scope.ServiceProvider, mapper, dbImportOptions, logger);
-        var importLogger = scope.ServiceProvider.GetRequiredService<ILogger<ImportService>>();
-        var importService = new ImportService(scope.ServiceProvider, mapper, importLogger, testDir);
-
+        var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
 
         // prepare data
         var testFile = Startup.GetTestFilePath("uploadtest.base64");
@@ -194,7 +202,22 @@ public class MmrTests
 
 
         // execute
-        var result = importService.ImportReplayBlobs().GetAwaiter().GetResult();
+
+        ImportRequest importRequest = new()
+        {
+            Replayblobs = new() { Path.Combine(testPath, testFileName) }
+        };
+
+        var are = new AutoResetEvent(false);
+        importService.OnBlobsHandled += (s, e) => { are.Set(); };
+        importService.ImportTask(importRequest).GetAwaiter().GetResult();
+
+        var importFinished = are.WaitOne(TimeSpan.FromSeconds(60));
+
+        // assert
+        Assert.True(importFinished);
+        Assert.True(context.Replays.Any());
+
         ratingsService.ProduceRatings(true).Wait();
 
         // assert
@@ -247,17 +270,12 @@ public class MmrTests
     [Fact]
     public void A5PlayerRatingChangesTest()
     {
-        var testDir = "/data/temp";
-
         // prepare services
         using var scope = app.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<RatingsService>>();
-        var dbImportOptions = scope.ServiceProvider.GetRequiredService<IOptions<DbImportOptions>>();
-        var ratingsService = new RatingsService(scope.ServiceProvider, mapper, dbImportOptions, logger);
-        var importLogger = scope.ServiceProvider.GetRequiredService<ILogger<ImportService>>();
-        var importService = new ImportService(scope.ServiceProvider, mapper, importLogger, testDir);
+        var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+        var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
 
         // prepare data
         var testFile = Startup.GetTestFilePath("replayDto3.json");
@@ -271,14 +289,6 @@ public class MmrTests
         }
 
         replayDto = replayDto with { GameTime = DateTime.UtcNow };
-        var replay = mapper.Map<Replay>(replayDto);
-
-        Assert.NotNull(replay);
-
-        if (replay == null)
-        {
-            return;
-        }
 
         var toonId = replayDto.ReplayPlayers.FirstOrDefault(f => f.Name == "PAX")?.Player.ToonId;
         var player = context.Players.FirstOrDefault(f => f.ToonId == toonId);
@@ -295,15 +305,17 @@ public class MmrTests
 
         context.Uploaders.Add(uploader);
         context.SaveChanges();
-        replay.UploaderId = uploader.UploaderId;
 
-        var result = importService.ImportReplays(new() { replay }, new()).GetAwaiter().GetResult();
+        var units = context.Units.ToList().ToHashSet();
+        var upgrades = context.Upgrades.ToList().ToHashSet();
+        (_, _, var dbReplay) = replayRepository.SaveReplay(replayDto, units, upgrades, null).GetAwaiter().GetResult();
 
-        Assert.Equal(1, result.SavedReplays);
+        Assert.NotNull(dbReplay);
 
         ratingsService.ProduceRatings(true).Wait();
 
-        var dbReplay = context.Replays
+        dbReplay = context.Replays
+            .Include(i => i.Uploaders)
             .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Player)
                     .ThenInclude(i => i.PlayerRatings)
@@ -319,8 +331,11 @@ public class MmrTests
             return;
         }
 
+        dbReplay.Uploaders.Add(uploader);
+        context.SaveChanges();
+
         // assert
-        
+
         foreach (var replayPlayer in dbReplay.ReplayPlayers.Where(x => x.IsUploader))
         {
             var rating = replayPlayer.Player.PlayerRatings

@@ -12,7 +12,6 @@ public partial class UploadService
 {
     private readonly IServiceProvider serviceProvider;
     private readonly IMapper mapper;
-    private readonly IHttpClientFactory httpClientFactory;
     private readonly ILogger<UploadService> logger;
     private const string blobBaseDir = "/data/ds/replayblobs";
 
@@ -23,8 +22,39 @@ public partial class UploadService
     {
         this.serviceProvider = serviceProvider;
         this.mapper = mapper;
-        this.httpClientFactory = httpClientFactory;
         this.logger = logger;
+    }
+
+    public void ImportInit()
+    {
+        var blobs = Directory.EnumerateFiles(blobBaseDir, "*base64", SearchOption.AllDirectories);
+
+        if (!blobs.Any())
+        {
+            return;
+        }
+
+        List<Task> importTasks = new List<Task>();
+        foreach (var blob in blobs)
+        {
+            if (!File.Exists(blob))
+            {
+                continue;
+            }
+
+            var blobDir = new DirectoryInfo(Path.GetDirectoryName(blob) ?? "").Name;
+
+            if (!Guid.TryParse(blobDir, out Guid uploaderGuid))
+            {
+                continue;
+            }
+
+            var gzipbase64String = File.ReadAllText(blob);
+            var importTask = ImportReplays(gzipbase64String, uploaderGuid, DateTime.UtcNow, true);
+            importTasks.Add(importTask);
+        }
+
+        Task.WaitAll(importTasks.ToArray());
     }
 
     public async Task<bool> ImportReplays(string gzipbase64String, Guid appGuid, DateTime latestReplay, bool dry = false)
@@ -78,11 +108,10 @@ public partial class UploadService
             var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
 
             importService.Import(importRequest);
-            // await httpClient.PostAsJsonAsync<ImportRequest>("/api/v1/import", importRequest);
         }
         catch (Exception ex)
         {
-            logger.LogError($"Failed posting importRequest: {ex.Message}");
+            logger.LogError($"Failed starting Import: {ex.Message}");
         }
         return true;
     }

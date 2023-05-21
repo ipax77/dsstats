@@ -60,7 +60,8 @@ public static class RatingsCsvService
             sbReplay.Append($"{(int)replayRatingDto.RatingType},");
             sbReplay.Append($"{(int)replayRatingDto.LeaverType},");
             sbReplay.Append($"{replayRatingDto.ExpectationToWin.ToString(CultureInfo.InvariantCulture)},");
-            sbReplay.Append($"{replayRatingDto.ReplayId}");
+            sbReplay.Append($"{replayRatingDto.ReplayId},");
+            sbReplay.Append("0"); // IsPreRating
             sbReplay.Append(Environment.NewLine);
 
             foreach (var rpr in replayRatingDto.RepPlayerRatings)

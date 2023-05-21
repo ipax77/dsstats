@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
 
-namespace pax.dsstats.web.Server.Services;
+namespace pax.dsstats.web.Server.Services.Import;
 
-public partial class UploadService
+public partial class ImportService
 {
     public async Task SetPreRatings(Replay replay)
     {
@@ -47,12 +47,12 @@ public partial class UploadService
         {
             var replayPlayer = replay.ReplayPlayers
                 .FirstOrDefault(f => f.GamePos == replayPlayerRating.GamePos);
-            
+
             if (replayPlayer == null)
             {
                 return;
             }
-            
+
             replayPlayerRating.ReplayPlayerId = replayPlayer.ReplayPlayerId;
         }
 
@@ -72,7 +72,7 @@ public partial class UploadService
                 && playerIds.Contains(x.Player.PlayerId))
             .ProjectTo<PlayerRatingReplayCalcDto>(mapper.ConfigurationProvider)
             .ToListAsync();
-                
+
         foreach (var replayPlayer in replay.ReplayPlayers)
         {
             var calcDto = calcDtos.FirstOrDefault(f => f.Player.PlayerId == replayPlayer.Player.PlayerId);
