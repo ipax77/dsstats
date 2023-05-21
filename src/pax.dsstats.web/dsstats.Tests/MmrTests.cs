@@ -130,11 +130,7 @@ public class MmrTests
     {
         // prepare services
         using var scope = app.Services.CreateScope();
-        var serviceProvider = scope.ServiceProvider;
-        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<RatingsService>>();
-        var dbImportOptions = scope.ServiceProvider.GetRequiredService<IOptions<DbImportOptions>>();
-        var ratingsService = new RatingsService(serviceProvider, mapper, dbImportOptions, logger);
+        var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
 
         // execute
         ratingsService.ProduceRatings(true).Wait();
@@ -410,5 +406,23 @@ public class MmrTests
 
         // cleanup
         Directory.Delete(testPath, true);
+    }
+
+    [Fact]
+    public void A7RecalculateWithPreRatingsTest()
+    {
+        // prepare services
+        using var scope = app.Services.CreateScope();
+        var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+
+        // execute
+        ratingsService.ProduceRatings(true).Wait();
+
+        // assert
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        Assert.True(context.PlayerRatings.Any());
+        Assert.True(context.RepPlayerRatings.Any());
+
+        Assert.False(context.ReplayRatings.Where(x => x.IsPreRating).Any());
     }
 }

@@ -2,6 +2,7 @@
 using dsstats.mmr;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
+using pax.dsstats.dbng.Services.Ratings;
 using pax.dsstats.shared;
 
 namespace pax.dsstats.web.Server.Services.Import;
@@ -17,33 +18,51 @@ public partial class ImportService
 
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
 
-        var replayDsRDto = await context.Replays
-            .Where(x => x.ReplayId == replay.ReplayId)
-            .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
-            .FirstOrDefaultAsync();
-
-        if (replayDsRDto == null)
+        var waitResult = await ratingsService.ratingSs.WaitAsync(60000);
+        if (waitResult == false)
         {
             return;
         }
 
-        var ratingType = MmrService.GetRatingType(replayDsRDto);
-
-        if (ratingType == RatingType.None)
+        try
         {
-            return;
+            var replayDsRDto = await context.Replays
+                .Where(x => x.ReplayId == replay.ReplayId)
+                .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync();
+
+            if (replayDsRDto == null)
+            {
+                return;
+            }
+
+            var ratingType = MmrService.GetRatingType(replayDsRDto);
+
+            if (ratingType == RatingType.None)
+            {
+                return;
+            }
+
+            var calcRatings = await GetCalcRatings(replay, ratingType, context);
+            var replayRating = MmrService.ProcessReplay(replayDsRDto, calcRatings, new(), new(false));
+
+            if (replayRating == null)
+            {
+                return;
+            }
+
+            await SavePreRating(replay, replayRating, context);
         }
-
-        var calcRatings = await GetCalcRatings(replay, ratingType, context);
-        var replayRating = MmrService.ProcessReplay(replayDsRDto, calcRatings, new(), new(false));
-
-        if (replayRating == null)
+        catch (Exception ex)
         {
-            return;
+            logger.LogError($"failed generating preRating: {ex.Message}");
         }
-
-        await SavePreRating(replay, replayRating, context);
+        finally
+        {
+            ratingsService.ratingSs.Release();
+        }
     }
 
     private async Task SavePreRating(Replay replay, ReplayRatingDto replayRatingDto, ReplayContext context)
@@ -64,7 +83,7 @@ public partial class ImportService
 
             replayPlayerRating.ReplayPlayerId = replayPlayer.ReplayPlayerId;
         }
-        
+
         replayRating.IsPreRating = true;
         context.ReplayRatings.Add(replayRating);
         await context.SaveChangesAsync();
