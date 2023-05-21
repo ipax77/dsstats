@@ -11,7 +11,8 @@ using pax.dsstats.dbng.Services;
 using pax.dsstats.dbng.Services.Ratings;
 using pax.dsstats.shared;
 using pax.dsstats.web.Server.Services.Import;
-using System.Net.Mime;
+using System.Collections.Generic;
+using System.Text.Json;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -351,5 +352,63 @@ public class MmrTests
 
         // PlayerRatingChanges is created with the database procedure SetRatingChange
         // introduced in migration 20230114191807_PlayerRatingChanges and 20230116063107_FixSetRatingChangeProcedure
+    }
+
+    [Fact]
+    public void A6PreRatingsTest()
+    {
+        // prepare data
+        using var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+
+        var testDir = "/data/temp";
+        var testFile = Startup.GetTestFilePath("uploadtest4.base64");
+        Guid testGuid = Guid.NewGuid();
+
+        var memStream = ImportService.UnzipAsync(File.ReadAllText(testFile)).GetAwaiter().GetResult();
+
+        var testReplays = JsonSerializer.Deserialize<List<ReplayDto>>(memStream);
+
+        Assert.NotNull(testReplays);
+        Assert.NotEmpty(testReplays);
+
+        if (testReplays == null || testReplays.Count == 0)
+        {
+            return;
+        }
+
+        var replays = testReplays.Select(s => s with { GameTime = DateTime.UtcNow }).ToList();
+
+        var testPath = Path.Combine(testDir, testGuid.ToString());
+        var testFileName = $"{DateTime.UtcNow.ToString(@"yyyyMMdd-HHmmss")}.base64";
+        var testFilePath = Path.Combine(testPath, testFileName);
+
+        if (!Directory.Exists(testPath))
+        {
+            Directory.CreateDirectory(testPath);
+        }
+        var json = JsonSerializer.Serialize(replays);
+        File.WriteAllText(testFilePath, ImportService.Zip(json));
+
+        // execute
+
+        ImportRequest importRequest = new()
+        {
+            Replayblobs = new() { Path.Combine(testPath, testFileName) }
+        };
+
+        var are = new AutoResetEvent(false);
+        importService.OnBlobsHandled += (s, e) => { are.Set(); };
+        importService.ImportTask(importRequest).GetAwaiter().GetResult();
+
+        var importFinished = are.WaitOne(TimeSpan.FromSeconds(60));
+
+        // assert
+        Assert.True(importFinished);
+        Assert.True(context.ReplayRatings.Where(x => x.IsPreRating).Any());
+
+        // cleanup
+        Directory.Delete(testPath, true);
     }
 }

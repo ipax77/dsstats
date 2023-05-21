@@ -15,16 +15,25 @@ public partial class ImportService
             return;
         }
 
-        var replayDsRDto = mapper.Map<ReplayDsRDto>(replay);
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var replayDsRDto = await context.Replays
+            .Where(x => x.ReplayId == replay.ReplayId)
+            .ProjectTo<ReplayDsRDto>(mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
+
+        if (replayDsRDto == null)
+        {
+            return;
+        }
+
         var ratingType = MmrService.GetRatingType(replayDsRDto);
 
         if (ratingType == RatingType.None)
         {
             return;
         }
-
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         var calcRatings = await GetCalcRatings(replay, ratingType, context);
         var replayRating = MmrService.ProcessReplay(replayDsRDto, calcRatings, new(), new(false));
@@ -55,7 +64,8 @@ public partial class ImportService
 
             replayPlayerRating.ReplayPlayerId = replayPlayer.ReplayPlayerId;
         }
-
+        
+        replayRating.IsPreRating = true;
         context.ReplayRatings.Add(replayRating);
         await context.SaveChangesAsync();
     }
@@ -65,7 +75,7 @@ public partial class ImportService
         Dictionary<int, CalcRating> calcRatings = new();
 
 
-        var playerIds = replay.ReplayPlayers.Select(s => s.Player.PlayerId).ToList();
+        var playerIds = replay.ReplayPlayers.Select(s => s.PlayerId).ToList();
 
         var calcDtos = await context.PlayerRatings
             .Where(x => x.RatingType == ratingType
@@ -75,11 +85,11 @@ public partial class ImportService
 
         foreach (var replayPlayer in replay.ReplayPlayers)
         {
-            var calcDto = calcDtos.FirstOrDefault(f => f.Player.PlayerId == replayPlayer.Player.PlayerId);
+            var calcDto = calcDtos.FirstOrDefault(f => f.Player.PlayerId == replayPlayer.PlayerId);
 
             CalcRating calcRating = new()
             {
-                PlayerId = replayPlayer.Player.PlayerId,
+                PlayerId = replayPlayer.PlayerId,
                 Games = calcDto?.Games ?? 0,
                 Mmr = calcDto?.Rating ?? 1000.0,
                 Consistency = calcDto?.Consistency ?? 0,
@@ -87,7 +97,7 @@ public partial class ImportService
                 IsUploader = replayPlayer.IsUploader
             };
 
-            calcRatings[replayPlayer.Player.PlayerId] = calcRating;
+            calcRatings[replayPlayer.PlayerId] = calcRating;
         }
 
         return calcRatings;

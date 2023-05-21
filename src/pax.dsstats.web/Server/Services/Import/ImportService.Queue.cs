@@ -133,7 +133,7 @@ public partial class ImportService
         {
             await context.SaveChangesAsync();
         }
-        // await SetPreRatings(replay);
+        await SetPreRatings(replay);
 
         dbCache.ReplayHashes[replay.ReplayHash] = replay.ReplayId;
         foreach (var replayPlayer in replay.ReplayPlayers)
