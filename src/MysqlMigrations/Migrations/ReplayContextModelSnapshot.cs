@@ -981,6 +981,9 @@ namespace MysqlMigrations.Migrations
                     b.Property<float>("ExpectationToWin")
                         .HasColumnType("float");
 
+                    b.Property<bool>("IsPreRating")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<int>("LeaverType")
                         .HasColumnType("int");
 

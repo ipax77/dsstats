@@ -1,13 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Arcade;
+using System.Collections.Concurrent;
 
 namespace sc2dsstats.maui.Services;
 
 public partial class DecodeService
 {
-    // private DateTime sessionStart = new DateTime(2023, 04, 24);
+    // private DateTime sessionStart = new DateTime(2023, 05, 17);
     private DateTime sessionStart = DateTime.MinValue;
+    private ConcurrentDictionary<string, ReplayRatingDto?> replayOnlineRatings = new();
 
     public void SetSessionStart()
     {
@@ -17,7 +20,7 @@ public partial class DecodeService
         }
     }
 
-    public async Task<SessionProgress> GetSessionProgress()
+    public async Task<SessionProgress> GetSessionProgress(bool online)
     {
         using var scope = serviceScopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -39,16 +42,36 @@ public partial class DecodeService
             .Distinct()
             .ToList();
 
+        if (online)
+        {
+            await SetOnlineRatings(replays);
+        }
+
         return new()
         {
             SessionStart = sessionStart,
-            SessionGames = replays.Select(s => GetSessionGameInfo(s, toonIdInfos)).ToList(),
+            SessionGames = replays.Select(s => GetSessionGameInfo(s, toonIdInfos, online)).ToList(),
         };
     }
 
-    private SessionGameInfo GetSessionGameInfo(Replay replay, List<ToonIdInfo> toonIds)
+    private SessionGameInfo GetSessionGameInfo(Replay replay, List<ToonIdInfo> toonIds, bool online)
     {
         var playerReplayPlayer = GetPlayerReplayPlayer(replay, toonIds);
+
+        float ratingGain = 0;
+
+        if (online && playerReplayPlayer != null
+            && replayOnlineRatings.TryGetValue(replay.ReplayHash, out var onlineRating) 
+            && onlineRating != null)
+        {
+            var onlinePlayerRating = onlineRating.RepPlayerRatings
+                .FirstOrDefault(f => f.GamePos == playerReplayPlayer.GamePos);
+            ratingGain = onlinePlayerRating?.RatingChange ?? 0;
+        }
+        else
+        {
+            ratingGain = playerReplayPlayer?.ReplayPlayerRatingInfo?.RatingChange ?? 0;
+        }
 
         return new SessionGameInfo()
         {
@@ -64,7 +87,7 @@ public partial class DecodeService
             Commander = playerReplayPlayer?.Race ?? Commander.None,
             PlayerResult = playerReplayPlayer?.PlayerResult ?? PlayerResult.None,
             Duration = replay.Duration,
-            RatingGain = playerReplayPlayer?.ReplayPlayerRatingInfo?.RatingChange ?? 0,
+            RatingGain = ratingGain,
             ExpectationToWin = GetExpectationToWin(replay, playerReplayPlayer),
         };
     }
@@ -89,6 +112,68 @@ public partial class DecodeService
                 && rp.Player.RegionId == info.RegionId
             )
         );
+    }
+
+    private async Task SetOnlineRatings(List<Replay> replays)
+    {
+        using var scope = serviceScopeFactory.CreateScope();
+        var dataService = scope.ServiceProvider.GetRequiredService<IDataService>();
+        var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
+
+        foreach (var replay in replays)
+        {
+            if (replay.ReplayRatingInfo == null)
+            {
+                continue;
+            }
+
+            if (!replayOnlineRatings.TryGetValue(replay.ReplayHash, out ReplayRatingDto? onlineRating))
+            {
+                PlayerIdRatingRequest request = new()
+                {
+                    RatingType = replay.ReplayRatingInfo.RatingType,
+                    PlayerIds = replay.ReplayPlayers
+                        .Select(s => new PlayerId(s.Player.ToonId, s.Player.RealmId, s.Player.RegionId))
+                        .ToList()
+                };
+
+                var calcRatings = await dataService.GetPlayerIdCalcRatings(request, default);
+
+                var replayDto = mapper.Map<ReplayDetailsDto>(replay);
+                onlineRating = ratingRepository.GetOnlineRating(replayDto, calcRatings);
+                replayOnlineRatings.TryAdd(replay.ReplayHash, onlineRating);
+            }
+        }
+    }
+
+    public async Task<ReplayRatingDto?> GetOnlineRating(ReplayDetailsDto replayDetailsDto)
+    {
+        if (!replayOnlineRatings.TryGetValue(replayDetailsDto.ReplayHash, out ReplayRatingDto? onlineRating))
+        {
+            if (replayDetailsDto.ReplayRatingInfo == null)
+            {
+                replayOnlineRatings.TryAdd(replayDetailsDto.ReplayHash, null);
+                return null;
+            }
+
+            using var scope = serviceScopeFactory.CreateScope();
+            var dataService = scope.ServiceProvider.GetRequiredService<IDataService>();
+            var ratingRepository = scope.ServiceProvider.GetRequiredService<IRatingRepository>();
+
+            PlayerIdRatingRequest request = new()
+            {
+                RatingType = replayDetailsDto.ReplayRatingInfo.RatingType,
+                PlayerIds = replayDetailsDto.ReplayPlayers
+                    .Select(s => new PlayerId(s.Player.ToonId, s.Player.RealmId, s.Player.RegionId))
+                    .ToList()
+            };
+
+            var calcRatings = await dataService.GetPlayerIdCalcRatings(request, default);
+
+            onlineRating = ratingRepository.GetOnlineRating(replayDetailsDto, calcRatings);
+            replayOnlineRatings.TryAdd(replayDetailsDto.ReplayHash, onlineRating);
+        }
+        return onlineRating;
     }
 }
 

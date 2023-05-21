@@ -642,11 +642,6 @@ public class DataService : IDataService
         return await Task.FromResult(new List<PlayerRatingReplayCalcDto>());
     }
 
-    public ReplayRatingDto? GetOnlineRating(ReplayDetailsDto replayDto, List<PlayerRatingReplayCalcDto> calcDtos)
-    {
-        return null;
-    }
-
     public async Task<CmdrStrengthResult> GetCmdrStrengthResults(CmdrStrengthRequest request, CancellationToken token = default)
     {
         try
@@ -1025,5 +1020,10 @@ public class DataService : IDataService
             logger.LogError($"failed getting playerchartdata: {ex.Message}");
         }
         return new();
+    }
+
+    public async Task<ReplayRatingDto?> GetOnlineRating(ReplayDetailsDto replayDto)
+    {
+        return await Task.FromResult<ReplayRatingDto?>(null);
     }
 }

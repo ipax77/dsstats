@@ -26,13 +26,13 @@ public partial class CheatDetectService
         return cheatResult;
     }
 
-    public static async Task AdjustReplay(ReplayContext context, Replay replay, CheatResult cheatResult, bool init = false)
+    public static async Task<bool> AdjustReplay(ReplayContext context, Replay replay, CheatResult cheatResult, bool init = false)
     {
         if (replay.WinnerTeam != 0
             || replay.Playercount != 6
             || replay.Duration < 60)
         {
-            return;
+            return false;
         }
 
         if (!init)
@@ -45,7 +45,7 @@ public partial class CheatDetectService
         if (uploaderReplayPlayer == null)
         {
             cheatResult.UnknownGames++;
-            return;
+            return false;
         }
 
         int rqScore = GetRageQuitScore(replay, uploaderReplayPlayer.Team);
@@ -61,6 +61,7 @@ public partial class CheatDetectService
             cheatResult.DcGames++;
             uploaderReplayPlayer.Player.DisconnectCount++;
         }
+        return true;
     }
 
     private static void CorrectResult(Replay replay, int winnerTeam)
