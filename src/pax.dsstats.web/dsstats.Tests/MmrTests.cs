@@ -493,9 +493,8 @@ public class MmrTests
         var are = new AutoResetEvent(false);
         importService.OnBlobsHandled += (s, e) => { are.Set(); };
 
-        var ratingsTask = ratingsService.ProduceRatings(true);
-        Task.Delay(2).Wait();
         var importTask = importService.ImportTask(importRequest);
+        var ratingsTask = ratingsService.ProduceRatings(true);
         Task.WaitAll(new Task[2] { ratingsTask, importTask });
 
         var importFinished = are.WaitOne(TimeSpan.FromSeconds(60));
