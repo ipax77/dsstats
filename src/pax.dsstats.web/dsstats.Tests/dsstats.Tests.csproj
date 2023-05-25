@@ -67,6 +67,12 @@
 		<None Update="testdata\uploadtest4.base64">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
+		<None Update="testdata\uploadtest5.base64">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="testdata\uploadtest5.base64">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 		<None Update="testdata\arcadetestdata.json">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>

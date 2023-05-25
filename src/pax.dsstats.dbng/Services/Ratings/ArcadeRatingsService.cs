@@ -126,6 +126,7 @@ public partial class ArcadeRatingsService
                 && r.PlayerCount == 6
                 && r.Duration >= 300
                 && r.WinnerTeam > 0
+                && !r.TournamentEdition
                 && gameModes.Contains(r.GameMode));
 
         if (!recalc)
