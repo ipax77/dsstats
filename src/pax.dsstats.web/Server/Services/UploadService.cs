@@ -220,9 +220,12 @@ public partial class UploadService
                                                                                   && f.RegionId == uploaderPlayer.RegionId);
                     if (dbPlayer == null)
                     {
-                        var dbAddPlayer = mapper.Map<Player>(uploaderPlayer);
-                        dbAddPlayer.Uploader = dbUploader;
-                        dbUploader.Players.Add(dbAddPlayer);
+                        using var scope = serviceProvider.CreateScope();
+                        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+                        int playerId = await importService.CreatePlayer(mapper.Map<Player>(uploaderPlayer));
+                        dbPlayer = await context.Players.FirstAsync(f => f.PlayerId == playerId);
+                        dbPlayer.Uploader = dbUploader;
+                        dbUploader.Players.Add(dbPlayer);
                     }
                     else
                     {
