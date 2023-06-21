@@ -2,10 +2,12 @@
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
 using MathNet.Numerics.Interpolation;
+using pax.dsstats.shared.Interfaces;
+using MathNet.Numerics;
 
 namespace pax.dsstats.dbng.Services;
 
-public class DurationService
+public class DurationService : IDurationService
 {
     private readonly ReplayContext context;
 
@@ -26,7 +28,7 @@ public class DurationService
 
         var chartData = GetChartData(results);
 
-        return new DurationResponse() 
+        return new DurationResponse()
         {
             Commander = request.Commander,
             ChartData = chartData,
@@ -38,7 +40,7 @@ public class DurationService
     {
         (var from, var to) = Data.TimeperiodSelected(request.TimePeriod);
 
-        var sql = 
+        var sql =
             $@"SELECT CASE
                         WHEN r.Duration < 480 THEN 1
                         WHEN r.Duration < 660 THEN 2
@@ -61,7 +63,7 @@ public class DurationService
         var result = await context.DRangeResults
             .FromSqlRaw(sql)
             .ToListAsync(token);
-        
+
         return result;
     }
 
@@ -96,7 +98,7 @@ public class DurationService
                     };
 
         return await query.ToListAsync(token);
-    }    
+    }
 
     private static ChartData GetChartData(List<DRangeResult> results)
     {
@@ -105,27 +107,30 @@ public class DurationService
             return new();
         }
 
-        double[] xValues = results.Select(r => (double)r.DRange).ToArray();
-        double[] yValues = results.Select(r => (double)r.Wins / r.Count).ToArray();
+        List<double> xValues = new();
+        List<double> yValues = new();
 
-        IInterpolation interpolation = CubicSpline.InterpolateNatural(xValues, yValues);
-
-        int minX = (int)xValues.Min();
-        int maxX = (int)xValues.Max();
-        int[] interpolatedXValues = Enumerable.Range(minX, maxX - minX + 1).ToArray();
-
-        double[] interpolatedYValues = interpolatedXValues.Select(i => interpolation.Interpolate(i)).ToArray();
-
-        return new ChartData() 
+        for (int i = 0; i < results.Count; i++)
         {
-            Labels = interpolatedXValues.Select(s => GetDRangeLabel(s)).ToList(),
-            Data = interpolatedYValues.ToList()
+            var result = results[i];
+            xValues.Add(i);
+            yValues.Add(result.Wins * 100.0 / result.Count);
+        }
+
+        int order = Math.Min(4, yValues.Count - 1);
+
+        var poly = Fit.PolynomialFunc(xValues.ToArray(), yValues.ToArray(), 4);
+
+        return new ChartData()
+        {
+            Labels = results.Select(s => GetDRangeLabel(s.DRange)).ToList(),
+            Data = xValues.Select(s => Math.Round(poly(s), 2)).ToList()
         };
     }
 
     private static string GetDRangeLabel(int drange)
     {
-        return drange switch 
+        return drange switch
         {
             1 => "5 - 8",
             2 => "8 - 11",
@@ -140,31 +145,4 @@ public class DurationService
         };
     }
 
-}
-
-public record ChartData
-{
-    public List<string> Labels { get; set; } = new();
-    public List<double> Data { get; set; } = new();
-}
-
-public record DRangeResult
-{
-    public int DRange { get; set;  }
-    public int Count { get; set; }
-    public int Wins { get; set; }
-}
-
-public record DurationRequest
-{
-    public TimePeriod TimePeriod { get; set; }
-    public Commander Commander { get; set; }
-
-}
-
-public record DurationResponse
-{
-    public Commander Commander { get; set; }
-    public ChartData ChartData { get; set; } = new();
-    public List<DRangeResult> Results { get; set; } = new();
 }

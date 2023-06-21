@@ -1,0 +1,173 @@
+@using pax.BlazorChartJs;
+@using pax.dsstats.shared;
+
+<ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered"></ChartComponent>
+
+@code {
+    [CascadingParameter]
+    public DurationRequest Request { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public DurationResponse Response { get; set; } = default!;
+
+    ChartJsConfig chartConfig = null!;
+    ChartComponent? chartComponent;
+    bool chartReady;
+
+    protected override void OnInitialized()
+    {
+        chartConfig = GetChartConfig();
+        base.OnInitialized();
+    }
+
+    private void ChartEventTriggered(ChartJsEvent chartEvent)
+    {
+        if (chartEvent is ChartJsInitEvent initEvent)
+        {
+            chartReady = true;
+            SetupChart(Response);
+        }
+    }
+
+    public void SetupChart(DurationResponse response)
+    {
+        if (!chartReady)
+        {
+            return;
+        }
+
+        if (chartConfig.Data.Datasets.Any())
+        {
+            chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
+        }
+
+        if (chartConfig.Options?.Plugins?.Title != null)
+        {
+            chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"Duration {Data.GetTimePeriodLongName(Request.TimePeriod)}");
+            chartConfig.UpdateChartOptions();
+        }
+
+        chartConfig.SetLabels(response.ChartData.Labels);
+        chartConfig.AddDataset(GetLineDataset(response));
+        chartConfig.AddDataset(GetPointDataset(response));
+
+    }
+
+    private ChartJsDataset GetLineDataset(DurationResponse response)
+    {
+        return new LineDataset()
+            {
+                Label = response.Commander.ToString(),
+                Data = response.ChartData.Data.Cast<object>().ToList(),
+                // Data = response.Results.Select(s => (double)s.Wins / s.Count).Cast<object>().ToList(),
+                BorderColor = Data.GetBackgroundColor(response.Commander, "90"),
+                BorderWidth = 2,
+                PointRadius = new IndexableOption<double>(0),
+                Tension = 0.4,
+            };
+    }
+
+    private ChartJsDataset GetPointDataset(DurationResponse response)
+    {
+        return new LineDataset()
+            {
+                Label = response.Commander.ToString(),
+                Data = response.Results.Select(s => (double)s.Wins * 100.0 / s.Count).Cast<object>().ToList(),
+                BorderWidth = 0,
+                PointRadius = new IndexableOption<double>(2),
+                PointBackgroundColor = new IndexableOption<string>(Data.GetBackgroundColor(response.Commander, "90")),
+            };
+    }
+
+    private ChartJsConfig GetChartConfig()
+    {
+        string mainColor = "#3F5FFA";
+
+        return new ChartJsConfig()
+            {
+                Type = ChartType.line,
+                Options = new ChartJsOptions()
+                {
+                    Responsive = true,
+                    MaintainAspectRatio = true,
+                    Plugins = new Plugins()
+                    {
+                        Title = new Title()
+                        {
+                            Display = true,
+                            Text = new IndexableOption<string>("Duration"),
+                            Color = "#CED0DD",
+                            Font = new()
+                            {
+                                Size = 16,
+                            }
+                        },
+                        Legend = new Legend()
+                        {
+                            Display = true,
+                            Position = "bottom",
+                            Labels = new Labels()
+                            {
+                                Color = "#CED0DD",
+                            }
+                        }
+                    },
+                    Scales = new ChartJsOptionsScales()
+                    {
+                        X = new LinearAxis()
+                        {
+                            Title = new()
+                            {
+                                Display = true,
+                                Text = new IndexableOption<string>("Game duration in minutes"),
+                                Color = mainColor
+                            },
+                            Ticks = new LinearAxisTick()
+                            {
+                                Display = true,
+                                Color = mainColor,
+                            },
+                            Grid = new ChartJsGrid()
+                            {
+                                Display = true,
+                                Color = "rgba(113, 116, 143, 0.25)",
+                                TickColor = "rgba(113, 116, 143, 0.75)"
+                            },
+                            Border = new ChartJsAxisBorder()
+                            {
+                                Display = true,
+                                Color = "rgba(113, 116, 143)",
+                                Dash = new List<double>() { 2, 4 }
+                            }
+                        },
+                        Y = new LinearAxis()
+                        {
+                            Title = new()
+                            {
+                                Display = true,
+                                Text = new IndexableOption<string>("Winrate"),
+                                Color = mainColor,
+                            },
+                            Ticks = new LinearAxisTick()
+                            {
+                                Display = true,
+                                Color = mainColor,
+                            },
+                            Grid = new ChartJsGrid()
+                            {
+                                Display = true,
+                                Color = "rgba(113, 116, 143, 0.25)",
+                                TickColor = "rgba(113, 116, 143, 0.75)"
+                            },
+                            Border = new ChartJsAxisBorder()
+                            {
+                                Display = true,
+                                Color = "rgba(113, 116, 143)",
+                                Dash = new List<double>() { 2, 4 }
+                            }
+                        }
+                    }
+            },
+        };
+    }
+}

@@ -1,0 +1,19 @@
+@page "/stats/duration"
+@using pax.dsstats.shared;
+
+<PageTitle>Stats/Duration</PageTitle>
+
+<sc2dsstats.razorlib.Stats.Duration.DurationComponent Request="Request" OnRequetChanged="RequestChanged"></sc2dsstats.razorlib.Stats.Duration.DurationComponent>
+
+@code {
+    DurationRequest Request = new() 
+    {
+        Commander = Commander.Abathur,
+        TimePeriod = TimePeriod.Patch2_71
+    };
+
+    private void RequestChanged(DurationRequest request)
+    {
+        
+    }
+}

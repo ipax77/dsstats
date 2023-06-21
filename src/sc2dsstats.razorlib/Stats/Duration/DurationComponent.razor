@@ -1,0 +1,22 @@
+@if (isLoading)
+{
+    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+
+<div>
+    <CascadingValue Value="Request">
+        <DurationRequestComponent OnRequetChanged="LaodData"></DurationRequestComponent>
+    </CascadingValue>
+</div>
+
+<div class="border rounded border-secondary"
+    style="min-width: 550px; width: 44vw; height: calc(44vw * 0.5); min-height: 275px;">
+    <CascadingValue Value="Request">
+    @if (Response != null)
+    {
+        <DurationChart @ref="durationChart" Response="Response"></DurationChart>
+    }
+    </CascadingValue>
+</div>

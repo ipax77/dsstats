@@ -26,5 +26,6 @@ builder.Services.AddChartJs(options =>
 builder.Services.AddTransient<IDataService, DataService>();
 builder.Services.AddTransient<IArcadeService, ArcadeService>();
 builder.Services.AddScoped<IServerStatsService, ServerStatsService>();
+builder.Services.AddScoped<IDurationService, DurationService>();
 
 await builder.Build().RunAsync();

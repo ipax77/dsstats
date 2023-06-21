@@ -1,0 +1,45 @@
+
+@using pax.dsstats.shared;
+@using Microsoft.AspNetCore.Components.Forms;
+@implements IDisposable;
+
+<EditForm EditContext="editContext">
+    <div class="col-auto">
+        <label class="form-label">
+            Time Period
+            <InputSelect class="form-select" @bind-Value="Request.TimePeriod">
+                @foreach (TimePeriod time in Data.GetTimePeriods(Data.TimePeriodGet.NoNone))
+                {
+                    <option value="@time">@Data.GetTimePeriodLongName(time)</option>
+                }
+            </InputSelect>
+        </label>
+    </div>
+</EditForm>
+
+@code {
+    [CascadingParameter]
+    public DurationRequest Request { get; set; } = default!;
+    EditContext editContext = null!;
+
+    [Parameter]
+    public EventCallback OnRequetChanged { get; set; }
+
+    protected override void OnInitialized()
+    {
+        editContext  = new(Request);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        OnRequetChanged.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+
+}
