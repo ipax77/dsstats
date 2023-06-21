@@ -7,16 +7,22 @@
 
 <div>
     <CascadingValue Value="Request">
-        <DurationRequestComponent OnRequetChanged="LaodData"></DurationRequestComponent>
+        <DurationRequestComponent OnRequestChanged="LoadData"></DurationRequestComponent>
     </CascadingValue>
 </div>
 
 <div class="border rounded border-secondary"
-    style="min-width: 550px; width: 44vw; height: calc(44vw * 0.5); min-height: 275px;">
+    style="min-width: 550px; width: 66vw; height: calc(66vw * 0.5); min-height: 275px;">
     <CascadingValue Value="Request">
     @if (Response != null)
     {
         <DurationChart @ref="durationChart" Response="Response"></DurationChart>
     }
     </CascadingValue>
+</div>
+<div>
+    @if (Response != null)
+    {
+        <DurationTable Response="Response"></DurationTable>
+    }
 </div>

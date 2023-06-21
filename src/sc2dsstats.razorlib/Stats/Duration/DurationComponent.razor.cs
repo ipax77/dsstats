@@ -23,11 +23,11 @@ public partial class DurationComponent : ComponentBase, IDisposable
 
     protected override void OnInitialized()
     {
-        _ = LaodData();
+        _ = LoadData();
         base.OnInitialized();
     }
 
-    public async Task LaodData()
+    public async Task LoadData()
     {
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
@@ -35,6 +35,7 @@ public partial class DurationComponent : ComponentBase, IDisposable
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
         await OnRequetChanged.InvokeAsync(Request);
+        durationChart?.SetupChart(Response);
     }
 
     public void Dispose()

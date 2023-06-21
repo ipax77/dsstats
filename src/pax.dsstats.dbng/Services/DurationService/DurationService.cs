@@ -1,7 +1,6 @@
 
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
-using MathNet.Numerics.Interpolation;
 using pax.dsstats.shared.Interfaces;
 using MathNet.Numerics;
 
@@ -18,21 +17,14 @@ public class DurationService : IDurationService
 
     public async Task<DurationResponse> GetDuration(DurationRequest request, CancellationToken token = default)
     {
-        if (request.Commander == Commander.None)
-        {
-            request.Commander = Commander.Abathur;
-        }
-
         var results = await GetDurationRangeData(request, token);
         // var results = await GetEfDurationRangeData(request, token);
 
-        var chartData = GetChartData(results);
+        var chartDatas = GetChartData(results);
 
         return new DurationResponse()
         {
-            Commander = request.Commander,
-            ChartData = chartData,
-            Results = results
+            ChartDatas = chartDatas
         };
     }
 
@@ -41,7 +33,8 @@ public class DurationService : IDurationService
         (var from, var to) = Data.TimeperiodSelected(request.TimePeriod);
 
         var sql =
-            $@"SELECT CASE
+            $@"SELECT rp.Race,
+                     CASE
                         WHEN r.Duration < 480 THEN 1
                         WHEN r.Duration < 660 THEN 2
                         WHEN r.Duration < 840 THEN 3
@@ -55,9 +48,9 @@ public class DurationService : IDurationService
                         END as drange, count(*) as count, count(CASE WHEN rp.PlayerResult = 1 THEN 1 END) as wins
                 FROM Replays as r
                 INNER JOIN ReplayPlayers AS rp on rp.ReplayId = r.ReplayId
-                WHERE r.GameTime > '{from:yyyy-MM-dd}' AND r.DefaultFilter = 1 AND rp.Race = {(int)request.Commander}
+                WHERE r.GameTime > '{from:yyyy-MM-dd}' AND r.DefaultFilter = 1
                     {(to < DateTime.Today.AddDays(-2) ? $"AND r.GameTime < '{to:yyyy-MM-dd}'" : "")}
-                GROUP BY drange;            
+                GROUP BY drange, rp.Race;            
             ";
 
         var result = await context.DRangeResults
@@ -75,10 +68,10 @@ public class DurationService : IDurationService
                     join rp in context.ReplayPlayers on r.ReplayId equals rp.ReplayId
                     where r.GameTime > fromDate
                         && r.DefaultFilter
-                        && rp.Race == request.Commander
                         && (toDate < DateTime.Today.AddDays(-2) ? r.GameTime < toDate.Date : true)
                     group rp by new
                     {
+                        Race = rp.Race,
                         DRange = r.Duration < 480 ? 1 :
                                 r.Duration < 660 ? 2 :
                                 r.Duration < 840 ? 3 :
@@ -92,6 +85,7 @@ public class DurationService : IDurationService
                     } into g
                     select new DRangeResult
                     {
+                        Race = (int)g.Key.Race,
                         DRange = g.Key.DRange,
                         Count = g.Count(),
                         Wins = g.Count(rp => rp.PlayerResult == PlayerResult.Win)
@@ -100,32 +94,46 @@ public class DurationService : IDurationService
         return await query.ToListAsync(token);
     }
 
-    private static ChartData GetChartData(List<DRangeResult> results)
+    private static List<ChartData> GetChartData(List<DRangeResult> results)
     {
         if (!results.Any())
         {
             return new();
         }
 
-        List<double> xValues = new();
-        List<double> yValues = new();
+        List<ChartData> datas = new();
+        double[] xValues = new double[10] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
-        for (int i = 0; i < results.Count; i++)
+
+        foreach (var commander in Data.GetCommanders(Data.CmdrGet.NoNone))
         {
-            var result = results[i];
-            xValues.Add(i);
-            yValues.Add(result.Wins * 100.0 / result.Count);
+            List<double> yValues = new();
+            List<int> counts = new();
+
+            foreach (var result in results.Where(x => x.Race == (int)commander))
+            {
+                yValues.Add(result.Wins * 100.0 / result.Count);
+                counts.Add(result.Count);
+            }
+
+            if (yValues.Count < 3)
+            {
+                continue;
+            }
+
+            int order = Math.Min(4, yValues.Count - 1);
+
+            var poly = Fit.PolynomialFunc(xValues, yValues.ToArray(), 4);
+
+            datas.Add(new ChartData()
+            {
+                Commander = commander,
+                Data = yValues.ToList(),
+                NiceData = xValues.Select(s => Math.Round(poly(s), 2)).ToList(),
+                Counts = counts
+            });
         }
-
-        int order = Math.Min(4, yValues.Count - 1);
-
-        var poly = Fit.PolynomialFunc(xValues.ToArray(), yValues.ToArray(), 4);
-
-        return new ChartData()
-        {
-            Labels = results.Select(s => GetDRangeLabel(s.DRange)).ToList(),
-            Data = xValues.Select(s => Math.Round(poly(s), 2)).ToList()
-        };
+        return datas;
     }
 
     private static string GetDRangeLabel(int drange)

@@ -23,7 +23,7 @@
     EditContext editContext = null!;
 
     [Parameter]
-    public EventCallback OnRequetChanged { get; set; }
+    public EventCallback OnRequestChanged { get; set; }
 
     protected override void OnInitialized()
     {
@@ -34,7 +34,7 @@
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
-        OnRequetChanged.InvokeAsync();
+        OnRequestChanged.InvokeAsync();
     }
 
     public void Dispose()

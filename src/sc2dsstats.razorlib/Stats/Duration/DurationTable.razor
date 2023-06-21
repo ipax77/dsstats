@@ -1,0 +1,134 @@
+﻿@using System.Globalization;
+@using pax.dsstats.shared;
+
+<style>
+    .tableFixHead {
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+        .tableFixHead thead th {
+            position: sticky;
+            top: 0;
+        }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+
+    th {
+        background: purple;
+    }
+
+    .tablebackground {
+        position: absolute;
+        z-index: -1;
+        opacity: 0.15;
+    }
+</style>
+
+<div class="tableFixHead, table-responsive">
+    <table class="table table-dark table-hover table-striped">
+        <thead style="user-select: none;">
+            <tr>
+                <th>Commander</th>
+                <th>Duration (min)</th>
+                <th>Count</th>
+                <th>Winrate</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var commander in Data.GetCommanders(Data.CmdrGet.NoNone))
+            {
+                var chartData = Response.ChartDatas.FirstOrDefault(f => f.Commander == commander);
+                @if (chartData != null)
+                {
+                    <tr>
+                        @for (int i = 0; i < chartData.Data.Count; i++)
+                        {
+                            <td>@chartData.Commander</td>
+                            <td>@GetDRangeLabel(i + 1)</td>
+                            <td>@chartData.Counts[i]</td>
+                            <td>@chartData.Data[i].ToString("N2", CultureInfo.InvariantCulture)</td>
+                        }
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public DurationResponse Response { get; set; } = default!;
+
+    List<DurTableData> tableDatas = new();
+
+    private static string GetDRangeLabel(int drange)
+    {
+        return drange switch
+        {
+            1 => "5 - 8",
+            2 => "8 - 11",
+            3 => "11 - 14",
+            4 => "14 - 17",
+            5 => "17 - 20",
+            6 => "20 - 23",
+            7 => "23 - 26",
+            8 => "26 - 29",
+            9 => "29 - 32",
+            _ => "32+"
+        };
+    }
+
+    private void PrepareData(DurationResponse response, RatingType ratingType)
+    {
+        var commanders = ratingType == RatingType.Std ?
+              new List<Commander>() { Commander.Protoss, Commander.Terran, Commander.Zerg }
+            : Data.GetCommanders(Data.CmdrGet.NoStd);
+
+        tableDatas.Clear();
+
+        foreach (var commander in commanders)
+        {
+            DurTableData data = new() { Commander = commander };
+
+            var cmdrData = response.ChartDatas.FirstOrDefault(f => f.Commander == commander);
+
+            if (cmdrData == null || cmdrData.Counts.Count != cmdrData.Data.Count)
+            {
+                continue;
+            }
+
+            for (int i = 0; i < cmdrData.Counts.Count; i++)
+            {
+                // var property = data.GetPrperty($"Dur{i+1}");
+            }
+
+            tableDatas.Add(data);
+        }
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    private record DurTableData
+    {
+        public Commander Commander { get; set; }
+        public string Dur1 { get; set; } = string.Empty;
+        public string Dur2 { get; set; } = string.Empty;
+        public string Dur3 { get; set; } = string.Empty;
+        public string Dur4 { get; set; } = string.Empty;
+        public string Dur5 { get; set; } = string.Empty;
+        public string Dur6 { get; set; } = string.Empty;
+        public string Dur7 { get; set; } = string.Empty;
+        public string Dur8 { get; set; } = string.Empty;
+        public string Dur9 { get; set; } = string.Empty;
+        public string Dur10 { get; set; } = string.Empty;
+    }
+}
