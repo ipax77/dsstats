@@ -25,11 +25,11 @@
         if (chartEvent is ChartJsInitEvent initEvent)
         {
             chartReady = true;
-            SetupChart(Response);
+            SetupChart(Response, Request.RatingType);
         }
     }
 
-    public void SetupChart(DurationResponse response)
+    public void SetupChart(DurationResponse response, RatingType ratingType)
     {
         if (!chartReady)
         {
@@ -50,8 +50,22 @@
         }
 
         SetLabels();
-        chartConfig.AddDataset(GetLineDataset(response, Commander.Abathur));
-        chartConfig.AddDataset(GetPointDataset(response, Commander.Abathur));
+        List<ChartJsDataset> datasets = new();
+
+        var commanders = ratingType == RatingType.Std ?
+            Data.GetCommanders(Data.CmdrGet.Std)
+            : Data.GetCommanders(Data.CmdrGet.NoStd);
+
+        foreach (var cmdr in commanders)
+        {
+            datasets.Add(GetLineDataset(response, cmdr));
+            datasets.Add(GetPointDataset(response, cmdr));
+        }
+
+        chartConfig.AddDatasets(datasets);
+
+        //chartConfig.AddDataset(GetLineDataset(response, Commander.Abathur));
+        //chartConfig.AddDataset(GetPointDataset(response, Commander.Abathur));
     }
 
     private void SetLabels()

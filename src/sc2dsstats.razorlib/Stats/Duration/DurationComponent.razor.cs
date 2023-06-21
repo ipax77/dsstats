@@ -11,6 +11,7 @@ public partial class DurationComponent : ComponentBase, IDisposable
     private bool isLoading;
     private CancellationTokenSource cts = new();
     private DurationChart? durationChart;
+    private DurationTable? durationTable;
 
     [Inject]
     protected IDurationService durationService { get; set; } = null!;
@@ -35,7 +36,18 @@ public partial class DurationComponent : ComponentBase, IDisposable
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
         await OnRequetChanged.InvokeAsync(Request);
-        durationChart?.SetupChart(Response);
+        durationChart?.SetupChart(Response, Request.RatingType);
+        durationTable?.PrepareData(Response, Request.RatingType);
+    }
+
+    private void RatingTypeChanged(RatingType ratingType)
+    {
+        if (Response == null)
+        {
+            return;
+        }
+        durationChart?.SetupChart(Response, ratingType);
+        durationTable?.PrepareData(Response, ratingType);
     }
 
     public void Dispose()

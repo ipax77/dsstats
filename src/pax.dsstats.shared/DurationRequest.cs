@@ -4,6 +4,7 @@ namespace pax.dsstats.shared;
 public record DurationRequest
 {
     public TimePeriod TimePeriod { get; set; }
+    public RatingType RatingType { get; set; }
 }
 
 public record DurationResponse

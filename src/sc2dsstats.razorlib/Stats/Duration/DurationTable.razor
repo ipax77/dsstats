@@ -1,5 +1,7 @@
 ﻿@using System.Globalization;
 @using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Extensions;
+@using sc2dsstats.razorlib.Services;
 
 <style>
     .tableFixHead {
@@ -37,28 +39,88 @@
     <table class="table table-dark table-hover table-striped">
         <thead style="user-select: none;">
             <tr>
-                <th>Commander</th>
-                <th>Duration (min)</th>
-                <th>Count</th>
-                <th>Winrate</th>
+                <CascadingValue Value="tableOrders">
+                    <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Commander)))">
+                        <SortArrow Property="@nameof(DurTableData.Commander)">
+                            Commander
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur1)))">
+                        <SortArrow Property="@nameof(DurTableData.Dur1)">
+                            5 - 8 min
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur2)))">
+                        <SortArrow Property="@nameof(DurTableData.Dur2)">
+                            8 - 11 min
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur3)))">
+                        <SortArrow Property="@nameof(DurTableData.Dur3)">
+                            11 - 14 min
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur4)))">
+                        <SortArrow Property="@nameof(DurTableData.Dur4)">
+                            14 - 17 min
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur5)))">
+                        <SortArrow Property="@nameof(DurTableData.Dur5)">
+                            17 - 20 min
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur6)))">
+                        <SortArrow Property="@nameof(DurTableData.Dur6)">
+                            20 - 23 min
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur7)))">
+                        <SortArrow Property="@nameof(DurTableData.Dur7)">
+                            23 - 26 min
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur8)))">
+                        <SortArrow Property="@nameof(DurTableData.Dur8)">
+                            26 - 29 min
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur9)))">
+                        <SortArrow Property="@nameof(DurTableData.Dur9)">
+                            29 - 32 min
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur10)))">
+                        <SortArrow Property="@nameof(DurTableData.Dur10)">
+                            32+ min
+                        </SortArrow>
+                    </th>
+                </CascadingValue>
             </tr>
         </thead>
         <tbody>
-            @foreach (var commander in Data.GetCommanders(Data.CmdrGet.NoNone))
+            @foreach (var durData in tableDatasSorted)
             {
-                var chartData = Response.ChartDatas.FirstOrDefault(f => f.Commander == commander);
-                @if (chartData != null)
-                {
-                    <tr>
-                        @for (int i = 0; i < chartData.Data.Count; i++)
-                        {
-                            <td>@chartData.Commander</td>
-                            <td>@GetDRangeLabel(i + 1)</td>
-                            <td>@chartData.Counts[i]</td>
-                            <td>@chartData.Data[i].ToString("N2", CultureInfo.InvariantCulture)</td>
-                        }
-                    </tr>
-                }
+                <tr class="pointer" @onclick="e => SetChart(durData.Commander)">
+                    <td>
+                        <img src="@HelperService.GetImageSrc(durData.Commander)"
+                             alt="@durData.Commander"
+                             title="@durData.Commander"
+                             width="30"
+                             height="30" />
+                        @durData.Commander
+                    </td>
+                    <td style="color: @GetColumnColor(1, durData.Commander);">@durData.Dur1</td>
+                    <td style="color: @GetColumnColor(2, durData.Commander);">@durData.Dur2</td>
+                    <td style="color: @GetColumnColor(3, durData.Commander);">@durData.Dur3</td>
+                    <td style="color: @GetColumnColor(4, durData.Commander);">@durData.Dur4</td>
+                    <td style="color: @GetColumnColor(5, durData.Commander);">@durData.Dur5</td>
+                    <td style="color: @GetColumnColor(6, durData.Commander);">@durData.Dur6</td>
+                    <td style="color: @GetColumnColor(7, durData.Commander);">@durData.Dur7</td>
+                    <td style="color: @GetColumnColor(8, durData.Commander);">@durData.Dur8</td>
+                    <td style="color: @GetColumnColor(9, durData.Commander);">@durData.Dur9</td>
+                    <td style="color: @GetColumnColor(10, durData.Commander);">@durData.Dur10</td>
+                </tr>
             }
         </tbody>
     </table>
@@ -69,7 +131,26 @@
     [Parameter, EditorRequired]
     public DurationResponse Response { get; set; } = default!;
 
+    TableOrder tableOrder = new()
+        {
+            Property = nameof(DurTableData.Commander),
+            Ascending = true
+        };
+    List<TableOrder> tableOrders = new();
+
     List<DurTableData> tableDatas = new();
+    List<DurTableData> tableDatasSorted => tableOrder.Ascending ?
+        tableDatas.AsQueryable().AppendOrderBy(tableOrder.Property).ToList()
+        : tableDatas.AsQueryable().AppendOrderByDescending(tableOrder.Property).ToList();
+
+    List<DurInfo> durInfos = new();
+
+    protected override void OnInitialized()
+    {
+        tableOrders.Add(tableOrder);
+        PrepareData(Response, RatingType.Cmdr);
+        base.OnInitialized();
+    }
 
     private static string GetDRangeLabel(int drange)
     {
@@ -88,7 +169,7 @@
         };
     }
 
-    private void PrepareData(DurationResponse response, RatingType ratingType)
+    public void PrepareData(DurationResponse response, RatingType ratingType)
     {
         var commanders = ratingType == RatingType.Std ?
               new List<Commander>() { Commander.Protoss, Commander.Terran, Commander.Zerg }
@@ -102,19 +183,113 @@
 
             var cmdrData = response.ChartDatas.FirstOrDefault(f => f.Commander == commander);
 
-            if (cmdrData == null || cmdrData.Counts.Count != cmdrData.Data.Count)
+            if (cmdrData == null || cmdrData.Counts.Count != cmdrData.Data.Count || cmdrData.Counts.Count > 10)
             {
                 continue;
             }
 
             for (int i = 0; i < cmdrData.Counts.Count; i++)
             {
-                // var property = data.GetPrperty($"Dur{i+1}");
+                var prop = data.GetType().GetProperty($"Dur{i+1}");
+                if (prop != null)
+                {
+                    prop.SetValue(data, $"{cmdrData.Data[i].ToString("N2", CultureInfo.InvariantCulture)} ({cmdrData.Counts[i]})");
+                }
             }
 
             tableDatas.Add(data);
         }
+        SetInfos(response, commanders);
         InvokeAsync(() => StateHasChanged());
+    }
+
+    private void SetInfos(DurationResponse response, List<Commander> cmdrs)
+    {
+        durInfos.Clear();
+        if (response.ChartDatas.Count < 6 || response.ChartDatas.Any(a => a.Data.Count != 10))
+        {
+            return;
+        }
+
+        int total = response.ChartDatas.Sum(s => s.Counts.Sum());
+
+        for (int i = 0; i < 10; i++)
+        {
+            var sum = response.ChartDatas.Sum(s => s.Counts[i]);
+            var orderedData = response.ChartDatas.OrderByDescending(o => o.Data[i]).ToList();
+            durInfos.Add(new()
+            {
+                Percentage = (sum * 100.0 / total).ToString("N2", CultureInfo.InvariantCulture),
+                TopCmdr = orderedData[0].Commander,
+                Top2Cmdr = orderedData[1].Commander,
+                Top3Cmdr = orderedData[2].Commander,
+                BottomCmdr = orderedData[orderedData.Count - 1].Commander,
+                Bottom2Cmdr = orderedData[orderedData.Count - 2].Commander,
+                Bottom3Cmdr = orderedData[orderedData.Count - 3].Commander,
+            });
+        }
+    }
+
+    private void SetOrder(string propertyName)
+    {
+        if (tableOrder.Property == propertyName)
+        {
+            tableOrder.Ascending = !tableOrder.Ascending;
+        }
+        else
+        {
+            tableOrder.Property = propertyName;
+            tableOrder.Ascending = true;
+        }
+        StateHasChanged();
+    }
+
+    private string GetColumnColor(int dur, Commander cmdr)
+    {
+        int index = dur - 1;
+        if (durInfos.Count < index)
+        {
+            return "";
+        }
+
+        var durInfo = durInfos[index];
+
+        if (durInfo.TopCmdr == cmdr)
+        {
+            return "#69D867";
+        }
+
+        if (durInfo.Top2Cmdr == cmdr)
+        {
+            return "#51A750";
+        }
+
+        if (durInfo.Top3Cmdr == cmdr)
+        {
+            return "#4E974D";
+        }
+
+        if (durInfo.BottomCmdr == cmdr)
+        {
+            return "#E91626";
+        }
+
+        if (durInfo.Bottom2Cmdr == cmdr)
+        {
+            return "#C2101D";
+        }
+
+        if (durInfo.Bottom3Cmdr == cmdr)
+        {
+            return "#9C0D17";
+        }
+
+        return "";
+    }
+
+    private void SetChart(Commander cmdr)
+    {
+        
     }
 
     private record DurTableData
@@ -130,5 +305,16 @@
         public string Dur8 { get; set; } = string.Empty;
         public string Dur9 { get; set; } = string.Empty;
         public string Dur10 { get; set; } = string.Empty;
+    }
+
+    private record DurInfo
+    {
+        public string Percentage { get; set; } = "0%";
+        public Commander TopCmdr { get; set; }
+        public Commander Top2Cmdr { get; set; }
+        public Commander Top3Cmdr { get; set; }
+        public Commander BottomCmdr { get; set;  }
+        public Commander Bottom2Cmdr { get; set;  }
+        public Commander Bottom3Cmdr { get; set; }
     }
 }

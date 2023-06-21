@@ -7,7 +7,7 @@
 
 <div>
     <CascadingValue Value="Request">
-        <DurationRequestComponent OnRequestChanged="LoadData"></DurationRequestComponent>
+        <DurationRequestComponent OnRequestChanged="LoadData" OnRatingTypeChanged="RatingTypeChanged"></DurationRequestComponent>
     </CascadingValue>
 </div>
 
@@ -20,9 +20,12 @@
     }
     </CascadingValue>
 </div>
-<div>
+<div class="mt-3">
+    <p class="text-warning">
+        Winrate for all commanders whose games ended with the specified duration. The number in brackets indicates the number of matchups. The minimum playing time is 5 minutes.
+    </p>
     @if (Response != null)
     {
-        <DurationTable Response="Response"></DurationTable>
+        <DurationTable @ref="durationTable" Response="Response"></DurationTable>
     }
 </div>
