@@ -3,19 +3,34 @@ using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Interfaces;
 using MathNet.Numerics;
+using Microsoft.Extensions.Caching.Memory;
+using pax.dsstats.dbng.Extensions;
 
 namespace pax.dsstats.dbng.Services;
 
 public class DurationService : IDurationService
 {
     private readonly ReplayContext context;
+    private readonly IMemoryCache memoryCache;
 
-    public DurationService(ReplayContext context)
+    public DurationService(ReplayContext context, IMemoryCache memoryCache)
     {
         this.context = context;
+        this.memoryCache = memoryCache;
     }
 
     public async Task<DurationResponse> GetDuration(DurationRequest request, CancellationToken token = default)
+    {
+        var mamKey = request.GenMemKey();
+        if (!memoryCache.TryGetValue(mamKey, out DurationResponse response))
+        { 
+            response = await ProduceDuration(request, token);
+            memoryCache.Set(mamKey, response, TimeSpan.FromHours(24));
+        }
+        return response;
+    }
+
+    private async Task<DurationResponse> ProduceDuration(DurationRequest request, CancellationToken token = default)
     {
         var results = await GetDurationRangeData(request, token);
         // var results = await GetEfDurationRangeData(request, token);
