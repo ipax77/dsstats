@@ -79,6 +79,7 @@ builder.Services.AddScoped<PlayerService>();
 builder.Services.AddScoped<CrawlerService>();
 builder.Services.AddScoped<IServerStatsService, ServerStatsService>();
 builder.Services.AddScoped<ReplaysMergeService>();
+builder.Services.AddScoped<IDurationService, DurationService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -125,6 +126,8 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
+    // var duartionService = scope.ServiceProvider.GetRequiredService<IDurationService>();
+    // duartionService.GetDuration(new() { TimePeriod = TimePeriod.Past90Days }).Wait();
 }
 
 // Configure the HTTP request pipeline.

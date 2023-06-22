@@ -3,6 +3,7 @@ using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Arcade;
+using pax.dsstats.shared.Interfaces;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace pax.dsstats.web.Server.Controllers.v6
@@ -14,16 +15,19 @@ namespace pax.dsstats.web.Server.Controllers.v6
         private readonly IReplayRepository replayRepository;
         private readonly BuildService buildService;
         private readonly IStatsService statsService;
+        private readonly IDurationService durationService;
         private readonly CmdrsService cmdrService;
 
         public StatsController(IReplayRepository replayRepository,
                                BuildService buildService,
                                IStatsService statsService,
+                               IDurationService durationService,
                                CmdrsService cmdrService)
         {
             this.replayRepository = replayRepository;
             this.buildService = buildService;
             this.statsService = statsService;
+            this.durationService = durationService;
             this.cmdrService = cmdrService;
         }
 
@@ -330,6 +334,13 @@ namespace pax.dsstats.web.Server.Controllers.v6
         public async Task<ActionResult<List<ReplayPlayerChartDto>>> GetPlayerRatingChartData([FromBody] PlayerId playerId, int ratingType)
         {
             return await statsService.GetPlayerRatingChartData(playerId, (RatingType)ratingType);
+        }
+
+        [HttpPost]
+        [Route("duration")]
+        public async Task<ActionResult<DurationResponse>> GetDuration(DurationRequest request, CancellationToken token)
+        {
+            return await durationService.GetDuration(request, token);
         }
     }
 }

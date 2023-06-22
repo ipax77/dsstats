@@ -7,6 +7,7 @@
 @inject IDataService dataService
 @inject IJSRuntime IJSRuntime
 @inject IToastService toastService
+@inject NavigationManager NavigationManager
 @implements IDisposable
 
 <EditForm EditContext="editContext">
@@ -245,6 +246,12 @@
         }
         else if (e.FieldIdentifier.FieldName == nameof(StatsRequest.StatsMode))
         {
+            if (StatsRequest.StatsMode == StatsMode.Duration)
+            {
+                NavigationManager.NavigateTo("/stats/duration");
+                return;
+            }
+
             if (!(StatsRequest.StatsMode == StatsMode.Winrate || StatsRequest.StatsMode == StatsMode.Mvp))
             {
                 StatsRequest.TeMaps = false;

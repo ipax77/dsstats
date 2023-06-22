@@ -1,0 +1,115 @@
+@using pax.dsstats.shared;
+@using Microsoft.AspNetCore.Components.Forms;
+@inject NavigationManager NavigationManager
+@implements IDisposable;
+
+<EditForm EditContext="editContext">
+    <div class="row">
+        <div class="col-auto">
+            <label class="form-label">
+                StatsMode
+                <span class="oi oi-info pointer ms-2" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki#statsmode'"></span>
+                <select class="form-select" @onchange="ChangeMode">
+                    @foreach (StatsMode statsMode in Enum.GetValues(typeof(StatsMode)))
+                    {
+                        @if ((int)statsMode > 0)
+                        {
+                            @if (statsMode == StatsMode.Duration)
+                            {
+                                <option value="@statsMode" selected>@statsMode</option>
+                            }
+                            else
+                            {
+                                <option value="@statsMode">@statsMode</option>
+                            }
+                        }
+                    }
+                </select>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Time Period
+                <InputSelect class="form-select" @bind-Value="Request.TimePeriod">
+                    @foreach (TimePeriod time in Data.GetTimePeriods(Data.TimePeriodGet.NoNone))
+                    {
+                        <option value="@time">@Data.GetTimePeriodLongName(time)</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Type
+                <InputSelect class="form-select" @bind-Value="Request.RatingType">
+                    <option value="@RatingType.Cmdr">Commanders</option>
+                    <option value="@RatingType.Std">Standard</option>
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <div class="form-check form-switch">
+                <label class="form-check-label">
+                    WithBrawl
+                    <InputCheckbox class="form-check-input" @bind-Value="Request.WithBrawl">
+                    </InputCheckbox>
+                </label>
+            </div>
+            <div class="d-flex">
+                <div class="form-check form-switch">
+                    <label class="form-check-label">
+                        DefaultFilter
+                        <input type="checkbox" checked disabled class="form-check-input" />
+                    </label>
+                </div>
+                <div class="ms-2">
+                    <span class="oi oi-info pointer" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki#default-filter'"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    [CascadingParameter]
+    public DurationRequest Request { get; set; } = default!;
+    EditContext editContext = null!;
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<RatingType> OnRatingTypeChanged { get; set; }
+
+    string statsMode = "Duration";
+
+    protected override void OnInitialized()
+    {
+        editContext = new(Request);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        if (e.FieldIdentifier.FieldName == nameof(DurationRequest.RatingType))
+        {
+            OnRatingTypeChanged.InvokeAsync(Request.RatingType);
+        }
+        else
+        {
+            OnRequestChanged.InvokeAsync();
+        }
+    }
+
+    private void ChangeMode(ChangeEventArgs e)
+    {
+        NavigationManager.NavigateTo($"/stats?StatsMode={e.Value}");
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+
+}

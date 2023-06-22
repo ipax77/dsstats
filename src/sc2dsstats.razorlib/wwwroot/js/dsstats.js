@@ -280,3 +280,13 @@ function setZeroLineColor(defaultColor, defaultTickColor, zeroColor, chartId) {
 
     chart.update();
 }
+
+function setChartLegendFilter(chartId) {
+    const chart = Chart.getChart(chartId);
+    if (chart !== undefined) {
+        chart.options.plugins.legend.labels.filter = function (legendItem, chartData) {
+            return !(legendItem.lineWidth == 0);
+        };
+        chart.update();
+    }
+}

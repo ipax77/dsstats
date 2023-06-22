@@ -184,6 +184,15 @@ public static class ReplayExtensions
         return sb.ToString();
     }
 
+    public static string GenMemKey(this DurationRequest request)
+    {
+        StringBuilder sb = new();
+        sb.Append("StatsDuration");
+        sb.Append(request.TimePeriod.ToString());
+        sb.Append(request.WithBrawl);
+        return sb.ToString();
+    }
+
     public static string GetMd5Hash(MD5 md5Hash, string input)
     {
         byte[] data = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(input));

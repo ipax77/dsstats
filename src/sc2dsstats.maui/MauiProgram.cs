@@ -8,6 +8,7 @@ using pax.dsstats.dbng.Services;
 using pax.dsstats.dbng.Services.Ratings;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Arcade;
+using pax.dsstats.shared.Interfaces;
 using sc2dsstats.maui.Services;
 
 namespace sc2dsstats.maui;
@@ -67,6 +68,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<RatingsService>();
         builder.Services.AddScoped<PlayerService>();
         builder.Services.AddScoped<IArcadeService, sc2dsstats.maui.Services.ArcadeService>();
+        builder.Services.AddScoped<IDurationService, DurationService>();
 
         builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
         builder.Services.AddTransient<IStatsRepository, StatsRepository>();
