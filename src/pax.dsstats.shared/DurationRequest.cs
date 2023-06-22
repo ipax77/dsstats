@@ -5,6 +5,7 @@ public record DurationRequest
 {
     public TimePeriod TimePeriod { get; set; }
     public RatingType RatingType { get; set; }
+    public bool WithBrawl { get; set; }
 }
 
 public record DurationResponse

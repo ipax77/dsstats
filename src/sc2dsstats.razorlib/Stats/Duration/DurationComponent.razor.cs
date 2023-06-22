@@ -50,6 +50,34 @@ public partial class DurationComponent : ComponentBase, IDisposable
         durationTable?.PrepareData(Response, ratingType);
     }
 
+    private void ClearChart()
+    {
+        durationChart?.ClearDatasets();
+        durationTable?.ClearChart();
+    }
+
+    private void ShowChart()
+    {
+        if (Response == null)
+        {
+            return;
+        }
+        durationChart?.SetupChart(Response, Request.RatingType);
+        durationTable?.SetChart();
+    }
+
+    private void ChartRequest(KeyValuePair<Commander, bool> request)
+    {
+        if (request.Value)
+        {
+            durationChart?.AddDataset(request.Key);
+        }
+        else
+        {
+            durationChart?.RemoveDataset(request.Key);
+        }
+    }
+
     public void Dispose()
     {
         cts.Cancel();

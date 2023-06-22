@@ -40,6 +40,7 @@
         <thead style="user-select: none;">
             <tr>
                 <CascadingValue Value="tableOrders">
+                    <th><span class="oi oi-bar-chart" aria-hidden="true"></span></th>
                     <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Commander)))">
                         <SortArrow Property="@nameof(DurTableData.Commander)">
                             Commander
@@ -47,47 +48,47 @@
                     </th>
                     <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur1)))">
                         <SortArrow Property="@nameof(DurTableData.Dur1)">
-                            5 - 8 min
+                            5-8 min
                         </SortArrow>
                     </th>
                     <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur2)))">
                         <SortArrow Property="@nameof(DurTableData.Dur2)">
-                            8 - 11 min
+                            8-11 min
                         </SortArrow>
                     </th>
                     <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur3)))">
                         <SortArrow Property="@nameof(DurTableData.Dur3)">
-                            11 - 14 min
+                            11-14 min
                         </SortArrow>
                     </th>
                     <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur4)))">
                         <SortArrow Property="@nameof(DurTableData.Dur4)">
-                            14 - 17 min
+                            14-17 min
                         </SortArrow>
                     </th>
                     <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur5)))">
                         <SortArrow Property="@nameof(DurTableData.Dur5)">
-                            17 - 20 min
+                            17-20 min
                         </SortArrow>
                     </th>
                     <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur6)))">
                         <SortArrow Property="@nameof(DurTableData.Dur6)">
-                            20 - 23 min
+                            20-23 min
                         </SortArrow>
                     </th>
                     <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur7)))">
                         <SortArrow Property="@nameof(DurTableData.Dur7)">
-                            23 - 26 min
+                            23-26 min
                         </SortArrow>
                     </th>
                     <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur8)))">
                         <SortArrow Property="@nameof(DurTableData.Dur8)">
-                            26 - 29 min
+                            26-29 min
                         </SortArrow>
                     </th>
                     <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur9)))">
                         <SortArrow Property="@nameof(DurTableData.Dur9)">
-                            29 - 32 min
+                            29-32 min
                         </SortArrow>
                     </th>
                     <th class="pointer" @onclick="@(e => SetOrder(nameof(DurTableData.Dur10)))">
@@ -97,11 +98,30 @@
                     </th>
                 </CascadingValue>
             </tr>
+            <tr class="table-primary">
+                <th></th>
+                <th>Matchups</th>
+                <th>@GetDurPercentage(1)</th>
+                <th>@GetDurPercentage(2)</th>
+                <th>@GetDurPercentage(3)</th>
+                <th>@GetDurPercentage(4)</th>
+                <th>@GetDurPercentage(5)</th>
+                <th>@GetDurPercentage(6)</th>
+                <th>@GetDurPercentage(7)</th>
+                <th>@GetDurPercentage(8)</th>
+                <th>@GetDurPercentage(9)</th>
+                <th>@GetDurPercentage(10)</th>
+            </tr>
         </thead>
         <tbody>
             @foreach (var durData in tableDatasSorted)
             {
-                <tr class="pointer" @onclick="e => SetChart(durData.Commander)">
+                <tr class="pointer" @onclick:stopPropagation @onclick="e => LineChartRequest(durData)">
+                    <td>
+                        <div class="form-check">
+                            <input type="checkbox" checked="@durData.Chart" class="form-check-input" @onclick:stopPropagation @onchange="e => ChartRequest(e, durData.Commander)" />
+                        </div>
+                    </td>
                     <td>
                         <img src="@HelperService.GetImageSrc(durData.Commander)"
                              alt="@durData.Commander"
@@ -131,6 +151,9 @@
     [Parameter, EditorRequired]
     public DurationResponse Response { get; set; } = default!;
 
+    [Parameter]
+    public EventCallback<KeyValuePair<Commander, bool>> OnChartRequest { get; set; }
+
     TableOrder tableOrder = new()
         {
             Property = nameof(DurTableData.Commander),
@@ -144,12 +167,29 @@
         : tableDatas.AsQueryable().AppendOrderByDescending(tableOrder.Property).ToList();
 
     List<DurInfo> durInfos = new();
+    private bool shouldRender = true;
+
+    protected override bool ShouldRender() => shouldRender;
 
     protected override void OnInitialized()
     {
         tableOrders.Add(tableOrder);
         PrepareData(Response, RatingType.Cmdr);
         base.OnInitialized();
+    }
+
+    private void ChartRequest(ChangeEventArgs e, Commander cmdr)
+    {
+        if (e.Value is bool value)
+        {
+            OnChartRequest.InvokeAsync(new(cmdr, value));
+        }
+    }
+
+    private void LineChartRequest(DurTableData data)
+    {
+        data.Chart = !data.Chart;
+        OnChartRequest.InvokeAsync(new(data.Commander, data.Chart));
     }
 
     private static string GetDRangeLabel(int drange)
@@ -169,8 +209,19 @@
         };
     }
 
+    public void ClearChart()
+    {
+        tableDatas.ForEach(f => f.Chart = false);
+    }
+
+    public void SetChart()
+    {
+        tableDatas.ForEach(f => f.Chart = true);
+    }
+
     public void PrepareData(DurationResponse response, RatingType ratingType)
     {
+        shouldRender = false;
         var commanders = ratingType == RatingType.Std ?
               new List<Commander>() { Commander.Protoss, Commander.Terran, Commander.Zerg }
             : Data.GetCommanders(Data.CmdrGet.NoStd);
@@ -179,7 +230,7 @@
 
         foreach (var commander in commanders)
         {
-            DurTableData data = new() { Commander = commander };
+            DurTableData data = new() { Commander = commander, Chart = true };
 
             var cmdrData = response.ChartDatas.FirstOrDefault(f => f.Commander == commander);
 
@@ -193,13 +244,16 @@
                 var prop = data.GetType().GetProperty($"Dur{i+1}");
                 if (prop != null)
                 {
-                    prop.SetValue(data, $"{cmdrData.Data[i].ToString("N2", CultureInfo.InvariantCulture)} ({cmdrData.Counts[i]})");
+                    // prop.SetValue(data, $"{cmdrData.Data[i].ToString("N2", CultureInfo.InvariantCulture)} ({cmdrData.Counts[i]})");
+                    prop.SetValue(data, $"{cmdrData.Data[i].ToString("N2", CultureInfo.InvariantCulture)}%");
                 }
             }
 
             tableDatas.Add(data);
         }
         SetInfos(response, commanders);
+
+        shouldRender = true;
         InvokeAsync(() => StateHasChanged());
     }
 
@@ -220,6 +274,7 @@
             durInfos.Add(new()
             {
                 Percentage = (sum * 100.0 / total).ToString("N2", CultureInfo.InvariantCulture),
+                Total = sum,
                 TopCmdr = orderedData[0].Commander,
                 Top2Cmdr = orderedData[1].Commander,
                 Top3Cmdr = orderedData[2].Commander,
@@ -287,13 +342,23 @@
         return "";
     }
 
-    private void SetChart(Commander cmdr)
+    private string GetDurPercentage(int dur)
     {
-        
+        int index = dur - 1;
+        if (durInfos.Count == 0 || durInfos.Count < index)
+        {
+            return "";
+        }
+        else
+        {
+            var durInfo = durInfos[index];
+            return $"{HelperService.GetBigNumberString(durInfo.Total)} ({durInfo.Percentage}%)";
+        }
     }
 
     private record DurTableData
     {
+        public bool Chart { get; set; }
         public Commander Commander { get; set; }
         public string Dur1 { get; set; } = string.Empty;
         public string Dur2 { get; set; } = string.Empty;
@@ -310,6 +375,7 @@
     private record DurInfo
     {
         public string Percentage { get; set; } = "0%";
+        public int Total { get; set; }
         public Commander TopCmdr { get; set; }
         public Commander Top2Cmdr { get; set; }
         public Commander Top3Cmdr { get; set; }

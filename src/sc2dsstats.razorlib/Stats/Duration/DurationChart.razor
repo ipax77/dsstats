@@ -1,5 +1,7 @@
+@using Microsoft.JSInterop;
 @using pax.BlazorChartJs;
 @using pax.dsstats.shared;
+@inject IJSRuntime JSRuntime
 
 <ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered"></ChartComponent>
 
@@ -45,8 +47,9 @@
 
         if (chartConfig.Options?.Plugins?.Title != null)
         {
-            chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"Duration {Data.GetTimePeriodLongName(Request.TimePeriod)}");
+            chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"Duration - {Data.GetTimePeriodLongName(Request.TimePeriod)}");
             chartConfig.UpdateChartOptions();
+            JSRuntime.InvokeVoidAsync("setChartLegendFilter", chartConfig.ChartJsConfigGuid);
         }
 
         SetLabels();
@@ -63,9 +66,6 @@
         }
 
         chartConfig.AddDatasets(datasets);
-
-        //chartConfig.AddDataset(GetLineDataset(response, Commander.Abathur));
-        //chartConfig.AddDataset(GetPointDataset(response, Commander.Abathur));
     }
 
     private void SetLabels()
@@ -96,13 +96,21 @@
         var datasets = chartConfig.Data.Datasets
             .Cast<LineDataset>()
             .Where(x => x.Label == commander.ToString());
-        
+
         if (!datasets.Any())
         {
             return;
         }
 
         chartConfig.RemoveDatasets(datasets.Cast<ChartJsDataset>().ToList());
+    }
+
+    public void ClearDatasets()
+    {
+        if (chartConfig.Data.Datasets.Any())
+        {
+            chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
+        }
     }
 
     private ChartJsDataset GetLineDataset(DurationResponse response, Commander commander)
@@ -115,7 +123,7 @@
                 Data = chartData == null ? new List<object>() : chartData.NiceData.Cast<object>().ToList(),
                 BorderColor = Data.GetBackgroundColor(commander, "90"),
                 BorderWidth = 2,
-                PointRadius = new IndexableOption<double>(0),
+                PointRadius = new IndexableOption<double>(3),
                 Tension = 0.4,
             };
     }
@@ -130,7 +138,7 @@
                 Data = chartData == null ? new List<object>() : chartData.Data.Cast<object>().ToList(),
                 BorderWidth = 0,
                 PointRadius = new IndexableOption<double>(2),
-                PointBackgroundColor = new IndexableOption<string>(Data.GetBackgroundColor(commander, "90")),
+                PointBackgroundColor = new IndexableOption<string>(Data.GetBackgroundColor(commander, "90"))
             };
     }
 
@@ -160,7 +168,7 @@
                         Legend = new Legend()
                         {
                             Display = true,
-                            Position = "bottom",
+                            Position = "right",
                             Labels = new Labels()
                             {
                                 Color = "#CED0DD",

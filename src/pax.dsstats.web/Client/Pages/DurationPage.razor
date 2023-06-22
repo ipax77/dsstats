@@ -11,6 +11,8 @@
     public int? Time { get; set; }
     [SupplyParameterFromQuery]
     public int? Type { get; set; }
+    [SupplyParameterFromQuery]
+    public int? Brawl { get; set; }
 
     protected override void OnInitialized()
     {
@@ -20,7 +22,8 @@
     DurationRequest Request = new() 
     {
         TimePeriod = TimePeriod.Patch2_71,
-        RatingType = RatingType.Cmdr
+        RatingType = RatingType.Cmdr,
+        WithBrawl = false
     };
 
     private void SetRequest()
@@ -33,6 +36,11 @@
         if (Type != null)
         {
             Request.RatingType = (RatingType)Type.Value;
+        }
+
+        if (Brawl != null)
+        {
+            Request.WithBrawl = Brawl.Value > 0;
         }
     }
 
@@ -49,6 +57,15 @@
         else
         {
             queryDic.Add("Type", null);
+        }
+
+        if (request.WithBrawl)
+        {
+            queryDic.Add("Brawl", 1);
+        }
+        else
+        {
+            queryDic.Add("Brawl", null);
         }
 
         NavigationManager.NavigateTo(

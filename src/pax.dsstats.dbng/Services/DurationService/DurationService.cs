@@ -50,6 +50,7 @@ public class DurationService : IDurationService
                 INNER JOIN ReplayPlayers AS rp on rp.ReplayId = r.ReplayId
                 WHERE r.GameTime > '{from:yyyy-MM-dd}' AND r.DefaultFilter = 1
                     {(to < DateTime.Today.AddDays(-2) ? $"AND r.GameTime < '{to:yyyy-MM-dd}'" : "")}
+                    {(request.WithBrawl ? "" : "AND r.GameMode IN (3,4,7)")}
                 GROUP BY drange, rp.Race;            
             ";
 
