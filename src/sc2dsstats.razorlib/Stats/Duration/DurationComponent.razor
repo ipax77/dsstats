@@ -1,0 +1,35 @@
+@if (isLoading)
+{
+    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+
+<div>
+    <CascadingValue Value="Request">
+        <DurationRequestComponent OnRequestChanged="LoadData" OnRatingTypeChanged="RatingTypeChanged"></DurationRequestComponent>
+    </CascadingValue>
+</div>
+
+<div class="border rounded border-secondary"
+    style="min-width: 650px; width: 77vw; height: calc(77vw * 0.5); min-height: 275px;">
+    <CascadingValue Value="Request">
+    @if (Response != null)
+    {
+        <DurationChart @ref="durationChart" Response="Response"></DurationChart>
+    }
+    </CascadingValue>
+</div>
+<div class="mt-2 button-block">
+    <button type="button" class="btn btn-sm btn-outline-light" @onclick="ClearChart">Clear Chart</button>
+    <button type="button" class="btn btn-sm btn-outline-light" @onclick="ShowChart">Full Chart</button>
+</div>
+<div class="mt-2">
+    <p class="text-warning">
+        Commanders winrate for games finished in the specified time.
+    </p>
+    @if (Response != null)
+    {
+        <DurationTable @ref="durationTable" Response="Response" OnChartRequest="ChartRequest"></DurationTable>
+    }
+</div>

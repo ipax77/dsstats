@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using pax.dsstats.dbng.Services;
+using pax.dsstats.shared;
 using System.Reflection;
 
 namespace pax.dsstats.dbng;
@@ -36,6 +38,8 @@ public class ReplayContext : DbContext
     public virtual DbSet<ArcadePlayerRating> ArcadePlayerRatings { get; set; } = null!;
     public virtual DbSet<ArcadeReplayPlayerRating> ArcadeReplayPlayerRatings { get; set; } = null!;
     public virtual DbSet<ArcadePlayerRatingChange> ArcadePlayerRatingChanges { get; set; } = null!;
+
+    public DbSet<DRangeResult> DRangeResults { get; set; } = null!;
 
     public int Week(DateTime date) => throw new InvalidOperationException($"{nameof(Week)} cannot be called client side.");
     public int Strftime(string arg, DateTime date) => throw new InvalidOperationException($"{nameof(Strftime)} cannot be called client side.");
@@ -150,6 +154,10 @@ public class ReplayContext : DbContext
         modelBuilder.Entity<ReplayRating>(entity =>
         {
             entity.HasIndex(i => i.RatingType);
+        });
+
+        modelBuilder.Entity<DRangeResult>(entity => {
+            entity.HasNoKey();
         });
 
         MethodInfo weekMethodInfo = typeof(ReplayContext)
