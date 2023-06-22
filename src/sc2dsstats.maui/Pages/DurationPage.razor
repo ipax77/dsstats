@@ -1,0 +1,12 @@
+﻿@page "/stats/duration"
+@using pax.dsstats.shared;
+
+<sc2dsstats.razorlib.Stats.Duration.DurationComponent Request="Request"></sc2dsstats.razorlib.Stats.Duration.DurationComponent>
+
+@code {
+    public DurationRequest Request = new()
+        {
+            TimePeriod = TimePeriod.Patch2_71,
+            WithBrawl = false
+        };
+}

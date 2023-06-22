@@ -5,6 +5,7 @@ using pax.dsstats.shared.Interfaces;
 using MathNet.Numerics;
 using Microsoft.Extensions.Caching.Memory;
 using pax.dsstats.dbng.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace pax.dsstats.dbng.Services;
 
@@ -12,18 +13,20 @@ public class DurationService : IDurationService
 {
     private readonly ReplayContext context;
     private readonly IMemoryCache memoryCache;
+    private readonly ILogger<DurationService> logger;
 
-    public DurationService(ReplayContext context, IMemoryCache memoryCache)
+    public DurationService(ReplayContext context, IMemoryCache memoryCache, ILogger<DurationService> logger)
     {
         this.context = context;
         this.memoryCache = memoryCache;
+        this.logger = logger;
     }
 
     public async Task<DurationResponse> GetDuration(DurationRequest request, CancellationToken token = default)
     {
         var mamKey = request.GenMemKey();
         if (!memoryCache.TryGetValue(mamKey, out DurationResponse response))
-        { 
+        {
             response = await ProduceDuration(request, token);
             memoryCache.Set(mamKey, response, TimeSpan.FromHours(24));
         }
@@ -33,14 +36,20 @@ public class DurationService : IDurationService
     private async Task<DurationResponse> ProduceDuration(DurationRequest request, CancellationToken token = default)
     {
         var results = await GetDurationRangeData(request, token);
-        // var results = await GetEfDurationRangeData(request, token);
 
-        var chartDatas = GetChartData(results);
-
-        return new DurationResponse()
+        try
         {
-            ChartDatas = chartDatas
-        };
+            var chartDatas = GetChartData(results);
+            return new DurationResponse()
+            {
+                ChartDatas = chartDatas
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed producing duration: {ex.Message}");
+        }
+        return new();
     }
 
     private async Task<List<DRangeResult>> GetDurationRangeData(DurationRequest request, CancellationToken token)
@@ -128,11 +137,11 @@ public class DurationService : IDurationService
 
             foreach (var result in results.Where(x => x.Race == (int)commander))
             {
-                yValues.Add(result.Wins * 100.0 / result.Count);
+                yValues.Add(result.Count == 0 ? 0 : result.Wins * 100.0 / result.Count);
                 counts.Add(result.Count);
             }
 
-            if (yValues.Count < 3)
+            if (yValues.Count != 10)
             {
                 continue;
             }
