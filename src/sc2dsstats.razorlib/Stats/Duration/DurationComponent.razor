@@ -25,11 +25,20 @@
     <button type="button" class="btn btn-sm btn-outline-light" @onclick="ShowChart">Full Chart</button>
 </div>
 <div class="mt-2">
-    <p class="text-warning">
-        Commanders winrate for games finished in the specified time.
-    </p>
+    @if (Request.WithRating)
+    {
+        <p class="text-warning">
+            Commanders average rating gain for games finished in the specified time.
+        </p>
+    }
+    else
+    {
+        <p class="text-warning">
+            Commanders winrate for games finished in the specified time.
+        </p>
+    }
     @if (Response != null)
     {
-        <DurationTable @ref="durationTable" Response="Response" OnChartRequest="ChartRequest"></DurationTable>
+        <DurationTable @ref="durationTable" Response="Response" OnChartRequest="ChartRequest" Request="Request"></DurationTable>
     }
 </div>

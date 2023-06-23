@@ -190,6 +190,7 @@ public static class ReplayExtensions
         sb.Append("StatsDuration");
         sb.Append(request.TimePeriod.ToString());
         sb.Append(request.WithBrawl);
+        sb.Append(request.WithRating);
         return sb.ToString();
     }
 

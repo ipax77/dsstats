@@ -50,8 +50,15 @@
         <div class="col-auto">
             <div class="form-check form-switch">
                 <label class="form-check-label">
+                    WithRating
+                    <InputCheckbox class="form-check-input" @bind-Value="Request.WithRating">
+                    </InputCheckbox>
+                </label>
+            </div>
+            <div class="form-check form-switch">
+                <label class="form-check-label">
                     WithBrawl
-                    <InputCheckbox class="form-check-input" @bind-Value="Request.WithBrawl">
+                    <InputCheckbox class="@(Request.WithRating ? "form-check-input disabled" : "form-check-input")" disabled="@Request.WithRating" @bind-Value="Request.WithBrawl">
                     </InputCheckbox>
                 </label>
             </div>
@@ -81,8 +88,6 @@
     [Parameter]
     public EventCallback<RatingType> OnRatingTypeChanged { get; set; }
 
-    string statsMode = "Duration";
-
     protected override void OnInitialized()
     {
         editContext = new(Request);
@@ -92,6 +97,11 @@
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
+        if (Request.WithRating)
+        {
+            Request.WithBrawl = false;
+        }
+
         if (e.FieldIdentifier.FieldName == nameof(DurationRequest.RatingType))
         {
             OnRatingTypeChanged.InvokeAsync(Request.RatingType);
