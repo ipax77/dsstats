@@ -35,11 +35,13 @@ public class DurationService : IDurationService
 
     private async Task<DurationResponse> ProduceDuration(DurationRequest request, CancellationToken token = default)
     {
-        var results = await GetDurationRangeData(request, token);
+        var results = request.WithRating ?
+            await GetDurationRangeDataWithRating(request, token)
+            : await GetDurationRangeData(request, token);
 
         try
         {
-            var chartDatas = GetChartData(results);
+            var chartDatas = GetChartData(results, request.WithRating);
             return new DurationResponse()
             {
                 ChartDatas = chartDatas
@@ -69,7 +71,7 @@ public class DurationService : IDurationService
                         WHEN r.Duration < 1740 THEN 8
                         WHEN r.Duration < 1920 THEN 9        
                         ELSE 10
-                        END as drange, count(*) as count, count(CASE WHEN rp.PlayerResult = 1 THEN 1 END) as wins
+                        END as drange, count(*) as count, CAST(count(CASE WHEN rp.PlayerResult = 1 THEN 1 END) AS DECIMAL) as winsOrRating
                 FROM Replays as r
                 INNER JOIN ReplayPlayers AS rp on rp.ReplayId = r.ReplayId
                 WHERE r.GameTime > '{from:yyyy-MM-dd}' AND r.DefaultFilter = 1
@@ -85,41 +87,41 @@ public class DurationService : IDurationService
         return result;
     }
 
-    private async Task<List<DRangeResult>> GetEfDurationRangeData(DurationRequest request, CancellationToken token)
+    private async Task<List<DRangeResult>> GetDurationRangeDataWithRating(DurationRequest request, CancellationToken token)
     {
-        (DateTime fromDate, DateTime toDate) = Data.TimeperiodSelected(request.TimePeriod);
+        (var from, var to) = Data.TimeperiodSelected(request.TimePeriod);
 
-        var query = from r in context.Replays
-                    join rp in context.ReplayPlayers on r.ReplayId equals rp.ReplayId
-                    where r.GameTime > fromDate
-                        && r.DefaultFilter
-                        && (toDate < DateTime.Today.AddDays(-2) ? r.GameTime < toDate.Date : true)
-                    group rp by new
-                    {
-                        Race = rp.Race,
-                        DRange = r.Duration < 480 ? 1 :
-                                r.Duration < 660 ? 2 :
-                                r.Duration < 840 ? 3 :
-                                r.Duration < 1020 ? 4 :
-                                r.Duration < 1200 ? 5 :
-                                r.Duration < 1380 ? 6 :
-                                r.Duration < 1560 ? 7 :
-                                r.Duration < 1740 ? 8 :
-                                r.Duration < 1920 ? 9 :
-                                10
-                    } into g
-                    select new DRangeResult
-                    {
-                        Race = (int)g.Key.Race,
-                        DRange = g.Key.DRange,
-                        Count = g.Count(),
-                        Wins = g.Count(rp => rp.PlayerResult == PlayerResult.Win)
-                    };
+        var sql =
+            $@"SELECT rp.Race,
+                     CASE
+                        WHEN r.Duration < 480 THEN 1
+                        WHEN r.Duration < 660 THEN 2
+                        WHEN r.Duration < 840 THEN 3
+                        WHEN r.Duration < 1020 THEN 4
+                        WHEN r.Duration < 1200 THEN 5
+                        WHEN r.Duration < 1380 THEN 6
+                        WHEN r.Duration < 1560 THEN 7
+                        WHEN r.Duration < 1740 THEN 8
+                        WHEN r.Duration < 1920 THEN 9        
+                        ELSE 10
+                        END as drange, count(*) as count, ROUND(AVG(rpr.RatingChange), 2) as winsOrRating
+                FROM Replays as r
+                INNER JOIN ReplayPlayers AS rp on rp.ReplayId = r.ReplayId
+                INNER JOIN RepPlayerRatings AS rpr on rpr.ReplayPlayerId = rp.ReplayPlayerId
+                WHERE r.GameTime > '{from:yyyy-MM-dd}' AND r.DefaultFilter = 1
+                    {(to < DateTime.Today.AddDays(-2) ? $"AND r.GameTime < '{to:yyyy-MM-dd}'" : "")}
+                    {(request.RatingType == RatingType.Std ? "AND r.GameMode = 7" : "AND r.GameMode IN (3,4)")}
+                GROUP BY drange, rp.Race;            
+            ";
 
-        return await query.ToListAsync(token);
+        var result = await context.DRangeResults
+            .FromSqlRaw(sql)
+            .ToListAsync(token);
+
+        return result;
     }
 
-    private static List<ChartData> GetChartData(List<DRangeResult> results)
+    private static List<ChartData> GetChartData(List<DRangeResult> results, bool withRating)
     {
         if (!results.Any())
         {
@@ -137,7 +139,8 @@ public class DurationService : IDurationService
 
             foreach (var result in results.Where(x => x.Race == (int)commander))
             {
-                yValues.Add(result.Count == 0 ? 0 : result.Wins * 100.0 / result.Count);
+                yValues.Add(withRating ? result.WinsOrRating :
+                        result.Count == 0 ? 0 : result.WinsOrRating * 100.0 / result.Count);
                 counts.Add(result.Count);
             }
 
