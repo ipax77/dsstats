@@ -37,7 +37,7 @@ public partial class DurationComponent : ComponentBase, IDisposable
         await InvokeAsync(() => StateHasChanged());
         await OnRequetChanged.InvokeAsync(Request);
         durationChart?.SetupChart(Response, Request.RatingType);
-        durationTable?.PrepareData(Response, Request.RatingType);
+        durationTable?.PrepareData(Response, Request);
     }
 
     private void RatingTypeChanged(RatingType ratingType)
@@ -47,7 +47,7 @@ public partial class DurationComponent : ComponentBase, IDisposable
             return;
         }
         durationChart?.SetupChart(Response, ratingType);
-        durationTable?.PrepareData(Response, ratingType);
+        durationTable?.PrepareData(Response, Request);
     }
 
     private void ClearChart()

@@ -130,16 +130,16 @@
                              height="30" />
                         @durData.Commander
                     </td>
-                    <td style="color: @GetColumnColor(1, durData.Commander);">@durData.Dur1</td>
-                    <td style="color: @GetColumnColor(2, durData.Commander);">@durData.Dur2</td>
-                    <td style="color: @GetColumnColor(3, durData.Commander);">@durData.Dur3</td>
-                    <td style="color: @GetColumnColor(4, durData.Commander);">@durData.Dur4</td>
-                    <td style="color: @GetColumnColor(5, durData.Commander);">@durData.Dur5</td>
-                    <td style="color: @GetColumnColor(6, durData.Commander);">@durData.Dur6</td>
-                    <td style="color: @GetColumnColor(7, durData.Commander);">@durData.Dur7</td>
-                    <td style="color: @GetColumnColor(8, durData.Commander);">@durData.Dur8</td>
-                    <td style="color: @GetColumnColor(9, durData.Commander);">@durData.Dur9</td>
-                    <td style="color: @GetColumnColor(10, durData.Commander);">@durData.Dur10</td>
+                    <td style="color: @GetColumnColor(1, durData.Commander);">@durData.Dur1.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td style="color: @GetColumnColor(2, durData.Commander);">@durData.Dur2.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td style="color: @GetColumnColor(3, durData.Commander);">@durData.Dur3.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td style="color: @GetColumnColor(4, durData.Commander);">@durData.Dur4.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td style="color: @GetColumnColor(5, durData.Commander);">@durData.Dur5.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td style="color: @GetColumnColor(6, durData.Commander);">@durData.Dur6.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td style="color: @GetColumnColor(7, durData.Commander);">@durData.Dur7.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td style="color: @GetColumnColor(8, durData.Commander);">@durData.Dur8.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td style="color: @GetColumnColor(9, durData.Commander);">@durData.Dur9.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td style="color: @GetColumnColor(10, durData.Commander);">@durData.Dur10.ToString("N2", CultureInfo.InvariantCulture)</td>
                 </tr>
             }
         </tbody>
@@ -150,6 +150,9 @@
 @code {
     [Parameter, EditorRequired]
     public DurationResponse Response { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public DurationRequest Request { get; set; } = default!;
 
     [Parameter]
     public EventCallback<KeyValuePair<Commander, bool>> OnChartRequest { get; set; }
@@ -163,8 +166,8 @@
 
     List<DurTableData> tableDatas = new();
     List<DurTableData> tableDatasSorted => tableOrder.Ascending ?
-        tableDatas.AsQueryable().AppendOrderBy(tableOrder.Property).ToList()
-        : tableDatas.AsQueryable().AppendOrderByDescending(tableOrder.Property).ToList();
+    tableDatas.AsQueryable().AppendOrderBy(tableOrder.Property).ToList()
+    : tableDatas.AsQueryable().AppendOrderByDescending(tableOrder.Property).ToList();
 
     List<DurInfo> durInfos = new();
     private bool shouldRender = true;
@@ -174,7 +177,7 @@
     protected override void OnInitialized()
     {
         tableOrders.Add(tableOrder);
-        PrepareData(Response, RatingType.Cmdr);
+        PrepareData(Response, Request);
         base.OnInitialized();
     }
 
@@ -219,10 +222,11 @@
         tableDatas.ForEach(f => f.Chart = true);
     }
 
-    public void PrepareData(DurationResponse response, RatingType ratingType)
+    public void PrepareData(DurationResponse response, DurationRequest request)
     {
         shouldRender = false;
-        var commanders = ratingType == RatingType.Std ?
+        Request = request;
+        var commanders = request.RatingType == RatingType.Std ?
               new List<Commander>() { Commander.Protoss, Commander.Terran, Commander.Zerg }
             : Data.GetCommanders(Data.CmdrGet.NoStd);
 
@@ -245,7 +249,8 @@
                 if (prop != null)
                 {
                     // prop.SetValue(data, $"{cmdrData.Data[i].ToString("N2", CultureInfo.InvariantCulture)} ({cmdrData.Counts[i]})");
-                    prop.SetValue(data, $"{cmdrData.Data[i].ToString("N2", CultureInfo.InvariantCulture)}%");
+                    // prop.SetValue(data, $"{cmdrData.Data[i].ToString("N2", CultureInfo.InvariantCulture)}{(WithRating ? "" : "%")}");
+                    prop.SetValue(data, cmdrData.Data[i]);
                 }
             }
 
@@ -360,16 +365,16 @@
     {
         public bool Chart { get; set; }
         public Commander Commander { get; set; }
-        public string Dur1 { get; set; } = string.Empty;
-        public string Dur2 { get; set; } = string.Empty;
-        public string Dur3 { get; set; } = string.Empty;
-        public string Dur4 { get; set; } = string.Empty;
-        public string Dur5 { get; set; } = string.Empty;
-        public string Dur6 { get; set; } = string.Empty;
-        public string Dur7 { get; set; } = string.Empty;
-        public string Dur8 { get; set; } = string.Empty;
-        public string Dur9 { get; set; } = string.Empty;
-        public string Dur10 { get; set; } = string.Empty;
+        public double Dur1 { get; set; }
+        public double Dur2 { get; set; }
+        public double Dur3 { get; set; }
+        public double Dur4 { get; set; }
+        public double Dur5 { get; set; }
+        public double Dur6 { get; set; }
+        public double Dur7 { get; set; }
+        public double Dur8 { get; set; }
+        public double Dur9 { get; set; }
+        public double Dur10 { get; set; }
     }
 
     private record DurInfo

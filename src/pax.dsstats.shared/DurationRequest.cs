@@ -6,6 +6,7 @@ public record DurationRequest
     public TimePeriod TimePeriod { get; set; }
     public RatingType RatingType { get; set; }
     public bool WithBrawl { get; set; }
+    public bool WithRating { get; set; }
 }
 
 public record DurationResponse
@@ -26,7 +27,7 @@ public record DRangeResult
     public int Race { get; set; }
     public int DRange { get; set;  }
     public int Count { get; set; }
-    public int Wins { get; set; }
+    public double WinsOrRating { get; set; }
 }
 
 public record DurationResult

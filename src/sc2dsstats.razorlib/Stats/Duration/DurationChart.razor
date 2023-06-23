@@ -45,6 +45,13 @@
             chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
         }
 
+        if (chartConfig.Options?.Scales?.Y?.Title != null)
+        {
+#pragma warning disable CS8602
+            chartConfig.Options.Scales.Y.Title.Text = new IndexableOption<string>($"{(Request.WithRating ? "Average rating gain" : "Winrate")}");
+#pragma warning restore CS8602
+        }
+
         if (chartConfig.Options?.Plugins?.Title != null)
         {
             chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"Duration - {Data.GetTimePeriodLongName(Request.TimePeriod)}");
