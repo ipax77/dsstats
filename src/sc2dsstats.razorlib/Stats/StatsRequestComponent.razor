@@ -251,6 +251,11 @@
                 NavigationManager.NavigateTo("/stats/duration");
                 return;
             }
+            else if (StatsRequest.StatsMode == StatsMode.Timeline)
+            {
+                NavigationManager.NavigateTo("/stats/timeline");
+                return;
+            }
 
             if (!(StatsRequest.StatsMode == StatsMode.Winrate || StatsRequest.StatsMode == StatsMode.Mvp))
             {

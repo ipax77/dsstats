@@ -151,7 +151,7 @@ public class DurationService : IDurationService
 
             int order = Math.Min(4, yValues.Count - 1);
 
-            var poly = Fit.PolynomialFunc(xValues, yValues.ToArray(), 4);
+            var poly = Fit.PolynomialFunc(xValues, yValues.ToArray(), order);
 
             datas.Add(new ChartData()
             {

@@ -80,7 +80,7 @@ builder.Services.AddScoped<CrawlerService>();
 builder.Services.AddScoped<IServerStatsService, ServerStatsService>();
 builder.Services.AddScoped<ReplaysMergeService>();
 builder.Services.AddScoped<IDurationService, DurationService>();
-builder.Services.AddScoped<TimelineService>();
+builder.Services.AddScoped<ITimelineService, TimelineService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -127,7 +127,7 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var timelineService = scope.ServiceProvider.GetRequiredService<TimelineService>();
+    var timelineService = scope.ServiceProvider.GetRequiredService<ITimelineService>();
     timelineService.GetTimeline(new()
     {
         TimePeriod = TimePeriod.ThisYear,
