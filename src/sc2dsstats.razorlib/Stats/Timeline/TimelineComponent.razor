@@ -22,6 +22,15 @@
             <TimelineChart @ref="timelineChart" Response="Response" Request="Request"></TimelineChart>
         }
 </div>
+<div class="mt-2">
+
+</div>
+<div class="mt-2">
+    @if (Response != null)
+    {
+        <TimelineTable Request="Request" Response="Response"></TimelineTable>
+    }
+</div>
 @code {
     [Parameter, EditorRequired]
     public TimelineRequest Request { get; set; } = default!;

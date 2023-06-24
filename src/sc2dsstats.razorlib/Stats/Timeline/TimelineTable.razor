@@ -1,0 +1,83 @@
+﻿@using System.Globalization;
+@using sc2dsstats.razorlib.Services;
+<h3>TimelineTable</h3>
+
+<style>
+    .tableFixHead {
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+        .tableFixHead thead th {
+            position: sticky;
+            top: 0;
+        }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+
+    th {
+        background: purple;
+    }
+
+    .tablebackground {
+        position: absolute;
+        z-index: -1;
+        opacity: 0.15;
+    }
+</style>
+
+<div class="tableFixHead, table-responsive">
+    <table class="table table-dark table-hover table-striped">
+        <thead style="user-select: none;">
+            <tr>
+                <CascadingValue Value="tableOrders">
+                    <th><span class="oi oi-bar-chart" aria-hidden="true"></span></th>
+                    <th class="pointer" @onclick="@(e => SetOrder(nameof(TimeTableData.Commander)))">
+                        <SortArrow Property="@nameof(TimeTableData.Commander)">
+                            Commander
+                        </SortArrow>
+                    </th>
+                    @for (int i = 0; i < times.Count; i++)
+                    {
+                        var j = i;
+                        var time = times[j];
+                        <th class="pointer" @onclick="@(e => SetOrder($"{j}"))">
+                            <SortArrow Property="@($"{j}")">
+                                @time.ToString(@"yyyy-MM")
+                            </SortArrow>
+                        </th>
+                    }
+                </CascadingValue>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var data in SortData())
+            {
+                <tr>
+                    <td>X</td>
+                    <td>
+                        <img src="@HelperService.GetImageSrc(data.Commander)"
+                             alt="@data.Commander"
+                             title="@data.Commander"
+                             width="30"
+                             height="30" />
+                        @data.Commander
+                    </td>
+                    @for (int k = 0; k < data.Strengths.Count; k++)
+                    {
+                        var l = k;
+                        <td>@data.Strengths[k].ToString("N2", CultureInfo.InvariantCulture)</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
