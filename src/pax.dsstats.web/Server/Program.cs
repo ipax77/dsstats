@@ -127,12 +127,12 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var timelineService = scope.ServiceProvider.GetRequiredService<ITimelineService>();
-    timelineService.GetTimeline(new()
-    {
-        TimePeriod = TimePeriod.ThisYear,
-        RatingType = RatingType.Cmdr
-    }).Wait();
+    //var timelineService = scope.ServiceProvider.GetRequiredService<ITimelineService>();
+    //timelineService.GetTimeline(new()
+    //{
+    //    TimePeriod = TimePeriod.ThisYear,
+    //    RatingType = RatingType.Cmdr
+    //}).Wait();
 }
 
 // Configure the HTTP request pipeline.
