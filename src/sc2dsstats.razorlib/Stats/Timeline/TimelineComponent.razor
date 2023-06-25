@@ -22,13 +22,14 @@
             <TimelineChart @ref="timelineChart" Response="Response" Request="Request"></TimelineChart>
         }
 </div>
-<div class="mt-2">
-
+<div class="mt-2 button-block">
+    <button type="button" class="btn btn-sm btn-outline-light" @onclick="ClearChart">Clear Chart</button>
+    <button type="button" class="btn btn-sm btn-outline-light" @onclick="ShowChart">Full Chart</button>
 </div>
 <div class="mt-2">
     @if (Response != null)
     {
-        <TimelineTable Request="Request" Response="Response"></TimelineTable>
+        <TimelineTable @ref="timelineTable" Request="Request" Response="Response" OnChartRequest="ChartRequest"></TimelineTable>
     }
 </div>
 @code {
@@ -43,6 +44,7 @@
     private bool isLoading;
 
     private TimelineChart? timelineChart;
+    private TimelineTable? timelineTable;
 
     protected override void OnInitialized()
     {
@@ -58,6 +60,36 @@
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
         await OnRequestChanged.InvokeAsync(Request);
+        timelineChart?.SetupChart(Response, Request);
+        timelineTable?.PrepareData(Response, Request);
+    }
+
+    private void ClearChart()
+    {
+        timelineChart?.ClearDatasets();
+        timelineTable?.ClearChart();
+    }
+
+    private void ShowChart()
+    {
+        if (Response == null)
+        {
+            return;
+        }
+        timelineChart?.SetupChart(Response, Request);
+        timelineTable?.SetChart();
+    }
+
+    private void ChartRequest(KeyValuePair<Commander, bool> request)
+    {
+        if (request.Value)
+        {
+            timelineChart?.AddDataset(request.Key);
+        }
+        else
+        {
+            timelineChart?.RemoveDataset(request.Key);
+        }
     }
 
     public void Dispose()

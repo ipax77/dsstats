@@ -61,8 +61,12 @@
         <tbody>
             @foreach (var data in SortData())
             {
-                <tr>
-                    <td>X</td>
+                <tr class="pointer" @onclick:stopPropagation @onclick="e => LineChartRequest(data)">
+                    <td>
+                        <div class="form-check">
+                            <input type="checkbox" checked="@data.Chart" class="form-check-input" @onclick:stopPropagation @onchange="e => ChartRequest(e, data.Commander)" />
+                        </div>
+                    </td>
                     <td>
                         <img src="@HelperService.GetImageSrc(data.Commander)"
                              alt="@data.Commander"

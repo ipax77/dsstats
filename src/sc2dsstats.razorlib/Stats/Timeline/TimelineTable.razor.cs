@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
 using pax.dsstats.shared;
-using System.ComponentModel.Design;
 using System.Text.RegularExpressions;
 
 namespace sc2dsstats.razorlib.Stats.Timeline;
@@ -12,6 +11,9 @@ public partial class TimelineTable : ComponentBase
 
     [Parameter, EditorRequired]
     public TimelineRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<KeyValuePair<Commander, bool>> OnChartRequest { get; set; }
 
     List<DateTime> times = new();
     List<TimeTableData> tableDatas = new();
@@ -54,7 +56,7 @@ public partial class TimelineTable : ComponentBase
 
         foreach (var cmdr in cmdrs)
         {
-            var tableData = new TimeTableData() { Commander = cmdr };
+            var tableData = new TimeTableData() { Commander = cmdr, Chart = true };
             for (int i = 0; i < times.Count; i++)
             {
                 var data = response.TimeLineEnts.FirstOrDefault(f => f.Commander == cmdr && f.Time == times[i]);
@@ -127,8 +129,33 @@ public partial class TimelineTable : ComponentBase
         return tableDatas;
     }
 
+    public void ClearChart()
+    {
+        tableDatas.ForEach(f => f.Chart = false);
+    }
+
+    public void SetChart()
+    {
+        tableDatas.ForEach(f => f.Chart = true);
+    }
+
+    private void ChartRequest(ChangeEventArgs e, Commander cmdr)
+    {
+        if (e.Value is bool value)
+        {
+            OnChartRequest.InvokeAsync(new(cmdr, value));
+        }
+    }
+
+    private void LineChartRequest(TimeTableData data)
+    {
+        data.Chart = !data.Chart;
+        OnChartRequest.InvokeAsync(new(data.Commander, data.Chart));
+    }
+
     public record TimeTableData
     {
+        public bool Chart { get; set; }
         public Commander Commander { get; set; }
         public List<double> Strengths { get; set; } = new();
         public List<int> Counts { get; set; } = new();

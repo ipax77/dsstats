@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Interfaces;
+using pax.dsstats.shared.Services;
 
 namespace pax.dsstats.dbng.Services;
 
@@ -17,7 +18,10 @@ public class TimelineService : ITimelineService
     public async Task<TimelineResponse> GetTimeline(TimelineRequest request, CancellationToken token = default)
     {
         var data = await GetData(request, token);
-        SetStrength(data);
+        // SetStrength(data);
+        // SetStrengthPerMonth(data);
+        //SetWeightedStrengthPerMonth(data);
+        SetWeightedStrength(data);
 
         return new()
         {
@@ -32,22 +36,12 @@ public class TimelineService : ITimelineService
             return;
         }
 
-        double maxRating = data.Max(d => d.AvgRating);
-        double maxGain = data.Max(d => d.AvgGain);
+        var nRatings = Normalize.NormalizeList(data.Select(s => s.AvgRating).ToList());
+        var nGains = Normalize.NormalizeList(data.Select(s => s.AvgGain).ToList());
 
-        if (maxRating == 0)
+        for (int i = 0; i < data.Count; i++)
         {
-            maxRating = 1;
-        }
-
-        if (maxGain == 0)
-        {
-            maxGain = 1;
-        }
-
-        foreach (var ent in data)
-        {
-            ent.Strength = (ent.AvgGain / maxGain) + (ent.AvgRating / maxRating) / 2;
+            data[i].Strength = (nGains[i] + nRatings[i]) / 2;
         }
 
         var maxStrenght = data.Max(d => d.Strength);
@@ -56,10 +50,123 @@ public class TimelineService : ITimelineService
         {
             maxStrenght = 1;
         }
+    }
 
-        foreach (var ent in data)
+    private void SetStrengthPerMonth(List<TimelineEnt> data)
+    {
+        if (!data.Any())
         {
-            ent.Strength = Math.Round((ent.Strength / maxStrenght) * 100, 2);
+            return;
+        }
+
+        var cmdrs = data.Select(s => s.Commander).Distinct().ToList();
+
+        foreach (var cmdr in cmdrs)
+        {
+            var cmdrData = data.Where(x => x.Commander == cmdr).ToList();
+
+            var nRatings = Normalize.NormalizeList(cmdrData.Select(s => s.AvgRating).ToList());
+            var nGains = Normalize.NormalizeList(cmdrData.Select(s => s.AvgGain).ToList());
+
+            for (int i = 0; i < cmdrData.Count; i++)
+            {
+                cmdrData[i].Strength = (nGains[i] + nRatings[i]) / 2;
+            }
+
+
+            var nStrength = Normalize.NormalizeList(cmdrData.Select(s => s.Strength).ToList());
+            for (int i = 0; i < cmdrData.Count; i++)
+            {
+                cmdrData[i].Strength = Math.Round(nStrength[i] * 100.0, 2);
+            }
+        }
+    }
+
+    private void SetWeightedStrengthPerMonth(List<TimelineEnt> data)
+    {
+        if (!data.Any())
+        {
+            return;
+        }
+
+        double weightMatchups = 1;
+        double weightWinrate = 5;
+        double weightRating = 8;
+        double weightGain = 8;
+
+        var cmdrs = data.Select(s => s.Commander).Distinct().ToList();
+
+        foreach (var cmdr in cmdrs)
+        {
+            var cmdrData = data.Where(x => x.Commander == cmdr).ToList();
+
+            double minMatchups = cmdrData.Min(m => m.Count);
+            double maxMatchups = cmdrData.Max(m => m.Count);
+
+            var winrates = cmdrData.Select(s => s.Count == 0 ? 0 : s.Wins * 100.0 / (double)s.Count).ToList();
+            double minWinrate = winrates.Min();
+            double maxWinrate = winrates.Max();
+
+            double minRating = cmdrData.Min(m => m.AvgRating);
+            double maxRating = cmdrData.Max(m => m.AvgRating);
+
+            double minGain = cmdrData.Min(m => m.AvgGain);
+            double maxGain = cmdrData.Max(m => m.AvgGain);
+
+            foreach (var item in cmdrData)
+            {
+                var normalizedMatchups = (item.Count - minMatchups) / (maxMatchups - minMatchups);
+                var normalizedWinrate = (item.Wins * 100.0 / (double)item.Count - minWinrate) / (maxWinrate - minWinrate);
+                var normalizedRating = (item.AvgRating - minRating) / (maxRating - minRating);
+                var normalizedGain = (item.AvgGain - minGain) / (maxGain - minGain);
+
+                item.Strength =
+                      weightMatchups * normalizedMatchups
+                    + weightWinrate * normalizedWinrate
+                    + weightRating * normalizedRating
+                    + weightGain * normalizedGain;
+            }
+        }
+    }
+
+    private void SetWeightedStrength(List<TimelineEnt> data)
+    {
+        if (!data.Any())
+        {
+            return;
+        }
+
+        double weightMatchups = 1;
+        double weightWinrate = 5;
+        double weightRating = 8;
+        double weightGain = 8;
+
+
+        double minMatchups = data.Min(m => m.Count);
+        double maxMatchups = data.Max(m => m.Count);
+
+        var winrates = data.Select(s => s.Count == 0 ? 0 : s.Wins * 100.0 / (double)s.Count).ToList();
+        double minWinrate = winrates.Min();
+        double maxWinrate = winrates.Max();
+
+        double minRating = data.Min(m => m.AvgRating);
+        double maxRating = data.Max(m => m.AvgRating);
+
+        double minGain = data.Min(m => m.AvgGain);
+        double maxGain = data.Max(m => m.AvgGain);
+
+        foreach (var item in data)
+        {
+            var normalizedMatchups = (item.Count - minMatchups) / (maxMatchups - minMatchups);
+            var normalizedWinrate = (item.Wins * 100.0 / (double)item.Count - minWinrate) / (maxWinrate - minWinrate);
+            var normalizedRating = (item.AvgRating - minRating) / (maxRating - minRating);
+            var normalizedGain = (item.AvgGain - minGain) / (maxGain - minGain);
+
+            item.Strength = 0
+                //   weightMatchups * normalizedMatchups
+                // + weightWinrate * normalizedWinrate
+                // + weightRating * normalizedRating
+                + weightGain * normalizedGain;
         }
     }
 
