@@ -1,0 +1,99 @@
+﻿@page "/stats/count"
+@layout StatsLayout
+@using pax.dsstats.shared
+@inject NavigationManager NavigationManager
+
+<PageTitle>Stats</PageTitle>
+<title>Direct Strike - Commander stats</title>
+
+<sc2dsstats.razorlib.Stats.StatsComponent StatsRequest="statsRequest" OnRequestChanged="RequestChanged"></sc2dsstats.razorlib.Stats.StatsComponent>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? StatsMode { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? TimePeriod { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Interest { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public bool? Uploaders { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public bool? DefaultFilter { get; set; }
+
+    private StatsRequest statsRequest = new()
+        {
+            StatsMode = shared.StatsMode.Winrate,
+            TimePeriod = shared.TimePeriod.Past90Days,
+            Uploaders = false,
+            DefaultFilter = true,
+            GameModes = new() { GameMode.Commanders, GameMode.CommandersHeroic }
+        };
+
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }
+
+    private void SetRequest()
+    {
+        if (Enum.TryParse(typeof(StatsMode), StatsMode, out object? statsModeObj))
+        {
+            if (statsModeObj is StatsMode satsMode)
+            {
+                statsRequest.StatsMode = satsMode;
+            }
+        }
+
+        if (!String.IsNullOrEmpty(TimePeriod) 
+            && Enum.TryParse(typeof(TimePeriod), TimePeriod, out var timePeriodObj) 
+            && timePeriodObj is TimePeriod timePeriod)
+        {
+            statsRequest.TimePeriod = timePeriod;
+        }
+
+        if (Enum.TryParse(typeof(Commander), Interest, out object? interestObj))
+        {
+            if (interestObj is Commander interest)
+            {
+                statsRequest.Interest = interest;
+            }
+        }
+
+        if (Uploaders != null)
+        {
+            statsRequest.Uploaders = Uploaders.Value;
+        }
+
+        if (DefaultFilter != null)
+        {
+            statsRequest.DefaultFilter = DefaultFilter.Value;
+        }
+    }
+
+    private void RequestChanged()
+    {
+        Dictionary<string, object?> queryDic = new();
+
+        queryDic.Add("StatsMode", statsRequest.StatsMode.ToString());
+        queryDic.Add("TimePeriod", statsRequest.TimePeriod.ToString());
+        queryDic.Add("Interest", statsRequest.Interest.ToString());
+        queryDic.Add("Uploaders", statsRequest.Uploaders);
+        queryDic.Add("DefaultFilter", statsRequest.DefaultFilter);
+
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters(
+                new Dictionary<string, object?>(queryDic)
+            )
+        );
+    }
+}

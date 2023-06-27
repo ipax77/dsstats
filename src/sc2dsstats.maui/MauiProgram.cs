@@ -69,6 +69,8 @@ public static class MauiProgram
         builder.Services.AddScoped<PlayerService>();
         builder.Services.AddScoped<IArcadeService, sc2dsstats.maui.Services.ArcadeService>();
         builder.Services.AddScoped<IDurationService, DurationService>();
+        builder.Services.AddScoped<ITimelineService, TimelineService>();
+        builder.Services.AddScoped<IDsUpdateService, Services.DsUpdateService>();
 
         builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
         builder.Services.AddTransient<IStatsRepository, StatsRepository>();
