@@ -1,4 +1,4 @@
-﻿@page "/stats"
+﻿@page "/stats/count"
 @layout Statslayout
 @inject DecodeService DecodeService
 @inject IToastService toastService
@@ -20,7 +20,7 @@
 @code {
     StatsRequest statsRequest = new()
     {
-        StatsMode = StatsMode.Winrate,
+        StatsMode = StatsMode.Count,
         Uploaders = true,
         DefaultFilter = true,
         GameModes = new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic }

@@ -15,7 +15,7 @@ namespace SqliteMigrations.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "6.0.16");
+            modelBuilder.HasAnnotation("ProductVersion", "6.0.19");
 
             modelBuilder.Entity("pax.dsstats.dbng.ArcadePlayer", b =>
                 {
@@ -330,6 +330,34 @@ namespace SqliteMigrations.Migrations
                     b.HasIndex("Race", "OppRace");
 
                     b.ToTable("CommanderMmrs");
+                });
+
+            modelBuilder.Entity("pax.dsstats.dbng.DsUpdate", b =>
+                {
+                    b.Property<int>("DsUpdateId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Change")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Commander")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DiscordId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Time")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("DsUpdateId");
+
+                    b.HasIndex("Time");
+
+                    b.ToTable("DsUpdates");
                 });
 
             modelBuilder.Entity("pax.dsstats.dbng.Event", b =>
@@ -1002,6 +1030,41 @@ namespace SqliteMigrations.Migrations
                     b.ToTable("RepPlayerRatings");
                 });
 
+            modelBuilder.Entity("pax.dsstats.dbng.Services.TimelineQueryData", b =>
+                {
+                    b.Property<double>("AvgGain")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("AvgOppRating")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("AvgOppTeamRating")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("AvgRating")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("AvgTeamRating")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Race")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Rmonth")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Ryear")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Wins")
+                        .HasColumnType("INTEGER");
+
+                    b.ToTable("TimelineQueryDatas");
+                });
+
             modelBuilder.Entity("pax.dsstats.dbng.SkipReplay", b =>
                 {
                     b.Property<int>("SkipReplayId")
@@ -1187,6 +1250,23 @@ namespace SqliteMigrations.Migrations
                         .IsUnique();
 
                     b.ToTable("Uploaders");
+                });
+
+            modelBuilder.Entity("pax.dsstats.shared.DRangeResult", b =>
+                {
+                    b.Property<int>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DRange")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Race")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("WinsOrRating")
+                        .HasColumnType("REAL");
+
+                    b.ToTable("DRangeResults");
                 });
 
             modelBuilder.Entity("ReplayUploader", b =>

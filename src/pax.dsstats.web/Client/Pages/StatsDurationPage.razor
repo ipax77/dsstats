@@ -1,4 +1,5 @@
 @page "/stats/duration"
+@layout StatsLayout
 @using pax.dsstats.shared;
 @inject NavigationManager NavigationManager
 
@@ -18,6 +19,7 @@
 
     protected override void OnInitialized()
     {
+        SetRequest();
         base.OnInitialized();
     }
 

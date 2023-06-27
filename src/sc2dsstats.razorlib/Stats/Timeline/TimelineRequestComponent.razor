@@ -1,4 +1,4 @@
-@using pax.dsstats.shared;
+﻿@using pax.dsstats.shared;
 @using Microsoft.AspNetCore.Components.Forms;
 @inject NavigationManager NavigationManager
 @implements IDisposable;
@@ -14,7 +14,7 @@
                     {
                         @if ((int)statsMode > 0)
                         {
-                            @if (statsMode == StatsMode.Duration)
+                            @if (statsMode == StatsMode.Timeline)
                             {
                                 <option value="@statsMode" selected>@statsMode</option>
                             }
@@ -44,24 +44,12 @@
                 <InputSelect class="form-select" @bind-Value="Request.RatingType">
                     <option value="@RatingType.Cmdr">Commanders</option>
                     <option value="@RatingType.Std">Standard</option>
+                    <option value="@RatingType.CmdrTE">Commanders TE</option>
+                    <option value="@RatingType.StdTE">Standard TE</option>
                 </InputSelect>
             </label>
         </div>
         <div class="col-auto">
-            <div class="form-check form-switch">
-                <label class="form-check-label">
-                    WithRating
-                    <InputCheckbox class="form-check-input" @bind-Value="Request.WithRating">
-                    </InputCheckbox>
-                </label>
-            </div>
-            <div class="form-check form-switch">
-                <label class="form-check-label">
-                    WithBrawl
-                    <InputCheckbox class="@(Request.WithRating ? "form-check-input disabled" : "form-check-input")" disabled="@Request.WithRating" @bind-Value="Request.WithBrawl">
-                    </InputCheckbox>
-                </label>
-            </div>
             <div class="d-flex">
                 <div class="form-check form-switch">
                     <label class="form-check-label">
@@ -77,39 +65,66 @@
     </div>
 </EditForm>
 
+@*<h3>Weights</h3>
+<EditForm EditContext="weightContext" OnValidSubmit="OnRequestChanged">
+    <div class="row">
+        <div class="col-auto">
+            <label class="form-label">
+                Average rating gain
+                <InputNumber class="form-control" @bind-Value="Request.Weights.WeightGain"></InputNumber>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Average rating
+                <InputNumber class="form-control" @bind-Value="Request.Weights.WeightRating"></InputNumber>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Average player rating difference
+                <InputNumber class="form-control" @bind-Value="Request.Weights.WeightPlDiff"></InputNumber>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Average team rating difference
+                <InputNumber class="form-control" @bind-Value="Request.Weights.WeightTeamDiff"></InputNumber>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Winrate
+                <InputNumber class="form-control" @bind-Value="Request.Weights.WeightWinrate"></InputNumber>
+            </label>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-sm btn-secondary">Send</button>
+        </div>
+    </div>
+</EditForm>
+*@
 @code {
     [CascadingParameter]
-    public DurationRequest Request { get; set; } = default!;
+    public TimelineRequest Request { get; set; } = default!;
     EditContext editContext = null!;
 
     [Parameter]
     public EventCallback OnRequestChanged { get; set; }
 
-    [Parameter]
-    public EventCallback<RatingType> OnRatingTypeChanged { get; set; }
+    EditContext weightContext = null!;
 
     protected override void OnInitialized()
     {
         editContext = new(Request);
+        weightContext = new(Request.Weights);
         editContext.OnFieldChanged += FieldChanged;
         base.OnInitialized();
     }
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
-        if (Request.WithRating)
-        {
-            Request.WithBrawl = false;
-        }
-
-        if (e.FieldIdentifier.FieldName == nameof(DurationRequest.RatingType))
-        {
-            OnRatingTypeChanged.InvokeAsync(Request.RatingType);
-        }
-        else
-        {
-            OnRequestChanged.InvokeAsync();
-        }
+        OnRequestChanged.InvokeAsync();
     }
 
     private void ChangeMode(ChangeEventArgs e)

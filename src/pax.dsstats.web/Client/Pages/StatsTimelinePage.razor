@@ -1,0 +1,55 @@
+﻿@page "/stats/timeline"
+@layout StatsLayout
+@using pax.dsstats.shared;
+@inject NavigationManager NavigationManager
+
+<PageTitle>Stats/Timeline</PageTitle>
+
+<sc2dsstats.razorlib.Stats.Timeline.TimelineComponent Request="Request" OnRequestChanged="RequestChanged"></sc2dsstats.razorlib.Stats.Timeline.TimelineComponent>
+
+@code {
+    [SupplyParameterFromQuery]
+    public int? Time { get; set; }
+
+    [SupplyParameterFromQuery]
+    public int? Type { get; set; }
+
+    TimelineRequest Request = new()
+        {
+            TimePeriod = TimePeriod.Last2Years,
+            RatingType = RatingType.Cmdr
+        };
+
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }
+
+    private void SetRequest()
+    {
+        if (Time != null)
+        {
+            Request.TimePeriod = (TimePeriod)Time.Value;
+        }
+
+        if (Type != null)
+        {
+            Request.RatingType = (RatingType)Type.Value;
+        }
+    }
+
+    private void RequestChanged(TimelineRequest request)
+    {
+        Dictionary<string, object?> queryDic = new();
+
+        queryDic.Add("Time", (int)request.TimePeriod);
+        queryDic.Add("Type", (int)request.RatingType);
+
+        NavigationManager.NavigateTo(
+        NavigationManager.GetUriWithQueryParameters(
+            new Dictionary<string, object?>(queryDic)
+        )
+        );
+    }
+}
