@@ -1,0 +1,108 @@
+﻿@using pax.dsstats.shared;
+@using pax.dsstats.shared.Interfaces;
+@inject ITimelineService timelineService
+@implements IDisposable
+
+@if (isLoading)
+{
+    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+
+<div>
+    <CascadingValue Value="Request">
+        <TimelineRequestComponent OnRequestChanged="LoadData"></TimelineRequestComponent>
+    </CascadingValue>
+</div>
+<div class="border rounded border-secondary"
+     style="min-width: 650px; width: 77vw; height: calc(77vw * 0.5); min-height: 275px;">
+        @if (Response != null)
+        {
+            <TimelineChart @ref="timelineChart" Response="Response" Request="Request"></TimelineChart>
+        }
+</div>
+<div class="mt-2 button-block">
+    <button type="button" class="btn btn-sm btn-outline-light" @onclick="ClearChart">Clear Chart</button>
+    <button type="button" class="btn btn-sm btn-outline-light" @onclick="ShowChart">Full Chart</button>
+</div>
+<div class="mt-2">
+    <span class="text-warning">
+        Average rating gains per month in the selected period.
+    </span>
+</div>
+<div class="mt-3">
+    <DsUpdateComponent></DsUpdateComponent>
+</div>
+<div class="mt-2">
+    @if (Response != null)
+    {
+        <TimelineTable @ref="timelineTable" Request="Request" Response="Response" OnChartRequest="ChartRequest"></TimelineTable>
+    }
+</div>
+@code {
+    [Parameter, EditorRequired]
+    public TimelineRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<TimelineRequest> OnRequestChanged { get; set; }
+
+    private TimelineResponse? Response;
+    private CancellationTokenSource cts = new();
+    private bool isLoading;
+
+    private TimelineChart? timelineChart;
+    private TimelineTable? timelineTable;
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        Response = await timelineService.GetTimeline(Request, cts.Token);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+        await OnRequestChanged.InvokeAsync(Request);
+        timelineChart?.SetupChart(Response, Request);
+        timelineTable?.PrepareData(Response, Request);
+    }
+
+    private void ClearChart()
+    {
+        timelineChart?.ClearDatasets();
+        timelineTable?.ClearChart();
+    }
+
+    private void ShowChart()
+    {
+        if (Response == null)
+        {
+            return;
+        }
+        timelineChart?.SetupChart(Response, Request);
+        timelineTable?.SetChart();
+    }
+
+    private void ChartRequest(KeyValuePair<Commander, bool> request)
+    {
+        if (request.Value)
+        {
+            timelineChart?.AddDataset(request.Key);
+        }
+        else
+        {
+            timelineChart?.RemoveDataset(request.Key);
+        }
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}
