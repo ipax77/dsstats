@@ -1,5 +1,7 @@
 ﻿
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Interfaces;
 
@@ -8,24 +10,85 @@ namespace pax.dsstats.dbng.Services;
 public class TimelineService : ITimelineService
 {
     private readonly ReplayContext context;
+    private readonly IMemoryCache memoryCache;
 
-    public TimelineService(ReplayContext context)
+    public TimelineService(ReplayContext context, IMemoryCache memoryCache)
     {
         this.context = context;
+        this.memoryCache = memoryCache;
     }
 
     public async Task<TimelineResponse> GetTimeline(TimelineRequest request, CancellationToken token = default)
     {
-        var data = await GetDataFromRaw(request, token);
+        var memKey = request.GenMemKey();
+        if (!memoryCache.TryGetValue(memKey, out TimelineResponse response))
+        {
+            response = await ProduceTimeline(request, token);
+            memoryCache.Set(memKey, response, TimeSpan.FromHours(24));
+        }
+        return response;
+    }
 
-
+    public async Task<TimelineResponse> ProduceTimeline(TimelineRequest request, CancellationToken token = default)
+    {
+        var data = await GetData(request, token);
+        
         return new()
         {
-            TimeLineEnts = SetStrength(data)
+            TimeLineEnts = data,
         };
     }
 
-    public List<TimelineEnt> SetStrength(List<TimelineQueryData> data)
+    public List<TimelineEnt> SetStrength(List<TimelineQueryData> data, TimelineWeights weights)
+    {
+        if (!data.Any())
+        {
+            return new();
+        }
+
+        //var weightGain = 1.0;
+        //var weightRating = 0.1;
+        //var weightPlDiff = -0.025;
+        //var weightTeamDiff = -0.075;
+        //var weightWinrate = 0.02;
+
+        var weightGain = weights.WeightGain;
+        var weightRating = weights.WeightRating;
+        var weightPlDiff = weights.WeightPlDiff;
+        var weightTeamDiff = weights.WeightTeamDiff;
+        var weightWinrate = weights.WeightWinrate;
+
+        List<TimelineEnt> ents = new();
+
+        for (int i = 0; i < data.Count; i++)
+        {
+            var ent = data[i];
+            ents.Add(new()
+            {
+                Commander = (Commander)ent.Race,
+                Time = new DateTime(ent.Ryear, ent.Rmonth, 1),
+                Count = ent.Count,
+                Wins = ent.Wins,
+                AvgGain = ent.AvgGain,
+                AvgRating = ent.AvgRating,
+                Strength = (weightGain * ent.AvgGain)
+                    + (weightRating * ent.AvgRating)
+                    + (weightPlDiff * (ent.AvgRating - ent.AvgOppRating))
+                    + (weightTeamDiff * (ent.AvgTeamRating - ent.AvgOppTeamRating))
+                    + (weightWinrate * (ent.Wins * 100.0 / ent.Count))
+            });
+        }
+
+        var minStrength = ents.Min(m => m.Strength);
+        var maxStrength = ents.Max(m => m.Strength);
+
+        var strengthDiv = maxStrength - minStrength;
+
+        ents.ForEach(f => f.Strength = (f.Strength - minStrength) / strengthDiv);
+        return ents;
+    }
+
+    public List<TimelineEnt> SetNormalizedStrength(List<TimelineQueryData> data)
     {
         if (!data.Any())
         {

@@ -27,6 +27,14 @@
     <button type="button" class="btn btn-sm btn-outline-light" @onclick="ShowChart">Full Chart</button>
 </div>
 <div class="mt-2">
+    <span class="text-warning">
+        Average rating gains per month in the selected period.
+    </span>
+</div>
+<div class="mt-3">
+    <DsUpdateComponent></DsUpdateComponent>
+</div>
+<div class="mt-2">
     @if (Response != null)
     {
         <TimelineTable @ref="timelineTable" Request="Request" Response="Response" OnChartRequest="ChartRequest"></TimelineTable>

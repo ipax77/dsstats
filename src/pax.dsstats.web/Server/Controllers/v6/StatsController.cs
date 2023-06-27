@@ -4,6 +4,7 @@ using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Arcade;
 using pax.dsstats.shared.Interfaces;
+using pax.dsstats.shared.Services;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace pax.dsstats.web.Server.Controllers.v6
@@ -17,6 +18,7 @@ namespace pax.dsstats.web.Server.Controllers.v6
         private readonly IStatsService statsService;
         private readonly IDurationService durationService;
         private readonly ITimelineService timelineService;
+        private readonly IDsUpdateService dsupdateService;
         private readonly CmdrsService cmdrService;
 
         public StatsController(IReplayRepository replayRepository,
@@ -24,6 +26,7 @@ namespace pax.dsstats.web.Server.Controllers.v6
                                IStatsService statsService,
                                IDurationService durationService,
                                ITimelineService timelineService,
+                               IDsUpdateService dsupdateService,
                                CmdrsService cmdrService)
         {
             this.replayRepository = replayRepository;
@@ -31,6 +34,7 @@ namespace pax.dsstats.web.Server.Controllers.v6
             this.statsService = statsService;
             this.durationService = durationService;
             this.timelineService = timelineService;
+            this.dsupdateService = dsupdateService;
             this.cmdrService = cmdrService;
         }
 
@@ -351,6 +355,13 @@ namespace pax.dsstats.web.Server.Controllers.v6
         public async Task<ActionResult<TimelineResponse>> GetTimeline(TimelineRequest request, CancellationToken token)
         {
             return await timelineService.GetTimeline(request, token);
+        }
+
+        [HttpGet]
+        [Route("dsupdates/{timeperiod:int}")]
+        public async Task<ActionResult<List<DsUpdateInfo>>> GetDsUpdate(int timeperiod, CancellationToken token)
+        {
+            return await dsupdateService.GetDsUpdates((TimePeriod)timeperiod, token);
         }
     }
 }

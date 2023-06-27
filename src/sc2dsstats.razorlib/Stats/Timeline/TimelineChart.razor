@@ -118,7 +118,7 @@
         var chartData = response.TimeLineEnts
             .Where(x => x.Commander == commander)
             .OrderBy(o => o.Time)
-            .Select(s => s.Strength)
+            .Select(s => s.AvgGain)
             .ToList();
 
         return new LineDataset()
@@ -137,7 +137,7 @@
         var chartData = response.TimeLineEnts
             .Where(x => x.Commander == commander)
             .OrderBy(o => o.Time)
-            .Select(s => s.Strength)
+            .Select(s => s.AvgGain)
             .ToList();
 
         return new LineDataset()
@@ -236,7 +236,7 @@
                             Title = new()
                             {
                                 Display = true,
-                                Text = new IndexableOption<string>("Strength"),
+                                Text = new IndexableOption<string>("Average rating gain"),
                                 Color = mainColor,
                             },
                             Ticks = new LinearAxisTick()

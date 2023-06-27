@@ -10,6 +10,7 @@ using pax.dsstats.dbng.Services.ServerStats;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Arcade;
 using pax.dsstats.shared.Interfaces;
+using pax.dsstats.shared.Services;
 using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
@@ -81,6 +82,7 @@ builder.Services.AddScoped<IServerStatsService, ServerStatsService>();
 builder.Services.AddScoped<ReplaysMergeService>();
 builder.Services.AddScoped<IDurationService, DurationService>();
 builder.Services.AddScoped<ITimelineService, TimelineService>();
+builder.Services.AddScoped<IDsUpdateService, DsUpdateService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -127,12 +129,8 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    //var timelineService = scope.ServiceProvider.GetRequiredService<ITimelineService>();
-    //timelineService.GetTimeline(new()
-    //{
-    //    TimePeriod = TimePeriod.ThisYear,
-    //    RatingType = RatingType.Cmdr
-    //}).Wait();
+    var dsupdatesService = scope.ServiceProvider.GetRequiredService<IDsUpdateService>();
+    dsupdatesService.SeedDsUpdates();
 }
 
 // Configure the HTTP request pipeline.

@@ -194,6 +194,15 @@ public static class ReplayExtensions
         return sb.ToString();
     }
 
+    public static string GenMemKey(this TimelineRequest request)
+    {
+        StringBuilder sb = new();
+        sb.Append("StatsTimeline");
+        sb.Append(request.TimePeriod.ToString());
+        sb.Append(request.RatingType.ToString());
+        return sb.ToString();
+    }
+
     public static string GetMd5Hash(MD5 md5Hash, string input)
     {
         byte[] data = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(input));

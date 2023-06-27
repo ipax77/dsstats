@@ -1,0 +1,269 @@
+@using pax.dsstats.shared.Interfaces;
+@using pax.dsstats.shared.Services;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Extensions;
+@using sc2dsstats.razorlib.Services;
+@inject IDsUpdateService dsupdateSerivce
+@implements IDisposable
+
+<style>
+    .tableFixHead {
+        overflow-y: auto;
+        overflow-x: auto;
+        max-height: 600px;
+        max-width: 1200px;
+    }
+
+        .tableFixHead thead th {
+            position: sticky;
+            top: 0;
+        }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+
+    th {
+        background: purple;
+    }
+
+    .tablebackground {
+        position: absolute;
+        z-index: -1;
+        opacity: 0.15;
+    }
+</style>
+
+<div class="row">
+    <div class="col-auto">
+        <span class="text-info">Patch notes</span>
+    </div>
+    <div class="col-auto">
+        <label class="form-label">
+            <select class="form-select" value="@Commander" @onchange="ChangeCommander">
+                <option value="@Commander.None" selected>All Commanders</option>
+                @foreach (Commander scmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
+                {
+                    <option value="@scmdr">@scmdr</option>
+                }
+            </select>
+        </label>
+    </div>
+    <div class="col-auto">
+        <label class="form-label">
+            <select class="form-select" value="@TimePeriod" @onchange="ChangeTimePeriod">
+                <option value="@TimePeriod.Past90Days" selected="@(TimePeriod == TimePeriod.Past90Days)">@Data.GetTimePeriodLongName(TimePeriod.Past90Days)</option>
+                <option value="@TimePeriod.ThisYear" selected="@(TimePeriod == TimePeriod.ThisYear)">@Data.GetTimePeriodLongName(TimePeriod.ThisYear)</option>
+                <option value="@TimePeriod.Last2Years" selected="@(TimePeriod == TimePeriod.Last2Years)">@Data.GetTimePeriodLongName(TimePeriod.Last2Years)</option>
+                <option value="@TimePeriod.All" selected="@(TimePeriod == TimePeriod.All)">@Data.GetTimePeriodLongName(TimePeriod.All)</option>
+            </select>
+        </label>
+    </div>
+</div>
+<div class="mt-2 table-responsive tableFixHead">
+    <table class="table table-dark table-hover">
+        <thead>
+            <tr>
+                <CascadingValue Value="tableOrders">
+                    <th class="pointer" @onclick="e => SortList(e, nameof(DsUpdateInfo.Time))">
+                        <SortArrow Property="@nameof(DsUpdateInfo.Time)">
+                            Time
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="e => SortList(e, nameof(DsUpdateInfo.Commander))">
+                        <SortArrow Property="@nameof(DsUpdateInfo.Commander)">
+                            Commander
+                        </SortArrow>
+                    </th>
+                    <th>
+                        Change
+                    </th>
+                </CascadingValue>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                Commander cmdr = Commander.None;
+                DateTime time = DateTime.MinValue;
+            }
+            @foreach (var info in GetList())
+            {
+                <tr>
+                    @if (info.Time != time)
+                    {
+                        time = info.Time;
+                        <td>@info.Time.ToString("yyyy-MM-dd")</td>
+                    }
+                    else
+                    {
+                        <td></td>
+                    }
+                    @if (info.Commander != cmdr)
+                    {
+                        cmdr = info.Commander;
+                        <td>
+                            @if (cmdr == Commander.None)
+                            {
+                                <span></span>
+                            }
+                            else
+                            {
+                                <img src="@HelperService.GetImageSrc(info.Commander)"
+                                     alt="@info.Commander"
+                                     title="@info.Commander"
+                                     width="30"
+                                     height="30" />
+                                @info.Commander
+                            }
+                        </td>
+                    }
+                    else
+                    {
+                        <td></td>
+                    }
+                    <td>
+                        <pre>@string.Join('\n', info.Changes)</pre>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter]
+    public TimePeriod TimePeriod { get; set; } = TimePeriod.Last2Years;
+
+    [Parameter]
+    public Commander Commander { get; set; } = Commander.None;
+
+    List<DsUpdateInfo> infos = new();
+    bool isLoading;
+    CancellationTokenSource cts = new();
+
+    List<TableOrder> tableOrders = new()
+    {
+        new()
+        {
+            Property = nameof(DsUpdateInfo.Time),
+            Ascending = false
+        },
+        new()
+        {
+            Property = nameof(DsUpdateInfo.Commander),
+            Ascending = true
+        }
+    };
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        infos = await dsupdateSerivce.GetDsUpdates(TimePeriod, cts.Token);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private List<DsUpdateInfo> GetList()
+    {
+        if (!infos.Any())
+        {
+            return new();
+        }
+
+        var query = infos.AsQueryable();
+
+        if (Commander != Commander.None)
+        {
+            query = query.Where(x => x.Commander == Commander);
+        }
+
+        foreach (var order in tableOrders)
+        {
+            var prop = typeof(DsUpdateInfo).GetProperty(order.Property);
+            if (prop == null)
+            {
+                continue;
+            }
+
+            if (order.Ascending)
+            {
+                query = query.AppendOrderBy(order.Property);
+            }
+            else
+            {
+                query = query.AppendOrderByDescending(order.Property);
+            }
+        }
+        return query.ToList();
+    }
+
+    private void ChangeCommander(ChangeEventArgs e)
+    {
+        if (e.Value is string value
+            && Enum.TryParse(typeof(Commander), value, out var cmdrObj)
+            && cmdrObj is Commander cmdr)
+        {
+            Commander = cmdr;
+            StateHasChanged();
+        }
+    }
+
+    private void ChangeTimePeriod(ChangeEventArgs e)
+    {
+        if (e.Value is string value
+            && Enum.TryParse(typeof(TimePeriod), value, out var timeObj)
+            && timeObj is TimePeriod time)
+        {
+            TimePeriod = time;
+            _ = LoadData();
+        }
+    }
+
+    private void SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = tableOrders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                tableOrders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            tableOrders.Clear();
+            tableOrders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

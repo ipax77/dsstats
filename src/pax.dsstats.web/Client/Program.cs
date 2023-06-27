@@ -28,5 +28,6 @@ builder.Services.AddTransient<IArcadeService, ArcadeService>();
 builder.Services.AddScoped<IServerStatsService, ServerStatsService>();
 builder.Services.AddScoped<IDurationService, DurationService>();
 builder.Services.AddScoped<ITimelineService, TimelineService>();
+builder.Services.AddScoped<IDsUpdateService, DsUpdateService>();
 
 await builder.Build().RunAsync();

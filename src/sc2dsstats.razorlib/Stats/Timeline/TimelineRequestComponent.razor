@@ -5,7 +5,7 @@
 
 <EditForm EditContext="editContext">
     <div class="row">
-        <div class="col-auto">
+@*        <div class="col-auto">
             <label class="form-label">
                 StatsMode
                 <span class="oi oi-info pointer ms-2" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki#statsmode'"></span>
@@ -26,7 +26,7 @@
                     }
                 </select>
             </label>
-        </div>
+        </div>*@
         <div class="col-auto">
             <label class="form-label">
                 Time Period
@@ -65,6 +65,45 @@
     </div>
 </EditForm>
 
+@*<h3>Weights</h3>
+<EditForm EditContext="weightContext" OnValidSubmit="OnRequestChanged">
+    <div class="row">
+        <div class="col-auto">
+            <label class="form-label">
+                Average rating gain
+                <InputNumber class="form-control" @bind-Value="Request.Weights.WeightGain"></InputNumber>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Average rating
+                <InputNumber class="form-control" @bind-Value="Request.Weights.WeightRating"></InputNumber>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Average player rating difference
+                <InputNumber class="form-control" @bind-Value="Request.Weights.WeightPlDiff"></InputNumber>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Average team rating difference
+                <InputNumber class="form-control" @bind-Value="Request.Weights.WeightTeamDiff"></InputNumber>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Winrate
+                <InputNumber class="form-control" @bind-Value="Request.Weights.WeightWinrate"></InputNumber>
+            </label>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-sm btn-secondary">Send</button>
+        </div>
+    </div>
+</EditForm>
+*@
 @code {
     [CascadingParameter]
     public TimelineRequest Request { get; set; } = default!;
@@ -73,11 +112,12 @@
     [Parameter]
     public EventCallback OnRequestChanged { get; set; }
 
-
+    EditContext weightContext = null!;
 
     protected override void OnInitialized()
     {
         editContext = new(Request);
+        weightContext = new(Request.Weights);
         editContext.OnFieldChanged += FieldChanged;
         base.OnInitialized();
     }

@@ -70,7 +70,8 @@ public partial class TimelineTable : ComponentBase
                 }
                 else
                 {
-                    tableData.Strengths.Add(data.Strength);
+                    // tableData.Strengths.Add(data.Strength);
+                    tableData.Strengths.Add(data.AvgGain);
                     tableData.Counts.Add(data.Count);
                     tableData.Winrate.Add(data.Count == 0 ? 0 : data.Wins * 100.0 / data.Count);
                     tableData.Gains.Add(data.AvgGain);

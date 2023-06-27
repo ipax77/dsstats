@@ -38,6 +38,7 @@ public class ReplayContext : DbContext
     public virtual DbSet<ArcadePlayerRating> ArcadePlayerRatings { get; set; } = null!;
     public virtual DbSet<ArcadeReplayPlayerRating> ArcadeReplayPlayerRatings { get; set; } = null!;
     public virtual DbSet<ArcadePlayerRatingChange> ArcadePlayerRatingChanges { get; set; } = null!;
+    public virtual DbSet<DsUpdate> DsUpdates { get; set; } = null!;
 
     public DbSet<DRangeResult> DRangeResults { get; set; } = null!;
     public DbSet<TimelineQueryData> TimelineQueryDatas { get; set; } = null!;
@@ -155,6 +156,11 @@ public class ReplayContext : DbContext
         modelBuilder.Entity<ReplayRating>(entity =>
         {
             entity.HasIndex(i => i.RatingType);
+        });
+
+        modelBuilder.Entity<DsUpdate>(entity =>
+        {
+            entity.HasIndex(i => i.Time);
         });
 
         modelBuilder.Entity<DRangeResult>(entity => {
