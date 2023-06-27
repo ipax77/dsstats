@@ -5,7 +5,6 @@ using pax.dsstats.shared;
 using pax.dsstats.shared.Arcade;
 using pax.dsstats.shared.Interfaces;
 using pax.dsstats.shared.Services;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace pax.dsstats.web.Server.Controllers.v6
 {
@@ -19,6 +18,7 @@ namespace pax.dsstats.web.Server.Controllers.v6
         private readonly IDurationService durationService;
         private readonly ITimelineService timelineService;
         private readonly IDsUpdateService dsupdateService;
+        private readonly IWinrateService winrateService;
         private readonly CmdrsService cmdrService;
 
         public StatsController(IReplayRepository replayRepository,
@@ -27,6 +27,7 @@ namespace pax.dsstats.web.Server.Controllers.v6
                                IDurationService durationService,
                                ITimelineService timelineService,
                                IDsUpdateService dsupdateService,
+                               IWinrateService winrateService,
                                CmdrsService cmdrService)
         {
             this.replayRepository = replayRepository;
@@ -35,6 +36,7 @@ namespace pax.dsstats.web.Server.Controllers.v6
             this.durationService = durationService;
             this.timelineService = timelineService;
             this.dsupdateService = dsupdateService;
+            this.winrateService = winrateService;
             this.cmdrService = cmdrService;
         }
 
@@ -362,6 +364,13 @@ namespace pax.dsstats.web.Server.Controllers.v6
         public async Task<ActionResult<List<DsUpdateInfo>>> GetDsUpdate(int timeperiod, CancellationToken token)
         {
             return await dsupdateService.GetDsUpdates((TimePeriod)timeperiod, token);
+        }
+
+        [HttpPost]
+        [Route("winrate")]
+        public async Task<ActionResult<WinrateResponse>> GetWinrate(WinrateRequest request, CancellationToken token)
+        {
+            return await winrateService.GetWinrate(request, token);
         }
     }
 }

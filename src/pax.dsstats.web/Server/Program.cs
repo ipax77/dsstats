@@ -83,6 +83,7 @@ builder.Services.AddScoped<ReplaysMergeService>();
 builder.Services.AddScoped<IDurationService, DurationService>();
 builder.Services.AddScoped<ITimelineService, TimelineService>();
 builder.Services.AddScoped<IDsUpdateService, DsUpdateService>();
+builder.Services.AddScoped<IWinrateService, WinrateService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();

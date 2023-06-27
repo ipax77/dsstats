@@ -6,7 +6,7 @@
 <PageTitle>Stats</PageTitle>
 <title>Direct Strike - Commander stats</title>
 
-<sc2dsstats.razorlib.Stats.StatsComponent StatsRequest="statsRequest" OnRequestChanged="RequestChanged"></sc2dsstats.razorlib.Stats.StatsComponent>
+<sc2dsstats.razorlib.Stats.Winrate.WinrateComponent Request="winrateRequest"></sc2dsstats.razorlib.Stats.Winrate.WinrateComponent>
 
 @code {
     [Parameter]
@@ -37,6 +37,13 @@
             DefaultFilter = true,
             GameModes = new() { GameMode.Commanders, GameMode.CommandersHeroic }
         };
+
+    private WinrateRequest winrateRequest = new()
+    {
+        TimePeriod = shared.TimePeriod.Past90Days,
+        RatingType = RatingType.Cmdr,
+        Interest = Commander.None
+    };
 
     protected override void OnInitialized()
     {
