@@ -1,7 +1,15 @@
 ﻿@using pax.dsstats.shared.Interfaces;
 @using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Extensions;
 @inject IWinrateService winrateService
 @implements IDisposable
+
+@if (isLoading)
+{
+    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
 
 <div>
     <CascadingValue Value="Request">
@@ -13,9 +21,9 @@
     @if (response != null)
     {
         <div class="border rounded border-secondary"
-             style="min-width: 650px; width: 77vw; height: calc(77vw * 0.5); min-height: 275px;">
+             style="min-width: 850px; width: 55vw; height: calc(55vw * 0.5); min-height: 425px;">
 
-            <WinrateChart @ref="winrateChart" Request="Request" Response="response"></WinrateChart>
+            <WinrateChart @ref="winrateChart" Request="Request" Response="orderedResponse"></WinrateChart>
         </div>
     }
 </div>
@@ -31,8 +39,23 @@
     WinrateResponse? response = null;
     WinrateChart? winrateChart;
 
+    TableOrder tableOrder = new()
+        {
+            Property = nameof(WinrateEnt.AvgGain),
+            Ascending = false
+        };
+    List<TableOrder> tableOrders = new();
+
+    WinrateResponse orderedResponse => response == null ? new() : new()
+    {
+        Interest = response.Interest,
+        WinrateEnts = tableOrder.Ascending ? response.WinrateEnts.AsQueryable().AppendOrderBy(tableOrder.Property).ToList()
+                : response.WinrateEnts.AsQueryable().AppendOrderByDescending(tableOrder.Property).ToList()
+    };
+
     protected override void OnInitialized()
     {
+        tableOrders.Add(tableOrder);
         _ = LoadData();
         base.OnInitialized();
     }
@@ -43,7 +66,7 @@
         await InvokeAsync(() => StateHasChanged());
         response = await winrateService.GetWinrate(Request, cts.Token);
 
-        winrateChart?.PrepareData(response, Request);
+        winrateChart?.PrepareData(orderedResponse, Request);
 
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());

@@ -81,6 +81,26 @@ function preloadChartIcons(xWidth, yWidth) {
     }
 }
 
+function increaseChartHeight(chartId, height) {
+    const chart = Chart.getChart(chartId);
+
+    const originalFit = chart.legend.fit;
+    chart.legend.fit = function fit() {
+        // Call the original function and bind scope in order to use `this` correctly inside it
+        originalFit.bind(chart.legend)();
+        // Change the height as suggested in other answers
+        this.height += height;
+    }
+}
+
+function setDatalabelsFormatter(chartId) {
+    const chart = Chart.getChart(chartId);
+    chart.options.plugins.datalabels.formatter = function (value, context) {
+        return Number.parseFloat(value).toFixed(2);
+    };
+    chart.update();
+}
+
 function barIconsPlugin() {
     return {
         id: 'barIcons',
@@ -101,6 +121,7 @@ function barIconsPlugin() {
 
                     const elem = meta.data[i];
                     if (elem != undefined) {
+                        let raw = elem["$context"].raw;
                         let x0 = 0;
                         let y0 = 0;
                         if (x != undefined) {
@@ -115,6 +136,10 @@ function barIconsPlugin() {
                                 x0 = piePos.x;
                                 y0 = piePos.y + yOffset;
                             }
+                        }
+
+                        if (raw < 0) {
+                            y0 = y.getPixelForValue(0) - yWidth;
                         }
 
                         const img = cmdrIconsMap.get(option.cmdr);

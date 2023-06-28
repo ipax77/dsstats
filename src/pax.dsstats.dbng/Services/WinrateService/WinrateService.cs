@@ -19,7 +19,7 @@ public class WinrateService : IWinrateService
 
     public async Task<WinrateResponse> GetWinrate(WinrateRequest request, CancellationToken token)
     {
-        var data = await GetData(request, token);
+        var data = await GetDataFromRaw(request, token);
 
         if (request.RatingType == RatingType.Std || request.RatingType == RatingType.StdTE)
         {
@@ -45,7 +45,6 @@ public class WinrateService : IWinrateService
                     from r in context.Replays
                     from rp in r.ReplayPlayers
                     where r.GameTime > fromDate
-                        && r.GameTime < toDate
                         && toDate < DateTime.Now.AddDays(-2) ? r.GameTime < toDate : true
                         && r.ReplayRatingInfo!.RatingType == request.RatingType
                         && rp.Duration >= 300
@@ -61,7 +60,6 @@ public class WinrateService : IWinrateService
                     from r in context.Replays
                     from rp in r.ReplayPlayers
                     where r.GameTime > fromDate
-                        && r.GameTime < toDate
                         && toDate < DateTime.Now.AddDays(-2) ? r.GameTime < toDate : true
                         && r.ReplayRatingInfo!.RatingType == request.RatingType
                         && rp.Duration >= 300
@@ -77,6 +75,55 @@ public class WinrateService : IWinrateService
                     };
 
         return await group.ToListAsync(token);
+    }
+
+    private async Task<List<WinrateEnt>> GetDataFromRaw(WinrateRequest request, CancellationToken token)
+    {
+        (var fromDate, var toDate) = Data.TimeperiodSelected(request.TimePeriod);
+
+        var sql = request.Interest == Commander.None ?
+            $@"
+                SELECT 
+                    rp.Race as commander,
+	                count(*) as count,
+                    round(avg(rpr.Rating), 2) as avgrating,
+                    round(avg(rpr.RatingChange), 2) as avggain,
+                    sum(CASE WHEN rp.PlayerResult = 1 THEN 1 END) as wins
+                FROM Replays as r
+                INNER JOIN ReplayRatings as rr on rr.ReplayId = r.ReplayId
+                INNER JOIN ReplayPlayers AS rp on rp.ReplayId = r.ReplayId
+                INNER JOIN RepPlayerRatings AS rpr on rpr.ReplayPlayerId = rp.ReplayPlayerId
+                WHERE rr.RatingType = {(int)request.RatingType}
+                 AND r.GameTime > '{fromDate.ToString("yyyy-MM-dd")}'
+                 {(toDate < DateTime.Today.AddDays(-2) ? $"AND r.GameTime < {toDate.ToString("yyyy-MM-dd")}" : "")}
+                 AND rp.Duration > 300
+                GROUP BY rp.Race;
+            "
+            : 
+            $@"
+                SELECT 
+                    rp.OppRace as commander,
+	                count(*) as count,
+                    round(avg(rpr.Rating), 2) as avgrating,
+                    round(avg(rpr.RatingChange), 2) as avggain,
+                    sum(CASE WHEN rp.PlayerResult = 1 THEN 1 END) as wins
+                FROM Replays as r
+                INNER JOIN ReplayRatings as rr on rr.ReplayId = r.ReplayId
+                INNER JOIN ReplayPlayers AS rp on rp.ReplayId = r.ReplayId
+                INNER JOIN RepPlayerRatings AS rpr on rpr.ReplayPlayerId = rp.ReplayPlayerId
+                WHERE rr.RatingType = {(int)request.RatingType}
+                 AND r.GameTime > '{fromDate.ToString("yyyy-MM-dd")}'
+                 {(toDate < DateTime.Today.AddDays(-2) ? $"AND r.GameTime < {toDate.ToString("yyyy-MM-dd")}" : "")}
+                 AND rp.Duration > 300
+                 AND rp.Race = {(int)request.Interest}
+                GROUP BY rp.OppRace;
+            ";
+
+        var result = await context.WinrateEnts
+            .FromSqlRaw(sql)
+            .ToListAsync(token);
+
+        return result;
     }
 }
 
