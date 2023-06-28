@@ -27,17 +27,38 @@
         </div>
     }
 </div>
+<div class="mt-2">
+    <div class="btn-group" role="group" aria-label="Chart type toggle group">
+        @{int i = -1;}
+        @foreach (WinrateType winrateType in Enum.GetValues(typeof(WinrateType)))
+        {
+            i++;
+            <input type="radio" class="btn-check" name="@($"btnwinrate{i}")" id="@($"winratetype{i}")" autocomplete="off" checked="@(Request.WinrateType == winrateType)" @onchange="e => SetWinrateType(e, winrateType)">
+            <label class="btn btn-sm btn-outline-light" for="@($"winratetype{i}")">@winrateType</label>
+        }
+    </div>
+</div>
+@if (response != null)
+{
+    <CascadingValue Value="tableOrders">
+        <div class="mt-2">
+            <WinrateTable @ref="winrateTable" Response="orderedResponse" OnOrderChanged="OrderChanged"></WinrateTable>
+        </div>
+    </CascadingValue>
+}
 
 
 @code {
     [Parameter, EditorRequired]
     public WinrateRequest Request { get; set; } = default!;
 
+
     CancellationTokenSource cts = new();
     bool isLoading;
 
     WinrateResponse? response = null;
     WinrateChart? winrateChart;
+    WinrateTable? winrateTable;
 
     TableOrder tableOrder = new()
         {
@@ -47,11 +68,14 @@
     List<TableOrder> tableOrders = new();
 
     WinrateResponse orderedResponse => response == null ? new() : new()
-    {
-        Interest = response.Interest,
-        WinrateEnts = tableOrder.Ascending ? response.WinrateEnts.AsQueryable().AppendOrderBy(tableOrder.Property).ToList()
-                : response.WinrateEnts.AsQueryable().AppendOrderByDescending(tableOrder.Property).ToList()
-    };
+        {
+            Interest = response.Interest,
+            WinrateEnts = tableOrder.Property == "Winrate" ?
+                    tableOrder.Ascending ? response.WinrateEnts.OrderBy(o => o.Wins * 100.0 / o.Count).ToList()
+                    : response.WinrateEnts.OrderByDescending(o => o.Wins * 100.0 / o.Count).ToList()
+                : tableOrder.Ascending ? response.WinrateEnts.AsQueryable().AppendOrderBy(tableOrder.Property).ToList()
+                    : response.WinrateEnts.AsQueryable().AppendOrderByDescending(tableOrder.Property).ToList()
+        };
 
     protected override void OnInitialized()
     {
@@ -67,9 +91,34 @@
         response = await winrateService.GetWinrate(Request, cts.Token);
 
         winrateChart?.PrepareData(orderedResponse, Request);
+        winrateTable?.SetTable(orderedResponse);
 
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void SetWinrateType(ChangeEventArgs e, WinrateType winrateType)
+    {
+        Request.WinrateType = winrateType;
+
+        tableOrder.Property = Request.WinrateType switch
+        {
+            WinrateType.AvgGain => nameof(WinrateEnt.AvgGain),
+            WinrateType.Count => nameof(WinrateEnt.Count),
+            WinrateType.AvgRating => nameof(WinrateEnt.AvgRating),
+            WinrateType.Winrate => "Winrate",
+            _ => nameof(WinrateEnt.AvgGain)
+        };
+        tableOrder.Ascending = false;
+
+        winrateChart?.PrepareData(orderedResponse, Request);
+        winrateTable?.SetTable(orderedResponse);
+    }
+
+    private void OrderChanged()
+    {
+        winrateTable?.SetTable(orderedResponse);
+        winrateChart?.ChangeOrder(orderedResponse);
     }
 
     public void Dispose()

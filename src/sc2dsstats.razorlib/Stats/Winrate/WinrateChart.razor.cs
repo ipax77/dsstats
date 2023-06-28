@@ -67,19 +67,7 @@ public partial class WinrateChart : ComponentBase
 
         if (chartConfig.Options?.Plugins?.Title != null)
         {
-            if (request.Interest == Commander.None)
-            {
-                chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"Average rating gain - {Data.GetTimePeriodLongName(request.TimePeriod)}");
-            } else
-            {
-                chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"{request.Interest}'s average rating gain - {Data.GetTimePeriodLongName(request.TimePeriod)}");
-                //chartConfig.Options.Plugins.Title.Text =
-                //    new IndexableOption<string>(new List<string>()
-                //    {
-                //        $"Average rating gain - {Data.GetTimePeriodLongName(request.TimePeriod)}",
-                //        $"for {request.Interest} vs"
-                //    });
-            }
+            chartConfig.Options.Plugins.Title.Text = GetTitle(request);
             chartConfig.UpdateChartOptions();
         }
 
@@ -92,14 +80,60 @@ public partial class WinrateChart : ComponentBase
         JSRuntime.InvokeVoidAsync("setDatalabelsFormatter", chartConfig.ChartJsConfigGuid);
     }
 
+    private IndexableOption<string> GetTitle(WinrateRequest request)
+    {
+        string title = request.WinrateType switch
+        {
+            WinrateType.AvgGain => "Average rating gain",
+            WinrateType.Count => "Count",
+            WinrateType.AvgRating => "Average rating",
+            WinrateType.Winrate => "Winrate",
+            _ => ""
+        };
+
+        if (request.Interest == Commander.None)
+        {
+            return new IndexableOption<string>($"{title} - {Data.GetTimePeriodLongName(request.TimePeriod)}");
+        }
+        else
+        {
+            return new IndexableOption<string>($"{request.Interest}'s {title} - {Data.GetTimePeriodLongName(request.TimePeriod)}");
+        }
+    }
+
+    private List<object> GetData(WinrateResponse response)
+    {
+        return Request.WinrateType switch
+        {
+            WinrateType.AvgGain => response.WinrateEnts.Select(s => s.AvgGain).Cast<object>().ToList(),
+            WinrateType.Count => response.WinrateEnts.Select(s => s.Count).Cast<object>().ToList(),
+            WinrateType.AvgRating => response.WinrateEnts.Select(s => s.AvgRating).Cast<object>().ToList(),
+            WinrateType.Winrate => response.WinrateEnts.Select(s => Math.Round(s.Wins * 100.0 / s.Count, 2)).Cast<object>().ToList(),
+            _ => new List<object>()
+        };
+    }
+
+    public void ChangeOrder(WinrateResponse response)
+    {
+        PrepareData(response, Request);
+        //Response = response;
+        //var chartDataset = chartConfig.Data.Datasets.FirstOrDefault();
+        //if (chartDataset is BarDataset barDataset)
+        //{
+        //    chartConfig.SetLabels(response.WinrateEnts.Select(s => s.Commander.ToString()).ToList());
+        //    barDataset.Data = GetData(response);
+        //    barDataset.BackgroundColor = new IndexableOption<string>(response.WinrateEnts.Select(s => Data.GetBackgroundColor(s.Commander)).ToList());
+        //    barDataset.BorderColor = new IndexableOption<string>(response.WinrateEnts.Select(s => Data.CmdrColor[s.Commander]).ToList());
+        //    chartConfig.UpdateDataset(barDataset);
+        //}
+    }
+
     private ChartJsDataset GetAvgGainDataset(WinrateResponse response)
     {
-        var data = response.WinrateEnts.Select(s => s.AvgGain).Cast<object>().ToList();
-
         var barDataset = new BarDataset()
         {
             Label = $"AvgGain",
-            Data = data,
+            Data = GetData(response),
             BackgroundColor = new IndexableOption<string>(response.WinrateEnts.Select(s => Data.GetBackgroundColor(s.Commander)).ToList()),
             BorderColor = new IndexableOption<string>(response.WinrateEnts.Select(s => Data.CmdrColor[s.Commander]).ToList()),
             BorderWidth = new IndexableOption<double>(2),

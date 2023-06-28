@@ -95,7 +95,7 @@ public class WinrateService : IWinrateService
                 INNER JOIN RepPlayerRatings AS rpr on rpr.ReplayPlayerId = rp.ReplayPlayerId
                 WHERE rr.RatingType = {(int)request.RatingType}
                  AND r.GameTime > '{fromDate.ToString("yyyy-MM-dd")}'
-                 {(toDate < DateTime.Today.AddDays(-2) ? $"AND r.GameTime < {toDate.ToString("yyyy-MM-dd")}" : "")}
+                 {(toDate < DateTime.Today.AddDays(-2) ? $"AND r.GameTime < '{toDate.ToString("yyyy-MM-dd")}'" : "")}
                  AND rp.Duration > 300
                 GROUP BY rp.Race;
             "
@@ -113,7 +113,7 @@ public class WinrateService : IWinrateService
                 INNER JOIN RepPlayerRatings AS rpr on rpr.ReplayPlayerId = rp.ReplayPlayerId
                 WHERE rr.RatingType = {(int)request.RatingType}
                  AND r.GameTime > '{fromDate.ToString("yyyy-MM-dd")}'
-                 {(toDate < DateTime.Today.AddDays(-2) ? $"AND r.GameTime < {toDate.ToString("yyyy-MM-dd")}" : "")}
+                 {(toDate < DateTime.Today.AddDays(-2) ? $"AND r.GameTime < '{toDate.ToString("yyyy-MM-dd")}'" : "")}
                  AND rp.Duration > 300
                  AND rp.Race = {(int)request.Interest}
                 GROUP BY rp.OppRace;

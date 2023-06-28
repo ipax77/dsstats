@@ -96,7 +96,12 @@ function increaseChartHeight(chartId, height) {
 function setDatalabelsFormatter(chartId) {
     const chart = Chart.getChart(chartId);
     chart.options.plugins.datalabels.formatter = function (value, context) {
-        return Number.parseFloat(value).toFixed(2);
+        var float = Number.parseFloat(value);
+        if (float < 100) {
+            return float.toFixed(2);
+        } else {
+            return Math.round(float)
+        }
     };
     chart.update();
 }

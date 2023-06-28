@@ -48,10 +48,19 @@ public record WinrateRequest
     public TimePeriod TimePeriod { get; set; }
     public RatingType RatingType { get; set; }
     public Commander Interest { get; set; }
+    public WinrateType WinrateType { get; set; }
 }
 
 public record WinrateResponse
 {
     public Commander Interest { get; set; }
     public List<WinrateEnt> WinrateEnts { get; set; } = new();
+}
+
+public enum WinrateType
+{
+    AvgGain = 0,
+    Winrate = 1,
+    Count = 2,
+    AvgRating = 3,
 }
