@@ -49,6 +49,8 @@ public record WinrateRequest
     public RatingType RatingType { get; set; }
     public Commander Interest { get; set; }
     public WinrateType WinrateType { get; set; }
+    public int FromRating { get; set; }
+    public int ToRating { get; set; }
 }
 
 public record WinrateResponse
@@ -61,6 +63,6 @@ public enum WinrateType
 {
     AvgGain = 0,
     Winrate = 1,
-    Count = 2,
+    Matchups = 2,
     AvgRating = 3,
 }

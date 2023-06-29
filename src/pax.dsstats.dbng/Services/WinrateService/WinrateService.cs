@@ -88,7 +88,7 @@ public class WinrateService : IWinrateService
 	                count(*) as count,
                     round(avg(rpr.Rating), 2) as avgrating,
                     round(avg(rpr.RatingChange), 2) as avggain,
-                    sum(CASE WHEN rp.PlayerResult = 1 THEN 1 END) as wins
+                    sum(CASE WHEN rp.PlayerResult = 1 THEN 1 ELSE 0 END) as wins
                 FROM Replays as r
                 INNER JOIN ReplayRatings as rr on rr.ReplayId = r.ReplayId
                 INNER JOIN ReplayPlayers AS rp on rp.ReplayId = r.ReplayId
@@ -97,6 +97,8 @@ public class WinrateService : IWinrateService
                  AND r.GameTime > '{fromDate.ToString("yyyy-MM-dd")}'
                  {(toDate < DateTime.Today.AddDays(-2) ? $"AND r.GameTime < '{toDate.ToString("yyyy-MM-dd")}'" : "")}
                  AND rp.Duration > 300
+                 {(request.FromRating > Data.MinBuildRating ? $"AND rpr.Rating >= {request.FromRating}" : "")}
+                 {(request.ToRating != 0 && request.ToRating < Data.MaxBuildRating ? $"AND rpr.Rating <= {request.ToRating}" : "")}
                 GROUP BY rp.Race;
             "
             : 
@@ -106,7 +108,7 @@ public class WinrateService : IWinrateService
 	                count(*) as count,
                     round(avg(rpr.Rating), 2) as avgrating,
                     round(avg(rpr.RatingChange), 2) as avggain,
-                    sum(CASE WHEN rp.PlayerResult = 1 THEN 1 END) as wins
+                    sum(CASE WHEN rp.PlayerResult = 1 THEN 1 ELSE 0 END) as wins
                 FROM Replays as r
                 INNER JOIN ReplayRatings as rr on rr.ReplayId = r.ReplayId
                 INNER JOIN ReplayPlayers AS rp on rp.ReplayId = r.ReplayId
@@ -116,6 +118,8 @@ public class WinrateService : IWinrateService
                  {(toDate < DateTime.Today.AddDays(-2) ? $"AND r.GameTime < '{toDate.ToString("yyyy-MM-dd")}'" : "")}
                  AND rp.Duration > 300
                  AND rp.Race = {(int)request.Interest}
+                 {(request.FromRating > Data.MinBuildRating ? $"AND rpr.Rating >= {request.FromRating}" : "")}
+                 {(request.ToRating != 0 && request.ToRating < Data.MaxBuildRating ? $"AND rpr.Rating <= {request.ToRating}" : "")}
                 GROUP BY rp.OppRace;
             ";
 

@@ -14,6 +14,21 @@
 <div>
     <CascadingValue Value="Request">
         <WinrateRequestComponent OnRequestChanged="LoadData"></WinrateRequestComponent>
+        <div>
+            <button class="btn btn-sm btn-outline-light"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#RatingRange"
+                    aria-expanded="false"
+                    aria-controls="RatingRange"
+                @onclick="ShowHideRatingRange">
+                <span class="oi @(showRatingRange ? "oi-caret-bottom" : "oi-caret-top")"></span>
+                Rating Range
+            </button>
+        </div>
+        <div class="collapse mt-1" id="RatingRange">
+            <WinrateRatingRequestComponent OnRangeSelected="LoadData"></WinrateRatingRequestComponent>
+        </div>
     </CascadingValue>
 </div>
 
@@ -38,6 +53,11 @@
         }
     </div>
 </div>
+<div class="mt-2">
+    <p class="text-warning">
+        @GetDescription()
+    </p>
+</div>
 @if (response != null)
 {
     <CascadingValue Value="tableOrders">
@@ -54,7 +74,9 @@
 
 
     CancellationTokenSource cts = new();
+    SemaphoreSlim ss = new(1, 1);
     bool isLoading;
+    bool showRatingRange;
 
     WinrateResponse? response = null;
     WinrateChart? winrateChart;
@@ -86,15 +108,23 @@
 
     private async Task LoadData()
     {
-        isLoading = true;
-        await InvokeAsync(() => StateHasChanged());
-        response = await winrateService.GetWinrate(Request, cts.Token);
+        await ss.WaitAsync();
+        try
+        {
+            isLoading = true;
+            await InvokeAsync(() => StateHasChanged());
+            response = await winrateService.GetWinrate(Request, cts.Token);
 
-        winrateChart?.PrepareData(orderedResponse, Request);
-        winrateTable?.SetTable(orderedResponse);
+            winrateChart?.PrepareData(orderedResponse, Request);
+            winrateTable?.SetTable(orderedResponse);
 
-        isLoading = false;
-        await InvokeAsync(() => StateHasChanged());
+            isLoading = false;
+            await InvokeAsync(() => StateHasChanged());
+        } 
+        finally
+        {
+            ss.Release();
+        }
     }
 
     private void SetWinrateType(ChangeEventArgs e, WinrateType winrateType)
@@ -104,7 +134,7 @@
         tableOrder.Property = Request.WinrateType switch
         {
             WinrateType.AvgGain => nameof(WinrateEnt.AvgGain),
-            WinrateType.Count => nameof(WinrateEnt.Count),
+            WinrateType.Matchups => nameof(WinrateEnt.Count),
             WinrateType.AvgRating => nameof(WinrateEnt.AvgRating),
             WinrateType.Winrate => "Winrate",
             _ => nameof(WinrateEnt.AvgGain)
@@ -115,15 +145,43 @@
         winrateTable?.SetTable(orderedResponse);
     }
 
+    private string GetDescription()
+    {
+        return (Request.WinrateType, Request.Interest == Commander.None) switch
+        {
+            (WinrateType.AvgGain, true) => $"The average rating gain of players who played the Commanders.",
+            (WinrateType.Matchups, true) => $"The number of matchups (up to 6 per game)",
+            (WinrateType.AvgRating, true) => $"The average player rating of players who played the Commanders",
+            (WinrateType.Winrate, true) => $"Winrate - average wins per 100 matchups",
+            (WinrateType.AvgGain, false) => $"The average rating gain of players who played {Request.Interest} vs the Commanders.",
+            (WinrateType.Matchups, false) => $"The number of matchups (up to 6 per game) of {Request.Interest} vs the Commanders",
+            (WinrateType.AvgRating, false) => $"The average player rating of players who played {Request.Interest} the Commanders",
+            (WinrateType.Winrate, false) => $"Winrate - average wins per 100 matchups of {Request.Interest} vs the Commanders",
+            _ => ""
+        };
+    }
+
     private void OrderChanged()
     {
         winrateTable?.SetTable(orderedResponse);
         winrateChart?.ChangeOrder(orderedResponse);
     }
 
+    private void ShowHideRatingRange()
+    {
+        showRatingRange = !showRatingRange;
+        if (!showRatingRange)
+        {
+            Request.FromRating = 0;
+            Request.ToRating = 0;
+            _ = LoadData();
+        }
+    }
+
     public void Dispose()
     {
         cts.Cancel();
         cts.Dispose();
+        ss.Dispose();
     }
 }
