@@ -4,59 +4,83 @@
 @inject IWinrateService winrateService
 @implements IDisposable
 
-@if (isLoading)
-{
-    <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
-        <span class="visually-hidden">Loading...</span>
-    </div>
-}
+<style>
+    .check-label:hover {
+        color: white !important;
+        background-color: #adb5bd !important;
+        border-color: white !important;
+    }
+</style>
 
-<div>
-    <CascadingValue Value="Request">
-        <WinrateRequestComponent OnRequestChanged="LoadData"></WinrateRequestComponent>
+<CascadingValue Value="Request">
+    <WinrateRequestComponent OnRequestChanged="LoadData"></WinrateRequestComponent>
+    <div class="d-flex">
         <div>
+            @if (isLoading)
+            {
+                <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            }
+            else
+            {
+                <div class="ms-4"></div>
+            }
+        </div>
+        <div class="ms-2">
             <button class="btn btn-sm btn-outline-light"
                     type="button"
                     data-bs-toggle="collapse"
                     data-bs-target="#RatingRange"
                     aria-expanded="false"
                     aria-controls="RatingRange"
-                @onclick="ShowHideRatingRange">
+            @onclick="ShowHideRatingRange">
                 <span class="oi @(showRatingRange ? "oi-caret-bottom" : "oi-caret-top")"></span>
                 Rating Range
             </button>
         </div>
-        <div class="collapse mt-1" id="RatingRange">
-            <WinrateRatingRequestComponent OnRangeSelected="LoadData"></WinrateRatingRequestComponent>
-        </div>
-    </CascadingValue>
-</div>
-
-<div class="mt-2">
-    @if (response != null)
-    {
-        <div class="border rounded border-secondary"
-             style="min-width: 850px; width: 55vw; height: calc(55vw * 0.5); min-height: 425px;">
-
-            <WinrateChart @ref="winrateChart" Request="Request" Response="orderedResponse"></WinrateChart>
-        </div>
-    }
-</div>
-<div class="mt-2">
-    <div class="btn-group" role="group" aria-label="Chart type toggle group">
-        @{int i = -1;}
-        @foreach (WinrateType winrateType in Enum.GetValues(typeof(WinrateType)))
-        {
-            i++;
-            <input type="radio" class="btn-check" name="@($"btnwinrate{i}")" id="@($"winratetype{i}")" autocomplete="off" checked="@(Request.WinrateType == winrateType)" @onchange="e => SetWinrateType(e, winrateType)">
-            <label class="btn btn-sm btn-outline-light" for="@($"winratetype{i}")">@winrateType</label>
-        }
     </div>
-</div>
-<div class="mt-2">
-    <p class="text-warning">
-        @GetDescription()
-    </p>
+    <div class="collapse mt-1" id="RatingRange">
+        <WinrateRatingRequestComponent OnRangeSelected="LoadData"></WinrateRatingRequestComponent>
+    </div>
+</CascadingValue>
+
+<div class="row mt-2">
+    <div class="col-auto">
+        <div class="d-none d-xl-block">
+            <CmdrSelectComponent @ref="cmdrSelectComponent" OnCommanderSelected="CommanderSelected"></CmdrSelectComponent>
+        </div>
+    </div>
+    <div class="col-auto">
+        <div>
+            @if (response != null)
+            {
+                <div class="border rounded border-secondary"
+                     style="min-width: 850px; width: 55vw; height: calc(55vw * 0.5); min-height: 425px;">
+
+                    <WinrateChart @ref="winrateChart" Request="Request" Response="orderedResponse"></WinrateChart>
+                </div>
+            }
+        </div>
+        <div class="mt-2">
+            <div class="btn-group" role="group" aria-label="Chart type toggle group">
+                @{
+                    int i = -1;
+                }
+                @foreach (WinrateType winrateType in Enum.GetValues(typeof(WinrateType)))
+                {
+                    i++;
+                    <input type="radio" class="btn-check" name="@($"btnwinrate{i}")" id="@($"winratetype{i}")" autocomplete="off" checked="@(Request.WinrateType == winrateType)" @onchange="e => SetWinrateType(e, winrateType)">
+                    <label class="btn btn-sm btn-outline-light check-label" for="@($"winratetype{i}")">@winrateType</label>
+                }
+            </div>
+        </div>
+        <div class="mt-2">
+            <p class="text-warning">
+                @GetDescription()
+            </p>
+        </div>
+    </div>
 </div>
 @if (response != null)
 {
@@ -66,7 +90,6 @@
         </div>
     </CascadingValue>
 }
-
 
 @code {
     [Parameter, EditorRequired]
@@ -81,6 +104,7 @@
     WinrateResponse? response = null;
     WinrateChart? winrateChart;
     WinrateTable? winrateTable;
+    CmdrSelectComponent? cmdrSelectComponent;
 
     TableOrder tableOrder = new()
         {
@@ -93,10 +117,10 @@
         {
             Interest = response.Interest,
             WinrateEnts = tableOrder.Property == "Winrate" ?
-                    tableOrder.Ascending ? response.WinrateEnts.OrderBy(o => o.Wins * 100.0 / o.Count).ToList()
-                    : response.WinrateEnts.OrderByDescending(o => o.Wins * 100.0 / o.Count).ToList()
-                : tableOrder.Ascending ? response.WinrateEnts.AsQueryable().AppendOrderBy(tableOrder.Property).ToList()
-                    : response.WinrateEnts.AsQueryable().AppendOrderByDescending(tableOrder.Property).ToList()
+                                tableOrder.Ascending ? response.WinrateEnts.OrderBy(o => o.Wins * 100.0 / o.Count).ToList()
+                                : response.WinrateEnts.OrderByDescending(o => o.Wins * 100.0 / o.Count).ToList()
+                            : tableOrder.Ascending ? response.WinrateEnts.AsQueryable().AppendOrderBy(tableOrder.Property).ToList()
+                                : response.WinrateEnts.AsQueryable().AppendOrderByDescending(tableOrder.Property).ToList()
         };
 
     protected override void OnInitialized()
@@ -117,14 +141,21 @@
 
             winrateChart?.PrepareData(orderedResponse, Request);
             winrateTable?.SetTable(orderedResponse);
+            cmdrSelectComponent?.SetParameters(Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE, true, Request.Interest);
 
             isLoading = false;
             await InvokeAsync(() => StateHasChanged());
-        } 
+        }
         finally
         {
             ss.Release();
         }
+    }
+
+    private void CommanderSelected(Commander cmdr)
+    {
+        Request.Interest = cmdr;
+        _ = LoadData();
     }
 
     private void SetWinrateType(ChangeEventArgs e, WinrateType winrateType)
@@ -155,7 +186,7 @@
             (WinrateType.Winrate, true) => $"Winrate - average wins per 100 matchups",
             (WinrateType.AvgGain, false) => $"The average rating gain of players who played {Request.Interest} vs the Commanders.",
             (WinrateType.Matchups, false) => $"The number of matchups (up to 6 per game) of {Request.Interest} vs the Commanders",
-            (WinrateType.AvgRating, false) => $"The average player rating of players who played {Request.Interest} the Commanders",
+            (WinrateType.AvgRating, false) => $"The average player rating of players who played {Request.Interest} vs the Commanders",
             (WinrateType.Winrate, false) => $"Winrate - average wins per 100 matchups of {Request.Interest} vs the Commanders",
             _ => ""
         };

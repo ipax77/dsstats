@@ -320,3 +320,40 @@ function setChartLegendFilter(chartId) {
         chart.update();
     }
 }
+
+function drawYValueLine(chartId, yvalue) {
+    const horizontalLine = horizontalLinePlugin();
+    Chart.register(horizontalLine);
+
+    const chart = Chart.getChart(chartId);
+    if (chart !== undefined) {
+        chart.options.plugins.horizontalLine = { value: yvalue };
+        chart.update();
+    }
+}
+
+function horizontalLinePlugin() {
+    return {
+        id: 'horizontalLine',
+        beforeDatasetDraw(chart, args, options) {
+            const { ctx, chartArea: { top, right, bottom, left, width, height },
+                scales: { x, y } } = chart;
+            ctx.save();
+
+            const y0 = y.getPixelForValue(options.value);
+            ctx.setLineDash([10, 5]);
+            ctx.strokeStyle = 'red';
+            ctx.strokeRect(left, y0, width, 0);
+
+            const text = 'Avg';
+            const textX = left - 25; // X-coordinate of the text
+            const textY = y0 + 5; // Y-coordinate of the text (adjust as needed)
+
+            ctx.fillStyle = 'red';
+            ctx.font = '12px Arial';
+            ctx.fillText(text, textX, textY);
+
+            ctx.restore();
+        }
+    }
+}

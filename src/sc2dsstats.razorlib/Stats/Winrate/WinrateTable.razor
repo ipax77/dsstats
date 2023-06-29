@@ -68,10 +68,10 @@
             </tr>
             <tr class="table-primary">
                 <th></th>
-                <th>&Oslash; @Response.WinrateEnts.DefaultIfEmpty(new()).Average(a => a.AvgGain).ToString("N2", CultureInfo.InvariantCulture)</th>
-                <th>&Oslash; @Response.WinrateEnts.DefaultIfEmpty(new()).Average(a => a.Wins * 100.0 / a.Count).ToString("N2", CultureInfo.InvariantCulture)</th>
+                <th>&Oslash; @GetAverageRatingGain().ToString("N2", CultureInfo.InvariantCulture)</th>
+                <th>&Oslash; @GetAverageWinrate().ToString("N2", CultureInfo.InvariantCulture)</th>
                 <th>&sum; @HelperService.GetBigNumberString(Response.WinrateEnts.Sum(s => s.Count))</th>
-                <th>&Oslash; @Response.WinrateEnts.DefaultIfEmpty(new()).Average(a => a.AvgRating).ToString("N2", CultureInfo.InvariantCulture)</th>
+                <th>&Oslash; @GetAverageRating().ToString("N2", CultureInfo.InvariantCulture)</th>
             </tr>
         </thead>
         <tbody>
@@ -137,5 +137,34 @@
             }
         }
         OnOrderChanged.InvokeAsync();
+    }
+
+    private double GetAverageRatingGain()
+    {
+        if (!Response.WinrateEnts.Any())
+        {
+            return 0;
+        }
+
+        return Response.WinrateEnts.Sum(s => s.Count * s.AvgGain) / Response.WinrateEnts.Sum(s => s.Count);
+    }
+
+    private double GetAverageWinrate()
+    {
+        if (!Response.WinrateEnts.Any())
+        {
+            return 0;
+        }
+
+        return Response.WinrateEnts.Sum(s => s.Wins) * 100.0 / Response.WinrateEnts.Sum(s => s.Count);
+    }
+
+    private double GetAverageRating()
+    {
+        if (!Response.WinrateEnts.Any())
+        {
+            return 0;
+        }
+        return Response.WinrateEnts.Sum(s => s.Count * s.AvgRating) / Response.WinrateEnts.Sum(s => s.Count);
     }
 }

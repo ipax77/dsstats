@@ -78,6 +78,12 @@ public partial class WinrateChart : ComponentBase
 
         SetIcons(response);
         JSRuntime.InvokeVoidAsync("setDatalabelsFormatter", chartConfig.ChartJsConfigGuid);
+
+        //if (request.WinrateType == WinrateType.AvgGain || response.WinrateEnts.Any())
+        //{
+        //    var avg = Math.Round(response.WinrateEnts.Sum(a => a.Count * a.AvgGain) / response.WinrateEnts.Sum(s => s.Count), 2);
+        //    JSRuntime.InvokeVoidAsync("drawYValueLine", chartConfig.ChartJsConfigGuid, avg);
+        //}
     }
 
     private IndexableOption<string> GetTitle(WinrateRequest request)
