@@ -1,0 +1,85 @@
+﻿@using pax.dsstats.shared;
+@using Microsoft.AspNetCore.Components.Forms;
+@inject NavigationManager NavigationManager
+@implements IDisposable;
+
+<EditForm EditContext="editContext">
+    <div class="row">
+        <div class="col-auto">
+            <label class="form-label">
+                Time Period
+                <InputSelect class="form-select" @bind-Value="Request.TimePeriod">
+                    @foreach (TimePeriod time in Data.GetTimePeriods(Data.TimePeriodGet.NoNone))
+                    {
+                        <option value="@time">@Data.GetTimePeriodLongName(time)</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Type
+                <InputSelect class="form-select" @bind-Value="Request.RatingType">
+                    <option value="@RatingType.Cmdr">Commanders</option>
+                    <option value="@RatingType.Std">Standard</option>
+                    <option value="@RatingType.CmdrTE">Commanders TE</option>
+                    <option value="@RatingType.StdTE">Standard TE</option>
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Interest
+                <InputSelect class="form-select" @bind-Value="Request.Interest">
+                    <option value="@Commander.None">All</option>
+                    @if (Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)
+                    {
+                        @foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.Std))
+                        {
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                    else
+                    {
+                        @foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.NoStd))
+                        {
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                </InputSelect>
+            </label>
+        </div>
+    </div>
+</EditForm>
+
+
+@code {
+    [CascadingParameter]
+    public WinrateRequest Request { get; set; } = default!;
+    EditContext editContext = null!;
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    protected override void OnInitialized()
+    {
+        editContext = new(Request);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        if (e.FieldIdentifier.FieldName == nameof(WinrateRequest.RatingType))
+        {
+            Request.Interest = Commander.None;
+        }
+        OnRequestChanged.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+
+}

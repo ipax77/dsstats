@@ -56,7 +56,7 @@
 
         if (chartConfig.Options?.Plugins?.Title != null)
         {
-            chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"Duration - {Data.GetTimePeriodLongName(Request.TimePeriod)}");
+            chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"Timeline - {Data.GetTimePeriodLongName(Request.TimePeriod)}");
             chartConfig.UpdateChartOptions();
             JSRuntime.InvokeVoidAsync("setChartLegendFilter", chartConfig.ChartJsConfigGuid);
         }
