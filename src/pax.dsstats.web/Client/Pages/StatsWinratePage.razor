@@ -4,27 +4,26 @@
 @inject NavigationManager NavigationManager
 
 <PageTitle>Stats</PageTitle>
-<title>Direct Strike - Commander stats</title>
 
 <sc2dsstats.razorlib.Stats.Winrate.WinrateComponent Request="WinrateRequest" OnRequestChanged="RequestChanged"></sc2dsstats.razorlib.Stats.Winrate.WinrateComponent>
 
 @code {
-    [SupplyParameterFromQuery]
+    [Parameter, SupplyParameterFromQuery]
     public string? TimePeriod { get; set; }
 
-    [SupplyParameterFromQuery]
+    [Parameter, SupplyParameterFromQuery]
     public string? RType { get; set; }
 
-    [SupplyParameterFromQuery]
+    [Parameter, SupplyParameterFromQuery]
     public string? Interest { get; set; }
 
-    [SupplyParameterFromQuery]
+    [Parameter, SupplyParameterFromQuery]
     public string? WType { get; set; }
 
-    [SupplyParameterFromQuery]
+    [Parameter, SupplyParameterFromQuery]
     public string? From { get; set; }
 
-    [SupplyParameterFromQuery]
+    [Parameter, SupplyParameterFromQuery]
     public string? To { get; set; }
 
     private WinrateRequest WinrateRequest = new()
