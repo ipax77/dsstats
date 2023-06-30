@@ -95,6 +95,8 @@
     [Parameter, EditorRequired]
     public WinrateRequest Request { get; set; } = default!;
 
+    [Parameter]
+    public EventCallback<WinrateRequest> OnRequestChanged { get; set; }
 
     CancellationTokenSource cts = new();
     SemaphoreSlim ss = new(1, 1);
@@ -142,6 +144,7 @@
             winrateChart?.PrepareData(orderedResponse, Request);
             winrateTable?.SetTable(orderedResponse);
             cmdrSelectComponent?.SetParameters(Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE, true, Request.Interest);
+            await OnRequestChanged.InvokeAsync(Request);
 
             isLoading = false;
             await InvokeAsync(() => StateHasChanged());
@@ -174,6 +177,7 @@
 
         winrateChart?.PrepareData(orderedResponse, Request);
         winrateTable?.SetTable(orderedResponse);
+        OnRequestChanged.InvokeAsync(Request);
     }
 
     private string GetDescription()

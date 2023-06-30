@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Interfaces;
 
@@ -18,6 +19,19 @@ public class WinrateService : IWinrateService
     }
 
     public async Task<WinrateResponse> GetWinrate(WinrateRequest request, CancellationToken token)
+    {
+        var memKey = request.GenMemKey();
+
+        if (!memoryCache.TryGetValue(memKey, out WinrateResponse response)) 
+        { 
+            response = await ProduceWinrate(request, token);
+            memoryCache.Set(memKey, response, TimeSpan.FromHours(24));
+        }
+
+        return response;
+    }
+
+    private async Task<WinrateResponse> ProduceWinrate(WinrateRequest request, CancellationToken token)
     {
         var data = await GetDataFromRaw(request, token);
 

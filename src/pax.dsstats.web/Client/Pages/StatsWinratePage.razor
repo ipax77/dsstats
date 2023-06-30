@@ -6,39 +6,28 @@
 <PageTitle>Stats</PageTitle>
 <title>Direct Strike - Commander stats</title>
 
-<sc2dsstats.razorlib.Stats.Winrate.WinrateComponent Request="winrateRequest"></sc2dsstats.razorlib.Stats.Winrate.WinrateComponent>
+<sc2dsstats.razorlib.Stats.Winrate.WinrateComponent Request="WinrateRequest" OnRequestChanged="RequestChanged"></sc2dsstats.razorlib.Stats.Winrate.WinrateComponent>
 
 @code {
-    [Parameter]
-    [SupplyParameterFromQuery]
-    public string? StatsMode { get; set; }
-
-    [Parameter]
     [SupplyParameterFromQuery]
     public string? TimePeriod { get; set; }
 
-    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? RType { get; set; }
+
     [SupplyParameterFromQuery]
     public string? Interest { get; set; }
 
-    [Parameter]
     [SupplyParameterFromQuery]
-    public bool? Uploaders { get; set; }
+    public string? WType { get; set; }
 
-    [Parameter]
     [SupplyParameterFromQuery]
-    public bool? DefaultFilter { get; set; }
+    public string? From { get; set; }
 
-    private StatsRequest statsRequest = new()
-        {
-            StatsMode = shared.StatsMode.Winrate,
-            TimePeriod = shared.TimePeriod.Past90Days,
-            Uploaders = false,
-            DefaultFilter = true,
-            GameModes = new() { GameMode.Commanders, GameMode.CommandersHeroic }
-        };
+    [SupplyParameterFromQuery]
+    public string? To { get; set; }
 
-    private WinrateRequest winrateRequest = new()
+    private WinrateRequest WinrateRequest = new()
     {
         TimePeriod = shared.TimePeriod.Past90Days,
         RatingType = RatingType.Cmdr,
@@ -53,49 +42,105 @@
 
     private void SetRequest()
     {
-        if (Enum.TryParse(typeof(StatsMode), StatsMode, out object? statsModeObj))
-        {
-            if (statsModeObj is StatsMode satsMode)
-            {
-                statsRequest.StatsMode = satsMode;
-            }
-        }
-
         if (!String.IsNullOrEmpty(TimePeriod) 
             && Enum.TryParse(typeof(TimePeriod), TimePeriod, out var timePeriodObj) 
             && timePeriodObj is TimePeriod timePeriod)
         {
-            statsRequest.TimePeriod = timePeriod;
+            WinrateRequest.TimePeriod = timePeriod;
+        }
+
+        if (!String.IsNullOrEmpty(RType)
+            && Enum.TryParse(typeof(RatingType), RType, out var ratingTypeObj)
+            && ratingTypeObj is RatingType ratingType)
+        {
+            WinrateRequest.RatingType = ratingType;
         }
 
         if (Enum.TryParse(typeof(Commander), Interest, out object? interestObj))
         {
             if (interestObj is Commander interest)
             {
-                statsRequest.Interest = interest;
+                WinrateRequest.Interest = interest;
             }
         }
 
-        if (Uploaders != null)
+        if (Enum.TryParse(typeof(WinrateType), WType, out object? winrateTypeObj)
+            && winrateTypeObj is WinrateType winrateType)
         {
-            statsRequest.Uploaders = Uploaders.Value;
+            WinrateRequest.WinrateType = winrateType;
         }
 
-        if (DefaultFilter != null)
+        if (!String.IsNullOrEmpty(From)
+            && int.TryParse(From, out int from)
+            && from % 50 == 0)
         {
-            statsRequest.DefaultFilter = DefaultFilter.Value;
+            WinrateRequest.FromRating = from;
+        }
+
+        if (!String.IsNullOrEmpty(To)
+            && int.TryParse(To, out int to)
+            && to % 50 == 0)
+        {
+            WinrateRequest.ToRating = to;
         }
     }
 
-    private void RequestChanged()
+    private void RequestChanged(WinrateRequest winrateRequest)
     {
         Dictionary<string, object?> queryDic = new();
 
-        queryDic.Add("StatsMode", statsRequest.StatsMode.ToString());
-        queryDic.Add("TimePeriod", statsRequest.TimePeriod.ToString());
-        queryDic.Add("Interest", statsRequest.Interest.ToString());
-        queryDic.Add("Uploaders", statsRequest.Uploaders);
-        queryDic.Add("DefaultFilter", statsRequest.DefaultFilter);
+        if (winrateRequest.TimePeriod != shared.TimePeriod.Past90Days)
+        {
+            queryDic.Add("TimePeriod", winrateRequest.TimePeriod.ToString());
+        } else
+        {
+            queryDic.Add("TimePeriod", null);
+        }
+
+        if (winrateRequest.RatingType != RatingType.Cmdr)
+        {
+            queryDic.Add("RType", winrateRequest.RatingType.ToString());
+        }
+        else
+        {
+            queryDic.Add("RType", null);
+        }
+
+        if (winrateRequest.Interest != Commander.None)
+        {
+            queryDic.Add("Interest", winrateRequest.Interest.ToString());
+        }
+        else
+        {
+            queryDic.Add("Interest", null);
+        }
+
+        if (winrateRequest.WinrateType != WinrateType.AvgGain)
+        {
+            queryDic.Add("WType", winrateRequest.WinrateType.ToString());
+        }
+        else
+        {
+            queryDic.Add("WType", null);
+        }
+
+        if (winrateRequest.FromRating != 0)
+        {
+            queryDic.Add("From", winrateRequest.FromRating.ToString());
+        }
+        else
+        {
+            queryDic.Add("From", null);
+        }
+
+        if (winrateRequest.ToRating != 0)
+        {
+            queryDic.Add("To", winrateRequest.ToRating.ToString());
+        } 
+        else
+        {
+            queryDic.Add("To", null);
+        }
 
         NavigationManager.NavigateTo(
             NavigationManager.GetUriWithQueryParameters(
