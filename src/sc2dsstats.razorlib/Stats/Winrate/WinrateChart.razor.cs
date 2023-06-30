@@ -65,9 +65,11 @@ public partial class WinrateChart : ComponentBase
             chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
         }
 
-        if (chartConfig.Options?.Plugins?.Title != null)
+        if (chartConfig.Options?.Plugins?.Title != null
+            && chartConfig.Options?.Scales?.Y?.Title != null)
         {
             chartConfig.Options.Plugins.Title.Text = GetTitle(request);
+            chartConfig.Options!.Scales!.Y!.Title!.Text = GetYAxisDesc(request);
             chartConfig.UpdateChartOptions();
         }
 
@@ -125,6 +127,19 @@ public partial class WinrateChart : ComponentBase
                 });
             }
         }
+    }
+
+    private IndexableOption<string> GetYAxisDesc(WinrateRequest request)
+    {
+        var text = request.WinrateType switch
+        {
+            WinrateType.AvgGain => "Average rating gain",
+            WinrateType.Winrate => "Winrate",
+            WinrateType.Matchups => "Matchups",
+            WinrateType.AvgRating => "Average player rating",
+            _ => "Average rating gain"
+        };
+        return new IndexableOption<string>(text);
     }
 
     private List<object> GetData(WinrateResponse response)
