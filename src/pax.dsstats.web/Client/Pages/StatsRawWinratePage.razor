@@ -1,4 +1,4 @@
-﻿@page "/stats/synergy"
+﻿@page "/stats/rawwinrate"
 @layout StatsLayout
 @using pax.dsstats.shared
 @inject NavigationManager NavigationManager
@@ -33,7 +33,6 @@
         {
             StatsMode = shared.StatsMode.Winrate,
             TimePeriod = shared.TimePeriod.Past90Days,
-            Interest = Commander.Abathur,
             Uploaders = false,
             DefaultFilter = true,
             GameModes = new() { GameMode.Commanders, GameMode.CommandersHeroic }
@@ -55,8 +54,8 @@
             }
         }
 
-        if (!String.IsNullOrEmpty(TimePeriod) 
-            && Enum.TryParse(typeof(TimePeriod), TimePeriod, out var timePeriodObj) 
+        if (!String.IsNullOrEmpty(TimePeriod)
+            && Enum.TryParse(typeof(TimePeriod), TimePeriod, out var timePeriodObj)
             && timePeriodObj is TimePeriod timePeriod)
         {
             statsRequest.TimePeriod = timePeriod;

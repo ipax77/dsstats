@@ -1,0 +1,66 @@
+﻿@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
+
+<style>
+    .check-label:hover {
+        color: white !important;
+        background-color: #adb5bd !important;
+        border-color: white !important;
+    }
+</style>
+
+<div class="btn-group-vertical" role="group" aria-label="Cmdr toggle group">
+    @if (None)
+    {
+        <input type="radio" class="btn-check" name="@Commander.None" id="@Commander.None" autocomplete="off"
+            checked="@(Selected == Commander.None)" @onchange="e => SetCommander(Commander.None)">
+        <label class="btn btn-sm btn-outline-light check-label" for="@Commander.None">All</label>
+    }
+    @foreach (Commander cmdr in Data.GetCommanders(Std ? Data.CmdrGet.Std : Data.CmdrGet.NoStd))
+    {
+        <input type="radio" class="btn-check" name="@cmdr" id="@cmdr" autocomplete="off"
+               checked="@(Selected == cmdr)" @onchange="e => SetCommander(cmdr)">
+        <label class="btn btn-sm btn-outline-light check-label" for="@cmdr">
+            <span class="d-flex justify-content-start">
+                <span>
+                    <img src="@HelperService.GetImageSrc(cmdr)"
+                         alt="@cmdr"
+                         title="@cmdr"
+                         width="20"
+                         height="20" />
+                </span>
+                <span class="mt-1">
+                    @cmdr
+                </span>
+            </span>
+        </label>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public bool Std { get; set; }
+
+    [Parameter]
+    public bool None { get; set; }
+
+    [Parameter]
+    public Commander Selected { get; set; } = Commander.None;
+
+    [Parameter]
+    public EventCallback<Commander> OnCommanderSelected { get; set; }
+
+    public void SetParameters(bool std, bool none, Commander selected)
+    {
+        Std = std;
+        None = none;
+        Selected = selected;
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    private void SetCommander(Commander cmdr)
+    {
+        Selected = cmdr;
+        OnCommanderSelected.InvokeAsync(cmdr);
+    }
+}

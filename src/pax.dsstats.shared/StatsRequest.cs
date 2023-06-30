@@ -32,3 +32,37 @@ public enum StatsMode
     Count = 5,
     Duration = 6,
 }
+
+public record WinrateEnt
+{
+    public Commander Commander { get; set; }
+    public int Count { get; set; }
+    public int Wins { get; set; }
+    public double AvgRating { get; set; }
+    public double AvgGain { get; set; }
+}
+
+
+public record WinrateRequest
+{
+    public TimePeriod TimePeriod { get; set; }
+    public RatingType RatingType { get; set; }
+    public Commander Interest { get; set; }
+    public WinrateType WinrateType { get; set; }
+    public int FromRating { get; set; }
+    public int ToRating { get; set; }
+}
+
+public record WinrateResponse
+{
+    public Commander Interest { get; set; }
+    public List<WinrateEnt> WinrateEnts { get; set; } = new();
+}
+
+public enum WinrateType
+{
+    AvgGain = 0,
+    Winrate = 1,
+    Matchups = 2,
+    AvgRating = 3,
+}

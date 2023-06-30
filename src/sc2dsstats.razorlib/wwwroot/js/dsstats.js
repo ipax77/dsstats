@@ -81,6 +81,31 @@ function preloadChartIcons(xWidth, yWidth) {
     }
 }
 
+function increaseChartHeight(chartId, height) {
+    const chart = Chart.getChart(chartId);
+
+    const originalFit = chart.legend.fit;
+    chart.legend.fit = function fit() {
+        // Call the original function and bind scope in order to use `this` correctly inside it
+        originalFit.bind(chart.legend)();
+        // Change the height as suggested in other answers
+        this.height += height;
+    }
+}
+
+function setDatalabelsFormatter(chartId) {
+    const chart = Chart.getChart(chartId);
+    chart.options.plugins.datalabels.formatter = function (value, context) {
+        var float = Number.parseFloat(value);
+        if (float < 100) {
+            return float.toFixed(2);
+        } else {
+            return Math.round(float)
+        }
+    };
+    chart.update();
+}
+
 function barIconsPlugin() {
     return {
         id: 'barIcons',
@@ -101,6 +126,7 @@ function barIconsPlugin() {
 
                     const elem = meta.data[i];
                     if (elem != undefined) {
+                        let raw = elem["$context"].raw;
                         let x0 = 0;
                         let y0 = 0;
                         if (x != undefined) {
@@ -115,6 +141,10 @@ function barIconsPlugin() {
                                 x0 = piePos.x;
                                 y0 = piePos.y + yOffset;
                             }
+                        }
+
+                        if (raw < 0) {
+                            y0 = y.getPixelForValue(0) - yWidth;
                         }
 
                         const img = cmdrIconsMap.get(option.cmdr);
@@ -288,5 +318,42 @@ function setChartLegendFilter(chartId) {
             return !(legendItem.lineWidth == 0);
         };
         chart.update();
+    }
+}
+
+function drawYValueLine(chartId, yvalue) {
+    const horizontalLine = horizontalLinePlugin();
+    Chart.register(horizontalLine);
+
+    const chart = Chart.getChart(chartId);
+    if (chart !== undefined) {
+        chart.options.plugins.horizontalLine = { value: yvalue };
+        chart.update();
+    }
+}
+
+function horizontalLinePlugin() {
+    return {
+        id: 'horizontalLine',
+        beforeDatasetDraw(chart, args, options) {
+            const { ctx, chartArea: { top, right, bottom, left, width, height },
+                scales: { x, y } } = chart;
+            ctx.save();
+
+            const y0 = y.getPixelForValue(options.value);
+            ctx.setLineDash([10, 5]);
+            ctx.strokeStyle = 'red';
+            ctx.strokeRect(left, y0, width, 0);
+
+            const text = 'Avg';
+            const textX = left - 25; // X-coordinate of the text
+            const textY = y0 + 5; // Y-coordinate of the text (adjust as needed)
+
+            ctx.fillStyle = 'red';
+            ctx.font = '12px Arial';
+            ctx.fillText(text, textX, textY);
+
+            ctx.restore();
+        }
     }
 }
