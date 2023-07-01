@@ -215,6 +215,16 @@ public static class ReplayExtensions
         return sb.ToString();
     }
 
+    public static string GenMemKey(this SynergyRequest request)
+    {
+        StringBuilder sb = new();
+        sb.Append("StatsSynergy");
+        sb.Append(request.TimePeriod.ToString());
+        sb.Append(request.RatingType.ToString());
+        sb.Append(request.WithLeavers.ToString());
+        return sb.ToString();
+    }
+
     public static string GetMd5Hash(MD5 md5Hash, string input)
     {
         byte[] data = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(input));

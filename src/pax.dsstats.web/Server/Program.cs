@@ -84,6 +84,7 @@ builder.Services.AddScoped<IDurationService, DurationService>();
 builder.Services.AddScoped<ITimelineService, TimelineService>();
 builder.Services.AddScoped<IDsUpdateService, DsUpdateService>();
 builder.Services.AddScoped<IWinrateService, WinrateService>();
+builder.Services.AddScoped<ISynergyService, SynergyService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -130,8 +131,13 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var dsupdatesService = scope.ServiceProvider.GetRequiredService<IDsUpdateService>();
-    dsupdatesService.SeedDsUpdates();
+    var synergyService = scope.ServiceProvider.GetRequiredService<ISynergyService>();
+    synergyService.GetSynergy(new()
+    {
+        TimePeriod = TimePeriod.Past90Days,
+        RatingType = RatingType.Cmdr,
+        WithLeavers = false
+    }).Wait();
 }
 
 // Configure the HTTP request pipeline.

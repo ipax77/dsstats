@@ -6,7 +6,7 @@
 <PageTitle>Stats</PageTitle>
 <title>Direct Strike - Commander stats</title>
 
-<sc2dsstats.razorlib.Stats.StatsComponent StatsRequest="statsRequest" OnRequestChanged="RequestChanged"></sc2dsstats.razorlib.Stats.StatsComponent>
+<sc2dsstats.razorlib.Stats.Synergy.SynergyComponent Request="Request"></sc2dsstats.razorlib.Stats.Synergy.SynergyComponent>
 
 @code {
     [Parameter]
@@ -37,6 +37,13 @@
             Uploaders = false,
             DefaultFilter = true,
             GameModes = new() { GameMode.Commanders, GameMode.CommandersHeroic }
+        };
+
+    private SynergyRequest Request = new()
+        {
+            TimePeriod = shared.TimePeriod.Patch2_71,
+            RatingType = RatingType.Cmdr,
+            WithLeavers = false
         };
 
     protected override void OnInitialized()

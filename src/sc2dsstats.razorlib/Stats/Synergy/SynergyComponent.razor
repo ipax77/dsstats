@@ -1,0 +1,62 @@
+﻿@using pax.dsstats.shared;
+@using pax.dsstats.shared.Interfaces;
+@inject ISynergyService synergyService
+@implements IDisposable
+
+<div>
+    <CascadingValue Value="Request">
+        <SynergyRequestComponent OnRequestChanged="LoadData"></SynergyRequestComponent>
+    </CascadingValue>
+</div>
+
+<div class="row">
+    <div class="col-auto">
+        <div class="d-none d-xl-block">
+            <CascadingValue Value="CmdrSelects">
+                <CmdrCheckSelectComponent></CmdrCheckSelectComponent>
+            </CascadingValue>
+        </div>
+    </div>
+    <div class="col-auto">
+
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public SynergyRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<SynergyRequest> OnRequestChanged { get; set; }
+
+    bool isLoading;
+    CancellationTokenSource cts = new();
+
+    SynergyResponse? response = null;
+
+    Dictionary<Commander, bool> CmdrSelects = Data.GetCommanders(Data.CmdrGet.All).ToDictionary(k => k, v => false);
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        response = await synergyService.GetSynergy(Request, cts.Token);
+
+
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+        await OnRequestChanged.InvokeAsync(Request);
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}
