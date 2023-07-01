@@ -48,10 +48,7 @@
     public bool None { get; set; }
 
     [Parameter]
-    public EventCallback<CmdrSelect> OnCommanderSelected { get; set; }
-
-    
-
+    public EventCallback OnCommanderSelected { get; set; }
 
     public void SetParameters(bool std, bool none)
     {
@@ -67,7 +64,7 @@
         {
             CmdrSelects[cmdr] = value;
 
-            OnCommanderSelected.InvokeAsync(new() { Commander = cmdr, Checked = value });
+            OnCommanderSelected.InvokeAsync();
         }
     }
 

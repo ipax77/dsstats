@@ -5,7 +5,9 @@
 
 <div>
     <CascadingValue Value="Request">
-        <SynergyRequestComponent OnRequestChanged="LoadData"></SynergyRequestComponent>
+        <CascadingValue Value="CmdrSelects">
+            <SynergyRequestComponent OnRequestChanged="LoadData" OnCmdrSelected="CmdrSelected"></SynergyRequestComponent>
+        </CascadingValue>
     </CascadingValue>
 </div>
 
@@ -13,12 +15,18 @@
     <div class="col-auto">
         <div class="d-none d-xl-block">
             <CascadingValue Value="CmdrSelects">
-                <CmdrCheckSelectComponent></CmdrCheckSelectComponent>
+                <CmdrCheckSelectComponent OnCommanderSelected="CmdrSelected"></CmdrCheckSelectComponent>
             </CascadingValue>
         </div>
     </div>
     <div class="col-auto">
-
+        @if (response != null)
+        {
+            <div class="border rounded border-secondary"
+                 style="min-width: 850px; width: 55vw; height: calc(55vw * 0.5); min-height: 425px;">
+                <SynergyChart @ref="synergyChart" Request="Request" Response="response"></SynergyChart>
+            </div>
+        }
     </div>
 </div>
 
@@ -33,6 +41,7 @@
     CancellationTokenSource cts = new();
 
     SynergyResponse? response = null;
+    SynergyChart? synergyChart;
 
     Dictionary<Commander, bool> CmdrSelects = Data.GetCommanders(Data.CmdrGet.All).ToDictionary(k => k, v => false);
 
@@ -48,10 +57,16 @@
         await InvokeAsync(() => StateHasChanged());
         response = await synergyService.GetSynergy(Request, cts.Token);
 
+        synergyChart?.PrepareData(Request, response, CmdrSelects);
 
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
         await OnRequestChanged.InvokeAsync(Request);
+    }
+
+    private void CmdrSelected()
+    {
+        synergyChart?.AddRemoveDatasets(CmdrSelects);
     }
 
     public void Dispose()
