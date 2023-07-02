@@ -13,6 +13,9 @@
     ChartJsConfig chartConfig = null!;
     bool chartReady;
 
+    [Parameter, EditorRequired]
+    public Dictionary<Commander, bool> CmdrSelects { get; set; } = default!;
+
     protected override void OnInitialized()
     {
         chartConfig = GetChartConfig();
@@ -24,12 +27,14 @@
         if (chartJsEvent is ChartJsInitEvent initEvent)
         {
             chartReady = true;
-            PrepareData(Request, Response, new());
+            PrepareData(Request, Response, CmdrSelects);
         }
     }
 
     public void PrepareData(SynergyRequest request, SynergyResponse response, Dictionary<Commander, bool> cmdrSelects)
     {
+        CmdrSelects = cmdrSelects;
+
         if (!chartReady)
         {
             return;
@@ -46,6 +51,7 @@
         if (chartConfig.Options?.Plugins?.Title != null)
         {
             chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"Synergy - {Data.GetRatingTypeLongName(request.RatingType)} - {Data.GetTimePeriodLongName(request.TimePeriod)}");
+            chartConfig.UpdateChartOptions();
         }
 
         SetLabels(request);
@@ -98,16 +104,6 @@
     private List<object> GetData(SynergyResponse response, Commander cmdr)
     {
         var ents = response.Entities.Where(x => x.Commander == cmdr).OrderBy(o => o.Teammate).ToList();
-        var min = ents.Min(m => m.AvgGain);
-
-        if (min < 0)
-        {
-            min = Math.Abs(min) + 1.0;
-        }
-        else
-        {
-            min = 1.0;
-        }
 
         List<Commander> cmdrs;
         if ((int)cmdr <= 3)
@@ -131,7 +127,7 @@
             }
             else
             {
-                data.Add(ent.AvgGain + min);
+                data.Add(ent.NormalizedAvgGain);
             }
         }
         return data;
@@ -187,7 +183,7 @@
                     {
                         Legend = new Legend()
                         {
-                            Position = "bottom",
+                            Position = "right",
                             Labels = new Labels()
                             {
                                 Color = "#f2f2f2",

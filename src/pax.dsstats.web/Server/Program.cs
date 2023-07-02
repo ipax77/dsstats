@@ -131,13 +131,7 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var synergyService = scope.ServiceProvider.GetRequiredService<ISynergyService>();
-    synergyService.GetSynergy(new()
-    {
-        TimePeriod = TimePeriod.Past90Days,
-        RatingType = RatingType.Cmdr,
-        WithLeavers = false
-    }).Wait();
+
 }
 
 // Configure the HTTP request pipeline.

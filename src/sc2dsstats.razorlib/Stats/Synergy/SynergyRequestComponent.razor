@@ -37,6 +37,12 @@
                 </select>
             </label>
         </div>
+@*        <div class="col-auto">
+            <label class="form-label">
+                Max Expectation2Win (range 0.0 (diabled) - 0.99)
+                <InputNumber class="form-control" @bind-Value="Request.MaxExp2Win"></InputNumber>
+            </label>
+        </div>*@
         <div class="col-auto">
             <div class="form-check form-switch">
                 <label class="form-check-label">
@@ -74,6 +80,17 @@
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
+        if (e.FieldIdentifier.FieldName == nameof(SynergyRequest.MaxExp2Win))
+        {
+            if (Request.MaxExp2Win < 0 || Request.MaxExp2Win > 0.99)
+            {
+                Request.MaxExp2Win = 0;
+            }
+            else
+            {
+                Request.MaxExp2Win = Math.Round(Request.MaxExp2Win, 2);
+            }
+        }
         OnRequestChanged.InvokeAsync();
     }
 

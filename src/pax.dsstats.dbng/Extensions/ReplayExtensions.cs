@@ -1,6 +1,7 @@
 
 using pax.dsstats.dbng.Services;
 using pax.dsstats.shared;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -222,6 +223,7 @@ public static class ReplayExtensions
         sb.Append(request.TimePeriod.ToString());
         sb.Append(request.RatingType.ToString());
         sb.Append(request.WithLeavers.ToString());
+        sb.Append(request.MaxExp2Win.ToString(CultureInfo.InvariantCulture));
         return sb.ToString();
     }
 

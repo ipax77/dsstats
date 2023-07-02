@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace pax.dsstats.shared;
 
@@ -6,6 +7,7 @@ public record SynergyRequest
 {
     public TimePeriod TimePeriod { get; set; }
     public RatingType RatingType { get; set; }
+    public double MaxExp2Win { get; set; }
     public bool WithLeavers { get; set; }
 }
 
@@ -22,6 +24,9 @@ public record SynergyEnt
     public int Wins { get; set; }
     public double AvgRating { get; set; }
     public double AvgGain { get; set; }
+    public double NormalizedAvgGain { get; set; }
+    [JsonIgnore]
+    public double Winrate => Count == 0 ? 0 : Math.Round(Wins * 100.0 / Count , 2);
 }
 
 public record CmdrSelect
