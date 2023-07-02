@@ -15,7 +15,7 @@
     <div class="col-auto">
         <div class="d-none d-xl-block">
             <CascadingValue Value="CmdrSelects">
-                <CmdrCheckSelectComponent OnCommanderSelected="CmdrSelected"></CmdrCheckSelectComponent>
+                <CmdrCheckSelectComponent @ref="cmdrCheckSelectComponent" Std="@(Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)" OnCommanderSelected="CmdrSelected"></CmdrCheckSelectComponent>
             </CascadingValue>
         </div>
         <div class="mt-2">
@@ -71,6 +71,7 @@
 
     SynergyResponse? response = null;
     SynergyChart? synergyChart;
+    CmdrCheckSelectComponent? cmdrCheckSelectComponent;
 
     Dictionary<Commander, bool> CmdrSelects = null!;
 
@@ -107,6 +108,7 @@
         response = await synergyService.GetSynergy(Request, cts.Token);
 
         synergyChart?.PrepareData(Request, response, CmdrSelects);
+        cmdrCheckSelectComponent?.SetParameters(Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE, false);
 
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
