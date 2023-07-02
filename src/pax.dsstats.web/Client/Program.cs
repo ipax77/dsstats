@@ -30,5 +30,6 @@ builder.Services.AddScoped<IDurationService, DurationService>();
 builder.Services.AddScoped<ITimelineService, TimelineService>();
 builder.Services.AddScoped<IDsUpdateService, DsUpdateService>();
 builder.Services.AddScoped<IWinrateService, WinrateService>();
+builder.Services.AddScoped<ISynergyService, SynergyService>();
 
 await builder.Build().RunAsync();

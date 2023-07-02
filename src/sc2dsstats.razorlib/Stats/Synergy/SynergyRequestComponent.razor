@@ -1,0 +1,122 @@
+﻿@using pax.dsstats.shared;
+@using Microsoft.AspNetCore.Components.Forms;
+@implements IDisposable;
+
+<EditForm EditContext="editContext">
+    <div class="row">
+        <div class="col-auto">
+            <label class="form-label">
+                Time Period
+                <InputSelect class="form-select" @bind-Value="Request.TimePeriod">
+                    @foreach (TimePeriod time in Data.GetTimePeriods(Data.TimePeriodGet.NoNone))
+                    {
+                        <option value="@time">@Data.GetTimePeriodLongName(time)</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Type
+                <InputSelect class="form-select" @bind-Value="Request.RatingType">
+                    <option value="@RatingType.Cmdr">Commanders</option>
+                    <option value="@RatingType.Std">Standard</option>
+                    <option value="@RatingType.CmdrTE">Commanders TE</option>
+                    <option value="@RatingType.StdTE">Standard TE</option>
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Commanders
+                <select id="addremovecmdr" class="form-select" multiple aria-label="multiple" @onchange="AddRemoveCmdr">
+                    @foreach (Commander cmdr in Data.GetCommanders(Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE ? Data.CmdrGet.Std : Data.CmdrGet.NoNone))
+                    {
+                        <option value="@cmdr.ToString()" selected="@CmdrSelects[cmdr]">@cmdr</option>
+                    }
+                </select>
+            </label>
+        </div>
+@*        <div class="col-auto">
+            <label class="form-label">
+                Max Expectation2Win (range 0.0 (diabled) - 0.99)
+                <InputNumber class="form-control" @bind-Value="Request.MaxExp2Win"></InputNumber>
+            </label>
+        </div>*@
+        <div class="col-auto">
+            <div class="form-check form-switch">
+                <label class="form-check-label">
+                    With Leavers
+                    <InputCheckbox class="form-check-input" @bind-Value="Request.WithLeavers">
+                    </InputCheckbox>
+                </label>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+
+@code {
+    [CascadingParameter]
+    public SynergyRequest Request { get; set; } = default!;
+
+    [CascadingParameter]
+    public Dictionary<Commander, bool> CmdrSelects { get; set; } = Data.GetCommanders(Data.CmdrGet.All).ToDictionary(k => k, v => false);
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnCmdrSelected { get; set; }
+
+    EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new(Request);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        if (e.FieldIdentifier.FieldName == nameof(SynergyRequest.MaxExp2Win))
+        {
+            if (Request.MaxExp2Win < 0 || Request.MaxExp2Win > 0.99)
+            {
+                Request.MaxExp2Win = 0;
+            }
+            else
+            {
+                Request.MaxExp2Win = Math.Round(Request.MaxExp2Win, 2);
+            }
+        }
+        OnRequestChanged.InvokeAsync();
+    }
+
+    private void AddRemoveCmdr(ChangeEventArgs e)
+    {
+        if (e.Value is string[] values)
+        {
+            foreach (var key in CmdrSelects.Keys.ToArray())
+            {
+                CmdrSelects[key] = false;
+            }
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (Enum.TryParse(values[i], out Commander cmdr))
+                {
+                    CmdrSelects[cmdr] = true;
+                }
+            }
+        }
+        OnCmdrSelected.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+
+}

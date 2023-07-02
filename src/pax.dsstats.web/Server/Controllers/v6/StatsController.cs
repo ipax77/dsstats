@@ -19,6 +19,7 @@ namespace pax.dsstats.web.Server.Controllers.v6
         private readonly ITimelineService timelineService;
         private readonly IDsUpdateService dsupdateService;
         private readonly IWinrateService winrateService;
+        private readonly ISynergyService synergyService;
         private readonly CmdrsService cmdrService;
 
         public StatsController(IReplayRepository replayRepository,
@@ -28,6 +29,7 @@ namespace pax.dsstats.web.Server.Controllers.v6
                                ITimelineService timelineService,
                                IDsUpdateService dsupdateService,
                                IWinrateService winrateService,
+                               ISynergyService synergyService,
                                CmdrsService cmdrService)
         {
             this.replayRepository = replayRepository;
@@ -38,6 +40,7 @@ namespace pax.dsstats.web.Server.Controllers.v6
             this.dsupdateService = dsupdateService;
             this.winrateService = winrateService;
             this.cmdrService = cmdrService;
+            this.synergyService = synergyService;
         }
 
         [HttpGet]
@@ -371,6 +374,13 @@ namespace pax.dsstats.web.Server.Controllers.v6
         public async Task<ActionResult<WinrateResponse>> GetWinrate(WinrateRequest request, CancellationToken token)
         {
             return await winrateService.GetWinrate(request, token);
+        }
+
+        [HttpPost]
+        [Route("synergy")]
+        public async Task<ActionResult<SynergyResponse>> GetSynergy(SynergyRequest request, CancellationToken token)
+        {
+            return await synergyService.GetSynergy(request, token);
         }
     }
 }
