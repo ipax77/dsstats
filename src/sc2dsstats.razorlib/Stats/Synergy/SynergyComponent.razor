@@ -1,0 +1,138 @@
+﻿@using pax.dsstats.shared;
+@using pax.dsstats.shared.Interfaces;
+@inject ISynergyService synergyService
+@implements IDisposable
+
+<div>
+    <CascadingValue Value="Request">
+        <CascadingValue Value="CmdrSelects">
+            <SynergyRequestComponent OnRequestChanged="LoadData" OnCmdrSelected="CmdrSelected"></SynergyRequestComponent>
+        </CascadingValue>
+    </CascadingValue>
+</div>
+
+<div class="row">
+    <div class="col-auto">
+        <div class="d-none d-xl-block">
+            <CascadingValue Value="CmdrSelects">
+                <CmdrCheckSelectComponent OnCommanderSelected="CmdrSelected"></CmdrCheckSelectComponent>
+            </CascadingValue>
+        </div>
+        <div class="mt-2">
+            <button type="button" class="btn btn-outline-warning" @onclick="ClearSelects">Clear Chart</button>
+        </div>
+    </div>
+    <div class="col-auto">
+        @if (isLoading)
+        {
+            <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        }
+        else
+        {
+            <div class="ms-4"></div>
+        }
+    </div>
+    <div class="col-auto">
+        @if (response != null)
+        {
+            <div class="border rounded border-secondary"
+                 style="min-width: 800px; width: 42vw; height: calc(55vw * 0.8); min-height: 640px;">
+                <SynergyChart @ref="synergyChart" Request="Request" Response="response" CmdrSelects="CmdrSelects"></SynergyChart>
+            </div>
+        }
+    </div>
+</div>
+<div class="mt-2">
+    <p class="text-warning">
+        Synergy - Average rating gain of the selected commander when on the same team with the other commanders. The chart values ​​are normalized to a value between 0 and 1..
+    </p>
+</div>
+<div class="mt-2">
+    @if (response != null)
+    {
+        <SynergyTable Response="response"></SynergyTable>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public SynergyRequest Request { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public int[]? Interests { get; set; }
+
+    [Parameter]
+    public EventCallback<KeyValuePair<SynergyRequest, Dictionary<Commander, bool>>> OnRequestChanged { get; set; }
+
+    bool isLoading;
+    CancellationTokenSource cts = new();
+
+    SynergyResponse? response = null;
+    SynergyChart? synergyChart;
+
+    Dictionary<Commander, bool> CmdrSelects = null!;
+
+    protected override void OnInitialized()
+    {
+        CmdrSelects = Data.GetCommanders(Data.CmdrGet.All).ToDictionary(k => k, v => false);
+        SetCmdrSelects();
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private void SetCmdrSelects()
+    {
+        if (Interests == null || !Interests.Any())
+        {
+            CmdrSelects[Commander.Abathur] = true;
+        }
+        else
+        {
+            foreach (var cmdrInt in Interests)
+            {
+                if (Enum.IsDefined(typeof(Commander), cmdrInt))
+                {
+                    CmdrSelects[(Commander)cmdrInt] = true;
+                }
+            }
+        }
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        response = await synergyService.GetSynergy(Request, cts.Token);
+
+        synergyChart?.PrepareData(Request, response, CmdrSelects);
+
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+        await OnRequestChanged.InvokeAsync(new(Request, CmdrSelects));
+    }
+
+    private void CmdrSelected()
+    {
+        synergyChart?.AddRemoveDatasets(CmdrSelects);
+        OnRequestChanged.InvokeAsync(new(Request, CmdrSelects));
+    }
+
+    private void ClearSelects()
+    {
+        foreach (var ent in CmdrSelects.Keys.ToArray())
+        {
+            CmdrSelects[ent] = false;
+        }
+        synergyChart?.AddRemoveDatasets(CmdrSelects);
+        StateHasChanged();
+        OnRequestChanged.InvokeAsync(new(Request, CmdrSelects));
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

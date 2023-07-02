@@ -1,0 +1,75 @@
+﻿@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
+
+<style>
+    .check-label:hover {
+        color: white !important;
+        background-color: #adb5bd !important;
+        border-color: white !important;
+    }
+</style>
+
+<div class="btn-group-vertical" role="group" aria-label="Cmdr toggle group">
+    @if (None)
+    {
+        <input type="checkbox" class="btn-check" name="@Commander.None" id="@Commander.None" autocomplete="off"
+               checked="@GetChecked(Commander.None)" @onchange="e => SetCommander(e, Commander.None)">
+        <label class="btn btn-sm btn-outline-light check-label" for="@Commander.None">All</label>
+    }
+    @foreach (Commander cmdr in Data.GetCommanders(Std ? Data.CmdrGet.Std : Data.CmdrGet.NoStd))
+    {
+        <input type="checkbox" class="btn-check" name="@cmdr" id="@cmdr" autocomplete="off"
+               checked="@GetChecked(cmdr)" @onchange="e => SetCommander(e, cmdr)">
+        <label class="btn btn-sm btn-outline-light check-label" for="@cmdr">
+            <span class="d-flex justify-content-start">
+                <span>
+                    <img src="@HelperService.GetImageSrc(cmdr)"
+                         alt="@cmdr"
+                         title="@cmdr"
+                         width="20"
+                         height="20" />
+                </span>
+                <span class="mt-1">
+                    @cmdr
+                </span>
+            </span>
+        </label>
+    }
+</div>
+
+@code {
+    [CascadingParameter]
+    public Dictionary<Commander, bool> CmdrSelects { get; set; } = Data.GetCommanders(Data.CmdrGet.All).ToDictionary(k => k, v => false);
+
+    [Parameter]
+    public bool Std { get; set; }
+
+    [Parameter]
+    public bool None { get; set; }
+
+    [Parameter]
+    public EventCallback OnCommanderSelected { get; set; }
+
+    public void SetParameters(bool std, bool none)
+    {
+        Std = std;
+        None = none;
+
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    private void SetCommander(ChangeEventArgs e, Commander cmdr)
+    {
+        if (e.Value is bool value)
+        {
+            CmdrSelects[cmdr] = value;
+
+            OnCommanderSelected.InvokeAsync();
+        }
+    }
+
+    private bool GetChecked(Commander cmdr)
+    {
+        return CmdrSelects[cmdr];
+    }
+}

@@ -1,32 +1,9 @@
 @using pax.dsstats.shared;
 @using Microsoft.AspNetCore.Components.Forms;
-@inject NavigationManager NavigationManager
 @implements IDisposable;
 
 <EditForm EditContext="editContext">
     <div class="row">
-@*        <div class="col-auto">
-            <label class="form-label">
-                StatsMode
-                <span class="oi oi-info pointer ms-2" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki#statsmode'"></span>
-                <select class="form-select" @onchange="ChangeMode">
-                    @foreach (StatsMode statsMode in Enum.GetValues(typeof(StatsMode)))
-                    {
-                        @if ((int)statsMode > 0)
-                        {
-                            @if (statsMode == StatsMode.Duration)
-                            {
-                                <option value="@statsMode" selected>@statsMode</option>
-                            }
-                            else
-                            {
-                                <option value="@statsMode">@statsMode</option>
-                            }
-                        }
-                    }
-                </select>
-            </label>
-        </div>*@
         <div class="col-auto">
             <label class="form-label">
                 Time Period
@@ -110,11 +87,6 @@
         {
             OnRequestChanged.InvokeAsync();
         }
-    }
-
-    private void ChangeMode(ChangeEventArgs e)
-    {
-        NavigationManager.NavigateTo($"/stats?StatsMode={e.Value}");
     }
 
     public void Dispose()
