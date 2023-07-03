@@ -1,0 +1,72 @@
+﻿@using pax.dsstats.shared;
+@using pax.dsstats.shared.Interfaces;
+@inject IDamageService damageService
+@implements IDisposable
+
+<div>
+    <CascadingValue Value="Request">
+        <DamageRequestComponent OnRequestChanged="LoadData" OnBreakpointChanged="BreakpointChanged"></DamageRequestComponent>
+    </CascadingValue>
+</div>
+
+<div>
+    @if (isLoading)
+    {
+        <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
+    else
+    {
+        <div class="ms-4"></div>
+    }
+</div>
+
+<div>
+    @if (response != null)
+    {
+        <CascadingValue Value="Request">
+            <DamageTable @ref="damageTable" Response="response"></DamageTable>
+        </CascadingValue>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public DamageRequest Request { get; set; } = default!;
+
+    CancellationTokenSource cts = new();
+    bool isLoading;
+
+    DamageResponse? response = null;
+    DamageTable? damageTable;
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        response = await damageService.GetDamage(Request, cts.Token);
+
+        damageTable?.SetTable(response);
+
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void BreakpointChanged()
+    {
+        damageTable?.Update();
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

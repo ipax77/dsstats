@@ -1,12 +1,15 @@
-﻿namespace pax.dsstats.shared;
+﻿using System.Text.Json.Serialization;
+
+namespace pax.dsstats.shared;
 
 public record DamageRequest
 {
     public TimePeriod TimePeriod { get; set; }
     public RatingType RatingType { get; set; }
     public Commander Interest { get; set; }
+    public Breakpoint Breakpoint { get; set; }
     public bool WithLeavers { get; set; }
-    public double Exp2WinOffset { get; set; }
+    public int Exp2WinOffset { get; set; }
     public int FromRating { get; set; }
     public int ToRating { get; set; }
 }
@@ -27,4 +30,6 @@ public record DamageEnt
     public double AvgGas { get; set; }
     public int AvgIncome { get; set; }
     public int AvgAPM { get; set; }
+    [JsonIgnore]
+    public double MvpPercentage => Count == 0 ? 0 : Math.Round(Mvp * 100.0 / Count, 2);
 }

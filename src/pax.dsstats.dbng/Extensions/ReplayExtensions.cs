@@ -232,7 +232,7 @@ public static class ReplayExtensions
         StringBuilder sb = new();
         sb.Append("StatsDamage");
         sb.Append(request.TimePeriod.ToString());
-        sb.Append(request.Exp2WinOffset.ToString(CultureInfo.InvariantCulture));
+        sb.Append(request.Exp2WinOffset.ToString());
         sb.Append(request.RatingType.ToString());
         sb.Append(request.FromRating.ToString());
         sb.Append(request.Interest.ToString());

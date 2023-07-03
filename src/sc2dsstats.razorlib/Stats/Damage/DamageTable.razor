@@ -1,0 +1,191 @@
+﻿@using System.Globalization;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Extensions;
+@using sc2dsstats.razorlib.Services;
+
+
+<style>
+    .tableFixHead {
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+
+        .tableFixHead thead th {
+            position: sticky;
+            top: 0;
+        }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+
+    th {
+        background: purple;
+    }
+
+    .tablebackground {
+        position: absolute;
+        z-index: -1;
+        opacity: 0.15;
+    }
+</style>
+
+<div class="table-responsive tableFixHead">
+    <table class="table table-dark table-hover w-auto">
+        <thead>
+            <tr>
+                <CascadingValue Value="TableOrders">
+                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.Commander))">
+                        <SortArrow Property="@nameof(DamageEnt.Commander)">
+                            @nameof(DamageEnt.Commander)
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.Count))">
+                        <SortArrow Property="@nameof(DamageEnt.Count)">
+                            Matchups
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.MvpPercentage))">
+                        <SortArrow Property="@nameof(DamageEnt.MvpPercentage)">
+                            Mvp
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.AvgKills))">
+                        <SortArrow Property="@nameof(DamageEnt.AvgKills)">
+                            @nameof(DamageEnt.AvgKills)
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.AvgArmy))">
+                        <SortArrow Property="@nameof(DamageEnt.AvgArmy)">
+                            @nameof(DamageEnt.AvgArmy)
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.AvgGas))">
+                        <SortArrow Property="@nameof(DamageEnt.AvgGas)">
+                            @nameof(DamageEnt.AvgGas)
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.AvgIncome))">
+                        <SortArrow Property="@nameof(DamageEnt.AvgIncome)">
+                            @nameof(DamageEnt.AvgIncome)
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.AvgAPM))">
+                        <SortArrow Property="@nameof(DamageEnt.AvgAPM)">
+                            @nameof(DamageEnt.AvgAPM)
+                        </SortArrow>
+                    </th>
+                    
+                </CascadingValue>
+            </tr>
+            <tr>
+                <th class="table-primary" colspan="8">Breakpoint @Request.Breakpoint <span class="text-warning">@(Request.Interest == Commander.None ? "" : $" {Request.Interest} vs ..")</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var ent in GetSortedList())
+            {
+                <tr>
+                    <td>
+                        <img src="@HelperService.GetImageSrc(ent.Commander)"
+                             alt="@ent.Commander"
+                             title="@ent.Commander"
+                             width="30"
+                             height="30" />
+                        @ent.Commander
+                    </td>
+                    <td>@ent.Count</td>
+                    <td>@ent.MvpPercentage.ToString("N2", CultureInfo.InvariantCulture)%</td>
+                    <td>@ent.AvgKills</td>
+                    <td>@ent.AvgArmy</td>
+                    <td>@ent.AvgGas</td>
+                    <td>@ent.AvgIncome</td>
+                    <td>@ent.AvgAPM</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [CascadingParameter]
+    public DamageRequest Request { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public DamageResponse Response { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnOrderChanged { get; set; }
+
+    private List<TableOrder> TableOrders = new()
+    {
+        new()
+        {
+            Property = nameof(DamageEnt.Commander),
+            Ascending = true
+        }
+    };
+
+    public void SetTable(DamageResponse response)
+    {
+        Response = response;
+        StateHasChanged();
+    }
+
+    public void Update()
+    {
+        StateHasChanged();
+    }
+
+    private void SetOrder(MouseEventArgs e, string property)
+    {
+        var tableOrder = TableOrders.FirstOrDefault();
+        if (tableOrder == null)
+        {
+            tableOrder = new()
+                {
+                    Property = property,
+                    Ascending = false
+                };
+        }
+        else
+        {
+            if (tableOrder.Property == property)
+            {
+                tableOrder.Ascending = !tableOrder.Ascending;
+            }
+            else
+            {
+                tableOrder.Property = property;
+                tableOrder.Ascending = false;
+            }
+        }
+        OnOrderChanged.InvokeAsync();
+    }
+
+    private List<DamageEnt> GetSortedList()
+    {
+        var query = Response.Entities
+            .Where(x => x.Breakpoint == Request.Breakpoint)
+            .AsQueryable();
+
+        foreach (var order in TableOrders)
+        {
+            if (order.Ascending)
+            {
+                query = query.AppendOrderBy(order.Property);
+            }
+            else
+            {
+                query = query.AppendOrderByDescending(order.Property);
+            }
+        }
+        return query.ToList();
+    }
+}

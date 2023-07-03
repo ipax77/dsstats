@@ -4,6 +4,7 @@ using Microsoft.Extensions.Caching.Memory;
 using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 using pax.dsstats.shared.Interfaces;
+using System.Globalization;
 
 namespace pax.dsstats.dbng.Services;
 
@@ -66,6 +67,7 @@ public class DamageService : IDamageService
                     {(request.Interest == Commander.None ? "" : $"AND rp.OppRace = {(int)request.Interest}")}
                     {(request.FromRating > Data.MinBuildRating ? $"AND rpr.Rating >= {request.FromRating}" : "")}
                     {(request.ToRating != 0 && request.ToRating < Data.MaxBuildRating ? $"AND rpr.Rating <= {request.ToRating}" : "")}
+                    {(request.Exp2WinOffset != 0 ? $"AND rr.ExpectationToWin >= {((50 - request.Exp2WinOffset) / 100.0).ToString(CultureInfo.InvariantCulture)} AND rr.ExpectationToWin <= {((50 + request.Exp2WinOffset) / 100.0).ToString(CultureInfo.InvariantCulture)}" : "")}
                 group by rp.Race, s.Breakpoint;
             ";
 
