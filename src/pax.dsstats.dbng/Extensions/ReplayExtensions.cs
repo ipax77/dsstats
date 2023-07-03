@@ -227,6 +227,20 @@ public static class ReplayExtensions
         return sb.ToString();
     }
 
+    public static string GenMemKey(this DamageRequest request)
+    {
+        StringBuilder sb = new();
+        sb.Append("StatsDamage");
+        sb.Append(request.TimePeriod.ToString());
+        sb.Append(request.Exp2WinOffset.ToString(CultureInfo.InvariantCulture));
+        sb.Append(request.RatingType.ToString());
+        sb.Append(request.FromRating.ToString());
+        sb.Append(request.Interest.ToString());
+        sb.Append(request.ToRating.ToString());
+        return sb.ToString();
+    }
+
+
     public static string GetMd5Hash(MD5 md5Hash, string input)
     {
         byte[] data = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(input));
