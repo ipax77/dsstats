@@ -1,5 +1,6 @@
 ﻿@using pax.dsstats.shared;
 @using Microsoft.AspNetCore.Components.Forms;
+@inject NavigationManager NavigationManager
 @implements IDisposable;
 
 <EditForm EditContext="editContext">
@@ -28,13 +29,31 @@
         </div>
         <div class="col-auto">
             <label class="form-label">
-                Commanders
-                <select id="addremovecmdr" class="form-select" multiple aria-label="multiple" @onchange="AddRemoveCmdr">
-                    @foreach (Commander cmdr in Data.GetCommanders(Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE ? Data.CmdrGet.Std : Data.CmdrGet.NoNone))
+                Interest
+                <InputSelect class="form-select" @bind-Value="Request.Interest">
+                    <option value="@Commander.None">All</option>
+                    @if (Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)
                     {
-                        <option value="@cmdr.ToString()" selected="@CmdrSelects[cmdr]">@cmdr</option>
+                        @foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.Std))
+                        {
+                            <option value="@cmdr">@cmdr</option>
+                        }
                     }
-                </select>
+                    else
+                    {
+                        @foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.NoStd))
+                        {
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto" style="width: 175px;">
+            <label class="form-label">
+                Breakpoint <span class="text-info">@Request.Breakpoint</span>
+                <input type="range" class="form-range" value="@((int)Request.Breakpoint)" min="1" max="4"
+                       step="1" @oninput="BreakpointChange">
             </label>
         </div>
         <div class="col-auto">
@@ -51,11 +70,11 @@
 <div class="row ms-2">
     <div class="col-auto">
         <button class="btn btn-sm btn-outline-light"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#RatingRange"
-                aria-expanded="false"
-                aria-controls="RatingRange"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#RatingRange"
+        aria-expanded="false"
+        aria-controls="RatingRange"
         @onclick="ShowHideRatingRange">
             <span class="oi @(showRatingRange ? "oi-caret-bottom" : "oi-caret-top")"></span>
             Rating Range
@@ -81,30 +100,29 @@
         </div>
     </div>
 </div>
+
 <div class="row mt-1">
     <div class="col-auto">
         <div class="collapse" id="RatingRange">
             <div class="row">
                 <div class="col-auto" style="width: 175px;">
                     <label class="form-label">
-                        From Rating <span class="text-info">
-                            @(
-                                fromRating == Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" : $"{fromRating}"
+                        From Rating <span class="text-info">@(
+                        fromRating == Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" : $"{fromRating}"
                                 )
                         </span>
                         <input type="range" class="form-range" value="@(fromRating)" min="@Data.MinBuildRating" max="@Data.MaxBuildRating"
-                               step="50" id="spawnrange" @oninput="FromRatingChange">
+                        step="50" id="spawnrange" @oninput="FromRatingChange">
                     </label>
                 </div>
                 <div class="col-auto" style="width: 175px;">
                     <label class="form-label">
-                        To Rating <span class="text-info">
-                            @(
-                                toRating >= Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" : $"{toRating}"
+                        To Rating <span class="text-info">@(
+                        toRating >= Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" : $"{toRating}"
                                 )
                         </span>
                         <input type="range" class="form-range" value="@(toRating)" min="@Data.MinBuildRating" max="@Data.MaxBuildRating"
-                               step="50" id="spawnrange" @oninput="ToRatingChange">
+                        step="50" id="spawnrange" @oninput="ToRatingChange">
                     </label>
                 </div>
                 <div class="col-auto">
@@ -126,7 +144,7 @@
                     <label class="form-label">
                         Exp2Win Offset <span class="text-info">@exp2WinInfo</span>
                         <input type="range" class="form-range" value="@exp2winOffset" min="0" max="50"
-                               step="5" id="spawnrange" @oninput="Exp2WinChange">
+                        step="5" id="spawnrange" @oninput="Exp2WinChange">
                     </label>
                 </div>
                 <div class="col-auto">
@@ -139,18 +157,14 @@
 
 @code {
     [CascadingParameter]
-    public SynergyRequest Request { get; set; } = default!;
-
-    [CascadingParameter]
-    public Dictionary<Commander, bool> CmdrSelects { get; set; } = Data.GetCommanders(Data.CmdrGet.All).ToDictionary(k => k, v => false);
+    public DamageRequest Request { get; set; } = default!;
+    EditContext editContext = null!;
 
     [Parameter]
     public EventCallback OnRequestChanged { get; set; }
 
     [Parameter]
-    public EventCallback OnCmdrSelected { get; set; }
-
-    EditContext editContext = null!;
+    public EventCallback OnBreakpointChanged { get; set; }
 
     private int fromRating;
     private int toRating;
@@ -171,27 +185,20 @@
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
+        if (e.FieldIdentifier.FieldName == nameof(WinrateRequest.RatingType))
+        {
+            Request.Interest = Commander.None;
+        }
         OnRequestChanged.InvokeAsync();
     }
 
-    private void AddRemoveCmdr(ChangeEventArgs e)
+    private void BreakpointChange(ChangeEventArgs e)
     {
-        if (e.Value is string[] values)
+        if (e.Value is string value && int.TryParse(value, out int intvalue))
         {
-            foreach (var key in CmdrSelects.Keys.ToArray())
-            {
-                CmdrSelects[key] = false;
-            }
-
-            for (int i = 0; i < values.Length; i++)
-            {
-                if (Enum.TryParse(values[i], out Commander cmdr))
-                {
-                    CmdrSelects[cmdr] = true;
-                }
-            }
+            Request.Breakpoint = (Breakpoint)intvalue;
+            OnBreakpointChanged.InvokeAsync();
         }
-        OnCmdrSelected.InvokeAsync();
     }
 
     private void FromRatingChange(ChangeEventArgs e)

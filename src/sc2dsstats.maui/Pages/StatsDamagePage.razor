@@ -1,0 +1,13 @@
+﻿@page "/stats/damage"
+@using pax.dsstats.shared;
+
+<sc2dsstats.razorlib.Stats.Damage.DamageComponent Request="Request"></sc2dsstats.razorlib.Stats.Damage.DamageComponent>
+
+@code {
+    DamageRequest Request = new()
+        {
+            TimePeriod = TimePeriod.Past90Days,
+            RatingType = RatingType.Cmdr,
+            Breakpoint = Breakpoint.Min10
+        };
+}

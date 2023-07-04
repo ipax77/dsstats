@@ -85,6 +85,7 @@ builder.Services.AddScoped<ITimelineService, TimelineService>();
 builder.Services.AddScoped<IDsUpdateService, DsUpdateService>();
 builder.Services.AddScoped<IWinrateService, WinrateService>();
 builder.Services.AddScoped<ISynergyService, SynergyService>();
+builder.Services.AddScoped<IDamageService, DamageService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -131,7 +132,12 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-
+    var damageService = scope.ServiceProvider.GetRequiredService<IDamageService>();
+    damageService.GetDamage(new()
+    {
+        TimePeriod = TimePeriod.Past90Days,
+        RatingType = RatingType.Cmdr
+    }).Wait();
 }
 
 // Configure the HTTP request pipeline.

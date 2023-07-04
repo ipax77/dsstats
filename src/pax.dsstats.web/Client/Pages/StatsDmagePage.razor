@@ -1,0 +1,152 @@
+﻿@page "/stats/damage"
+@using pax.dsstats.shared;
+@layout StatsLayout
+@inject NavigationManager NavigationManager
+
+<PageTitle>Stats/Damage</PageTitle>
+
+<sc2dsstats.razorlib.Stats.Damage.DamageComponent Request="Request" OnRequestChanged="RequestChanged"></sc2dsstats.razorlib.Stats.Damage.DamageComponent>
+
+@code {
+    [Parameter, SupplyParameterFromQuery]
+    public int? Tp { get; set; }
+
+    [Parameter, SupplyParameterFromQuery]
+    public int? Rt { get; set; }
+
+    [Parameter, SupplyParameterFromQuery]
+    public int? Bp { get; set; }
+
+    [Parameter, SupplyParameterFromQuery]
+    public int? Ct { get; set; }
+
+    [Parameter, SupplyParameterFromQuery]
+    public int? Fr { get; set; }
+
+    [Parameter, SupplyParameterFromQuery]
+    public int? Tr { get; set; }
+
+    [Parameter, SupplyParameterFromQuery]
+    public int? Eo { get; set; }
+
+
+    DamageRequest Request = new()
+        {
+            TimePeriod = TimePeriod.Past90Days,
+            RatingType = RatingType.Cmdr,
+            Breakpoint = Breakpoint.Min10,
+            ChartType = DamageChartType.Damage
+        };
+
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }
+
+    private void SetRequest()
+    {
+        if (Tp != null && Enum.IsDefined(typeof(TimePeriod), Tp))
+        {
+            Request.TimePeriod = (TimePeriod)Tp.Value;
+        }
+        if (Rt != null && Enum.IsDefined(typeof(RatingType), Rt))
+        {
+            Request.RatingType = (RatingType)Rt.Value;
+        }
+        if (Bp != null && Enum.IsDefined(typeof(Breakpoint), Bp))
+        {
+            Request.Breakpoint = (Breakpoint)Bp.Value;
+        }
+        if (Ct != null && Enum.IsDefined(typeof(DamageChartType), Ct))
+        {
+            Request.ChartType = (DamageChartType)Ct.Value;
+        }
+        if (Fr != null && Fr.Value % 50 == 0)
+        {
+            Request.FromRating = Fr.Value;
+        }
+        if (Tr != null && Tr.Value % 50 == 0)
+        {
+            Request.ToRating = Tr.Value;
+        }
+        if (Eo != null && Eo.Value > 0 && Eo.Value < 50)
+        {
+            Request.Exp2WinOffset = Eo.Value;
+        }
+    }
+
+    private void RequestChanged(DamageRequest request)
+    {
+        Dictionary<string, object?> queryDic = new();
+
+        if (request.TimePeriod != TimePeriod.Past90Days)
+        {
+            queryDic.Add("Tp", (int)request.TimePeriod);
+        }
+        else
+        {
+            queryDic.Add("Tp", null);
+        }
+
+        if (request.RatingType != RatingType.Cmdr)
+        {
+            queryDic.Add("Rt", (int)request.RatingType);
+        }
+        else
+        {
+            queryDic.Add("Rt", null);
+        }
+
+        if (request.Breakpoint != Breakpoint.Min10)
+        {
+            queryDic.Add("Bp", (int)request.Breakpoint);
+        }
+        else
+        {
+            queryDic.Add("Bp", null);
+        }
+
+        if (request.ChartType != DamageChartType.Damage)
+        {
+            queryDic.Add("Ct", (int)request.ChartType);
+        }
+        else
+        {
+            queryDic.Add("Ct", null);
+        }
+
+        if (request.FromRating != 0)
+        {
+            queryDic.Add("Fr", request.FromRating);
+        }
+        else
+        {
+            queryDic.Add("Fr", null);
+        }
+
+        if (request.ToRating != 0)
+        {
+            queryDic.Add("Tr", request.ToRating);
+        }
+        else
+        {
+            queryDic.Add("Tr", null);
+        }
+
+        if (request.Exp2WinOffset != 0)
+        {
+            queryDic.Add("Eo", request.Exp2WinOffset);
+        }
+        else
+        {
+            queryDic.Add("Eo", null);
+        }
+
+            NavigationManager.NavigateTo(
+        NavigationManager.GetUriWithQueryParameters(
+            new Dictionary<string, object?>(queryDic)
+        )
+        );
+    }
+}
