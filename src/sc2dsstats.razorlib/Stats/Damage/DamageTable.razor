@@ -40,6 +40,14 @@
 <div class="table-responsive tableFixHead">
     <table class="table table-dark table-hover w-auto">
         <thead>
+            <tr>
+                <th class="table-primary" colspan="8">
+                    Breakpoint @Request.Breakpoint
+                    <span class="text-warning">@(Request.Interest == Commander.None ? "" : $" {Request.Interest} vs ..")</span>
+                    <span class="ms-2 text-warning">@(Request.FromRating != 0 || Request.ToRating != 0 ? $"Rating range {Request.FromRating} - {Request.ToRating}" : "")</span>
+                    <span class="ms-2 text-warning">@(Request.Exp2WinOffset != 0 ? $"Exp2Win range {50 - Request.Exp2WinOffset}% - {50 + Request.Exp2WinOffset}%" : "")</span>
+                </th>
+            </tr>
             <tr style="user-select: none;">
                 <CascadingValue Value="TableOrders">
                     <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.Commander))">
@@ -95,12 +103,9 @@
                             @nameof(DamageEnt.AvgAPM)
                         </SortArrow>
                     </th>
-                    
                 </CascadingValue>
             </tr>
-            <tr>
-                <th class="table-primary" colspan="8">Breakpoint @Request.Breakpoint <span class="text-warning">@(Request.Interest == Commander.None ? "" : $" {Request.Interest} vs ..")</span></th>
-            </tr>
+
         </thead>
         <tbody>
             @foreach (var ent in GetSortedList())
