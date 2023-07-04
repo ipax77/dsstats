@@ -266,7 +266,7 @@ public partial class DamageChart : ComponentBase
                         },
                         Ticks = new ChartJsAxisTick()
                         {
-                            Color = mainColor
+                            Color = "#f39c12"
                         },
                         Grid = new ChartJsGrid()
                         {
