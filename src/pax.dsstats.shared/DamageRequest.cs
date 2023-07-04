@@ -8,6 +8,7 @@ public record DamageRequest
     public RatingType RatingType { get; set; }
     public Commander Interest { get; set; }
     public Breakpoint Breakpoint { get; set; }
+    public DamageChartType ChartType { get; set; }
     public bool WithLeavers { get; set; }
     public int Exp2WinOffset { get; set; }
     public int FromRating { get; set; }
@@ -33,4 +34,19 @@ public record DamageEnt
     public int AvgAPM { get; set; }
     [JsonIgnore]
     public double MvpPercentage => Count == 0 ? 0 : Math.Round(Mvp * 100.0 / Count, 2);
+    [JsonIgnore]
+    public int ArmyValue => AvgArmy + AvgUpgrades;
+}
+
+public enum DamageChartType
+{
+    Damage = 0,
+    MVP = 1,
+    Army = 2,
+}
+
+public record WindowDimension
+{
+    public int Width { get; set; }
+    public int Height { get; set; }
 }
