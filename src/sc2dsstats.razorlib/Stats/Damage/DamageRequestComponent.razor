@@ -230,8 +230,8 @@
         showRatingRange = !showRatingRange;
         if (!showRatingRange)
         {
-            Request.FromRating = 0;
-            Request.ToRating = 0;
+            fromRating = Request.FromRating = 0;
+            toRating = Request.ToRating = 0;
             OnRequestChanged.InvokeAsync();
         }
     }
@@ -249,7 +249,7 @@
         showExp2Win = !showExp2Win;
         if (!showExp2Win)
         {
-            Request.Exp2WinOffset = 0;
+            exp2winOffset = Request.Exp2WinOffset = 0;
             OnRequestChanged.InvokeAsync();
         }
     }

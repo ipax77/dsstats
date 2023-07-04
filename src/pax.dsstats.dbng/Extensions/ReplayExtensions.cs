@@ -221,9 +221,11 @@ public static class ReplayExtensions
         StringBuilder sb = new();
         sb.Append("StatsSynergy");
         sb.Append(request.TimePeriod.ToString());
+        sb.Append(request.FromRating);
         sb.Append(request.RatingType.ToString());
+        sb.Append(request.ToRating);
         sb.Append(request.WithLeavers.ToString());
-        sb.Append(request.MaxExp2Win.ToString(CultureInfo.InvariantCulture));
+        sb.Append(request.Exp2WinOffset.ToString());
         return sb.ToString();
     }
 

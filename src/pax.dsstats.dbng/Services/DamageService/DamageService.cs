@@ -52,6 +52,7 @@ public class DamageService : IDamageService
                 sum(CASE WHEN rp.Kills = r.Maxkillsum THEN 1 ELSE 0 END) as mvp,
                 round(avg(s.KilledValue)) as avgKills,
                 round(avg(s.ArmyValue)) as avgArmy,
+                round(avg(s.UpgradeSpent)) as avgUpgrades,
                 round(avg(s.GasCount), 2) as avggas,
                 round(avg(s.Income)) as avgincome,
                 round(avg(rp.APM)) as avgapm

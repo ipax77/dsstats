@@ -1,8 +1,9 @@
 ﻿@using System.Globalization;
+@using Microsoft.JSInterop;
 @using pax.dsstats.shared;
 @using sc2dsstats.razorlib.Extensions;
 @using sc2dsstats.razorlib.Services;
-
+@inject IJSRuntime JSRuntime
 
 <style>
     .tableFixHead {
@@ -39,7 +40,7 @@
 <div class="table-responsive tableFixHead">
     <table class="table table-dark table-hover w-auto">
         <thead>
-            <tr>
+            <tr style="user-select: none;">
                 <CascadingValue Value="TableOrders">
                     <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.Commander))">
                         <SortArrow Property="@nameof(DamageEnt.Commander)">
@@ -51,19 +52,30 @@
                             Matchups
                         </SortArrow>
                     </th>
-                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.MvpPercentage))">
+                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.MvpPercentage))"
+                        data-bs-toggle="tooltip"
+                        data-bs-title="Most kills in the game">
                         <SortArrow Property="@nameof(DamageEnt.MvpPercentage)">
                             Mvp
                         </SortArrow>
                     </th>
-                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.AvgKills))">
+                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.AvgKills))"
+                        data-bs-toggle="tooltip"
+                        data-bs-title="Average sum of kills at the breakpoint">
                         <SortArrow Property="@nameof(DamageEnt.AvgKills)">
                             @nameof(DamageEnt.AvgKills)
                         </SortArrow>
                     </th>
-                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.AvgArmy))">
+                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.AvgArmy))"
+                        data-bs-toggle="tooltip"
+                        data-bs-title="Average size of the last spawn">
                         <SortArrow Property="@nameof(DamageEnt.AvgArmy)">
                             @nameof(DamageEnt.AvgArmy)
+                        </SortArrow>
+                    </th>
+                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.AvgUpgrades))">
+                        <SortArrow Property="@nameof(DamageEnt.AvgUpgrades)">
+                            @nameof(DamageEnt.AvgUpgrades)
                         </SortArrow>
                     </th>
                     <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.AvgGas))">
@@ -71,12 +83,14 @@
                             @nameof(DamageEnt.AvgGas)
                         </SortArrow>
                     </th>
-                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.AvgIncome))">
+@*                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.AvgIncome))">
                         <SortArrow Property="@nameof(DamageEnt.AvgIncome)">
                             @nameof(DamageEnt.AvgIncome)
                         </SortArrow>
-                    </th>
-                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.AvgAPM))">
+                    </th>*@
+                    <th class="pointer" @onclick="e => SetOrder(e, nameof(DamageEnt.AvgAPM))"
+                        data-bs-toggle="tooltip"
+                        data-bs-title="Average actions per minute">
                         <SortArrow Property="@nameof(DamageEnt.AvgAPM)">
                             @nameof(DamageEnt.AvgAPM)
                         </SortArrow>
@@ -104,8 +118,9 @@
                     <td>@ent.MvpPercentage.ToString("N2", CultureInfo.InvariantCulture)%</td>
                     <td>@ent.AvgKills</td>
                     <td>@ent.AvgArmy</td>
-                    <td>@ent.AvgGas</td>
-                    <td>@ent.AvgIncome</td>
+                    <td>@ent.AvgUpgrades</td>
+                    <td>@ent.AvgGas.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    @*<td>@ent.AvgIncome</td>*@
                     <td>@ent.AvgAPM</td>
                 </tr>
             }
@@ -131,6 +146,15 @@
             Ascending = true
         }
     };
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            JSRuntime.InvokeVoidAsync("enableTooltips");
+        }
+        base.OnAfterRender(firstRender);
+    }
 
     public void SetTable(DamageResponse response)
     {

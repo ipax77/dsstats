@@ -37,12 +37,6 @@
                 </select>
             </label>
         </div>
-@*        <div class="col-auto">
-            <label class="form-label">
-                Max Expectation2Win (range 0.0 (diabled) - 0.99)
-                <InputNumber class="form-control" @bind-Value="Request.MaxExp2Win"></InputNumber>
-            </label>
-        </div>*@
         <div class="col-auto">
             <div class="form-check form-switch">
                 <label class="form-check-label">
@@ -54,7 +48,87 @@
         </div>
     </div>
 </EditForm>
-
+<div class="row ms-2">
+    <div class="col-auto">
+        <button class="btn btn-sm btn-outline-light"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#RatingRange"
+                aria-expanded="false"
+                aria-controls="RatingRange"
+        @onclick="ShowHideRatingRange">
+            <span class="oi @(showRatingRange ? "oi-caret-bottom" : "oi-caret-top")"></span>
+            Rating Range
+        </button>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-sm btn-outline-light"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#Exp2WinOffset"
+                aria-expanded="false"
+                aria-controls="Exp2WinOffset"
+        @onclick="ShowHideExp2Win">
+            <span class="oi @(showExp2Win ? "oi-caret-bottom" : "oi-caret-top")"></span>
+            Expectation to win offset
+        </button>
+    </div>
+</div>
+<div class="row mt-1">
+    <div class="col-auto">
+        <div class="collapse" id="RatingRange">
+            <div class="row">
+                <div class="col-auto" style="width: 175px;">
+                    <label class="form-label">
+                        From Rating <span class="text-info">
+                            @(
+                                fromRating == Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" : $"{fromRating}"
+                                )
+                        </span>
+                        <input type="range" class="form-range" value="@(fromRating)" min="@Data.MinBuildRating" max="@Data.MaxBuildRating"
+                               step="50" id="spawnrange" @oninput="FromRatingChange">
+                    </label>
+                </div>
+                <div class="col-auto" style="width: 175px;">
+                    <label class="form-label">
+                        To Rating <span class="text-info">
+                            @(
+                                toRating >= Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" : $"{toRating}"
+                                )
+                        </span>
+                        <input type="range" class="form-range" value="@(toRating)" min="@Data.MinBuildRating" max="@Data.MaxBuildRating"
+                               step="50" id="spawnrange" @oninput="ToRatingChange">
+                    </label>
+                </div>
+                <div class="col-auto">
+                    <button type="button" class="btn btn-sm btn-outline-warning" @onclick="RequestRange">Set Range</button>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-info" @onclick="@(() => { fromRating = 500; toRating = 950;})">Learners</button>
+                        <button type="button" class="btn btn-sm btn-outline-info" @onclick="@(() => { fromRating = 950; toRating = 1150;})">Average</button>
+                        <button type="button" class="btn btn-sm btn-outline-info" @onclick="@(() => { fromRating = 1150; toRating = 1500;})">Advanced</button>
+                        <button type="button" class="btn btn-sm btn-outline-info" @onclick="@(() => { fromRating = 1500; toRating = 2500;})">Top</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-auto">
+        <div class="collapse" id="Exp2WinOffset">
+            <div class="row">
+                <div class="col-auto" style="width: 225px;">
+                    <label class="form-label">
+                        Exp2Win Offset <span class="text-info">@exp2WinInfo</span>
+                        <input type="range" class="form-range" value="@exp2winOffset" min="0" max="50"
+                               step="5" id="spawnrange" @oninput="Exp2WinChange">
+                    </label>
+                </div>
+                <div class="col-auto">
+                    <button type="button" class="btn btn-sm btn-outline-warning" @onclick="RequestExp2Win">Set Exp2Win</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
     [CascadingParameter]
@@ -71,8 +145,18 @@
 
     EditContext editContext = null!;
 
+    private int fromRating;
+    private int toRating;
+    bool showRatingRange;
+    bool showExp2Win;
+    private int exp2winOffset;
+    string exp2WinInfo => exp2winOffset == 0 || exp2winOffset == 50 ? "All" : $"{50 - exp2winOffset}% - {50 + exp2winOffset}%";
+
     protected override void OnInitialized()
     {
+        fromRating = Request.FromRating == 0 ? Data.MinBuildRating : Request.FromRating;
+        toRating = Request.ToRating == 0 ? Data.MaxBuildRating : Request.ToRating;
+        exp2winOffset = Request.Exp2WinOffset;
         editContext = new(Request);
         editContext.OnFieldChanged += FieldChanged;
         base.OnInitialized();
@@ -80,17 +164,6 @@
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
-        if (e.FieldIdentifier.FieldName == nameof(SynergyRequest.MaxExp2Win))
-        {
-            if (Request.MaxExp2Win < 0 || Request.MaxExp2Win > 0.99)
-            {
-                Request.MaxExp2Win = 0;
-            }
-            else
-            {
-                Request.MaxExp2Win = Math.Round(Request.MaxExp2Win, 2);
-            }
-        }
         OnRequestChanged.InvokeAsync();
     }
 
@@ -112,6 +185,72 @@
             }
         }
         OnCmdrSelected.InvokeAsync();
+    }
+
+    private void FromRatingChange(ChangeEventArgs e)
+    {
+        if (e.Value is string value && int.TryParse(value, out int intvalue))
+        {
+            fromRating = intvalue;
+            if (toRating <= fromRating)
+            {
+                toRating = fromRating + 50;
+            }
+        }
+    }
+
+    private void ToRatingChange(ChangeEventArgs e)
+    {
+        if (e.Value is string value && int.TryParse(value, out int intvalue))
+        {
+            toRating = intvalue;
+            if (toRating <= fromRating)
+            {
+                toRating = fromRating + 50;
+            }
+        }
+    }
+
+    private void RequestRange()
+    {
+        Request.FromRating = fromRating;
+        Request.ToRating = toRating;
+        OnRequestChanged.InvokeAsync();
+    }
+
+    private void ShowHideRatingRange()
+    {
+        showRatingRange = !showRatingRange;
+        if (!showRatingRange)
+        {
+            fromRating = Request.FromRating = 0;
+            toRating = Request.ToRating = 0;
+            OnRequestChanged.InvokeAsync();
+        }
+    }
+
+    private void Exp2WinChange(ChangeEventArgs e)
+    {
+        if (e.Value is string value && int.TryParse(value, out int intvalue))
+        {
+            exp2winOffset = intvalue;
+        }
+    }
+
+    private void ShowHideExp2Win()
+    {
+        showExp2Win = !showExp2Win;
+        if (!showExp2Win)
+        {
+            exp2winOffset = Request.Exp2WinOffset = 0;
+            OnRequestChanged.InvokeAsync();
+        }
+    }
+
+    private void RequestExp2Win()
+    {
+        Request.Exp2WinOffset = exp2winOffset;
+        OnRequestChanged.InvokeAsync();
     }
 
     public void Dispose()

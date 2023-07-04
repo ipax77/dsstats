@@ -27,6 +27,7 @@ public record DamageEnt
     public int Mvp { get; set; }
     public int AvgKills { get; set; }
     public int AvgArmy { get; set; }
+    public int AvgUpgrades { get; set; }
     public double AvgGas { get; set; }
     public int AvgIncome { get; set; }
     public int AvgAPM { get; set; }

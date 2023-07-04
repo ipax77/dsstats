@@ -10,8 +10,15 @@
         </CascadingValue>
     </CascadingValue>
 </div>
-
-<div class="row">
+@if (Request.FromRating != 0 || Request.ToRating != 0 || Request.Exp2WinOffset != 0)
+{
+    <div class="mt-2">
+        <p class="text-danger">
+            If you filter too much, the sample size may be too small to provide reasonable data.
+        </p>
+    </div>
+}
+<div class="row mt-2">
     <div class="col-auto">
         <div class="d-none d-xl-block">
             <CascadingValue Value="CmdrSelects">
