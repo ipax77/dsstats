@@ -44,6 +44,7 @@ public class ReplayContext : DbContext
     public DbSet<TimelineQueryData> TimelineQueryDatas { get; set; } = null!;
     public DbSet<WinrateEnt> WinrateEnts { get; set; } = null!;
     public DbSet<SynergyEnt> SynergyEnts { get; set; } = null!;
+    public DbSet<DamageEnt> DamageEnts { get; set; } = null!;
 
     public int Week(DateTime date) => throw new InvalidOperationException($"{nameof(Week)} cannot be called client side.");
     public int Strftime(string arg, DateTime date) => throw new InvalidOperationException($"{nameof(Strftime)} cannot be called client side.");
@@ -180,6 +181,11 @@ public class ReplayContext : DbContext
         });
 
         modelBuilder.Entity<SynergyEnt>(entity =>
+        {
+            entity.HasNoKey();
+        });
+
+        modelBuilder.Entity<DamageEnt>(entity =>
         {
             entity.HasNoKey();
         });

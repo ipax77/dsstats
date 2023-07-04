@@ -221,11 +221,27 @@ public static class ReplayExtensions
         StringBuilder sb = new();
         sb.Append("StatsSynergy");
         sb.Append(request.TimePeriod.ToString());
+        sb.Append(request.FromRating);
         sb.Append(request.RatingType.ToString());
+        sb.Append(request.ToRating);
         sb.Append(request.WithLeavers.ToString());
-        sb.Append(request.MaxExp2Win.ToString(CultureInfo.InvariantCulture));
+        sb.Append(request.Exp2WinOffset.ToString());
         return sb.ToString();
     }
+
+    public static string GenMemKey(this DamageRequest request)
+    {
+        StringBuilder sb = new();
+        sb.Append("StatsDamage");
+        sb.Append(request.TimePeriod.ToString());
+        sb.Append(request.Exp2WinOffset.ToString());
+        sb.Append(request.RatingType.ToString());
+        sb.Append(request.FromRating.ToString());
+        sb.Append(request.Interest.ToString());
+        sb.Append(request.ToRating.ToString());
+        return sb.ToString();
+    }
+
 
     public static string GetMd5Hash(MD5 md5Hash, string input)
     {

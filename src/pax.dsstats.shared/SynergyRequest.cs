@@ -7,8 +7,10 @@ public record SynergyRequest
 {
     public TimePeriod TimePeriod { get; set; }
     public RatingType RatingType { get; set; }
-    public double MaxExp2Win { get; set; }
     public bool WithLeavers { get; set; }
+    public int Exp2WinOffset { get; set; }
+    public int FromRating { get; set; }
+    public int ToRating { get; set; }
 }
 
 public record SynergyResponse

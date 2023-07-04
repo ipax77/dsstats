@@ -10,8 +10,15 @@
         </CascadingValue>
     </CascadingValue>
 </div>
-
-<div class="row">
+@if (Request.FromRating != 0 || Request.ToRating != 0 || Request.Exp2WinOffset != 0)
+{
+    <div class="mt-2">
+        <p class="text-danger">
+            If you filter too much, the sample size may be too small to provide reasonable data.
+        </p>
+    </div>
+}
+<div class="row mt-2">
     <div class="col-auto">
         <div class="d-none d-xl-block">
             <CascadingValue Value="CmdrSelects">
@@ -68,6 +75,7 @@
 
     bool isLoading;
     CancellationTokenSource cts = new();
+    SemaphoreSlim ss = new(1, 1);
 
     SynergyResponse? response = null;
     SynergyChart? synergyChart;
@@ -103,16 +111,24 @@
 
     private async Task LoadData()
     {
-        isLoading = true;
-        await InvokeAsync(() => StateHasChanged());
-        response = await synergyService.GetSynergy(Request, cts.Token);
+        await ss.WaitAsync();
+        try
+        {
+            isLoading = true;
+            await InvokeAsync(() => StateHasChanged());
+            response = await synergyService.GetSynergy(Request, cts.Token);
 
-        synergyChart?.PrepareData(Request, response, CmdrSelects);
-        cmdrCheckSelectComponent?.SetParameters(Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE, false);
+            synergyChart?.PrepareData(Request, response, CmdrSelects);
+            cmdrCheckSelectComponent?.SetParameters(Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE, false);
 
-        isLoading = false;
-        await InvokeAsync(() => StateHasChanged());
-        await OnRequestChanged.InvokeAsync(new(Request, CmdrSelects));
+            isLoading = false;
+            await InvokeAsync(() => StateHasChanged());
+            await OnRequestChanged.InvokeAsync(new(Request, CmdrSelects));
+        } 
+        finally
+        {
+            ss.Release();
+        }
     }
 
     private void CmdrSelected()
@@ -136,5 +152,6 @@
     {
         cts.Cancel();
         cts.Dispose();
+        ss.Dispose();
     }
 }

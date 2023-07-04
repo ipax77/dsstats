@@ -357,3 +357,10 @@ function horizontalLinePlugin() {
         }
     }
 }
+
+function getWindowDimension() {
+    return {
+        width: window.innerWidth,
+        height: window.innerHeight
+    };
+}

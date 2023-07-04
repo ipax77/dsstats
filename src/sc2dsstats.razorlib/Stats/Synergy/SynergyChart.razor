@@ -50,7 +50,7 @@
 
         if (chartConfig.Options?.Plugins?.Title != null)
         {
-            chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"Synergy - {Data.GetRatingTypeLongName(request.RatingType)} - {Data.GetTimePeriodLongName(request.TimePeriod)}");
+            chartConfig.Options.Plugins.Title.Text = GetTitle(request);
             chartConfig.UpdateChartOptions();
         }
 
@@ -69,6 +69,30 @@
         else
         {
             chartConfig.AddDataset(GetDataset(response, Commander.Abathur));
+        }
+    }
+
+    private IndexableOption<string> GetTitle(SynergyRequest request)
+    {
+        if (request.FromRating == 0 && request.ToRating == 0 && request.Exp2WinOffset == 0)
+        {
+            return new IndexableOption<string>($"Synergy - {Data.GetRatingTypeLongName(request.RatingType)} - {Data.GetTimePeriodLongName(request.TimePeriod)}");
+        }
+        else
+        {
+            List<string> titles = new()
+            {
+                $"Synergy - {Data.GetRatingTypeLongName(request.RatingType)} - {Data.GetTimePeriodLongName(request.TimePeriod)}"
+            };
+            if (request.FromRating != 0 || request.ToRating != 0)
+            {
+                titles.Add($"Rating range {request.FromRating} - {request.ToRating}");
+            }
+            if (request.Exp2WinOffset != 0)
+            {
+                titles.Add($"Expectation to win range {(50 - request.Exp2WinOffset)}% - {(50 + request.Exp2WinOffset)}% ");
+            }
+            return new IndexableOption<string>(titles);
         }
     }
 

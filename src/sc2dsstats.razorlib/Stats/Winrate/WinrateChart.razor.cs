@@ -234,7 +234,6 @@ public partial class WinrateChart : ComponentBase
             {
                 MaintainAspectRatio = true,
                 Responsive = true,
-                OnClickEvent = true,
                 Plugins = new IconsPlugins()
                 {
                     Title = new()
