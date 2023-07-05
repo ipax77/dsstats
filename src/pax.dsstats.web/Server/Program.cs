@@ -149,9 +149,6 @@ if (app.Environment.IsDevelopment())
 
     //var arcadeRating = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
     //arcadeRating.ProduceRatings(false).Wait();
-
-    var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
-    crawlerService.GetLobbyHistory(new DateTime(2023, 7, 1)).Wait();
 }
 
 // Configure the HTTP request pipeline.
