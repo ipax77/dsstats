@@ -45,10 +45,11 @@ public class RatingsBackgroundService : IHostedService, IDisposable
         await replayRepository.FixPlayerNames();
 
         var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
-        await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-3));
+        await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-6));
 
         var arcadeRatingsService = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
-        await arcadeRatingsService.ProduceRatings(DateTime.Today.Day == 1);
+        // await arcadeRatingsService.ProduceRatings(DateTime.Today.Day == 1);
+        await arcadeRatingsService.ProduceRatings(recalc: true);
 
         sw.Stop();
         logger.LogWarning($"{DateTime.UtcNow.ToString(@"yyyy-MM-dd HH:mm:ss")} - Work done in {sw.ElapsedMilliseconds} ms");
