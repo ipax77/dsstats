@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components;
 using pax.dsstats.shared.Interfaces;
 using pax.dsstats.shared;
+using Microsoft.JSInterop;
 
 namespace sc2dsstats.razorlib.Stats.Duration;
 
@@ -16,6 +17,9 @@ public partial class DurationComponent : ComponentBase, IDisposable
     [Inject]
     protected IDurationService durationService { get; set; } = null!;
 
+    [Inject]
+    protected IJSRuntime JSRuntime { get; set; } = null!;
+
     [Parameter, EditorRequired]
     public DurationRequest Request { get; set; } = default!;
 
@@ -26,6 +30,15 @@ public partial class DurationComponent : ComponentBase, IDisposable
     {
         _ = LoadData();
         base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            JSRuntime.InvokeVoidAsync("enableTooltips");
+        }
+        base.OnAfterRender(firstRender);
     }
 
     public async Task LoadData()
