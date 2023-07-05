@@ -96,6 +96,7 @@
     {
         chartConfig.AddDataset(GetLineDataset(Response, commander));
         chartConfig.AddDataset(GetPointDataset(Response, commander));
+        RemoveAvgLine();
     }
 
     public void RemoveDataset(Commander commander)
@@ -110,6 +111,7 @@
         }
 
         chartConfig.RemoveDatasets(datasets.Cast<ChartJsDataset>().ToList());
+        RemoveAvgLine();
     }
 
     public void ClearDatasets()
@@ -147,6 +149,61 @@
                 PointRadius = new IndexableOption<double>(2),
                 PointBackgroundColor = new IndexableOption<string>(Data.GetBackgroundColor(commander, "90"))
             };
+    }
+
+    public void AddAvgLine()
+    {
+        var datasets = chartConfig.Data.Datasets
+            .ToList();
+        
+        if (!datasets.Any())
+        {
+            return;
+        }
+
+        var lineDatasets = datasets.Cast<LineDataset>()
+            .Where(x => x.BorderWidth == 0)
+            .ToList();
+
+        if (!lineDatasets.Any())
+        {
+            return;
+        }
+
+        var count = lineDatasets.First().Data.Count();
+
+        if (!lineDatasets.All(a => a.Data.Count() == count))
+        {
+            return;
+        }
+
+        List<double> avgData = new();
+        for (int i = 0; i < count; i++)
+        {
+            avgData.Add(lineDatasets.Select(s => (double)s.Data[i]).Average());
+        }
+
+        var dataset = new LineDataset()
+        {
+            Label = "Average",
+            Data = avgData.Cast<object>().ToList(),
+            BorderWidth = 3,
+            BorderColor = "red",
+            PointRadius = new IndexableOption<double>(2),
+            PointBackgroundColor = new IndexableOption<string>("red"),
+            Tension = 0.2
+        };
+
+        chartConfig.AddDataset(dataset);
+    }
+
+    public void RemoveAvgLine()
+    {
+        var avgDataset = chartConfig.Data.Datasets.Cast<LineDataset>().FirstOrDefault(f => f.Label == "Average");
+        if (avgDataset != null)
+        {
+            chartConfig.RemoveDataset(avgDataset);
+        }
     }
 
     private ChartJsConfig GetChartConfig()
