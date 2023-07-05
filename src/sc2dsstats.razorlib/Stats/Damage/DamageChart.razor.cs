@@ -135,7 +135,7 @@ public partial class DamageChart : ComponentBase
 
         return new BarDataset()
         {
-            Label = "Army",
+            Label = "MVP",
             Data = data
                 .Select(s => s.MvpPercentage)
                 .Cast<object>()
@@ -152,7 +152,7 @@ public partial class DamageChart : ComponentBase
 
         return new BarDataset()
         {
-            Label = "Army",
+            Label = "Kills",
             Data = data
                 .Select(s => s.AvgKills)
                 .Cast<object>()
