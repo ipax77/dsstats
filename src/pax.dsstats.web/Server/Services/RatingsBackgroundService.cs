@@ -51,6 +51,8 @@ public class RatingsBackgroundService : IHostedService, IDisposable
         // await arcadeRatingsService.ProduceRatings(DateTime.Today.Day == 1);
         await arcadeRatingsService.ProduceRatings(recalc: true);
 
+        await replayRepository.FixArcadePlayerNames();
+
         sw.Stop();
         logger.LogWarning($"{DateTime.UtcNow.ToString(@"yyyy-MM-dd HH:mm:ss")} - Work done in {sw.ElapsedMilliseconds} ms");
     }
