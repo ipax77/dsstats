@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MySqlConnector;
 using pax.dsstats.shared;
 using System.Diagnostics;
@@ -43,5 +44,50 @@ public partial class ReplayRepository
         }
         sw.Stop();
         logger.LogWarning($"Player names fixed in {sw.ElapsedMilliseconds}");
+    }
+
+    public async Task FixArcadePlayerNames()
+    {
+        var fromDate = DateTime.Today.AddDays(-6);
+
+        Stopwatch sw = Stopwatch.StartNew();
+
+        var replays = await context.ArcadeReplays
+            .Include(i => i.ArcadeReplayPlayers)
+                .ThenInclude(i => i.ArcadePlayer)
+            .Where(x => x.CreatedAt > fromDate)
+            .OrderByDescending(o => o.CreatedAt)
+            .ToListAsync();
+
+        if (!replays.Any())
+        {
+            return;
+        }
+
+        Dictionary<int, string> playersDone = new();
+
+        foreach (var replay in replays)
+        {
+            foreach (var replayPlayer in replay.ArcadeReplayPlayers)
+            {
+                if (playersDone.ContainsKey(replayPlayer.ArcadePlayer.ArcadePlayerId))
+                {
+                    continue;
+                }
+
+                if (replayPlayer.Name != replayPlayer.ArcadePlayer.Name)
+                {
+                    replayPlayer.ArcadePlayer.Name = replayPlayer.Name;
+                    playersDone[replayPlayer.ArcadePlayer.ArcadePlayerId] = replayPlayer.Name;
+                }
+                else
+                {
+                    playersDone[replayPlayer.ArcadePlayer.ArcadePlayerId] = replayPlayer.ArcadePlayer.Name;
+                }
+            }
+        }
+        int count = await context.SaveChangesAsync();
+        sw.Stop();
+        logger.LogWarning($"Arcade {count} player names fixed in {sw.ElapsedMilliseconds}ms");
     }
 }

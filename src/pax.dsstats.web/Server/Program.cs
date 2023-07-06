@@ -132,23 +132,7 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    //var replays = context.ArcadeReplays
-    //    .Include(i => i.ArcadeReplayPlayers)
-    //    .Include(i => i.ArcadeReplayRating)
-    //        .ThenInclude(i => i.ArcadeReplayPlayerRatings)
-    //    .Where(x => x.Imported > new DateTime(2023, 7, 5))
-    //.ToList();
 
-    //List<ArcadeReplayRating> replayRatings = replays
-    //    .Where(x => x.ArcadeReplayRating != null)
-    //    .Select(s => s.ArcadeReplayRating ?? new()).ToList();
-
-
-    //context.ArcadeReplayRatings.RemoveRange(replayRatings);
-    //context.SaveChanges();
-
-    //var arcadeRating = scope.ServiceProvider.GetRequiredService<ArcadeRatingsService>();
-    //arcadeRating.ProduceRatings(false).Wait();
 }
 
 // Configure the HTTP request pipeline.
