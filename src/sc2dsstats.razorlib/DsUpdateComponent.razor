@@ -144,7 +144,6 @@
     public Commander Commander { get; set; } = Commander.None;
 
     List<DsUpdateInfo> infos = new();
-    bool isLoading;
     CancellationTokenSource cts = new();
 
     List<TableOrder> tableOrders = new()
@@ -169,10 +168,7 @@
 
     private async Task LoadData()
     {
-        isLoading = true;
-        await InvokeAsync(() => StateHasChanged());
         infos = await dsupdateSerivce.GetDsUpdates(TimePeriod, cts.Token);
-        isLoading = false;
         await InvokeAsync(() => StateHasChanged());
     }
 

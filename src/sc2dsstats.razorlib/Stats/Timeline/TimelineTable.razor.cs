@@ -24,7 +24,6 @@ public partial class TimelineTable : ComponentBase
         Ascending = true
     };
     List<TableOrder> tableOrders = new();
-    string tableType = nameof(TimeTableData.Strengths);
 
     private bool shouldRender = true;
     protected override bool ShouldRender() => shouldRender;
