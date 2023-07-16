@@ -1,5 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Blazored.Toast;
+using CommunityToolkit.Maui;
+using CommunityToolkit.Maui.Storage;
 using sc2dsstats.maui.Data;
+using sc2dsstats.maui.Services;
 
 namespace sc2dsstats.maui;
 
@@ -8,9 +11,11 @@ public static class MauiProgram
 	public static MauiApp CreateMauiApp()
 	{
 		var builder = MauiApp.CreateBuilder();
+
 		builder
 			.UseMauiApp<App>()
-			.ConfigureFonts(fonts =>
+            .UseMauiCommunityToolkit()
+            .ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
 			});
@@ -19,11 +24,21 @@ public static class MauiProgram
 
 #if DEBUG
 		builder.Services.AddBlazorWebViewDeveloperTools();
-		builder.Logging.AddDebug();
+		// builder.Logging.AddDebug();
 #endif
 
-		builder.Services.AddSingleton<WeatherForecastService>();
+		builder.Services.AddBlazoredToast();
 
-		return builder.Build();
+		builder.Services.AddSingleton<ConfigService>();
+        builder.Services.AddSingleton<IFolderPicker>(FolderPicker.Default);
+
+        builder.Services.AddSingleton<WeatherForecastService>();
+
+		var app = builder.Build();
+
+		var configService = app.Services.GetRequiredService<ConfigService>();
+
+
+		return app;
 	}
 }
