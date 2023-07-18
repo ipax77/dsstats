@@ -1,5 +1,52 @@
 ﻿@page "/"
+@using System.Collections.Concurrent;
+@using sc2dsstats.maui.Services;
+@inject DecodeService decodeService
+@implements IDisposable
 
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
+
+<div>
+    <button type="button" class="btn btn-primary" @onclick="Decode">Decode</button>
+</div>
+
+<div>
+    @foreach (var replay in replays)
+    {
+        <p>
+            @replay
+        </p>
+    }
+</div>
+
+
+@code {
+    CancellationTokenSource cts = new();
+    ConcurrentBag<string> replays = new();
+
+    protected override void OnInitialized()
+    {
+        decodeService.DecodeStateChanged += DecodeStateChanged;
+        base.OnInitialized();
+    }
+
+    private void DecodeStateChanged(object? sender, DecodeEventArgs e)
+    {
+        replays.Add(e.ReplayPath);
+        StateHasChanged();
+    }
+
+    private async void Decode()
+    {
+        var replayFiles = Directory.GetFiles(@"C:\data\ds\decodeTest\input");
+
+        await decodeService.Decode(replayFiles.ToList(), cts.Token);
+    }
+
+    public void Dispose()
+    {
+        decodeService.DecodeStateChanged -= DecodeStateChanged;
+    }
+}

@@ -55,9 +55,18 @@
     <ItemGroup>
         <PackageReference Include="Blazored.Toast" Version="4.1.0" />
         <PackageReference Include="CommunityToolkit.Maui" Version="5.2.0" />
+        <PackageReference Include="IronPython.StdLib" Version="2.7.12" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0-preview.6.23329.7" />
+        <PackageReference Include="s2protocol.NET" Version="0.6.11" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\pax.dsstats.dbng\pax.dsstats.dbng.csproj" />
+      <ProjectReference Include="..\..\pax.dsstats.shared\pax.dsstats.shared.csproj" />
+      <ProjectReference Include="..\..\pax.dsstats.parser\pax.dsstats.parser.csproj" />
+      <ProjectReference Include="..\..\SqliteMigrations\SqliteMigrations.csproj" />
     </ItemGroup>
 
   <!-- Build Properties must be defined within these property groups to ensure successful publishing
