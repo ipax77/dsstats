@@ -152,8 +152,10 @@ public partial class DsstatsService
     {
         if (decoder == null)
         {
-            var _assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
-            decoder = new ReplayDecoder(_assemblyPath);
+            // var _assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
+            // var _assemblyPath = System.AppContext.BaseDirectory;
+            var libPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Dsstats Service");
+            decoder = new ReplayDecoder(libPath);
         }
         return decoder;
     }
