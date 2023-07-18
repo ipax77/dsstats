@@ -2,6 +2,7 @@ using dsstats.worker;
 using pax.dsstats.dbng;
 using pax.dsstats.shared;
 using Microsoft.EntityFrameworkCore;
+using pax.dsstats.dbng.Repositories;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddWindowsService(options =>
@@ -23,8 +24,9 @@ builder.Services.AddDbContext<ReplayContext>(options => options
 //.EnableSensitiveDataLogging()
 );
 
-
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 builder.Services.AddSingleton<DsstatsService>();
+builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddHostedService<WindowsBackgroundService>();
 
 builder.Logging.AddConfiguration(

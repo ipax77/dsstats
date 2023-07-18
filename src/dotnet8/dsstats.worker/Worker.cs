@@ -14,10 +14,16 @@ public sealed class WindowsBackgroundService : BackgroundService
     {
         try
         {
+            await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
+            var random = new Random();
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 await dsstatsService.StartJob(stoppingToken);
-                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+
+                var delayMinutes = random.Next(40, 81);
+                await Task.Delay(TimeSpan.FromMinutes(delayMinutes), stoppingToken);
+                // await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
         }
         catch (TaskCanceledException)
