@@ -4,9 +4,11 @@
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>dotnet-dsstats.worker-64927385-8c0a-406c-b602-c4160a5231ae</UserSecretsId>
+    <UserSecretsId>dotnet-dsstats.worker-b8cd172c-ee40-4d05-aa54-f9da07463ba4</UserSecretsId>
     <OutputType>exe</OutputType>
     <PublishSingleFile Condition="'$(Configuration)' == 'Release'">true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <DebugType>embedded</DebugType>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>

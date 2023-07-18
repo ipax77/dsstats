@@ -12,13 +12,12 @@
              Version="$(Version)"
              UpgradeCode="$(var.UpgradeCode)"
              Compressed="true">
-             <!-- Scope="perUser"> -->
         
         <!-- Allow upgrades and prevent downgrades -->
         <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
         <MediaTemplate EmbedCab="yes" />
         <!-- Define the directory structure -->
-        <Directory Id="TARGETDIR" Name="SourceDir">
+        <StandardDirectory Id="TARGETDIR">
             <Directory Id="ProgramFilesFolder">
 
                 <!-- Create a folder inside program files -->
@@ -26,78 +25,72 @@
 
                     <!-- Create a folder within the parent folder given the name -->
                     <Directory Id="INSTALLFOLDER" Name="$(Name)">
-                    </Directory>
-
-                </Directory>
-            </Directory>
-        </Directory>
-
-        <Directory Id="AppDataFolder">
-            <Directory Id="AppAppDataFolder" Name="$(Name)">
-                <Directory Id="libs2" Name="libs2">
-                    <Directory Id="s2protocol" Name="s2protocol">
-                        <Directory Id="versions" Name="versions">
+                        <Directory Id="libs2" Name="libs2">
+                            <Directory Id="s2protocol" Name="s2protocol">
+                                <Directory Id="versions" Name="versions">
+                                </Directory>
+                            </Directory>
                         </Directory>
-                    </Directory>
-                </Directory>
-                <Directory Id="Lib" Name="Lib">
-                    <Directory Id="ctypes" Name="ctypes">
-                        <Directory Id="macholib" Name="macholib">
-                        </Directory>
-                    </Directory>
-                    <Directory Id="distutils" Name="distutils">
-                        <Directory Id="command" Name="command">
-                        </Directory>
-                    </Directory>
-                    <Directory Id="email" Name="email">
-                        <Directory Id="mime" Name="mime">
-                        </Directory>
-                    </Directory>
-                    <Directory Id="encodings" Name="encodings">
-                    </Directory>
-                    <Directory Id="ensurepip" Name="ensurepip">
-                        <Directory Id="_bundled" Name="_bundled">
-                        </Directory>
-                    </Directory>
-                    <Directory Id="importlib" Name="importlib">
-                    </Directory>
-                    <Directory Id="json" Name="json">
-                    </Directory>
-                    <Directory Id="lib2to3" Name="lib2to3">
-                        <Directory Id="fixes" Name="fixes">
-                        </Directory>
-                        <Directory Id="pgen2" Name="pgen2">
-                        </Directory>
-                    </Directory>
-                    <Directory Id="logging" Name="logging">
-                    </Directory>
-                    <Directory Id="multiprocessing" Name="multiprocessing">
-                        <Directory Id="dummy" Name="dummy">
-                        </Directory>
-                    </Directory>
-                    <Directory Id="pydoc_data" Name="pydoc_data">
-                    </Directory>
-                    <Directory Id="site_packages" Name="site-packages">
-                    </Directory>
-                    <Directory Id="sqlite3" Name="sqlite3">
-                    </Directory>
-                    <Directory Id="unittest" Name="unittest">
-                    </Directory>
-                    <Directory Id="wsgiref" Name="wsgiref">
-                    </Directory>
-                    <Directory Id="xml" Name="xml">
-                        <Directory Id="dom" Name="dom">
-                        </Directory>
-                        <Directory Id="etree" Name="etree">
-                        </Directory>
-                        <Directory Id="parsers" Name="parsers">
-                        </Directory>
-                        <Directory Id="sax" Name="sax">
+                        <Directory Id="Lib" Name="Lib">
+                            <Directory Id="ctypes" Name="ctypes">
+                                <Directory Id="macholib" Name="macholib">
+                                </Directory>
+                            </Directory>
+                            <Directory Id="distutils" Name="distutils">
+                                <Directory Id="command" Name="command">
+                                </Directory>
+                            </Directory>
+                            <Directory Id="email" Name="email">
+                                <Directory Id="mime" Name="mime">
+                                </Directory>
+                            </Directory>
+                            <Directory Id="encodings" Name="encodings">
+                            </Directory>
+                            <Directory Id="ensurepip" Name="ensurepip">
+                                <Directory Id="_bundled" Name="_bundled">
+                                </Directory>
+                            </Directory>
+                            <Directory Id="importlib" Name="importlib">
+                            </Directory>
+                            <Directory Id="json" Name="json">
+                            </Directory>
+                            <Directory Id="lib2to3" Name="lib2to3">
+                                <Directory Id="fixes" Name="fixes">
+                                </Directory>
+                                <Directory Id="pgen2" Name="pgen2">
+                                </Directory>
+                            </Directory>
+                            <Directory Id="logging" Name="logging">
+                            </Directory>
+                            <Directory Id="multiprocessing" Name="multiprocessing">
+                                <Directory Id="dummy" Name="dummy">
+                                </Directory>
+                            </Directory>
+                            <Directory Id="pydoc_data" Name="pydoc_data">
+                            </Directory>
+                            <Directory Id="site_packages" Name="site-packages">
+                            </Directory>
+                            <Directory Id="sqlite3" Name="sqlite3">
+                            </Directory>
+                            <Directory Id="unittest" Name="unittest">
+                            </Directory>
+                            <Directory Id="wsgiref" Name="wsgiref">
+                            </Directory>
+                            <Directory Id="xml" Name="xml">
+                                <Directory Id="dom" Name="dom">
+                                </Directory>
+                                <Directory Id="etree" Name="etree">
+                                </Directory>
+                                <Directory Id="parsers" Name="parsers">
+                                </Directory>
+                                <Directory Id="sax" Name="sax">
+                                </Directory>
+                            </Directory>
                         </Directory>
                     </Directory>
                 </Directory>
             </Directory>
-        </Directory>
+        </StandardDirectory>
 
         <!-- The files inside this DirectoryRef are linked to
              the App.WindowsService directory via INSTALLFOLDER -->
@@ -109,10 +102,8 @@
                 
                 <!-- Copies the App.WindowsService.exe file using the
                      project reference preprocessor variables -->
-                <File Id="dsstats.worker.exe"
-                      Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\dsstats.worker.exe"
-                      KeyPath="true" />
-
+                <File Id="dsstats.worker.exe" Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\dsstats.worker.exe"/>
+                <File Id="sqlite" Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\e_sqlite3.dll"/>
                 <!-- Remove all files from the INSTALLFOLDER on uninstall -->
                 <RemoveFile Name="*.*" On="both" />
 
@@ -137,27 +128,14 @@
 
         <DirectoryRef Id="libs2">
             <Component Id="libs2Files" Guid='0977cb04-c00b-4ef1-997c-b6ab466d98c5'>
-                <RegistryValue Root='HKCU' Key='Software\$(Manufacturer)\$(Name)'
-                                    Name='libs2'
-                                    Value='1'
-                                    Type='string'
-                                    KeyPath='yes' />
-
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\mpyq.py"/>      
                 <RemoveFile Name="*.*" On="both" />
                 <RemoveFolder Id='Removelibs2Dir' Directory='libs2' On='uninstall' />
-                <RemoveFolder Id='RemoveAppAppDataDir' Directory='AppAppDataFolder' On='uninstall' />
             </Component>
         </DirectoryRef>
 
         <DirectoryRef Id="s2protocol">
             <Component Id="s2protocolFiles" Guid='fe9dea11-82ea-4534-aa22-802a56ef1aba'>
-                <RegistryValue Root='HKCU' Key='Software\$(Manufacturer)\$(Name)'
-                                    Name='s2protocol'
-                                    Value='1'
-                                    Type='string'
-                                    KeyPath='yes' />
-
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\__init__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\attributes.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\build.py" />
@@ -175,12 +153,6 @@
 
         <DirectoryRef Id="versions">
             <Component Id="versionsFiles" Guid='5d12ccb1-12ae-4377-a253-e8d56b80c2a5'>
-                <RegistryValue Root='HKCU' Key='Software\$(Manufacturer)\$(Name)'
-                                    Name='versions'
-                                    Value='1'
-                                    Type='string'
-                                    KeyPath='yes' />
-
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\__init__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol19679.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol55505.py" />
@@ -270,7 +242,6 @@
 		
         <DirectoryRef Id="ctypes">
             <Component Id="winx64libctypesFiles" Guid='3dfbbe70-07e2-49e0-8358-37014eeaa981'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='ctypes' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\ctypes/__init__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\ctypes/_endian.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\ctypes/util.py" />
@@ -281,7 +252,6 @@
         </DirectoryRef>
         <DirectoryRef Id="distutils">
             <Component Id="winx64libdistutilsFiles" Guid='ee7c3da1-f17d-4c77-bf20-53f3fe8f7c46'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='distutils' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/__init__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/archive_util.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/bcppcompiler.py" />
@@ -315,7 +285,6 @@
         </DirectoryRef>
         <DirectoryRef Id="email">
             <Component Id="winx64libemailFiles" Guid='3f86773b-fbda-47a0-9f37-f08e3067a99d'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='email' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/__init__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/_parseaddr.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/base64mime.py" />
@@ -336,7 +305,6 @@
         </DirectoryRef>
         <DirectoryRef Id="encodings">
             <Component Id="winx64libencodingsFiles" Guid='5d80a308-7aa3-40ff-bdcc-580cfef66af2'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='encodings' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/__init__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/aliases.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/ascii.py" />
@@ -439,7 +407,6 @@
         </DirectoryRef>
         <DirectoryRef Id="ensurepip">
             <Component Id="winx64libensurepipFiles" Guid='702d5dc1-183b-4ebb-8bfa-6ade1b971dcb'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='ensurepip' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\ensurepip/__init__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\ensurepip/__main__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\ensurepip/_uninstall.py" />
@@ -449,7 +416,6 @@
         </DirectoryRef>
         <DirectoryRef Id="importlib">
             <Component Id="winx64libimportlibFiles" Guid='517fef54-8c6a-4a51-8aac-9f6bb47b283a'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='importlib' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\importlib/__init__.py" />
                 <RemoveFile Name="*.*" On="both" />
                 <RemoveFolder Id='Removewinx64libimportlibDir' Directory="importlib" On='uninstall' />
@@ -457,7 +423,6 @@
         </DirectoryRef>
         <DirectoryRef Id="json">
             <Component Id="winx64libjsonFiles" Guid='e1b9f834-d08c-4543-a350-7698ce6804fa'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='json' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\json/__init__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\json/decoder.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\json/encoder.py" />
@@ -469,7 +434,6 @@
         </DirectoryRef>
         <DirectoryRef Id="lib2to3">
             <Component Id="winx64liblib2to3Files" Guid='01341eef-9d15-4ef0-abd6-8214b8d7d5a9'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='lib2to3' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\lib2to3/__init__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\lib2to3/__main__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\lib2to3/btm_matcher.py" />
@@ -487,7 +451,6 @@
         </DirectoryRef>
         <DirectoryRef Id="logging">
             <Component Id="winx64libloggingFiles" Guid='5f7cceba-e8e3-43b1-aec2-cb402df2dac3'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='logging' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\logging/__init__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\logging/config.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\logging/handlers.py" />
@@ -497,7 +460,6 @@
         </DirectoryRef>
         <DirectoryRef Id="multiprocessing">
             <Component Id="winx64libmultiprocessingFiles" Guid='df880d4c-4449-4f31-bcc3-63ce656cf722'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='multiprocessing' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\multiprocessing/__init__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\multiprocessing/connection.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\multiprocessing/forking.py" />
@@ -516,7 +478,6 @@
         </DirectoryRef>
         <DirectoryRef Id="pydoc_data">
             <Component Id="winx64libpydocdataFiles" Guid='bc821b56-0a59-4722-8c0a-47b53b048589'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='pydoc_data' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\pydoc_data/__init__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\pydoc_data/topics.py" />
                 <RemoveFile Name="*.*" On="both" />
@@ -525,7 +486,6 @@
         </DirectoryRef>
         <DirectoryRef Id="site_packages">
             <Component Id="winx64libsitepackagesFiles" Guid='21c6e26a-a1d9-4554-afd6-26c23aca819d'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='site_packages' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\site-packages/README.txt" />
                 <RemoveFile Name="*.*" On="both" />
                 <RemoveFolder Id='Removewinx64libsitepackagesDir' Directory="site_packages" On='uninstall' />
@@ -533,7 +493,6 @@
         </DirectoryRef>
         <DirectoryRef Id="sqlite3">
             <Component Id="winx64libsqlite3Files" Guid='fd7151e3-789a-410c-a175-559e6a04e1c0'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='sqlite3' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\sqlite3/__init__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\sqlite3/dbapi2.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\sqlite3/dump.py" />
@@ -543,7 +502,6 @@
         </DirectoryRef>
         <DirectoryRef Id="unittest">
             <Component Id="winx64libunittestFiles" Guid='2eba3c93-3b8a-40ef-884b-b0b0ae55b8e3'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='unittest' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\unittest/__init__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\unittest/__main__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\unittest/case.py" />
@@ -560,7 +518,6 @@
         </DirectoryRef>
         <DirectoryRef Id="wsgiref">
             <Component Id="winx64libwsgirefFiles" Guid='4bc2e73e-ce90-4432-81f3-55dd127bfd57'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='wsgiref' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\wsgiref/__init__.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\wsgiref/handlers.py" />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\wsgiref/headers.py" />
@@ -573,7 +530,6 @@
         </DirectoryRef>
         <DirectoryRef Id="xml">
             <Component Id="winx64libxmlFiles" Guid='74e7d4f6-405a-4eb1-964d-27a906b04bab'>
-                <RegistryValue Root='HKCU' Key='Software\$(var.Manufacturer)\$(var.Name)' Name='xml' Value='1' Type='string' KeyPath='yes' />
                 <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\xml/__init__.py" />
                 <RemoveFile Name="*.*" On="both" />
                 <RemoveFolder Id='Removewinx64libxmlDir' Directory="xml" On='uninstall' />
