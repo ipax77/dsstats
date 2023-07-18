@@ -1,4 +1,5 @@
 
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 
@@ -9,25 +10,27 @@ namespace dsstats.worker;
 
 public partial class DsstatsService
 {
+    private readonly string appFolder;
     private readonly string connectionString;
     private readonly string configFile;
     private readonly IServiceScopeFactory scopeFactory;
+    private readonly IHttpClientFactory httpClientFactory;
+    private readonly IMapper mapper;
     private readonly ILogger<DsstatsService> logger;
 
     private ReplayDecoderOptions decoderOptions;
     private ReplayDecoder? decoder;
     private readonly SemaphoreSlim ssDecode = new(1, 1);
     private readonly SemaphoreSlim ssSave = new(1, 1);
+    private readonly SemaphoreSlim ssUpload = new(1, 1);
 
-    public DsstatsService(IServiceScopeFactory scopeFactory, ILogger<DsstatsService> logger)
+    public DsstatsService(IServiceScopeFactory scopeFactory,
+                          IHttpClientFactory httpClientFactory,
+                          IMapper mapper,
+                          ILogger<DsstatsService> logger)
     {
-        var appFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        appFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "dsstats.worker");
-
-        if (!Directory.Exists(appFolder))
-        {
-            Directory.CreateDirectory(appFolder);
-        }
 
         configFile = Path.Combine(appFolder, "workerconfig.json");
         connectionString = $"Data Source={Path.Combine(appFolder, "dsstats.db")}";
@@ -43,11 +46,11 @@ public partial class DsstatsService
         };
 
         this.scopeFactory = scopeFactory;
+        this.httpClientFactory = httpClientFactory;
+        this.mapper = mapper;
         this.logger = logger;
 
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-        context.Database.Migrate();
+        EnsurePrerequisites();
     }
 
     private HashSet<Unit> Units = new();
@@ -57,6 +60,7 @@ public partial class DsstatsService
 
     public async Task StartJob(CancellationToken token = default)
     {
+        EnsurePrerequisites();
         UpdateConfig();
         var newReplays = await GetNewReplays();
         logger.LogInformation("New replays: {newReplays}", newReplays.Count);
@@ -66,6 +70,7 @@ public partial class DsstatsService
             try
             {
                 int decoded = await Decode(newReplays, token);
+                await Upload();
                 logger.LogWarning("replays decoded: {decoded}", decoded);
             }
             catch (OperationCanceledException) { }
@@ -74,6 +79,17 @@ public partial class DsstatsService
                 logger.LogError(ex, "{Message}", ex.Message);
             }
         }
+    }
+
+    private void EnsurePrerequisites()
+    {
+        if (!Directory.Exists(appFolder))
+        {
+            Directory.CreateDirectory(appFolder);
+        }
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        context.Database.Migrate();
     }
 }
 

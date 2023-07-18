@@ -3,6 +3,8 @@ using pax.dsstats.dbng;
 using pax.dsstats.shared;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng.Repositories;
+using Microsoft.Extensions.Options;
+using System.Net.Http.Headers;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddWindowsService(options =>
@@ -24,6 +26,13 @@ builder.Services.AddDbContext<ReplayContext>(options => options
 //.EnableSensitiveDataLogging()
 );
 
+builder.Services.AddHttpClient("dsstats")
+    .ConfigureHttpClient(options => {
+        // options.BaseAddress = new Uri("https://dsstats.pax77.org");
+        options.BaseAddress = new Uri("https://localhost:7174");
+        options.DefaultRequestHeaders.Add("Accept", "application/json");
+        options.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("DSupload77");
+    });
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 builder.Services.AddSingleton<DsstatsService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
