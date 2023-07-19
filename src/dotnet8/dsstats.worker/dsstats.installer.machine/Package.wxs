@@ -1,0 +1,581 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Define the variables in "$(var.*) expressions" -->
+<?define Name = "Dsstats Service" ?>
+<?define Manufacturer = "ipax77" ?>
+<?define Version = "1.0.0.0" ?>
+<?define UpgradeCode = "88b88f8c-abb7-4aa7-9cb4-7571e4c4c924" ?>
+
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+    <Package Name="$(Name)"
+             Manufacturer="$(Manufacturer)"
+             Version="$(Version)"
+             UpgradeCode="$(var.UpgradeCode)"
+             Compressed="true">
+        
+        <!-- Allow upgrades and prevent downgrades -->
+        <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
+        <MediaTemplate EmbedCab="yes" />
+        <!-- Define the directory structure -->
+        <StandardDirectory Id="TARGETDIR">
+            <Directory Id="ProgramFilesFolder">
+
+                <!-- Create a folder inside program files -->
+                <Directory Id="ROOTDIRECTORY" Name="$(var.Manufacturer)">
+
+                    <!-- Create a folder within the parent folder given the name -->
+                    <Directory Id="INSTALLFOLDER" Name="$(Name)">
+                        <Directory Id="libs2" Name="libs2">
+                            <Directory Id="s2protocol" Name="s2protocol">
+                                <Directory Id="versions" Name="versions">
+                                </Directory>
+                            </Directory>
+                        </Directory>
+                        <Directory Id="Lib" Name="Lib">
+                            <Directory Id="ctypes" Name="ctypes">
+                                <Directory Id="macholib" Name="macholib">
+                                </Directory>
+                            </Directory>
+                            <Directory Id="distutils" Name="distutils">
+                                <Directory Id="command" Name="command">
+                                </Directory>
+                            </Directory>
+                            <Directory Id="email" Name="email">
+                                <Directory Id="mime" Name="mime">
+                                </Directory>
+                            </Directory>
+                            <Directory Id="encodings" Name="encodings">
+                            </Directory>
+                            <Directory Id="ensurepip" Name="ensurepip">
+                                <Directory Id="_bundled" Name="_bundled">
+                                </Directory>
+                            </Directory>
+                            <Directory Id="importlib" Name="importlib">
+                            </Directory>
+                            <Directory Id="json" Name="json">
+                            </Directory>
+                            <Directory Id="lib2to3" Name="lib2to3">
+                                <Directory Id="fixes" Name="fixes">
+                                </Directory>
+                                <Directory Id="pgen2" Name="pgen2">
+                                </Directory>
+                            </Directory>
+                            <Directory Id="logging" Name="logging">
+                            </Directory>
+                            <Directory Id="multiprocessing" Name="multiprocessing">
+                                <Directory Id="dummy" Name="dummy">
+                                </Directory>
+                            </Directory>
+                            <Directory Id="pydoc_data" Name="pydoc_data">
+                            </Directory>
+                            <Directory Id="site_packages" Name="site-packages">
+                            </Directory>
+                            <Directory Id="sqlite3" Name="sqlite3">
+                            </Directory>
+                            <Directory Id="unittest" Name="unittest">
+                            </Directory>
+                            <Directory Id="wsgiref" Name="wsgiref">
+                            </Directory>
+                            <Directory Id="xml" Name="xml">
+                                <Directory Id="dom" Name="dom">
+                                </Directory>
+                                <Directory Id="etree" Name="etree">
+                                </Directory>
+                                <Directory Id="parsers" Name="parsers">
+                                </Directory>
+                                <Directory Id="sax" Name="sax">
+                                </Directory>
+                            </Directory>
+                        </Directory>
+                    </Directory>
+                </Directory>
+            </Directory>
+        </StandardDirectory>
+
+        <!-- The files inside this DirectoryRef are linked to
+             the App.WindowsService directory via INSTALLFOLDER -->
+        <DirectoryRef Id="INSTALLFOLDER">
+
+            <!-- Create a single component which is the App.WindowsService.exe file -->
+            <!-- <Component Id="ServiceExecutable" Bitness="always64"> -->
+            <Component Id="ServiceExecutable">
+                
+                <!-- Copies the App.WindowsService.exe file using the
+                     project reference preprocessor variables -->
+                <File Id="dsstats.worker.exe" Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\dsstats.worker.exe"/>
+                <File Id="sqlite" Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\e_sqlite3.dll"/>
+                <!-- Remove all files from the INSTALLFOLDER on uninstall -->
+                <RemoveFile Name="*.*" On="both" />
+
+                <!-- Tell WiX to install the Service -->
+                <ServiceInstall Id="ServiceInstaller"
+                                Type="ownProcess"
+                                Name="dsstats.worker"
+                                DisplayName="$(Name)"
+                                Description="Dsstats replay decoder and uploader"
+                                Start="auto"
+                                ErrorControl="normal" />
+
+                <!-- Tell WiX to start the Service -->
+                <ServiceControl Id="StartService"
+                                Start="install"
+                                Stop="both"
+                                Remove="uninstall"
+                                Name="dsstats.worker"
+                                Wait="true" />
+            </Component>
+        </DirectoryRef>
+
+        <DirectoryRef Id="libs2">
+            <Component Id="libs2Files" Guid='0977cb04-c00b-4ef1-997c-b6ab466d98c5'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\mpyq.py"/>      
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removelibs2Dir' Directory='libs2' On='uninstall' />
+            </Component>
+        </DirectoryRef>
+
+        <DirectoryRef Id="s2protocol">
+            <Component Id="s2protocolFiles" Guid='fe9dea11-82ea-4534-aa22-802a56ef1aba'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\__init__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\attributes.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\build.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\compat.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\decoders.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\diff.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\encoders.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\namespaces.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\s2_cli.py" />
+
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removes2protocolDir' Directory='s2protocol' On='uninstall' />
+            </Component>
+        </DirectoryRef>        
+
+        <DirectoryRef Id="versions">
+            <Component Id="versionsFiles" Guid='5d12ccb1-12ae-4377-a253-e8d56b80c2a5'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\__init__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol19679.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol55505.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol65895.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol74456.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol82457.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol15405.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol21029.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol55958.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol66668.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol74741.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol82893.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol16561.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol22612.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol56787.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol67188.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol75025.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol83830.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol16605.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol23260.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol57507.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol67926.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol75689.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol84643.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol16755.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol24944.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol58400.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol69232.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol75800.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol86383.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol16939.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol26490.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol59587.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol70154.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol76052.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol87702.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol17266.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol27950.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol60196.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol71061.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol76114.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol88500.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol17326.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol28272.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol60321.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol71523.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol77379.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol89165.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol18092.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol28667.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol62347.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol71663.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol77535.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol89634.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol18468.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol32283.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol62848.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol72282.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol77661.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol89720.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol18574.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol51702.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol63454.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol73286.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol78285.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol90136.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol19132.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol52910.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol64469.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol73559.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol80669.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol19458.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol53644.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol65094.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol73620.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol80949.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol19595.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol54518.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol65384.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol74071.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\libs2\s2protocol\versions\protocol81009.py" />
+
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='RemoveversionsDir' Directory='versions' On='uninstall' />
+            </Component>
+        </DirectoryRef>    
+		
+        <DirectoryRef Id="ctypes">
+            <Component Id="winx64libctypesFiles" Guid='3dfbbe70-07e2-49e0-8358-37014eeaa981'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\ctypes/__init__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\ctypes/_endian.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\ctypes/util.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\ctypes/wintypes.py" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64libctypesDir' Directory="ctypes" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="distutils">
+            <Component Id="winx64libdistutilsFiles" Guid='ee7c3da1-f17d-4c77-bf20-53f3fe8f7c46'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/__init__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/archive_util.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/bcppcompiler.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/ccompiler.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/cmd.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/config.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/core.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/cygwinccompiler.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/debug.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/dep_util.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/dir_util.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/dist.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/emxccompiler.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/errors.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/extension.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/fancy_getopt.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/file_util.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/filelist.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/log.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/msvccompiler.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/spawn.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/sysconfig.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/text_file.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/unixccompiler.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/util.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/version.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\distutils/versionpredicate.py" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64libdistutilsDir' Directory="distutils" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="email">
+            <Component Id="winx64libemailFiles" Guid='3f86773b-fbda-47a0-9f37-f08e3067a99d'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/__init__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/_parseaddr.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/base64mime.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/charset.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/encoders.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/errors.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/feedparser.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/generator.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/header.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/iterators.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/message.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/parser.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/quoprimime.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\email/utils.py" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64libemailDir' Directory="email" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="encodings">
+            <Component Id="winx64libencodingsFiles" Guid='5d80a308-7aa3-40ff-bdcc-580cfef66af2'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/__init__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/aliases.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/ascii.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/base64_codec.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/bz2_codec.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/charmap.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp037.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp1006.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp1026.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp1140.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp1250.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp1251.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp1252.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp1253.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp1254.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp1255.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp1256.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp1257.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp1258.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp424.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp437.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp500.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp720.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp737.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp775.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp850.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp852.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp855.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp856.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp857.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp858.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp860.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp861.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp862.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp863.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp864.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp865.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp866.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp869.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp874.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/cp875.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/hex_codec.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/hp_roman8.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/idna.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/iso8859_1.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/iso8859_10.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/iso8859_11.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/iso8859_13.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/iso8859_14.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/iso8859_15.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/iso8859_16.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/iso8859_2.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/iso8859_3.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/iso8859_4.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/iso8859_5.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/iso8859_6.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/iso8859_7.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/iso8859_8.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/iso8859_9.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/koi8_r.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/koi8_u.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/latin_1.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/mac_arabic.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/mac_centeuro.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/mac_croatian.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/mac_cyrillic.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/mac_farsi.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/mac_greek.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/mac_iceland.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/mac_latin2.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/mac_roman.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/mac_romanian.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/mac_turkish.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/mbcs.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/palmos.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/ptcp154.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/punycode.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/quopri_codec.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/raw_unicode_escape.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/rot_13.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/string_escape.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/tis_620.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/undefined.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/unicode_escape.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/unicode_internal.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/utf_16.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/utf_16_be.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/utf_16_le.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/utf_32.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/utf_32_be.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/utf_32_le.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/utf_7.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/utf_8.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/utf_8_sig.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/uu_codec.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\encodings/zlib_codec.py" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64libencodingsDir' Directory="encodings" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="ensurepip">
+            <Component Id="winx64libensurepipFiles" Guid='702d5dc1-183b-4ebb-8bfa-6ade1b971dcb'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\ensurepip/__init__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\ensurepip/__main__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\ensurepip/_uninstall.py" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64libensurepipDir' Directory="ensurepip" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="importlib">
+            <Component Id="winx64libimportlibFiles" Guid='517fef54-8c6a-4a51-8aac-9f6bb47b283a'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\importlib/__init__.py" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64libimportlibDir' Directory="importlib" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="json">
+            <Component Id="winx64libjsonFiles" Guid='e1b9f834-d08c-4543-a350-7698ce6804fa'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\json/__init__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\json/decoder.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\json/encoder.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\json/scanner.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\json/tool.py" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64libjsonDir' Directory="json" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="lib2to3">
+            <Component Id="winx64liblib2to3Files" Guid='01341eef-9d15-4ef0-abd6-8214b8d7d5a9'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\lib2to3/__init__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\lib2to3/__main__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\lib2to3/btm_matcher.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\lib2to3/btm_utils.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\lib2to3/fixer_base.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\lib2to3/fixer_util.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\lib2to3/main.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\lib2to3/patcomp.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\lib2to3/pygram.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\lib2to3/pytree.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\lib2to3/refactor.py" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64liblib2to3Dir' Directory="lib2to3" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="logging">
+            <Component Id="winx64libloggingFiles" Guid='5f7cceba-e8e3-43b1-aec2-cb402df2dac3'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\logging/__init__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\logging/config.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\logging/handlers.py" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64libloggingDir' Directory="logging" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="multiprocessing">
+            <Component Id="winx64libmultiprocessingFiles" Guid='df880d4c-4449-4f31-bcc3-63ce656cf722'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\multiprocessing/__init__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\multiprocessing/connection.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\multiprocessing/forking.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\multiprocessing/heap.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\multiprocessing/managers.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\multiprocessing/pool.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\multiprocessing/process.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\multiprocessing/queues.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\multiprocessing/reduction.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\multiprocessing/sharedctypes.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\multiprocessing/synchronize.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\multiprocessing/util.py" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64libmultiprocessingDir' Directory="multiprocessing" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="pydoc_data">
+            <Component Id="winx64libpydocdataFiles" Guid='bc821b56-0a59-4722-8c0a-47b53b048589'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\pydoc_data/__init__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\pydoc_data/topics.py" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64libpydocdataDir' Directory="pydoc_data" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="site_packages">
+            <Component Id="winx64libsitepackagesFiles" Guid='21c6e26a-a1d9-4554-afd6-26c23aca819d'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\site-packages/README.txt" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64libsitepackagesDir' Directory="site_packages" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="sqlite3">
+            <Component Id="winx64libsqlite3Files" Guid='fd7151e3-789a-410c-a175-559e6a04e1c0'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\sqlite3/__init__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\sqlite3/dbapi2.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\sqlite3/dump.py" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64libsqlite3Dir' Directory="sqlite3" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="unittest">
+            <Component Id="winx64libunittestFiles" Guid='2eba3c93-3b8a-40ef-884b-b0b0ae55b8e3'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\unittest/__init__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\unittest/__main__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\unittest/case.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\unittest/loader.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\unittest/main.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\unittest/result.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\unittest/runner.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\unittest/signals.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\unittest/suite.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\unittest/util.py" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64libunittestDir' Directory="unittest" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="wsgiref">
+            <Component Id="winx64libwsgirefFiles" Guid='4bc2e73e-ce90-4432-81f3-55dd127bfd57'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\wsgiref/__init__.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\wsgiref/handlers.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\wsgiref/headers.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\wsgiref/simple_server.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\wsgiref/util.py" />
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\wsgiref/validate.py" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64libwsgirefDir' Directory="wsgiref" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+        <DirectoryRef Id="xml">
+            <Component Id="winx64libxmlFiles" Guid='74e7d4f6-405a-4eb1-964d-27a906b04bab'>
+                <File Source="C:\Users\pax77\source\repos\dsstats\src\dotnet8\dsstats.worker\bin\Release\net7.0\win-x64\publish\Lib\xml/__init__.py" />
+                <RemoveFile Name="*.*" On="both" />
+                <RemoveFolder Id='Removewinx64libxmlDir' Directory="xml" On='uninstall' />
+                <RemoveFolder Id="Removemacholib" Directory="macholib" On='uninstall' />
+                <RemoveFolder Id="RemoveLib" Directory="Lib" On='uninstall' />
+                <RemoveFolder Id="Removecommand" Directory="command" On='uninstall' />
+                <RemoveFolder Id="Removemime" Directory="mime" On='uninstall' />
+                <RemoveFolder Id="Remove_bundled" Directory="_bundled" On='uninstall' />
+                <RemoveFolder Id="Removefixes" Directory="fixes" On='uninstall' />
+                <RemoveFolder Id="Removepgen2" Directory="pgen2" On='uninstall' />
+                <RemoveFolder Id="Removedummy" Directory="dummy" On='uninstall' />
+                <RemoveFolder Id="Removedom" Directory="dom" On='uninstall' />
+                <RemoveFolder Id="Removeetree" Directory="etree" On='uninstall' />
+                <RemoveFolder Id="Removeparsers" Directory="parsers" On='uninstall' />
+                <RemoveFolder Id="Removesax" Directory="sax" On='uninstall' />
+            </Component>
+        </DirectoryRef>
+
+        <!-- Tell WiX to install the files -->
+        <Feature Id="Service" Title="dsstats.worker Setup" Level="1">
+            <ComponentRef Id="libs2Files" />
+            <ComponentRef Id="s2protocolFiles" />
+            <ComponentRef Id="versionsFiles" />
+
+            <ComponentRef Id="winx64libctypesFiles" />
+            <ComponentRef Id="winx64libdistutilsFiles" />
+            <ComponentRef Id="winx64libemailFiles" />
+            <ComponentRef Id="winx64libencodingsFiles" />
+            <ComponentRef Id="winx64libensurepipFiles" />
+            <ComponentRef Id="winx64libimportlibFiles" />
+            <ComponentRef Id="winx64libjsonFiles" />
+            <ComponentRef Id="winx64liblib2to3Files" />
+            <ComponentRef Id="winx64libloggingFiles" />
+            <ComponentRef Id="winx64libmultiprocessingFiles" />
+            <ComponentRef Id="winx64libpydocdataFiles" />
+            <ComponentRef Id="winx64libsitepackagesFiles" />
+            <ComponentRef Id="winx64libsqlite3Files" />
+            <ComponentRef Id="winx64libunittestFiles" />
+            <ComponentRef Id="winx64libwsgirefFiles" />
+            <ComponentRef Id="winx64libxmlFiles" />
+
+            <ComponentRef Id="ServiceExecutable" />
+        </Feature>
+
+    </Package>
+</Wix>
+
+
+ 

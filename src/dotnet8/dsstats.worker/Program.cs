@@ -3,7 +3,6 @@ using pax.dsstats.dbng;
 using pax.dsstats.shared;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng.Repositories;
-using Microsoft.Extensions.Options;
 using System.Net.Http.Headers;
 
 var builder = Host.CreateApplicationBuilder(args);

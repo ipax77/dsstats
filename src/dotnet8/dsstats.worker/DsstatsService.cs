@@ -1,6 +1,8 @@
 
+using System.Management;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Win32;
 using pax.dsstats.dbng;
 
 using pax.dsstats.shared.Arcade;
@@ -10,9 +12,11 @@ namespace dsstats.worker;
 
 public partial class DsstatsService
 {
-    private readonly string appFolder;
-    private readonly string connectionString;
-    private readonly string configFile;
+    private string appFolder;
+    private string connectionString;
+    private string configFile;
+    private string libPath;
+    private List<string> sc2Dirs;
     private readonly IServiceScopeFactory scopeFactory;
     private readonly IHttpClientFactory httpClientFactory;
     private readonly IMapper mapper;
@@ -34,6 +38,10 @@ public partial class DsstatsService
 
         configFile = Path.Combine(appFolder, "workerconfig.json");
         connectionString = $"Data Source={Path.Combine(appFolder, "dsstats.db")}";
+        var sc2Dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Starcraft II");
+        sc2Dirs = new() { sc2Dir };
+        libPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "ipax77", "Dsstats Service");
+
         decoderOptions = new()
         {
             Initdata = true,
@@ -49,8 +57,6 @@ public partial class DsstatsService
         this.httpClientFactory = httpClientFactory;
         this.mapper = mapper;
         this.logger = logger;
-
-        EnsurePrerequisites();
     }
 
     private HashSet<Unit> Units = new();
@@ -60,9 +66,13 @@ public partial class DsstatsService
 
     public async Task StartJob(CancellationToken token = default)
     {
+        logger.LogWarning("indahouse1 {appFolder}", appFolder);
         EnsurePrerequisites();
+        logger.LogWarning("indahouse2 {configFile}", configFile);
         UpdateConfig();
+        logger.LogWarning("indahouse3 {sc2Dir}", sc2Dirs.FirstOrDefault());
         var newReplays = await GetNewReplays();
+        logger.LogWarning("indahouse4 {newReplays}", newReplays.Count);
         logger.LogInformation("New replays: {newReplays}", newReplays.Count);
 
         if (newReplays.Count > 0)
@@ -79,10 +89,13 @@ public partial class DsstatsService
                 logger.LogError(ex, "{Message}", ex.Message);
             }
         }
+        logger.LogWarning("indahouse5");
     }
 
     private void EnsurePrerequisites()
     {
+        sc2Dirs = GetMyDocumentsPathAllUsers().Select(s => Path.Combine(s, "Starcraft II")).ToList();
+
         if (!Directory.Exists(appFolder))
         {
             Directory.CreateDirectory(appFolder);
@@ -90,6 +103,72 @@ public partial class DsstatsService
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         context.Database.Migrate();
+    }
+
+   private static List<string> GetMyDocumentsPathAllUsers()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return new();
+        }
+
+        const string parcialSubkey = @"\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders";
+        const string keyName = "Personal";
+
+        //get sids
+        List<string> sids = GetMachineSids();
+        List<string> myDocumentsPaths = new();
+
+        if (sids != null)
+        {
+            foreach (var sid in sids)
+            {
+                //get paths                  
+                var subkey = sid + parcialSubkey;
+
+                using var key = Registry.Users.OpenSubKey(subkey);
+                if (key != null)
+                {
+                    var o = key.GetValue(keyName);
+                    if (o != null)
+                    {
+                        var myDocumentPath = o.ToString();
+                        if (myDocumentPath != null)
+                        {
+                            myDocumentsPaths.Add(myDocumentPath);
+                        }
+                    }
+                }
+            }
+        }
+
+        return myDocumentsPaths;
+    }    
+
+    private static List<string> GetMachineSids()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return new();
+        }
+
+        ManagementObjectSearcher searcher = new("SELECT * FROM Win32_UserProfile");
+        var regs = searcher.Get();
+        List<string> sids = new();
+
+        foreach (ManagementObject os in regs.Cast<ManagementObject>())
+        {
+            if (os["SID"] != null)
+            {
+                var sid = os["SID"].ToString();
+                if (sid != null)
+                {
+                    sids.Add(sid);
+                }
+            }
+        }
+        searcher.Dispose();
+        return sids;
     }
 }
 

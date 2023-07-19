@@ -70,13 +70,16 @@ public partial class DsstatsService
 
     private void SetNamesAndFolders()
     {
-        var sc2Dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Starcraft II");
+        HashSet<string> playerNames = new();
+        HashSet<string> folderNames = new();
+        HashSet<string> battlenetStrings = new();
 
-        if (Directory.Exists(sc2Dir))
+        foreach (var sc2Dir in sc2Dirs)
         {
-            HashSet<string> playerNames = new();
-            HashSet<string> folderNames = new();
-            HashSet<string> battlenetStrings = new();
+            if (!Directory.Exists(sc2Dir))
+            {
+                continue;
+            }
 
             foreach (var file in Directory.GetFiles(sc2Dir, "*.lnk", SearchOption.TopDirectoryOnly))
             {
@@ -103,16 +106,15 @@ public partial class DsstatsService
                     folderNames.Add(replayDir);
                 }
             }
-
-            AppConfigOptions.PlayerNames.Clear();
-            AppConfigOptions.ReplayFolders.Clear();
-            AppConfigOptions.BattlenetStrings.Clear();
-
-            AppConfigOptions.PlayerNames.AddRange(playerNames);
-            AppConfigOptions.ReplayFolders.AddRange(folderNames);
-            AppConfigOptions.BattlenetStrings.AddRange(battlenetStrings);
         }
 
+        AppConfigOptions.PlayerNames.Clear();
+        AppConfigOptions.ReplayFolders.Clear();
+        AppConfigOptions.BattlenetStrings.Clear();
+
+        AppConfigOptions.PlayerNames.AddRange(playerNames);
+        AppConfigOptions.ReplayFolders.AddRange(folderNames);
+        AppConfigOptions.BattlenetStrings.AddRange(battlenetStrings);
     }
 
     private static string? GetShortcutTarget(string file)

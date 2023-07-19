@@ -17,6 +17,8 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.*" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="7.0.*" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
+    <PackageReference Include="System.Management" Version="7.0.2" />
+    <PackageReference Include="System.Security.Principal.Windows" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
