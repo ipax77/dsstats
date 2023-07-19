@@ -74,7 +74,7 @@ public partial class DsstatsService
             try
             {
                 int decoded = await Decode(newReplays, token);
-                await Upload();
+                await Upload(token);
                 logger.LogWarning("replays decoded: {decoded}", decoded);
             }
             catch (OperationCanceledException) { }

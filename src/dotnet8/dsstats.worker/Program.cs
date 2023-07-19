@@ -27,8 +27,8 @@ builder.Services.AddDbContext<ReplayContext>(options => options
 
 builder.Services.AddHttpClient("dsstats")
     .ConfigureHttpClient(options => {
-        // options.BaseAddress = new Uri("https://dsstats.pax77.org");
-        options.BaseAddress = new Uri("http://localhost:5090");
+        options.BaseAddress = new Uri("https://dsstats.pax77.org");
+        // options.BaseAddress = new Uri("http://localhost:5090");
         options.DefaultRequestHeaders.Add("Accept", "application/json");
         options.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("DSupload77");
     });

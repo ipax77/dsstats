@@ -14,14 +14,14 @@ public partial class DsstatsService
 {
     private readonly string uploaderController = "api/Upload";
 
-    private async Task Upload()
+    private async Task Upload(CancellationToken token)
     {
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         var httpClient = httpClientFactory.CreateClient("dsstats");
 
-        await ssUpload.WaitAsync();
+        await ssUpload.WaitAsync(token);
         try
         {
             int skip = 0;
@@ -29,7 +29,7 @@ public partial class DsstatsService
 
             List<string> uploadedReplayHashes = new();
 
-            var replays = await GetUploadReplays(context, skip, take);
+            var replays = await GetUploadReplays(context, skip, take, token);
 
             while (replays.Count > 0)
             {
@@ -37,8 +37,8 @@ public partial class DsstatsService
                 var uploadDto = await GetUploadDto(replays);        
 
                 skip += take;      
-                replays = await GetUploadReplays(context, skip, take);
-                if (await UploadBlob(httpClient, uploadDto))
+                replays = await GetUploadReplays(context, skip, take, token);
+                if (await UploadBlob(httpClient, uploadDto, token))
                 {
                     uploadedReplayHashes.AddRange(replays.Select(s => s.ReplayHash));
                 }
@@ -46,7 +46,7 @@ public partial class DsstatsService
 
             if (uploadedReplayHashes.Count > 0)
             {
-                await SetUploadedFlag(context, uploadedReplayHashes);
+                await SetUploadedFlag(context, uploadedReplayHashes, token);
             }
         }
         finally
@@ -92,14 +92,15 @@ public partial class DsstatsService
         });
     }
 
-    private async Task<bool> UploadBlob(HttpClient httpClient, UploadDto uploadDto)
+    private async Task<bool> UploadBlob(HttpClient httpClient, UploadDto uploadDto, CancellationToken token)
     {
         try 
         {
-            var response = await httpClient.PostAsJsonAsync($"{uploaderController}/ImportReplays", uploadDto);
+            var response = await httpClient.PostAsJsonAsync($"{uploaderController}/ImportReplays", uploadDto, token);
             response.EnsureSuccessStatusCode();
             return true;
         }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             logger.LogError(ex, "{Message}", ex.Message);
@@ -107,7 +108,7 @@ public partial class DsstatsService
         return false;
     }
 
-    private async Task<List<ReplayDto>> GetUploadReplays(ReplayContext context, int skip, int take)
+    private async Task<List<ReplayDto>> GetUploadReplays(ReplayContext context, int skip, int take, CancellationToken token)
     {
 
         return await context.Replays
@@ -125,16 +126,18 @@ public partial class DsstatsService
             .Skip(skip)
             .Take(take)
             .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
-            .ToListAsync();
+            .ToListAsync(token);
     }
 
-    private async Task SetUploadedFlag(ReplayContext context, List<string> importedReplayHashes)
+    private async Task SetUploadedFlag(ReplayContext context,
+                                       List<string> importedReplayHashes,
+                                       CancellationToken token)
     {
         string replayHashString = String.Join(", ", importedReplayHashes.Select(s => $"'{s}'"));
 
         string updateCommand = $"UPDATE {nameof(ReplayContext.Replays)} SET {nameof(Replay.Uploaded)} = 1 WHERE {nameof(Replay.ReplayHash)} IN ({replayHashString});";
 
-        await context.Database.ExecuteSqlRawAsync(updateCommand);
+        await context.Database.ExecuteSqlRawAsync(updateCommand, token);
     }
 
     private async Task<string> GetBase64String(List<ReplayDto> replays)
@@ -155,6 +158,4 @@ public partial class DsstatsService
         }
         return Convert.ToBase64String(mso.ToArray());
     }
-
-
 }
