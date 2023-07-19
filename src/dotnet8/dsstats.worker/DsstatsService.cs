@@ -89,7 +89,7 @@ public partial class DsstatsService
                 logger.LogError(ex, "{Message}", ex.Message);
             }
         }
-        logger.LogWarning("indahouse5");
+        logger.LogWarning("indahouse5 {libPath}", libPath);
     }
 
     private void EnsurePrerequisites()
