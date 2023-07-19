@@ -66,15 +66,9 @@ public partial class DsstatsService
 
     public async Task StartJob(CancellationToken token = default)
     {
-        logger.LogWarning("indahouse1 {appFolder}", appFolder);
         EnsurePrerequisites();
-        logger.LogWarning("indahouse2 {configFile}", configFile);
         UpdateConfig();
-        logger.LogWarning("indahouse3 {sc2Dir}", sc2Dirs.FirstOrDefault());
         var newReplays = await GetNewReplays();
-        logger.LogWarning("indahouse4 {newReplays}", newReplays.Count);
-        logger.LogInformation("New replays: {newReplays}", newReplays.Count);
-
         if (newReplays.Count > 0)
         {
             try
@@ -89,7 +83,6 @@ public partial class DsstatsService
                 logger.LogError(ex, "{Message}", ex.Message);
             }
         }
-        logger.LogWarning("indahouse5 {libPath}", libPath);
     }
 
     private void EnsurePrerequisites()

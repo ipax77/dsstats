@@ -36,11 +36,12 @@ public partial class DsstatsService
                 CleanReplays(replays);
                 var uploadDto = await GetUploadDto(replays);        
 
+                skip += take;      
+                replays = await GetUploadReplays(context, skip, take);
                 if (await UploadBlob(httpClient, uploadDto))
                 {
                     uploadedReplayHashes.AddRange(replays.Select(s => s.ReplayHash));
                 }
-                skip += take;      
             }
 
             if (uploadedReplayHashes.Count > 0)

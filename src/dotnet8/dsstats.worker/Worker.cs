@@ -22,7 +22,6 @@ public sealed class WindowsBackgroundService : BackgroundService
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                logger.LogWarning("Dsstats Service starting");
                 try
                 {
                     await dsstatsService.StartJob(stoppingToken);
@@ -31,7 +30,6 @@ public sealed class WindowsBackgroundService : BackgroundService
                 {
                     logger.LogError(ex, "{Message}", ex.Message);
                 }
-                logger.LogWarning("Dsstats Service finished");
                 var delayMinutes = random.Next(40, 81);
                 await Task.Delay(TimeSpan.FromMinutes(delayMinutes), stoppingToken);
                 // await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
