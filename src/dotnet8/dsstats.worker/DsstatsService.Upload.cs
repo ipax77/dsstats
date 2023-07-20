@@ -29,6 +29,8 @@ public partial class DsstatsService
 
             List<string> uploadedReplayHashes = new();
 
+            await RegisterUploader(httpClient, token);
+
             var replays = await GetUploadReplays(context, skip, take, token);
 
             while (replays.Count > 0)
@@ -54,6 +56,27 @@ public partial class DsstatsService
             ssUpload.Release();
         }
     }
+
+    private async Task<bool> RegisterUploader(HttpClient httpClient, CancellationToken token)
+    {
+        UploaderDto uploaderDto = new()
+        {
+            AppGuid = AppConfigOptions.AppGuid,
+            AppVersion = "99.1"
+        };
+
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{uploaderController}/GetLatestReplayDate", uploaderDto, token);
+            response.EnsureSuccessStatusCode();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "{Message}", ex.Message);
+        }
+        return false;
+    }    
 
     private async Task<UploadDto> GetUploadDto(List<ReplayDto> replayDtos)
     {

@@ -23,7 +23,7 @@ public partial class DsstatsService
         {
             DirectoryInfo info = new(dir);
             files.AddRange(info.GetFiles($"{AppConfigOptions.ReplayStartName}*.SC2Replay", SearchOption.AllDirectories)
-                .OrderByDescending(p => p.CreationTime)
+                .Where(x => x.Length > 100)
                 .Select(s => new KeyValuePair<string, DateTime>(s.FullName, s.CreationTime)));
         }
         return files.OrderBy(o => o.Value).Select(s => s.Key).ToList();
