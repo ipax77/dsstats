@@ -473,8 +473,8 @@ public class MmrTests
                     .ThenInclude(i => i.Units)
             .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Upgrades)
-            .Include(i => i.ReplayRatingInfo)
-                .ThenInclude(i => i.RepPlayerRatings)
+            .Include(i => i.ReplayRatingInfo!)
+                .ThenInclude(i => i.RepPlayerRatings!)
             .FirstOrDefault(f => f.ReplayHash == "1271fcd4a8a5b0156f4e255ea80132c3");
 
         if (replay != null)
