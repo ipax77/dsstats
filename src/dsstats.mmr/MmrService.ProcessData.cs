@@ -102,6 +102,7 @@ public partial class MmrService
 
     private static IReadOnlyList<PlayerId> BannedPlayerIds = new List<PlayerId>()
     {
-        new(466786, 2, 2) // SabreWolf 
+        new(466786, 2, 2), // SabreWolf
+        new(9774911, 1, 2), // Baka
     }.AsReadOnly();
 }
