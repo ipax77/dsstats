@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
-using pax.dsstats.shared;
-using System.Linq;
 
 namespace pax.dsstats.web.Server.Services.Import;
 
@@ -71,7 +69,7 @@ public partial class ImportService
         }
     }
 
-    private async Task<Replay?> GetDupReplayFromId(int replayId, ReplayContext context)
+    private static async Task<Replay?> GetDupReplayFromId(int replayId, ReplayContext context)
     {
         return await context.Replays
             .Include(i => i.ReplayPlayers)
@@ -101,7 +99,7 @@ public partial class ImportService
     {
         if (regionId == 0)
         {
-            logger.LogWarning($"dup replayPlayer not found 1: ReplayPlayerId {keepReplayPlayer.ReplayPlayerId}");
+            logger.LogWarning("dup replayPlayer not found 1: ReplayPlayerId {ReplayPlayerId}", keepReplayPlayer.ReplayPlayerId);
             return;
         }
 
@@ -145,7 +143,10 @@ public partial class ImportService
             newPlayerId = players.First().PlayerId;
         }
 
-        logger.LogWarning($"fixing playerId for replayPlayer {keepReplayPlayer.ReplayPlayerId} from {keepReplayPlayer.PlayerId} to {newPlayerId}");
+        logger.LogWarning("fixing playerId for replayPlayer {ReplayPlayerId} from {PlayerId} to {newPlayerId}",
+            keepReplayPlayer.ReplayPlayerId,
+            keepReplayPlayer.PlayerId,
+            newPlayerId);
 
         keepReplayPlayer.PlayerId = newPlayerId;
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -184,7 +185,10 @@ public partial class ImportService
     {
         if ((dupReplay.GameTime - replay.GameTime).Duration() > TimeSpan.FromDays(3))
         {
-            logger.LogWarning($"false positive duplicate? {replay.GameTime} <=> {dupReplay.GameTime} : {dupReplay.ReplayHash}");
+            logger.LogWarning("false positive duplicate? {GameTime} <=> {GameTime} : {ReplayHash}",
+            replay.GameTime,
+            dupReplay.GameTime,
+            dupReplay.ReplayHash);
             return false;
         }
         return true;

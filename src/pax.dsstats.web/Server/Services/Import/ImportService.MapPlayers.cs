@@ -100,6 +100,21 @@ public partial class ImportService
         return playerId;
     }
 
+    public async Task<int> CreateUploader(Uploader uploader)
+    {
+        if (!dbCache.Uploaders.TryGetValue(uploader.AppGuid, out int uploaderId))
+        {
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+            context.Uploaders.Add(uploader);
+            await context.SaveChangesAsync();
+
+            uploaderId = dbCache.Uploaders[uploader.AppGuid] = uploader.UploaderId;
+        }
+        return uploaderId;
+    }
+
     public int GetReplayRegion(Replay replay)
     {
         Dictionary<int, int> regionCounts = new()
