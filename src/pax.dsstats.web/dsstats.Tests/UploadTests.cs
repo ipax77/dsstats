@@ -59,9 +59,8 @@ public class UploadTests : IDisposable
         var serviceProvider = serviceCollection.BuildServiceProvider();
         
         var dbImportOptions = serviceProvider.GetRequiredService<IOptions<DbImportOptions>>();
-        var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
 
-        uploadService = new UploadService(serviceProvider, mapper, httpClientFactory, NullLogger<UploadService>.Instance);
+        uploadService = new UploadService(serviceProvider, mapper, NullLogger<UploadService>.Instance);
         this.mapper = mapper;
     }
 
