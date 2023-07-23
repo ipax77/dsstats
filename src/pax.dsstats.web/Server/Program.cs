@@ -132,7 +132,9 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-
+    var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
+    var result = cheatDetectService.AdjustReplays(new DateTime(2023, 03, 30)).GetAwaiter().GetResult();
+    Console.WriteLine(result);
 }
 
 // Configure the HTTP request pipeline.
