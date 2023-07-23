@@ -131,11 +131,11 @@ public partial class CheatDetectService
         {
             if (team1Win > team2Win)
             {
-                CorrectResult(replay, 1);
+                CorrectResult(replay, 1, true);
             }
             else if (team2Win > team1Win)
             {
-                CorrectResult(replay, 2);
+                CorrectResult(replay, 2, true);
             }
             else
             {
@@ -145,7 +145,7 @@ public partial class CheatDetectService
         }
     }
 
-    private static void CorrectResult(Replay replay, int winnerTeam)
+    private static void CorrectResult(Replay replay, int winnerTeam, bool trusted = false)
     {
         foreach (var replayPlayer in replay.ReplayPlayers)
         {
@@ -159,7 +159,14 @@ public partial class CheatDetectService
             }
         }
         replay.WinnerTeam = winnerTeam;
-        replay.ResultCorrected = true;
+        if (!trusted)
+        {
+            replay.ResultCorrected = true;
+        }
+        else
+        {
+            replay.ResultCorrected = false;
+        }
     }
 
     private static ReplayPlayer? GetUploaderReplayPlayer(Replay replay)
