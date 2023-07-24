@@ -2,26 +2,17 @@
 
 <PageTitle>DsStats</PageTitle>
 
-<style>
-    main {
-        background-image: url('/_content/sc2dsstats.razorlib/images/bingBg.jpeg');
-        background-repeat: repeat;
-        background-attachment: fixed;
-        background-position: center;
-    }
-</style>
-
 <div class="container-fluid">
     <h3 class="fw-bold text-warning">Direct Strike Fan Project</h3>
 
     <div class="row mt-2">
-        <div class="col-auto bg-secondary p-2 border rounded mt-1">
+        <div class="col-auto bgchart p-2 border rounded mt-1">
             <sc2dsstats.razorlib.Stats.TopStatsComponent></sc2dsstats.razorlib.Stats.TopStatsComponent>
         </div>
-        <div class="col-auto bg-secondary p-2 ms-1 border rounded mt-1">
+        <div class="col-auto bgchart p-2 ms-1 border rounded mt-1">
             <sc2dsstats.razorlib.Ratings.TopPlayerRatings RatingType="shared.RatingType.Cmdr"></sc2dsstats.razorlib.Ratings.TopPlayerRatings>
         </div>
-        <div class="col-auto bg-secondary p-2 ms-1 border rounded mt-1">
+        <div class="col-auto bgchart p-2 ms-1 border rounded mt-1">
             <sc2dsstats.razorlib.Ratings.TopPlayerRatings RatingType="shared.RatingType.Std"></sc2dsstats.razorlib.Ratings.TopPlayerRatings>
         </div>
     </div>
@@ -29,44 +20,44 @@
     <h3 class="mt-2 fw-bold text-warning">Features</h3>
 
     <div class="row mt-2">
-        <div class="col-auto bg-dark p-2 border rounded mt-1">
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
             <div class="card" style="max-width: 400px;">
-                <div class="card-header">
+                <div class="card-header bgchart2">
                     <a href="/ratingbuilds">
-                        <span class="badge bg-secondary text-info text-decoration-underline" style="font-size: 1.3rem;">
+                        <span class="badge text-info text-decoration-underline" style="font-size: 1.3rem;">
                             Builds
                         </span>
                     </a>
                 </div>
-                <div class="card-body fw-bold">
+                <div class="card-body fw-bold bgchart">
                     Top players unit compositions for every matchup
                 </div>
             </div>
         </div>
-        <div class="col-auto bg-dark p-2 ms-2 border rounded mt-1">
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
             <div class="card" style="max-width: 400px;">
-                <div class="card-header">
+                <div class="card-header bgchart2">
                     <a href="/arcade/ratings">
-                        <span class="badge bg-secondary text-info text-decoration-underline" style="font-size: 1.3rem;">
+                        <span class="badge text-info text-decoration-underline" style="font-size: 1.3rem;">
                             SC2Arcade Ratings
                         </span>
                     </a>
                 </div>
-                <div class="card-body fw-bold">
+                <div class="card-body fw-bold bgchart">
                     Player ratings with the data from <a href="https://sc2arcade.com/">SC2Arcade</a> - all lobbies played since 2021-02-01
                 </div>
             </div>
         </div>
-        <div class="col-auto bg-dark p-2 ms-2 border rounded mt-1">
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
             <div class="card" style="max-width: 400px;">
-                <div class="card-header">
+                <div class="card-header bgchart2">
                     <a href="/cmdrreplays">
-                        <span class="badge bg-secondary text-info text-decoration-underline" style="font-size: 1.3rem;">
+                        <span class="badge text-info text-decoration-underline" style="font-size: 1.3rem;">
                             Top Players per Commander
                         </span>
                     </a>
                 </div>
-                <div class="card-body fw-bold">
+                <div class="card-body fw-bold bgchart">
                     Player ratings for each Commander
                 </div>
             </div>
@@ -76,11 +67,11 @@
     <h3 class="mt-2 fw-bold text-warning">Generate personal stats</h3>
 
     <div class="row mt-2">
-        <div class="col-auto bg-dark p-2 border rounded mt-1">
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
             <div>
                 <a href="https://www.microsoft.com/store/apps/9NNNMB503HN5">
                     <img src="images/store.png" alt="Microsoft Store" width="100" />
-                    <span class="badge bg-secondary text-decoration-underline" style="font-size: 1rem;">
+                    <span class="badge bgchart2 text-decoration-underline" style="font-size: 1rem;">
                         sc2dsstats Desktop App
                     </span>
                 </a>
@@ -91,10 +82,10 @@
                 </span>
             </div>
         </div>
-        <div class="col-auto bg-dark p-2 ms-2 border rounded mt-1">
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
             <a href="https://github.com/ipax77/dsstats.service">
                 <img src="_content/sc2dsstats.razorlib/images/GitHub-Mark-Light-64px.png" alt="GitHub" width="30" />
-                <span class="badge bg-secondary text-decoration-underline" style="font-size: 1rem;">
+                <span class="badge bgchart2 text-decoration-underline" style="font-size: 1rem;">
                     Windows Service
                 </span>
             </a>
@@ -104,26 +95,26 @@
     <h3 class="mt-2 fw-bold text-warning">Ressources</h3>
 
     <div class="row mt-2">
-        <div class="col-auto bg-dark p-2 ms-2 border rounded mt-1">
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
             <a href="https://discord.gg/rKAyaggtqP">
                 <img src="/images/discord.svg" alt="Discord" width="30" />
-                <span class="badge bg-secondary text-decoration-underline" style="font-size: 1rem;">
+                <span class="badge bgchart2 text-decoration-underline" style="font-size: 1rem;">
                     Discord
                 </span>
             </a>
         </div>
-        <div class="col-auto bg-dark p-2 ms-2 border rounded mt-1">
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
             <a href="https://github.com/ipax77/dsstats">
                 <img src="_content/sc2dsstats.razorlib/images/GitHub-Mark-Light-64px.png" alt="GitHub" width="30" />
-                <span class="badge bg-secondary text-decoration-underline" style="font-size: 1rem;">
+                <span class="badge bgchart2 text-decoration-underline" style="font-size: 1rem;">
                     GitHub Project
                 </span>
             </a>
         </div>
-        <div class="col-auto bg-dark p-2 ms-2 border rounded mt-1">
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
             <a href="https://github.com/ipax77/dsstats/wiki">
                 <img src="_content/sc2dsstats.razorlib/images/GitHub-Mark-Light-64px.png" alt="GitHub" width="30" />
-                <span class="badge bg-secondary text-decoration-underline" style="font-size: 1rem;">
+                <span class="badge bgchart2 text-decoration-underline" style="font-size: 1rem;">
                     GitHub Wiki
                 </span>
             </a>

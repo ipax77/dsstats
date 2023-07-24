@@ -7,28 +7,6 @@
 @inject NavigationManager NavigationManager
 @implements IDisposable
 
-<style>
-    .tableFixHead {
-        overflow-y: auto;
-        height: 750px;
-    }
-
-        .tableFixHead thead th {
-            position: sticky;
-            top: 0;
-        }
-
-    table {
-        border-collapse: collapse;
-        width: 100%;
-    }
-
-    th, td {
-        padding: 8px 16px;
-        white-space: nowrap;
-    }
-</style>
-
 <div class="@(replayDto == null ? "" : "visually-hidden")">
     <CascadingValue Value="replaysRequest">
         <ArcadeReplaysRequestComponent OnFieldChanged="Reload" WithMmrChange="true"></ArcadeReplaysRequestComponent>
@@ -43,8 +21,8 @@
             </div>
         }
     </div>
-    <div class="table-responsive tableFixHead">
-        <table id="replaylist" class="table table-dark table-hover w-auto">
+    <div class="table-responsive tableFixHead" style="width: 750px; max-height: 80vh;">
+        <table id="replaylist" class="tptable table">
             <thead class="user-select-none">
                 <CascadingValue Value="replaysRequest.Orders">
                     <tr>

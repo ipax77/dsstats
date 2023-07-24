@@ -7,7 +7,7 @@
 @implements IDisposable
 
 <div>
-    <div class="d-flex flex-row bg-secondary">
+    <div class="d-flex flex-row bgchart2">
         <div class="p-2">
             <span class="oi oi-x text-danger pointer" style="font-size: 1.5rem; z-index: 1000;"
                   @onclick="(() => OnCloseRequested.InvokeAsync())"></span>
@@ -95,12 +95,12 @@
         <div class="row mt-2">
             <div class="col-auto">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header bgchart2">
                         <h4 class="text-warning">GameModes Played</h4>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body bgchart">
                         <div class="table-responsive" style="max-height: 400px; overflow-y: auto; overflow-x: hidden;">
-                            <table class="table table-sm table-striped table-dark w-auto">
+                            <table class="tptable table table-sm w-auto">
                                 <thead>
                                     <tr>
                                         <th>GameMode</th>
@@ -124,13 +124,13 @@
                 </div>
             </div>
             <div class="col-auto">
-                <div style="width: 500px; height: 500px;">
+                <div class="bgchart border rounded border-secondary" style="width: 500px; height: 500px;">
                     <PlayerCmdrChart @ref="playerCmdrChart" CmdrInfos="playerSummary.Commanders"></PlayerCmdrChart>
                 </div>
             </div>
         </div>
     }
-    <div class="d-flex flex-row bg-secondary">
+    <div class="d-flex flex-row bgchart2">
         <div class="p-1">
             <EditForm EditContext="editContext">
                 <label class="form-label">
@@ -161,7 +161,7 @@
         @if (playerRatingDetailsDto != null)
         {
             <div class="col-auto">
-                <div style="width: 40vw; min-width: 500px; height: calc(40vw * 0.6); min-height: 300px;">
+                <div class="bgchart border rounded border-secondary" style="width: 40vw; min-width: 500px; height: calc(40vw * 0.6); min-height: 300px;">
                     <PlayerRatingDetailChart @ref="playerRatingDetailChart"
                         PlayerId="new pax.dsstats.shared.Arcade.PlayerId(RequestNames.ToonId, RequestNames.RealmId, RequestNames.RegionId)" 
                         RatingType="playerRatingDetailsDto.RatingType"
@@ -171,13 +171,13 @@
             </div>
             <div class="col-auto">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header bgchart2">
                         <h4><span class="text-warning">Rating Info</span></h4>
                         <small>@Data.GetRatingTypeLongName(playerRatingDetailsDto.RatingType)</small>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body bgchart">
                         <div class="table-responsive">
-                            <table class="table table-sm table-dark table-striped">
+                            <table class="tptable table table-sm">
                                 <tbody>
                                     <tr>
                                         <td>Rating games</td>
@@ -236,7 +236,7 @@
             </div>
             <div class="col-auto">
                 <div class="card" style="min-width: 475px;">
-                    <div class="card-header">
+                    <div class="card-header bgchart2">
                         <div class="d-flex justify-content-between">
                             <div>
                                 <h4><span class="text-warning">Teammates</span>  <small class="text-light">AvgRating @ratingDetails.AvgTeamRating.ToString("N2", CultureInfo.InvariantCulture)</small></h4>
@@ -247,7 +247,7 @@
                         </div>
                         <small>@Data.GetRatingTypeLongName(RatingType)</small>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body bgchart">
                         <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
                             <TeamTable TeamResults="ratingDetails.Teammates" ShowReplays="ShowWithReplays"></TeamTable>
                         </div>
@@ -256,7 +256,7 @@
             </div>
             <div class="col-auto">
                 <div class="card" style="min-width: 475px;">
-                    <div class="card-header">
+                    <div class="card-header bgchart2">
                         <div class="d-flex justify-content-between">
                             <div>
                                 <h4><span class="text-warning">Opponents</span> <small>and their winrate</small></h4>
@@ -267,7 +267,7 @@
                         </div>
                         <small>@Data.GetRatingTypeLongName(RatingType)</small>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body bgchart">
                         <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
                             <TeamTable TeamResults="ratingDetails.Opponents" ShowReplays="ShowVsReplays"></TeamTable>
                         </div>

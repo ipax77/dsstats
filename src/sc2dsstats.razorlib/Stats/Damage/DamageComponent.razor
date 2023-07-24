@@ -34,7 +34,7 @@
 
 @if (response != null)
 {
-    <div class="border rounded border-secondary"
+    <div class="border rounded border-secondary bgchart"
          style="min-width: 750px; width: 70vw; height: calc(70vw * @(chartHeightCalc.ToString(CultureInfo.InvariantCulture))); min-height: @(chartMinHeight)px;">
         <DamageChart @ref="damageChart" Request="Request" Response="response" TableOrders="tableOrders"></DamageChart>
     </div>

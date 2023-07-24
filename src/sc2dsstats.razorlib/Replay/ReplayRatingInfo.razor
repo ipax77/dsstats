@@ -12,10 +12,10 @@ else
 {
     <div class="d-flex justify-content-center">
         <div class="col-auto">
-            <h5><span class="badge bg-secondary me-4"><span class="text-light">RatingType</span> @Data.GetRatingTypeLongName(ReplayRatingDto.RatingType)</span></h5>
+            <h5><span class="badge bg-primary me-4"><span class="text-light">RatingType</span> @Data.GetRatingTypeLongName(ReplayRatingDto.RatingType)</span></h5>
         </div>
         <div class="col-auto">
-            <h5><span class="badge bg-secondary ms-4 me-4"><span class="text-light">LeaverType</span> @ReplayRatingDto.LeaverType</span></h5>
+            <h5><span class="badge bg-primary ms-4 me-4"><span class="text-light">LeaverType</span> @ReplayRatingDto.LeaverType</span></h5>
         </div>
     </div>
     <div class="row">
@@ -25,7 +25,7 @@ else
             : ReplayRatingDto.RepPlayerRatings.Where(x => x.GamePos > 3).ToList();
             <div class="col-auto">
                 <div class="table-responsive" style="width: 560px;">
-                    <table class="table table-sm table-hover table-dark">
+                    <table class="tptable table table-sm w-auto">
                         <thead>
                             <tr>
                                 <th style="width: 30px;">#</th>
