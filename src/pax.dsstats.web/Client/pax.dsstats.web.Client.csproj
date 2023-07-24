@@ -22,4 +22,8 @@
     <ProjectReference Include="..\Shared\pax.dsstats.web.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Shared\FrontPage\" />
+  </ItemGroup>
+
 </Project>
