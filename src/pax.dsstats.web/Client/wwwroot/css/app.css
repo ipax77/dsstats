@@ -42,48 +42,48 @@ a, .btn-link {
     background-color: #080808E6;
 }
 
-.tableTransparentFixHead {
-    overflow-y: auto;
-    overflow-x: auto;
-    height: 800px;
+.bgchart2 {
+    background-color: #0f1a29E6;
 }
 
-.transparent-table {
-    /* Base color for the table background */
+.tableFixHead {
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+.tptable {
     background-color: #080808E6;
     width: 100%;
     border-collapse: collapse;
 }
 
-    .transparent-table thead th {
+    .tptable thead th {
         position: sticky;
         top: 0;
-        color: white;
+        background-color: #080808;
     }
 
-    .transparent-table th,
-    .transparent-table td {
+    .tptable table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    /* .tptable th, td {
         padding: 8px 16px;
         white-space: nowrap;
-        border-bottom: 1px solid #fff;
+    } */
+
+    .tptable tbody tr:hover {
+        background-color: #12243aE6;
     }
 
-    /* Apply striped effect to even rows */
-    .transparent-table tbody tr:nth-child(even) {
-        background-color: #08080880;
-    }
+    .tptable tbody tr:nth-child(odd) {
+        background-color: #0f1a29E6;
+      }
 
-    /* Hover effect */
-    .transparent-table tbody tr:hover {
-        background-color: #08080880;
+    .tptable tbody tr:nth-child(odd):hover {
+    background-color: #12243aE6;
     }
-
-/* Optional background for the entire table (behind the sticky header) */
-.tablebackground {
-    position: absolute;
-    z-index: -1;
-    opacity: 0.15;
-}
 
 #blazor-error-ui {
     background: lightyellow;

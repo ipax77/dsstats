@@ -9,34 +9,6 @@
 @implements IDisposable
 
 <style>
-    .tableFixHead {
-        overflow-y: auto;
-        overflow-x: auto;
-        height: 800px;
-    }
-
-        .tableFixHead thead th {
-            position: sticky;
-            top: 0;
-        }
-
-    table {
-        border-collapse: collapse;
-        width: 100%;
-    }
-
-    th,
-    td {
-        padding: 8px 16px;
-        white-space: nowrap;
-    }
-
-    .tablebackground {
-        position: absolute;
-        z-index: -1;
-        opacity: 0.15;
-    }
-
     .preload-terran {
         background-image: url("/_content/sc2dsstats.razorlib/images/terran-min.png");
         background-repeat: no-repeat;
@@ -286,8 +258,8 @@
                     </div>
                 }
             </div>
-            <div class="table-responsive tableFixHead">
-                <table class="table table-dark table-hover w-auto">
+            <div class="table-responsive tableFixHead" style="max-height: 80vh;">
+                <table class="tptable table w-auto">
                     <CascadingValue Value="Request.Orders">
                         <thead class="user-select-none">
                             <tr>
@@ -400,7 +372,7 @@
 
     </div>
     <div class="col-auto">
-        <div class="ms-2 mt-2 p-2 bg-dark" style="max-width: 1000px;">
+        <div class="ms-2 mt-2 p-2 bgchart" style="max-width: 1000px;">
             <p>
                 The <b>Strength</b> value is a measure of a players's overall effectiveness at playing <span class="text-warning">@Request.Interest</span>, calculated based on factors such as their win rate,
                 average rating, and matchup frequency. It gives an indication of how well a player is performing with

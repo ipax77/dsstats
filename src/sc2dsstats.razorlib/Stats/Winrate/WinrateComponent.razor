@@ -71,7 +71,7 @@
                 {
                     i++;
                     <input type="radio" class="btn-check" name="@($"btnwinrate{i}")" id="@($"winratetype{i}")" autocomplete="off" checked="@(Request.WinrateType == winrateType)" @onchange="e => SetWinrateType(e, winrateType)">
-                    <label class="btn btn-sm btn-outline-light check-label" for="@($"winratetype{i}")">@winrateType</label>
+                    <label class="btn btn-sm btn-outline-light bgchart check-label" for="@($"winratetype{i}")">@winrateType</label>
                 }
             </div>
         </div>

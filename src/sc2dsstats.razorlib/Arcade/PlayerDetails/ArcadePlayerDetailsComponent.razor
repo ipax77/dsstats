@@ -8,7 +8,7 @@
 @implements IDisposable
 
 <div>
-    <div class="row bg-secondary p-2">
+    <div class="row bgchart2 p-2">
         <div class="col-auto">
             <span class="oi oi-x text-danger pointer" style="font-size: 2rem; z-index: 1000;"
                   @onclick="(() => OnCloseRequested.InvokeAsync())"></span>
@@ -91,7 +91,7 @@
             }
         </div>
         <div class="row mt-2">
-            <div class="col-auto">
+            <div class="col-auto bgchart">
                 <div style="width: 40vw; min-width: 500px; height: calc(40vw * 0.6); min-height: 300px;">
                     @if (InterestRating != null)
                     {
@@ -107,13 +107,13 @@
             {
                 <div class="col-auto">
                     <div class="card">
-                        <div class="card-header">
+                        <div class="card-header bgchart2">
                             <h4><span class="text-warning">Rating Info</span></h4>
                             <small>@Data.GetRatingTypeLongName(InterestRating.RatingType)</small>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body bgchart">
                             <div class="table-responsive">
-                                <table class="table table-sm table-dark table-striped">
+                                <table class="tptable table">
                                     <tbody>
                                         <tr>
                                             <td>Rating games</td>
@@ -162,7 +162,7 @@
             {
                 <div class="col-auto mt-1">
                     <div class="card" style="max-width: 600px;">
-                        <div class="card-header">
+                        <div class="card-header bgchart2">
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h4><span class="text-warning">Teammates</span>  <small class="text-light">AvgRating @playerMoreDetails.AvgTeamRating.ToString("N2", CultureInfo.InvariantCulture)</small></h4>
@@ -173,7 +173,7 @@
                             </div>
                             <small>@Data.GetRatingTypeLongName(RatingType)</small>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body bgchart">
                             <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
                                 <TeamTable TeamResults="playerMoreDetails.Teammates" ShowReplays="ShowWithReplays"></TeamTable>
                             </div>
@@ -185,7 +185,7 @@
             {
                 <div class="col-auto mt-1">
                     <div class="card" style="max-width: 600px;">
-                        <div class="card-header">
+                        <div class="card-header bgchart2">
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h4><span class="text-warning">Opponents</span> <small>and their winrate</small></h4>
@@ -196,7 +196,7 @@
                             </div>
                             <small>@Data.GetRatingTypeLongName(RatingType)</small>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body bgchart">
                             <div class="table-responsive" style="min-width: 450px; max-height: 400px; overflow: auto;">
                                 <TeamTable TeamResults="playerMoreDetails.Opponents" ShowReplays="ShowVsReplays"></TeamTable>
                             </div>
