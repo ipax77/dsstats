@@ -10,39 +10,6 @@
 
 @implements IDisposable
 
-<style>
-    .tableFixHead {
-        overflow-y: auto;
-        overflow-x: auto;
-        height: 800px;
-    }
-
-        .tableFixHead thead th {
-            position: sticky;
-            top: 0;
-        }
-
-    table {
-        border-collapse: collapse;
-        width: 100%;
-    }
-
-    th, td {
-        padding: 8px 16px;
-        white-space: nowrap;
-    }
-
-    th {
-        background: purple;
-    }
-
-    .tablebackground {
-        position: absolute;
-        z-index: -1;
-        opacity: 0.15;
-    }
-</style>
-
 <div class="@(requestNames == null ? "" : "visually-hidden")">
     <div class="d-flex">
         <EditForm EditContext="editContext">
@@ -101,11 +68,11 @@
     </div>
     <div class="row">
         <div class="col-auto">
-            <div class="d-flex" style="max-width: 750px;">
-                <p class="ms-auto p-0 m-0"><small class="text-primary">min 20 games</small> #@ratingsCount</p>
+            <div class="d-flex" style="width: 750px;">
+                <p class="ms-auto p-0 m-0"><small class="text-primary bgchart">min 20 games</small> #@ratingsCount</p>
             </div>
-            <div class="tableFixHead">
-                <table class="table table-dark table-hover table-striped">
+            <div class="tableFixHead" style="max-height: 80vh;">
+                <table class="tptable table">
                     <thead style="user-select: none;">
                         <CascadingValue Value="RatingsRequest.Orders">
                             <tr>
