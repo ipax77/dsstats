@@ -13,7 +13,7 @@
         <div class="card" style="max-width: 1200px; min-width: 600px;">
             <div class="card-header">
                 <div class="row fw-bolder">
-                    <div class="col">@replayDto.GameTime.ToShortDateString()</div>
+                    <div class="col">@replayDto.GameTime.ToString("yyyy-MM-dd")</div>
                     <div class="col">Duration @duration</div>
                     <div class="col">
                         @replayDto.GameMode

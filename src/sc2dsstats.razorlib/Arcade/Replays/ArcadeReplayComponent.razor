@@ -1,11 +1,13 @@
 ﻿@using System.Globalization;
+@using Microsoft.JSInterop;
 @using pax.dsstats.shared.Arcade;
 @using pax.dsstats.shared;
+@inject IJSRuntime JSRuntime
 
-<div class="card" style="max-width: 900px; min-width: 500px;">
+<div class="card" style="max-width: 1000px; min-width: 500px;">
     <div class="card-header">
         <div class="row fw-bolder">
-            <div class="col">@Replay.CreatedAt.ToShortDateString()</div>
+            <div class="col">@Replay.CreatedAt.ToString("yyyy-MM-dd")</div>
             <div class="col">Duration @TimeSpan.FromSeconds(Replay.Duration).ToString(@"hh\:mm\:ss")</div>
             <div class="col">Region @Data.GetRegionString(Replay.RegionId)</div>
             <div class="col">Mode @Replay.GameMode</div>
@@ -66,7 +68,8 @@
                                     <th>Name</th>
                                     <th>Rating</th>
                                     <th>Games</th>
-                                    <th>Disc</th>
+                                    <th><span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Consistency">Cons</span></th>
+                                    <th><span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Confidence">Conf</span></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -97,9 +100,8 @@
                                         <td>
                                             @plRating?.Games
                                         </td>
-                                        <td>
-                                            @player.Discriminator
-                                        </td>
+                                        <td>@plRating?.Consistency</td>
+                                        <td>@plRating?.Confidence</td>
                                     </tr>
                                 }
                             </tbody>
@@ -123,4 +125,13 @@
 
     [Parameter]
     public EventCallback<int> OnPlayerRequested { get; set; }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            JSRuntime.InvokeVoidAsync("enableTooltips");
+        }
+        base.OnAfterRender(firstRender);
+    }
 }
