@@ -38,6 +38,53 @@ a, .btn-link {
     cursor: pointer;
 }
 
+.bgchart {
+    background-color: #080808E6;
+}
+
+.tableTransparentFixHead {
+    overflow-y: auto;
+    overflow-x: auto;
+    height: 800px;
+}
+
+.transparent-table {
+    /* Base color for the table background */
+    background-color: #080808E6;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .transparent-table thead th {
+        position: sticky;
+        top: 0;
+        color: white;
+    }
+
+    .transparent-table th,
+    .transparent-table td {
+        padding: 8px 16px;
+        white-space: nowrap;
+        border-bottom: 1px solid #fff;
+    }
+
+    /* Apply striped effect to even rows */
+    .transparent-table tbody tr:nth-child(even) {
+        background-color: #08080880;
+    }
+
+    /* Hover effect */
+    .transparent-table tbody tr:hover {
+        background-color: #08080880;
+    }
+
+/* Optional background for the entire table (behind the sticky header) */
+.tablebackground {
+    position: absolute;
+    z-index: -1;
+    opacity: 0.15;
+}
+
 #blazor-error-ui {
     background: lightyellow;
     bottom: 0;

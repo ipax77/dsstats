@@ -7,39 +7,6 @@
 @inject NavigationManager NavigationManager
 @implements IDisposable
 
-<style>
-    .tableFixHead {
-        overflow-y: auto;
-        overflow-x: auto;
-        height: 800px;
-    }
-
-        .tableFixHead thead th {
-            position: sticky;
-            top: 0;
-        }
-
-    table {
-        border-collapse: collapse;
-        width: 100%;
-    }
-
-    th, td {
-        padding: 8px 16px;
-        white-space: nowrap;
-    }
-
-    th {
-        background: purple;
-    }
-
-    .tablebackground {
-        position: absolute;
-        z-index: -1;
-        opacity: 0.15;
-    }
-</style>
-
 <div class="@(Interest == null ? "" : "visually-hidden")">
     <div class="d-flex">
         <EditForm EditContext="editContext">
@@ -109,8 +76,8 @@
             <div class="d-flex" style="max-width: 750px;">
                 <p class="ms-auto p-0 m-0"><small class="text-primary">min 20 games</small> #@ratingsCount</p>
             </div>
-            <div class="tableFixHead">
-                <table class="table table-dark table-hover table-striped">
+            <div class="tableTransparentFixHead">
+                <table class="transparent-table">
                     <colgroup>
                         <col class="col">
                         <col class="col">
@@ -123,7 +90,7 @@
                         <col class="col">
                         <col class="col">
                     </colgroup>
-                    <thead style="user-select: none;">
+                    <thead class="table-dark" style="user-select: none;">
                         <CascadingValue Value="RatingsRequest.Orders">
                             <tr>
                                 <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Pos"))">
