@@ -119,10 +119,10 @@ public partial class UploadService
             .Include(i => i.BattleNetInfos)
             .FirstOrDefaultAsync(f => f.AppGuid == uploader.AppGuid);
 
-        if (dbUploader == null)
-        {
-            dbUploader = await FindDuplicateUploader(context, uploader);
-        }
+        //if (dbUploader == null)
+        //{
+        //    dbUploader = await FindDuplicateUploader(context, uploader);
+        //}
 
         if (dbUploader == null)
         {
@@ -202,8 +202,8 @@ public partial class UploadService
             var uploaderPlayer = uploader.BattleNetInfos?
                 .SelectMany(s => s.PlayerUploadDtos)
                 .FirstOrDefault(f => f.ToonId == dbPlayer.ToonId
-                    && f.RegionId == dbPlayer.RegionId
-                    && f.RealmId == dbPlayer.RealmId);
+                    && f.RegionId == dbPlayer.RegionId);
+                    //&& f.RealmId == dbPlayer.RealmId); // realm can be anything :(
             if (uploaderPlayer == null)
             {
                 dbUploader.Players.Remove(dbPlayer);

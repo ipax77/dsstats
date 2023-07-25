@@ -132,6 +132,12 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
+    var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
+    importService.ImportInit();
+
+    //var cheatService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
+    //var result = cheatService.AdjustReplays(new DateTime(2023, 07, 22)).GetAwaiter().GetResult();
+    //Console.WriteLine(result);
 }
 
 // Configure the HTTP request pipeline.
