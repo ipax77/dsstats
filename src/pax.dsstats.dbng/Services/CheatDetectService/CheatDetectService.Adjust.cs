@@ -54,10 +54,6 @@ public partial class CheatDetectService
         {
             return true;
         }
-        else if (init)
-        {
-            return false;
-        }
 
         if (!init)
         {

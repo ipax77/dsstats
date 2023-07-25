@@ -1,4 +1,5 @@
-
+﻿
+using System.Drawing.Printing;
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
@@ -34,20 +35,43 @@ public static class BlobCheck
 
         List<PlayerId> PlayerIds = new()
         {
-            new(9774911, 0, 2),
-            new(9774911, 1, 2)
+            new(2474605, 0, 2),
+            new(2474605, 1, 2),
+            new(2474605, 2, 2),
+            new(2474605, 0, 1),
+            new(2474605, 1, 1),
+            new(2474605, 2, 1),
         };
         int wins = 0;
         int loss = 0;
+        int uploader = 0;
+        int skip = 0;
+        int computer = 0;
 
+        List<GameMode> gameModes = new List<GameMode>() { GameMode.Commanders, GameMode.CommandersHeroic };    
 
         foreach (ReplayDto replay in replays)
         {
+            if (replay.WinnerTeam == 0
+                || replay.Duration < 300
+                || !gameModes.Contains(replay.GameMode))
+            {
+                skip++;
+                continue;
+            }
+
+            if (replay.ReplayPlayers.Any(a => a.Name.StartsWith("Компьютер ")))
+            {
+                computer++;
+                continue;
+            }
+
             var hash = Data.GenHash(replay);
 
             if (replay.ReplayHash != hash)
             {
                 Console.WriteLine($"hash manipulated!");
+                Console.WriteLine(replay);
             }
 
             var intrp = replay.ReplayPlayers.FirstOrDefault(f => PlayerIds.Any(a => f.Player.ToonId == a.ToonId
@@ -56,11 +80,14 @@ public static class BlobCheck
 
             if (intrp == null)
             {
-                Console.WriteLine($"no interest player");
-                Console.WriteLine(string.Join(',', replay.ReplayPlayers.Select(s => s.Player)));
             }
             else
             {
+                if (intrp.IsUploader)
+                {
+                    uploader++;
+                }
+
                 if (intrp.PlayerResult == PlayerResult.Win)
                 {
                     wins++;
@@ -76,7 +103,7 @@ public static class BlobCheck
         var first = repsOrdered.First().GameTime;
         var last = repsOrdered.Last().GameTime;
 
-        Console.WriteLine($"check done. First: {first.ToShortDateString()}, Last: {last.ToShortDateString()} Count: {replays.Count} Wins: {wins}, Loss: {loss}");
+        Console.WriteLine($"check done. Count: {replays.Count} Wins: {wins}, Loss: {loss}, uploader: {uploader}, skip: {skip}, computer: {computer}");
     }
 
 
