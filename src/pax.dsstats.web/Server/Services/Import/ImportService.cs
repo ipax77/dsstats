@@ -143,7 +143,7 @@ public partial class ImportService
 
                 dbCache.Uploaders.TryGetValue(uploaderGuid, out int uploaderId);
                 
-                await MapPlayers(replays);
+                await MapPlayers(replays, uploaderId);
 
                 foreach (var replay in replays)
                 {
