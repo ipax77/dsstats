@@ -64,7 +64,7 @@ a, .btn-link {
     }
 
     .tptable thead tr th {
-        padding: 8px 16px;
+        padding: 4px 8px;
         white-space: nowrap;
         user-select: none;
     } 
