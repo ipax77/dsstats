@@ -4,10 +4,12 @@
 @inject IServerStatsService serverStatsService
 
 <h3>Server Stats</h3>
-<p class="text-warning">
-    Stats for gamemode Commanders, CommandersHeroic and Standard with player count 6 (3v3)
-</p>
 
+<div class="bgchart d-inline-block p-1">
+    <p class="text-warning">
+        Stats for gamemode Commanders, CommandersHeroic and Standard with player count 6 (3v3)
+    </p>
+</div>
 <div>
     @if (isLoading)
     {
