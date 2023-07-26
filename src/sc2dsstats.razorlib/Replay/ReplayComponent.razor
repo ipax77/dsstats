@@ -8,6 +8,12 @@
 @inject IDataService dataService
 @implements IDisposable
 
+<style>
+    th {
+        padding: 2px 4px !important;
+    }
+</style>
+
 <div class="row @(Interest == null ? "" : "visually-hidden")">
     <div class="col-auto">
         <div class="card" style="max-width: 1200px; min-width: 600px;">

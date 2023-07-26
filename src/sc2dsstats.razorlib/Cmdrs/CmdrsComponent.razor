@@ -20,7 +20,7 @@
 else
 {
     <div>
-        <div class="d-flex bg-secondary p-2">
+        <div class="d-flex bgchart2 p-2">
             @if (isLoading)
             {
                 <div class="align-self-center me-2">
@@ -51,7 +51,7 @@ else
             </div>
         </div>
 
-        <div class="mt-3" style="font-size: 1.3rem;">
+        <div class="mt-3 bgchart d-inline-block p-2 rounded" style="font-size: 1.3rem;">
             <p>
                 @CmdrRequest.TimeSpan @cmdrResult.Cmdr plays best against
                 <img src="@HelperService.GetImageSrc(cmdrResult.BestMatchup?.Cmdr ?? Commander.None)" alt="@cmdrResult.BestMatchup?.Cmdr" width="35" height="35" />
@@ -101,9 +101,9 @@ else
 
         @if (cmdrResult.TopPlayers.Any())
         {
-            <div class="col-auto mt-2" style="max-width: 400px;">
+            <div class="col-auto mt-2 tableFixHead" style="max-width: 400px;">
                 <h4><span class="text-warning">@cmdrResult.Cmdr</span> Best Players</h4>
-                <table class="table table-sm table-dark table-hover w-auto">
+                <table class="tptable table table-sm w-auto">
                     <thead>
                         <tr>
                             <th>Name</th>

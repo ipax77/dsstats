@@ -32,19 +32,19 @@ else
         }
         <div class="col-auto">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header bgchart2">
                     <h5 class="text-warning">Total Time Played</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body bgchart">
                     @* <span class="fw-bold">@TimeSpan.FromSeconds(funStats.TotalTimePlayed).ToString("c", CultureInfo.InvariantCulture)</span> *@
                     <span class="fw-bold">@TimeSpan.FromSeconds(funStats.TotalTimePlayed).Humanize(10, culture: CultureInfo.InvariantCulture,  minUnit: TimeUnit.Day, maxUnit: TimeUnit.Year)</span>
                 </div>
             </div>
             <div class="card">
-                <div class="card-header">
+                <div class="card-header bgchart2">
                     <h5 class="text-warning">Average Game Duration</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body bgchart">
                     @* <span class="fw-bold">@TimeSpan.FromSeconds(funStats.AvgGameDuration).ToString(@"hh\:mm\:ss")</span> *@
                     <span class="fw-bold">@TimeSpan.FromSeconds(funStats.AvgGameDuration).Humanize(10, culture: CultureInfo.InvariantCulture,  minUnit: TimeUnit.Minute, maxUnit: TimeUnit.Hour)</span>
                 </div>
@@ -52,18 +52,18 @@ else
         </div>
         <div class="col-auto">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header bgchart2">
                     <h5 class="text-warning">Most Build Unit</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body bgchart">
                     <span class="fw-bold">@funStats.MostLeastBuildUnit.Key?.UnitName: @HelperService.GetBigNumberString(funStats.MostLeastBuildUnit.Key?.Count ?? 0)</span>
                 </div>
             </div>
             <div class="card">
-                <div class="card-header">
+                <div class="card-header bgchart2">
                     <h5 class="text-warning">Least Build Unit</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body bgchart">
                     <span class="fw-bold">@funStats.MostLeastBuildUnit.Value?.UnitName: @funStats.MostLeastBuildUnit.Value?.Count</span>
                 </div>
             </div>
@@ -75,10 +75,10 @@ else
         {
             <div class="col-auto">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header bgchart2">
                         <h3 class="text-warning">First Replay - @funStats.FirstReplay.GameTime.ToShortDateString()</h3>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body bgchart">
                         <sc2dsstats.razorlib.Replay.ReplayComponent @ref="fiRc" HideCloseButton="true" replayDto="funStats.FirstReplay" />
                     </div>
                 </div>
@@ -88,10 +88,10 @@ else
         {
             <div class="col-auto">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header bgchart2">
                         <h3 class="text-warning">Greatest Army Replay - @HelperService.GetBigNumberString(funStats.GreatestArmyReplay.ReplayPlayers.OrderByDescending(o => o.Army).FirstOrDefault()?.Army ?? 0)</h3>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body bgchart">
                         <sc2dsstats.razorlib.Replay.ReplayComponent @ref="gaRc" HideCloseButton="true" replayDto="funStats.GreatestArmyReplay" />
                     </div>
                 </div>
@@ -101,10 +101,10 @@ else
         {
             <div class="col-auto">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header bgchart2">
                         <h3 class="text-warning">Most Upgrades Replay - @HelperService.GetBigNumberString(funStats.MostUpgradesReplay.ReplayPlayers.OrderByDescending(o => o.UpgradesSpent).FirstOrDefault()?.UpgradesSpent ?? 0)</h3>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body bgchart">
                         <sc2dsstats.razorlib.Replay.ReplayComponent @ref="muRc" HideCloseButton="true" replayDto="funStats.MostUpgradesReplay" />
                     </div>
                 </div>
@@ -114,10 +114,10 @@ else
         {
             <div class="col-auto">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header bgchart2">
                         <h3 class="text-warning">Most Competitive Replay - Middle changes: @funStats.MostCompetitiveReplay.Middle.Split('|').Length</h3>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body bgchart">
                         <sc2dsstats.razorlib.Replay.ReplayComponent @ref="mcRc" HideCloseButton="true" replayDto="funStats.MostCompetitiveReplay" />
                     </div>
                 </div>
@@ -127,10 +127,10 @@ else
         {
             <div class="col-auto">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header bgchart2">
                         <h3 class="text-warning">Greatest Comeback Replay</h3>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body bgchart">
                         <sc2dsstats.razorlib.Replay.ReplayComponent @ref="gcRc" HideCloseButton="true" replayDto="funStats.GreatestComebackReplay" />
                     </div>
                 </div>

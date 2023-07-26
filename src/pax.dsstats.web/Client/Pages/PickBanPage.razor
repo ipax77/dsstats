@@ -7,8 +7,10 @@
 
 @if (String.IsNullOrEmpty(Mode) || Id == null || Id == Guid.Empty)
 {
-    <h3>Pick-Ban-Helper</h3>
-    <div class="btn-group-vertical border rounded bg-secondary p-2 mt-2">
+    <div class="bgchart2 rounded p-2">
+        <h3>Pick-Ban-Helper</h3>
+    </div>
+    <div class="btn-group-vertical border rounded bgchart p-2 mt-2">
         <button type="button" class="btn btn-outline-light" @onclick="@(() => ChangeMode("Std"))">Standard</button>
         <button type="button" class="btn btn-outline-light" @onclick="@(() => ChangeMode("Cmdr"))">Commanders</button>
         <button type="button" class="btn btn-outline-light" @onclick="@(() => ChangeMode("Name"))">Name</button>
