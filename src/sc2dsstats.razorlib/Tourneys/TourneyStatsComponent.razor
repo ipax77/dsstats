@@ -19,8 +19,8 @@ else
         <span class="badge bg-info">Replays @statsResponse.Count</span>
         <span class="badge bg-info ms-3">AvgDuration @TimeSpan.FromSeconds(statsResponse.AvgDuration).ToString(@"mm\:ss")</span>
     </div>
-    <div>
-        <table class="table table-bordered table-dark table-hover table-striped w-auto">
+    <div class="tableFixHead">
+        <table class="tptable table table-bordered w-auto">
             <colgroup>
                 <col class="col-auto">
                 <col class="col-auto">

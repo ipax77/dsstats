@@ -3,12 +3,12 @@
 
 @if (Cmdr != null && Cmdr != Commander.None)
 {
-    <div class="border rounded p-1">
+    <div class="border rounded bgchart p-1">
         <div class="fw-bold">
             @Desc <img src="@HelperService.GetImageSrc(Cmdr.Value)" alt="@Cmdr" width="35" height="35" /> @Cmdr
         </div>
         <div>
-            <span class="badge bg-secondary">@ChildContent</span>
+            <span class="badge bgchart2">@ChildContent</span>
         </div>
     </div>
 }
