@@ -18,34 +18,15 @@ public partial class CheatDetectService
             .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Upgrades)
             .Where(x => x.Imported >= fromDate
-              && (x.WinnerTeam == 0)
+              && x.WinnerTeam == 0
               && x.Playercount == 6
               && x.Duration >= 60)
             .ToListAsync();
         
         CheatResult cheatResult = new() { NoResultGames = replays.Count };
 
-        List<PlayerId> PlayerIds = new()
-        {
-            new(2474605, 0, 2),
-            new(2474605, 1, 2),
-            new(2474605, 2, 2),
-            new(2474605, 0, 1),
-            new(2474605, 1, 1),
-            new(2474605, 2, 1),
-        };
-
         foreach (var replay in replays)
         {
-            var intrp = replay.ReplayPlayers.FirstOrDefault(f => PlayerIds.Any(a => f.Player.ToonId == a.ToonId
-                && f.Player.RealmId == a.RealmId
-                && f.Player.RegionId == a.RegionId));
-
-            if (intrp != null)
-            {
-                Console.WriteLine("indahouse");
-            }
-
             if (await AdjustReplay(context, replay, cheatResult, true))
             {
                 cheatResult.DcGames++;
@@ -56,7 +37,7 @@ public partial class CheatDetectService
             }
         }
 
-        // await context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return cheatResult;
     }
 

@@ -6,10 +6,14 @@
 
 main {
     flex: 1;
+    background-image: url('/_content/sc2dsstats.razorlib/images/bgbing_soft.jpg');
+    background-repeat: repeat;
+    background-attachment: fixed;
+    background-position: center;
 }
 
 .sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    background-image: linear-gradient(180deg, #080808 0%, #0f1a29 70%);
 }
 
 .top-row {

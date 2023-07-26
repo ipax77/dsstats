@@ -364,7 +364,7 @@ public partial class DecodeService : IDisposable
                 var replayPlayer = replayDto.ReplayPlayers.ElementAt(i);
                 if (playerToonIds.Any(a => 
                     a.ToonId == replayPlayer.Player.ToonId
-                    && a.RealmId == replayPlayer.Player.RealmId
+                    //&& a.RealmId == replayPlayer.Player.RealmId // :(
                     && a.RegionId == replayPlayer.Player.RegionId))
                 {
                     replayPlayer.IsUploader = true;
