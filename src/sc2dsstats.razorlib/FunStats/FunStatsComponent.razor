@@ -15,47 +15,47 @@ else
     <div class="row">
         <div class="col-auto">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header bgchart2">
                     <h3 class="text-warning">Total Time Played</h3>
                 </div>
-                <div class="card-body">
+                <div class="card-body bgchart">
                     <span class="fw-bold">@funStats.TotalDuration.ToString("c", CultureInfo.InvariantCulture)</span>
                 </div>
             </div>
             <div class="card">
-                <div class="card-header">
+                <div class="card-header bgchart2">
                     <h3 class="text-warning">Average Game Duration</h3>
                 </div>
-                <div class="card-body">
+                <div class="card-body bgchart">
                     <span class="fw-bold">@funStats.AvgDuration.ToString(@"hh\:mm\:ss")</span>
                 </div>
             </div>
         </div>
         <div class="col-auto">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header bgchart2">
                     <h3 class="text-warning">Most Build Unit</h3>
                 </div>
-                <div class="card-body">
+                <div class="card-body bgchart">
                     <span class="fw-bold">@funStats.MostBuildUnit?.UnitName: @HelperService.GetBigNumberString(funStats.MostBuildUnit?.Count ?? 0)</span>
                 </div>
             </div>
             <div class="card">
-                <div class="card-header">
+                <div class="card-header bgchart2">
                     <h3 class="text-warning">Least Build Unit</h3>
                 </div>
-                <div class="card-body">
+                <div class="card-body bgchart">
                     <span class="fw-bold">@funStats.LeastBuildUnit?.UnitName: @funStats.LeastBuildUnit?.Count</span>
                 </div>
             </div>
         </div>
         <div class="col-auto">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header bgchart2">
                     <h3 class="text-warning">Player Positions</h3>
                 </div>
-                <div class="card-body">
-                    <table class="table table-sm table-dark table-striped">
+                <div class="card-body bgchart tableFixHead">
+                    <table class="tptable table table-sm">
                         <thead>
                             <tr>
                                 <th>Pos</th>
@@ -83,10 +83,10 @@ else
         {
             <div class="col-auto">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header bgchart2">
                         <h3 class="text-warning">First Replay - @funStats.FirstReplay.GameTime.ToShortDateString()</h3>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body bgchart">
                         <sc2dsstats.razorlib.Replay.ReplayComponent replayDto="funStats.FirstReplay" />
                     </div>
                 </div>
@@ -96,10 +96,10 @@ else
         {
             <div class="col-auto">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header bgchart2">
                         <h3 class="text-warning">Greatest Army Replay - @HelperService.GetBigNumberString(funStats.GreatestArmyReplay.ReplayPlayers.Where(x => ToonIds.Contains(x.Player.ToonId)).FirstOrDefault()?.Army ?? 0)</h3>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body bgchart">
                         <sc2dsstats.razorlib.Replay.ReplayComponent replayDto="funStats.GreatestArmyReplay" />
                     </div>
                 </div>
@@ -109,10 +109,10 @@ else
         {
             <div class="col-auto">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header bgchart2">
                         <h3 class="text-warning">Most Upgrades Replay - @HelperService.GetBigNumberString(funStats.MostUpgradesReplay.ReplayPlayers.Where(x => ToonIds.Contains(x.Player.ToonId)).FirstOrDefault()?.UpgradesSpent ?? 0)</h3>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body bgchart">
                         <sc2dsstats.razorlib.Replay.ReplayComponent replayDto="funStats.MostUpgradesReplay" />
                     </div>
                 </div>
@@ -122,10 +122,10 @@ else
         {
             <div class="col-auto">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header bgchart2">
                         <h3 class="text-warning">Most Competitive Replay - Middle changes: @funStats.MostCompetitiveReplay.Middle.Split('|').Length</h3>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body bgchart">
                         <sc2dsstats.razorlib.Replay.ReplayComponent replayDto="funStats.MostCompetitiveReplay" />
                     </div>
                 </div>
@@ -135,10 +135,10 @@ else
         {
             <div class="col-auto">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header bgchart2">
                         <h3 class="text-warning">Greatest Comeback Replay</h3>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body bgchart">
                         <sc2dsstats.razorlib.Replay.ReplayComponent replayDto="funStats.GreatestComebackReplay" />
                     </div>
                 </div>

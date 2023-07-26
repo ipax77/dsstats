@@ -68,10 +68,11 @@ a, .btn-link {
         width: 100%;
     }
 
-    /* .tptable th, td {
+    .tptable thead tr th {
         padding: 8px 16px;
         white-space: nowrap;
-    } */
+        user-select: none;
+    }
 
     .tptable tbody tr:hover {
         background-color: #12243aE6;

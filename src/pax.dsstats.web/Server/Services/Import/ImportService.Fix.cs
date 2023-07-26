@@ -40,6 +40,42 @@ public partial class ImportService
             .Include(i => i.Players)
             .FirstOrDefaultAsync(f => f.UploaderId == 181);
 
+        if (uploader == null)
+        {
+            return;
+        }
+
+        int i = 0;
+        foreach (var replayDto in replays)
+        {
+            var replay = await context.Replays
+                .Include(i => i.ReplayPlayers)
+                    .ThenInclude(i => i.Player)
+                .FirstOrDefaultAsync(f => f.ReplayHash == replayDto.ReplayHash);
+
+            if (replay == null)
+            {
+                continue;
+            }
+
+            foreach (var rp in replay.ReplayPlayers)
+            {
+                if (uploader.Players.Any(a => a.ToonId == rp.Player.ToonId
+                    && a.RegionId == rp.Player.RegionId
+                    && a.RealmId == rp.Player.RealmId))
+                {
+                    rp.IsUploader = true;
+                }
+            }
+
+            i++;
+            if (i % 1000 == 0)
+            {
+                await context.SaveChangesAsync();
+                logger.LogInformation("fixing ... {i}", i);
+            }
+        }
+        await context.SaveChangesAsync();
 
     }
 }
