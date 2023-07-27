@@ -5,7 +5,7 @@
 @inject NavigationManager NavigationManager
 
 <div>
-    <div class="d-flex p-2 bg-secondary" style="max-width: 1200px; min-width: 600px;">
+    <div class="d-flex p-2 bgchart2" style="max-width: 1200px; min-width: 600px;">
         @if (isLoading)
         {
             <div class="spinner-border spinner-border-sm text-info ms-2 me-2" role="status">
@@ -27,8 +27,8 @@
     @if (sessionProgress != null)
     {
         <div class="row">
-            <div class="col-auto table-responsive" style="max-height: 400px; overflow-y: auto;">
-                <table class="table table-dark table-striped table-hover">
+            <div class="col-auto table-responsive tableFixHead" style="max-height: 400px; overflow-y: auto;">
+                <table class="tptable table">
                     <thead>
                         <tr>
                             <th>Cmdr</th>
@@ -61,8 +61,8 @@
                     </tbody>
                 </table>
             </div>
-            <div class="col-auto" style="max-height: 400px; overflow-y: auto;">
-                <table class="table table-dark table-striped">
+            <div class="col-auto tableFixHead" style="max-height: 400px; overflow-y: auto;">
+                <table class="tptable table">
                     <thead>
                         <tr>
                             <th>Player</th>
