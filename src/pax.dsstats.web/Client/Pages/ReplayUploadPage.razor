@@ -9,9 +9,13 @@
 
 <PageTitle>ReplayUpload</PageTitle>
 
-<h3>Tournament Replays Upload</h3>
+<div class="bgchart2 d-inline-block p-2 text-warning rounded">
+    <h3>Tournament Replays Upload</h3>
+</div>
 
-<sc2dsstats.razorlib.Tourneys.UploadInfoComponent OnValidInfoSubmit="UploadInfoReady"></sc2dsstats.razorlib.Tourneys.UploadInfoComponent>
+<div class="bgchart p-4 rounded border">
+    <sc2dsstats.razorlib.Tourneys.UploadInfoComponent OnValidInfoSubmit="UploadInfoReady"></sc2dsstats.razorlib.Tourneys.UploadInfoComponent>
+</div>
 
 <div class="mt-3">
 @if (uploadInfo != null)

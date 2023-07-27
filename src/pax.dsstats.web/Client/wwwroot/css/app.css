@@ -38,6 +38,54 @@ a, .btn-link {
     cursor: pointer;
 }
 
+.bgchart {
+    background-color: #080808E6;
+}
+
+.bgchart2 {
+    background-color: #0f1a29E6;
+}
+
+.tableFixHead {
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+.tptable {
+    background-color: #080808E6;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .tptable thead th {
+        position: sticky;
+        top: 0;
+        background-color: #080808;
+    }
+
+    .tptable table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    .tptable thead tr th {
+        padding: 4px 8px;
+        white-space: nowrap;
+        user-select: none;
+    }
+
+    .tptable tbody tr:hover {
+        background-color: #12243aE6;
+    }
+
+    .tptable tbody tr:nth-child(odd) {
+        background-color: #0f1a29E6;
+      }
+
+    .tptable tbody tr:nth-child(odd):hover {
+    background-color: #12243aE6;
+    }
+
 #blazor-error-ui {
     background: lightyellow;
     bottom: 0;

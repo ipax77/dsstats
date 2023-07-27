@@ -2,84 +2,122 @@
 
 <PageTitle>DsStats</PageTitle>
 
-<div class="bg-light rounded p-3" style="max-width: 700px;">
-    <h3 class="text-primary">Direct Strike Fan Project</h3>
+<div class="container-fluid">
+    <h3 class="fw-bold text-warning">Direct Strike Fan Project</h3>
 
-    <h4 class="text-secondary">Fan Project for analyzing <a href="https://starcraft2.com/">Starcraft II</a> <a href="https://www.patreon.com/Tya">Direct Strike</a> Replays</h4>
-    <h4 class="text-dark mt-3"><a href="/stats">Stats</a> for every commander</h4>
-    <h4 class="text-dark"><a href="/ratings">Compare</a> yourself with other players worldwide</h4>
-    <h4 class="text-dark"><a href="/builds">Builds</a> from the top players for every matchup</h4>
-</div>
-
-<div class="mt-4">
-    <p>
-        The code for this website and the desktop app are <a href="https://en.wikipedia.org/wiki/Open_source">open source</a>.
-        So you always know where your data is stored and what is happening with it.(<a href="https://en.wikipedia.org/wiki/GNU_Affero_General_Public_License">AGPL-v3</a>)
-    </p>
-    <p>The data is from the community for the community, no other parties are involved.</p>
-</div>
-
-<div class="row mt-4">
-    <div class="col-auto">
-        <p>
-            <a href="https://github.com/ipax77/dsstats">
-                <img class="me-2" src="_content/sc2dsstats.razorlib/images/GitHub-Mark-Light-64px.png" alt="GitHub" width="25" />
-                GitHub Project
-            </a>
-        </p>
+    <div class="row mt-2">
+        <div class="col-auto bgchart p-2 border rounded mt-1">
+            <sc2dsstats.razorlib.Stats.TopStatsComponent></sc2dsstats.razorlib.Stats.TopStatsComponent>
+        </div>
+        <div class="col-auto bgchart p-2 ms-1 border rounded mt-1">
+            <sc2dsstats.razorlib.Ratings.TopPlayerRatings RatingType="shared.RatingType.Cmdr"></sc2dsstats.razorlib.Ratings.TopPlayerRatings>
+        </div>
+        <div class="col-auto bgchart p-2 ms-1 border rounded mt-1">
+            <sc2dsstats.razorlib.Ratings.TopPlayerRatings RatingType="shared.RatingType.Std"></sc2dsstats.razorlib.Ratings.TopPlayerRatings>
+        </div>
     </div>
-    <div class="col-auto">
-        <p>
-            <a href="https://github.com/ipax77/dsstats/wiki">
-                <img class="me-2" src="_content/sc2dsstats.razorlib/images/GitHub-Mark-Light-64px.png" alt="GitHub" width="25" />
-                GitHub Wiki
-            </a>
-        </p>
-    </div>
-    <div class="col-auto">
-        <p>
-            <a href="https://discord.gg/rKAyaggtqP">
-                <img class="me-2" src="/images/discord.svg" alt="Discord" width="25" />
-                Discord
-            </a>
-        </p>
-    </div>
-</div>
 
-<div class="row">
-    <div class="col-auto">
-        <div class="mt-3" style="max-width: 350px;">
-            <p>
-                Go to the Microsoft Store and install the <span class="text-warning">sc2dsstats</span> App for free.
-            </p>
-            <p>
+    <h3 class="mt-2 fw-bold text-warning">Features</h3>
+
+    <div class="row mt-2">
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
+            <div class="card" style="max-width: 400px;">
+                <div class="card-header bgchart2">
+                    <a href="/ratingbuilds">
+                        <span class="badge text-info text-decoration-underline" style="font-size: 1.3rem;">
+                            Builds
+                        </span>
+                    </a>
+                </div>
+                <div class="card-body fw-bold bgchart">
+                    Top players unit compositions for every matchup
+                </div>
+            </div>
+        </div>
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
+            <div class="card" style="max-width: 400px;">
+                <div class="card-header bgchart2">
+                    <a href="/arcade/ratings">
+                        <span class="badge text-info text-decoration-underline" style="font-size: 1.3rem;">
+                            SC2Arcade Ratings
+                        </span>
+                    </a>
+                </div>
+                <div class="card-body fw-bold bgchart">
+                    Player ratings with the data from <a href="https://sc2arcade.com/">SC2Arcade</a> - all lobbies played since 2021-02-01
+                </div>
+            </div>
+        </div>
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
+            <div class="card" style="max-width: 400px;">
+                <div class="card-header bgchart2">
+                    <a href="/cmdrreplays">
+                        <span class="badge text-info text-decoration-underline" style="font-size: 1.3rem;">
+                            Top Players per Commander
+                        </span>
+                    </a>
+                </div>
+                <div class="card-body fw-bold bgchart">
+                    Player ratings for each Commander
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="mt-2 fw-bold text-warning">Generate personal stats</h3>
+
+    <div class="row mt-2">
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
+            <div>
                 <a href="https://www.microsoft.com/store/apps/9NNNMB503HN5">
                     <img src="images/store.png" alt="Microsoft Store" width="100" />
-                    sc2dsstats Desktop App
+                    <span class="badge bgchart2 text-decoration-underline" style="font-size: 1rem;">
+                        sc2dsstats Desktop App
+                    </span>
                 </a>
-            </p>
-            <p>
-                The desktop app can run offline and you'll see your local stats. You must give your express consent to upload the replay data.
-            </p>
+            </div>
+            <div class="d-flex justify-content-center">
+                <span class="badge bg-light">
+                    <a href="https://www.youtube-nocookie.com/embed/g6Oya8hjIww">YouTube HowTo</a>
+                </span>
+            </div>
         </div>
-        <div>
-            <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/g6Oya8hjIww" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
+            <a href="https://github.com/ipax77/dsstats.service">
+                <img src="_content/sc2dsstats.razorlib/images/GitHub-Mark-Light-64px.png" alt="GitHub" width="30" />
+                <span class="badge bgchart2 text-decoration-underline" style="font-size: 1rem;">
+                    Windows Service
+                </span>
+            </a>
         </div>
     </div>
-    <div class="col-auto">
-        <h3 class="text-warning">sc2dsstats Desktop App</h3>
-        <img src="/images/maui.jpg" alt="Maui" />
-    </div>
-</div>
 
-<div class="row mt-3">
-    <div class="col-auto">
-        <sc2dsstats.razorlib.Stats.TopStatsComponent></sc2dsstats.razorlib.Stats.TopStatsComponent>
-    </div>
-    <div class="col-auto">
-        <sc2dsstats.razorlib.Ratings.TopPlayerRatings RatingType="shared.RatingType.Cmdr"></sc2dsstats.razorlib.Ratings.TopPlayerRatings>
-    </div>
-    <div class="col-auto">
-        <sc2dsstats.razorlib.Ratings.TopPlayerRatings RatingType="shared.RatingType.Std"></sc2dsstats.razorlib.Ratings.TopPlayerRatings>
+    <h3 class="mt-2 fw-bold text-warning">Ressources</h3>
+
+    <div class="row mt-2">
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
+            <a href="https://discord.gg/rKAyaggtqP">
+                <img src="/images/discord.svg" alt="Discord" width="30" />
+                <span class="badge bgchart2 text-decoration-underline" style="font-size: 1rem;">
+                    Discord
+                </span>
+            </a>
+        </div>
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
+            <a href="https://github.com/ipax77/dsstats">
+                <img src="_content/sc2dsstats.razorlib/images/GitHub-Mark-Light-64px.png" alt="GitHub" width="30" />
+                <span class="badge bgchart2 text-decoration-underline" style="font-size: 1rem;">
+                    GitHub Project
+                </span>
+            </a>
+        </div>
+        <div class="col-auto bgchart p-2 ms-2 border rounded mt-1">
+            <a href="https://github.com/ipax77/dsstats/wiki">
+                <img src="_content/sc2dsstats.razorlib/images/GitHub-Mark-Light-64px.png" alt="GitHub" width="30" />
+                <span class="badge bgchart2 text-decoration-underline" style="font-size: 1rem;">
+                    GitHub Wiki
+                </span>
+            </a>
+        </div>
     </div>
 </div>

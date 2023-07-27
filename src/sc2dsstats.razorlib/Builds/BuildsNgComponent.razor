@@ -6,6 +6,15 @@
 @inject NavigationManager NavigationManager
 @implements IDisposable
 
+<style>
+    main {
+        background-image: url('/_content/sc2dsstats.razorlib/images/bingBg.jpeg');
+        background-repeat: repeat;
+        background-attachment: fixed;
+        background-position: center;
+    }
+</style>
+
 <div>
     <CascadingValue Value="BuildRequest">
         <BuildsRequestComponent MauiPlayers="MauiPlayers" OnRequestChanged="Load"></BuildsRequestComponent>
@@ -28,7 +37,7 @@
                 <CmdrSelect Label="Vs" IsSelected="@BuildRequest.Versus" OnCmdrSelected="SelectOpponent"></CmdrSelect>
             </div>
         </div>
-        <div class="col-auto mt-2">
+        <div class="col-auto mt-2 bgchart p-2 border rounded border-secondary">
             <div class="fw-bold text-wrap h3">
                 Average unit count for
                 <span class="text-danger text-nowrap">
@@ -71,12 +80,12 @@
                         <input type="range" class="form-range" value="@((int)breakpoint)" min="1" max="4" step="1" id="spawnrange" @onchange="ChangeBreakpoint">
                     </div>
                 </div>
-                <div class="">
+                <div class="tableFixHead">
                     @{
                         var bp = buildResponse.Breakpoints.FirstOrDefault(f => f.Breakpoint == breakpoint.ToString());
                         int i = 0;
                     }
-                    <table class="table table-dark table-striped w-auto" style="min-width: 450px; overflow-y: auto;">
+                    <table class="tptable tablew-auto" style="min-width: 450px; overflow-y: auto;">
                         <thead>
                             <tr>
                                 <th>Unit</th>
@@ -119,8 +128,8 @@
             </div>
         </div>
         <div class="col-auto isdesktop ms-4 mt-3">
-            <div style="max-height: 650px; overflow: auto;">
-                <table class="table table-sm table-dark">
+            <div class="tableFixHead" style="max-height: 650px; overflow: auto;">
+                <table class="tptable table table-sm">
                     <thead>
                         <tr>
                             <th>Replays</th>

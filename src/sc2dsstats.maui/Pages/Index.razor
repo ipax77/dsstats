@@ -14,7 +14,7 @@
 @inject NavigationManager NavigationManager
 @implements IDisposable
 
-<div class="btn-group border border-3 rounded-2 border-light p-2">
+<div class="btn-group border border-3 rounded-2 border-light p-2 bgchart">
     @if (DecodeService.IsRunning)
     {
         <button type="button" class="btn btn-outline-warning" @onclick="StopDecoding">StopDecoding</button>
@@ -49,7 +49,7 @@
         <div class="row">
             <div class="col-auto">
 
-                <h3 class="text-warning p-2 bg-secondary">Latest Replay</h3>
+                <h3 class="text-warning p-2 bgchart2">Latest Replay</h3>
                 <sc2dsstats.razorlib.Replay.ReplayComponent @ref="replayComponent"
                                                         replayDto="latestReplay"
                                                         OnReplaysRequest="ReplaysToonIdRequest"
@@ -57,7 +57,7 @@
             </div>
         </div>
     </div>
-    <div class="btn-group mt-3">
+    <div class="btn-group mt-3 bgchart">
         <button type="button" class="btn btn-outline-light" @onclick="e => sessionDetails = !sessionDetails">Details</button>
         <button type="button" class="btn btn-outline-warning" @onclick="e => sessionDetails = !sessionDetails">Session</button>
     </div>
@@ -74,7 +74,15 @@
     <button type="button" class="btn btn-primary" @onclick="DecodeService.DEBUGEmulateErrorsTest">Debug Errors</button>
 </div>*@
 
+@*<div class="btn-group">
+    <button type="button" @onclick="e => uploadConfirmModal?.Show()">1</button>
+    <button type="button" @onclick="e => decodeErrorModal?.Show()">2</button>
+    <button type="button" @onclick="e => uploadQuestionModal?.Show()">3</button>
+</div>*@
+
 <UploadConfirmModal @ref="uploadConfirmModal"></UploadConfirmModal>
+@*<DecodeErrorModal @ref="decodeErrorModal"></DecodeErrorModal>
+<UploadQuestionModal @ref="uploadQuestionModal"></UploadQuestionModal>*@
 
 @code {
     ReplayDetailsDto? latestReplay = null;
@@ -83,6 +91,9 @@
     ReplayComponent? replayComponent;
     FrontPageDetails? frontPageDetails;
     SessionProgressComponent? sessionProgressComponent;
+
+    //DecodeErrorModal? decodeErrorModal;
+    //UploadQuestionModal? uploadQuestionModal;
 
     private bool DEBUG = false;
 

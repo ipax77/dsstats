@@ -1,7 +1,7 @@
 ﻿@page "/funstats"
 @using sc2dsstats.maui.Services;
 
-<h3 class="text-warning p-2 bg-secondary">FunStats <small class="text-info">based on Default Filter <span class="oi oi-info pointer" @onclick="BrowserOpenDefaultFilterInfo"></span></small></h3>
+<h3 class="text-warning p-2 bgchart2">FunStats <small class="text-info">based on Default Filter <span class="oi oi-info pointer" @onclick="BrowserOpenDefaultFilterInfo"></span></small></h3>
 
 <sc2dsstats.razorlib.FunStats.FunStatsComponent ToonIds="UserSettingsService.UserSettings.BattleNetInfos.SelectMany(s => s.ToonIds).Select(s => s.ToonId).ToList()" />
 

@@ -34,7 +34,15 @@ class Program
             return;
         }
 
-        if (args[0] == "decode")
+        if (args[0] == "checkblobs")
+        {
+            await BlobCheck.CheckBlobs(args[1]);
+        }
+        else if (args[0] == "checkblob")
+        {
+            BlobCheck.CheckBlob(args[1]);
+        }
+        else if (args[0] == "decode")
         {
             if (!Directory.Exists(args[1]) || !Directory.Exists(args[2]))
             {

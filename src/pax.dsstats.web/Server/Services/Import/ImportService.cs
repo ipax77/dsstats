@@ -112,7 +112,7 @@ public partial class ImportService
             {
                 if (!File.Exists(blob))
                 {
-                    logger.LogError($"blob file not found: {blob}");
+                    logger.LogError("blob file not found: {blob}", blob);
                     continue;
                 }
 
@@ -120,7 +120,7 @@ public partial class ImportService
 
                 if (!Guid.TryParse(blobDir, out Guid uploaderGuid))
                 {
-                    logger.LogError($"failed determining blob guid from directory name. {blob}");
+                    logger.LogError("failed determining blob guid from directory name. {blob}", blob);
                     continue;
                 }
 
@@ -131,19 +131,19 @@ public partial class ImportService
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError($"failed getting replays from {blob}: {ex.Message}");
+                    logger.LogError("failed getting replays from {blob}: {Message}", blob, ex.Message);
                     continue;
                 }
 
                 if (!blobCaches.TryAdd(blob, new() { Blob = blob, Count = replays.Count }))
                 {
-                    logger.LogWarning($"blob cache add failed: {blob} already exists!");
+                    logger.LogWarning("blob cache add failed: {blob} already exists!", blob);
                     continue;
                 }
 
                 dbCache.Uploaders.TryGetValue(uploaderGuid, out int uploaderId);
                 
-                await MapPlayers(replays);
+                await MapPlayers(replays, uploaderId);
 
                 foreach (var replay in replays)
                 {
@@ -151,14 +151,14 @@ public partial class ImportService
                     replay.Blobfile = blob;
                     if (!ImportChannel.Writer.TryWrite(replay))
                     {
-                        logger.LogError($"failed writing replay to import channel {replay.ReplayHash}");
+                        logger.LogError("failed writing replay to import channel {ReplayHash}", replay.ReplayHash);
                     };
                 }
             }
         }
         catch (Exception ex)
         {
-            logger.LogError($"failed importing replayblobs: {ex.Message}");
+            logger.LogError("failed importing replayblobs: {Message}", ex.Message);
         }
         finally
         {

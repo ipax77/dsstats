@@ -7,7 +7,7 @@
     <CmdrStrengthRequest Request="Request" OnRequestChanged="RequestChanged"></CmdrStrengthRequest>
 </div>
 
-<div class="mt-2">
+<div class="mt-2 bgchart d-inline-block p-1">
     <p class="text-warning">
         Only replays with no leavers were used.
         AvgRating is the average rating of players that picked the corresponding commander in the given time period.
@@ -35,10 +35,10 @@ else
                 <CmdrStrengthTable @ref="cmdrStrengthTable" Result="result" OnTableHover="TableHover"></CmdrStrengthTable>
             </div>
             <div class="col-auto">
-                <div class="border rounded border-secondary" style="min-width: 550px; width: 44vw; height: calc(44vw * 0.5); min-height: 275px;">
+                <div class="border rounded border-secondary bgchart" style="min-width: 550px; width: 44vw; height: calc(44vw * 0.5); min-height: 275px;">
                     <CmdrStrengthChart @ref="cmdrStrengthChart" Request="Request" Result="result" OnBubbleHover="BubbleHover"></CmdrStrengthChart>
                 </div>
-                <div style="min-width: 550px; max-width: 45vw;">
+                <div class="bgchart border rounded border-secondary" style="min-width: 550px; max-width: 45vw;">
 @*                    @if (result.Items.Any(a => a.Matchups < 961))
                     {
                         <div class="ms-2 mt-2 p-2 bg-dark">
@@ -51,7 +51,7 @@ else
                     }*@
                     @if (Request.Interest == Commander.None)
                     {
-                        <div class="ms-2 mt-2 p-2 bg-dark">
+                        <div class="ms-2 mt-2 p-2">
                             <h3 class="text-warning">Interpretation</h3>
                             <p class="fw-bold">
                                 TL;DR Top right is good, bottom left is bad
@@ -72,7 +72,7 @@ else
                     }
                     else
                     {
-                        <div class="ms-2 mt-2 p-2 bg-dark">
+                        <div class="ms-2 mt-2 p-2">
                             <h3 class="text-warning">Interpretation</h3>
                             <p class="fw-bold">
                                 TL;DR Top right <span class="text-warning">@Request.Interest</span> is good against, bottom left is bad
@@ -93,8 +93,8 @@ else
                     }
                 </div>
             </div>
-            <div class="col-auto">
-                <div class="ms-2 mt-2 p-2 bg-dark" style="max-width: 1000px;">
+            <div class="col-auto bgchart border rounded border-secondary">
+                <div class="ms-2 mt-2 p-2" style="max-width: 1000px;">
                     <p>
                         The <b>Strength</b> value is a measure of a commander's overall effectiveness in StarCraft II Direct Strike, calculated based on factors such as their win rate, average rating, and matchup frequency. It gives an indication of how well a commander is performing in the game, with higher values indicating greater strength.
                     </p>

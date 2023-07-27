@@ -9,7 +9,7 @@
 
 <EditForm EditContext="editContext">
     <div class="row align-items-center">
-        <div class="col-auto btn-group-vertical">
+        <div class="col-auto btn-group-vertical bgchart">
             <div class="btn-group">
                 <button type="button" class="btn btn-outline-warning" @onclick="e => TopPlayers(true)">Top Std</button>
                 <button type="button" class="btn btn-outline-warning" @onclick="e => TopPlayers(false)">Top Cmdr</button>
@@ -51,7 +51,7 @@
             </label>
         </div>
         <div class="col-auto form-group" style="max-width: 250px;">
-            <select id="playerselect" class="selectpicker" multiple aria-label="playerselect" @onchange="PlayersSelected">
+            <select id="playerselect" class="selectpicker bgchart" multiple aria-label="playerselect" @onchange="PlayersSelected">
                 <option value="All" selected>All Players</option>
                 @foreach (var player in requestNames)
                 {
@@ -59,7 +59,7 @@
                 }
             </select>
         </div>
-        <div class="col-auto btn-group-vertical">
+        <div class="col-auto btn-group-vertical bgchart">
             <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => playerSelectModal?.Show()">Add Player</button>
             <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => playerDeselectModal?.Show()">Remove Player</button>
         </div>

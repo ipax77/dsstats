@@ -9,7 +9,7 @@
         <BuildsRatingRequestComponent OnRequestChanged="e => LoadData()"></BuildsRatingRequestComponent>
     </CascadingValue>
 </div>
-<div>
+<div class="bgchart d-inline-block p-1">
     <p class="text-warning">
         Builds by player ratings. The average unit count for players within the range of the specified player ratings.
     </p>
@@ -21,8 +21,8 @@
             <CmdrSelect Label="Vs" IsSelected="@Request.Vs" OnCmdrSelected="SelectOpponent"></CmdrSelect>
         </div>
     </div>
-    <div class="col-auto">
-        <div class="mt-2">
+    <div class="col-auto bgchart">
+        <div class="mt-2 ">
             <div class="d-flex">
                 <div>
                     <h3>Average Unit Count for <span class="text-warning">@Request.Interest</span>
@@ -67,11 +67,11 @@
                         </div>
                     }
                     <div class="d-flex justify-content-center">
-                        <div class="table-responsive">
+                        <div class="table-responsive tableFixHead">
                             <div>
                                 <h6>Player Ratings Range <span class="text-danger">@(Request.FromRating <= Data.MinBuildRating ? "0" : $"{Request.FromRating}") - @(Request.ToRating >= Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" : $"{Request.ToRating}")</span></h6>
                             </div>
-                            <table class="table table-dark w-auto">
+                            <table class="tptable table w-auto">
                                 <thead>
                                     <tr>
                                         <th>Unit</th>
@@ -84,8 +84,8 @@
                                         int i = 0;
                                         @foreach (var unit in response.Units.OrderByDescending(o => o.Avg))
                                         {
-                                            <div class="d-none">@(i++)</div>
-                                            <tr class="@GetTableClass(i)">
+                                            { i++; }
+                                            <tr>
                                                 <td>@unit.Name</td>
                                                 <td>@unit.Avg.ToString("N2", CultureInfo.InvariantCulture)</td>
                                             </tr>
@@ -115,11 +115,11 @@
                                     </div>                            
                                 </div>
                             }
-                            <div class="table-responsive">
+                            <div class="table-responsive tableFixHead">
                                 <div>
                                     <h6>Player Ratings Range <span class="text-danger">@(compareFrom <= Data.MinBuildRating ? "0" : $"{compareFrom}") - @(compareTo >= Data.MaxBuildRating ? $"{Data.MaxBuildRating}+" : $"{compareTo}")</span></h6>
                                 </div>
-                                <table class="table table-dark w-auto">
+                                <table class="tptable table w-auto">
                                     <thead>
                                         <tr>
                                             <th>Unit</th>
@@ -134,8 +134,9 @@
                                             @foreach (var unit in compareResponse.Units.OrderByDescending(o => o.Avg))
                                             {
                                                 var diff = GetDiff(unit);
-                                                <div class="d-none">@(i++)</div>
-                                                <tr class="@GetTableClass(i)">
+                                                
+                                                { i++; }
+                                                <tr>
                                                     <td>@unit.Name</td>
                                                     <td>@unit.Avg.ToString("N2", CultureInfo.InvariantCulture)</td>
                                                     <td>

@@ -6,43 +6,11 @@
 @inject IDsUpdateService dsupdateSerivce
 @implements IDisposable
 
-<style>
-    .tableFixHead {
-        overflow-y: auto;
-        overflow-x: auto;
-        max-height: 600px;
-        max-width: 1200px;
-    }
-
-        .tableFixHead thead th {
-            position: sticky;
-            top: 0;
-        }
-
-    table {
-        border-collapse: collapse;
-        width: 100%;
-    }
-
-    th, td {
-        padding: 8px 16px;
-        white-space: nowrap;
-    }
-
-    th {
-        background: purple;
-    }
-
-    .tablebackground {
-        position: absolute;
-        z-index: -1;
-        opacity: 0.15;
-    }
-</style>
-
 <div class="row">
-    <div class="col-auto">
-        <span class="text-info">Patch notes</span>
+    <div class="col-auto bgchart border rounded border-secondary">
+        <div class="mt-2">
+            <span class="text-info">Patch notes</span>
+        </div>
     </div>
     <div class="col-auto">
         <label class="form-label">
@@ -66,8 +34,8 @@
         </label>
     </div>
 </div>
-<div class="mt-2 table-responsive tableFixHead">
-    <table class="table table-dark table-hover">
+<div class="mt-2 tableFixHead" style="width: 1200px; height: 600px;">
+    <table class="tptable table">
         <thead>
             <tr>
                 <CascadingValue Value="tableOrders">

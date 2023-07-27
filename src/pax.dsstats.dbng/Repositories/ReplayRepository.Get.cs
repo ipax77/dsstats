@@ -11,6 +11,7 @@ public partial class ReplayRepository
     public async Task<int> GetReplaysCountNg(ReplaysRequest request, CancellationToken token = default)
     {
         var replays = GetRequestReplaysNg(request);
+        replays = GetAdvReplays(replays, request);
         return await replays.CountAsync(token);
     }
 
@@ -22,6 +23,7 @@ public partial class ReplayRepository
         }
 
         var replays = GetRequestReplaysNg(request);
+        replays = GetAdvReplays(replays, request);
 
         replays = SortReplays(request, replays);
 

@@ -8,12 +8,18 @@
 @inject IDataService dataService
 @implements IDisposable
 
+<style>
+    th {
+        padding: 2px 4px !important;
+    }
+</style>
+
 <div class="row @(Interest == null ? "" : "visually-hidden")">
     <div class="col-auto">
         <div class="card" style="max-width: 1200px; min-width: 600px;">
-            <div class="card-header">
+            <div class="card-header bgchart2">
                 <div class="row fw-bolder">
-                    <div class="col">@replayDto.GameTime.ToShortDateString()</div>
+                    <div class="col">@replayDto.GameTime.ToString("yyyy-MM-dd")</div>
                     <div class="col">Duration @duration</div>
                     <div class="col">
                         @replayDto.GameMode
@@ -25,7 +31,7 @@
                     <div class="col-2"><span class="oi oi-x text-danger pointer" @onclick="e => OnCloseRequested.InvokeAsync()"></span></div>
                 </div>
             </div>
-            <div class="card-body">
+            <div class="card-body bgchart">
                 @if (showMiddleChart)
                 {
                     <div style="position: relative; width: 50vw; min-width: 600px; max-width: 1000px; height: calc(50vw * 0.5); min-height: 300px; max-height: 500px;">
@@ -60,7 +66,7 @@
                                 <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => showMiddleChart = !showMiddleChart)">Middle Control @(i == 1 ? mid1 : mid2)%</button>
                             </div>
                             <div class="table-responsive" style="max-width: 560px;">
-                                <table class="table table-sm table-hover table-dark pointer">
+                                <table class="tptable table table-sm w-auto pointer">
                                     <thead>
                                         <tr>
                                             <th style="width: 30px;">#</th>
@@ -81,24 +87,25 @@
                                     <tbody>
                                         @foreach (var player in players)
                                         {
-                                            <tr class="@GetPlayerTableRowCss(player)" @onclick="@(() => showBuilds[player.GamePos] = !showBuilds[player.GamePos])">
-                                                <td class="table-dark">@player.GamePos</td>
+                                            var tableclass = @GetPlayerTableRowCss(player);
+                                            <tr @onclick="@(() => showBuilds[player.GamePos] = !showBuilds[player.GamePos])">
+                                                <td>@player.GamePos</td>
                                                 @if (hasMmrChanges)
                                                 {
-                                                    <td class="table-dark">
+                                                    <td>
                                                         <span class="oi @(player.MmrChange.GetValueOrDefault(0) < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">@player.MmrChange.GetValueOrDefault(0).ToString("N1", CultureInfo.InvariantCulture)</span>
                                                     </td>
                                                 }
-                                                <td>
+                                                <td class="@tableclass">
                                                     <span @onclick:stopPropagation @onclick="e => ShowPlayerDetails(player.Player)" class="d-inline-block text-truncate text-decoration-underline" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
                                                         @player.Name
                                                     </span>
                                                 </td>
-                                                <td>@player.APM</td>
-                                                <td>
+                                                <td class="@tableclass">@player.APM</td>
+                                                <td class="@tableclass">
                                                     <input id="@($"showbuild{player.GamePos}")" name="@($"showbuild{player.GamePos}")" type="checkbox" class="form-check-input" checked="@showBuilds[player.GamePos]" />
                                                 </td>
-                                                <td>
+                                                <td class="@tableclass">
                                                     <div class="d-flex">
                                                         <img src="@HelperService.GetImageSrc(player.Race)"
                                                      alt="@player.Race"
@@ -108,9 +115,9 @@
                                                         <span><small>@player.Race</small></span>
                                                     </div>
                                                 </td>
-                                                <td>@HelperService.GetBigNumberString(player.Income)</td>
-                                                <td>@HelperService.GetBigNumberString(player.Army)</td>
-                                                <td>@HelperService.GetBigNumberString(player.Kills)</td>
+                                                <td class="@tableclass">@HelperService.GetBigNumberString(player.Income)</td>
+                                                <td class="@tableclass">@HelperService.GetBigNumberString(player.Army)</td>
+                                                <td class="@tableclass">@HelperService.GetBigNumberString(player.Kills)</td>
                                             </tr>
                                         }
                                     </tbody>
@@ -152,7 +159,7 @@
                     <ReplayRatingInfo @ref="replayRatingInfo" ReplayRatingDto="replayDto.ReplayRatingInfo"></ReplayRatingInfo>
                 </div>
             </div>
-            <div class="card-footer">
+            <div class="card-footer bgchart2">
                 <CascadingValue Value="replayDto">
                     <ReplayFooter OnCloseRequested="OnCloseRequested" HideCloseButton="HideCloseButton"></ReplayFooter>
                 </CascadingValue>
@@ -183,7 +190,7 @@
                 Breakpoint @(breakpoint != Breakpoint.All ? breakpoint.ToString() : $"Min{TimeSpan.FromSeconds(replayDto.Duration).ToString(@"mm")}")
             </span>
         </div>
-        <div class="col-auto" style="min-width: 175px;">
+        <div class="col-auto ms-2 mt-1" style="min-width: 175px;">
             <input type="range" class="form-range" value="@((int)breakpoint)" min="1" max="@breakpointsCount" step="1" id="spawnrange" @onchange="MoveSpawn">
         </div>
     </div>

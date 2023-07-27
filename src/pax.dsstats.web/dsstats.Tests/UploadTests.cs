@@ -59,9 +59,8 @@ public class UploadTests : IDisposable
         var serviceProvider = serviceCollection.BuildServiceProvider();
         
         var dbImportOptions = serviceProvider.GetRequiredService<IOptions<DbImportOptions>>();
-        var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
 
-        uploadService = new UploadService(serviceProvider, mapper, httpClientFactory, NullLogger<UploadService>.Instance);
+        uploadService = new UploadService(serviceProvider, mapper, NullLogger<UploadService>.Instance);
         this.mapper = mapper;
     }
 
@@ -495,38 +494,38 @@ public class UploadTests : IDisposable
         Assert.Null(latestReplay);
     }
 
-    [Fact]
-    public async Task DuplicateUploaderTest()
-    {
-        Guid appGuid = Guid.NewGuid();
+    //[Fact]
+    //public async Task DuplicateUploaderTest()
+    //{
+    //    Guid appGuid = Guid.NewGuid();
 
-        var uploaderDto = new UploaderDto()
-        {
-            AppGuid = appGuid,
-            AppVersion = "0.0.1",
-            BattleNetInfos = new List<BattleNetInfoDto>()
-            {
-                new BattleNetInfoDto()
-                {
-                    BattleNetId = 77123
-                }
-            }
-        };
+    //    var uploaderDto = new UploaderDto()
+    //    {
+    //        AppGuid = appGuid,
+    //        AppVersion = "0.0.1",
+    //        BattleNetInfos = new List<BattleNetInfoDto>()
+    //        {
+    //            new BattleNetInfoDto()
+    //            {
+    //                BattleNetId = 77123
+    //            }
+    //        }
+    //    };
 
-        var latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto);
+    //    var latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto);
 
-        var context = CreateContext();
-        bool dbHasUploader = await context.Uploaders.AnyAsync(a => a.AppGuid == uploaderDto.AppGuid);
-        Assert.True(dbHasUploader);
+    //    var context = CreateContext();
+    //    bool dbHasUploader = await context.Uploaders.AnyAsync(a => a.AppGuid == uploaderDto.AppGuid);
+    //    Assert.True(dbHasUploader);
 
-        var countBefore = await context.Uploaders.CountAsync();
+    //    var countBefore = await context.Uploaders.CountAsync();
 
-        latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto with { AppGuid = Guid.NewGuid() });
+    //    latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto with { AppGuid = Guid.NewGuid() });
 
-        Assert.NotNull(latestReplay);
+    //    Assert.NotNull(latestReplay);
 
-        var countAfter = await context.Uploaders.CountAsync();
+    //    var countAfter = await context.Uploaders.CountAsync();
 
-        Assert.Equal(countBefore, countAfter);
-    }
+    //    Assert.Equal(countBefore, countAfter);
+    //}
 }

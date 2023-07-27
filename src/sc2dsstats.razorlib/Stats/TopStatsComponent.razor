@@ -1,36 +1,42 @@
-﻿@using pax.dsstats.shared;
+﻿@using System.Globalization;
+@using Microsoft.JSInterop;
+@using pax.dsstats.shared;
+@using pax.dsstats.shared.Interfaces;
 @using sc2dsstats.razorlib.Services;
-@inject IDataService dataService
+@inject IWinrateService winrateService
+@inject IJSRuntime JSRuntime
 @implements IDisposable
 
-@if (statsResponse != null)
+@if (response != null)
 {
     <div>
         <h3 class="text-warning fw-bold"><a href="/stats">Top Commanders</a> past 90 days</h3>
     </div>
-    <div class="table-responsive">
-        <table class="table table-sm table-dark">
+    <div class="table-responsive tableFixHead">
+        <table class="tptable table table-sm">
             <thead>
                 <tr>
                     <th>Commander</th>
+                    <th><spnn data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Average rating gain">AvgGain</spnn></th>
                     <th>Winrate</th>
                     <th>Matchups</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var item in statsResponse.Items.OrderByDescending(o => o.Winrate).Take(7))
+                @foreach (var item in response.WinrateEnts.OrderByDescending(o => o.AvgGain).Take(7))
                 {
                     <tr>
                         <td>
-                            <img src="@HelperService.GetImageSrc(item.Cmdr)"
-                                 alt="@item.Label"
-                                 title="@item.Label"
+                            <img src="@HelperService.GetImageSrc(item.Commander)"
+                                 alt="@item.Commander"
+                                 title="@item.Commander"
                                  width="30"
                                  height="30" />
-                            @item.Label
+                            @item.Commander
                         </td>
-                        <td>@item.Winrate.ToString("N2") %</td>
-                        <td class="text-center">@item.Matchups</td>
+                        <td><span class="text-warning fw-bold">@item.AvgGain.ToString("N2", CultureInfo.InvariantCulture)</span></td>
+                        <td>@HelperService.GetPercentageString(item.Wins, item.Count)</td>
+                        <td class="text-center">@item.Count</td>
                     </tr>
                 }
             </tbody>
@@ -39,16 +45,14 @@
 }
 
 @code {
-    private StatsRequest statsRequest = new()
-        {
-            StatsMode = StatsMode.Winrate,
-            TimePeriod = TimePeriod.Past90Days,
-            Uploaders = false,
-            DefaultFilter = true,
-            GameModes = new() { GameMode.Commanders, GameMode.CommandersHeroic }
-        };
+    private WinrateRequest WinrateRequest = new()
+    {
+        TimePeriod = TimePeriod.Past90Days,
+        RatingType = RatingType.Cmdr,
+        Interest = Commander.None
+    };
 
-    private StatsResponse? statsResponse;
+    private WinrateResponse? response;
     private CancellationTokenSource cts = new();
 
     protected override void OnAfterRender(bool firstRender)
@@ -56,13 +60,14 @@
         if (firstRender)
         {
             _ = LoadData();
+            JSRuntime.InvokeVoidAsync("enableTooltips");
         }
         base.OnAfterRender(firstRender);
     }
 
     private async Task LoadData()
     {
-        statsResponse = await dataService.GetStats(statsRequest, cts.Token);
+        response = await winrateService.GetWinrate(WinrateRequest, cts.Token);
         await InvokeAsync(() => StateHasChanged());
     }
 

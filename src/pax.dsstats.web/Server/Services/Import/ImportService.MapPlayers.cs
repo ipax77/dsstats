@@ -1,21 +1,26 @@
 
+using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
 
 namespace pax.dsstats.web.Server.Services.Import;
 
 public partial class ImportService
 {
-    private async Task<int> MapPlayers(List<Replay> replays)
+    private async Task<int> MapPlayers(List<Replay> replays, int uploaderId)
     {
         int newPlayers = await CreateMissingPlayers(replays);
-        MapReplayPlayerPlayers(replays);
+        MapReplayPlayerPlayers(replays, uploaderId);
         return newPlayers;
     }
 
-    private void MapReplayPlayerPlayers(List<Replay> replays)
+    private async void MapReplayPlayerPlayers(List<Replay> replays, int uploaderId)
     {
+        Uploader? uploader = null;
         for (int i = 0; i < replays.Count; i++)
         {
+            ReplayPlayer? uploaderPlayer = null;
+            Dictionary<int, shared.Arcade.PlayerId> playerIds = new();
+
             foreach (var rp in replays[i].ReplayPlayers)
             {
                 if (rp.Player == null)
@@ -23,7 +28,13 @@ public partial class ImportService
                     continue;
                 }
 
+                if (rp.IsUploader)
+                {
+                    uploaderPlayer = rp;
+                }
+
                 var playerId = dbCache.Players[new(rp.Player.ToonId, rp.Player.RealmId, rp.Player.RegionId)];
+                playerIds[playerId] = new(rp.Player.ToonId, rp.Player.RealmId, rp.Player.RegionId);
 
                 // todo: fix regionId !?
 
@@ -32,7 +43,46 @@ public partial class ImportService
                 rp.Player = null;
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
             }
+
+            if (uploaderPlayer == null)
+            {
+                uploader = await SetUploader(replays[i], uploader, uploaderId, playerIds);
+            }
         }
+    }
+
+    private async Task<Uploader?> SetUploader(Replay replay,
+                                              Uploader? uploader,
+                                              int uploaderId,
+                                              Dictionary<int, shared.Arcade.PlayerId> playerIds)
+    {
+        if (uploader == null)
+        {
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+            uploader = await context.Uploaders
+                .Include(i => i.Players)
+                .FirstOrDefaultAsync(f => f.UploaderId == uploaderId);
+        }
+
+        if (uploader == null)
+        {
+            return null;
+        }
+
+        foreach (var rp in replay.ReplayPlayers)
+        {
+            if (playerIds.TryGetValue(rp.PlayerId, out var playerId)
+                && uploader.Players.Any(a => a.ToonId == playerId.ToonId
+                    && a.RegionId == playerId.RegionId
+                    && a.RealmId == playerId.RealmId))
+            {
+                rp.IsUploader = true;
+            }
+        }
+
+        return uploader;
     }
 
     private async Task<int> CreateMissingPlayers(List<Replay> replays)
@@ -52,7 +102,7 @@ public partial class ImportService
                 if (rp.Player.RealmId == 0)
                 {
                     rp.Player.RealmId = 1;
-                    
+
                     if (regionId == 0)
                     {
                         regionId = GetReplayRegion(replay);
@@ -98,6 +148,21 @@ public partial class ImportService
             playerId = dbCache.Players[new(player.ToonId, player.RealmId, player.RegionId)] = player.PlayerId;
         }
         return playerId;
+    }
+
+    public async Task<int> CreateUploader(Uploader uploader)
+    {
+        if (!dbCache.Uploaders.TryGetValue(uploader.AppGuid, out int uploaderId))
+        {
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+            context.Uploaders.Add(uploader);
+            await context.SaveChangesAsync();
+
+            uploaderId = dbCache.Uploaders[uploader.AppGuid] = uploader.UploaderId;
+        }
+        return uploaderId;
     }
 
     public int GetReplayRegion(Replay replay)

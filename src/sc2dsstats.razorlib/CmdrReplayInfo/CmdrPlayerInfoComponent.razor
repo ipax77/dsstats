@@ -4,61 +4,61 @@
 @using System.Globalization
 @using sc2dsstats.razorlib.Extensions
 
-<div class="table-responsive tableFixHead">
-    <table class="table table-dark table-striped table-hover w-auto">
+<div class="table-responsive tableFixHead" style="max-height: 80vh; max-width: 900px;">
+    <table class="tptable table w-auto">
         <thead class="user-select-none">
             <CascadingValue Value="orders">
                 <tr>
                     <th></th>
-                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.Pos)))">
+                    <th class="pointer" @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.Pos)))">
                         <SortArrow Property="@nameof(CmdrPlayerInfo.Pos)">
                             #
                         </SortArrow>
                     </th>
-                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.RegionId)))">
+                    <th class="pointer" @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.RegionId)))">
                         <SortArrow Property="@nameof(CmdrPlayerInfo.RegionId)">
                             <div class="text-center">
                                 <span class="oi oi-globe rounded-circle bg-primary p-1"></span>
                             </div>
                         </SortArrow>
                     </th>
-                    <th scope="col" class="pointer"
+                    <th class="pointer"
                         @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.Name)))">
                         <SortArrow Property="@nameof(CmdrPlayerInfo.Name)">
                             Name
                         </SortArrow>
                     </th>
-                    <th scope="col" class="pointer text-info"
+                    <th class="pointer text-info"
                         @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.Strength)))">
                         <SortArrow Property="@nameof(CmdrPlayerInfo.Strength)">
                             Strength
                         </SortArrow>
                     </th>                    
-                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.Count)))">
+                    <th class="pointer" @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.Count)))">
                         <SortArrow Property="@nameof(CmdrPlayerInfo.Count)">
                             Games
                         </SortArrow>
                     </th>
-                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Winrate"))">
+                    <th class="pointer" @onclick="@(e => SortList(e, "Winrate"))">
                         <SortArrow Property="Winrate">
                             Winrate
                         </SortArrow>
                     </th>
-                    <th scope="col" class="pointer text-warning"
+                    <th class="pointer text-warning"
                         @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.AvgRating)))">
                         <SortArrow Property="@nameof(CmdrPlayerInfo.AvgRating)">
                             <span data-bs-toggle="tooltip" data-bs-placement="top"
                                   data-bs-title="Average rating over all replays with the selected commander">Rating</span>
                         </SortArrow>
                     </th>
-                    <th scope="col" class="pointer" style="z-index: 1;"
+                    <th class="pointer" style="z-index: 1;"
                         @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.AvgGain)))">
                         <SortArrow Property="@nameof(CmdrPlayerInfo.AvgGain)">
                             <span data-bs-toggle="tooltip" data-bs-placement="top"
                                   data-bs-title="Average gain in rating over all replays with the selected commander">AvgGain</span>
                         </SortArrow>
                     </th>
-                    <th scope="col" class="pointer" style="z-index: 1;"
+                    <th class="pointer" style="z-index: 1;"
                         @onclick="@(e => SortList(e, nameof(CmdrPlayerInfo.TeamRating)))">
                         <SortArrow Property="@nameof(CmdrPlayerInfo.TeamRating)">
                             <span data-bs-toggle="tooltip" data-bs-placement="top"

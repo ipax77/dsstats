@@ -4,10 +4,12 @@
 @inject IServerStatsService serverStatsService
 
 <h3>Server Stats</h3>
-<p class="text-warning">
-    Stats for gamemode Commanders, CommandersHeroic and Standard with player count 6 (3v3)
-</p>
 
+<div class="bgchart d-inline-block p-1">
+    <p class="text-warning">
+        Stats for gamemode Commanders, CommandersHeroic and Standard with player count 6 (3v3)
+    </p>
+</div>
 <div>
     @if (isLoading)
     {
@@ -17,13 +19,13 @@
     }
     @if (Results.Any())
     {
-        <div class="border rounded border-secondary mt-2" style="min-width: 550px; width: 66vw; height: calc(66vw * 0.5); min-height: 275px;">
+        <div class="border rounded border-secondary bgchart mt-2" style="min-width: 550px; width: 66vw; height: calc(66vw * 0.5); min-height: 275px;">
             <ServerStatsChart Results="Results" Title="@($"SC2Arcade ∑{HelperService.GetBigNumberString(Results.Sum(s => s.Count))}")" />
         </div>
     }
     @if (DsResults.Any())
     {
-        <div class="border rounded border-secondary ms-2" style="min-width: 550px; width: 66vw; height: calc(66vw * 0.5); min-height: 275px;">
+        <div class="border rounded border-secondary bgchart ms-2" style="min-width: 550px; width: 66vw; height: calc(66vw * 0.5); min-height: 275px;">
             <ServerStatsChart Results="DsResults" Title="@($"dsstats ∑{HelperService.GetBigNumberString(DsResults.Sum(s => s.Count))}")" />
         </div>
     }

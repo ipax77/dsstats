@@ -1,17 +1,24 @@
 
 using Microsoft.EntityFrameworkCore;
+using pax.dsstats.shared.Arcade;
 
 namespace pax.dsstats.dbng.Services;
 
 public partial class CheatDetectService
 {
-    public async Task<CheatResult> AdjustReplays()
+    private static readonly int upgradeIdGameOver = 505;
+    private static readonly int updadeIdVictory = 504;
+
+    public async Task<CheatResult> AdjustReplays(DateTime fromDate)
     {
         var replays = await context.Replays
             .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Player)
                     .ThenInclude(i => i.Uploader)
-            .Where(x => x.WinnerTeam == 0
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Upgrades)
+            .Where(x => x.Imported >= fromDate
+              && x.WinnerTeam == 0
               && x.Playercount == 6
               && x.Duration >= 60)
             .ToListAsync();
@@ -20,19 +27,33 @@ public partial class CheatDetectService
 
         foreach (var replay in replays)
         {
-            await AdjustReplay(context, replay, cheatResult, true);
+            if (await AdjustReplay(context, replay, cheatResult, true))
+            {
+                cheatResult.DcGames++;
+            }
+            else
+            {
+                cheatResult.UnknownGames++;
+            }
         }
 
+        await context.SaveChangesAsync();
         return cheatResult;
     }
 
     public static async Task<bool> AdjustReplay(ReplayContext context, Replay replay, CheatResult cheatResult, bool init = false)
     {
-        if (replay.WinnerTeam != 0
+        if (!init &&
+            (replay.WinnerTeam != 0
             || replay.Playercount != 6
-            || replay.Duration < 60)
+            || replay.Duration < 60))
         {
             return false;
+        }
+
+        if (CheckPlayerStateVictory(replay))
+        {
+            return true;
         }
 
         if (!init)
@@ -64,7 +85,64 @@ public partial class CheatDetectService
         return true;
     }
 
-    private static void CorrectResult(Replay replay, int winnerTeam)
+    private static bool CheckPlayerStateVictory(Replay replay)
+    {
+        if (replay.GameTime <= new DateTime(2023, 3, 30))
+        {
+            return false;
+        }
+
+        int team1Win = 0;
+        int team2Win = 0;
+        foreach (var replayPlayer in replay.ReplayPlayers)
+        {
+            var gameOver = replayPlayer.Upgrades
+                .FirstOrDefault(f => f.UpgradeId == upgradeIdGameOver);
+
+            if (gameOver == null)
+            {
+                continue;
+            }
+
+            var victory = replayPlayer.Upgrades
+                .FirstOrDefault(f => f.UpgradeId == updadeIdVictory);
+
+            if (victory != null)
+            {
+                if (replayPlayer.Team == 1)
+                {
+                    team1Win++;
+                }
+                else if (replayPlayer.Team == 2)
+                {
+                    team2Win++;
+                }
+            }
+        }
+
+        if (team1Win == 0 && team2Win == 0)
+        {
+            return false;
+        }
+        else
+        {
+            if (team1Win > team2Win)
+            {
+                CorrectResult(replay, 1, true);
+            }
+            else if (team2Win > team1Win)
+            {
+                CorrectResult(replay, 2, true);
+            }
+            else
+            {
+                return false;
+            }
+            return true;
+        }
+    }
+
+    private static void CorrectResult(Replay replay, int winnerTeam, bool trusted = false)
     {
         foreach (var replayPlayer in replay.ReplayPlayers)
         {
@@ -78,7 +156,14 @@ public partial class CheatDetectService
             }
         }
         replay.WinnerTeam = winnerTeam;
-        replay.ResultCorrected = true;
+        if (!trusted)
+        {
+            replay.ResultCorrected = true;
+        }
+        else
+        {
+            replay.ResultCorrected = false;
+        }
     }
 
     private static ReplayPlayer? GetUploaderReplayPlayer(Replay replay)

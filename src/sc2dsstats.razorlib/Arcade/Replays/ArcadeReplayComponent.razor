@@ -1,18 +1,20 @@
 ﻿@using System.Globalization;
+@using Microsoft.JSInterop;
 @using pax.dsstats.shared.Arcade;
 @using pax.dsstats.shared;
+@inject IJSRuntime JSRuntime
 
-<div class="card" style="max-width: 900px; min-width: 500px;">
-    <div class="card-header">
+<div class="card" style="max-width: 1000px; min-width: 500px;">
+    <div class="card-header bgchart2">
         <div class="row fw-bolder">
-            <div class="col">@Replay.CreatedAt.ToShortDateString()</div>
+            <div class="col">@Replay.CreatedAt.ToString("yyyy-MM-dd")</div>
             <div class="col">Duration @TimeSpan.FromSeconds(Replay.Duration).ToString(@"hh\:mm\:ss")</div>
             <div class="col">Region @Data.GetRegionString(Replay.RegionId)</div>
             <div class="col">Mode @Replay.GameMode</div>
             <div class="col-2"><span class="oi oi-x text-danger pointer" @onclick="e => OnCloseRequested.InvokeAsync()"></span></div>
         </div>
     </div>
-    <div class="card-body">
+    <div class="card-body bgchart">
         <div class="row">
             @for (int i = 1; i <= 2; i++)
             {
@@ -58,7 +60,7 @@
                         }
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-dark table-striped w-auto">
+                        <table class="tptable table w-auto">
                             <thead>
                                 <tr>
                                     <th>#</th>
@@ -66,7 +68,8 @@
                                     <th>Name</th>
                                     <th>Rating</th>
                                     <th>Games</th>
-                                    <th>Disc</th>
+                                    <th><span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Consistency">Cons</span></th>
+                                    <th><span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Confidence">Conf</span></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -97,9 +100,8 @@
                                         <td>
                                             @plRating?.Games
                                         </td>
-                                        <td>
-                                            @player.Discriminator
-                                        </td>
+                                        <td>@plRating?.Consistency</td>
+                                        <td>@plRating?.Confidence</td>
                                     </tr>
                                 }
                             </tbody>
@@ -109,7 +111,7 @@
             }
         </div>
     </div>
-    <div class="card-footer">
+    <div class="card-footer bgchart2">
         <button type="button" class="btn btn-sm btn-danger" @onclick="e => OnCloseRequested.InvokeAsync()">Close</button>
     </div>
 </div>
@@ -123,4 +125,13 @@
 
     [Parameter]
     public EventCallback<int> OnPlayerRequested { get; set; }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            JSRuntime.InvokeVoidAsync("enableTooltips");
+        }
+        base.OnAfterRender(firstRender);
+    }
 }

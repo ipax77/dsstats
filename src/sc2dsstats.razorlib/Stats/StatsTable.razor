@@ -2,39 +2,8 @@
 @using sc2dsstats.razorlib.Extensions;
 @using sc2dsstats.razorlib.Services;
 
-<style>
-    .tableFixHead {
-        overflow-y: auto;
-    }
-
-        .tableFixHead thead th {
-            position: sticky;
-            top: 0;
-        }
-
-    table {
-        border-collapse: collapse;
-        width: 100%;
-    }
-
-    th, td {
-        padding: 8px 16px;
-        white-space: nowrap;
-    }
-
-    th {
-        background: purple;
-    }
-
-    .tablebackground {
-        position: absolute;
-        z-index: -1;
-        opacity: 0.15;
-    }
-</style>
-
 <div class="table-responsive tableFixHead">
-    <table class="table table-dark table-hover w-auto">
+    <table class="tptable table w-auto">
         <colgroup>
             <col class="col">
             <col class="col">

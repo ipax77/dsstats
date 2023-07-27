@@ -56,9 +56,7 @@ public class DuplicateTest : IDisposable
 
         var serviceProvider = serviceCollection.BuildServiceProvider();
 
-        var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
-
-        uploadService = new UploadService(serviceProvider, mapper, httpClientFactory, NullLogger<UploadService>.Instance);
+        uploadService = new UploadService(serviceProvider, mapper, NullLogger<UploadService>.Instance);
     }
 
     ReplayContext CreateContext() => new ReplayContext(_contextOptions);

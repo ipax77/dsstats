@@ -17,7 +17,6 @@ public partial class UploadService
 
     public UploadService(IServiceProvider serviceProvider,
                          IMapper mapper,
-                         IHttpClientFactory httpClientFactory,
                          ILogger<UploadService> logger)
     {
         this.serviceProvider = serviceProvider;
@@ -56,7 +55,7 @@ public partial class UploadService
         }
         catch (Exception ex)
         {
-            logger.LogError($"Failed updating uploader: {ex.Message}");
+            logger.LogError("Failed updating uploader: {Message}", ex.Message);
             return false;
         }
 
@@ -76,7 +75,7 @@ public partial class UploadService
         }
         catch (Exception ex)
         {
-            logger.LogError($"Failed starting Import: {ex.Message}");
+            logger.LogError("Failed starting Import: {Message}", ex.Message);
         }
         return true;
     }
@@ -100,7 +99,7 @@ public partial class UploadService
             fs++;
             if (fs > 20)
             {
-                logger.LogError($"can't find filename while saving replayblob {blobFilename}");
+                logger.LogError("can't find filename while saving replayblob {blobFilename}", blobFilename);
                 return "";
             }
         }
@@ -120,17 +119,20 @@ public partial class UploadService
             .Include(i => i.BattleNetInfos)
             .FirstOrDefaultAsync(f => f.AppGuid == uploader.AppGuid);
 
-        if (dbUploader == null)
-        {
-            dbUploader = await FindDuplicateUploader(context, uploader);
-        }
+        //if (dbUploader == null)
+        //{
+        //    dbUploader = await FindDuplicateUploader(context, uploader);
+        //}
 
         if (dbUploader == null)
         {
             dbUploader = mapper.Map<Uploader>(uploader);
             dbUploader.Identifier = uploader.BattleNetInfos.SelectMany(s => s.PlayerUploadDtos).FirstOrDefault()?.Name ?? "Anonymous";
-            context.Uploaders.Add(dbUploader);
-            await CreateUploaderPlayers(context, dbUploader, uploader.BattleNetInfos.SelectMany(s => s.PlayerUploadDtos).ToList());
+            
+            var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+            int uploaderId = await importService.CreateUploader(dbUploader);
+
+            await CreateUploaderPlayers(context, uploaderId, uploader.BattleNetInfos.SelectMany(s => s.PlayerUploadDtos).ToList());
         }
         else
         {
@@ -167,14 +169,19 @@ public partial class UploadService
         //    .FirstOrDefaultAsync();
     }
 
-    private async Task CreateUploaderPlayers(ReplayContext context, Uploader dbUploader, List<PlayerUploadDto> playerUploadDtos)
+    private async Task CreateUploaderPlayers(ReplayContext context, int uploaderId, List<PlayerUploadDto> playerUploadDtos)
     {
+        if (playerUploadDtos.Count == 0)
+        {
+            return;
+        }
+
         foreach (var player in playerUploadDtos)
         {
             var dbPlayer = await context.Players.FirstOrDefaultAsync(f =>
-                f.ToonId == player.ToonId
-                && f.RegionId == player.RegionId
-                && f.RealmId == player.RealmId);
+                    f.ToonId == player.ToonId
+                    && f.RegionId == player.RegionId
+                    && f.RealmId == player.RealmId);
             if (dbPlayer == null)
             {
                 using var scope = serviceProvider.CreateScope();
@@ -182,8 +189,7 @@ public partial class UploadService
                 int playerId = await importService.CreatePlayer(mapper.Map<PlayerUploadDto, Player>(player));
                 dbPlayer = await context.Players.FirstAsync(f => f.PlayerId == playerId);
             }
-            dbPlayer.Uploader = dbUploader;
-            dbUploader.Players.Add(dbPlayer);
+            dbPlayer.UploaderId = uploaderId;
         }
         await context.SaveChangesAsync();
     }
@@ -195,7 +201,9 @@ public partial class UploadService
             var dbPlayer = dbUploader.Players.ElementAt(i);
             var uploaderPlayer = uploader.BattleNetInfos?
                 .SelectMany(s => s.PlayerUploadDtos)
-                .FirstOrDefault(f => f.ToonId == dbPlayer.ToonId);
+                .FirstOrDefault(f => f.ToonId == dbPlayer.ToonId
+                    && f.RegionId == dbPlayer.RegionId);
+                    //&& f.RealmId == dbPlayer.RealmId); // realm can be anything :(
             if (uploaderPlayer == null)
             {
                 dbUploader.Players.Remove(dbPlayer);
@@ -271,7 +279,7 @@ public partial class UploadService
         await context.SaveChangesAsync();
     }
 
-    private async Task<Uploader?> FindDuplicateUploader(ReplayContext context, UploaderDto uploader)
+    private static async Task<Uploader?> FindDuplicateUploader(ReplayContext context, UploaderDto uploader)
     {
         var ids = uploader.BattleNetInfos.Select(s => s.BattleNetId).ToList();
 

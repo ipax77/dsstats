@@ -1,6 +1,6 @@
 ﻿using dsstats.mmr.ProcessData;
 using pax.dsstats.shared;
-
+using pax.dsstats.shared.Arcade;
 using TeamData = dsstats.mmr.ProcessData.TeamData;
 
 namespace dsstats.mmr;
@@ -71,7 +71,7 @@ public partial class MmrService
             };
         }
 
-        if (mmrOptions.InjectDic.Any() 
+        if (mmrOptions.InjectDic.Count > 0
             && mmrOptions.ReCalc 
             && !playerData.ReplayPlayer.IsUploader 
             && (replayData.RatingType == RatingType.Cmdr || replayData.RatingType == RatingType.Std))
@@ -83,8 +83,26 @@ public partial class MmrService
                                                             playerData.ReplayPlayer.Player.RegionId));
         }
 
-        playerData.Mmr = plRating.Mmr;
-        playerData.Consistency = plRating.Consistency;
-        playerData.Confidence = plRating.Confidence;
+        if (BannedPlayerIds.Contains(new(playerData.ReplayPlayer.Player.ToonId,
+                    playerData.ReplayPlayer.Player.RealmId,
+                    playerData.ReplayPlayer.Player.RegionId)))
+        {
+            playerData.Mmr = mmrOptions.StartMmr;
+            playerData.Consistency = 0;
+            playerData.Confidence = 0;
+
+        }
+        else
+        {
+            playerData.Mmr = plRating.Mmr;
+            playerData.Consistency = plRating.Consistency;
+            playerData.Confidence = plRating.Confidence;
+        }
     }
+
+    private static IReadOnlyList<PlayerId> BannedPlayerIds = new List<PlayerId>()
+    {
+        new(466786, 2, 2), // SabreWolf
+        new(9774911, 1, 2), // Baka
+    }.AsReadOnly();
 }
