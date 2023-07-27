@@ -1,0 +1,170 @@
+﻿@using Microsoft.AspNetCore.Components.Forms;
+@using Microsoft.JSInterop;
+@using pax.dsstats.shared;
+@inject IJSRuntime JSRuntime
+
+<EditForm EditContext="editContext" OnValidSubmit="Submit">
+    <div class="row">
+        <div class="col-auto">
+            <div class="bgchart p-2 rounded">
+                <div class="d-inline-block d-flex p-1 bgchart2">
+                    <div class="flex-grow-1">
+                        <h4>Commanders</h4>
+                    </div>
+                    <div class="">
+                        <span class="oi oi-x text-danger pointer" @onclick="ClearCmdrs"></span>
+                    </div>
+                </div>
+                @foreach (var cmdrRequest in SearchRequest.ReplayCmdrRequests)
+                {
+                    <div class="d-flex flex-row">
+                        <div class="row mb-2 me-2">
+                            <label for="@($"cmdr{cmdrRequest.Position}input")" class="col-form-label text-nowrap">
+                                Position @cmdrRequest.Position
+                            </label>
+                            <InputSelect id="@($"cmdr{cmdrRequest.Position}input")" class="form-select" @bind-Value="cmdrRequest.Commander">
+                                @foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.All))
+                                {
+                                    <option value="@cmdr">@cmdr</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="row mb-2 me-2 ms-2" style="max-width: 300px;">
+                            <label for="@($"cmdr{cmdrRequest.Position + 3}input")" class="col-form-label text-nowrap">
+                                Position @(cmdrRequest.Position + 3)
+                            </label>
+                            <InputSelect id="@($"cmdr{cmdrRequest.Position + 3}input")" class="form-select" @bind-Value="cmdrRequest.OppCommander">
+                                @foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.All))
+                                {
+                                    <option value="@cmdr">@cmdr</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div>
+                            <InputRadioGroup @bind-Value="cmdrRequest.Option">
+                                @foreach (var opt in (ReplaysAdvEnum[])Enum.GetValues(typeof(ReplaysAdvEnum)))
+                                {
+                                    <div class="mt-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@GetTooltip(opt)">
+                                        <label class="form-check-label">
+                                            <InputRadio id="@($"cmdropt{cmdrRequest.Position}input")" class="form-check-input ms-2" Value="@opt"></InputRadio>
+                                            @opt
+                                        </label>
+                                    </div>
+                                }
+                            </InputRadioGroup>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="bgchart p-2 rounded">
+                <div class="d-inline-block d-flex p-1 bgchart2">
+                    <div class="flex-grow-1">
+                        <h4>Player Names</h4>
+                    </div>
+                    <div>
+                        <span class="oi oi-x text-danger pointer" @onclick="ClearNames"></span>
+                    </div>
+                </div>
+                @foreach (var nameRequest in SearchRequest.ReplayNameRequests)
+                {
+                    <div class="d-flex flex-row">
+                        <div class="col-sm-4 row mb-2 me-2">
+                            <label for="@($"name{nameRequest.Position}input")" class="col-form-label text-nowrap">
+                                Position @nameRequest.Position
+                            </label>
+                            <InputText id="@($"name{nameRequest.Position}input")" class="form-control" @bind-Value="nameRequest.Name"></InputText>
+                        </div>
+                        <div class="col-sm-4 row mb-2 me-2 ms-2">
+                            <label for="@($"name{nameRequest.Position + 3}input")" class="col-form-label text-nowrap">
+                                Position @(nameRequest.Position + 3)
+                            </label>
+                            <InputText id="@($"name{nameRequest.Position}input")" class="form-control" @bind-Value="nameRequest.OppName"></InputText>
+                        </div>
+                        <div>
+                            <InputRadioGroup @bind-Value="nameRequest.Option">
+                                @foreach (var opt in (ReplaysAdvEnum[])Enum.GetValues(typeof(ReplaysAdvEnum)))
+                                {
+                                    <div class="mt-1" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@GetTooltip(opt)">
+                                        <label class="form-check-label">
+                                            <InputRadio id="@($"nameopt{nameRequest.Position}input")" class="form-check-input ms-2" Value="@opt"></InputRadio>
+                                            @opt
+                                        </label>
+                                    </div>
+                                }
+                            </InputRadioGroup>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div>
+        <button type="submit" class="btn btn-outline-warning bgchart">Filter</button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public ReplaysAdvancedRequest SearchRequest { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRequest { get; set; }
+
+    EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new(SearchRequest);
+        base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            JSRuntime.InvokeVoidAsync("enableTooltips");
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    private void Submit()
+    {
+        OnRequest.InvokeAsync();
+    }
+
+    private void ClearNames()
+    {
+        foreach (var ent in SearchRequest.ReplayNameRequests)
+        {
+            ent.Clear();
+        }
+        StateHasChanged();
+    }
+
+    private void ClearCmdrs()
+    {
+        foreach (var ent in SearchRequest.ReplayCmdrRequests)
+        {
+            ent.Clear();
+        }
+        StateHasChanged();
+    }
+
+    public void Clear()
+    {
+        SearchRequest.Clear();
+    }
+
+    private string GetTooltip(ReplaysAdvEnum advEnum)
+    {
+        return advEnum switch
+        {
+            ReplaysAdvEnum.Any => "Either can be at any position",
+            ReplaysAdvEnum.Exact => "Exact position",
+            ReplaysAdvEnum.ExactLine => "Position 1|4, 2|5 or 3|6",
+            _ => ""
+        };
+    }
+}

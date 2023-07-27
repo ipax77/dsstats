@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.JSInterop
 @using pax.dsstats.shared
+@using sc2dsstats.razorlib.Replays;
 @inject IDataService dataService
 @inject IJSRuntime IJSRuntime
 
@@ -128,6 +129,27 @@
         </div>
     </EditForm>
 </div>
+<div class="ms-2">
+    <button class="btn btn-sm btn-outline-light bgchart"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#AdvFilter"
+            aria-expanded="false"
+            aria-controls="AdvFilter"
+    @onclick="ShowHideAdvFilter">
+        <span class="oi @(showHideAdvFilter ? "oi-caret-bottom" : "oi-caret-top")"></span>
+        Advanced Filter
+    </button>
+</div>
+<div class="collapse mt-1" id="AdvFilter" style="min-height: 350px;">
+    @if (replaysRequest.AdvancedRequest != null)
+    {
+        <sc2dsstats.razorlib.Replays.ReplaysAdvancedRequestComponent
+            @ref="replaysAdvancedRequestComponent"
+            SearchRequest="replaysRequest.AdvancedRequest"
+            OnRequest="OnFieldChanged" />
+    }
+</div>
 
 @code {
     [CascadingParameter]
@@ -142,6 +164,9 @@
 
     private List<string> tournaments = new();
     private EditContext editContext = null!;
+
+    bool showHideAdvFilter = false;
+    ReplaysAdvancedRequestComponent? replaysAdvancedRequestComponent;
 
     protected override async Task OnInitializedAsync()
     {
@@ -160,6 +185,15 @@
             IJSRuntime.InvokeVoidAsync("setMultiSelect", "gamemodeselect", replaysRequest.GameModes.Any() ? replaysRequest.GameModes.Select(s => s.ToString()).ToArray() : new string[1] { "All GameModes" });
         }
         base.OnAfterRender(firstRender);
+    }
+
+    private void ShowHideAdvFilter()
+    {
+        if (replaysRequest.AdvancedRequest == null)
+        {
+            replaysRequest.AdvancedRequest = new();
+        }
+        showHideAdvFilter = !showHideAdvFilter;
     }
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
@@ -225,6 +259,7 @@
         replaysRequest.ToonIdWith = 0;
         replaysRequest.ToonIdVs = 0;
         replaysRequest.ToonIdName = null;
+        replaysAdvancedRequestComponent?.Clear();
         StateHasChanged();
         OnFieldChanged.InvokeAsync();
     }
