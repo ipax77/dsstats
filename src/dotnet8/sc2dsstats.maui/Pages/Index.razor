@@ -10,6 +10,13 @@ Welcome to your new app.
 
 <div>
     <button type="button" class="btn btn-primary" @onclick="Decode">Decode</button>
+    <button type="button" class="btn btn-primary" @onclick="ReadDir">GetFiles</button>
+</div>
+
+<div>
+    <p>
+        @count
+    </p>
 </div>
 
 <div>
@@ -25,6 +32,8 @@ Welcome to your new app.
 @code {
     CancellationTokenSource cts = new();
     ConcurrentBag<string> replays = new();
+
+    int count = 0;
 
     protected override void OnInitialized()
     {
@@ -43,6 +52,12 @@ Welcome to your new app.
         var replayFiles = Directory.GetFiles(@"C:\data\ds\decodeTest\input");
 
         await decodeService.Decode(replayFiles.ToList(), cts.Token);
+    }
+
+    private void ReadDir()
+    {
+        var files = Directory.GetFiles("/WINDOWS/system32/config/systemprofile/AppData/Local/dsstats.worker");
+        count = files.Length;
     }
 
     public void Dispose()
