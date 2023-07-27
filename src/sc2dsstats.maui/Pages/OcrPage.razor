@@ -23,9 +23,11 @@
         }
 </style>
 
-<h3>GameInfo</h3>
+<div class="bgchart2 text-warning p-2 rounded">
+    <h3>GameInfo</h3>
+</div>
 
-<div @ref="dropZoneElement" class="drop-zone">
+<div @ref="dropZoneElement" class="drop-zone bgchart">
     <p>
         Drop a file or paste an image from the clipboard or select a file using the input or use the 'Make Screenshot' button
         <br />
@@ -37,7 +39,7 @@
 </div>
 
 <div class="btn-group mt-2 mb-2">
-    <button type="button" class="btn btn-outline-warning" @onclick="MakeScreenShot">Make Screenshot</button>
+    <button type="button" class="btn btn-outline-warning bgchart" @onclick="MakeScreenShot">Make Screenshot</button>
 </div>
 
 <div>
@@ -45,7 +47,7 @@
 </div>
 
 <EditForm EditContext="editContext">
-    <div class="row">
+    <div class="row bgchart">
         <div class="col-auto me-2">
             <label class="form-label">
                 Rating Type
