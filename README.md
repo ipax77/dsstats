@@ -30,7 +30,16 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v1.2.2</summary>
+<details open="open"><summary>v1.2.3</summary>
+
+>- Layout redesign
+>- Stats redesign
+>- Fix Player RealmId
+>- Advanced replay filter
+
+</details>
+
+<details><summary>v1.2.2</summary>
 
 >- MAUI progress information with online data
 >- Web - new Replays with PreRating
