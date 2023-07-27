@@ -52,6 +52,12 @@ main {
     .top-row ::deep a, .top-row ::deep .btn-link {
         margin-left: 0;
     }
+
+    main {
+        background-attachment: scroll;
+        background-size: cover;
+        overflow: auto;
+    }
 }
 
 @media (min-width: 641px) {
