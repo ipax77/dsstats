@@ -4,10 +4,18 @@
 @using pax.dsstats.shared;
 
 <PageTitle>Teams</PageTitle>
-<title>Direct Strike - Standard teams performance</title>
+<title>Direct Strike - Team comps</title>
 
-<sc2dsstats.razorlib.Crosstable.CrosstableComponent CrossTableRequest="crossTableRequest"></sc2dsstats.razorlib.Crosstable.CrosstableComponent>
+@*<sc2dsstats.razorlib.Crosstable.CrosstableComponent CrossTableRequest="crossTableRequest"></sc2dsstats.razorlib.Crosstable.CrosstableComponent>*@
+<sc2dsstats.razorlib.TeamComp.TeamCompComponent Request="Request" />
 
 @code {
-    private CrossTableRequest crossTableRequest = new();
+    //private CrossTableRequest crossTableRequest = new();
+    private TeamCompRequest Request = new()
+        {
+            TimePeriod = TimePeriod.Patch2_71,
+            RatingType = RatingType.Std,
+            WithLeavers = false,
+            Interest = null
+        };
 }
