@@ -37,7 +37,7 @@ public class WinrateService : IWinrateService
 
         if (request.RatingType == RatingType.Std || request.RatingType == RatingType.StdTE)
         {
-            data = data.Where(x => (int)x.Commander <= 3).ToList();
+            data = data.Where(x => x.Commander != Commander.None && (int)x.Commander <= 3).ToList();
         }
         else
         {
