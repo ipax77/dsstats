@@ -1,0 +1,83 @@
+﻿@using Microsoft.AspNetCore.Components.Forms;
+@using Microsoft.JSInterop;
+@using pax.dsstats.shared;
+@inject IJSRuntime jsRuntime
+@implements IDisposable
+
+<EditForm EditContext="editContext">
+    <div class="row">
+        <div class="col-auto">
+            <label class="form-label">
+                Rating Type
+                <span class="oi oi-info pointer ms-2" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/Mmr-calculation#rating-types'"></span>
+                <InputSelect class="form-select" @bind-Value="Request.RatingType">
+                    <option value="@RatingType.Std">@Data.GetRatingTypeLongName(RatingType.Std)</option>
+                    <option value="@RatingType.StdTE">@Data.GetRatingTypeLongName(RatingType.StdTE)</option>
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Time Period
+                <InputSelect class="form-select" @bind-Value="Request.TimePeriod">
+                    @foreach (TimePeriod time in Data.GetTimePeriods(Data.TimePeriodGet.NoNone))
+                    {
+                        @if (time == TimePeriod.All)
+                        {
+                            continue;
+                        }
+                        <option value="@time">@Data.GetTimePeriodLongName(time)</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <div class="form-check form-switch">
+                <label class="form-check-label">
+                    With Leavers
+                    <InputCheckbox class="form-check-input" @bind-Value="Request.WithLeavers">
+                    </InputCheckbox>
+                </label>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public TeamCompRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    private EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(Request);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            jsRuntime.InvokeVoidAsync("enableTooltips");
+        }
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        if (e.FieldIdentifier.FieldName == "RatingType")
+        {
+            Request.Interest = null;
+        }
+        OnRequestChanged.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}

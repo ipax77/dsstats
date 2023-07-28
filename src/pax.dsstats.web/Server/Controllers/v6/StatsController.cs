@@ -21,6 +21,7 @@ namespace pax.dsstats.web.Server.Controllers.v6
         private readonly IWinrateService winrateService;
         private readonly ISynergyService synergyService;
         private readonly IDamageService damageService;
+        private readonly ITeamService teamService;
         private readonly CmdrsService cmdrService;
 
         public StatsController(IReplayRepository replayRepository,
@@ -32,6 +33,7 @@ namespace pax.dsstats.web.Server.Controllers.v6
                                IWinrateService winrateService,
                                ISynergyService synergyService,
                                IDamageService damageService,
+                               ITeamService teamService,
                                CmdrsService cmdrService)
         {
             this.replayRepository = replayRepository;
@@ -44,6 +46,7 @@ namespace pax.dsstats.web.Server.Controllers.v6
             this.cmdrService = cmdrService;
             this.synergyService = synergyService;
             this.damageService = damageService;
+            this.teamService = teamService;
         }
 
         [HttpGet]
@@ -391,6 +394,13 @@ namespace pax.dsstats.web.Server.Controllers.v6
         public async Task<ActionResult<DamageResponse>> GetDamage(DamageRequest request, CancellationToken token)
         {
             return await damageService.GetDamage(request, token);
+        }
+
+        [HttpPost]
+        [Route("teamcomp")]
+        public async Task<ActionResult<TeamCompResponse>> GetTeamComp(TeamCompRequest request, CancellationToken token)
+        {
+            return await teamService.GetTeamRating(request, token);
         }
     }
 }
