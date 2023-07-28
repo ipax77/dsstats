@@ -1,10 +1,18 @@
 ﻿@using System.Globalization;
+@using Microsoft.JSInterop;
 @using pax.dsstats.shared;
 @using sc2dsstats.razorlib.Extensions;
 @using sc2dsstats.razorlib.Services;
+@inject IJSRuntime JSRuntime
+
+<style>
+    .tptablebig thead tr th {
+        padding: 6px 12px !important;
+    }
+</style>
 
 <div class="tableFixHead" style="max-height: 80vh;">
-    <table class="tptable table w-auto">
+    <table class="tptable tptablebig table w-auto">
         <thead>
             <CascadingValue Value="Orders">
                 <tr>
@@ -18,7 +26,8 @@
                             Count
                         </SortArrow>
                     </th>
-                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(TeamResponseItem.AvgGain))">
+                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(TeamResponseItem.AvgGain))"
+                        data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Team average rating gain">
                         <SortArrow Property="@nameof(TeamResponseItem.AvgGain)">
                             AvgGain
                         </SortArrow>
@@ -62,6 +71,15 @@
 
     [Parameter]
     public string? InterestTeam { get; set; }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            JSRuntime.InvokeVoidAsync("eneableTooltips");
+        }
+        base.OnAfterRender(firstRender);
+    }
 
     private List<TableOrder> Orders = new List<TableOrder>()
     {

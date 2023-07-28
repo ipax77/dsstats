@@ -11,14 +11,8 @@
                 Rating Type
                 <span class="oi oi-info pointer ms-2" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/Mmr-calculation#rating-types'"></span>
                 <InputSelect class="form-select" @bind-Value="Request.RatingType">
-                    @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
-                    {
-                        @if (ratingType == RatingType.None)
-                        {
-                            continue;
-                        }
-                        <option value="@ratingType">@Data.GetRatingTypeLongName(ratingType)</option>
-                    }
+                    <option value="@RatingType.Std">@Data.GetRatingTypeLongName(RatingType.Std)</option>
+                    <option value="@RatingType.StdTE">@Data.GetRatingTypeLongName(RatingType.StdTE)</option>
                 </InputSelect>
             </label>
         </div>
@@ -28,6 +22,10 @@
                 <InputSelect class="form-select" @bind-Value="Request.TimePeriod">
                     @foreach (TimePeriod time in Data.GetTimePeriods(Data.TimePeriodGet.NoNone))
                     {
+                        @if (time == TimePeriod.All)
+                        {
+                            continue;
+                        }
                         <option value="@time">@Data.GetTimePeriodLongName(time)</option>
                     }
                 </InputSelect>

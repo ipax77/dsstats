@@ -1,13 +1,14 @@
 ﻿@using pax.dsstats.shared;
 
+<div class="bgchart2 d-inline-block rounded p-2">
+    Replays #@count
+</div>
 <div class="tableFixHead" style="max-height: 80vh;">
-    <div class="bgchart d-inline-block rounded p-2">
-        # @count
-    </div>
+
     <table class="tptable table w-auto">
         <thead>
             <tr>
-                <th>GameTime</th>
+                <th style="padding: 4px 8px;">GameTime</th>
             </tr>
         </thead>
         <tbody>
@@ -48,6 +49,15 @@
         {
             count = Response.Replays.Count;
             return Response.Replays;
+        }
+        else if (Response.Team == Interest)
+        {
+            var replays = Response.Replays
+                .Where(x => x.CommandersTeam1 == Interest
+                    && x.CommandersTeam2 == Interest)
+                    .ToList();
+            count = replays.Count;
+            return replays;
         }
         else
         {

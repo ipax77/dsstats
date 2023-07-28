@@ -242,6 +242,16 @@ public static class ReplayExtensions
         return sb.ToString();
     }
 
+    public static string GenMemKey(this TeamCompRequest request)
+    {
+        StringBuilder sb = new();
+        sb.Append("teamComp");
+        sb.Append(request.RatingType.ToString());
+        sb.Append(request.TimePeriod.ToString());
+        sb.Append(request.Interest);
+        sb.Append(request.WithLeavers.ToString());
+        return sb.ToString();
+    }
 
     public static string GetMd5Hash(MD5 md5Hash, string input)
     {

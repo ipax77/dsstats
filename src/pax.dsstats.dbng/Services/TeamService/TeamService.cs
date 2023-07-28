@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using pax.dsstats.dbng.Extensions;
 using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng.Services;
@@ -6,20 +8,34 @@ namespace pax.dsstats.dbng.Services;
 public partial class TeamService : ITeamService
 {
     private readonly ReplayContext context;
+    private readonly IMemoryCache memoryCache;
 
-    public TeamService(ReplayContext context)
+    public TeamService(ReplayContext context, IMemoryCache memoryCache)
     {
         this.context = context;
+        this.memoryCache = memoryCache;
     }
 
     public async Task<TeamCompResponse> GetTeamRating(TeamCompRequest request, CancellationToken token)
+    {
+        var memKey = request.GenMemKey();
+        if (!memoryCache.TryGetValue(memKey, out TeamCompResponse result))
+        {
+            result = await ProduceTeamRating(request, token);
+            memoryCache.Set(memKey, result, TimeSpan.FromHours(24));
+        }
+        return result;
+    }
+
+    private async Task<TeamCompResponse> ProduceTeamRating(TeamCompRequest request, CancellationToken token)
     {
         var replays = GetReplays(request);
         var noInterest = string.IsNullOrEmpty(request.Interest);
 
         var group1 = from r in replays
                      from rp in r.ReplayPlayers
-                     where rp.Team == 1 && (noInterest ? true : r.CommandersTeam2 == request.Interest)
+                     where rp.Team == 1 && (int)rp.Race <= 3 && (int)rp.OppRace <= 3
+                        && (noInterest ? true : r.CommandersTeam2 == request.Interest)
                      group new { r, rp } by r.CommandersTeam1 into g
                      select new TeamGroupResult()
                      {
@@ -31,7 +47,8 @@ public partial class TeamService : ITeamService
 
         var group2 = from r in replays
                      from rp in r.ReplayPlayers
-                     where rp.Team == 2 && (noInterest ? true : r.CommandersTeam1 == request.Interest)
+                     where rp.Team == 2 && (int)rp.Race <= 3 && (int)rp.OppRace <= 3
+                        && (noInterest ? true : r.CommandersTeam1 == request.Interest)
                      group new { r, rp } by r.CommandersTeam2 into g
                      select new TeamGroupResult()
                      {
@@ -58,15 +75,7 @@ public partial class TeamService : ITeamService
     {
         if (string.IsNullOrEmpty(request.Interest))
         {
-            return await replays
-                .OrderByDescending(o => o.GameTime)
-                .Select(s => new TeamReplayInfo()
-                {
-                    GameTime = s.GameTime,
-                    ReplayHash = s.ReplayHash,
-                    CommandersTeam1 = s.CommandersTeam1,
-                    CommandersTeam2 = s.CommandersTeam2,
-                }).ToListAsync();
+            return new();
         }
         else
         {

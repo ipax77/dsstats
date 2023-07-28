@@ -181,18 +181,28 @@
 <div>
     <TeamCompRequestComponent Request="Request" OnRequestChanged="LoadData" />
 </div>
-<div>
-    @if (isLoading || isReplayLoading)
-    {
-        <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-    }
+<div class="bgchart2 d-inline-block rounded mt-2">
+    <p class="text-warning">
+        The performance of the team compositions
+    </p>
+</div>
+<div class="mt-1">
     <div class="row">
         <div class="col-auto">
-            @if (response != null)
+            @if (isLoading || isReplayLoading)
+            {
+                <div class="spinner-border spinner-border-sm text-info ms-2 mt-4" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            }
+            else
             {
                 <div class="mt-5">
+                </div>
+            }
+            @if (response != null)
+            {
+                <div>
                     <TeamCompTable Response="response" OnInterestRequest="LoadInterestData"></TeamCompTable>
                 </div>
             }
@@ -224,10 +234,6 @@
             {
                 <TeamCompReplaysTable @ref="teamCompReplaysTableInterest" Response="interestResponse" OnReplayRequested="ShowReplay" />
             }
-            else if (response != null)
-            {
-                <TeamCompReplaysTable @ref="teamCompReplaysTable" Response="response" OnReplayRequested="ShowReplay" />
-            }
         </div>
     </div>
 </div>
@@ -252,7 +258,6 @@
     TeamCompResponse? interestResponse;
     ReplayDetailsDto? replayInterest;
     ReplayComponent? replayComponent;
-    TeamCompReplaysTable? teamCompReplaysTable;
     TeamCompReplaysTable? teamCompReplaysTableInterest;
     bool isLoading;
     bool isReplayLoading;
@@ -268,14 +273,13 @@
     {
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
-        response = await teamService.GetTeamRating(Request with {Interest = null }, cts.Token);
+        response = await teamService.GetTeamRating(Request with { Interest = null }, cts.Token);
         if (Request.Interest == null)
         {
             interestResponse = null;
             isLoading = false;
             await InvokeAsync(() => StateHasChanged());
             await OnRequestChanged.InvokeAsync(Request);
-            teamCompReplaysTable?.Update(response, null);
         }
         else
         {
@@ -306,6 +310,7 @@
     {
         interestResponse = null;
         StateHasChanged();
+        OnRequestChanged.InvokeAsync(Request with { Interest = null });
     }
 
     private async Task ShowReplay(string hash)
@@ -328,13 +333,13 @@
         NavigationManager.NavigateTo(
             NavigationManager.GetUriWithQueryParameters("replays",
                 new Dictionary<string, object?>()
-                    {
+                        {
                     { "Players", request.Name },
                     { "ToonId", request.ToonId },
                     { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
                     { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
                     { "ToonIdName", request.ToonIdName },
-                    }
+                        }
             )
         );
     }
