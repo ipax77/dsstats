@@ -1,0 +1,352 @@
+﻿@using Microsoft.JSInterop;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Replay;
+@using sc2dsstats.razorlib.Services;
+@inject ITeamService teamService
+@inject IDataService dataService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<style>
+    .preload-terran {
+        background-image: url("/_content/sc2dsstats.razorlib/images/terran-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-protoss {
+        background-image: url("/_content/sc2dsstats.razorlib/images/protoss-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-zerg {
+        background-image: url("/_content/sc2dsstats.razorlib/images/zerg-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-abathur {
+        background-image: url("/_content/sc2dsstats.razorlib/images/abathur-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-alarak {
+        background-image: url("/_content/sc2dsstats.razorlib/images/alarak-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-artanis {
+        background-image: url("/_content/sc2dsstats.razorlib/images/artanis-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-dehaka {
+        background-image: url("/_content/sc2dsstats.razorlib/images/dehaka-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-fenix {
+        background-image: url("/_content/sc2dsstats.razorlib/images/fenix-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-horner {
+        background-image: url("/_content/sc2dsstats.razorlib/images/horner-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-karax {
+        background-image: url("/_content/sc2dsstats.razorlib/images/karax-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-kerrigan {
+        background-image: url("/_content/sc2dsstats.razorlib/images/kerrigan-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-mengsk {
+        background-image: url("/_content/sc2dsstats.razorlib/images/mengsk-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-nova {
+        background-image: url("/_content/sc2dsstats.razorlib/images/nova-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-raynor {
+        background-image: url("/_content/sc2dsstats.razorlib/images/raynor-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-stetmann {
+        background-image: url("/_content/sc2dsstats.razorlib/images/stetmann-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-stukov {
+        background-image: url("/_content/sc2dsstats.razorlib/images/stukov-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-swann {
+        background-image: url("/_content/sc2dsstats.razorlib/images/swann-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-tychus {
+        background-image: url("/_content/sc2dsstats.razorlib/images/tychus-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-vorazun {
+        background-image: url("/_content/sc2dsstats.razorlib/images/vorazun-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-zagara {
+        background-image: url("/_content/sc2dsstats.razorlib/images/zagara-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+
+    .preload-zeratul {
+        background-image: url("/_content/sc2dsstats.razorlib/images/zeratul-min.png");
+        background-repeat: no-repeat;
+        height: 30px;
+        width: 30px;
+        background-size: cover;
+    }
+</style>
+
+<div>
+    <TeamCompRequestComponent Request="Request" OnRequestChanged="LoadData" />
+</div>
+<div class="bgchart2 d-inline-block rounded mt-2">
+    <p class="text-warning">
+        The performance of the team compositions
+    </p>
+</div>
+<div class="mt-1">
+    <div class="row">
+        <div class="col-auto">
+            @if (isLoading || isReplayLoading)
+            {
+                <div class="spinner-border spinner-border-sm text-info ms-2 mt-4" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            }
+            else
+            {
+                <div class="mt-5">
+                </div>
+            }
+            @if (response != null)
+            {
+                <div>
+                    <TeamCompTable Response="response" OnInterestRequest="LoadInterestData"></TeamCompTable>
+                </div>
+            }
+        </div>
+        <div class="col-auto">
+            @if (interestResponse != null)
+            {
+                <div class="bgchart2 d-inline-block p-2 rounded">
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <span class="text-warning">. versus </span>
+                        </div>
+                        @foreach (var cmdr in HelperService.GetCommanders(interestResponse.Team))
+                        {
+                            <div class="preload-@(cmdr.ToString().ToLower())" style="width: 30px; height: 30px;"></div>
+                        }
+                        <div class="ms-4">
+                            <span class="oi oi-x text-danger pointer" @onclick="ColoseInterest"></span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <TeamCompTable Response="interestResponse" OnInterestRequest="UpdateReplaysTable"></TeamCompTable>
+                </div>
+            }
+        </div>
+        <div class="col-auto">
+            @if (interestResponse != null)
+            {
+                <TeamCompReplaysTable @ref="teamCompReplaysTableInterest" Response="interestResponse" OnReplayRequested="ShowReplay" />
+            }
+        </div>
+    </div>
+</div>
+<div id="teamreplay" class="mt-2">
+    @if (replayInterest != null)
+    {
+        <sc2dsstats.razorlib.Replay.ReplayComponent @ref="replayComponent"
+                                                    replayDto="replayInterest"
+                                                    HideCloseButton="true"
+                                                    OnReplaysRequest="ReplaysToonIdRequest" />
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public TeamCompRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<TeamCompRequest> OnRequestChanged { get; set; }
+
+    TeamCompResponse? response;
+    TeamCompResponse? interestResponse;
+    ReplayDetailsDto? replayInterest;
+    ReplayComponent? replayComponent;
+    TeamCompReplaysTable? teamCompReplaysTableInterest;
+    bool isLoading;
+    bool isReplayLoading;
+    CancellationTokenSource cts = new();
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        response = await teamService.GetTeamRating(Request with { Interest = null }, cts.Token);
+        if (Request.Interest == null)
+        {
+            interestResponse = null;
+            isLoading = false;
+            await InvokeAsync(() => StateHasChanged());
+            await OnRequestChanged.InvokeAsync(Request);
+        }
+        else
+        {
+            await LoadInterestData(Request.Interest);
+        }
+    }
+
+    private async Task LoadInterestData(string team)
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        interestResponse = await teamService.GetTeamRating(Request with { Interest = team }, cts.Token);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+        await OnRequestChanged.InvokeAsync(Request with { Interest = team });
+        teamCompReplaysTableInterest?.Update(interestResponse, null);
+    }
+
+    private void UpdateReplaysTable(string interest)
+    {
+        if (interestResponse != null)
+        {
+            teamCompReplaysTableInterest?.Update(interestResponse, interest);
+        }
+    }
+
+    private void ColoseInterest()
+    {
+        interestResponse = null;
+        StateHasChanged();
+        OnRequestChanged.InvokeAsync(Request with { Interest = null });
+    }
+
+    private async Task ShowReplay(string hash)
+    {
+        if (isReplayLoading)
+            return;
+        isReplayLoading = true;
+        replayInterest = await dataService.GetDetailReplay(hash);
+        if (replayInterest != null)
+        {
+            replayComponent?.Init(replayInterest);
+        }
+        isReplayLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+        await JSRuntime.InvokeVoidAsync("scrollToId", "teamreplay");
+    }
+
+    private void ReplaysToonIdRequest(ReplaysToonIdRequest request)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters("replays",
+                new Dictionary<string, object?>()
+                        {
+                    { "Players", request.Name },
+                    { "ToonId", request.ToonId },
+                    { "ToonIdWith", request.ToonIdWith == 0 ? null : request.ToonIdWith },
+                    { "ToonIdVs", request.ToonIdVs == 0 ? null : request.ToonIdVs },
+                    { "ToonIdName", request.ToonIdName },
+                        }
+            )
+        );
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

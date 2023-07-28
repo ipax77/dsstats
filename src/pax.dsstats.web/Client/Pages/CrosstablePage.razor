@@ -1,13 +1,113 @@
 ﻿@page "/teams"
 @page "/misc/teams"
 @layout MiscLayout
-@using pax.dsstats.shared;
+@using pax.dsstats.shared
+@inject NavigationManager NavigationManager
 
 <PageTitle>Teams</PageTitle>
-<title>Direct Strike - Standard teams performance</title>
+<title>Direct Strike - Team comps</title>
 
-<sc2dsstats.razorlib.Crosstable.CrosstableComponent CrossTableRequest="crossTableRequest"></sc2dsstats.razorlib.Crosstable.CrosstableComponent>
+<sc2dsstats.razorlib.TeamComp.TeamCompComponent Request="Request" OnRequestChanged="RequestChanged" />
 
 @code {
-    private CrossTableRequest crossTableRequest = new();
+    [Parameter, SupplyParameterFromQuery]
+    public string? Tp { get; set; }
+
+    [Parameter, SupplyParameterFromQuery]
+    public string? Rt { get; set; }
+
+    [Parameter, SupplyParameterFromQuery]
+    public string? Int { get; set; }
+
+    [Parameter, SupplyParameterFromQuery]
+    public bool? WithLeavers { get; set; }
+
+    private TeamCompRequest Request = new()
+        {
+            TimePeriod = TimePeriod.Patch2_71,
+            RatingType = RatingType.Std,
+            WithLeavers = false,
+            Interest = null
+        };
+
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }
+
+    private void SetRequest()
+    {
+        if (Enum.TryParse(typeof(TimePeriod), Tp, out var tpObj)
+            && tpObj is TimePeriod tp)
+        {
+            Request.TimePeriod = tp;
+        }
+
+        if (Enum.TryParse(typeof(RatingType), Rt, out var rtObj)
+            && rtObj is RatingType rt)
+        {
+            Request.RatingType = rt;
+        }
+
+        if (!string.IsNullOrEmpty(Int))
+        {
+            Request.Interest = Int;
+        }
+
+        if (WithLeavers != null)
+        {
+            Request.WithLeavers = WithLeavers.Value;
+        }
+    }
+
+    private void RequestChanged(TeamCompRequest request)
+    {
+        Dictionary<string, object?> queryDic = new();
+
+        if (request.RatingType != RatingType.Std)
+        {
+            queryDic.Add("Rt", request.RatingType.ToString());
+        }
+        else
+        {
+            queryDic.Add("Rt", null);
+        }
+
+        if (request.TimePeriod != TimePeriod.Patch2_71)
+        {
+            queryDic.Add("Tp", request.TimePeriod.ToString());
+        }
+        else
+        {
+            queryDic.Add("Tp", null);
+        }
+
+        if (!string.IsNullOrEmpty(request.Interest))
+        {
+            queryDic.Add("Int", request.Interest);
+
+        }
+        else
+        {
+            queryDic.Add("Int", null);
+
+        }
+
+        if (request.WithLeavers)
+        {
+            queryDic.Add("WithLeavers", true);
+        }
+        else
+        {
+            queryDic.Add("WithLeavers", null);
+        }
+
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters(
+                new Dictionary<string, object?>(queryDic)
+            )
+        );
+    }
+
 }

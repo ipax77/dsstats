@@ -32,5 +32,6 @@ builder.Services.AddScoped<IDsUpdateService, DsUpdateService>();
 builder.Services.AddScoped<IWinrateService, WinrateService>();
 builder.Services.AddScoped<ISynergyService, SynergyService>();
 builder.Services.AddScoped<IDamageService, DamageService>();
+builder.Services.AddScoped<ITeamService, TeamService>();
 
 await builder.Build().RunAsync();

@@ -1,0 +1,79 @@
+﻿@using pax.dsstats.shared;
+
+<div class="bgchart2 d-inline-block rounded p-2">
+    Replays #@count
+</div>
+<div class="tableFixHead" style="max-height: 80vh;">
+
+    <table class="tptable table w-auto">
+        <thead>
+            <tr>
+                <th style="padding: 4px 8px;">GameTime</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var replay in GetItems())
+            {
+                <tr class="pointer" @onclick="e => RequestReplay(replay.ReplayHash)">
+                    <td class="@(replay.ReplayHash == replayHash ? "table-primary" : "")">
+                        <span class="text-decoration-underline">@replay.GameTime.ToString("yyyy-MM-dd")</span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public TeamCompResponse Response { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<string> OnReplayRequested { get; set; }
+
+    [Parameter]
+    public string? Interest { get; set; }
+
+    private string? replayHash;
+    int count = 0;
+
+    private void RequestReplay(string hash)
+    {
+        replayHash = hash;
+        OnReplayRequested.InvokeAsync(hash);
+    }
+
+    private List<TeamReplayInfo> GetItems()
+    {
+        if (string.IsNullOrEmpty(Interest))
+        {
+            count = Response.Replays.Count;
+            return Response.Replays;
+        }
+        else if (Response.Team == Interest)
+        {
+            var replays = Response.Replays
+                .Where(x => x.CommandersTeam1 == Interest
+                    && x.CommandersTeam2 == Interest)
+                    .ToList();
+            count = replays.Count;
+            return replays;
+        }
+        else
+        {
+            var replays = Response.Replays
+                .Where(x => x.CommandersTeam1 == Interest
+                    || x.CommandersTeam2 == Interest)
+                    .ToList();
+            count = replays.Count;
+            return replays;
+        }
+    }
+
+    public void Update(TeamCompResponse response, string? interest)
+    {
+        Response = response;
+        Interest = interest;
+        InvokeAsync(() => StateHasChanged());
+    }
+}

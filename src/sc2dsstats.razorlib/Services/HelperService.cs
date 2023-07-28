@@ -136,6 +136,25 @@ public static class HelperService
 
         return (Math.Round(sumTeam1 * 100.0 / (double)gameloops[^1], 2), Math.Round(sumTeam2 * 100.0 / (double)gameloops[^1], 2));
     }
+
+    public static List<Commander> GetCommanders(string? cmdrString)
+    {
+        if (string.IsNullOrEmpty(cmdrString))
+        {
+            return new();
+        }
+
+        var intCmdrs = cmdrString.Split('|', StringSplitOptions.RemoveEmptyEntries);
+        List<Commander> cmdrs = new();
+        foreach (var intCmdr in intCmdrs)
+        {
+            if (int.TryParse(intCmdr, out var i))
+            {
+                cmdrs.Add((Commander)i);
+            }
+        }
+        return cmdrs;
+    }
 }
 
 public record ReplaysToonIdRequest

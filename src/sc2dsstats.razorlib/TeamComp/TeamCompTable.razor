@@ -1,0 +1,157 @@
+﻿@using System.Globalization;
+@using Microsoft.JSInterop;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Extensions;
+@using sc2dsstats.razorlib.Services;
+@inject IJSRuntime JSRuntime
+
+<style>
+    .tptablebig thead tr th {
+        padding: 6px 12px !important;
+    }
+</style>
+
+<div class="tableFixHead" style="max-height: 80vh;">
+    <table class="tptable tptablebig table w-auto">
+        <thead>
+            <CascadingValue Value="Orders">
+                <tr>
+                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(TeamResponseItem.Team))">
+                        <SortArrow Property="@nameof(TeamResponseItem.Team)">
+                            Team
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(TeamResponseItem.Count))">
+                        <SortArrow Property="@nameof(TeamResponseItem.Count)">
+                            Count
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(TeamResponseItem.AvgGain))"
+                        data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Team average rating gain">
+                        <SortArrow Property="@nameof(TeamResponseItem.AvgGain)">
+                            AvgGain
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Winrate"))">
+                        <SortArrow Property="Winrate">
+                            Winrate
+                        </SortArrow>
+                    </th>
+                </tr>
+            </CascadingValue>
+        </thead>
+        <tbody>
+            @foreach (var item in GetSortedList())
+            {
+                <tr class="pointer @(InterestTeam == item.Team ? "table-primary" : "")" @onclick="e => InterestRequest(item.Team)">
+                    <td>
+                        <div class="d-flex">
+                            @foreach (var cmdr in HelperService.GetCommanders(item.Team))
+                            {
+                                <div class="preload-@(cmdr.ToString().ToLower())" style="width: 30px; height: 30px;"></div>
+                            }
+                        </div>
+                    </td>
+                    <td>@item.Count</td>
+                    <td><span class="text-warning">@item.AvgGain.ToString("N2", CultureInfo.InvariantCulture)</span></td>
+                    <td>@HelperService.GetPercentageString(item.Wins, item.Count)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public TeamCompResponse Response { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<string> OnInterestRequest { get; set; }
+
+    [Parameter]
+    public string? InterestTeam { get; set; }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            JSRuntime.InvokeVoidAsync("eneableTooltips");
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    private List<TableOrder> Orders = new List<TableOrder>()
+    {
+        new TableOrder() { Property = nameof(TeamResponseItem.AvgGain), Ascending = false }
+    };
+
+    private void InterestRequest(string team)
+    {
+        InterestTeam = team;
+        OnInterestRequest.InvokeAsync(team);
+    }
+
+
+
+    private void SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = Orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                Orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            Orders.Clear();
+            Orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+        StateHasChanged();
+    }
+
+    private List<TeamResponseItem> GetSortedList()
+    {
+        var itemsQ = Response.Items.AsQueryable();
+
+        foreach (var order in Orders)
+        {
+            if (order.Property == "Winrate")
+            {
+                if (order.Ascending)
+                {
+                    itemsQ = itemsQ.OrderBy(o => o.Count == 0 ? 0 : o.Wins * 100.0 / o.Count);
+                }
+                else
+                {
+                    itemsQ = itemsQ.OrderByDescending(o => o.Count == 0 ? 0 : o.Wins * 100.0 / o.Count);
+                }
+            }
+            else
+            {
+                if (order.Ascending)
+                {
+                    itemsQ = itemsQ.AppendOrderBy(order.Property);
+                }
+                else
+                {
+                    itemsQ = itemsQ.AppendOrderByDescending(order.Property);
+                }
+            }
+        }
+        return itemsQ.ToList();
+    }
+}
