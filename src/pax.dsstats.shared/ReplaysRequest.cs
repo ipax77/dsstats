@@ -23,6 +23,27 @@ public record ReplaysRequest
     public int ToonIdVs { get; set; }
     public string? ToonIdName { get; set; }
     public ReplaysAdvancedRequest? AdvancedRequest { get; set; }
+    public ReplaysUnitsRequest? UnitRequest { get; set; }
+}
+
+public record ReplaysUnitsRequest
+{
+    public ReplaysUnitsRequest()
+    {
+        UnitRequests = new() { new() };
+        UpgradeRequests = new() { new() };
+    }
+
+    public List<ReplayUnitRequest> UnitRequests { get; set; }
+    public List<ReplayUpgradeRequest> UpgradeRequests { get; set; }
+    public void Clear()
+    {
+        UnitRequests.Clear();
+        UnitRequests.Add(new());
+
+        UpgradeRequests.Clear();
+        UpgradeRequests.Add(new());
+    }
 }
 
 public record ReplaysAdvancedRequest
@@ -49,6 +70,34 @@ public record ReplaysAdvancedRequest
         {
             ent.Clear();
         }
+    }
+}
+
+public record ReplayUnitRequest
+{
+    public string UnitName { get; set; } = string.Empty;
+    public Breakpoint Breakpoint { get; set; } = Breakpoint.All;
+    public int Count { get; set; }
+    public bool Less { get; set; }
+    public void Clear()
+    {
+        UnitName = string.Empty;
+        Breakpoint = Breakpoint.All;
+        Count = 0;
+        Less = false;
+    }
+}
+
+public record ReplayUpgradeRequest
+{
+    public string UpgradeName { get; set; } = string.Empty;
+    public int Minutes { get; set; }
+    public bool Less { get; set; }
+    public void Clear()
+    {
+        UpgradeName = string.Empty;
+        Minutes = 0;
+        Less = false;
     }
 }
 

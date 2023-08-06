@@ -1,0 +1,179 @@
+﻿@using Microsoft.AspNetCore.Components.Forms;
+@using Microsoft.JSInterop;
+@using pax.dsstats.shared;
+@inject IJSRuntime JSRuntime
+
+<EditForm EditContext="editContext" OnValidSubmit="Submit">
+    <div class="row">
+        <div class="col-auto bgchart p-2 rounded">
+            <div class="d-inline-block d-flex p-1 bgchart2">
+                <div class="flex-grow-1">
+                    <h4>Units</h4>
+                </div>
+                <div class="">
+                    <span class="oi oi-x text-danger pointer" @onclick="ClearUnits"></span>
+                </div>
+            </div>
+            @{
+                int i = 0;
+            }
+            @foreach (var unitRequest in SearchRequest.UnitRequests)
+            {
+                i++;
+                <div class="row">
+                    <div class="col-sm-4">
+                        <InputText class="form-control" @bind-Value="unitRequest.UnitName"></InputText>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label">
+                            Breakpoint
+                            <InputSelect class="form-select" @bind-Value="unitRequest.Breakpoint">
+                                @foreach (Breakpoint bp in Enum.GetValues(typeof(Breakpoint)))
+                                {
+                                    if (bp == Breakpoint.None)
+                                    {
+                                        continue;
+                                    }
+                                    <option value="@bp">@bp</option>
+                                }
+                            </InputSelect>
+                        </label>
+                    </div>
+                    <div class="col-sm-4 row mb-2 me-2">
+                        <label for="@($"unitcount{i}input")" class="col-form-label text-nowrap">
+                            Count
+                        </label>
+                        <InputNumber id="@($"unitcount{i}input")" class="form-control" min="0" max="50" step="1" @bind-Value="unitRequest.Count"></InputNumber>
+                    </div>
+                    <div class="col-auto">
+                        <div class="form-check form-switch">
+                            <label class="form-check-label">
+                                Less
+                                <InputCheckbox class="form-check-input" @bind-Value="unitRequest.Less">
+                                </InputCheckbox>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="col-auto bgchart p-2 rounded">
+            <div class="d-inline-block d-flex p-1 bgchart2">
+                <div class="flex-grow-1">
+                    <h4>Upgrades</h4>
+                </div>
+                <div class="">
+                    <span class="oi oi-x text-danger pointer" @onclick="ClearUpgrades"></span>
+                </div>
+            </div>
+            @{
+                int j = 0;
+            }
+            @foreach (var upgradeRequest in SearchRequest.UpgradeRequests)
+            {
+                j++;
+                <div class="row">
+                    <div class="col-sm-4 row mb-2 me-2">
+                        <InputText class="form-control" @bind-Value="upgradeRequest.UpgradeName"></InputText>
+                    </div>
+                    <div class="col-sm-4 row mb-2 me-2">
+                        <label for="@($"upcount{j}input")" class="col-form-label text-nowrap">
+                            Minutes
+                        </label>
+                        <InputNumber id="@($"upcount{j}input")" class="form-control" min="0" max="30" step="1" @bind-Value="upgradeRequest.Minutes"></InputNumber>
+                    </div>
+                    <div class="col-auto">
+                        <div class="form-check form-switch">
+                            <label class="form-check-label">
+                                Less
+                                <InputCheckbox class="form-check-input" @bind-Value="upgradeRequest.Less">
+                                </InputCheckbox>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <div>
+        <button type="submit" class="btn btn-outline-warning bgchart">Filter</button>
+    </div>
+</EditForm>
+
+<div>
+    <sc2dsstats.razorlib.Options.AutoComplete.AutoComplete 
+        PossibleValues="Data.UnitNames"
+        Placeholder="Zergling"
+        OnChanged="ValueChanged"
+    />
+
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ReplaysUnitsRequest SearchRequest { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRequest { get; set; }
+
+    EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new(SearchRequest);
+        base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            JSRuntime.InvokeVoidAsync("enableTooltips");
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    private void Submit()
+    {
+        OnRequest.InvokeAsync();
+    }
+
+    private void ValueChanged(string value)
+    {
+        Console.WriteLine($"value: {value}");
+    }
+
+    private void ClearUnits()
+    {
+        foreach (var ent in SearchRequest.UnitRequests)
+        {
+            ent.Clear();
+        }
+        StateHasChanged();
+    }
+
+    private void ClearUpgrades()
+    {
+        foreach (var ent in SearchRequest.UpgradeRequests)
+        {
+            ent.Clear();
+        }
+        StateHasChanged();
+    }
+
+    public void Clear()
+    {
+        SearchRequest.Clear();
+    }
+
+    private string GetTooltip(ReplaysAdvEnum advEnum)
+    {
+        return advEnum switch
+        {
+            ReplaysAdvEnum.Any => "Either can be at any position",
+            ReplaysAdvEnum.Exact => "Exact position",
+            ReplaysAdvEnum.ExactLine => "Position 1|4, 2|5 or 3|6",
+            _ => ""
+        };
+    }
+}

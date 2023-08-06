@@ -25,5 +25,7 @@ namespace pax.dsstats.dbng.Repositories
         Task SetReplayDownloads();
         Task FixPlayerNames();
         Task FixArcadePlayerNames();
+        Task<List<string>> GetUnitNames();
+        Task<List<string>> GetUpgradeNames();
     }
 }

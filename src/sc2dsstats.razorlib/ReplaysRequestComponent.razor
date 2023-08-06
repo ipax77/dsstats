@@ -129,26 +129,51 @@
         </div>
     </EditForm>
 </div>
-<div class="ms-2">
-    <button class="btn btn-sm btn-outline-light bgchart"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#AdvFilter"
-            aria-expanded="false"
-            aria-controls="AdvFilter"
-    @onclick="ShowHideAdvFilter">
-        <span class="oi @(showHideAdvFilter ? "oi-caret-bottom" : "oi-caret-top")"></span>
-        Advanced Filter
-    </button>
+<div class="row">
+    <div class="ms-2 col-auto">
+        <button class="btn btn-sm btn-outline-light bgchart"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#AdvFilter"
+                aria-expanded="false"
+                aria-controls="AdvFilter"
+        @onclick="ShowHideAdvFilter">
+            <span class="oi @(showHideAdvFilter ? "oi-caret-bottom" : "oi-caret-top")"></span>
+            Advanced Filter
+        </button>
+    </div>
+    <div class="ms-2 col-auto">
+        <button class="btn btn-sm btn-outline-light bgchart"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#UnitFilter"
+                aria-expanded="false"
+                aria-controls="UnitFilter"
+        @onclick="ShowHideUnitFilter">
+            <span class="oi @(showHideUnitFilter ? "oi-caret-bottom" : "oi-caret-top")"></span>
+            Units Filter
+        </button>
+    </div>
 </div>
-<div class="collapse mt-1" id="AdvFilter" style="min-height: 350px;">
-    @if (replaysRequest.AdvancedRequest != null)
-    {
-        <sc2dsstats.razorlib.Replays.ReplaysAdvancedRequestComponent
-            @ref="replaysAdvancedRequestComponent"
-            SearchRequest="replaysRequest.AdvancedRequest"
-            OnRequest="OnFieldChanged" />
-    }
+<div class="row mt-1">
+    <div class="collapse col-auto" id="AdvFilter" style="min-height: 350px;">
+        @if (replaysRequest.AdvancedRequest != null)
+        {
+            <sc2dsstats.razorlib.Replays.ReplaysAdvancedRequestComponent
+                @ref="replaysAdvancedRequestComponent"
+                SearchRequest="replaysRequest.AdvancedRequest"
+                OnRequest="OnFieldChanged" />
+        }
+    </div>
+    <div class="collapse col-auto" id="UnitFilter" style="min-height: 350px;">
+        @if (replaysRequest.UnitRequest != null)
+        {
+            <sc2dsstats.razorlib.Replays.ReplaysUnitsRequestComponent
+                @ref="replaysUnitsRequestComponent"
+                SearchRequest="replaysRequest.UnitRequest"
+                OnRequest="OnFieldChanged" />
+        }
+    </div>
 </div>
 
 @code {
@@ -167,6 +192,9 @@
 
     bool showHideAdvFilter = false;
     ReplaysAdvancedRequestComponent? replaysAdvancedRequestComponent;
+
+    bool showHideUnitFilter = false;
+    ReplaysUnitsRequestComponent? replaysUnitsRequestComponent;
 
     protected override async Task OnInitializedAsync()
     {
@@ -194,6 +222,15 @@
             replaysRequest.AdvancedRequest = new();
         }
         showHideAdvFilter = !showHideAdvFilter;
+    }
+
+    private void ShowHideUnitFilter()
+    {
+        if (replaysRequest.UnitRequest == null)
+        {
+            replaysRequest.UnitRequest = new();
+        }
+        showHideUnitFilter = !showHideUnitFilter;
     }
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
@@ -260,6 +297,7 @@
         replaysRequest.ToonIdVs = 0;
         replaysRequest.ToonIdName = null;
         replaysAdvancedRequestComponent?.Clear();
+        replaysUnitsRequestComponent?.Clear();
         StateHasChanged();
         OnFieldChanged.InvokeAsync();
     }
