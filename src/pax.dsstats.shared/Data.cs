@@ -261,6 +261,7 @@ public static class Data
         "Adept",
         "AegisGuard",
         "AiurCarrier",
+        "Alarak",
         "Aleksander",
         "Annihilator",
         "Aperture",
@@ -291,6 +292,7 @@ public static class Data
         "Cyclone",
         "DarkArchon",
         "DarkTemplar",
+        "Dehaka",
         "DeimosViking",
         "Destroyer",
         "Devourer",
@@ -342,6 +344,7 @@ public static class Data
         "InfestedThor",
         "Infestor",
         "Kaldalis",
+        "Kerrigan",
         "Legionnaire",
         "Leviathan",
         "Liberator",
@@ -357,6 +360,7 @@ public static class Data
         "MothershipTaldarim",
         "Mutalisk",
         "Nikara",
+        "Nova",
         "Nux",
         "Observer",
         "Oracle",
@@ -368,7 +372,7 @@ public static class Data
         "PrimalHost",
         "PrimalHydralisk",
         "PrimalIgniter",
-        "Primalling",
+        "PrimalZergling",
         "PrimalMutalisk",
         "PrimalRavasaur",
         "PrimalRoach",
@@ -432,6 +436,7 @@ public static class Data
         "TrooperAA",
         "TrooperFlamethrower",
         "TrooperImproved",
+        "Tychus",
         "Tyrannozor",
         "Ultralisk",
         "Umbra",
@@ -453,7 +458,9 @@ public static class Data
         "WidowMine",
         "Wraith",
         "Wrathwalker",
+        "Zagara",
         "Zealot",
+        "Zergling"
     }.AsReadOnly();
 
     public static IReadOnlyList<string> UpgradeNames = new List<string>() {

@@ -1,6 +1,7 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms;
 @using Microsoft.JSInterop;
 @using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Options.InputAutoText
 @inject IJSRuntime JSRuntime
 
 <EditForm EditContext="editContext" OnValidSubmit="Submit">
@@ -14,15 +15,11 @@
                     <span class="oi oi-x text-danger pointer" @onclick="ClearUnits"></span>
                 </div>
             </div>
-            @{
-                int i = 0;
-            }
             @foreach (var unitRequest in SearchRequest.UnitRequests)
             {
-                i++;
                 <div class="row">
-                    <div class="col-sm-4">
-                        <InputText class="form-control" @bind-Value="unitRequest.UnitName"></InputText>
+                    <div class="col-sm-4 align-self-center" tabindex="0">
+                        <InputAutoText class="form-control" @bind-Value="unitRequest.UnitName" Placeholder="Zergling" PossibleValues="Data.UnitNames" />
                     </div>
                     <div class="col-auto">
                         <label class="form-label">
@@ -39,21 +36,32 @@
                             </InputSelect>
                         </label>
                     </div>
-                    <div class="col-sm-4 row mb-2 me-2">
-                        <label for="@($"unitcount{i}input")" class="col-form-label text-nowrap">
-                            Count
-                        </label>
-                        <InputNumber id="@($"unitcount{i}input")" class="form-control" min="0" max="50" step="1" @bind-Value="unitRequest.Count"></InputNumber>
-                    </div>
                     <div class="col-auto">
+                        <label class="form-label text-nowrap">
+                            @(unitRequest.Less ? "Max" : "Min") Count
+                            <InputNumber class="form-control" min="0" max="50" step="1" @bind-Value="unitRequest.Count" />
+                        </label>
+                    </div>
+                    <div class="col-auto align-self-center">
                         <div class="form-check form-switch">
                             <label class="form-check-label">
-                                Less
-                                <InputCheckbox class="form-check-input" @bind-Value="unitRequest.Less">
-                                </InputCheckbox>
+                                &lt;|&gt;
+                                <InputCheckbox class="form-check-input" @bind-Value="unitRequest.Less" />
                             </label>
                         </div>
                     </div>
+                    @if (SearchRequest.UnitRequests.Count > 1)
+                    {
+                        <div class="col-auto align-self-center">
+                            <span class="oi oi-x text-danger pointer" @onclick="e => RemoveUnit(unitRequest)"></span>
+                        </div>
+                    }
+                </div>
+            }
+            @if (SearchRequest.UnitRequests.Count < 3)
+            {
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" @onclick="AddUnit">+</button>
                 </div>
             }
         </div>
@@ -66,31 +74,40 @@
                     <span class="oi oi-x text-danger pointer" @onclick="ClearUpgrades"></span>
                 </div>
             </div>
-            @{
-                int j = 0;
-            }
+
             @foreach (var upgradeRequest in SearchRequest.UpgradeRequests)
             {
-                j++;
                 <div class="row">
-                    <div class="col-sm-4 row mb-2 me-2">
-                        <InputText class="form-control" @bind-Value="upgradeRequest.UpgradeName"></InputText>
-                    </div>
-                    <div class="col-sm-4 row mb-2 me-2">
-                        <label for="@($"upcount{j}input")" class="col-form-label text-nowrap">
-                            Minutes
-                        </label>
-                        <InputNumber id="@($"upcount{j}input")" class="form-control" min="0" max="30" step="1" @bind-Value="upgradeRequest.Minutes"></InputNumber>
+                    <div class="col-sm-6 align-self-center">
+                        <InputAutoText class="form-control" @bind-Value="upgradeRequest.UpgradeName" Placeholder="Charge" PossibleValues="Data.UpgradeNames" />
                     </div>
                     <div class="col-auto">
+                        <label class="form-label text-nowrap">
+                            @(upgradeRequest.Less ? "Before" : "After") Minute
+                            <InputNumber class="form-control" min="0" max="30" step="1" @bind-Value="upgradeRequest.Minutes" />
+                        </label>
+                    </div>
+                    <div class="col-auto align-self-center">
                         <div class="form-check form-switch">
                             <label class="form-check-label">
-                                Less
+                                &lt;|&gt;
                                 <InputCheckbox class="form-check-input" @bind-Value="upgradeRequest.Less">
                                 </InputCheckbox>
                             </label>
                         </div>
                     </div>
+                    @if (SearchRequest.UpgradeRequests.Count > 1)
+                    {
+                        <div class="col-auto align-self-center">
+                            <span class="oi oi-x text-danger pointer" @onclick="e => RemoveUpgrade(upgradeRequest)"></span>
+                        </div>
+                    }
+                </div>
+            }
+            @if (SearchRequest.UpgradeRequests.Count < 3)
+            {
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" @onclick="AddUpgrade">+</button>
                 </div>
             }
         </div>
@@ -99,15 +116,6 @@
         <button type="submit" class="btn btn-outline-warning bgchart">Filter</button>
     </div>
 </EditForm>
-
-<div>
-    <sc2dsstats.razorlib.Options.AutoComplete.AutoComplete 
-        PossibleValues="Data.UnitNames"
-        Placeholder="Zergling"
-        OnChanged="ValueChanged"
-    />
-
-</div>
 
 @code {
     [Parameter, EditorRequired]
@@ -138,32 +146,39 @@
         OnRequest.InvokeAsync();
     }
 
-    private void ValueChanged(string value)
-    {
-        Console.WriteLine($"value: {value}");
-    }
-
     private void ClearUnits()
     {
-        foreach (var ent in SearchRequest.UnitRequests)
-        {
-            ent.Clear();
-        }
-        StateHasChanged();
+        SearchRequest.UnitRequests = new() { new() };
     }
 
     private void ClearUpgrades()
     {
-        foreach (var ent in SearchRequest.UpgradeRequests)
-        {
-            ent.Clear();
-        }
-        StateHasChanged();
+        SearchRequest.UpgradeRequests = new() { new() };
     }
 
     public void Clear()
     {
         SearchRequest.Clear();
+    }
+
+    private void AddUpgrade()
+    {
+        SearchRequest.UpgradeRequests.Add(new());
+    }
+
+    private void AddUnit()
+    {
+        SearchRequest.UnitRequests.Add(new());
+    }
+
+    private void RemoveUpgrade(ReplayUpgradeRequest upgradeRequest)
+    {
+        SearchRequest.UpgradeRequests.Remove(upgradeRequest);
+    }
+
+    private void RemoveUnit(ReplayUnitRequest unitRequest)
+    {
+        SearchRequest.UnitRequests.Remove(unitRequest);
     }
 
     private string GetTooltip(ReplaysAdvEnum advEnum)
