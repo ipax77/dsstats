@@ -1,0 +1,194 @@
+﻿@using Microsoft.AspNetCore.Components.Forms;
+@using Microsoft.JSInterop;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Options.InputAutoText
+@inject IJSRuntime JSRuntime
+
+<EditForm EditContext="editContext" OnValidSubmit="Submit">
+    <div class="row">
+        <div class="col-auto bgchart p-2 rounded">
+            <div class="d-inline-block d-flex p-1 bgchart2">
+                <div class="flex-grow-1">
+                    <h4>Units</h4>
+                </div>
+                <div class="">
+                    <span class="oi oi-x text-danger pointer" @onclick="ClearUnits"></span>
+                </div>
+            </div>
+            @foreach (var unitRequest in SearchRequest.UnitRequests)
+            {
+                <div class="row">
+                    <div class="col-sm-4 align-self-center" tabindex="0">
+                        <InputAutoText class="form-control" @bind-Value="unitRequest.UnitName" Placeholder="Zergling" PossibleValues="Data.UnitNames" />
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label">
+                            Breakpoint
+                            <InputSelect class="form-select" @bind-Value="unitRequest.Breakpoint">
+                                @foreach (Breakpoint bp in Enum.GetValues(typeof(Breakpoint)))
+                                {
+                                    if (bp == Breakpoint.None)
+                                    {
+                                        continue;
+                                    }
+                                    <option value="@bp">@bp</option>
+                                }
+                            </InputSelect>
+                        </label>
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label text-nowrap">
+                            @(unitRequest.Less ? "Max" : "Min") Count
+                            <InputNumber class="form-control" min="0" max="50" step="1" @bind-Value="unitRequest.Count" />
+                        </label>
+                    </div>
+                    <div class="col-auto align-self-center">
+                        <div class="form-check form-switch">
+                            <label class="form-check-label">
+                                &lt;|&gt;
+                                <InputCheckbox class="form-check-input" @bind-Value="unitRequest.Less" />
+                            </label>
+                        </div>
+                    </div>
+                    @if (SearchRequest.UnitRequests.Count > 1)
+                    {
+                        <div class="col-auto align-self-center">
+                            <span class="oi oi-x text-danger pointer" @onclick="e => RemoveUnit(unitRequest)"></span>
+                        </div>
+                    }
+                </div>
+            }
+            @if (SearchRequest.UnitRequests.Count < 3)
+            {
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" @onclick="AddUnit">+</button>
+                </div>
+            }
+        </div>
+        <div class="col-auto bgchart p-2 rounded">
+            <div class="d-inline-block d-flex p-1 bgchart2">
+                <div class="flex-grow-1">
+                    <h4>Upgrades</h4>
+                </div>
+                <div class="">
+                    <span class="oi oi-x text-danger pointer" @onclick="ClearUpgrades"></span>
+                </div>
+            </div>
+
+            @foreach (var upgradeRequest in SearchRequest.UpgradeRequests)
+            {
+                <div class="row">
+                    <div class="col-sm-6 align-self-center">
+                        <InputAutoText class="form-control" @bind-Value="upgradeRequest.UpgradeName" Placeholder="Charge" PossibleValues="Data.UpgradeNames" />
+                    </div>
+                    <div class="col-auto">
+                        <label class="form-label text-nowrap">
+                            @(upgradeRequest.Less ? "Before" : "After") Minute
+                            <InputNumber class="form-control" min="0" max="30" step="1" @bind-Value="upgradeRequest.Minutes" />
+                        </label>
+                    </div>
+                    <div class="col-auto align-self-center">
+                        <div class="form-check form-switch">
+                            <label class="form-check-label">
+                                &lt;|&gt;
+                                <InputCheckbox class="form-check-input" @bind-Value="upgradeRequest.Less">
+                                </InputCheckbox>
+                            </label>
+                        </div>
+                    </div>
+                    @if (SearchRequest.UpgradeRequests.Count > 1)
+                    {
+                        <div class="col-auto align-self-center">
+                            <span class="oi oi-x text-danger pointer" @onclick="e => RemoveUpgrade(upgradeRequest)"></span>
+                        </div>
+                    }
+                </div>
+            }
+            @if (SearchRequest.UpgradeRequests.Count < 3)
+            {
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" @onclick="AddUpgrade">+</button>
+                </div>
+            }
+        </div>
+    </div>
+    <div>
+        <button type="submit" class="btn btn-outline-warning bgchart">Filter</button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired]
+    public ReplaysUnitsRequest SearchRequest { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRequest { get; set; }
+
+    EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new(SearchRequest);
+        base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            JSRuntime.InvokeVoidAsync("enableTooltips");
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    private void Submit()
+    {
+        OnRequest.InvokeAsync();
+    }
+
+    private void ClearUnits()
+    {
+        SearchRequest.UnitRequests = new() { new() };
+    }
+
+    private void ClearUpgrades()
+    {
+        SearchRequest.UpgradeRequests = new() { new() };
+    }
+
+    public void Clear()
+    {
+        SearchRequest.Clear();
+    }
+
+    private void AddUpgrade()
+    {
+        SearchRequest.UpgradeRequests.Add(new());
+    }
+
+    private void AddUnit()
+    {
+        SearchRequest.UnitRequests.Add(new());
+    }
+
+    private void RemoveUpgrade(ReplayUpgradeRequest upgradeRequest)
+    {
+        SearchRequest.UpgradeRequests.Remove(upgradeRequest);
+    }
+
+    private void RemoveUnit(ReplayUnitRequest unitRequest)
+    {
+        SearchRequest.UnitRequests.Remove(unitRequest);
+    }
+
+    private string GetTooltip(ReplaysAdvEnum advEnum)
+    {
+        return advEnum switch
+        {
+            ReplaysAdvEnum.Any => "Either can be at any position",
+            ReplaysAdvEnum.Exact => "Exact position",
+            ReplaysAdvEnum.ExactLine => "Position 1|4, 2|5 or 3|6",
+            _ => ""
+        };
+    }
+}

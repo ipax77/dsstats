@@ -1,0 +1,40 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@inherits InputText
+
+<div class="autocomplete">
+    <div class="input-group">
+        <input @ref="@Element"
+               type="text"
+               class="@CssClass"
+        @attributes="@AdditionalAttributes"
+               @bind="CurrentValue"
+        @oninput="OnInputChangedAsync"
+        @onkeydown="OnKeyDownAsync"
+               placeholder=" @Placeholder"
+               disabled="@Disabled"
+               autocomplete="off" />
+
+        @if (inputHasValue)
+        {
+            <button class="border-0"
+                    style="margin-left: -42px; z-index: 100; border-top-left-radius: .25rem; border-bottom-left-radius: .25rem;"
+                    disabled="@Disabled"
+            @onclick="ClearInputTextAsync">
+                <span class="oi oi-x text-danger pointer"></span>
+            </button>
+        }
+        <ul @ref="list" class="dropdown-menu autocomplete-list" data-popper-placement="bottom-start">
+            @if (items is not null && items.Any())
+            {
+                foreach (var item in items)
+                {
+                    <li class="dropdown-item" @onclick="async () => await OnItemSelectedAsync(item)">@item</li>
+                }
+            }
+            else
+            {
+                <li class="dropdown-item">No records found.</li>
+            }
+        </ul>
+    </div>
+</div>
