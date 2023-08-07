@@ -364,3 +364,80 @@ function getWindowDimension() {
         height: window.innerHeight
     };
 }
+
+window.dsoptions = {
+    autocomplete: {
+        initialize: (elementRef, dotNetHelper) => {
+            let dropdownToggleEl = elementRef;
+
+            dropdownToggleEl.addEventListener('show.bs.dropdown', function () {
+                dotNetHelper.invokeMethodAsync('bsShowAutocomplete');
+            });
+            dropdownToggleEl.addEventListener('shown.bs.dropdown', function () {
+                dotNetHelper.invokeMethodAsync('bsShownAutocomplete');
+            });
+            dropdownToggleEl.addEventListener('hide.bs.dropdown', function () {
+                dotNetHelper.invokeMethodAsync('bsHideAutocomplete');
+            });
+            dropdownToggleEl.addEventListener('hidden.bs.dropdown', function () {
+                dotNetHelper.invokeMethodAsync('bsHiddenAutocomplete');
+            });
+
+            bootstrap?.Dropdown?.getOrCreateInstance(elementRef);
+        },
+        show: (elementRef) => {
+            bootstrap?.Dropdown?.getOrCreateInstance(elementRef)?.show();
+        },
+        hide: (elementRef) => {
+            bootstrap?.Dropdown?.getOrCreateInstance(elementRef)?.hide();
+        },
+        dispose: (elementRef) => {
+            bootstrap?.Dropdown?.getOrCreateInstance(elementRef)?.dispose();
+        },
+        focusListItem: (ul, key, startIndex) => {
+            if (!ul || startIndex < -1) return 0;
+
+            let childNodes = ul.getElementsByTagName('LI');
+
+            if (!childNodes || childNodes.length === 0) return 0;
+
+            if (startIndex === undefined || startIndex === null)
+                startIndex = -1;
+
+            let nextSelectedIndex = startIndex;
+
+            if (key === "ArrowDown") { // ARROWDOWN
+                if (nextSelectedIndex < childNodes.length - 1)
+                    nextSelectedIndex++;
+            }
+            else if (key === "ArrowUp") { // ARROWUP
+                if (nextSelectedIndex > 0 && nextSelectedIndex <= childNodes.length - 1)
+                    nextSelectedIndex--;
+            }
+            else if (key === "Home") { // HOME
+                nextSelectedIndex = 0;
+            }
+            else if (key === "End") { // END
+                nextSelectedIndex = childNodes.length - 1;
+            }
+            else
+                return 0;
+
+            // reset li element focus
+            let highlighted = ul.querySelectorAll('.dropdown-item-highlight');
+            if (highlighted.length) {
+                for (let i = 0; i < highlighted.length; i++) {
+                    highlighted[i].classList.remove('dropdown-item-highlight');
+                }
+            }
+
+            // focus on the next li element
+            if (nextSelectedIndex >= 0 && nextSelectedIndex <= childNodes.length - 1) {
+                childNodes[nextSelectedIndex].classList.add('dropdown-item-highlight');
+                ul.scrollTop = childNodes[nextSelectedIndex].offsetTop;
+            }
+
+            return nextSelectedIndex;
+        }
+    }
+}
