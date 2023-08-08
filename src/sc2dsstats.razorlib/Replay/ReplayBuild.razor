@@ -31,8 +31,8 @@
                      title="@replayPlayer.Race"
                      width="30"
                      height="30" />
-                <div class="">
-                    <span class="badge bg-info">Gas @spawn?.GasCount</span>
+                <div class="ms-1 me-1">
+                    <button type="button" class="btn btn-sm btn-outline-info" @onclick="() => showGas = !showGas">Gas @spawn?.GasCount</button>
                 </div>
                 <div class="">
                     <button type="button" class="btn btn-sm btn-outline-light" @onclick="() => showUpgrades = !showUpgrades">Upgrades @spawn?.UpgradeSpent</button>
@@ -40,7 +40,11 @@
             </div>
             @if (showUpgrades)
             {
-                <ReplayUpgrades></ReplayUpgrades>
+                <ReplayUpgrades />
+            }
+            @if (showGas)
+            {
+                <ReplayPlayerRefineriesComponent TeamIncome="TeamIncome" />
             }
             <ReplayUnits></ReplayUnits>
         </div>
@@ -61,8 +65,13 @@
     [EditorRequired]
     public bool ShowPlayerNames { get; set; }
 
+    [Parameter]
+    [EditorRequired]
+    public int TeamIncome { get; set; }
+
     private bool showMap;
     private bool showUpgrades;
+    private bool showGas;
 
     private SpawnDto? spawn => replayPlayer.Spawns.FirstOrDefault(f => f.Breakpoint == breakpoint);
 }

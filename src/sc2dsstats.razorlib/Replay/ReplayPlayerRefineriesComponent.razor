@@ -1,0 +1,89 @@
+﻿@using System.Globalization;
+@using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
+
+<div class="col-auto">
+    <div class="table-responsive">
+
+        <table class="tptable table table-sm w-auto">
+            <thead>
+                <tr>
+                    <th>GasTime</th>
+                    <th>Value <img src="_content/sc2dsstats.razorlib/images/pax_mins.png" alt="minerals" /></th>
+                </tr>
+            </thead>
+            <tbody>
+                @{int total = 0;}
+                @foreach (var ent in GetRefineries())
+                {
+                    total += ent.Value;
+                    <tr>
+                        <td>@ent.Key</td>
+                        <td>@ent.Value</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr class="table-primary">
+                    <td>Total:</td>
+                    <td>@total (@GasIncomePercentageFromTeamIncome(total))</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    [EditorRequired]
+    public ReplayPlayerDto replayPlayer { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public int TeamIncome { get; set; }
+
+    List<KeyValuePair<string, int>> GetRefineries()
+    {
+        if (string.IsNullOrEmpty(replayPlayer.Refineries))
+        {
+            return new();
+        }
+
+        var refTimes = replayPlayer.Refineries.Split('|', StringSplitOptions.RemoveEmptyEntries);
+
+        List<KeyValuePair<string, int>> refineryTimes = new();
+
+        for (int i = 0; i < refTimes.Length; i++)
+        {
+            if (int.TryParse(refTimes[i], out int refTimeInt))
+            {
+                refineryTimes.Add(
+                    new(HelperService.TimeFromGameloop(refTimeInt), GetRefValue(i, refTimeInt, replayPlayer.Duration))
+                );
+            }
+
+        }
+        return refineryTimes;
+    }
+
+    private static int GetRefValue(int i, int refTime, int duration)
+    {
+        int refCost = i switch
+        {
+            0 => 150,
+            1 => 225,
+            2 => 300,
+            3 => 375,
+            _ => 150
+        };
+
+        var refDuration = duration - Convert.ToInt32(refTime / 22.4);
+        return Convert.ToInt32(refDuration * 0.5) - refCost;
+    }
+
+    private string GasIncomePercentageFromTeamIncome(int total)
+    {
+        var per = total * 100.0 / (double)TeamIncome;
+        return $"{per.ToString("N2", CultureInfo.InvariantCulture)}%";
+    }
+
+}

@@ -50,10 +50,17 @@ public static class HelperService
 
     public static string TimeFromGameloop(int gameloop)
     {
-        var duration = gameloop / 22.4;
+        var duration = (int)(gameloop / 22.4);
         return duration >= 3600 ?
               TimeSpan.FromSeconds(duration).ToString(@"hh\:mm\:ss")
             : TimeSpan.FromSeconds(duration).ToString(@"mm\:ss");
+    }
+
+    public static string TimeFromSeconds(int seconds)
+    {
+        return seconds >= 3600 ?
+              TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss")
+            : TimeSpan.FromSeconds(seconds).ToString(@"mm\:ss");
     }
 
     public static (int, int[], int) GetMiddleInfo(string middleString, int duration)

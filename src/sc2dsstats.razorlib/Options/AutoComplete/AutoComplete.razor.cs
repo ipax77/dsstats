@@ -92,10 +92,10 @@ public partial class AutoComplete : ComponentBase, IDisposable
 
         var token = cts.Token;
         await Task.Delay(300, token); // 300ms timeout for the debouncing
-        await FilterDataAsync(token);
+        FilterData();
     }
 
-    private async Task FilterDataAsync(CancellationToken cancellationToken = default)
+    private void FilterData(CancellationToken cancellationToken = default)
     {
         var searchKey = Value;
         if (string.IsNullOrWhiteSpace(searchKey))

@@ -63,7 +63,15 @@
                                 {
                                     <button class="btn btn-sm btn-danger"><b>@(@replayDto.ReplayEvent != null ? replayDto.ReplayEvent.RunnerTeam : $"Team {i}")</b></button>
                                 }
-                                <button type="button" class="btn btn-sm btn-outline-light" @onclick="@(() => showMiddleChart = !showMiddleChart)">Middle Control @(i == 1 ? mid1 : mid2)%</button>
+                                <button type="button" class="btn btn-sm btn-outline-light ms-1" @onclick="@(() => showMiddleChart = !showMiddleChart)">Middle Control @(i == 1 ? mid1 : mid2)%</button>
+                                @if (i == 1 && replayDto.Cannon > 0)
+                                {
+                                    <button class="btn btn-sm btn-outline-success ms-1" @onclick="@(()=> showMiddleChart = !showMiddleChart)">Cannon down at @HelperService.TimeFromSeconds(replayDto.Cannon)</button>
+                                }
+                                else if (i == 2 && replayDto.Bunker > 0)
+                                {
+                                    <button class="btn btn-sm btn-outline-success ms-1" @onclick="@(()=> showMiddleChart = !showMiddleChart)">Bunker down at @HelperService.TimeFromSeconds(replayDto.Bunker)</button>
+                                }
                             </div>
                             <div class="table-responsive" style="max-width: 560px;">
                                 <table class="tptable table table-sm w-auto pointer">
@@ -80,8 +88,8 @@
                                             <th style="width: 120px;">Cmdr</th>
                                             @*<th>Build</th>*@
                                             <th>Income</th>
-                                            <th>Army</th>
-                                            <th>Kills</th>
+                                            <th data-bs-toggle ="tooltip" data-bs-placement="top" data-bs-title="Summary of all spawns">Army</th>
+                                            <th data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Summary of all kills">Kills</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -115,7 +123,11 @@
                                                         <span><small>@player.Race</small></span>
                                                     </div>
                                                 </td>
-                                                <td class="@tableclass">@HelperService.GetBigNumberString(player.Income)</td>
+                                                @*<td class="@tableclass">@HelperService.GetBigNumberString(player.Income)</td>*@
+                                                <td class="@tableclass">@(i == 1 ?
+                                                        @HelperService.GetBigNumberString(income1 + GetGasIncome(player))
+                                                        : @HelperService.GetBigNumberString(income2 + GetGasIncome(player)))
+                                                </td>
                                                 <td class="@tableclass">@HelperService.GetBigNumberString(player.Army)</td>
                                                 <td class="@tableclass">@HelperService.GetBigNumberString(player.Kills)</td>
                                             </tr>
@@ -202,7 +214,7 @@
                 var player = showBuilds[i] ? replayDto.ReplayPlayers.FirstOrDefault(f => f.GamePos == i) : null;
                 @if (player != null)
                 {
-                    <ReplayBuild replayPlayer="player" ShowPlayerNames="showPlayerNames"></ReplayBuild>
+                    <ReplayBuild replayPlayer="player" TeamIncome="@(i <= 3 ? income1 : income2)" ShowPlayerNames="showPlayerNames"></ReplayBuild>
                 }
             }
         </div>
@@ -248,6 +260,9 @@
     private ReplayRatingDto? mauiRating;
     private ReplayRatingInfo? replayRatingInfo;
     bool onlineRating;
+
+    int income1 = 0;
+    int income2 = 0;
 
     protected override void OnInitialized()
     {
@@ -295,6 +310,9 @@
                 player.MmrChange = plRating?.RatingChange ?? 0;
             }
         }
+
+        income1 = Convert.ToInt32(replay.Duration * 7.5 + (replay.Duration * (mid1 / 100)));
+        income2 = Convert.ToInt32(replay.Duration * 7.5 + (replay.Duration * (mid2 / 100)));
 
         mauiRating = replay.ReplayRatingInfo;
         if (onlineRating)
@@ -586,6 +604,42 @@
                     }
                 }
             };
+    }
+
+    private static int GetGasIncome(ReplayPlayerDto replayPlayer)
+    {
+        if (string.IsNullOrEmpty(replayPlayer.Refineries))
+        {
+            return 0;
+        }
+
+        var refTimes = replayPlayer.Refineries.Split('|', StringSplitOptions.RemoveEmptyEntries);
+
+        List<int> refineryValues = new();
+
+        for (int i = 0; i < refTimes.Length; i++)
+        {
+            if (int.TryParse(refTimes[i], out int refTimeInt))
+            {
+                refineryValues.Add(GetRefValue(i, refTimeInt, replayPlayer.Duration));
+            }
+        }
+        return refineryValues.Sum();
+    }
+
+    private static int GetRefValue(int i, int refTime, int duration)
+    {
+        int refCost = i switch
+        {
+            0 => 150,
+            1 => 225,
+            2 => 300,
+            3 => 375,
+            _ => 150
+        };
+
+        var refDuration = duration - Convert.ToInt32(refTime / 22.4);
+        return Convert.ToInt32(refDuration * 0.5) - refCost;
     }
 
     public void Dispose()
