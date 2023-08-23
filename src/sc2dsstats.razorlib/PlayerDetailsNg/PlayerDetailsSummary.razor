@@ -295,6 +295,8 @@
     public EventCallback OnCloseRequested { get; set; }
     [Parameter]
     public EventCallback<ReplaysToonIdRequest> ReplaysRequest { get; set; }
+    [Parameter]
+    public EventCallback<RatingType> OnRatingTypeChanged { get; set; }
 
     CancellationTokenSource cts = new();
     bool isLoading;
@@ -319,6 +321,7 @@
 
     public void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
+        OnRatingTypeChanged.InvokeAsync(RatingType);
         _ = LoadDetailData();
     }
 

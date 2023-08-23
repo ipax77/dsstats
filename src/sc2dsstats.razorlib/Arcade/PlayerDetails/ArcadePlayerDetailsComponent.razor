@@ -235,6 +235,9 @@
     [Parameter]
     public EventCallback<ReplaysToonIdRequest> OnReplaysRequest { get; set; }
 
+    [Parameter]
+    public EventCallback<RatingType> OnRatingTypeChanged { get; set; }
+
     private CancellationTokenSource cts = new();
     private bool loading;
 
@@ -291,6 +294,7 @@
                 RatingType = ratingTypeValue;
                 arcadePlayerDetailsChart?.Update(RatingType, InterestRating?.Rating ?? 0);
                 await LoadMoreData();
+                await OnRatingTypeChanged.InvokeAsync(RatingType);
             }
         }
     }

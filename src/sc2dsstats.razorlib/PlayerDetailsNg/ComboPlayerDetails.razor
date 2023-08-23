@@ -28,7 +28,8 @@
             <sc2dsstats.razorlib.Arcade.PlayerDetails.ArcadePlayerDetailsComponent RequestNames="RequestNames"
                                                                                    RatingType="RatingType"
                                                                                    OnCloseRequested="OnCloseRequested"
-                                                                                   OnReplaysRequest="OnArcadeReplaysRequest" />
+                                                                                   OnReplaysRequest="OnArcadeReplaysRequest"
+                                                                                   OnRatingTypeChanged="RatingTypeChanged" />
 
         }
     </div>
@@ -38,7 +39,8 @@
             <sc2dsstats.razorlib.PlayerDetailsNg.PlayerDetailsSummary RequestNames="RequestNames"
                                                                       OnCloseRequested="OnCloseRequested"
                                                                       RatingType="RatingType"
-                                                                      ReplaysRequest="OnReplaysRequest" />
+                                                                      ReplaysRequest="OnReplaysRequest"
+                                                                      OnRatingTypeChanged="RatingTypeChanged" />
         }
     </div>
 </div>
@@ -50,7 +52,7 @@
     [Parameter, EditorRequired]
     public bool ArcadeDetails { get; set; }
 
-    [Parameter]
+    [Parameter, EditorRequired]
     public RatingType RatingType { get; set; } = RatingType.Cmdr;
 
     [Parameter]
@@ -60,4 +62,9 @@
     public EventCallback<ReplaysToonIdRequest> OnReplaysRequest { get; set; }
     [Parameter]
     public EventCallback<ReplaysToonIdRequest> OnArcadeReplaysRequest { get; set; }
+
+    private void RatingTypeChanged(RatingType ratingType)
+    {
+        RatingType = ratingType;
+    }
 }
