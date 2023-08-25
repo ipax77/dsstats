@@ -162,6 +162,22 @@ public static class HelperService
         }
         return cmdrs;
     }
+
+    public static string SanitizePlayerName(string playerName)
+    {
+        if (string.IsNullOrWhiteSpace(playerName) || playerName.Equals("null", StringComparison.OrdinalIgnoreCase))
+        {
+            return "N/A"; // Handle empty or null names
+        }
+
+        // Define a list of characters you want to remove or replace
+        char[] invalidChars = { '<', '>', '&', '"' };
+
+        // Replace invalid characters with a safe character (e.g., space)
+        string sanitizedName = new string(playerName.Select(c => invalidChars.Contains(c) ? ' ' : c).ToArray());
+
+        return sanitizedName;
+    }
 }
 
 public record ReplaysToonIdRequest
