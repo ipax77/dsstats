@@ -105,7 +105,7 @@
                                                     </td>
                                                 }
                                                 <td class="@tableclass">
-                                                    <span @onclick:stopPropagation @onclick="e => ShowPlayerDetails(player.Player)" class="d-inline-block text-truncate text-decoration-underline" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
+                                                    <span @onclick:stopPropagation @onclick="e => ShowPlayerDetails(player.Player)" class="d-inline-block text-truncate text-decoration-underline" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@HelperService.SanitizePlayerName(player.Name)">
                                                         @player.Name
                                                     </span>
                                                 </td>
