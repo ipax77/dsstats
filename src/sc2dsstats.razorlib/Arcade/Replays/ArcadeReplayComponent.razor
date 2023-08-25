@@ -2,6 +2,7 @@
 @using Microsoft.JSInterop;
 @using pax.dsstats.shared.Arcade;
 @using pax.dsstats.shared;
+@using sc2dsstats.razorlib.Services;
 @inject IJSRuntime JSRuntime
 
 <div class="card" style="max-width: 1000px; min-width: 500px;">
@@ -87,7 +88,7 @@
                                             }
                                         </td>
                                         <td class="@(player.PlayerResult == PlayerResult.None ? "table-danger" : "")">
-                                            <span class="d-inline-block text-truncate text-decoration-underline" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@player.Name">
+                                            <span class="d-inline-block text-truncate text-decoration-underline" style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="@HelperService.SanitizePlayerName(player.Name)">
                                                 @player.Name
                                             </span>
                                         </td>
