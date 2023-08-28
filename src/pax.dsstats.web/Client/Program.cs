@@ -17,7 +17,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddBlazoredToast();
 builder.Services.AddChartJs(options =>
 {
-    options.ChartJsLocation = "/_content/sc2dsstats.razorlib/js/chart.umd.js";
+    options.ChartJsLocation = "/_content/sc2dsstats.razorlib/js/chart.js";
     options.ChartJsPluginDatalabelsLocation = "/_content/sc2dsstats.razorlib/js/chartjs-plugin-datalabels.min.js";
     //options.ChartJsLocation = "/js/chart.js";
     //options.ChartJsPluginDatalabelsLocation = "/js/chartjs-plugin-datalabels.js";

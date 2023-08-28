@@ -53,7 +53,7 @@ public static class MauiProgram
         builder.Services.AddBlazoredToast();
         builder.Services.AddChartJs(options =>
         {
-            options.ChartJsLocation = "/_content/sc2dsstats.razorlib/js/chart.umd.js";
+            options.ChartJsLocation = "/_content/sc2dsstats.razorlib/js/chart.js";
             options.ChartJsPluginDatalabelsLocation = "/_content/sc2dsstats.razorlib/js/chartjs-plugin-datalabels.min.js";
         });
 

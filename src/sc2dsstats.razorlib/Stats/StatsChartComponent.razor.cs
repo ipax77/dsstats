@@ -513,7 +513,7 @@ public partial class StatsChartComponent : ComponentBase
             {
                 R = new LinearRadialAxis()
                 {
-                    AngelLines = new AngelLines()
+                    AngleLines = new AngleLines()
                     {
                         Display = true,
                         Color = "#f2f2f233"
