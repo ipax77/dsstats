@@ -16,7 +16,7 @@ namespace MysqlMigrations.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.19")
+                .HasAnnotation("ProductVersion", "6.0.21")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("ReplayUploader", b =>
@@ -524,6 +524,9 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    b.Property<int>("ArcadeDefeatsSinceLastUpload")
+                        .HasColumnType("int");
+
                     b.Property<int>("DisconnectCount")
                         .HasColumnType("int");
 
@@ -564,6 +567,9 @@ namespace MysqlMigrations.Migrations
                 {
                     b.Property<int>("PlayerRatingId")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("ArcadeDefeatsSinceLastUpload")
                         .HasColumnType("int");
 
                     b.Property<double>("Confidence")
@@ -1284,6 +1290,87 @@ namespace MysqlMigrations.Migrations
                         .HasColumnType("double");
 
                     b.ToTable("DRangeResults");
+                });
+
+            modelBuilder.Entity("pax.dsstats.shared.DamageEnt", b =>
+                {
+                    b.Property<int>("AvgAPM")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AvgArmy")
+                        .HasColumnType("int");
+
+                    b.Property<double>("AvgGas")
+                        .HasColumnType("double");
+
+                    b.Property<int>("AvgIncome")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AvgKills")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AvgUpgrades")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Breakpoint")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Commander")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Mvp")
+                        .HasColumnType("int");
+
+                    b.ToTable("DamageEnts");
+                });
+
+            modelBuilder.Entity("pax.dsstats.shared.SynergyEnt", b =>
+                {
+                    b.Property<double>("AvgGain")
+                        .HasColumnType("double");
+
+                    b.Property<double>("AvgRating")
+                        .HasColumnType("double");
+
+                    b.Property<int>("Commander")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("int");
+
+                    b.Property<double>("NormalizedAvgGain")
+                        .HasColumnType("double");
+
+                    b.Property<int>("Teammate")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Wins")
+                        .HasColumnType("int");
+
+                    b.ToTable("SynergyEnts");
+                });
+
+            modelBuilder.Entity("pax.dsstats.shared.WinrateEnt", b =>
+                {
+                    b.Property<double>("AvgGain")
+                        .HasColumnType("double");
+
+                    b.Property<double>("AvgRating")
+                        .HasColumnType("double");
+
+                    b.Property<int>("Commander")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Wins")
+                        .HasColumnType("int");
+
+                    b.ToTable("WinrateEnts");
                 });
 
             modelBuilder.Entity("ReplayUploader", b =>

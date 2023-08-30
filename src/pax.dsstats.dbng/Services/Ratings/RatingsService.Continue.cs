@@ -1,14 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
-using MySqlConnector;
-using pax.dsstats.dbng;
+﻿using MySqlConnector;
 using pax.dsstats.shared;
-using pax.dsstats.shared.Ratings;
 
 namespace pax.dsstats.dbng.Services.Ratings;
 
 public partial class RatingsService
 {
-    private async Task UpdatePlayerRatings(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
+    private async Task UpdatePlayerRatings(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings, Dictionary<int, int> playerArcadeNoUploads)
     {
         using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
@@ -18,14 +15,14 @@ public partial class RatingsService
 
         command.CommandText =
             $@"
-                INSERT INTO PlayerRatings ({nameof(PlayerRating.PlayerRatingId)},{nameof(PlayerRating.RatingType)},{nameof(PlayerRating.Rating)},{nameof(PlayerRating.Games)},{nameof(PlayerRating.Wins)},{nameof(PlayerRating.Mvp)},{nameof(PlayerRating.TeamGames)},{nameof(PlayerRating.MainCount)},{nameof(PlayerRating.Main)},{nameof(PlayerRating.Consistency)},{nameof(PlayerRating.Confidence)},{nameof(PlayerRating.IsUploader)},{nameof(PlayerRating.PlayerId)})
-                VALUES ((SELECT t.{nameof(PlayerRating.PlayerRatingId)} FROM (SELECT * from PlayerRatings where {nameof(PlayerRating.RatingType)} = @value1 AND {nameof(PlayerRating.PlayerId)} = @value12) as t),@value1,@value2,@value3,@value4,@value5,@value6,@value7,@value8,@value9,@value10,@value11,@value12)
-                ON DUPLICATE KEY UPDATE {nameof(PlayerRating.Rating)}=@value2,{nameof(PlayerRating.Games)}=@value3,{nameof(PlayerRating.Wins)}=@value4,{nameof(PlayerRating.Mvp)}=@value5,{nameof(PlayerRating.TeamGames)}=@value6,{nameof(PlayerRating.MainCount)}=@value7,{nameof(PlayerRating.Main)}=@value8,{nameof(PlayerRating.Consistency)}=@value9,{nameof(PlayerRating.Confidence)}=@value10,{nameof(PlayerRating.IsUploader)}=@value11
+                INSERT INTO PlayerRatings ({nameof(PlayerRating.PlayerRatingId)},{nameof(PlayerRating.RatingType)},{nameof(PlayerRating.Rating)},{nameof(PlayerRating.Games)},{nameof(PlayerRating.Wins)},{nameof(PlayerRating.Mvp)},{nameof(PlayerRating.TeamGames)},{nameof(PlayerRating.MainCount)},{nameof(PlayerRating.Main)},{nameof(PlayerRating.Consistency)},{nameof(PlayerRating.Confidence)},{nameof(PlayerRating.IsUploader)},{nameof(PlayerRating.PlayerId)},{nameof(PlayerRating.ArcadeDefeatsSinceLastUpload)})
+                VALUES ((SELECT t.{nameof(PlayerRating.PlayerRatingId)} FROM (SELECT * from PlayerRatings where {nameof(PlayerRating.RatingType)} = @value1 AND {nameof(PlayerRating.PlayerId)} = @value12) as t),@value1,@value2,@value3,@value4,@value5,@value6,@value7,@value8,@value9,@value10,@value11,@value12,@value13)
+                ON DUPLICATE KEY UPDATE {nameof(PlayerRating.Rating)}=@value2,{nameof(PlayerRating.Games)}=@value3,{nameof(PlayerRating.Wins)}=@value4,{nameof(PlayerRating.Mvp)}=@value5,{nameof(PlayerRating.TeamGames)}=@value6,{nameof(PlayerRating.MainCount)}=@value7,{nameof(PlayerRating.Main)}=@value8,{nameof(PlayerRating.Consistency)}=@value9,{nameof(PlayerRating.Confidence)}=@value10,{nameof(PlayerRating.IsUploader)}=@value11,{nameof(PlayerRating.ArcadeDefeatsSinceLastUpload)}=@value13
             ";
         command.Transaction = transaction;
 
         List<MySqlParameter> parameters = new List<MySqlParameter>();
-        for (int i = 1; i <= 12; i++)
+        for (int i = 1; i <= 13; i++)
         {
             var parameter = command.CreateParameter();
             parameter.ParameterName = $"@value{i}";
@@ -51,6 +48,14 @@ public partial class RatingsService
                 parameters[9].Value = calcEnt.Confidence;
                 parameters[10].Value = calcEnt.IsUploader;
                 parameters[11].Value = calcEnt.PlayerId;
+                if (playerArcadeNoUploads.TryGetValue(calcEnt.PlayerId, out int defeats))
+                {
+                    parameters[12].Value = defeats;
+                }
+                else
+                {
+                    parameters[12].Value = 0;
+                }
                 command.CommandTimeout = 120;
                 await command.ExecuteNonQueryAsync();
             }

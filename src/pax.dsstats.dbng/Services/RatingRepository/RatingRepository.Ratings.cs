@@ -42,7 +42,18 @@ public partial class RatingRepository
     {
         foreach (var order in request.Orders)
         {
-            if (order.Property == "Wins")
+            if (order.Property == "Rating")
+            {
+                if (order.Ascending)
+                {
+                    ratings = ratings.OrderBy(o => o.Rating - o.ArcadeDefeatsSinceLastUpload * 25);
+                }
+                else
+                {
+                    ratings = ratings.OrderByDescending(o => o.Rating - o.ArcadeDefeatsSinceLastUpload * 25);
+                }
+            }
+            else if (order.Property == "Wins")
             {
                 if (order.Ascending)
                 {

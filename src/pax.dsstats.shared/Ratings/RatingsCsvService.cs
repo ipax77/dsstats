@@ -6,7 +6,8 @@ namespace pax.dsstats.shared.Ratings;
 public static class RatingsCsvService
 {
     public const string csvBasePath = "/data/mysqlfiles";
-    public static void CreatePlayerRatingCsv(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings)
+    public static void CreatePlayerRatingCsv(Dictionary<RatingType, Dictionary<int, CalcRating>> mmrIdRatings,
+                                             Dictionary<int, int> arcadeDefeatsSinceLastUpload)
     {
         StringBuilder sb = new();
         int i = 0;
@@ -31,7 +32,15 @@ public static class RatingsCsvService
                 sb.Append($"{(entCalc.IsUploader ? 1 : 0)},");
 
                 sb.Append($"{entCalc.PlayerId},");
-                sb.Append($"0");
+                sb.Append($"0,");
+                if (arcadeDefeatsSinceLastUpload.TryGetValue(entCalc.PlayerId, out int defeats))
+                {
+                    sb.Append($"{defeats}");
+                }
+                else
+                {
+                    sb.Append($"0");
+                }
                 sb.Append(Environment.NewLine);
             }
         }

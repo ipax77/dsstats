@@ -1,5 +1,4 @@
 ﻿using MySqlConnector;
-using pax.dsstats.dbng;
 
 namespace pax.dsstats.dbng.Services.Ratings;
 

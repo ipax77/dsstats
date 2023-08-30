@@ -134,7 +134,8 @@ if (app.Environment.IsProduction())
 if (app.Environment.IsDevelopment())
 {
     var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
-    ratingsService.NoUploadAdjustment().Wait();
+    // ratingsService.NoUploadAdjustment().Wait();
+    // ratingsService.ProduceRatings(recalc: true).Wait();
 }
 
 // Configure the HTTP request pipeline.
