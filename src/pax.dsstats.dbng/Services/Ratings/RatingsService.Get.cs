@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using pax.dsstats.shared;
-using System.Globalization;
 
 namespace pax.dsstats.dbng.Services.Ratings;
 

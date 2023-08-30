@@ -22,6 +22,7 @@ public record PlayerRatingPlayerDto
     public int ToonId { get; set; }
     public int RegionId { get; set; }
     public int RealmId { get; set; }
+    public int ArcadeDefeatsSinceLastUpload { get; set; }
 }
 
 public record PlayerRatingDetailDto
@@ -38,6 +39,7 @@ public record PlayerRatingDetailDto
     public double Consistency { get; set; }
     public double Confidence { get; set; }
     public bool IsUploader { get; set; }
+    public int ArcadeDefeatsSinceLastUpload { get; set; }
     public PlayerRatingPlayerDto Player { get; init; } = null!;
     public PlayerRatingChangeDto? PlayerRatingChange { get; init; }
     [NotMapped]

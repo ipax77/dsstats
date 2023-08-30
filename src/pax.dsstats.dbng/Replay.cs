@@ -79,6 +79,7 @@ public class Player
     public int NotUploadCount { get; set; }
     public int DisconnectCount { get; set; }
     public int RageQuitCount { get; set; }
+    public int ArcadeDefeatsSinceLastUpload { get; set; }
     public int? UploaderId { get; set; }
     public virtual Uploader? Uploader { get; set; }
     public virtual ICollection<ReplayPlayer> ReplayPlayers { get; set; }
@@ -100,6 +101,7 @@ public class PlayerRating
     public double Consistency { get; set; }
     public double Confidence { get; set; }
     public bool IsUploader { get; set; }
+    public int ArcadeDefeatsSinceLastUpload { get; set; }
     public PlayerRatingChange? PlayerRatingChange { get; set; }
     public int PlayerId { get; set; }
     public virtual Player Player { get; set; } = null!;

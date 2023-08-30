@@ -164,7 +164,8 @@
                                         <td>@(rating.Games == 0 || rating.MainCount * 100.0 / rating.Games < 10.5 ? "Random" : rating.Main.ToString())</td>
                                         <td>@HelperService.GetPercentageString(rating.MainCount, rating.Games)</td>
                                         <td class="border-start">@rating.Games</td>
-                                        <td class="text-warning">@rating.Rating.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                        @* <td class="text-warning">@rating.Rating.ToString("N2", CultureInfo.InvariantCulture)</td> *@
+                                        <td class="text-warning">@((rating.Rating - rating.Player.ArcadeDefeatsSinceLastUpload * 25).ToString("N2", CultureInfo.InvariantCulture))</td>
                                         <td>
                                             @if (rating.PlayerRatingChange != null)
                                             {
