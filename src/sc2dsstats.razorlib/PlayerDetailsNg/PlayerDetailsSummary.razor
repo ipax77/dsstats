@@ -65,7 +65,17 @@
                 </div>
             }
         </div>
+        
         <div class="p-2">
+            @if (playerRatingDetailsDto is not null && playerRatingDetailsDto.ArcadeDefeatsSinceLastUpload > 0)
+            {
+                <div>
+                    <span class="p-2 bgchart rounded" style="font-size: 1.3rem; color: #BF40BF;">
+                        Leaderboard rating adjustment <span class="text-danger">-@(playerRatingDetailsDto.ArcadeDefeatsSinceLastUpload * 25)</span> due to not uploaded SC2Arcade defeats.
+                        <a href="https://github.com/ipax77/dsstats/wiki/RatingAdjustment"><span class="oi oi-info text-info pointer"></span></a>
+                    </span>
+                </div>
+            }
             @foreach (var interestRating in playerSummary.Ratings.OrderBy(o => o.RatingType))
             {
                 @if (interestRating.RatingType == RatingType.Cmdr 

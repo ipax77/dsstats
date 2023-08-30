@@ -74,14 +74,15 @@ public partial class RatingsService
             }
             else
             {
+                var playerArcadeNoUploads = await GetPlayerArcadeNoUploads();
                 if (request.MmrOptions.ReCalc)
                 {
-                    RatingsCsvService.CreatePlayerRatingCsv(request.MmrIdRatings);
+                    RatingsCsvService.CreatePlayerRatingCsv(request.MmrIdRatings, playerArcadeNoUploads);
                     await WriteCsvFilesToDatabase();
                 }
                 else
                 {
-                    await UpdatePlayerRatings(request.MmrIdRatings);
+                    await UpdatePlayerRatings(request.MmrIdRatings, playerArcadeNoUploads);
                     await ContinueReplayPlayerRatingsFromCsv2MySql(RatingsCsvService.csvBasePath);
                     await ContinueReplayRatingsFromCsv2MySql(RatingsCsvService.csvBasePath);
                 }
@@ -264,7 +265,8 @@ public partial class RatingsService
         using var connection = new MySqlConnection(dbImportOptions.Value.ImportConnectionString);
         await connection.OpenAsync();
         var command = connection.CreateCommand();
-        command.CommandText = "CALL SetPlayerRatingPos();";
+        // command.CommandText = "CALL SetPlayerRatingPos();";
+        command.CommandText = "CALL SetPlayerRatingPosWithDefeats();";
         command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
     }

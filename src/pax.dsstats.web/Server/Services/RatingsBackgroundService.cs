@@ -38,6 +38,10 @@ public class RatingsBackgroundService : IHostedService, IDisposable
         Stopwatch sw = Stopwatch.StartNew();
 
         using var scope = serviceProvider.CreateScope();
+
+        var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+        await ratingsService.NoUploadAdjustment();
+
         var cheatDetectService = scope.ServiceProvider.GetRequiredService<CheatDetectService>();
         await cheatDetectService.DetectNoUpload();
 
