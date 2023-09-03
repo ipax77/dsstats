@@ -4,6 +4,7 @@ using pax.BlazorChartJs;
 using Microsoft.JSInterop;
 using static sc2dsstats.razorlib.Stats.StatsChartComponent;
 using sc2dsstats.razorlib.Services;
+using System.Dynamic;
 
 namespace sc2dsstats.razorlib.Stats.Winrate;
 
@@ -99,34 +100,29 @@ public partial class WinrateChart : ComponentBase
             _ => ""
         };
 
-        if (request.FromRating == 0 && request.ToRating == 0)
+        List<string> titleParts = new();
+
+        if (request.Interest == Commander.None)
         {
-            if (request.Interest == Commander.None)
-            {
-                return new IndexableOption<string>($"{title} - {Data.GetTimePeriodLongName(request.TimePeriod)}");
-            }
-            else
-            {
-                return new IndexableOption<string>($"{request.Interest}'s {title} - {Data.GetTimePeriodLongName(request.TimePeriod)}");
-            }
+            titleParts.Add($"{title} - {Data.GetTimePeriodLongName(request.TimePeriod)}");
         }
         else
         {
-            if (request.Interest == Commander.None)
-            {
-                return new IndexableOption<string>(new List<string>() {
-                    $"{title} - {Data.GetTimePeriodLongName(request.TimePeriod)}",
-                    $"Rating Range {(request.FromRating == Data.MinBuildRating ? 0 : request.FromRating)} - {(request.ToRating == Data.MaxBuildRating ? $"{request.ToRating}+" : $"{request.ToRating}")}"
-                });
-            }
-            else
-            {
-                return new IndexableOption<string>(new List<string>() {
-                    $"{request.Interest}'s {title} - {Data.GetTimePeriodLongName(request.TimePeriod)}",
-                    $"Rating Range {(request.FromRating == Data.MinBuildRating ? 0 : request.FromRating)} - {(request.ToRating == Data.MaxBuildRating ? $"{request.ToRating}+" : $"{request.ToRating}")}"
-                });
-            }
+            titleParts.Add($"{request.Interest}'s {title} - {Data.GetTimePeriodLongName(request.TimePeriod)}");
         }
+
+        if (request.FromRating > 0 || request.ToRating > 0)
+        {
+            titleParts.Add($"Rating Range {(request.FromRating == Data.MinBuildRating ? 0 : request.FromRating)} - {(request.ToRating == Data.MaxBuildRating ? $"{request.ToRating}+" : $"{request.ToRating}")}");
+        }
+
+        if (request.Exp2WinOffset > 0)
+        {
+            var exp2WinInfo = request.Exp2WinOffset == 0 || request.Exp2WinOffset == 50 ? "All" : $"{50 - request.Exp2WinOffset}% - {50 + request.Exp2WinOffset}%";
+            titleParts.Add($"Expectation to win range {exp2WinInfo}");
+        }
+
+        return new IndexableOption<string>(titleParts);
     }
 
     private IndexableOption<string> GetYAxisDesc(WinrateRequest request)

@@ -209,6 +209,7 @@ public static class ReplayExtensions
         StringBuilder sb = new();
         sb.Append("StatsWinrate");
         sb.Append(request.TimePeriod.ToString());
+        sb.Append(request.Exp2WinOffset.ToString());
         sb.Append(request.RatingType.ToString());
         sb.Append(request.FromRating.ToString());
         sb.Append(request.Interest.ToString());

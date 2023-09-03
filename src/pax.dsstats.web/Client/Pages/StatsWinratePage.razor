@@ -26,6 +26,9 @@
     [Parameter, SupplyParameterFromQuery]
     public string? To { get; set; }
 
+    [Parameter, SupplyParameterFromQuery]
+    public string? Exp2Win { get; set; }
+
     private WinrateRequest WinrateRequest = new()
     {
         TimePeriod = shared.TimePeriod.Past90Days,
@@ -81,6 +84,13 @@
             && to % 50 == 0)
         {
             WinrateRequest.ToRating = to;
+        }
+
+        if (!String.IsNullOrEmpty(Exp2Win)
+            && int.TryParse(Exp2Win, out int exp2win)
+            && exp2win % 5 == 0)
+        {
+            WinrateRequest.Exp2WinOffset = exp2win;
         }
     }
 
@@ -139,6 +149,15 @@
         else
         {
             queryDic.Add("To", null);
+        }
+
+        if (winrateRequest.Exp2WinOffset != 0)
+        {
+            queryDic.Add("Exp2Win", winrateRequest.Exp2WinOffset.ToString());
+        }
+        else
+        {
+            queryDic.Add("Exp2Win", null);
         }
 
         NavigationManager.NavigateTo(

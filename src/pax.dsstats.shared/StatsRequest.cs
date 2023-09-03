@@ -49,6 +49,7 @@ public record WinrateRequest
     public RatingType RatingType { get; set; }
     public Commander Interest { get; set; }
     public WinrateType WinrateType { get; set; }
+    public int Exp2WinOffset { get; set; }
     public int FromRating { get; set; }
     public int ToRating { get; set; }
 }

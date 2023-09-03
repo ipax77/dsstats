@@ -14,34 +14,66 @@
 
 <CascadingValue Value="Request">
     <WinrateRequestComponent OnRequestChanged="LoadData"></WinrateRequestComponent>
-    <div class="d-flex">
-        <div>
-            @if (isLoading)
-            {
-                <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
-                    <span class="visually-hidden">Loading...</span>
+    <div class="row">
+        <div class="col-auto">
+            <div class="d-flex">
+                <div>
+                    @if (isLoading)
+                    {
+                        <div class="spinner-border spinner-border-sm text-info ms-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ms-4"></div>
+                    }
                 </div>
-            }
-            else
-            {
-                <div class="ms-4"></div>
-            }
+                <div class="ms-2">
+                    <button class="btn btn-sm btn-outline-light bgchart"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#RatingRange"
+                            aria-expanded="false"
+                            aria-controls="RatingRange"
+                    @onclick="ShowHideRatingRange">
+                        <span class="oi @(showRatingRange ? "oi-caret-bottom" : "oi-caret-top")"></span>
+                        Rating Range
+                    </button>
+                </div>
+            </div>
         </div>
-        <div class="ms-2">
-            <button class="btn btn-sm btn-outline-light"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#RatingRange"
-                    aria-expanded="false"
-                    aria-controls="RatingRange"
-            @onclick="ShowHideRatingRange">
-                <span class="oi @(showRatingRange ? "oi-caret-bottom" : "oi-caret-top")"></span>
-                Rating Range
-            </button>
+        <div class="col-auto">
+            <div class="d-flex">
+                <div>
+                    <button class="btn btn-sm btn-outline-light bgchart"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#Exp2WinOffset"
+                            aria-expanded="false"
+                            aria-controls="Exp2WinOffset"
+                    @onclick="ShowHideExp2Win">
+                        <span class="oi @(showExp2Win ? "oi-caret-bottom" : "oi-caret-top")"></span>
+                        Win Probability Range
+                    </button>
+                </div>
+                <div class="ms-2">
+                    <span class="oi oi-info pointer" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki#win-probability-range'"></span>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="collapse mt-1" id="RatingRange">
-        <WinrateRatingRequestComponent OnRangeSelected="LoadData"></WinrateRatingRequestComponent>
+    <div class="row mt-1">
+        <div class="col-auto">
+            <div class="collapse" id="RatingRange">
+                <WinrateRatingRequestComponent OnRangeSelected="LoadData"></WinrateRatingRequestComponent>
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="collapse" id="Exp2WinOffset">
+                <WinrateExpToWinOffsetRequestComponent OnExp2WinRequested="LoadData" ></WinrateExpToWinOffsetRequestComponent>
+            </div>
+        </div>
     </div>
 </CascadingValue>
 
@@ -102,6 +134,7 @@
     SemaphoreSlim ss = new(1, 1);
     bool isLoading;
     bool showRatingRange;
+    bool showExp2Win;
 
     WinrateResponse? response = null;
     WinrateChart? winrateChart;
@@ -119,10 +152,10 @@
         {
             Interest = response.Interest,
             WinrateEnts = tableOrder.Property == "Winrate" ?
-                                tableOrder.Ascending ? response.WinrateEnts.OrderBy(o => o.Wins * 100.0 / o.Count).ToList()
-                                : response.WinrateEnts.OrderByDescending(o => o.Wins * 100.0 / o.Count).ToList()
-                            : tableOrder.Ascending ? response.WinrateEnts.AsQueryable().AppendOrderBy(tableOrder.Property).ToList()
-                                : response.WinrateEnts.AsQueryable().AppendOrderByDescending(tableOrder.Property).ToList()
+                                                tableOrder.Ascending ? response.WinrateEnts.OrderBy(o => o.Wins * 100.0 / o.Count).ToList()
+                                                : response.WinrateEnts.OrderByDescending(o => o.Wins * 100.0 / o.Count).ToList()
+                                            : tableOrder.Ascending ? response.WinrateEnts.AsQueryable().AppendOrderBy(tableOrder.Property).ToList()
+                                                : response.WinrateEnts.AsQueryable().AppendOrderByDescending(tableOrder.Property).ToList()
         };
 
     protected override void OnInitialized()
@@ -210,6 +243,16 @@
             Request.FromRating = 0;
             Request.ToRating = 0;
             _ = LoadData();
+        }
+    }
+
+    private void ShowHideExp2Win()
+    {
+        showExp2Win = !showExp2Win;
+        if (!showExp2Win)
+        {
+            Request.Exp2WinOffset = 0;
+            OnRequestChanged.InvokeAsync();
         }
     }
 
