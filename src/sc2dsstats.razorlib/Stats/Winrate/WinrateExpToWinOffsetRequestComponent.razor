@@ -1,0 +1,45 @@
+﻿@using pax.dsstats.shared
+
+<div class="row">
+    <div class="col-auto" style="width: 225px;">
+        <label class="form-label">
+            Exp2Win Offset <span class="text-info">@exp2WinInfo</span>
+            <input type="range" class="form-range" value="@exp2winOffset" min="0" max="50"
+                    step="5" id="spawnrange" @oninput="Exp2WinChange">
+        </label>
+    </div>
+    <div class="col-auto mt-3">
+        <button type="button" class="btn btn-sm btn-outline-warning bgchart" @onclick="RequestExp2Win">Set Exp2Win</button>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public WinrateRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnExp2WinRequested { get; set; }
+
+    private int exp2winOffset;
+    string exp2WinInfo => exp2winOffset == 0 || exp2winOffset == 50 ? "All" : $"{50 - exp2winOffset}% - {50 + exp2winOffset}%";
+
+    protected override void OnInitialized()
+    {
+        exp2winOffset = Request.Exp2WinOffset;
+        base.OnInitialized();
+    }
+
+    private void Exp2WinChange(ChangeEventArgs e)
+    {
+        if (e.Value is string value && int.TryParse(value, out int intvalue))
+        {
+            exp2winOffset = intvalue;
+        }
+    }
+
+    private void RequestExp2Win()
+    {
+        Request.Exp2WinOffset = exp2winOffset;
+        OnExp2WinRequested.InvokeAsync();
+    }
+}
