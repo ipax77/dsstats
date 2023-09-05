@@ -101,7 +101,7 @@ public class WinrateService : IWinrateService
 
     private async Task<List<WinrateEnt>> GetDataFromRaw(WinrateRequest request, CancellationToken token)
     {
-        if (request.Exp2WinOffset > 0 && (request.FromRating > 0 || request.ToRating > 0))
+        if (!Data.IsMaui && request.Exp2WinOffset > 0 && (request.FromRating > 0 || request.ToRating > 0))
         {
             return await GetDataFromVeryRawWithExp2Win(request, token);
         }
