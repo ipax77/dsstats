@@ -30,6 +30,12 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
+<details open="open"><summary>v1.2.4</summary>
+
+>- Sanitize player names for css
+
+</details>
+
 <details open="open"><summary>v1.2.3</summary>
 
 >- Layout redesign
