@@ -214,6 +214,7 @@ public static class ReplayExtensions
         sb.Append(request.FromRating.ToString());
         sb.Append(request.Interest.ToString());
         sb.Append(request.ToRating.ToString());
+        sb.Append(request.ComboRating.ToString());
         return sb.ToString();
     }
 

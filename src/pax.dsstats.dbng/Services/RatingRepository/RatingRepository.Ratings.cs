@@ -11,6 +11,11 @@ public partial class RatingRepository
 {
     public async Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token)
     {
+        if (request.ComboRating)
+        {
+            return await GetComboRatingsCount(request, token);
+        }
+
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
@@ -20,6 +25,11 @@ public partial class RatingRepository
 
     public async Task<RatingsResult> GetRatings(RatingsRequest request, CancellationToken token)
     {
+        if (request.ComboRating)
+        {
+            return await GetComboRatings(request, token);
+        }
+
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 

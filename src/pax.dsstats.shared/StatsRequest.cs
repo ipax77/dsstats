@@ -52,6 +52,7 @@ public record WinrateRequest
     public int Exp2WinOffset { get; set; }
     public int FromRating { get; set; }
     public int ToRating { get; set; }
+    public bool ComboRating { get; set; }
 }
 
 public record WinrateResponse

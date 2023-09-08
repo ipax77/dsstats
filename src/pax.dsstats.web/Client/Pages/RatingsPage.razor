@@ -25,6 +25,9 @@
     [SupplyParameterFromQuery]
     public string? Mode { get; set; }
 
+    [Parameter, SupplyParameterFromQuery]
+    public bool? Combo { get; set; }
+
     private RatingsRequest ratingsRequest = new()
     {
         Type = shared.RatingType.Cmdr,
@@ -62,6 +65,11 @@
                 ratingsRequest.Type = ratingType;
             }
         }
+
+        if (Combo is not null)
+        {
+            ratingsRequest.ComboRating = Combo.Value;
+        }
     }
 
     private void SetUrl()
@@ -88,6 +96,15 @@
         else
         {
             queryDic.Add("Mode", null);
+        }
+
+        if (ratingsRequest.ComboRating)
+        {
+            queryDic.Add("Combo", ratingsRequest.ComboRating);
+        }
+        else
+        {
+            queryDic.Add("Combo", null);
         }
 
         NavigationManager.NavigateTo(

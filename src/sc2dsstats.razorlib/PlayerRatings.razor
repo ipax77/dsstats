@@ -55,11 +55,27 @@
                 }
                 else
                 {
-                    <div class="col-auto form-check form-switch align-self-center me-2">
-                        <label class="form-check-label">
-                            Uploaders
-                            <InputCheckbox class="form-check-input" @bind-Value="RatingsRequest.Uploaders"></InputCheckbox>
-                        </label>
+                    <div class="col-auto align-self-center me-2">
+                        <div class="form-check form-switch">
+                            <label class="form-check-label">
+                                Uploaders
+                                <InputCheckbox class="form-check-input" @bind-Value="RatingsRequest.Uploaders"></InputCheckbox>
+                            </label>
+                        </div>
+                        <div class="d-flex">
+                            <div class="form-check form-switch">
+                                <label class="form-check-label">
+                                    ComboRatings
+                                    <InputCheckbox class="form-check-input" @bind-Value="RatingsRequest.ComboRating">
+                                    </InputCheckbox>
+                                </label>
+                            </div>              
+                            <div class="ms-2">
+                                <span class="oi oi-info pointer"
+                                    onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/ComboRatings'">
+                                </span>
+                            </div>
+                        </div>              
                     </div>
                 }
             </div>

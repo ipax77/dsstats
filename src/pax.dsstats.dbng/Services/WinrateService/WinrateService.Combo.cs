@@ -1,70 +1,18 @@
-﻿
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using MySqlConnector;
-using pax.dsstats.dbng.Extensions;
-using pax.dsstats.shared;
-using pax.dsstats.shared.Interfaces;
 using System.Globalization;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using MySqlConnector;
+using pax.dsstats.shared;
 
 namespace pax.dsstats.dbng.Services;
 
-public partial class WinrateService : IWinrateService
+public partial class WinrateService
 {
-    private readonly ReplayContext context;
-    private readonly IMemoryCache memoryCache;
-    private readonly IOptions<DbImportOptions> dbOptions;
-    private readonly ILogger<WinrateService> logger;
-
-    public WinrateService(ReplayContext context, IMemoryCache memoryCache, IOptions<DbImportOptions> dbOptions, ILogger<WinrateService> logger)
-    {
-        this.context = context;
-        this.memoryCache = memoryCache;
-        this.dbOptions = dbOptions;
-        this.logger = logger;
-    }
-
-    public async Task<WinrateResponse> GetWinrate(WinrateRequest request, CancellationToken token)
-    {
-        var memKey = request.GenMemKey();
-
-        if (!memoryCache.TryGetValue(memKey, out WinrateResponse response)) 
-        { 
-            response = await ProduceWinrate(request, token);
-            memoryCache.Set(memKey, response, TimeSpan.FromHours(3));
-        }
-
-        return response;
-    }
-
-    private async Task<WinrateResponse> ProduceWinrate(WinrateRequest request, CancellationToken token)
-    {
-        var data = request.ComboRating ? await GetComboDataFromRaw(request, token) 
-            : await GetDataFromRaw(request, token);
-
-        if (request.RatingType == RatingType.Std || request.RatingType == RatingType.StdTE)
-        {
-            data = data.Where(x => x.Commander != Commander.None && (int)x.Commander <= 3).ToList();
-        }
-        else
-        {
-            data = data.Where(x => (int)x.Commander > 3).ToList();
-        }
-
-        return new()
-        {
-            Interest = request.Interest,
-            WinrateEnts = data,
-        };
-    }
-
-    private async Task<List<WinrateEnt>> GetDataFromRaw(WinrateRequest request, CancellationToken token)
+    private async Task<List<WinrateEnt>> GetComboDataFromRaw(WinrateRequest request, CancellationToken token)
     {
         if (!Data.IsMaui && request.Exp2WinOffset > 0 && (request.FromRating > 0 || request.ToRating > 0))
         {
-            return await GetDataFromVeryRawWithExp2Win(request, token);
+            return await GetComboDataFromVeryRawWithExp2Win(request, token);
         }
 
         (var fromDate, var toDate) = Data.TimeperiodSelected(request.TimePeriod);
@@ -75,12 +23,12 @@ public partial class WinrateService : IWinrateService
                     rp.Race as commander,
 	                count(*) as count,
                     round(avg(rpr.Rating), 2) as avgrating,
-                    round(avg(rpr.RatingChange), 2) as avggain,
+                    round(avg(rpr.Change), 2) as avggain,
                     sum(CASE WHEN rp.PlayerResult = 1 THEN 1 ELSE 0 END) as wins
                 FROM Replays as r
-                INNER JOIN ReplayRatings as rr on rr.ReplayId = r.ReplayId
+                INNER JOIN ComboReplayRatings as rr on rr.ReplayId = r.ReplayId
                 INNER JOIN ReplayPlayers AS rp on rp.ReplayId = r.ReplayId
-                INNER JOIN RepPlayerRatings AS rpr on rpr.ReplayPlayerId = rp.ReplayPlayerId
+                INNER JOIN ComboReplayPlayerRatings AS rpr on rpr.ReplayPlayerId = rp.ReplayPlayerId
                 WHERE rr.RatingType = {(int)request.RatingType}
                  AND r.GameTime > '{fromDate.ToString("yyyy-MM-dd")}'
                  {(toDate < DateTime.Today.AddDays(-2) ? $"AND r.GameTime < '{toDate.ToString("yyyy-MM-dd")}'" : "")}
@@ -96,12 +44,12 @@ public partial class WinrateService : IWinrateService
                     rp.OppRace as commander,
 	                count(*) as count,
                     round(avg(rpr.Rating), 2) as avgrating,
-                    round(avg(rpr.RatingChange), 2) as avggain,
+                    round(avg(rpr.Change), 2) as avggain,
                     sum(CASE WHEN rp.PlayerResult = 1 THEN 1 ELSE 0 END) as wins
                 FROM Replays as r
-                INNER JOIN ReplayRatings as rr on rr.ReplayId = r.ReplayId
+                INNER JOIN ComboReplayRatings as rr on rr.ReplayId = r.ReplayId
                 INNER JOIN ReplayPlayers AS rp on rp.ReplayId = r.ReplayId
-                INNER JOIN RepPlayerRatings AS rpr on rpr.ReplayPlayerId = rp.ReplayPlayerId
+                INNER JOIN ComboReplayPlayerRatings AS rpr on rpr.ReplayPlayerId = rp.ReplayPlayerId
                 WHERE rr.RatingType = {(int)request.RatingType}
                  AND r.GameTime > '{fromDate.ToString("yyyy-MM-dd")}'
                  {(toDate < DateTime.Today.AddDays(-2) ? $"AND r.GameTime < '{toDate.ToString("yyyy-MM-dd")}'" : "")}
@@ -120,7 +68,7 @@ public partial class WinrateService : IWinrateService
         return result;
     }
 
-    private async Task<List<WinrateEnt>> GetDataFromVeryRawWithExp2Win(WinrateRequest request, CancellationToken token)
+        private async Task<List<WinrateEnt>> GetComboDataFromVeryRawWithExp2Win(WinrateRequest request, CancellationToken token)
     {
         (var fromDate, var toDate) = Data.TimeperiodSelected(request.TimePeriod);
 
@@ -135,7 +83,7 @@ public partial class WinrateService : IWinrateService
             CREATE TEMPORARY TABLE `{tempTableName}` AS
             SELECT rp.ReplayId, MIN(rpr.Rating) AS minRating, MAX(rpr.Rating) AS maxRating
             FROM ReplayPlayers AS rp
-            INNER JOIN RepPlayerRatings AS rpr ON rp.ReplayPlayerId = rpr.ReplayPlayerId
+            INNER JOIN ComboReplayPlayerRatings AS rpr ON rp.ReplayPlayerId = rpr.ReplayPlayerId
             INNER JOIN Replays AS r ON r.ReplayId = rp.ReplayId
             WHERE r.GameTime > @FromDate
             {(toDate < DateTime.Today.AddDays(-2) ? "AND r.GameTime < @ToDate" : "")}
@@ -152,20 +100,18 @@ public partial class WinrateService : IWinrateService
 
         await createCommand.ExecuteNonQueryAsync();
 
-        logger.LogInformation("Creating temp table: {sql}", createSql);
-
         var sql = request.Interest == Commander.None ?
             $@"
                 SELECT
                   rp.Race AS commander,
                   COUNT(*) AS count,
                   ROUND(AVG(rpr.Rating), 2) AS avgrating,
-                  ROUND(AVG(rpr.RatingChange), 2) AS avggain,
+                  ROUND(AVG(rpr.Change), 2) AS avggain,
                   SUM(CASE WHEN rp.PlayerResult = 1 THEN 1 ELSE 0 END) AS wins
                 FROM Replays AS r
-                INNER JOIN ReplayRatings AS rr ON rr.ReplayId = r.ReplayId
+                INNER JOIN ComboReplayRatings AS rr ON rr.ReplayId = r.ReplayId
                 INNER JOIN ReplayPlayers AS rp ON rp.ReplayId = r.ReplayId
-                INNER JOIN RepPlayerRatings AS rpr ON rpr.ReplayPlayerId = rp.ReplayPlayerId
+                INNER JOIN ComboReplayPlayerRatings AS rpr ON rpr.ReplayPlayerId = rp.ReplayPlayerId
                 INNER JOIN `{tempTableName}` AS tpr ON r.ReplayId = tpr.ReplayId
                 WHERE rr.RatingType = @RatingType
                   AND rp.Duration > 300
@@ -179,12 +125,12 @@ public partial class WinrateService : IWinrateService
                   rp.OppRace AS commander,
                   COUNT(*) AS count,
                   ROUND(AVG(rpr.Rating), 2) AS avgrating,
-                  ROUND(AVG(rpr.RatingChange), 2) AS avggain,
+                  ROUND(AVG(rpr.Change), 2) AS avggain,
                   SUM(CASE WHEN rp.PlayerResult = 1 THEN 1 ELSE 0 END) AS wins
                 FROM Replays AS r
-                INNER JOIN ReplayRatings AS rr ON rr.ReplayId = r.ReplayId
+                INNER JOIN ComboReplayRatings AS rr ON rr.ReplayId = r.ReplayId
                 INNER JOIN ReplayPlayers AS rp ON rp.ReplayId = r.ReplayId
-                INNER JOIN RepPlayerRatings AS rpr ON rpr.ReplayPlayerId = rp.ReplayPlayerId
+                INNER JOIN ComboReplayPlayerRatings AS rpr ON rpr.ReplayPlayerId = rp.ReplayPlayerId
                 INNER JOIN `{tempTableName}` AS tpr ON r.ReplayId = tpr.ReplayId
                 WHERE rr.RatingType = @RatingType
                   AND rp.Duration > 300
@@ -232,4 +178,3 @@ public partial class WinrateService : IWinrateService
         return results;
     }
 }
-

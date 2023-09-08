@@ -1,4 +1,6 @@
 using AutoMapper;
+using dsstats.ratings.db;
+using dsstats.ratings.lib;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.dbng;
@@ -87,6 +89,8 @@ builder.Services.AddScoped<IWinrateService, WinrateService>();
 builder.Services.AddScoped<ISynergyService, SynergyService>();
 builder.Services.AddScoped<IDamageService, DamageService>();
 builder.Services.AddScoped<ITeamService, TeamService>();
+builder.Services.AddScoped<ICalcRepository, CalcRepository>();
+builder.Services.AddScoped<CalcService>();
 
 builder.Services.AddTransient<IStatsService, StatsService>();
 builder.Services.AddTransient<IReplayRepository, ReplayRepository>();
@@ -133,9 +137,15 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
+    // var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
+    // importService.ImportInit();
+
+    // var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
     // ratingsService.NoUploadAdjustment().Wait();
     // ratingsService.ProduceRatings(recalc: true).Wait();
+
+    // var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
+    // calcService.GenerateCombinedRatings().Wait();
 }
 
 // Configure the HTTP request pipeline.
