@@ -14,6 +14,7 @@ public record RatingsRequest
     public int RegionId { get; set; }
     public int RealmId { get; set; }
     public bool Uploaders { get; set; } = true;
+    public bool ComboRating { get; set; }
     [JsonIgnore]
     public RatingChangeTimePeriod TimePeriod { get; set; } = RatingChangeTimePeriod.Past10Days;
 }

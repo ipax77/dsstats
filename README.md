@@ -36,7 +36,7 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 </details>
 
-<details open="open"><summary>v1.2.3</summary>
+<details><summary>v1.2.3</summary>
 
 >- Layout redesign
 >- Stats redesign

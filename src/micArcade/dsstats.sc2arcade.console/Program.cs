@@ -1,10 +1,13 @@
 ﻿using System.Text.Json;
+using dsstats.ratings.db;
+using dsstats.ratings.lib;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using pax.dsstats.dbng;
 using pax.dsstats.dbng.Services.Ratings;
 using pax.dsstats.shared;
+using pax.dsstats.shared.Interfaces;
 using pax.dsstats.web.Server.Services.Arcade;
 
 namespace dsstats.sc2arcade.console;
@@ -53,12 +56,20 @@ class Program
         services.AddScoped<CrawlerService>();
         services.AddScoped<ArcadeRatingsService>();
         services.AddScoped<RatingsService>();
+        services.AddScoped<ICalcRepository, CalcRepository>();
+        services.AddScoped<CalcService>();
 
         var serviceProvider = services.BuildServiceProvider();
 
         using var scope = serviceProvider.CreateScope();
-
-        if (args.Length > 0 && args[0] == "dsratings")
+        
+        if (args.Length > 0 && args[0] == "comboratings")
+        {
+            Console.WriteLine($"producing combo ratings");
+            var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
+            calcService.GenerateCombinedRatings().Wait();
+        }
+        else if (args.Length > 0 && args[0] == "dsratings")
         {
             Console.WriteLine($"producing dsstats ratings");
             var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();

@@ -29,6 +29,9 @@
     [Parameter, SupplyParameterFromQuery]
     public string? Exp2Win { get; set; }
 
+    [Parameter, SupplyParameterFromQuery]
+    public bool? Combo { get; set; }
+
     private WinrateRequest WinrateRequest = new()
     {
         TimePeriod = shared.TimePeriod.Past90Days,
@@ -91,6 +94,11 @@
             && exp2win % 5 == 0)
         {
             WinrateRequest.Exp2WinOffset = exp2win;
+        }
+
+        if (Combo is not null)
+        {
+            WinrateRequest.ComboRating = Combo.Value;
         }
     }
 
@@ -158,6 +166,15 @@
         else
         {
             queryDic.Add("Exp2Win", null);
+        }
+
+        if (winrateRequest.ComboRating)
+        {
+            queryDic.Add("Combo", winrateRequest.ComboRating);
+        }
+        else
+        {
+            queryDic.Add("Combo", null);
         }
 
         NavigationManager.NavigateTo(

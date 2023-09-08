@@ -40,6 +40,10 @@ public class ReplayContext : DbContext
     public virtual DbSet<ArcadePlayerRatingChange> ArcadePlayerRatingChanges { get; set; } = null!;
     public virtual DbSet<DsUpdate> DsUpdates { get; set; } = null!;
 
+    public virtual DbSet<ComboPlayerRating> ComboPlayerRatings { get; set; } = null!;
+    public virtual DbSet<ComboReplayRating> ComboReplayRatings { get; set; } = null!;
+    public virtual DbSet<ComboReplayPlayerRating> ComboReplayPlayerRatings { get; set; } = null!;
+
     public DbSet<DRangeResult> DRangeResults { get; set; } = null!;
     public DbSet<TimelineQueryData> TimelineQueryDatas { get; set; } = null!;
     public DbSet<WinrateEnt> WinrateEnts { get; set; } = null!;
@@ -132,6 +136,16 @@ public class ReplayContext : DbContext
             entity.Property(p => p.Group).HasColumnName("Name");
         });
 
+        modelBuilder.Entity<ComboPlayerRating>(entity =>
+        {
+            entity.HasIndex(i => i.RatingType);
+        });
+
+        modelBuilder.Entity<ComboReplayRating>(entity =>
+        {
+            entity.HasIndex(i => i.RatingType);
+        });
+
         modelBuilder.Entity<PlayerRating>(entity =>
         {
             entity.HasIndex(e => e.RatingType);
@@ -166,7 +180,8 @@ public class ReplayContext : DbContext
             entity.HasIndex(i => i.Time);
         });
 
-        modelBuilder.Entity<DRangeResult>(entity => {
+        modelBuilder.Entity<DRangeResult>(entity =>
+        {
             entity.HasNoKey();
         });
 
