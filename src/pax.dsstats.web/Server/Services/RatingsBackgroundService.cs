@@ -1,4 +1,5 @@
-﻿using pax.dsstats.dbng.Repositories;
+﻿using dsstats.ratings.lib;
+using pax.dsstats.dbng.Repositories;
 using pax.dsstats.dbng.Services;
 using pax.dsstats.dbng.Services.Ratings;
 using pax.dsstats.web.Server.Services.Arcade;
@@ -56,6 +57,9 @@ public class RatingsBackgroundService : IHostedService, IDisposable
         await arcadeRatingsService.ProduceRatings(recalc: true);
 
         await replayRepository.FixArcadePlayerNames();
+
+        var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
+        await calcService.GenerateCombinedRatings();
 
         sw.Stop();
         logger.LogWarning($"{DateTime.UtcNow.ToString(@"yyyy-MM-dd HH:mm:ss")} - Work done in {sw.ElapsedMilliseconds} ms");
