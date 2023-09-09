@@ -138,14 +138,7 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    var replay = context.Replays
-        .Include(i => i.ReplayPlayers)
-            .ThenInclude(i => i.Player)
-        .Where(x => x.ReplayId == 419414)
-        .First();
 
-    var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-    importService.SetComboPreRatings(replay).Wait();
 }
 
 // Configure the HTTP request pipeline.
