@@ -442,4 +442,9 @@ public partial class DataService : IDataService
     {
         return await GetPlayerCmdrAvgGain(playerId.ToonId, ratingType, timePeriod, token);
     }
+
+    public Task<ReplayRatingDto?> GetReplayComboRating(int replayId)
+    {
+        return Task.FromResult(null as ReplayRatingDto);
+    }
 }

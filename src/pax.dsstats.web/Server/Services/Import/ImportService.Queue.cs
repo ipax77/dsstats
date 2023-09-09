@@ -144,6 +144,7 @@ public partial class ImportService
         }
         
         await SetPreRatings(replay);
+        await SetComboPreRatings(replay);
     }
 
     private static void AdjustImportValues(Replay replay)

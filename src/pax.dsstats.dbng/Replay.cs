@@ -198,6 +198,7 @@ public class Replay
     public int? ReplayEventId { get; set; }
     public ReplayEvent? ReplayEvent { get; set; }
     public ReplayRating? ReplayRatingInfo { get; set; }
+    public ComboReplayRating? ComboReplayRating { get; set; }
     public virtual ICollection<ReplayPlayer> ReplayPlayers { get; set; }
     public virtual ICollection<Uploader> Uploaders { get; set; }
     [NotMapped]
@@ -245,6 +246,7 @@ public class ReplayPlayer
     public int PlayerId { get; set; }
     public virtual Player Player { get; set; } = null!;
     public RepPlayerRating? ReplayPlayerRatingInfo { get; set; }
+    public ComboReplayPlayerRating? ComboReplayPlayerRating { get; set; }
     public virtual ICollection<Spawn> Spawns { get; set; }
     public virtual ICollection<PlayerUpgrade> Upgrades { get; set; }
 }

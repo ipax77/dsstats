@@ -60,10 +60,11 @@ public partial class CalcRepository
             replayAppendId++;
 
             sbReplay.Append($"{replayAppendId},");
-            sbReplay.Append($"{(int)replayRatingDto.RatingType},");
-            sbReplay.Append($"{(int)replayRatingDto.LeaverType},");
+            sbReplay.Append($"{replayRatingDto.RatingType},");
+            sbReplay.Append($"{replayRatingDto.LeaverType},");
             sbReplay.Append($"{replayRatingDto.ExpectationToWin.ToString(CultureInfo.InvariantCulture)},");
-            sbReplay.Append($"{replayRatingDto.ReplayId}");
+            sbReplay.Append($"{replayRatingDto.ReplayId},");
+            sbReplay.Append("0");
             sbReplay.Append(Environment.NewLine);
 
             foreach (var rpr in replayRatingDto.RepPlayerRatings)

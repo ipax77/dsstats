@@ -26,6 +26,31 @@ public partial class ReplayRepository : IReplayRepository
         this.mapper = mapper;
     }
 
+    public async Task<ReplayRatingDto?> GetReplayComboRating(int replayId)
+    {
+        return await context.Replays
+                .Where(x => x.ReplayId == replayId && x.ComboReplayRating != null)
+                .Select(s => new ReplayRatingDto() 
+                {
+                    RatingType = s.ComboReplayRating!.RatingType,
+                    LeaverType = s.ComboReplayRating!.LeaverType,
+                    ExpectationToWin = (float)s.ComboReplayRating!.ExpectationToWin,
+                    IsPreRating = s.ComboReplayRating!.IsPreRating,
+                    ReplayId = s.ReplayId,
+                    RepPlayerRatings = s.ReplayPlayers.Select(t => new RepPlayerRatingDto() 
+                    {   
+                        GamePos = t.ComboReplayPlayerRating!.GamePos,
+                        Rating = t.ComboReplayPlayerRating.Rating,
+                        RatingChange = (float)t.ComboReplayPlayerRating!.Change,
+                        Games = t.ComboReplayPlayerRating.Games,
+                        Consistency = (float)t.ComboReplayPlayerRating!.Consistency,
+                        Confidence = (float)t.ComboReplayPlayerRating!.Confidence,
+                        ReplayPlayerId = t.ReplayPlayerId
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync();
+    }
+
     public async Task<ReplayDetailsDto?> GetDetailReplay(string replayHash, bool dry = false, CancellationToken token = default)
     {
         var replay = await context.Replays

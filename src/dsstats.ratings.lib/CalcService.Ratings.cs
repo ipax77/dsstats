@@ -39,7 +39,7 @@ public partial class CalcService
         return result;
     }
 
-    private static ReplayRatingDto? ProcessReplay(CalcDto calcDto, CalcRatingRequest request)
+    public static ReplayRatingDto? ProcessReplay(CalcDto calcDto, CalcRatingRequest request)
     {
         var calcData = GetCalcData(calcDto, request);
 
@@ -186,7 +186,7 @@ public partial class CalcService
         };
     }
 
-    private static int GetRatingType(CalcDto calcDto)
+    public static int GetRatingType(CalcDto calcDto)
     {
         if (calcDto.TournamentEdition && calcDto.GameMode == 3)
         {

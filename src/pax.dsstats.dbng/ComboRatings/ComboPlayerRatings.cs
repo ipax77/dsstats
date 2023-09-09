@@ -27,6 +27,7 @@ public class ComboReplayRating
     public double ExpectationToWin { get; set; }
     public int ReplayId { get; set; }
     public virtual Replay Replay { get; set;} = null!;
+    public bool IsPreRating { get; set; }
 }
 
 public class ComboReplayPlayerRating

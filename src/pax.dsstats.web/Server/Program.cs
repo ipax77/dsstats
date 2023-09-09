@@ -17,6 +17,7 @@ using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
 using pax.dsstats.web.Server.Services.Arcade;
+using pax.dsstats.web.Server.Services.Import;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -137,15 +138,7 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    // var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
-    // importService.ImportInit();
 
-    // var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
-    // ratingsService.NoUploadAdjustment().Wait();
-    // ratingsService.ProduceRatings(recalc: true).Wait();
-
-    // var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
-    // calcService.GenerateCombinedRatings().Wait();
 }
 
 // Configure the HTTP request pipeline.

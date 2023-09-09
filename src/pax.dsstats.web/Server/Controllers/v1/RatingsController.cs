@@ -168,5 +168,6 @@ public class RatingsController
     {
         return await playerService.GetPlayerIdPlayerCmdrAvgGain(new(toonId, realmId, regionId), (RatingType)ratingType, (TimePeriod)timePeriod, token);
     }
+
 }
 
