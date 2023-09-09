@@ -12,10 +12,10 @@ public partial class ImportService
 {
     public async Task SetComboPreRatings(Replay replay)
     {
-        //if ((DateTime.UtcNow - replay.GameTime) > TimeSpan.FromHours(1))
-        //{
-        //    return;
-        //}
+        if ((DateTime.UtcNow - replay.GameTime) > TimeSpan.FromHours(1))
+        {
+           return;
+        }
 
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
