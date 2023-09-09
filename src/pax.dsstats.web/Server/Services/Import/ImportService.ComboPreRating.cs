@@ -158,7 +158,12 @@ public partial class ImportService
         {
             var calcDto = calcDtos.FirstOrDefault(f => f.Player.PlayerId == replayPlayer.PlayerId);
 
-            shared.Calc.PlayerId playerId = new() { ProfileId = replayPlayer.Player.ToonId, RegionId = replayPlayer.Player.RegionId, RealmId = replayPlayer.Player.RealmId };
+            if (calcDto == null)
+            {
+                continue;
+            }
+
+            shared.Calc.PlayerId playerId = new() { ProfileId = calcDto.Player.ToonId, RegionId = calcDto.Player.RegionId, RealmId = calcDto.Player.RealmId };
 
             dsstats.shared.Calc.CalcRating calcRating = new()
             {
