@@ -1,8 +1,41 @@
 ﻿@using System.Text.Json.Serialization;
 @using System.Globalization;
 @using pax.dsstats.shared;
+@using Microsoft.AspNetCore.Components.Forms;
+@inject IDataService dataService
+@implements IDisposable
 
-@if (ReplayRatingDto == null)
+<EditForm EditContext="editContext">
+    <div class="d-flex justify-content-center">
+        <div class="col-auto form-check form-switch me-4">
+            <label class="form-check-label">
+                ComboRatings <span class="text-warning">@((showComboRating && currentReplayRating is not null && currentReplayRating.IsPreRating ? "PreRating*" : ""))</span>
+                <InputCheckbox class="form-check-input" @bind-Value="showComboRating">
+                </InputCheckbox>
+            </label>
+        </div>
+        @if (currentReplayRating is not null)
+        {
+            <div class="col-auto">
+                <h5>
+                    <span class="badge bg-primary me-4">
+                        <span class="text-light">RatingType</span>
+                        @Data.GetRatingTypeLongName(currentReplayRating.RatingType)
+                    </span>
+                </h5>
+            </div>
+            <div class="col-auto">
+                <h5>
+                <span class="badge bg-primary ms-4 me-4">
+                    <span class="text-light">LeaverType</span>
+                    @currentReplayRating.LeaverType
+                </span>
+            </h5>
+        </div>
+        }
+    </div>
+</EditForm>
+@if (currentReplayRating == null)
 {
     <div>
         <p>No data available.</p>
@@ -10,19 +43,12 @@
 }
 else
 {
-    <div class="d-flex justify-content-center">
-        <div class="col-auto">
-            <h5><span class="badge bg-primary me-4"><span class="text-light">RatingType</span> @Data.GetRatingTypeLongName(ReplayRatingDto.RatingType)</span></h5>
-        </div>
-        <div class="col-auto">
-            <h5><span class="badge bg-primary ms-4 me-4"><span class="text-light">LeaverType</span> @ReplayRatingDto.LeaverType</span></h5>
-        </div>
-    </div>
+
     <div class="row">
         @for (int i = 1; i <= 2; i++)
         {
-            var infos = i == 1 ? ReplayRatingDto.RepPlayerRatings.Where(x => x.GamePos <= 3).ToList()
-            : ReplayRatingDto.RepPlayerRatings.Where(x => x.GamePos > 3).ToList();
+            var infos = i == 1 ? currentReplayRating.RepPlayerRatings.Where(x => x.GamePos <= 3).ToList()
+            : currentReplayRating.RepPlayerRatings.Where(x => x.GamePos > 3).ToList();
             <div class="col-auto">
                 <div class="table-responsive" style="width: 560px;">
                     <table class="tptable table table-sm w-auto">
@@ -46,10 +72,13 @@ else
                                         <span class="text-warning">@info.Rating.ToString("N2", CultureInfo.InvariantCulture)</span>
                                     </td>
                                     <td>
-                                        <span class="text-info">@((info.Rating - info.RatingChange).ToString("N2", CultureInfo.InvariantCulture))</span>
+                                        <span class="text-info">@((info.Rating - info.RatingChange).ToString("N2",
+                                CultureInfo.InvariantCulture))</span>
                                     </td>
                                     <td>
-                                        <span class="oi @(info.RatingChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">@info.RatingChange.ToString("N1", CultureInfo.InvariantCulture)</span>
+                                        <span
+                                            class="oi @(info.RatingChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">@info.RatingChange.ToString("N1",
+                                CultureInfo.InvariantCulture)</span>
                                     </td>
                                     <td>@info.Games</td>
                                     <td>@info.Consistency.ToString("N2", CultureInfo.InvariantCulture)</td>
@@ -63,13 +92,21 @@ else
                                 @if (i == 1)
                                 {
                                     <td colspan="6">
-                                        Expectation to Win <span class="fw-bold @(Team1ExpectationToWin > 0.5 ? "text-success" : "text-danger")">@Team1ExpectationToWin.ToString("P", CultureInfo.InvariantCulture)</span>
+                                        Expectation to Win <span
+                                            class="fw-bold @(WinnerTeam == i ? "text-success" : "text-danger")">@((WinnerTeam == 1 ?
+                                currentReplayRating.ExpectationToWin : 1 -
+                                currentReplayRating.ExpectationToWin).ToString("P",
+                                CultureInfo.InvariantCulture))</span>
                                     </td>
                                 }
                                 else
                                 {
                                     <td colspan="6">
-                                        Expectation to Win <span class="fw-bold @(Team1ExpectationToWin < 0.5 ? "text-success" : "text-danger")">@((1 - Team1ExpectationToWin).ToString("P", CultureInfo.InvariantCulture))</span>
+                                        Expectation to Win <span
+                                            class="fw-bold @(WinnerTeam == 2 ? "text-success" : "text-danger")">@((WinnerTeam == 2 ?
+                                currentReplayRating.ExpectationToWin : 1 -
+                                currentReplayRating.ExpectationToWin).ToString("P",
+                                CultureInfo.InvariantCulture))</span>
                                     </td>
                                 }
                             </tr>
@@ -85,24 +122,51 @@ else
     [Parameter, EditorRequired]
     public ReplayRatingDto? ReplayRatingDto { get; set; }
 
+    [Parameter, EditorRequired]
+    public int WinnerTeam { get; set; }
+
+    bool showComboRating;
+    ReplayRatingDto? comboReplayRatingDto;
+
+    ReplayRatingDto? currentReplayRating => showComboRating ? comboReplayRatingDto : ReplayRatingDto;
+
+    EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new(showComboRating);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
     public void Update(ReplayRatingDto? replayRatingDto)
     {
         ReplayRatingDto = replayRatingDto;
+        comboReplayRatingDto = null;
+        showComboRating = false;
         InvokeAsync(() => StateHasChanged());
     }
 
-    double Team1Mmr => ReplayRatingDto == null ? 0 : ReplayRatingDto.RepPlayerRatings
-        .Where(x => x.GamePos <= 3)
-        .Sum(s => s.Rating - s.RatingChange);
-
-    double Team2Mmr => ReplayRatingDto == null ? 0 : ReplayRatingDto.RepPlayerRatings
-        .Where(x => x.GamePos > 3)
-        .Sum(s => s.Rating - s.RatingChange);
-
-    double Team1ExpectationToWin => ReplayRatingDto == null ? 0 : EloExpectationToWin(Team1Mmr, Team2Mmr);
-
-    public static double EloExpectationToWin(double ratingOne, double ratingTwo, double clip = 1600)
+    private void FieldChanged(object? sender, Microsoft.AspNetCore.Components.Forms.FieldChangedEventArgs e)
     {
-        return 1.0 / (1.0 + Math.Pow(10.0, (2.0 / clip) * (ratingTwo - ratingOne)));
+        if (showComboRating && comboReplayRatingDto is null)
+        {
+            _ = LoadComboData();
+        }
+    }
+
+    private async Task LoadComboData()
+    {
+        if (ReplayRatingDto is null)
+        {
+            return;
+        }
+        comboReplayRatingDto = await dataService.GetReplayComboRating(ReplayRatingDto.ReplayId);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
     }
 }

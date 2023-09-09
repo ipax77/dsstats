@@ -402,5 +402,12 @@ namespace pax.dsstats.web.Server.Controllers.v6
         {
             return await teamService.GetTeamRating(request, token);
         }
+
+        [HttpGet]
+        [Route("ComboReplayRating/{id}")]
+        public async Task<ActionResult<ReplayRatingDto?>> GetComboReplayRating(int id)
+        {
+            return await replayRepository.GetReplayComboRating(id);
+        }
     }
 }

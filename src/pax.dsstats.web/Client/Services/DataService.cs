@@ -1026,4 +1026,18 @@ public class DataService : IDataService
     {
         return await Task.FromResult<ReplayRatingDto?>(null);
     }
+
+    public async Task<ReplayRatingDto?> GetReplayComboRating(int replayId)
+    {
+        try
+        {
+            var result = await httpClient.GetFromJsonAsync<ReplayRatingDto?>($"{statsController}ComboReplayRating/{replayId}");
+            return result;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"failed getting ReplayComboRating {replayId}: {ex.Message}");
+        }
+        return null;
+    }
 }

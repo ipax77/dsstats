@@ -17,6 +17,7 @@ using pax.dsstats.web.Server.Attributes;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
 using pax.dsstats.web.Server.Services.Arcade;
+using pax.dsstats.web.Server.Services.Import;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -137,15 +138,14 @@ if (app.Environment.IsProduction())
 // DEBUG
 if (app.Environment.IsDevelopment())
 {
-    // var importService = scope.ServiceProvider.GetRequiredService<pax.dsstats.web.Server.Services.Import.ImportService>();
-    // importService.ImportInit();
+    var replay = context.Replays
+        .Include(i => i.ReplayPlayers)
+            .ThenInclude(i => i.Player)
+        .Where(x => x.ReplayId == 419414)
+        .First();
 
-    // var ratingsService = scope.ServiceProvider.GetRequiredService<RatingsService>();
-    // ratingsService.NoUploadAdjustment().Wait();
-    // ratingsService.ProduceRatings(recalc: true).Wait();
-
-    // var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
-    // calcService.GenerateCombinedRatings().Wait();
+    var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+    importService.SetComboPreRatings(replay).Wait();
 }
 
 // Configure the HTTP request pipeline.

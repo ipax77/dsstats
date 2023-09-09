@@ -395,7 +395,8 @@ namespace MysqlMigrations.Migrations
 
                     b.HasKey("ComboReplayPlayerRatingId");
 
-                    b.HasIndex("ReplayPlayerId");
+                    b.HasIndex("ReplayPlayerId")
+                        .IsUnique();
 
                     b.ToTable("ComboReplayPlayerRatings");
                 });
@@ -410,6 +411,9 @@ namespace MysqlMigrations.Migrations
                         .HasPrecision(5, 2)
                         .HasColumnType("double");
 
+                    b.Property<bool>("IsPreRating")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<int>("LeaverType")
                         .HasColumnType("int");
 
@@ -423,7 +427,8 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("RatingType");
 
-                    b.HasIndex("ReplayId");
+                    b.HasIndex("ReplayId")
+                        .IsUnique();
 
                     b.ToTable("ComboReplayRatings");
                 });
@@ -1588,8 +1593,8 @@ namespace MysqlMigrations.Migrations
             modelBuilder.Entity("pax.dsstats.dbng.ComboReplayPlayerRating", b =>
                 {
                     b.HasOne("pax.dsstats.dbng.ReplayPlayer", "ReplayPlayer")
-                        .WithMany()
-                        .HasForeignKey("ReplayPlayerId")
+                        .WithOne("ComboReplayPlayerRating")
+                        .HasForeignKey("pax.dsstats.dbng.ComboReplayPlayerRating", "ReplayPlayerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1599,8 +1604,8 @@ namespace MysqlMigrations.Migrations
             modelBuilder.Entity("pax.dsstats.dbng.ComboReplayRating", b =>
                 {
                     b.HasOne("pax.dsstats.dbng.Replay", "Replay")
-                        .WithMany()
-                        .HasForeignKey("ReplayId")
+                        .WithOne("ComboReplayRating")
+                        .HasForeignKey("pax.dsstats.dbng.ComboReplayRating", "ReplayId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1819,6 +1824,8 @@ namespace MysqlMigrations.Migrations
 
             modelBuilder.Entity("pax.dsstats.dbng.Replay", b =>
                 {
+                    b.Navigation("ComboReplayRating");
+
                     b.Navigation("ReplayPlayers");
 
                     b.Navigation("ReplayRatingInfo");
@@ -1831,6 +1838,8 @@ namespace MysqlMigrations.Migrations
 
             modelBuilder.Entity("pax.dsstats.dbng.ReplayPlayer", b =>
                 {
+                    b.Navigation("ComboReplayPlayerRating");
+
                     b.Navigation("ReplayPlayerRatingInfo");
 
                     b.Navigation("Spawns");

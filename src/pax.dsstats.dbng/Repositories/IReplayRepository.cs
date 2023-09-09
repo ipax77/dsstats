@@ -27,5 +27,6 @@ namespace pax.dsstats.dbng.Repositories
         Task FixArcadePlayerNames();
         Task<List<string>> GetUnitNames();
         Task<List<string>> GetUpgradeNames();
+        Task<ReplayRatingDto?> GetReplayComboRating(int replayId);
     }
 }
