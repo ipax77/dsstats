@@ -1,4 +1,4 @@
-//v 1.1
+//v 1.6
 
 const cmdrIconsMap = new Map();
 
