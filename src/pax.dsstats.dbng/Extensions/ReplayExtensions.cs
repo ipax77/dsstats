@@ -158,6 +158,7 @@ public static class ReplayExtensions
         sb.Append(request.Interest);
         sb.Append('|');
         sb.Append(request.Team);
+        sb.Append(request.ComboRating.ToString());
         return sb.ToString();
     }
 
