@@ -36,7 +36,8 @@ else
             </div>
             <div class="col-auto">
                 <div class="border rounded border-secondary bgchart" style="min-width: 550px; width: 44vw; height: calc(44vw * 0.5); min-height: 275px;">
-                    <CmdrStrengthChart @ref="cmdrStrengthChart" Request="Request" Result="result" OnBubbleHover="BubbleHover"></CmdrStrengthChart>
+                    @* <CmdrStrengthChart @ref="cmdrStrengthChart" Request="Request" Result="result" OnBubbleHover="BubbleHover"></CmdrStrengthChart> *@
+                    <CmdrStrengthFlipChart @ref="cmdrStrengthChart" Request="Request" Result="result" OnBubbleHover="BubbleHover"></CmdrStrengthFlipChart>
                 </div>
                 <div class="bgchart border rounded border-secondary" style="min-width: 550px; max-width: 45vw;">
 @*                    @if (result.Items.Any(a => a.Matchups < 961))
@@ -58,11 +59,11 @@ else
                             </p>
                             <p>
                                 <span class="oi oi-chevron-right"></span>
-                                The further right the bubble is, the higher the commanders winrate
+                                The further right the bubble is, the more <a href="https://github.com/ipax77/dsstats/wiki/AverageRatingGain">rating was gained (AvgGain)</a>> while playing the commander
                             </p>
                             <p>
                                 <span class="oi oi-chevron-right"></span>
-                                The higher the bubble, the more rating was gained while playing the commander
+                                The higher the bubble, the higher the commanders winrate
                             </p>
                             <p>
                                 <span class="oi oi-chevron-right"></span>
@@ -79,11 +80,11 @@ else
                             </p>
                             <p>
                                 <span class="oi oi-chevron-right"></span>
-                                The further right the bubble is, the higher <span class="text-warning">@Request.Interest</span>s winrate vs the commander
+                                The further right the bubble is, the more rating was gained by the players who played <span class="text-warning">@Request.Interest</span>
                             </p>
                             <p>
                                 <span class="oi oi-chevron-right"></span>
-                                The higher the bubble, the more rating was gained by the players who played <span class="text-warning">@Request.Interest</span>
+                                The higher the bubble, the higher <span class="text-warning">@Request.Interest</span>s winrate vs the commander
                             </p>
                             <p>
                                 <span class="oi oi-chevron-right"></span>
@@ -120,7 +121,7 @@ else
     private CancellationTokenSource cts = new();
     private bool isLoading;
 
-    private CmdrStrengthChart? cmdrStrengthChart;
+    private CmdrStrengthFlipChart? cmdrStrengthChart;
     private CmdrStrengthTable? cmdrStrengthTable;
 
     protected override void OnInitialized()
@@ -154,9 +155,9 @@ else
             return;
         }
 
-        double weightMatchups = 1;
-        double weightWinrate = 5;
-        double weightRating = 8;
+        double weightMatchups = 2;
+        double weightWinrate = 2;
+        double weightRating = 2;
         double weightGain = 8;
 
         double z = 1.96; // 95% confidence interval

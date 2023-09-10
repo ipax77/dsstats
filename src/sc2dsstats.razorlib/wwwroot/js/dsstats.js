@@ -311,6 +311,64 @@ function setZeroLineColor(defaultColor, defaultTickColor, zeroColor, chartId) {
     chart.update();
 }
 
+function setFlipZeroLineColor(defaultColor, defaultTickColor, zeroColor, chartId) {
+    const chart = Chart.getChart(chartId);
+
+    if (chart == undefined) {
+        return;
+    }
+
+    chart.options.scales.x.grid.color = (context) => {
+        if (context.tick.value === 0) {
+            return zeroColor;
+        } else {
+            return defaultColor;
+        }
+    }
+
+    chart.options.scales.x.grid.tickColor = (context) => {
+        if (context.tick.value === 0) {
+            return zeroColor;
+        } else {
+            return defaultColor;
+        }
+    }
+
+    chart.options.scales.x.ticks.color = (context) => {
+        if (context.tick.value === 0) {
+            return 'red';
+        } else {
+            return defaultTickColor;
+        }
+    }
+
+    chart.options.scales.y.grid.color = (context) => {
+        if (context.tick.value === 50) {
+            return zeroColor;
+        } else {
+            return defaultColor;
+        }
+    }
+
+    chart.options.scales.y.grid.tickColor = (context) => {
+        if (context.tick.value === 50) {
+            return zeroColor;
+        } else {
+            return defaultColor;
+        }
+    }
+
+    chart.options.scales.y.ticks.color = (context) => {
+        if (context.tick.value === 50) {
+            return 'red';
+        } else {
+            return defaultTickColor;
+        }
+    }
+
+    chart.update();
+}
+
 function setChartLegendFilter(chartId) {
     const chart = Chart.getChart(chartId);
     if (chart !== undefined) {
