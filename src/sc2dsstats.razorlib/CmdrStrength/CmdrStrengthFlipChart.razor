@@ -81,7 +81,7 @@
 
         jsRuntime.InvokeVoidAsync("setFlipZeroLineColor", "rgba(113, 116, 143, 0.25)", mainColor, "rgb(142, 139, 112, 0.50)", chartConfig.ChartJsConfigGuid);
 
-        jsRuntime.InvokeVoidAsync("setBubbleChartTooltips", request.Interest == Commander.None ? "" : request.Interest.ToString(), min, max, rMin, rMax, chartConfig.ChartJsConfigGuid);
+        jsRuntime.InvokeVoidAsync("setFlipBubbleChartTooltips", request.Interest == Commander.None ? "" : request.Interest.ToString(), min, max, rMin, rMax, chartConfig.ChartJsConfigGuid);
     }
 
     private void ChartEventTriggered(ChartJsEvent e)

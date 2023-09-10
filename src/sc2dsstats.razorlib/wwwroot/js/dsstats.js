@@ -252,6 +252,26 @@ function setBubbleChartTooltips(vs, min, max, rMin, rMax, chartId) {
     };
 }
 
+function setFlipBubbleChartTooltips(vs, min, max, rMin, rMax, chartId) {
+    const chart = Chart.getChart(chartId);
+
+    if (chart == undefined) {
+        return;
+    }
+
+    chart.options.plugins.tooltip.callbacks.label = (tooltipItem) => {
+        if (tooltipItem == undefined) {
+            return "";
+        }
+        let avgStrength = Math.round((((tooltipItem.raw.r - rMin) * (max - min)) / (rMax - rMin)) + min);
+        if (vs) {
+            return [vs + " vs " + tooltipItem.raw.label, "Winrate " + tooltipItem.raw.y + "%", "AvgGain: " + tooltipItem.raw.x, "AvgRating: " + avgStrength];
+        } else {
+            return [tooltipItem.raw.label, "Winrate " + tooltipItem.raw.y + "%", "AvgGain: " + tooltipItem.raw.x, "AvgRating: " + avgStrength];
+        }
+    };
+}
+
 
 function setZeroLineColor(defaultColor, defaultTickColor, zeroColor, chartId) {
     const chart = Chart.getChart(chartId);
