@@ -13,6 +13,7 @@ public record TimelineRequest
     public TimePeriod TimePeriod { get; set; }
     public RatingType RatingType { get; set; }
     public TimelineWeights Weights { get; set; } = new();
+    public bool ComboRating { get; set; }
 }
 
 public record TimelineResponse

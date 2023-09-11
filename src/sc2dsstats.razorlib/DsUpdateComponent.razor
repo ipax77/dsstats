@@ -62,7 +62,7 @@
             }
             @foreach (var info in GetList())
             {
-                <tr>
+                <tr @onclick="e => OnChangeClick.InvokeAsync(new(info.Commander, info.Time))">
                     @if (info.Time != time)
                     {
                         time = info.Time;
@@ -110,6 +110,9 @@
 
     [Parameter]
     public Commander Commander { get; set; } = Commander.None;
+
+    [Parameter]
+    public EventCallback<KeyValuePair<Commander, DateTime>> OnChangeClick { get; set; }
 
     List<DsUpdateInfo> infos = new();
     CancellationTokenSource cts = new();

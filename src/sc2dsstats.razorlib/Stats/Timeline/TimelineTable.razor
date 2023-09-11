@@ -24,6 +24,16 @@
                     }
                 </CascadingValue>
             </tr>
+            <tr>
+                <th></th>
+                <th></th>
+
+                @for (int i = 0; i < times.Count; i++)
+                {
+                    var t = i;
+                    <th>&sum; @HelperService.GetBigNumberString(Response.TimeLineEnts.Where(x => x.Time == times[t]).Sum(s => s.Count))</th>
+                }
+            </tr>
         </thead>
         <tbody>
             @foreach (var data in SortData())
@@ -45,7 +55,7 @@
                     @for (int k = 0; k < data.Strengths.Count; k++)
                     {
                         var l = k;
-                        <td>@data.Strengths[k].ToString("N2", CultureInfo.InvariantCulture)</td>
+                        <td class="text-nowrap">@data.Strengths[l].ToString("N2", CultureInfo.InvariantCulture) (@data.Counts[l])</td>
                     }
                 </tr>
             }

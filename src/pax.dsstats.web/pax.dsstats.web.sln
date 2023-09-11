@@ -25,7 +25,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.raven", "dsstats.ra
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.mmr", "..\dsstats.mmr\dsstats.mmr.csproj", "{27337B0D-A8B1-405D-A4F6-273793C1C501}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.ratings.lib", "..\dsstats.ratings.lib\dsstats.ratings.lib.csproj", "{73022196-1FEF-4C91-9DA2-9C0CBF098C3A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.ratings.lib", "..\dsstats.ratings.lib\dsstats.ratings.lib.csproj", "{73022196-1FEF-4C91-9DA2-9C0CBF098C3A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
