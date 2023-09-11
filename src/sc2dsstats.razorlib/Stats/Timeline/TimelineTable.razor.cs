@@ -70,6 +70,7 @@ public partial class TimelineTable : ComponentBase
                 else
                 {
                     // tableData.Strengths.Add(data.Strength);
+                    tableData.Time = data.Time;
                     tableData.Strengths.Add(data.AvgGain);
                     tableData.Counts.Add(data.Count);
                     tableData.Winrate.Add(data.Count == 0 ? 0 : data.Wins * 100.0 / data.Count);
@@ -155,6 +156,7 @@ public partial class TimelineTable : ComponentBase
 
     public record TimeTableData
     {
+        public DateTime Time { get; set; }
         public bool Chart { get; set; }
         public Commander Commander { get; set; }
         public List<double> Strengths { get; set; } = new();

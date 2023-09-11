@@ -8,11 +8,14 @@
 <sc2dsstats.razorlib.Stats.Timeline.TimelineComponent Request="Request" OnRequestChanged="RequestChanged"></sc2dsstats.razorlib.Stats.Timeline.TimelineComponent>
 
 @code {
-    [SupplyParameterFromQuery]
+    [Parameter, SupplyParameterFromQuery]
     public int? Time { get; set; }
 
-    [SupplyParameterFromQuery]
+    [Parameter, SupplyParameterFromQuery]
     public int? Type { get; set; }
+
+    [Parameter, SupplyParameterFromQuery]
+    public bool? Combo { get; set; }
 
     TimelineRequest Request = new()
         {
@@ -37,6 +40,11 @@
         {
             Request.RatingType = (RatingType)Type.Value;
         }
+
+        if (Combo != null)
+        {
+            Request.ComboRating = Combo.Value;
+        }
     }
 
     private void RequestChanged(TimelineRequest request)
@@ -45,6 +53,15 @@
 
         queryDic.Add("Time", (int)request.TimePeriod);
         queryDic.Add("Type", (int)request.RatingType);
+
+        if (request.ComboRating)
+        {
+            queryDic.Add("Combo", request.ComboRating);
+        }
+        else
+        {
+            queryDic.Add("Combo", null);
+        }
 
         NavigationManager.NavigateTo(
         NavigationManager.GetUriWithQueryParameters(

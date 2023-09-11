@@ -30,6 +30,87 @@
             chartReady = true;
             SetupChart(Response, Request);
         }
+        else if (chartEvent is ChartJsLabelClickEvent labelClickEvent)
+        {
+            if (!string.IsNullOrEmpty(labelClickEvent.DatasetLabel))
+            {
+                SetInteresetLine(labelClickEvent.DatasetLabel);
+            }
+            else
+            {
+                ClearInterestLines();
+            }
+        }
+    }
+
+    private void SetInteresetLine(string label)
+    {
+        foreach (var dataset in chartConfig.Data.Datasets.ToArray())
+        {
+            if (dataset is LineDataset lineDataset
+                && lineDataset.BorderWidth > 0
+                && lineDataset.Label == label)
+            {
+                lineDataset.BorderWidth = 5;
+                chartConfig.UpdateDataset(lineDataset);
+                break;
+            }
+        }
+    }
+
+    private void ClearInterestLines()
+    {
+        foreach (var dataset in chartConfig.Data.Datasets.ToArray())
+        {
+            if (dataset is LineDataset lineDataset
+             && lineDataset.BorderWidth > 0
+             && lineDataset.BorderWidth != 2)
+            {
+                lineDataset.BorderWidth = 2;
+                chartConfig.UpdateDataset(lineDataset);
+            }
+        }
+    }
+
+    public void SetArbitraryLine(KeyValuePair<Commander, DateTime> change)
+    {
+        ClearInterestLines();
+        SetInteresetLine(change.Key.ToString());
+
+
+        chartConfig.Options?.Plugins?.ArbitraryLines?.Clear();
+
+        string label = change.Value.Day <= 15 ? change.Value.ToString("yyyy-MM") : change.Value.AddMonths(1).ToString("yyyy-MM");
+
+        int index = chartConfig.Data.Labels.IndexOf(label);
+        if (index <= 0 || index >= chartConfig.Data.Labels.Count)
+        {
+            chartConfig.UpdateChartOptions();
+            JSRuntime.InvokeVoidAsync("setChartLegendFilter", chartConfig.ChartJsConfigGuid);
+            return;
+        }
+
+        if (chartConfig.Options?.Plugins?.ArbitraryLines is not null)
+        {
+            chartConfig.Options.Plugins.ArbitraryLines.Add(new()
+            {
+                ArbitraryLineColor = "#CED0DD",
+                XPosition = index,
+                XWidth = 5,
+                Text = $"{change.Key} - {change.Value.ToString("yyyy-MM-dd")}"
+            });
+            chartConfig.UpdateChartOptions();
+            JSRuntime.InvokeVoidAsync("setChartLegendFilter", chartConfig.ChartJsConfigGuid);
+        }
+    }
+
+    private Commander GetCommander(ChartJsLabelClickEvent labelClickEvent)
+    {
+        Commander cmdr = Commander.None;
+
+
+
+        return cmdr;
     }
 
     public void SetupChart(TimelineResponse response, TimelineRequest request)
@@ -177,10 +258,12 @@
         return new ChartJsConfig()
             {
                 Type = ChartType.line,
+                
                 Options = new ChartJsOptions()
                 {
                     Responsive = true,
                     MaintainAspectRatio = true,
+                    OnClickEvent = true,
                     Plugins = new Plugins()
                     {
                         Title = new Title()
@@ -201,7 +284,8 @@
                             {
                                 Color = "#CED0DD",
                             }
-                        }
+                        },
+                        ArbitraryLines = new List<ArbitraryLineConfig>()
                     },
                     Scales = new ChartJsOptionsScales()
                     {

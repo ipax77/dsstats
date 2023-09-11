@@ -202,6 +202,7 @@ public static class ReplayExtensions
         sb.Append("StatsTimeline");
         sb.Append(request.TimePeriod.ToString());
         sb.Append(request.RatingType.ToString());
+        sb.Append(request.ComboRating.ToString());
         return sb.ToString();
     }
 

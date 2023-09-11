@@ -61,6 +61,24 @@
                     <span class="oi oi-info pointer" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki#default-filter'"></span>
                 </div>
             </div>
+            @if (!Data.IsMaui)
+            {
+                <div class="d-flex">
+                    <div class="form-check form-switch">
+                        <label class="form-check-label">
+                            ComboRatings
+                            <InputCheckbox class="form-check-input" @bind-Value="Request.ComboRating">
+                            </InputCheckbox>
+                        </label>
+                    </div>
+                    <div class="ms-2">
+                        <span class="oi oi-info pointer"
+                              onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/ComboRatings'">
+                        </span>
+                    </div>
+                </div>
+
+            }
         </div>
     </div>
 </EditForm>
