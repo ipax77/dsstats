@@ -21,7 +21,7 @@
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.21" />
 	<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.21" />
-	<PackageReference Include="pax.BlazorChartJs" Version="0.6.0" />
+	<PackageReference Include="pax.BlazorChartJs" Version="0.6.1" />
   </ItemGroup>
 
   <ItemGroup>

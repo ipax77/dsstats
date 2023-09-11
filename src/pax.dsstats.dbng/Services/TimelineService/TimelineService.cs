@@ -156,6 +156,11 @@ public class TimelineService : ITimelineService
 
     private async Task<List<TimelineEnt>> GetData(TimelineRequest request, CancellationToken token)
     {
+        if (request.ComboRating)
+        {
+            return await GetComboData(request, token);
+        }
+
         (var fromDate, var toDate) = Data.TimeperiodSelected(request.TimePeriod);
 
         toDate = new DateTime(toDate.Year, toDate.Month, 1);
@@ -174,6 +179,32 @@ public class TimelineService : ITimelineService
                         Count = g.Count(),
                         AvgRating = Math.Round(g.Average(a => a.rp.ReplayPlayerRatingInfo!.Rating), 2),
                         AvgGain = Math.Round(g.Average(a => a.rp.ReplayPlayerRatingInfo!.RatingChange), 2),
+                        Wins = g.Count(s => s.rp.PlayerResult == PlayerResult.Win)
+                    };
+
+        return await group.ToListAsync();
+    }
+
+    private async Task<List<TimelineEnt>> GetComboData(TimelineRequest request, CancellationToken token)
+    {
+        (var fromDate, var toDate) = Data.TimeperiodSelected(request.TimePeriod);
+
+        toDate = new DateTime(toDate.Year, toDate.Month, 1);
+
+        var group = from r in context.Replays
+                    from rp in r.ReplayPlayers
+                    where r.GameTime > fromDate
+                        && r.GameTime < toDate
+                        && r.ComboReplayRating!.RatingType == request.RatingType
+                        && rp.Duration >= 300
+                    group new { r, rp } by new { rp.Race, r.GameTime.Year, r.GameTime.Month } into g
+                    select new TimelineEnt
+                    {
+                        Commander = g.Key.Race,
+                        Time = new DateTime(g.Key.Year, g.Key.Month, 1),
+                        Count = g.Count(),
+                        AvgRating = Math.Round(g.Average(a => a.rp.ComboReplayPlayerRating!.Rating), 2),
+                        AvgGain = Math.Round(g.Average(a => a.rp.ComboReplayPlayerRating!.Change), 2),
                         Wins = g.Count(s => s.rp.PlayerResult == PlayerResult.Win)
                     };
 
