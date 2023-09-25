@@ -45,6 +45,21 @@
             <div class="row">
                 <div class="col-auto">
                     <label class="form-label">
+                        Rating Type
+                        <InputSelect class="form-select" @bind-Value="ratingsRequest.Type">
+                            @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+                            {
+                                @if (ratingType == RatingType.None || ratingType == RatingType.CmdrTE || ratingType == RatingType.StdTE)
+                                {
+                                    continue;
+                                }
+                                <option value="@ratingType">@Data.GetRatingTypeLongName(ratingType)</option>
+                            }
+                        </InputSelect>
+                    </label>
+                </div>
+                <div class="col-auto">
+                    <label class="form-label">
                         Search:
                         <InputText class="form-control" @bind-Value="ratingsRequest.Search"></InputText>
                     </label>
@@ -94,9 +109,9 @@
             <tbody>
                 @if (ratingsCount > 0)
                 {
-                    <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings">
+                    <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings" ItemSize="47">
                         <ItemContent>
-                            <tr>
+                            <tr height="47px">
                                 <td>
                                     <button type="button" class="btn btn-sm btn-primary" @onclick="e => OnPlayersSelected.InvokeAsync(rating.Player)">Select</button>
                                 </td>
