@@ -9,7 +9,8 @@ public partial class CalcService
 {
     private static double GetPlayerImpact(CalcRating calcRating, double teamConfidence, CalcRatingRequest request)
     {
-        double factor_consistency = GetCorrectedRevConsistency(1 - calcRating.Consistency, request.MmrOptions.consistencyImpact);
+        double factor_consistency = 
+            GetCorrectedRevConsistency(1 - calcRating.Consistency, request.MmrOptions.consistencyImpact);
         double factor_confidence = GetCorrectedConfidenceFactor(calcRating.Confidence,
                                                                 teamConfidence,
                                                                 request.MmrOptions.distributionMult,
@@ -25,7 +26,10 @@ public partial class CalcService
                                                        double distributionMult,
                                                        double confidenceImpact)
     {
-        double totalConfidenceFactor = (0.5 * (1 - GetConfidenceFactor(playerConfidence, distributionMult))) + (0.5 * GetConfidenceFactor(replayConfidence, distributionMult));
+        double totalConfidenceFactor = 
+            (0.5 * (1 - GetConfidenceFactor(playerConfidence, distributionMult))) 
+            + (0.5 * GetConfidenceFactor(replayConfidence, distributionMult));
+
         return 1 + confidenceImpact * (totalConfidenceFactor - 1);
     }
 
