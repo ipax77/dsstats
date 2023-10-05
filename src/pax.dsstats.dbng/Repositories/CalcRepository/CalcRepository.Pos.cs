@@ -24,4 +24,14 @@ public partial class CalcRepository
         command.CommandTimeout = 120;
         await command.ExecuteNonQueryAsync();
     }
+
+    public async Task SetComboPlayerRatingsPos()
+    {
+        using var connection = new MySqlConnection(connectionString);
+        await connection.OpenAsync();
+        var command = connection.CreateCommand();
+        command.CommandText = "CALL SetComboPlayerRatingPos();";
+        command.CommandTimeout = 120;
+        await command.ExecuteNonQueryAsync();
+    }
 }

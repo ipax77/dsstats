@@ -32,6 +32,7 @@ public partial class RatingRepository
                 Rating = s.Rating,
                 Games = s.Games,
                 Wins = s.Wins,
+                Pos = s.Pos,
                 Player = new PlayerRatingPlayerDto() 
                 {
                     Name = s.Player.Name,

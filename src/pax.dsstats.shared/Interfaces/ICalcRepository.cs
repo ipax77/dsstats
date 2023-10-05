@@ -13,6 +13,7 @@ public interface ICalcRepository
     Task<List<CalcDto>> GetSc2ArcadeCalcDtos(Sc2ArcadeRequest request);
     Task SetMainCmdr(int ratingType);
     Task SetPlayerRatingsPos();
+    Task SetComboPlayerRatingsPos();
     Task SetRatingChange();
     Task<List<CalcDto>> TestGetDsstatsCalcDtos(int playerId);
     Task<List<CalcDto>> TestGetSc2ArcadeCalcDtos(int playerId);

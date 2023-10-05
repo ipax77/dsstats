@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics;
+using System.Text.Json;
 using dsstats.ratings.db;
 using dsstats.ratings.lib;
 using Microsoft.EntityFrameworkCore;
@@ -63,6 +64,8 @@ class Program
 
         using var scope = serviceProvider.CreateScope();
         
+        Stopwatch sw = Stopwatch.StartNew();
+
         if (args.Length > 0 && args[0] == "comboratings")
         {
             Console.WriteLine($"producing combo ratings");
@@ -130,6 +133,8 @@ class Program
             Console.WriteLine($"Crawling lobby histories from today till {tillDate.ToShortDateString()}");
             crawlerService.GetLobbyHistory(tillDate).Wait();
         }
-        Console.WriteLine($"job done.");
+
+        sw.Stop();
+        Console.WriteLine($"job done. (elapsed: {sw.ElapsedMilliseconds}ms)");
     }
 }

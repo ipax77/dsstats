@@ -89,8 +89,7 @@ public partial class CalcService
         await calcRepository.DsstatsReplayRatingsFromCsv2MySql();
         await calcRepository.DsstatsReplayPlayerRatingsFromCsv2MySql();
 
-        // await calcRepository.SetPlayerRatingsPos();
-        // await calcRepository.SetRatingChange();
+        await calcRepository.SetComboPlayerRatingsPos();
 
         return result;
     }
