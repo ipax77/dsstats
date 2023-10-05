@@ -88,10 +88,12 @@ public partial class CalcService
         var result = isWinner ? 1 : 0;
         if (player.IsLeaver)
         {
-            mmrDelta = -1 * CalculateMmrDelta(exp2win, playerImpact, request.MmrOptions.EloK);
+            mmrDelta =
+             -1 * CalculateMmrDelta(isWinner ? exp2win : 1.0 - exp2win, playerImpact, request.MmrOptions.EloK);
         }
         else
         {
+            playerImpact *= calcData.LeaverImpact;
             mmrDelta = CalculateMmrDelta(calcData.WinnerTeamExpecationToWin, playerImpact, request.MmrOptions.EloK);
             consistencyDelta = Math.Abs(exp2win - result) < 0.50 ? 1.0 : 0.0;
             confidenceDelta = Math.Abs(exp2win - result);
@@ -114,10 +116,12 @@ public partial class CalcService
         player.CalcRating.Consistency = consistencyAfter;
         player.CalcRating.Confidence = confidenceAfter;
         player.CalcRating.Games++;
-        if (isWinner)
+        
+        if (!player.IsLeaver && isWinner)
         {
             player.CalcRating.Wins++;
         }
+
         var ratingChange = MathF.Round((float)(mmrAfter - player.CalcRating.Mmr), 2);
         player.CalcRating.Mmr = mmrAfter;
 
