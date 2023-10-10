@@ -35,8 +35,8 @@
     </div>
 </div>
 <div class="mt-2 tableFixHead" style="width: 1200px; height: 600px;">
-    <table class="tptable table">
-        <thead>
+    <table class="tptable table text-nowrap">
+        <thead class="user-select-none">
             <tr>
                 <CascadingValue Value="tableOrders">
                     <th class="pointer" @onclick="e => SortList(e, nameof(DsUpdateInfo.Time))">
