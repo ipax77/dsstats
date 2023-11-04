@@ -1,0 +1,25 @@
+﻿@page "/builds"
+@using dsstats.shared
+@using dsstats.razorlib.Builds
+@using dsstats.maui.Services
+@inject ConfigService configService
+
+<BuildsComponent Request="Request" />
+
+@code {
+    BuildRequest Request = null!;
+
+    protected override void OnInitialized()
+    {
+        Request = new()
+        {
+            RatingType = RatingType.Cmdr,
+            TimePeriod = TimePeriod.Patch2_60,
+            Interest = Commander.Abathur,
+            FromRating = 1600,
+            ToRating = 2500,
+            Breakpoint = Breakpoint.Min10,
+            PlayerNames = configService.GetRequestNames()
+        };
+    }
+}

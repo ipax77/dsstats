@@ -1,0 +1,61 @@
+﻿@using dsstats.razorlib.Services
+@using dsstats.shared
+
+<div class="card d-inline-block">
+    <div class="card-header bgchart2">
+        <h4 class="text-warning">GameModes Played</h4>
+    </div>
+    <div class="card-body bgchart">
+        <div class="ismobile">
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto; overflow-x: hidden;">
+                <table class="tptable table table-sm w-auto">
+                    <thead>
+                        <tr>
+                            <th>GameMode</th>
+                            <th>Players</th>
+                            <th>Games</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var gameMode in Summary.GameModesPlayed.OrderByDescending(o => o.Count))
+                        {
+                            <tr>
+                                <td>@gameMode.GameMode</td>
+                                <td>@HelperService.GetPlayerCountString(gameMode.PlayerCount)</td>
+                                <td>@gameMode.Count</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="isdesktop">
+            <div class="table-responsive" style="overflow-x: auto; max-width: 80vw;">
+                <table class="tptable table table-sm w-auto">
+                    <thead>
+                        <tr>
+                            @foreach (var gameMode in Summary.GameModesPlayed.OrderByDescending(o => o.Count))
+                            {
+                                <th>@gameMode.GameMode @HelperService.GetPlayerCountString(gameMode.PlayerCount)</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="text-center">
+                            @foreach (var gameMode in Summary.GameModesPlayed.OrderByDescending(o => o.Count))
+                            {
+                                <td>@gameMode.Count</td>
+                            }
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public PlayerDetailSummary Summary { get; set; } = default!;
+}

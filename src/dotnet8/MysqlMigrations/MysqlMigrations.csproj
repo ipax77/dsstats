@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0-rc.2.*" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0-rc.2.*">
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.0-beta.2.*" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\dsstats.db8\dsstats.db8.csproj" />
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,29 @@
+﻿@using dsstats.shared;
+
+
+
+@code {
+    [Parameter, EditorRequired]
+    public StatsRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    public bool IsLoading { get; set; }
+
+
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData(true);
+        base.OnInitialized();
+    }
+
+    public virtual async Task LoadData(bool init = false)
+    {
+        if (!init)
+        {
+            await OnRequestChanged.InvokeAsync();
+        }
+    }
+}

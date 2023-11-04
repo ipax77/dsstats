@@ -1,0 +1,158 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.razorlib.Models
+@using dsstats.razorlib.Services
+@using pax.BlazorChartJs
+@using dsstats.shared
+@inject IJSRuntime JSRuntime
+
+<ChartComponent ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered" />
+
+@code {
+    [Parameter, EditorRequired]
+    public CountResponse Response { get; set; } = default!;
+
+    IconsChartJsConfig chartConfig = null!;
+    bool dataReady;
+    bool chartReady;
+    bool iconsReady;
+    private int iconX = 25;
+    private int iconY = 25;
+
+    protected override void OnInitialized()
+    {
+        chartConfig = GetChartConfig();
+        dataReady = true;
+        base.OnInitialized();
+    }
+
+    private void ChartEventTriggered(ChartJsEvent chartJsEvent)
+    {
+        if (chartJsEvent is ChartJsInitEvent)
+        {
+            chartReady = true;
+            if (!iconsReady)
+            {
+                JSRuntime.InvokeVoidAsync("registerImagePlugin", iconX, iconY);
+                iconsReady = true;
+            }
+            SetupChart(Response);
+        }
+    }
+
+    public void SetupChart(CountResponse response)
+    {
+        if (!dataReady || !chartReady)
+        {
+            return;
+        }
+
+        Response = response;
+
+        if (chartConfig.Data.Datasets.Count > 0)
+        {
+            chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
+        }
+
+        var data = response.CountEnts
+            .OrderByDescending(o => o.Matchups)
+            .ToList();
+
+        if (data.Count == 0)
+        {
+            return;
+        }
+
+        chartConfig.SetLabels(data.Select(s => s.Commander.ToString()).ToList());
+        chartConfig.AddDataset(GetDataset(data));
+        SetIcons(data);
+        JSRuntime.InvokeVoidAsync("setChartLabelsToLabel", chartConfig.ChartJsConfigGuid);
+    }
+
+    private ChartJsDataset GetDataset(List<CountEnt> counts)
+    {
+        return new CustomDougnutDataset()
+        {
+            Data = counts.Select(s => s.Matchups).Cast<object>().ToList(),
+            BackgroundColor = new IndexableOption<string>(counts
+                .Select(s => Data.GetBackgroundColor(s.Commander, "33"))
+                .ToList()),
+            BorderColor = new IndexableOption<string>(counts
+                    .Select(s => Data.GetBackgroundColor(s.Commander, ""))
+                    .ToList()),
+            Spacing = 25,
+            BorderRadius = 5,
+            Cutout = "35%",
+            // Clip = new { Left = 15, Top = 15, Right = 15, Bottom = 15 }
+        };
+    }
+
+    private void SetIcons(List<CountEnt> countEnts)
+    {
+        if (chartConfig.Options?.Plugins != null
+            && chartConfig.Options?.Plugins is IconsPlugins iconPlugins)
+        {
+            var icons = countEnts.Select(s => new ChartIconsConfig()
+                {
+                    XWidth = iconX,
+                    YWidth = iconY,
+                    YOffset = 0,
+                    ImageSrc = HelperService.GetImageSrc(s.Commander),
+                    Cmdr = s.Commander.ToString().ToLower()
+                }).ToList();
+
+            iconPlugins.BarIcons = icons;
+            chartConfig.UpdateChartOptions();
+        }
+    }
+
+    public record CustomDougnutDataset : DoughnutDataset
+    {
+        public StringOrDoubleValue? Cutout { get; set; }
+    }
+
+    private IconsChartJsConfig GetChartConfig()
+    {
+        return new()
+            {
+                Type = ChartType.doughnut,
+                Options = new()
+                {
+                    Responsive = true,
+                    MaintainAspectRatio = true,
+                    Plugins = new()
+                    {
+                        Legend = new()
+                        {
+                            Display = false,
+                            Position = "right",
+                            MaxHeight = 0,
+                            MaxWidth = 0,
+                        },
+                        Title = new()
+                        {
+                            Display = true,
+                            Position = "top",
+                            Text = new IndexableOption<string>("Commander Matchups"),
+                            Color = "white",
+                            Font = new()
+                            {
+                                Size = 16,
+                            }
+                        },
+                        Datalabels = new()
+                        {
+                            Display = "auto",
+                            Color = "#0a050c",
+                            BackgroundColor = "#cdc7ce",
+                            BorderColor = "#491756",
+                            BorderRadius = 4,
+                            BorderWidth = 1,
+                            Anchor = "end",
+                            Align = "start",
+                            Clip = true
+                        },
+                    }
+                },
+            };
+    }
+}

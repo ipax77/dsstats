@@ -1,0 +1,77 @@
+﻿@using dsstats.maui.Services
+@inject IJSRuntime JSRuntime
+
+<div class="modal" id="decodeerrormodal" tabindex="-1" aria-labelledby="decodeerrormodal" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4>Error Replays</h4>
+                <div class="row">
+                    <div class="col-auto ms-2">
+                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                @onclick="AddAllReplaysToIgnoreList">
+                            Add All to Ignore List
+                        </button>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="tableFixHead table-responsive" style="max-height: 70vh; max-width: 1075px;">
+                    <table class="tptable table table-sm">
+                        <thead class="" style="user-select: none;">
+                            <tr>
+                                <th></th>
+                                <th>Replay</th>
+                                <th>Error</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var ent in DecodeErrors)
+                            {
+                                <tr>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-warning" @onclick="e => AddReplayToIgnoreList(ent.ReplayPath)">
+                                            Ignore
+                                        </button>
+                                    </td>
+                                    <td>@ent.ReplayPath</td>
+                                    <td>@ent.Error</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public List<DecodeError> DecodeErrors { get; set; } = default!;
+
+    private void AddAllReplaysToIgnoreList()
+    {
+
+    }
+
+    private void AddReplayToIgnoreList(string replayPath)
+    {
+        
+    }
+
+    public void Show()
+    {
+        JSRuntime.InvokeVoidAsync("openModalById", "decodeerrormodal");
+    }
+
+    public void Hide()
+    {
+        Console.WriteLine("hiding");
+        JSRuntime.InvokeVoidAsync("closeModalById", "decodeerrormodal");
+    }
+}

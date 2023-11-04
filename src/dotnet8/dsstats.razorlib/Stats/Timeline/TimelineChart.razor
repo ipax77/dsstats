@@ -1,0 +1,415 @@
+﻿@using MathNet.Numerics
+@using Microsoft.JSInterop;
+@using pax.BlazorChartJs;
+@using dsstats.shared;
+@inject IJSRuntime JSRuntime
+
+<ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered"></ChartComponent>
+
+@code {
+    [Parameter, EditorRequired]
+    public StatsRequest Request { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public TimelineResponse Response { get; set; } = default!;
+
+    ChartJsConfig chartConfig = null!;
+    ChartComponent? chartComponent;
+    bool chartReady;
+
+    protected override void OnInitialized()
+    {
+        chartConfig = GetChartConfig();
+        base.OnInitialized();
+    }
+
+    private void ChartEventTriggered(ChartJsEvent chartEvent)
+    {
+        if (chartEvent is ChartJsInitEvent initEvent)
+        {
+            chartReady = true;
+            SetupChart(Response, Request);
+        }
+        else if (chartEvent is ChartJsLabelClickEvent labelClickEvent)
+        {
+            if (!string.IsNullOrEmpty(labelClickEvent.DatasetLabel))
+            {
+                SetInteresetLine(labelClickEvent.DatasetLabel);
+            }
+            else
+            {
+                ClearInterestLines();
+            }
+        }
+    }
+
+    private void SetInteresetLine(string label)
+    {
+        foreach (var dataset in chartConfig.Data.Datasets.ToArray())
+        {
+            if (dataset is LineDataset lineDataset
+                && lineDataset.BorderWidth > 0
+                && lineDataset.Label == label)
+            {
+                lineDataset.BorderWidth = 5;
+                chartConfig.UpdateDataset(lineDataset);
+                break;
+            }
+        }
+    }
+
+    private void ClearInterestLines()
+    {
+        foreach (var dataset in chartConfig.Data.Datasets.ToArray())
+        {
+            if (dataset is LineDataset lineDataset
+             && lineDataset.BorderWidth > 0
+             && lineDataset.BorderWidth != 2)
+            {
+                lineDataset.BorderWidth = 2;
+                chartConfig.UpdateDataset(lineDataset);
+            }
+        }
+    }
+
+    public void SetArbitraryLine(KeyValuePair<Commander, DateTime> change)
+    {
+        ClearInterestLines();
+        SetInteresetLine(change.Key.ToString());
+
+
+        chartConfig.Options?.Plugins?.ArbitraryLines?.Clear();
+
+        string label = change.Value.Day <= 15 ? change.Value.ToString("yyyy-MM") : change.Value.AddMonths(1).ToString("yyyy-MM");
+
+        int index = chartConfig.Data.Labels.IndexOf(label);
+        if (index <= 0 || index >= chartConfig.Data.Labels.Count)
+        {
+            chartConfig.UpdateChartOptions();
+            JSRuntime.InvokeVoidAsync("setChartLegendFilter", chartConfig.ChartJsConfigGuid);
+            return;
+        }
+
+        if (chartConfig.Options?.Plugins?.ArbitraryLines is not null)
+        {
+            chartConfig.Options.Plugins.ArbitraryLines.Add(new()
+            {
+                ArbitraryLineColor = "#CED0DD",
+                XPosition = index,
+                XWidth = 5,
+                Text = $"{change.Key} - {change.Value.ToString("yyyy-MM-dd")}"
+            });
+            chartConfig.UpdateChartOptions();
+            JSRuntime.InvokeVoidAsync("setChartLegendFilter", chartConfig.ChartJsConfigGuid);
+        }
+    }
+
+    private Commander GetCommander(ChartJsLabelClickEvent labelClickEvent)
+    {
+        Commander cmdr = Commander.None;
+
+
+
+        return cmdr;
+    }
+
+    public void SetupChart(TimelineResponse response, StatsRequest request, bool fullChart = false)
+    {
+        if (!chartReady)
+        {
+            return;
+        }
+
+        Response = response;
+        Request = request;
+
+        if (chartConfig.Data.Datasets.Any())
+        {
+            chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
+        }
+
+        if (chartConfig.Options?.Scales?.Y?.Title != null)
+        {
+#pragma warning disable CS8602
+            // chartConfig.Options.Scales.Y.Title.Text = new IndexableOption<string>($"{(Request.WithRating ? "Average rating gain" : "Winrate")}");
+#pragma warning restore CS8602
+        }
+
+        if (chartConfig.Options?.Plugins?.Title != null)
+        {
+            chartConfig.Options.Plugins.Title.Text = GetTitle(request);
+            chartConfig.UpdateChartOptions();
+            JSRuntime.InvokeVoidAsync("setChartLegendFilter", chartConfig.ChartJsConfigGuid);
+        }
+
+        SetLabels(response);
+        List<ChartJsDataset> datasets = new();
+
+        List<Commander> commanders = new();
+
+        if (fullChart)
+        {
+            commanders = request.RatingType == RatingType.StdTE || request.RatingType == RatingType.Std ?
+                Data.GetCommanders(Data.CmdrGet.Std)
+                : Data.GetCommanders(Data.CmdrGet.NoStd);
+
+        }
+        else
+        {
+            if (Request.Interest != Commander.None)
+            {
+                commanders.Add(Request.Interest);
+            }
+            else
+            {
+                if (request.RatingType == RatingType.Std || request.RatingType == RatingType.StdTE)
+                {
+                    commanders.Add(Commander.Protoss);
+                }
+                else
+                {
+                    commanders.Add(Commander.Abathur);
+                }
+            }
+        }
+
+        foreach (var cmdr in commanders)
+        {
+            datasets.Add(GetLineDataset(response, cmdr));
+            datasets.Add(GetPointDataset(response, cmdr));
+        }
+
+        chartConfig.AddDatasets(datasets);
+    }
+
+    private IndexableOption<string> GetTitle(StatsRequest request)
+    {
+        var title = $"Timeline - {GetTimeInfo(request)}";
+
+        List<string> titleList = [title];
+
+        if (request.Filter is not null)
+        {
+            if (request.Filter.Rating is not null
+                && (request.Filter.Rating.FromRating > 0 || request.Filter.Rating.ToRating > 0))
+            {
+                titleList.Add($"Rating Range {(request.Filter.Rating.FromRating == Data.MinBuildRating ? 0 : request.Filter.Rating.FromRating)} - {(request.Filter.Rating.ToRating == Data.MaxBuildRating ? $"{request.Filter.Rating.ToRating}+" : $"{request.Filter.Rating.ToRating}")}");
+            }
+
+            if (request.Filter.Exp2Win is not null
+                && (request.Filter.Exp2Win.FromExp2Win > 0 || request.Filter.Exp2Win.ToExp2Win > 0))
+            {
+                titleList.Add($"Exp2Win Range {request.Filter.Exp2Win.FromExp2Win}% - {request.Filter.Exp2Win.ToExp2Win}%");
+            }
+        }
+
+        if (titleList.Count == 1)
+        {
+            return new IndexableOption<string>(titleList[0]);
+        }
+        else
+        {
+            return new IndexableOption<string>(titleList);
+        }
+    }
+
+    private string GetTimeInfo(StatsRequest request)
+    {
+        if (request.Filter.Time is null)
+        {
+            return Data.GetTimePeriodLongName(request.TimePeriod);
+        }
+        else
+        {
+            return $"{request.Filter.Time.FromDate.ToString("yyyy-MM-dd")} - {request.Filter.Time.ToDate.ToString("yyyy-MM-dd")}";
+        }
+    }
+
+    private void SetLabels(TimelineResponse response)
+    {
+        var dateTimes = response.TimeLineEnts.Select(s => s.Time)
+            .Distinct()
+            .OrderBy(o => o);
+        chartConfig.SetLabels(dateTimes.Select(s => s.ToString(@"yyyy-MM")).ToList());
+    }
+
+    public void AddDataset(Commander commander)
+    {
+        chartConfig.AddDataset(GetLineDataset(Response, commander));
+        chartConfig.AddDataset(GetPointDataset(Response, commander));
+    }
+
+    public void RemoveDataset(Commander commander)
+    {
+        var datasets = chartConfig.Data.Datasets
+            .Cast<LineDataset>()
+            .Where(x => x.Label == commander.ToString());
+
+        if (!datasets.Any())
+        {
+            return;
+        }
+
+        chartConfig.RemoveDatasets(datasets.Cast<ChartJsDataset>().ToList());
+    }
+
+    public void ClearDatasets()
+    {
+        if (chartConfig.Data.Datasets.Any())
+        {
+            chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
+        }
+    }
+
+    private ChartJsDataset GetLineDataset(TimelineResponse response, Commander commander)
+    {
+        var chartData = response.TimeLineEnts
+            .Where(x => x.Commander == commander)
+            .OrderBy(o => o.Time)
+            .Select(s => s.AvgGain)
+            .ToList();
+
+        return new LineDataset()
+            {
+                Label = commander.ToString(),
+                Data = GetNiceData(chartData),
+                BorderColor = Data.GetBackgroundColor(commander, "90"),
+                BorderWidth = 2,
+                PointRadius = new IndexableOption<double>(3),
+                Tension = 0.4,
+            };
+    }
+
+    private ChartJsDataset GetPointDataset(TimelineResponse response, Commander commander)
+    {
+        var chartData = response.TimeLineEnts
+            .Where(x => x.Commander == commander)
+            .OrderBy(o => o.Time)
+            .Select(s => s.AvgGain)
+            .ToList();
+
+        return new LineDataset()
+            {
+                Label = commander.ToString(),
+                Data = chartData == null ? new List<object>() : chartData.Cast<object>().ToList(),
+                BorderWidth = 0,
+                PointRadius = new IndexableOption<double>(2),
+                PointBackgroundColor = new IndexableOption<string>(Data.GetBackgroundColor(commander, "90"))
+            };
+    }
+
+    private List<object> GetNiceData(List<double> data)
+    {
+        if (data.Count < 4)
+        {
+            return data.Cast<object>().ToList();
+        }
+
+        List<double> xValues = new();
+        for (int i = 0; i < data.Count; i++)
+        {
+            xValues.Add(i);
+        }
+        
+        int order = Math.Min(4, data.Count - 1);
+
+        var poly = Fit.PolynomialFunc(xValues.ToArray(), data.ToArray(), order);
+
+        return xValues.Select(s => Math.Round(poly(s), 2)).Cast<object>().ToList();
+    }
+
+    private ChartJsConfig GetChartConfig()
+    {
+        string mainColor = "#3F5FFA";
+
+        return new ChartJsConfig()
+            {
+                Type = ChartType.line,
+                
+                Options = new ChartJsOptions()
+                {
+                    Responsive = true,
+                    MaintainAspectRatio = true,
+                    OnClickEvent = true,
+                    Plugins = new Plugins()
+                    {
+                        Title = new Title()
+                        {
+                            Display = true,
+                            Text = new IndexableOption<string>("Timeline"),
+                            Color = "#CED0DD",
+                            Font = new()
+                            {
+                                Size = 16,
+                            }
+                        },
+                        Legend = new Legend()
+                        {
+                            Display = true,
+                            Position = "right",
+                            Labels = new Labels()
+                            {
+                                Color = "#CED0DD",
+                            }
+                        },
+                        ArbitraryLines = new List<ArbitraryLineConfig>()
+                    },
+                    Scales = new ChartJsOptionsScales()
+                    {
+                        X = new LinearAxis()
+                        {
+                            Title = new()
+                            {
+                                Display = true,
+                                Text = new IndexableOption<string>("Time (yyyy-MM)"),
+                                Color = mainColor
+                            },
+                            Ticks = new LinearAxisTick()
+                            {
+                                Display = true,
+                                Color = mainColor,
+                            },
+                            Grid = new ChartJsGrid()
+                            {
+                                Display = true,
+                                Color = "rgba(113, 116, 143, 0.25)",
+                                TickColor = "rgba(113, 116, 143, 0.75)"
+                            },
+                            Border = new ChartJsAxisBorder()
+                            {
+                                Display = true,
+                                Color = "rgba(113, 116, 143)",
+                                Dash = new List<double>() { 2, 4 }
+                            }
+                        },
+                        Y = new LinearAxis()
+                        {
+                            Title = new()
+                            {
+                                Display = true,
+                                Text = new IndexableOption<string>("Average rating gain"),
+                                Color = mainColor,
+                            },
+                            Ticks = new LinearAxisTick()
+                            {
+                                Display = true,
+                                Color = mainColor,
+                            },
+                            Grid = new ChartJsGrid()
+                            {
+                                Display = true,
+                                Color = "rgba(113, 116, 143, 0.25)",
+                                TickColor = "rgba(113, 116, 143, 0.75)"
+                            },
+                            Border = new ChartJsAxisBorder()
+                            {
+                                Display = true,
+                                Color = "rgba(113, 116, 143)",
+                                Dash = new List<double>() { 2, 4 }
+                            }
+                        }
+                    }
+                },
+            };
+    }
+}

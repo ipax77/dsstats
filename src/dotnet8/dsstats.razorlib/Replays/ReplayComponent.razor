@@ -1,0 +1,371 @@
+@using dsstats.shared
+@using dsstats.shared.Extensions
+@using dsstats.shared.Interfaces
+@using dsstats.razorlib.Services
+@inject NavigationManager NavigationManager
+@inject IReplaysService replaysService
+@inject IRemoteToggleService remoteToggleService
+
+@* <div class="card d-inline-block" @ontouchstart="TouchStart" @ontouchmove="TouchMove"> *@
+<div class="card d-inline-block @(interestPlayer == null ? "" : "visually-hidden")">
+    <div class="card-header bgchart2">
+        <div class="row fw-bold" style="max-width: 1100px;">
+            @if (IsScrollable)
+            {
+                <div class="col-auto">
+                    <div class="d-flex">
+                        <div>
+                            <span class="bi bi-arrow-left pointer"
+                                @onclick="e => OnScrollRequest.InvokeAsync(false)"></span>
+                        </div>
+                        <div class="ms-1">
+                            <span class="bi bi-arrow-right pointer"
+                                @onclick="e => OnScrollRequest.InvokeAsync(true)"></span>
+                        </div>
+                    </div>
+                </div>
+            }
+            <div class="col-2">
+                @Replay.GameTime.ToString("yyyy-MM-dd")
+            </div>
+            <div class="col-2">
+                Duration @TimeSpan.FromSeconds(Replay.Duration).ToString(@"hh\:mm\:ss")
+            </div>
+            <div class="col-2">
+                @Replay.GameMode
+                @if (Replay.TournamentEdition)
+                {
+                    <span class="border rounded p-1 ms-2">TE</span>
+                }
+            </div>
+
+            @if (IsCloseable)
+            {
+                <div class="col-2 text-danger pointer">
+                    <i class="bi bi-x-lg" @onclick="e => OnCloseRequested.InvokeAsync()"></i>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="card-body bgchart">
+        @if (showMiddleChart)
+        {
+            <div class="bgchart"
+                style="position: relative; width: 70vw; min-width: 600px; max-width: 1200px; height: calc(70vw * 0.5); min-height: 300px; max-height: 600px;">
+                <ReplayMiddleChart MiddleInfo="middleInfo" OnCloseRequest="ShowHideMiddleChart" />
+            </div>
+        }
+        <div class="row">
+            <CascadingValue Value="replayRating">
+                <CascadingValue Value="showRating">
+                    <div class="col-auto">
+                        <ReplayTeamTable @ref="teamTable1" Replay="Replay" MiddleInfo="middleInfo" Team="1"
+                            OnBuildRequest="ShowHideBuild" OnPlayerDetailsRequest="ShowPlayerDetails"
+                            OnMiddleChartRequest="ShowHideMiddleChart" />
+                    </div>
+                    <div class="col-auto">
+                        <ReplayTeamTable @ref="teamTable2" Replay="Replay" MiddleInfo="middleInfo" Team="2"
+                            OnBuildRequest="ShowHideBuild" OnPlayerDetailsRequest="ShowPlayerDetails"
+                            OnMiddleChartRequest="ShowHideMiddleChart" />
+                    </div>
+                </CascadingValue>
+            </CascadingValue>
+        </div>
+        <div class="row">
+            <div class="col-auto">
+                <div class="form-check form-switch user-select-none">
+                    <label class="form-check-label">
+                        @if (replayRating?.IsPreRating ?? false)
+                        {
+                            <span class="text-warning">Pre-Rating Info</span>
+                        }
+                        else
+                        {
+                            <span>Rating Info</span>
+                        }
+                        <input class="form-check-input" type="checkbox" @bind="showRating">
+                    </label>
+                </div>
+            </div>
+            <div class="col-auto d-flex">
+                <div class="form-check form-switch user-select-none">
+                    <label class="form-check-label">
+                        Combo Rating
+                        <input class="form-check-input" type="checkbox" checked="@comboRating"
+                            @onchange="ChangeRatingType">
+                    </label>
+                </div>
+                <div class="ms-2">
+                    <span class="bi bi-info-circle pointer"
+                        onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/ComboRatings'">
+                    </span>
+                </div>
+            </div>
+            <div class="col-auto">
+                @if (replayRating is not null)
+                {
+                    <span>
+                        Expectation To Win:
+                        <span class="@(replayRating.ExpectationToWin > 0.5 ? "text-success fw-bold" : "text-danger fw-bold")">
+                            @((replayRating.ExpectationToWin * 100.0).ToString("N0"))%
+                        </span>
+                    </span>
+                }
+            </div>
+        </div>
+        @if (buildPlayers.Count > 0)
+        {
+            <div class="row">
+                <div class="col-auto text-center align-self-center">
+                    <span class="fw-bold">Breakpoint</span>
+                </div>
+                <div class="col-auto">
+                    <div class="btn-group bgchart" role="group" aria-label="bptogglegroup">
+                        @foreach (Breakpoint bp in AvailableBreakpoints[breakpointsCount])
+                        {
+                            <input type="radio" class="btn-check" name="bptoggle" id="@($"bp{bp}")"
+                                   checked="@(Breakpoint == bp)"
+                                   autocomplete="off" @onchange="e => SetBreakpoint(e, bp)">
+                            <label class="btn btn-outline-light check-label" for="@($"bp{bp}")">
+                                @(bp == Breakpoint.All ? "Game End" : $"{bp}")
+                            </label>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        <div class="row">
+            <CascadingValue Value="Breakpoint">
+                @foreach (var player in buildPlayers.OrderBy(o => o.GamePos))
+                {
+                    <div class="col-auto p-1">
+                        <ReplayPlayerDetails Player="player" MiddleInfo="middleInfo"></ReplayPlayerDetails>
+                    </div>
+                }
+            </CascadingValue>
+        </div>
+    </div>
+    <div class="card-footer bgchart2">
+        <div class="row fw-bolder text-white-50" style="max-width: 1100px;">
+            @if (IsCloseable)
+            {
+                <div class="col-2">
+                    <button type="button" class="btn btn-sm btn-danger"
+                        @onclick="e => OnCloseRequested.InvokeAsync()">Close</button>
+                </div>
+            }
+
+            <div class="col-2">
+                Views @Replay.Views
+            </div>
+            @if (remoteToggleService.IsMaui)
+            {
+                <div class="col-2">
+                    <button type="button" class="btn btn-sm btn-dark" @onclick="@(() => showReplayPath = !showReplayPath)">FileName</button>
+                </div>
+            }
+            else
+            {
+                <div class="col-2">
+                    <a class="btn btn-sm btn-dark"
+                        href="@($"{NavigationManager.BaseUri}replays?replay={Replay.ReplayHash}")">
+                        Link
+                    </a>
+                </div>
+            }
+            @if (showReplayPath)
+            {
+                <div class="mt-1">
+                    @Replay.FileName
+                </div>
+            }
+        </div>
+    </div>
+</div>
+@if (interestPlayer is not null)
+{
+@*     <dsstats.razorlib.Players.PlayerDetails PlayerId="interestPlayer" RatingType="ratingType"
+        RatingCalcType="RatingCalcType.Combo"
+        OnCloseRequested="ClosePlayerDetails" />
+ *@
+    <dsstats.razorlib.Players.Profile.ProfileComponent PlayerId="interestPlayer" RatingType="ratingType"
+                                                       RatingCalcType="RatingCalcType.Combo"
+                                                       OnCloseRequested="ClosePlayerDetails" />
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public ReplayDto Replay { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnCloseRequested { get; set; }
+
+    [Parameter]
+    public bool IsCloseable { get; set; }
+
+    [Parameter]
+    public bool IsScrollable { get; set; }
+    [Parameter]
+    public EventCallback<bool> OnScrollRequest { get; set; }
+
+    Dictionary<bool, ReplayRatingDto> replayRatings = new();
+    ReplayRatingDto? replayRating => replayRatings.ContainsKey(comboRating) ?
+    replayRatings[comboRating] : null;
+
+    MiddleInfo middleInfo = new();
+    private string replayHash = string.Empty;
+    ReplayTeamTable? teamTable1;
+    ReplayTeamTable? teamTable2;
+
+    List<ReplayPlayerDto> buildPlayers = new();
+    private bool showMiddleChart = false;
+    Breakpoint Breakpoint = Breakpoint.All;
+    int breakpointsCount = 1;
+    bool showRating = false;
+    bool comboRating = true;
+    bool showReplayPath = false;
+    PlayerId? interestPlayer = null;
+    RatingType ratingType = RatingType.Cmdr;
+
+    Dictionary<int, List<Breakpoint>> AvailableBreakpoints = new()
+    {
+        { 0, new() { Breakpoint.All }},
+        { 1, new() { Breakpoint.All }},
+        { 2, new() { Breakpoint.Min5, Breakpoint.All }},
+        { 3, new() { Breakpoint.Min5, Breakpoint.Min10, Breakpoint.All }},
+        { 4, new() { Breakpoint.Min5, Breakpoint.Min10, Breakpoint.Min15, Breakpoint.All }}
+    };
+
+    TouchPoint? referencePoint = null;
+
+    protected override void OnParametersSet()
+    {
+        if (replayHash != Replay.ReplayHash)
+        {
+            Init();
+            replayHash = Replay.ReplayHash;
+        }
+        base.OnParametersSet();
+    }
+
+    public void Init()
+    {
+        if (remoteToggleService.IsMaui)
+        {
+            comboRating = false;
+        }
+        else
+        {
+            comboRating = true;
+        }
+        interestPlayer = null;
+        showRating = false;
+        showReplayPath = false;
+        replayRatings.Clear();
+        showMiddleChart = false;
+        Breakpoint = Breakpoint.All;
+        breakpointsCount = Math.Min(4, Replay.ReplayPlayers.Select(s => s.Spawns.Count).Max());
+        buildPlayers.Clear();
+        middleInfo = Replay.GetMiddleInfo();
+        teamTable1?.Uncheck();
+        teamTable2?.Uncheck();
+        _ = LoadRating();
+    }
+
+    private async Task LoadRating()
+    {
+        if (!replayRatings.ContainsKey(comboRating))
+        {
+
+            var rating = await replaysService.GetReplayRating(Replay.ReplayHash, comboRating);
+
+            if (rating is null)
+            {
+                ratingType = Data.GetReplayRatingType(Replay.GameMode, Replay.TournamentEdition);
+            }
+            else
+            {
+                ratingType = rating.RatingType;
+                replayRatings[comboRating] = rating;
+            }
+        }
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public void ShowHideMiddleChart()
+    {
+        showMiddleChart = !showMiddleChart;
+    }
+
+    public void ShowHideBuild(ReplayPlayerDto player)
+    {
+        if (buildPlayers.Contains(player))
+        {
+            buildPlayers.Remove(player);
+        }
+        else
+        {
+            buildPlayers.Add(player);
+        }
+    }
+
+    private void ChangeRatingType(ChangeEventArgs e)
+    {
+        if (e.Value is bool value)
+        {
+            comboRating = value;
+            _ = LoadRating();
+        }
+    }
+
+    public void ShowPlayerDetails(ReplayPlayerDto player)
+    {
+        interestPlayer = new(player.Player.ToonId, player.Player.RealmId, player.Player.RegionId);
+    }
+
+    public void ClosePlayerDetails()
+    {
+        interestPlayer = null;
+    }
+
+    private void TouchStart(Microsoft.AspNetCore.Components.Web.TouchEventArgs e)
+    {
+        if (!IsScrollable)
+        {
+            return;
+        }
+        referencePoint = e.TargetTouches.FirstOrDefault();
+    }
+
+    private void TouchMove(Microsoft.AspNetCore.Components.Web.TouchEventArgs e)
+    {
+        if (!IsScrollable || referencePoint is null)
+        {
+            return;
+        }
+
+        var endReferencePoint = e.TargetTouches.FirstOrDefault();
+
+        if (endReferencePoint is null)
+        {
+            return;
+        }
+
+        var diffX = referencePoint.ClientX - endReferencePoint.ClientX;
+
+        if (diffX > 0)
+        {
+            OnScrollRequest.InvokeAsync(false);
+        }
+
+        if (diffX < 0)
+        {
+            OnScrollRequest.InvokeAsync(true);
+        }
+    }
+
+    private void SetBreakpoint(ChangeEventArgs e, Breakpoint breakpoint)
+    {
+        Breakpoint = breakpoint;
+    }
+}

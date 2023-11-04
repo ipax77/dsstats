@@ -1,0 +1,317 @@
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using dsstats.razorlib.Players
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using dsstats.razorlib.Services
+@using System.Globalization
+@using Microsoft.JSInterop
+@inject IPlayerService playerService
+@inject IRemoteToggleService remoteToggleService
+@inject IJSRuntime JSRuntime
+
+<div class="modal" id="addplayermodal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4>Add Players (maximum 5)</h4>
+                <div class="row">
+                    <div class="col-auto me-2">
+                        <button type="button" class="btn btn-outline-warning"
+                            @onclick="AddPlayers">Add Players</button>
+                    </div>
+                    @foreach (var player in addPlayers)
+                    {
+                        <div class="col-auto">
+                            <input type="checkbox" class="btn-check" id="@($"{player.Name}-x-{player.ToonId}")"
+                                autocomplete="off" @onclick="e => RemovePlayer(player)">
+                            <label class="btn btn-primary" for="@($"{player.Name}-{player.ToonId}")">
+                                @player.Name @Data.GetRegionString(player.RegionId)
+                                <i class="bi bi-x-lg text-danger" @onclick="e => RemovePlayer(player)"></i>
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="modal-body">
+                <div>
+                    <CascadingValue Value="Request">
+                        <RatingsRequestComponent OnRequestChanged="Reload" />
+                    </CascadingValue>
+                </div>
+                <div class="tableFixHead table-responsive" style="max-height: 50vh; max-width: 1075px;">
+                    <table class="tptable table table-sm">
+                        <thead class="" style="user-select: none;">
+                            <CascadingValue Value="Request.Orders">
+                                <tr>
+                                    <th class="pointer" @onclick="@(e => SortList(e, "Pos"))">
+                                        <SortArrow Property="Pos">
+                                            #
+                                        </SortArrow>
+                                    </th>
+                                    <th class="pointer" @onclick="@(e => SortList(e, "Player.RegionId"))">
+                                        <SortArrow Property="Player.RegionId">
+                                            <div class="text-center">
+                                                <span class="bi bi-globe rounded-circle bg-primary p-1"></span>
+                                            </div>
+                                        </SortArrow>
+                                    </th>
+                                    <th class="pointer text-info" @onclick="@(e => SortList(e, "Player.Name"))">
+                                        <SortArrow Property="Player.Name">
+                                            Name
+                                        </SortArrow>
+                                    </th>
+                                    <th class="pointer text-info" style="width: 90px;"
+                                        @onclick="@(e => SortList(e, "Main"))">
+                                        <SortArrow Property="Main">
+                                            Main
+                                        </SortArrow>
+                                    </th>
+                                    <th class="pointer text-info" @onclick="@(e => SortList(e, "MainCount"))">
+                                        <SortArrow Property="MainCount">
+                                            Main %
+                                        </SortArrow>
+                                    </th>
+                                    <th class="pointer" @onclick="@(e => SortList(e, "Games"))">
+                                        <SortArrow Property="Games">
+                                            Games
+                                        </SortArrow>
+                                    </th>
+                                    <th class="pointer text-warning" @onclick="@(e => SortList(e, "Rating"))">
+                                        <SortArrow Property="Rating">
+                                            Rating
+                                        </SortArrow>
+                                    </th>
+                                    <th class="pointer" style="z-index: 1;"
+                                        @onclick="@(e => SortList(e, ratingChangeSort))">
+                                        <SortArrow Property="@ratingChangeSort">
+                                            Change
+                                        </SortArrow>
+                                    </th>
+                                    <th class="pointer" @onclick="@(e => SortList(e, "Wins"))">
+                                        <SortArrow Property="Wins">
+                                            Winrate
+                                        </SortArrow>
+                                    </th>
+                                    <th class="pointer" @onclick="@(e => SortList(e, "Mvp"))">
+                                        <SortArrow Property="Mvp">
+                                            Mvp
+                                        </SortArrow>
+                                    </th>
+                                </tr>
+                            </CascadingValue>
+                        </thead>
+                        <tbody>
+                            @if (ratingsCount == 0)
+                            {
+                                <tr height="41px;">
+                                    <td colspan="10">No Data found.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings"
+                                    OverscanCount="10" ItemSize="41" SpacerElement="tr">
+                                    <ItemContent>
+                                        <tr height="41px;" class="pointer" @onclick="e => AddPlayer(rating.Player)">
+                                            <td>
+                                                <span class="text-truncate text-warning"
+                                                      style="display: block; width: 40px;">
+                                                    @(Request.ComboRating ? rating.ComboPlayerRating.Pos : rating.PlayerRating.Pos)
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span>@Data.GetRegionString(rating.Player.RegionId)</span>
+                                            </td>
+                                            <td>
+                                                <span class="text-truncate text-info"
+                                                      style="display: block; width: 130px;">@rating.Player.Name</span>
+                                            </td>
+                                            <td>
+                                                @(rating.PlayerRating.Games == 0 || rating.PlayerRating.MainCount * 100.0 /
+                                                rating.PlayerRating.Games < 10.5 ? "Random" :
+                                                rating.PlayerRating.Main.ToString())
+                                            </td>
+                                            <td>
+                                                @HelperService.GetPercentageString(rating.PlayerRating.MainCount,
+                                                     rating.PlayerRating.Games)
+                                            </td>
+                                            <td class="border-start">@rating.PlayerRating.Games</td>
+                                            <td class="text-warning">
+                                                @(Request.ComboRating ? rating.ComboPlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture)
+                                                : rating.PlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture))
+                                            </td>
+                                            <td>
+                                                @if (rating.PlayerRating.PlayerRatingChange != null)
+                                                {
+                                                    var ratingChange = Request.TimePeriod switch
+                                                    {
+                                                        RatingChangeTimePeriod.Past24h => rating.PlayerRating.PlayerRatingChange.Change24h,
+                                                        RatingChangeTimePeriod.Past10Days => rating.PlayerRating.PlayerRatingChange.Change10d,
+                                                        _ => rating.PlayerRating.PlayerRatingChange.Change30d
+                                                    };
+                                                    <span class="@(ratingChange >= 0 ? "bi bi-arrow-top text-success" : "bi bi-arrow-bottom text-danger")">
+                                                        @ratingChange.ToString("N2", CultureInfo.InvariantCulture)
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (Request.ComboRating || Request.Arcade)
+                                                {
+                                                    @HelperService.GetPercentageString(rating.ComboPlayerRating.Wins, rating.ComboPlayerRating.Games)
+                                                }
+                                                else
+                                                {
+                                                    @HelperService.GetPercentageString(rating.PlayerRating.Wins, rating.PlayerRating.Games)
+                                                }
+                                            </td>
+                                            <td>
+                                                @HelperService.GetPercentageString(rating.PlayerRating.Mvp, rating.PlayerRating.Games)
+                                            </td>
+                                        </tr>
+                                    </ItemContent>
+                                    <Placeholder>
+                                        <tr height="41px">
+                                            <td colspan="10">Loading ...</td>
+                                        </tr>
+                                    </Placeholder>
+                                </Virtualize>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@code {
+    [Parameter]
+    public EventCallback<List<RequestNames>> OnPlayersSelected { get; set; }
+
+    private RatingsRequest Request = new()
+        {
+            Type = RatingType.Cmdr,
+            ComboRating = true,
+            Orders = new() { new() { Property = "Rating" } }
+        };
+
+    private int ratingsCount;
+
+    private List<RequestNames> addPlayers = new();
+
+    private Virtualize<ComboPlayerRatingDto>? virtualize;
+    private string ratingChangeSort => Request.TimePeriod switch
+    {
+        RatingChangeTimePeriod.Past24h => "PlayerRatingChange.Change24h",
+        RatingChangeTimePeriod.Past10Days => "PlayerRatingChange.Change10d",
+        _ => "PlayerRatingChange.Change30d"
+    };
+    protected override void OnInitialized()
+    {
+        if (!remoteToggleService.FromServer)
+        {
+            Request.ComboRating = false;
+            Request.Uploaders = false;
+        }
+        base.OnInitialized();
+    }
+
+    public void Show(RatingType ratingType)
+    {
+        JSRuntime.InvokeVoidAsync("openModalById", "addplayermodal");
+        addPlayers.Clear();
+        Request.Type = ratingType;
+        _ = Reload();
+    }
+
+    public void Hide()
+    {
+        Console.WriteLine("hiding");
+        JSRuntime.InvokeVoidAsync("closeModalById", "addplayermodal");
+    }
+
+    private void AddPlayers()
+    {
+        OnPlayersSelected.InvokeAsync(addPlayers);
+        Hide();
+    }
+
+    private void AddPlayer(PlayerRatingPlayerDto player)
+    {
+        if (addPlayers.Count > 4)
+        {
+            return;
+        }
+        RequestNames requestNames = new(player.Name, player.ToonId, player.RegionId, player.RealmId);
+        if (!addPlayers.Contains(requestNames))
+        {
+            addPlayers.Add(requestNames);
+        }
+    }
+
+    private void RemovePlayer(RequestNames player)
+    {
+        if (addPlayers.Contains(player))
+        {
+            addPlayers.Remove(player);
+        }
+    }
+
+    private async Task SetRatingsCount()
+    {
+        ratingsCount = await playerService.GetRatingsCount(Request, default);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public async Task Reload()
+    {
+        await SetRatingsCount();
+        if (virtualize != null)
+        {
+            await virtualize.RefreshDataAsync();
+        }
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async ValueTask<ItemsProviderResult<ComboPlayerRatingDto>> LoadRatings(ItemsProviderRequest request)
+    {
+        var numRatings = Math.Min(request.Count, ratingsCount - request.StartIndex);
+        Request.Skip = request.StartIndex;
+        Request.Take = numRatings;
+
+        if (Request.Skip < 0 || Request.Take < 0)
+        {
+            return new ItemsProviderResult<ComboPlayerRatingDto>();
+        }
+        var result = await playerService.GetRatings(Request, request.CancellationToken);
+        return new ItemsProviderResult<ComboPlayerRatingDto>(result, ratingsCount);
+    }
+
+    private async Task SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = Request.Orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                Request.Orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            Request.Orders.Clear();
+            Request.Orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+        await Reload();
+    }
+}

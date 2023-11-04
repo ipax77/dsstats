@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\dsstats.web.Client\dsstats.web.Client.csproj" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.0-rc.2.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\dsstats.db\dsstats.db.csproj" />
+    <ProjectReference Include="..\..\dsstats.shared\dsstats.shared.csproj" />
+    <ProjectReference Include="..\..\dsstats.razorlib\dsstats.razorlib.csproj" />
+    <ProjectReference Include="..\..\dsstats.services\dsstats.services.csproj" />
+    <ProjectReference Include="..\..\MysqlMigrations\MysqlMigrations.csproj" />
+  </ItemGroup>
+
+</Project>

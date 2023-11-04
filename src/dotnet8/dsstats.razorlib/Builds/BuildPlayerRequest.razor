@@ -1,0 +1,141 @@
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IBuildService buildService
+@inject IPlayerService playerService
+
+<div class="row align-items-center">
+    <div class="col-auto btn-group-vertical bgchart">
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-warning" @onclick="e => SetTopPlayers(RatingType.Std)">Top
+                Std</button>
+            <button type="button" class="btn btn-outline-warning" @onclick="e => SetTopPlayers(RatingType.Cmdr)">Top
+                Cmdr</button>
+        </div>
+        <button type="button" class="btn btn-outline-light" @onclick="SetDefaultPlayers">Default Players</button>
+    </div>
+    <div class="col-auto">
+        <div class="row">
+            @foreach (var player in Players)
+            {
+                <div class="col-auto">
+                    <input type="checkbox" class="btn-check"
+                        id="@($"{player.RequestNames.Name}-{player.RequestNames.ToonId}")" autocomplete="off"
+                        @onclick="e => TogglePlayer(player)">
+                    <label class="btn btn-primary" for="@($"{player.RequestNames.Name}-{player.RequestNames.ToonId}")">
+                        @player.RequestNames.Name @Data.GetRegionString(player.RequestNames.RegionId)
+                        <i class="bi bi-x-lg text-danger" @onclick:stopPropagation @onclick="e => RemovePlayer(player)"></i>
+                    </label>
+                </div>
+            }
+            <div class="col-auto">
+                <button type="button" class="btn btn-outline-warning" @onclick="e => addPlayersModal?.Show(Request.RatingType)">Add Players</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<AddPlayersModal @ref="addPlayersModal" OnPlayersSelected="AddPlayers" />
+
+@code {
+    [CascadingParameter]
+    public BuildRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnPlayersSet { get; set; }
+
+    private List<PlayerListEnt> Players = new();
+    AddPlayersModal? addPlayersModal;
+    protected override void OnInitialized()
+    {
+        SetPlayers();
+        base.OnInitialized();
+    }
+
+    public void SetPlayers()
+    {
+        Players.Clear();
+        Players.AddRange(Request.PlayerNames.Select(s => new PlayerListEnt()
+            {
+                RequestNames = s
+            }));
+        _ = SetNames();
+    }
+
+    private async Task SetNames()
+    {
+        if (Request.PlayerNames.Count > 0 && Request.PlayerNames.All(a => string.IsNullOrEmpty(a.Name)))
+        {
+            foreach (var player in Request.PlayerNames)
+            {
+                player.Name = await playerService
+                .GetPlayerIdName(new(player.ToonId, player.RealmId, player.RegionId)) ?? "";
+            }
+            await InvokeAsync(() => StateHasChanged());
+        }
+    }
+
+    private async Task SetTopPlayers(RatingType ratingType)
+    {
+        Request.RatingType = ratingType;
+        Request.PlayerNames = await buildService.GetTopPlayers(ratingType);
+        SetPlayers();
+        await OnPlayersSet.InvokeAsync();
+    }
+
+    private async Task SetDefaultPlayers()
+    {
+        Request.RatingType = RatingType.Cmdr;
+        Request.PlayerNames = await buildService.GetDefaultPlayers();
+        SetPlayers();
+        await OnPlayersSet.InvokeAsync();
+    }
+
+    private void AddPlayers(List<RequestNames> players)
+    {
+        foreach (var player in players)
+        {
+            if (!Request.PlayerNames.Contains(player))
+            {
+                Request.PlayerNames.Add(player);
+            }
+        }
+        SetPlayers();
+        OnPlayersSet.InvokeAsync();
+    }
+
+    private void TogglePlayer(PlayerListEnt player)
+    {
+        player.Disabled = !player.Disabled;
+        if (player.Disabled)
+        {
+            if (Request.PlayerNames.Contains(player.RequestNames))
+            {
+                Request.PlayerNames.Remove(player.RequestNames);
+            }
+        }
+        else
+        {
+            if (!Request.PlayerNames.Contains(player.RequestNames))
+            {
+                Request.PlayerNames.Add(player.RequestNames);
+            }
+        }
+        OnPlayersSet.InvokeAsync();
+    }
+
+    private void RemovePlayer(PlayerListEnt player)
+    {
+        Players.Remove(player);
+        if (Request.PlayerNames.Contains(player.RequestNames))
+        {
+            Request.PlayerNames.Remove(player.RequestNames);
+            OnPlayersSet.InvokeAsync();
+        }
+    }
+
+    public record PlayerListEnt
+    {
+        public RequestNames RequestNames { get; set; } = null!;
+        public bool Disabled { get; set; }
+    }
+}

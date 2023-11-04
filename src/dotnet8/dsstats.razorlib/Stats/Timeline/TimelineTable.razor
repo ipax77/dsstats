@@ -1,0 +1,65 @@
+﻿@using System.Globalization;
+@using dsstats.razorlib.Services;
+
+<div class="tableFixHead" style="max-width: 1600px;">
+    <table class="tptable table text-nowrap">
+        <thead class="user-select-none">
+            <tr>
+                <CascadingValue Value="tableOrders">
+                    <th><span class="oi oi-bar-chart" aria-hidden="true"></span></th>
+                    <th class="pointer" @onclick="@(e => SetOrder(nameof(TimeTableData.Commander)))">
+                        <SortArrow Property="@nameof(TimeTableData.Commander)">
+                            Commander
+                        </SortArrow>
+                    </th>
+                    @for (int i = 0; i < times.Count; i++)
+                    {
+                        var j = i;
+                        var time = times[j];
+                        <th class="pointer" @onclick="@(e => SetOrder($"{j}"))">
+                            <SortArrow Property="@($"{j}")">
+                                @time.ToString(@"yyyy-MM")
+                            </SortArrow>
+                        </th>
+                    }
+                </CascadingValue>
+            </tr>
+            <tr>
+                <th></th>
+                <th></th>
+
+                @for (int i = 0; i < times.Count; i++)
+                {
+                    var t = i;
+                    <th>&sum; @HelperService.GetBigNumberString(Response.TimeLineEnts.Where(x => x.Time == times[t]).Sum(s => s.Count))</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var data in SortData())
+            {
+                <tr class="pointer" @onclick:stopPropagation @onclick="e => LineChartRequest(data)">
+                    <td>
+                        <div class="form-check">
+                            <input type="checkbox" checked="@CmdrSelects[data.Commander]" class="form-check-input" @onclick:stopPropagation @onchange="e => ChartRequest(e, data.Commander)" />
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex justify-content-start">
+                            <div class="@($"preload-{data.Commander.ToString().ToLower()}") commander-image">
+                            </div>
+                            <div class="mt-1">
+                                @data.Commander
+                            </div>
+                        </div>
+                    </td>
+                    @for (int k = 0; k < data.Strengths.Count; k++)
+                    {
+                        var l = k;
+                        <td class="text-nowrap">@data.Strengths[l].ToString("N2", CultureInfo.InvariantCulture) (@data.Counts[l])</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

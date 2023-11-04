@@ -1,0 +1,267 @@
+@using dsstats.shared
+@using dsstats.razorlib.Services
+@using Microsoft.JSInterop
+@using System.Globalization
+@inject IJSRuntime JSRuntime
+
+<div class="d-flex">
+    @if (Replay.WinnerTeam == Team)
+    {
+        @if (Replay.ResultCorrected)
+        {
+            <button class="btn btn-sm" style="background-color: #BF40BF;">
+                <b>@(Replay.ReplayEvent != null ? Replay.ReplayEvent.WinnerTeam : $"Team {Team}") - Winner</b>
+            </button>
+        }
+        else
+        {
+            <button class="btn btn-sm btn-success">
+                <b>@(Replay.ReplayEvent != null ? Replay.ReplayEvent.WinnerTeam : $"Team {Team}") - Winner</b>
+            </button>
+        }
+    }
+    else
+    {
+        <button class="btn btn-sm btn-danger">
+            <b>@(@Replay.ReplayEvent != null ? Replay.ReplayEvent.RunnerTeam : $"Team {Team}")</b>
+        </button>
+    }
+    <button type="button" class="btn btn-sm btn-outline-light ms-1" @onclick="e => OnMiddleChartRequest.InvokeAsync()">
+        Middle Control @(Team == 1 ? MiddleInfo.Team1Percentage : MiddleInfo.Team2Percentage)%
+    </button>
+    @if (Team == 1 && Replay.Cannon > 0)
+    {
+        <button class="btn btn-sm btn-outline-success ms-1" @onclick="e => OnMiddleChartRequest.InvokeAsync()">
+            Cannon down at @HelperService.TimeFromSeconds(Replay.Cannon)
+        </button>
+    }
+    else if (Team == 2 && Replay.Bunker > 0)
+    {
+        <button class="btn btn-sm btn-outline-success ms-1" @onclick="e => OnMiddleChartRequest.InvokeAsync()">
+            Bunker down at @HelperService.TimeFromSeconds(Replay.Bunker)
+        </button>
+    }
+</div>
+<div>
+    <div class="table-responsive text-nowrap @(ShowRating ? "" : "visually-hidden")">
+        <table class="tptable table">
+            <thead class="user-select-none">
+                <tr>
+                    <th>#</th>
+                    <th>
+                        <i class="bi bi-arrow-down-up"></i>
+                    </th>
+                    <th>Player</th>
+                    <th>
+                        <span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Actions Per Minute">
+                            APM
+                        </span>
+                    </th>
+                    <th>Cmdr</th>
+                    <th class="text-warning">Rating</th>
+                    <th class="text-info">Pre-Rating</th>
+                    <th>Games</th>
+                    <th>
+                        <span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Consistency">
+                            Cons
+                        </span>
+                    </th>
+                    <th>
+                        <span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Confidence">
+                            Conf
+                        </span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var player in players.OrderBy(o => o.GamePos))
+                {
+                    var playerRating =
+                    ReplayRating?.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
+                    var trClass = GetPlayerTableRowCss(player);
+
+                    <tr class="pointer" @onclick="e => RequestBuild(player)">
+                        <td>@player.GamePos</td>
+                        <td>
+                            @if (playerRating is not null)
+                            {
+                                <span class="bi @(playerRating.RatingChange < 0 ? "bi-arrow-down text-danger"
+                                : "bi-arrow-up text-success")">
+                                    @playerRating.RatingChange.ToString("N1", CultureInfo.InvariantCulture)
+                                </span>
+                            }
+                        </td>
+                        <td class="@trClass" @onclick:stopPropagation
+                            @onclick="e => OnPlayerDetailsRequest.InvokeAsync(player)">
+                            <div class="d-inline-block text-truncate text-decoration-underline" style="max-width: 120px;"
+                                data-bs-toggle="tooltip" data-bs-placement="top"
+                                data-bs-title="@HelperService.SanitizePlayerName(player.Name)">
+                                @player.Name
+                            </div>
+                        </td>
+                        <td class="@trClass">@player.APM</td>
+                        <td>
+                            <img src="@HelperService.GetImageSrc(player.Race)" alt="@player.Race" title="@player.Race"
+                                width="30" height="30" />
+                        </td>
+                        <td>
+                            <span class="text-warning">
+                                @playerRating?.Rating.ToString("N0", CultureInfo.InvariantCulture)
+                            </span>
+                        </td>
+                        <td>
+                            <span class="text-info">
+                                @(playerRating is null ? 0 : (playerRating.Rating -
+                                    playerRating.RatingChange).ToString("N0",
+                                    CultureInfo.InvariantCulture))
+                            </span>
+                        </td>
+                        <td>@HelperService.GetBigNumberString(playerRating?.Games ?? 0)</td>
+                        <td>@playerRating?.Consistency.ToString("N2", CultureInfo.InvariantCulture)</td>
+                        <td>@playerRating?.Confidence.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<div>
+    <div class="table-responsive text-nowrap @(ShowRating ? "visually-hidden" : "")">
+        <table class="tptable table">
+            <thead class="user-select-none">
+                <tr>
+                    <th>#</th>
+                    <th>
+                        <i class="bi bi-arrow-down-up"></i>
+                    </th>
+                    <th>Player</th>
+                    <th>
+                        <span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Actions Per Minute">
+                            APM
+                        </span>
+                    </th>
+                    <th>Commander</th>
+                    <th>Build</th>
+                    <th>Income</th>
+                    <th>
+                        <span data-bs-toggle="tooltip" data-bs-placement="top"
+                            data-bs-title="Army Value Summary of all Spawns">
+                            Army
+                        </span>
+                    </th>
+                    <th>Kills</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var player in players.OrderBy(o => o.GamePos))
+                {
+                    var trClass = GetPlayerTableRowCss(player);
+                    <tr class="pointer" @onclick="e => RequestBuild(player)">
+                        <td>@player.GamePos</td>
+                        <td>
+                            @if (ReplayRating is not null)
+                            {
+                                var playerRating =
+                                ReplayRating.RepPlayerRatings.FirstOrDefault(f => f.GamePos == player.GamePos);
+
+                                @if (playerRating is not null)
+                                {
+                                    <span class="bi @(playerRating.RatingChange < 0 ? "bi-arrow-down text-danger"
+                                 : "bi-arrow-up text-success")">
+                                        @playerRating.RatingChange.ToString("N1", CultureInfo.InvariantCulture)
+                                    </span>
+                                }
+                            }
+                        </td>
+                        <td class="@trClass" @onclick:stopPropagation
+                            @onclick="e => OnPlayerDetailsRequest.InvokeAsync(player)">
+                            <div class="d-inline-block text-truncate text-decoration-underline" style="max-width: 120px;"
+                                data-bs-toggle="tooltip" data-bs-placement="top"
+                                data-bs-title="@HelperService.SanitizePlayerName(player.Name)">
+                                @player.Name
+                            </div>
+                        </td>
+                        <td class="@trClass">@player.APM</td>
+                        <td class="@trClass">
+                            <div class="d-flex">
+                                <img src="@HelperService.GetImageSrc(player.Race)" alt="@player.Race" title="@player.Race"
+                                    width="30" height="30" />
+                                <span><small>@player.Race</small></span>
+                            </div>
+                        </td>
+                        <td class="@trClass">
+                            <input id="@($"show{Team}build{player.GamePos}")" name="@($"showbuild{player.GamePos}")"
+                                type="checkbox" class="form-check-input" @onclick:stopPropagation
+                                @onclick="e => OnBuildRequest.InvokeAsync(player)" />
+                        </td>
+                        <td class="@trClass">
+                            @HelperService.GetBigNumberString(income + HelperService.GetGasIncome(player))
+                        </td>
+                        <td class="@trClass">@HelperService.GetBigNumberString(player.Army)</td>
+                        <td class="@trClass">@HelperService.GetBigNumberString(player.Kills)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public ReplayRatingDto? ReplayRating { get; set; }
+
+    [CascadingParameter]
+    public bool ShowRating { get; set; }
+
+    [Parameter, EditorRequired]
+    public ReplayDto Replay { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public int Team { get; set; }
+
+    [Parameter, EditorRequired]
+    public MiddleInfo MiddleInfo { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<ReplayPlayerDto> OnBuildRequest { get; set; }
+
+    [Parameter]
+    public EventCallback<ReplayPlayerDto> OnPlayerDetailsRequest { get; set; }
+
+    [Parameter]
+    public EventCallback OnMiddleChartRequest { get; set; }
+
+    List<ReplayPlayerDto> players => Replay.ReplayPlayers.Where(x => x.Team == Team).ToList();
+    int income => Team == 1 ? MiddleInfo.Team1Income : MiddleInfo.Team2Income;
+
+    private void RequestBuild(ReplayPlayerDto player)
+    {
+        OnBuildRequest.InvokeAsync(player);
+        JSRuntime.InvokeVoidAsync("toggleCheckbox", $"show{Team}build{player.GamePos}");
+    }
+
+    public void Uncheck()
+    {
+        JSRuntime.InvokeVoidAsync("uncheckCheckboxes", $"show{Team}build");
+    }
+
+    private string GetPlayerTableRowCss(ReplayPlayerDto replayPlayerDto)
+    {
+        if (replayPlayerDto.Kills == Replay.Maxkillsum)
+        {
+            return "table-success";
+        }
+
+        else if (replayPlayerDto.Duration < Replay.Duration - 89)
+        {
+            return "table-danger";
+        }
+
+        else if (replayPlayerDto.IsUploader)
+        {
+            return "table-primary";
+        }
+
+        return "";
+    }
+}

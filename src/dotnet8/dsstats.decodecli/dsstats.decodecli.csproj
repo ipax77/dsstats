@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\dsstats.shared\dsstats.shared.csproj" />
+    <ProjectReference Include="..\dsstats.maui\pax.dsstats.parser\pax.dsstats.parser.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="IronPython.StdLib" Version="2.7.12" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

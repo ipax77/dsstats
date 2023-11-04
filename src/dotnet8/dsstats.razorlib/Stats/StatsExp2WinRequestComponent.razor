@@ -1,0 +1,89 @@
+﻿@using dsstats.shared
+<div class="row">
+    <div class="col-auto" style="width: 175px;">
+        <label class="form-label">
+            From Exp2Win @fromExp2Win
+            <input type="range" class="form-range" value="@(fromExp2Win)" min="0" max="100"
+                   step="5" id="spawnrange" @oninput="FromRatingChange">
+        </label>
+    </div>
+    <div class="col-auto" style="width: 175px;">
+        <label class="form-label">
+            To ExpToWin @toExp2Win
+            <input type="range" class="form-range" value="@(toExp2Win)" min="0" max="100"
+                   step="5" id="spawnrange" @oninput="ToRatingChange">
+        </label>
+    </div>
+    <div class="col-auto mt-3">
+        <button type="button" class="btn btn-sm btn-outline-warning bgchart" @onclick="RequestRange">Set Range</button>
+        <div class="btn-group bgchart">
+            <button type="button" class="btn btn-sm btn-outline-info" @onclick="e => SetExp2Win(30, 70)">Slightly balanced games</button>
+            <button type="button" class="btn btn-sm btn-outline-info" @onclick="e => SetExp2Win(40, 60)">Balanced games</button>
+            <button type="button" class="btn btn-sm btn-outline-info" @onclick="e => SetExp2Win(45, 55)">Very balanced games</button>
+        </div>
+    </div>
+</div>
+@code {
+    [CascadingParameter]
+    public StatsRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRangeSelected { get; set; }
+
+    private int fromExp2Win = 0;
+    private int toExp2Win = 0;
+
+    protected override void OnInitialized()
+    {
+        if (Request.Filter.Rating is null)
+        {
+            Request.Filter.Rating = new();
+        }
+
+        fromExp2Win = Request.Filter.Exp2Win?.FromExp2Win ?? 0;
+        toExp2Win = Request.Filter.Exp2Win?.ToExp2Win ?? 0;
+        base.OnInitialized();
+    }
+
+    private void RequestRange()
+    {
+        if (Request.Filter.Exp2Win is null)
+        {
+            return;
+        }
+
+        Request.Filter.Exp2Win.FromExp2Win = fromExp2Win;
+        Request.Filter.Exp2Win.ToExp2Win = toExp2Win;
+        OnRangeSelected.InvokeAsync();
+    }
+
+    private void SetExp2Win(int from, int to)
+    {
+        fromExp2Win = from;
+        toExp2Win = to;
+    }
+
+    private void FromRatingChange(ChangeEventArgs e)
+    {
+        if (e.Value is string value && int.TryParse(value, out int intvalue))
+        {
+            fromExp2Win = intvalue;
+            if (toExp2Win <= fromExp2Win)
+            {
+                toExp2Win = fromExp2Win + 5;
+            }
+        }
+    }
+
+    private void ToRatingChange(ChangeEventArgs e)
+    {
+        if (e.Value is string value && int.TryParse(value, out int intvalue))
+        {
+            toExp2Win = intvalue;
+            if (toExp2Win <= fromExp2Win)
+            {
+                toExp2Win = fromExp2Win + 5;
+            }
+        }
+    }
+}

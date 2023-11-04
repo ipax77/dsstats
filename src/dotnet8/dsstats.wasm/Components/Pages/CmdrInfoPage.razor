@@ -1,0 +1,21 @@
+﻿@page "/cmdrinfos"
+@using dsstats.shared
+
+<PageTitle>dsstats - cmdrinfos</PageTitle>
+
+<dsstats.razorlib.CmdrInfos.CmdrInfosComponent Request="Request" OnRequestChanged="SetRequest" />
+
+@code {
+    CmdrInfoRequest Request = new()
+    {
+        RatingType = RatingType.Cmdr,
+        TimePeriod = TimePeriod.Past90Days,
+        Interest = Commander.Abathur,
+        Uploaders = true
+    };
+
+    private void SetRequest(CmdrInfoRequest  request)
+    {
+        
+    }
+}

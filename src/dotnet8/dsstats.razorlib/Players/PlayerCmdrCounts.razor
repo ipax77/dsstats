@@ -1,0 +1,147 @@
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using pax.BlazorChartJs
+@inject IPlayerService playerService
+
+<ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="EventTriggered" />
+
+@code {
+    [Parameter, EditorRequired]
+    public PlayerId PlayerId { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public RatingType RatingType { get; set; }
+
+    [Parameter, EditorRequired]
+    public List<CommanderInfo> CommanderInfos { get; set; } = default!;
+
+    Dictionary<RatingType, List<CommanderInfo>> rpCommanderInfos = new();
+
+    bool dataReady;
+    bool chartReady;
+
+    ChartJsConfig chartConfig = null!;
+    ChartComponent? chartComponent;
+
+    protected override void OnInitialized()
+    {
+        chartConfig = GetPieChartConfig();
+
+        if (CommanderInfos.Count > 0)
+        {
+            rpCommanderInfos[RatingType] = new(CommanderInfos);
+            dataReady = true;
+            SetupChart();
+        }
+        else
+        {
+            _ = LoadData();
+        }
+    }
+
+    public void Update(RatingType ratingType, bool force = false)
+    {
+        RatingType = ratingType;
+
+        if (force)
+        {
+            rpCommanderInfos.Clear();
+        }
+
+        if (rpCommanderInfos.ContainsKey(ratingType))
+        {
+            SetupChart();
+        }
+        else
+        {
+            _ = LoadData();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        rpCommanderInfos[RatingType] = await playerService.GetPlayerIdCommandersPlayed(PlayerId, RatingType, default);
+        dataReady = true;
+        SetupChart();
+    }
+
+    private void EventTriggered(ChartJsEvent chartEvent)
+    {
+        if (chartEvent is ChartJsInitEvent initEvent)
+        {
+            chartReady = true;
+            SetupChart();
+        }
+    }
+
+    private void SetupChart()
+    {
+        if (!chartReady || !dataReady)
+        {
+            return;
+        }
+
+        if (chartConfig.Data.Datasets.Any())
+        {
+            chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
+        }
+
+        if (chartConfig.Options?.Plugins?.Title != null)
+        {
+            chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"Commanders played - {Data.GetRatingTypeLongName(RatingType)}");
+            chartConfig.UpdateChartOptions();
+        }
+
+        if (!rpCommanderInfos.ContainsKey(RatingType) || rpCommanderInfos[RatingType].Count == 0)
+        {
+            chartConfig.SetLabels(new List<string>());
+            return;
+        }
+
+        chartConfig.SetLabels(rpCommanderInfos[RatingType].Select(s => s.Cmdr.ToString()).ToList());
+        var dataset = GetDataset(rpCommanderInfos[RatingType]);
+        chartConfig.AddDataset(dataset);
+    }
+
+    private ChartJsDataset GetDataset(List<CommanderInfo> data)
+    {
+        return new PieDataset()
+            {
+                Data = data.Select(s => s.Count).Cast<object>().ToList(),
+                BackgroundColor = new IndexableOption<string>(data.Select(s => Data.GetBackgroundColor(s.Cmdr)).ToList()),
+                BorderColor = new IndexableOption<string>(data.Select(s => Data.CmdrColor[s.Cmdr]).ToList()),
+                BorderWidth = new IndexableOption<double>(1)
+            };
+    }
+
+    private ChartJsConfig GetPieChartConfig()
+    {
+        return new()
+            {
+                Type = ChartType.pie,
+                Options = new ChartJsOptions()
+                {
+                    Responsive = true,
+                    MaintainAspectRatio = true,
+                    Plugins = new Plugins()
+                    {
+                        Title = new Title()
+                        {
+                            Display = true,
+                            Text = new IndexableOption<string>("Commanders Played"),
+                            Color = "#f39c22",
+                            Font = new Font()
+                            {
+                                Size = 24,
+                            }
+                        },
+                        Legend = new Legend()
+                        {
+                            Display = true,
+                            Position = "right"
+                        }
+                    }
+                }
+            };
+    }
+}

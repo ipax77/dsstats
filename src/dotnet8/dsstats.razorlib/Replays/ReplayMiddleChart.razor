@@ -1,0 +1,184 @@
+@using dsstats.razorlib.Services
+@using dsstats.shared
+@using pax.BlazorChartJs
+
+<ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="ChartEventTriggered">
+</ChartComponent>
+<span class="bi bi-x-lg pointer text-danger" style="position: absolute; top: 0; right: 0; padding: 10px; z-index: 1000;"
+    @onclick="e => OnCloseRequest.InvokeAsync()"></span>
+
+@code {
+    [Parameter, EditorRequired]
+    public MiddleInfo MiddleInfo { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnCloseRequest { get; set; }
+
+    private ChartComponent? chartComponent;
+    private ChartJsConfig chartJsConfig = null!;
+
+    protected override void OnInitialized()
+    {
+        chartJsConfig = new()
+            {
+                Type = ChartType.line,
+                Options = new ChartJsOptions()
+                {
+                    Responsive = true,
+                    MaintainAspectRatio = true,
+                    Plugins = new Plugins()
+                    {
+                        ArbitraryLines = new List<ArbitraryLineConfig>(),
+                        Legend = new Legend()
+                        {
+                            Position = "top"
+                        },
+                        Title = new Title()
+                        {
+                            Display = true,
+                            Text = new IndexableOption<string>($"Middle - {MiddleInfo.MiddleChanges.Count} changes"),
+                            Color = "yellow",
+                            Font = new Font()
+                            {
+                                Size = 16
+                            }
+                        }
+                    },
+                    Scales = new ChartJsOptionsScales()
+                    {
+                        X = new LinearAxis()
+                        {
+                            Display = true,
+                            Position = "bottom",
+                            BeginAtZero = true,
+                            Title = new Title()
+                            {
+                                Display = true,
+                                Text = new IndexableOption<string>("GameTime"),
+                                Color = "yellow",
+                            },
+                            Ticks = new LinearAxisTick()
+                            {
+                                Color = "yellow",
+                            }
+                        },
+                        Y = new LinearAxis()
+                        {
+                            Display = true,
+                            BeginAtZero = true,
+                            Title = new Title()
+                            {
+                                Display = true,
+                                Text = new IndexableOption<string>("%"),
+                                Color = "yellow",
+                            },
+                            Ticks = new LinearAxisTick()
+                            {
+                                Color = "yellow",
+                            },
+                            Grid = new ChartJsGrid()
+                            {
+                                Color = "grey",
+                            }
+                        }
+                    }
+                }
+            };
+        Init();
+        base.OnInitialized();
+    }
+
+    public void Init()
+    {
+        List<object> team1mid = new();
+        List<object> team2mid = new();
+        List<int> labels = new();
+
+        int seconds = 0;
+        while (seconds < MiddleInfo.Duration)
+        {
+            (var mid1, var mid2) = HelperService.GetChartMiddle(MiddleInfo, seconds);
+
+            labels.Add(seconds);
+            team1mid.Add(mid1);
+            team2mid.Add(mid2);
+            seconds += 30;
+        }
+
+        labels.Add(MiddleInfo.Duration);
+        (var lmid1, var lmid2) = HelperService.GetChartMiddle(MiddleInfo, MiddleInfo.Duration);
+        team1mid.Add(lmid1);
+        team2mid.Add(lmid2);
+
+        List<ArbitraryLineConfig> objectives = new();
+        if (MiddleInfo.Cannon > 0 && MiddleInfo.Duration > MiddleInfo.Cannon)
+        {
+            int nextLabelLoop = labels.First(f => f > MiddleInfo.Cannon);
+            objectives.Add(new()
+                {
+                    XPosition = labels.IndexOf(nextLabelLoop),
+                    ArbitraryLineColor = "yellow",
+                    Text = "Cannon"
+                });
+        }
+        if (MiddleInfo.Bunker > 0 && MiddleInfo.Duration > MiddleInfo.Bunker)
+        {
+            int nextLabelLoop = labels.First(f => f > MiddleInfo.Bunker);
+            objectives.Add(new()
+                {
+                    XPosition = labels.IndexOf(nextLabelLoop),
+                    ArbitraryLineColor = "yellow",
+                    Text = "Bunker"
+                });
+        }
+
+        var team1Dataset = new LineDataset()
+            {
+                Label = "Team 1",
+                Data = team1mid,
+                BorderColor = MiddleInfo.WinnerTeam == 1 ? "green" : "red",
+                BorderWidth = 3,
+                Fill = false,
+                PointBackgroundColor = new IndexableOption<string>("white"),
+                PointBorderColor = new IndexableOption<string>("yellow"),
+                PointRadius = new IndexableOption<double>(1),
+                PointBorderWidth = new IndexableOption<double>(1),
+                PointHitRadius = new IndexableOption<double>(1),
+                Tension = 0
+            };
+        var team2Dataset = new LineDataset()
+            {
+                Label = "Team 2",
+                Data = team2mid,
+                BorderColor = MiddleInfo.WinnerTeam == 2 ? "green" : "red",
+                BorderWidth = 3,
+                Fill = false,
+                PointBackgroundColor = new IndexableOption<string>("white"),
+                PointBorderColor = new IndexableOption<string>("yellow"),
+                PointRadius = new IndexableOption<double>(1),
+                PointBorderWidth = new IndexableOption<double>(1),
+                PointHitRadius = new IndexableOption<double>(1),
+                Tension = 0
+            };
+
+        if (chartJsConfig.Data.Datasets.Count > 0)
+        {
+            chartJsConfig.RemoveDatasets(chartJsConfig.Data.Datasets);
+        }
+
+        // chartJsConfig.SetLabels(labels.Select(s => TimeSpan.FromSeconds(s).ToString(@"hh\:mm\:ss")).ToList());
+        chartJsConfig.SetLabels(labels.Select(s => HelperService.TimeFromSeconds(s)).ToList());
+        chartJsConfig.AddDatasets(new List<ChartJsDataset>() { team1Dataset, team2Dataset });
+
+        if (chartJsConfig.Options?.Plugins?.ArbitraryLines is not null)
+        {
+            chartJsConfig.Options.Plugins.ArbitraryLines = objectives;
+            chartJsConfig.UpdateChartOptions();
+        }
+    }
+
+    private void ChartEventTriggered(ChartJsEvent chartEvent)
+    {
+
+    }
+}

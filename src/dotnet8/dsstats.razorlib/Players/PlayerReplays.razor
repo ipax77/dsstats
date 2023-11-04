@@ -1,0 +1,175 @@
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using dsstats.razorlib.Services
+@using System.Globalization
+@inject IReplaysService replayService
+
+<div class="table-responsive tableFixHead text-nowrap" style="max-width: 1150px; max-height: 80vh;" tabindex="1">
+    <div class="d-flex justify-content-between">
+        <div>
+            @if (isLoading)
+            {
+                <div class="spinner-border spinner-border-sm text-danger" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            }
+        </div>
+        <div class="me-1">
+            <div class="d-flex">
+                <div>
+                    <span class="bi bi-arrow-clockwise text-secondary pointer" @onclick="LoadReplays"></span>
+                </div>
+                <div class="ms-2">
+                    # @totalCount.ToString("N0")
+                </div>
+            </div>
+        </div>
+    </div>
+    <table class="tptable table table-sm">
+        <thead class="user-select-none">
+            <tr>
+                <th>GameTime</th>
+                <th>Duration</th>
+                <th>Team1</th>
+                <th>Team2</th>
+                @if (response.PlayerId is not null)
+                {
+                    <th><i class="bi bi-arrow-down-up"></i></th>
+                    <th>Exp2Win</th>
+                }
+                else
+                {
+                    <th>Winner</th>
+                }
+                <th>MaxLeaver</th>
+                <th>GameMode</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (totalCount == 0)
+            {
+                <tr>
+                    <td colspan="8">
+                        <div>No data found.</div>
+                    </td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var replay in response.Replays)
+                {
+                    <tr @key="replay" id="@replay.ReplayHash" class="pointer"
+                        @onclick="e => OnReplayRequest.InvokeAsync(replay.ReplayHash)">
+                        <td>@replay.GameTime.ToString("yyyy-MM-dd")</td>
+                        <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+                        <td>
+                            <dsstats.razorlib.Replays.ReplayTeam Team="@replay.CommandersTeam1"
+                                                                 PlayerPos="GetPlayerPos(replay, 1)" />
+                        </td>
+                        <td>
+                            <dsstats.razorlib.Replays.ReplayTeam Team="@replay.CommandersTeam2"
+                                                                 PlayerPos="GetPlayerPos(replay, 2)" />
+                        </td>
+                        @if (response.PlayerId is not null)
+                        {
+                            <td>
+                                @if (replay.PlayerInfo is not null)
+                                {
+                                    <div>
+                                        <span class="@(replay.PlayerInfo.RatingChange >= 0 ? "text-success" : "text-danger")">
+                                            @replay.PlayerInfo.RatingChange.ToString("N1", CultureInfo.InvariantCulture)
+                                        </span>
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                @if (replay.Exp2Win > 0)
+                                {
+                                    <div>
+                                        <span class="@(replay.Exp2Win >= 0.5 ? "text-success" : "text-danger")">
+                                            @((replay.Exp2Win * 100).ToString("N0", CultureInfo.InvariantCulture))%
+                                        </span>
+                                    </div>
+                                }
+                            </td>
+                        }
+                        else
+                        {
+                            <td>@replay.WinnerTeam</td>
+                        }
+                        <td>@TimeSpan.FromSeconds(replay.MaxLeaver).ToString(@"mm\:ss")</td>
+                        <td>@GetGameMode(replay)</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public PlayerId PlayerId { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<string> OnReplayRequest { get; set; }
+
+    int totalCount = 0;
+    bool isLoading;
+    ReplaysResponse response = new();
+
+    protected override void OnInitialized()
+    {
+        _ = LoadReplays();
+        base.OnInitialized();
+    }
+    private async Task LoadReplays()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        ReplaysRequest request = new()
+            {
+                Take = 10,
+                PlayerId = PlayerId
+            };
+        totalCount = await replayService.GetReplaysCount(request);
+        response = await replayService.GetReplays(request);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private int GetPlayerPos(ReplayListDto replay, int team)
+    {
+        if (replay.PlayerInfo is null)
+        {
+            return 0;
+        }
+
+        return (replay.PlayerInfo.Pos, team) switch
+        {
+            ( <= 3, 1) => replay.PlayerInfo.Pos,
+            ( > 3, 2) => replay.PlayerInfo.Pos - 3,
+            _ => 0
+        };
+    }
+
+    private string GetGameMode(ReplayListDto replay)
+    {
+        if (!replay.TournamentEdition)
+        {
+            return replay.GameMode.ToString();
+        }
+        else
+        {
+            if (replay.GameMode == GameMode.Commanders)
+            {
+                return "Cmdrs TE";
+            }
+            if (replay.GameMode == GameMode.Standard)
+            {
+                return "Std TE";
+            }
+            return $"{replay.GameMode} TE";
+        }
+    }
+}

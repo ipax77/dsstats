@@ -1,0 +1,27 @@
+@using dsstats.shared
+
+<div class="table-responsive tableFixHead text-nowrap" style="max-width: 1150px; max-height: 80vh;" tabindex="1">
+    <table class="tptable table table-sm w-auto">
+        <thead class="user-select-none">
+            <tr>
+                <th>Unit</th>
+                <th>AvgCount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var (unit, index) in Units.Select((unit, index) => (unit, index)))
+            {
+                <tr class="@((index < 3) ? "text-warning" : "")">
+                    <td>@unit.Name</td>
+                    <td>@unit.Count</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public List<BuildResponseBreakpointUnit> Units { get; set; } = default!;
+        
+}

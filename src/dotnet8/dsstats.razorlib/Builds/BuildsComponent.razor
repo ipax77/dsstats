@@ -1,0 +1,319 @@
+@using Microsoft.JSInterop
+@using dsstats.razorlib.Replays
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using System.Globalization
+@inject IBuildService buildService
+@inject IReplaysService replaySerivce
+@inject IJSRuntime JSRuntime
+
+<style>
+    .check-label:hover {
+        color: white !important;
+        background-color: #adb5bd !important;
+        border-color: white !important;
+    }
+</style>
+
+<div>
+    <CascadingValue Value="Request">
+        <div>
+            <BuildsRequestComponent OnRequestChanged="e => LoadData()" />
+        </div>
+        <div class="bgchart2 p-2 d-inline-block">
+            <nav>
+                <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                    <button class="@(initPlayers ? "nav-link" : "nav-link active")" id="nav-home-tab"
+                            data-bs-toggle="tab" data-bs-target="#nav-rating" type="button" role="tab"
+                            aria-controls="nav-ratings" aria-selected="true" @onclick="ByRating">
+                        By Ratings
+                    </button>
+                    <button class="@(initPlayers ? "nav-link active" : "nav-link")" id="nav-profile-tab"
+                            data-bs-toggle="tab" data-bs-target="#nav-players" type="button" role="tab"
+                            aria-controls="nav-players" aria-selected="false" @onclick="ByPlayers">
+                        By Players
+                    </button>
+                </div>
+            </nav>
+            <div class="tab-content mt-1 bgchart p-2 border rounded" id="nav-tabContent">
+                <div class="@(initPlayers ? "tab-pane fade" : "tab-pane fade show active")" id="nav-rating"
+                     role="tabpanel" aria-labelledby="nav-rating-tab">
+                    <RatingRangeRequest OnRangeSelected="e => LoadData()" />
+                </div>
+                <div class="@(initPlayers ? "tab-pane fade show active" : "tab-pane fade")" id="nav-players"
+                     role="tabpanel" aria-labelledby="nav-players-tab">
+                    <BuildPlayerRequest @ref="buildPlayerRequest" OnPlayersSet="e => LoadData()" />
+                </div>
+            </div>
+        </div>
+    </CascadingValue>
+</div>
+<div>
+    <div class="row mt-2">
+        <div class="col-auto isdesktop">
+            <div class="d-flex">
+                <div>
+                    <div style="height: 30px;">
+                        @if (isLoading)
+                        {
+                            <div class="spinner-border spinner-border-sm text-danger" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        }
+                    </div>
+                    <CmdrSelectComponent Selected="Request.Interest" None="false"
+                                         Std="@(Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)"
+                                         OnCommanderSelected="SelectInterest" />
+                </div>
+                <div>
+                    <CmdrSelectComponent Selected="Request.Versus" None="true"
+                                         Std="@(Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)"
+                                         OnCommanderSelected="SelectVersus" />
+                </div>
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="card" style="max-width: 800px;">
+                <div class="card-header bgchart2">
+                    <h4 class="card-title">
+                        Average Unit Count for <span class="text-warning">@Request.Interest</span>
+                        @if (Request.Versus != Commander.None)
+                        {
+                            <span> Vs <span class="text-danger">@Request.Versus</span></span>
+                        }
+                    </h4>
+                    @if (Request.PlayerNames.Count > 0)
+                    {
+                        <h5 class="card-subtitle mb-2 text-muted">
+                            Players
+                            <span class="text-danger">
+                                @string.Join(", ", Request.PlayerNames.Select(s => s.Name).Distinct())
+                            </span>
+                        </h5>
+                    }
+                    else
+                    {
+                        <h5 class="card-subtitle mb-2 text-muted">
+                            Player Ratings Range
+                            <span class="text-danger">
+                                @(Request.FromRating <= Data.MinBuildRating ? "0"
+                                    : Request.FromRating) - @(Request.ToRating >= Data.MaxBuildRating ?
+                            $"{Data.MaxBuildRating}+" : Request.ToRating)
+                            </span>
+                        </h5>
+                    }
+                    <div class="row">
+                        <div class="col-auto text-center align-self-center">
+                            <span class="fw-bold">Breakpoint</span>
+                        </div>
+                        <div class="col-auto">
+                            <div class="btn-group bgchart" role="group" aria-label="bptogglegroup">
+                                @foreach (Breakpoint bp in Enum.GetValues(typeof(Breakpoint)))
+                                {
+                                    @if (bp == Breakpoint.None)
+                                    {
+                                        continue;
+                                    }
+                                    <input type="radio" class="btn-check" name="bptoggle" id="@($"bp{bp}")"
+                                           checked="@(Request.Breakpoint == bp)"
+                                           autocomplete="off" @onchange="e => SetBreakpoint(e, bp)">
+                                    <label class="btn btn-outline-light check-label" for="@($"bp{bp}")">
+                                        @(bp == Breakpoint.All ? "Game End" : $"{bp}")
+                                    </label>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body bgchart">
+                    <div class="d-flex justify-content-evenly" style="font-size: 1.4rem;">
+                        <div class="col-auto">
+                            <span class="badge bgchart2 border rounded">
+                                Games<br><span class="text-warning">@Response.BuildCounts.Count</span>
+                            </span>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge bgchart2 border rounded">
+                                AvgGain<br>
+                                <span class="@(Response.BuildCounts.AvgGain >= 0 ? "bi bi-arrow-up text-success": "bi bi-arrow-down text-danger")">
+                                    @Response.BuildCounts.AvgGain
+                                </span>
+                            </span>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge bgchart2 border rounded">
+                                Winrate<br><span class="text-warning">@Response.BuildCounts.Winrate%</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-evenly mt-1" style="font-size: 1.4rem;">
+                        <div class="col-auto">
+                            <span class="badge bgchart2 border rounded">
+                                ∅ Duration<br><span class="text-warning">@TimeSpan.FromSeconds(Response.BuildCounts.Duration).ToString(@"mm\:ss")</span>
+                            </span>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge bgchart2 border rounded">
+                                ∅ Gas<br><span class="text-warning">@Response.BuildCounts.Gas</span>
+                            </span>
+                        </div>
+                        <div class="col-auto">
+                            <span class="badge bgchart2 border rounded">
+                                ∅ Upgrades<br><span class="text-warning">@Response.BuildCounts.Upgrades.ToString("N0")</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="d-flex mt-1 justify-content-center">
+                        <UnitsTable Units="Response.Units" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-auto" style="min-width: 800px;">
+            <div class="ms-2">
+                <button class="btn btn-sm btn-outline-light bgchart"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#buildreplays"
+                        aria-expanded="false"
+                        aria-controls="buildreplays"
+                        @onclick="e => showReplays = !showReplays">
+                    <span class="bi @(showReplays ? "bi bi-chevron-double-down" : "bi-chevron-double-up")"></span>
+                    Replays
+                </button>
+            </div>
+            <div class="collapse" id="buildreplays">
+                @if (showReplays)
+                {
+                    <BuildReplaysComponent @ref="buildReplaysComponent" Request="Request" OnReplayRequest="LoadReplay" />
+                }
+            </div>
+        </div>
+    </div>
+</div>
+@if (replayDto is not null)
+{
+    <div id="replaycontainer">
+        <ReplayComponent Replay="replayDto" IsCloseable="true" IsScrollable="false" OnCloseRequested="e => replayDto = null" />
+    </div>
+}
+<div class="mt-2 bgchart d-inline-block p-1" style="max-width: 50vw;">
+    <p class="text-warning">
+        This builds table provides valuable insights into unit compositions at specific game breakpoints (5min, 10min, 15min, and game end) for different commanders.
+        By selecting one commander and their opponent, you can access detailed information about the unit counts and upgrade spent at each specified time interval.
+        This data allows you to tailor your strategies, adapt to different matchups, and make informed decisions for each stage of the game.
+    </p>
+</div>
+<div class="mt-2 bgchart d-inline-block p-1" style="max-width: 50vw;">
+    <p class="text-warning">
+        In addition to commander-specific insights, this table offers versatile interactive features.
+        You can filter the data by player rating categories (learners, average, advanced, and top players) to analyze how strategies vary across skill levels.
+        Furthermore, you have the option to select specific players, enabling you to pinpoint the unit compositions of top players in a specific matchup.
+        This level of customization empowers you to explore and adopt strategies that align with your skill level and desired gameplay experience.
+        The ability to view individual games for the selected matchup provides an even deeper level of analysis, allowing you to see the actual numbers of units in specific games and gain a more granular understanding of strategy execution.
+    </p>
+</div>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public BuildRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<BuildRequest> OnRequestChanged { get; set; }
+
+    BuildResponse Response = new();
+    bool isLoading = true;
+    BuildPlayerRequest? buildPlayerRequest;
+    BuildReplaysComponent? buildReplaysComponent;
+    ReplayDto? replayDto = null;
+
+    protected override void OnInitialized()
+    {
+        if (Request.PlayerNames.Count > 0)
+        {
+            initPlayers = true;
+        }
+        _ = LoadData(true);
+        base.OnInitialized();
+    }
+
+    bool initPlayers = false;
+    bool showReplays = false;
+
+    private async Task LoadData(bool init = false)
+    {
+        replayDto = null;
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+
+        if ((Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)
+            && (int)Request.Interest > 3)
+        {
+            Request.Interest = Commander.Protoss;
+            Request.Versus = Commander.None;
+        }
+        else if ((Request.RatingType == RatingType.Cmdr || Request.RatingType == RatingType.CmdrTE)
+            && (int)Request.Interest <= 3)
+        {
+            Request.Interest = Commander.Abathur;
+            Request.Versus = Commander.None;
+        }
+
+        Response = await buildService.GetBuild(Request);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+        if (!init)
+        {
+            await OnRequestChanged.InvokeAsync(Request);
+            buildReplaysComponent?.Reload();
+        }
+    }
+
+    private void SelectInterest(Commander cmdr)
+    {
+        Request.Interest = cmdr;
+        _ = LoadData();
+    }
+
+    private void SelectVersus(Commander cmdr)
+    {
+        Request.Versus = cmdr;
+        _ = LoadData();
+    }
+
+    private void SetBreakpoint(ChangeEventArgs e, Breakpoint breakpoint)
+    {
+        Request.Breakpoint = breakpoint;
+        _ = LoadData();
+    }
+
+    private async Task ByPlayers()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        Request.TimePeriod = TimePeriod.Patch2_60;
+        Request.PlayerNames = await buildService.GetDefaultPlayers();
+        buildPlayerRequest?.SetPlayers();
+        _ = LoadData();
+    }
+
+    private void ByRating()
+    {
+        Request.PlayerNames.Clear();
+        Request.TimePeriod = TimePeriod.Past90Days;
+        Request.FromRating = 1600;
+        Request.ToRating = Data.MaxBuildRating;
+        _ = LoadData();
+    }
+
+    private async Task LoadReplay(string replayHash)
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        replayDto = await replaySerivce.GetReplay(replayHash);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+        await JSRuntime.InvokeVoidAsync("scrollToElementId", "replaycontainer");
+    }
+}

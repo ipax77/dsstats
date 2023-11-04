@@ -1,0 +1,162 @@
+﻿@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+@inject IPlayerService playerService
+@inject IRemoteToggleService remoteToggleService
+@implements IDisposable
+
+<div class="bgchart">
+    <EditForm EditContext="editContext">
+        <div class="row">
+            <div class="col-auto">
+                <label class="form-label">
+                    Search Cmdrs:
+                    <InputText class="form-control bgchart" disabled="@Request.Arcade" placeholder="Zagara Kerrigan" @bind-Value="Request.Commanders">
+                    </InputText>
+                </label>
+            </div>
+            <div class="col-auto align-self-center">
+                <button id="linkbutton" type="button" class="border rounded btn btn-sm btn-outline-light" @onclick="SetLink">
+                    <i class="bi bi-link-45deg pointer" style="font-size: 1.2rem; @(Request.Link ? "color: red;" : "color: white;")"
+                       data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Link cmdr and player"></i>
+                </button>
+            </div>
+            <div class="col-auto">
+                <label class="form-label">
+                    Search Players:
+                    <InputText class="form-control bgchart" disabled="@(Request.PlayerId != null)" placeholder="PAX Feralan" @bind-Value="Request.Players">
+                    </InputText>
+                </label>
+                @foreach (var lockedPlayer in lockedPlayers)
+                {
+                    <div>
+                        <small class="text-warning">@lockedPlayer</small>
+                    </div>
+                }
+            </div>
+            <div class="col-auto align-self-center me-2">
+                @if (remoteToggleService.IsMaui)
+                {
+                    <div class="form-check form-switch">
+                        <label class="form-check-label">
+                            Server Replays
+                            <input type="checkbox" class="form-check-input" disabled="@Request.Arcade" checked="@remoteToggleService.FromServer" @onchange="ToggleFromServer" />
+                        </label>
+                    </div>
+                }
+                <div class="d-flex">
+                    <div class="form-check form-switch">
+                        <label class="form-check-label">
+                            SC2Arcade
+                            <InputCheckbox class="form-check-input" @bind-Value="Request.Arcade" />
+                        </label>
+
+                    </div>
+                    <div class="ms-2">
+                        <span class="bi bi-info-circle pointer"
+                              onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/SC2Arcade'">
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-auto align-self-center">
+                <button type="button" class="btn btn-outline-primary" @onclick="Reset">Reset</button>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ReplaysRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    private EditContext editContext = null!;
+
+    List<string> lockedPlayers = new();
+    protected override void OnInitialized()
+    {
+        editContext = new(Request);
+        editContext.OnFieldChanged += FieldChanged;
+        _ = LoadLockedPlayers();
+    }
+
+    private async Task LoadLockedPlayers()
+    {
+        if (Request.PlayerId is not null)
+        {
+            var name = await playerService.GetPlayerIdName(Request.PlayerId);
+            if (!string.IsNullOrEmpty(name))
+            {
+                lockedPlayers.Add($"Player: {name}");
+            }
+        }
+        if (Request.PlayerIdVs is not null)
+        {
+            var name = await playerService.GetPlayerIdName(Request.PlayerIdVs);
+            if (!string.IsNullOrEmpty(name))
+            {
+                lockedPlayers.Add($"Vs: {name}");
+            }
+        }
+        if (Request.PlayerIdWith is not null)
+        {
+            var name = await playerService.GetPlayerIdName(Request.PlayerIdWith);
+            if (!string.IsNullOrEmpty(name))
+            {
+                lockedPlayers.Add($"With: {name}");
+            }
+        }
+
+        await InvokeAsync(() => StateHasChanged());
+    }
+    protected override void OnAfterRender(bool firstRender)
+    {
+        JSRuntime.InvokeVoidAsync("enableTooltips");
+        base.OnAfterRender(firstRender);
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        OnRequestChanged.InvokeAsync();
+    }
+
+    private void SetLink()
+    {
+        Request.Link = !Request.Link;
+        OnRequestChanged.InvokeAsync();
+        JSRuntime.InvokeVoidAsync("hideTooltip", "#linkbutton");
+    }
+
+    private void Reset()
+    {
+        Request.Players = string.Empty;
+        Request.Commanders = string.Empty;
+        Request.Link = false;
+
+        Request.PlayerId = null;
+        Request.PlayerIdVs = null;
+        Request.PlayerIdWith = null;
+        lockedPlayers.Clear();
+
+        OnRequestChanged.InvokeAsync();
+    }
+
+    private void ToggleFromServer(ChangeEventArgs e)
+    {
+        if (e.Value is bool value)
+        {
+            remoteToggleService.SetFromServer(value);
+            OnRequestChanged.InvokeAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}

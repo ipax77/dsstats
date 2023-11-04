@@ -1,0 +1,184 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using dsstats.shared
+
+<div>
+    <EditForm EditContext="editContext" OnValidSubmit="ValidSubmit">
+        <div class="form-group">
+            <InputSelect class="form-select" aria-label="playercount" @bind-Value="Filter.Playercount">
+                <option value="0">Any Playercount</option>
+                <option value="1">One</option>
+                <option value="2">Two</option>
+                <option value="3">Three</option>
+                <option value="4">Four</option>
+                <option value="5">Five</option>
+                <option value="6">Six</option>
+            </InputSelect>
+        </div>
+        <div class="form-check form-switch">
+            <label class="form-check-label">
+                TE
+                <InputCheckbox class="form-check-input" @bind-Value="Filter.TournamentEdition" />
+            </label>
+
+        </div>
+        <div class="form-group">
+            <select class="form-select" multiple aria-label="playercount" @onchange="SetGameModes">
+                <option value="@GameMode.None" selected>Any GameMode</option>
+                <option value="@GameMode.Commanders">@GameMode.Commanders</option>
+                <option value="@GameMode.Standard">@GameMode.Standard</option>
+                <option value="@GameMode.CommandersHeroic">@GameMode.CommandersHeroic</option>
+                <option value="@GameMode.Gear">@GameMode.Gear</option>
+                <option value="@GameMode.Sabotage">@GameMode.Sabotage</option>
+                <option value="@GameMode.BrawlCommanders">@GameMode.BrawlCommanders</option>
+                <option value="@GameMode.BrawlStandard">@GameMode.BrawlStandard</option>
+                <option value="@GameMode.Tutorial">@GameMode.Tutorial</option>
+            </select>
+        </div>
+        <div class="mt-1">
+            @foreach (var posFilter in Filter.PosFilters)
+            {
+                <div class="mt-1 p-1 border rounded">
+                    <div>
+                        <span class="bi bi-x-lg text-warning pointer" @onclick="e => Filter.PosFilters.Remove(posFilter)"></span>
+                        <small>Pos Filter #@(Filter.PosFilters.IndexOf(posFilter) + 1)</small>
+                    </div>
+                    <div class="form-group">
+                        <InputSelect class="form-select" aria-label="playercount" @bind-Value="posFilter.GamePos">
+                            <option value="0">Any GamePosition</option>
+                            <option value="1">One</option>
+                            <option value="2">Two</option>
+                            <option value="3">Three</option>
+                            <option value="4">Four</option>
+                            <option value="5">Five</option>
+                            <option value="6">Six</option>
+                        </InputSelect>
+                    </div>
+                    <div class="form-group">
+                        <InputSelect class="form-select" aria-label="playercount" @bind-Value="posFilter.Commander">
+                            <option value="@Commander.None">Any Commander</option>
+                            @foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
+                            {
+                                <option value="@cmdr">@cmdr</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="form-group">
+                        <InputSelect class="form-select" aria-label="playercount" @bind-Value="posFilter.OppCommander">
+                            <option value="@Commander.None">Vs Any Commander</option>
+                            @foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.NoNone))
+                            {
+                                <option value="@cmdr">@cmdr</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-control">
+                            <InputText placeholder="Player Name or Id" @bind-Value="posFilter.PlayerNameOrId" />
+                        </div>
+                    </div>
+                    @foreach (var unitFilter in posFilter.UnitFilters)
+                    {
+                        <div class="mt-1 p-1 border rounded">
+                            <div>
+                                <span class="bi bi-x-lg text-warning pointer" @onclick="e => posFilter.UnitFilters.Remove(unitFilter)"></span>
+                                <small>Unit Filter</small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">
+                                    Breakpoint
+                                    <InputSelect class="form-select text-light bgchart" @bind-Value="unitFilter.Breakpoint">
+                                        @foreach (Breakpoint bp in Enum.GetValues(typeof(Breakpoint)))
+                                        {
+                                            if (bp == Breakpoint.None)
+                                            {
+                                                continue;
+                                            }
+                                            <option value="@bp">@bp</option>
+                                        }
+                                    </InputSelect>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <div class="form-control">
+                                    <InputText placeholder="Unitname" @bind-Value="unitFilter.Name" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="form-control">
+                                    <label class="form-label">
+                                        <span class="fw-bold p-1 border rounded">@(unitFilter.Min ? ">=" : "<")</span> <small class="text-muted">at least one</small>
+                                        <InputCheckbox class="d-none" @bind-Value="unitFilter.Min" />
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="form-control">
+                                    <InputNumber placeholder="Count" @bind-Value="unitFilter.Count" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (Filter.PosFilters.SelectMany(s => s.UnitFilters).Count() < 3)
+                    {
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => posFilter.UnitFilters.Add(new())">Add Unit Filter</button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+        @if (Filter.PosFilters.Count < 6)
+        {
+            <div class="mt-2">
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => Filter.PosFilters.Add(new())">Add Pos Filter</button>
+            </div>
+        }
+        <div class="mt-2 btn-group bgchart p-2 rounded">
+            <button type="submit" class="btn btn-outline-warning">Filter</button>
+            <button type="button" class="btn btn-sm btn-outline-primary" @onclick="Reset">Reset</button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public ReplaysFilter Filter { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new(Filter);
+        base.OnInitialized();
+    }
+
+    void ValidSubmit()
+    {
+        OnRequestChanged.InvokeAsync();
+    }
+
+    void SetGameModes(ChangeEventArgs e)
+    {
+        if (e.Value is string[] values)
+        {
+            List<GameMode> gameModes = new();
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (Enum.TryParse(values[i], out GameMode gameMode))
+                {
+                    gameModes.Add(gameMode);
+                }
+            }
+            Filter.GameModes = gameModes;
+        }
+    }
+
+    void Reset()
+    {
+        Filter.Reset();
+        OnRequestChanged.InvokeAsync();
+    }
+}

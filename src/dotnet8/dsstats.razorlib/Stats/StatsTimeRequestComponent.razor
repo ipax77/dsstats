@@ -1,0 +1,91 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using dsstats.shared
+@implements IDisposable
+
+<div>
+    @if (Request.Filter.Time is not null)
+    {
+        <EditForm EditContext="editContext" OnValidSubmit="ValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="row">
+                <div class="col-auto">
+                    <label class="col-form-label">
+                        From
+                        <InputDate class="form-input" @bind-Value="Request.Filter.Time.FromDate" />
+                    </label>
+                </div>
+
+                <div class="col-auto">
+                    <label class="col-form-label">
+                        To
+                        <InputDate class="form-input" @bind-Value="Request.Filter.Time.ToDate" />
+                    </label>
+                </div>
+
+                <div class="col-auto align-self-center">
+                    <div>
+                        <button type="submit" class="btn btn-sm btn-outline-warning bgchart">Set Time</button>
+                    </div>
+                </div>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [CascadingParameter]
+    public StatsRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnTimeSelected { get; set; }
+
+    EditContext editContext = null!;
+    ValidationMessageStore validationMessageStore = null!;
+
+    protected override void OnInitialized()
+    {
+        if (Request.Filter.Time is null)
+        {
+            Request.Filter.Time = new();
+        }
+        (var fromDate, var toDate) = Data.TimeperiodSelected(Request.TimePeriod);
+        Request.Filter.Time.FromDate = fromDate;
+        Request.Filter.Time.ToDate = toDate;
+        editContext = new(Request.Filter.Time);
+        validationMessageStore = new(editContext);
+        editContext.OnValidationRequested += OnValidationRequestedAsync;
+        base.OnInitialized();
+    }
+
+    private void ValidSubmit()
+    {
+        OnTimeSelected.InvokeAsync();
+    }
+
+    private void OnValidationRequestedAsync(object? sender, ValidationRequestedEventArgs e)
+    {
+        validationMessageStore.Clear();
+
+        if (Request.Filter.Time is not null)
+        {
+            if (Request.Filter.Time.FromDate > Request.Filter.Time.ToDate)
+            {
+                validationMessageStore.Add(() => Request.Filter.Time.FromDate, "FromDate should be before ToDate.");
+
+            }
+
+            if (Request.Filter.Time.FromDate < new DateTime(2018, 1, 1))
+            {
+                validationMessageStore.Add(() => Request.Filter.Time.FromDate, "FromDate should be after 2018-01-01");
+            }
+
+            editContext.NotifyValidationStateChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        editContext.OnValidationRequested -= OnValidationRequestedAsync;
+    }
+}

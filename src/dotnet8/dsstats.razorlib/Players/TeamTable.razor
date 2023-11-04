@@ -1,0 +1,121 @@
+@using dsstats.shared
+@using dsstats.shared.Extensions
+@using dsstats.razorlib.Services
+@inject NavigationManager NavigationManager
+
+<table class="tptable table table-sm">
+    <thead>
+        <CascadingValue Value="orders">
+            <tr>
+                <th><small>Replays</small></th>
+                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Name"))">
+                    <SortArrow Property="Name">
+                        Name
+                    </SortArrow>
+                </th>
+                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Count"))">
+                    <SortArrow Property="Count">
+                        Games
+                    </SortArrow>
+                </th>
+                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Winrate"))">
+                    <SortArrow Property="Winrate">
+                        Winrate
+                    </SortArrow>
+                </th>
+            </tr>
+        </CascadingValue>
+    </thead>
+    <tbody>
+        @foreach (var player in GetSortedList())
+        {
+            <tr class="pointer" @onclick="e => ShowReplays.InvokeAsync(player.PlayerId)">
+                <td>
+                    <span class="bi bi-list text-primary"></span>
+                </td>
+                <td>
+                    <span class="text-truncate" style="display: block; width: 150px;">
+                        @player.Name
+                    </span>
+                </td>
+                <td>@player.Count</td>
+                <td>@HelperService.GetPercentageString(player.Wins, player.Count)</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    [Parameter, EditorRequired]
+    public List<PlayerTeamResult> TeamResults { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<PlayerId> ShowReplays { get; set; }
+
+    private List<TableOrder> orders = new()
+    {
+        new TableOrder()
+        {
+            Property = nameof(PlayerTeamResult.Count)
+        }
+    };
+
+    private void SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            orders.Clear();
+            orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+    }
+
+    private List<PlayerTeamResult> GetSortedList()
+    {
+        var list = TeamResults.AsQueryable();
+        foreach (var order in orders)
+        {
+            if (order.Property == "Winrate")
+            {
+                if (order.Ascending)
+                {
+                    list = list.OrderBy(o => o.Count == 0 ? 0 : o.Wins * 100.0 / o.Count);
+                }
+                else
+                {
+                    list = list.OrderByDescending(o => o.Count == 0 ? 0 : o.Wins * 100.0 / o.Count);
+                }
+            }
+            else
+            {
+                if (order.Ascending)
+                {
+                    list = list.AppendOrderBy(order.Property);
+                }
+                else
+                {
+                    list = list.AppendOrderByDescending(order.Property);
+                }
+            }
+        }
+        return list.ToList();
+    }
+}

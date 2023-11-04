@@ -1,0 +1,56 @@
+﻿@page "/ratings"
+@using dsstats.shared
+@using dsstats.razorlib.Players
+@using dsstats.ratings.lib
+@inject CalcService calcService
+@inject IToastService toastService
+<div>
+    <div class="d-flex">
+        <div>
+            @if (isLoading)
+            {
+                <div class="spinner-border spinner-border-sm text-danger" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            }
+            else
+            {
+                <div style="width: 30px;"></div>
+            }
+        </div>
+
+        <div>
+            <button type="button" class="btn btn-sm btn-outline-warning" @onclick="Recalc">Recalculate Ratings</button>
+        </div>
+    </div>
+</div>
+
+<ComboRatingsComponent Request="Request" />
+
+@code {
+    RatingsRequest Request = new()
+        {
+            Type = RatingType.Cmdr,
+            Uploaders = false
+        };
+
+    bool isLoading = false;
+
+    async void Recalc()
+    {
+        if (isLoading)
+        {
+            return;
+        }
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        toastService.ShowWarning("Starting local rating recalculation");
+        await Task.Run(async () =>
+        {
+            await calcService.GenerateRatings(RatingCalcType.Dsstats, true);
+        });
+        toastService.ShowSuccess("Ratings recalculated.");
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+}

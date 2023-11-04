@@ -1,0 +1,166 @@
+@using dsstats.shared
+@using Microsoft.AspNetCore.Components.Forms
+@using dsstats.shared.Interfaces
+@inject IRemoteToggleService remoteToggleService
+@implements IDisposable
+
+<div>
+    <EditForm EditContext="editContext">
+        <div class="row bgchart">
+            <div class="col-auto">
+                <label class="form-label">
+                    Search:
+                    <InputText class="form-control text-light bgchart" @bind-Value="Request.Search"></InputText>
+                </label>
+            </div>
+            <div class="col-auto">
+                <label class="form-label">
+                    Rating Type
+                    <span class="bi bi-info-circle pointer ms-2"
+                        onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/Mmr-calculation#rating-types'"></span>
+                    <InputSelect class="form-select text-light bgchart" @bind-Value="Request.Type">
+                        @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+                        {
+                            @if (ratingType == RatingType.None)
+                            {
+                                continue;
+                            }
+                            <option value="@ratingType">@Data.GetRatingTypeLongName(ratingType)</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+            <div class="col-auto">
+                <label class="form-label">
+                    Change
+                    <InputSelect class="form-select text-light bgchart" @bind-Value="Request.TimePeriod">
+                        <option value="@RatingChangeTimePeriod.Past24h">@RatingChangeTimePeriod.Past24h</option>
+                        <option value="@RatingChangeTimePeriod.Past10Days">@RatingChangeTimePeriod.Past10Days</option>
+                        <option value="@RatingChangeTimePeriod.Past30Days">@RatingChangeTimePeriod.Past30Days</option>
+                    </InputSelect>
+                </label>
+            </div>
+
+            <div class="col-auto align-self-center me-2">
+                @if (remoteToggleService.IsMaui)
+                {
+                    <div class="form-check form-switch">
+                        <label class="form-check-label">
+                            Server Ratings
+                            <input type="checkbox" class="form-check-input" checked="@remoteToggleService.FromServer" @onchange="ToggleFromServer" />
+                        </label>
+                    </div>
+                }
+                <div class="form-check form-switch">
+                    <label class="form-check-label">
+                        Uploaders
+                        <InputCheckbox class="form-check-input" @bind-Value="Request.Uploaders"></InputCheckbox>
+                    </label>
+                </div>
+                <div class="d-flex">
+                    <div class="form-check form-switch">
+                        <label class="form-check-label">
+                            ComboRatings
+                            <InputCheckbox class="form-check-input" @bind-Value="Request.ComboRating">
+                            </InputCheckbox>
+                        </label>
+                    </div>
+                    <div class="ms-2">
+                        <span class="bi bi-info-circle pointer"
+                            onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/ComboRatings'">
+                        </span>
+                    </div>
+                </div>
+                <div class="d-flex">
+                    <div class="form-check form-switch">
+                        <label class="form-check-label">
+                            SC2Arcade
+                            <InputCheckbox class="form-check-input" @bind-Value="Request.Arcade" />
+                        </label>
+
+                    </div>
+                    <div class="ms-2">
+                        <span class="bi bi-info-circle pointer"
+                              onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/SC2Arcade'">
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-auto align-self-center ms-2">
+                <span class="bi bi-x-lg text-danger pointer" @onclick="ResetSearch"></span>
+            </div>
+            <div class="col-auto ms-3 align-self-center">
+                <a href="https://github.com/ipax77/dsstats/wiki/Mmr-calculation"><span
+                        class="bi bi-info-circle me-1"></span>Calculation</a>
+            </div>
+        </div>
+        <div class="btn-group mt-1 bgchart">
+            <InputRadioGroup @bind-Value="Request.Type">
+                @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+                {
+                    @if (ratingType == RatingType.None)
+                    {
+                        continue;
+                    }
+                    <div>
+                        <InputRadio class="btn-check" autocomplete="off" id="@($"radio{ratingType}")" Value="@ratingType" />
+                        <label class="btn btn-outline-light" for="@($"radio{ratingType}")">@Data.GetRatingTypeLongName(ratingType)</label>
+                    </div>
+                }
+            </InputRadioGroup>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [CascadingParameter]
+    public RatingsRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new(Request);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        if (e.FieldIdentifier.FieldName == nameof(RatingsRequest.ComboRating))
+        {
+            Request.Arcade = false;
+            remoteToggleService.SetFromServer(true);
+        }
+        else if (e.FieldIdentifier.FieldName == nameof(RatingsRequest.Arcade))
+        {
+            Request.ComboRating = false;
+            remoteToggleService.SetFromServer(true);
+        }
+
+        OnRequestChanged.InvokeAsync();
+    }
+
+    private void ResetSearch()
+    {
+        Request.Search = string.Empty;
+        OnRequestChanged.InvokeAsync();
+    }
+
+    private void ToggleFromServer(ChangeEventArgs e)
+    {
+        if (e.Value is bool value)
+        {
+            remoteToggleService.SetFromServer(value);
+            OnRequestChanged.InvokeAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}
