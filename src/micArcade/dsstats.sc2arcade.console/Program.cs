@@ -32,7 +32,7 @@ class Program
         {
             options.SetMinimumLevel(LogLevel.Information);
             options.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
-            options.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
+            options.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Information);
             options.AddConsole();
         });
 

@@ -104,5 +104,6 @@ public partial class MmrService
     {
         new(466786, 2, 2), // SabreWolf
         new(9774911, 1, 2), // Baka
+        new(3768192, 1, 1) // Henz
     }.AsReadOnly();
 }
