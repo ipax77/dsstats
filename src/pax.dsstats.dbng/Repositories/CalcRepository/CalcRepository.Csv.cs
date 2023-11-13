@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Text;
 using MySqlConnector;
+using pax.dsstats.shared;
 using pax.dsstats.shared.Calc;
 
 namespace dsstats.ratings.db;
@@ -10,7 +11,7 @@ public partial class CalcRepository
 {
     private readonly string csvBasePath = "/data/mysqlfiles";
 
-    public async Task CreateDsstatsPlayerRatingCsv(Dictionary<int, Dictionary<PlayerId, CalcRating>> mmrIdRatings)
+    public async Task CreateDsstatsPlayerRatingCsv(Dictionary<int, Dictionary<PlayerId, pax.dsstats.shared.Calc.CalcRating>> mmrIdRatings)
     {
         var playerIdDic = await GetPlayerIdDic();
 
@@ -23,6 +24,11 @@ public partial class CalcRepository
                 if (!playerIdDic.TryGetValue(entCalc.PlayerId, out var playerId))
                 {
                     continue;
+                }
+
+                if (Data.SoftBanDsstatsIds.ContainsKey(playerId))
+                {
+                    entCalc.Mmr -= 1000.0;
                 }
 
                 i++;
@@ -41,7 +47,7 @@ public partial class CalcRepository
         File.WriteAllText($"{csvBasePath}/ComboPlayerRatings.csv", sb.ToString());
     }
 
-    public (int, int) DsstatsCreateOrAppendReplayAndReplayPlayerRatingsCsv(List<ReplayRatingDto> replayRatingDtos,
+    public (int, int) DsstatsCreateOrAppendReplayAndReplayPlayerRatingsCsv(List<pax.dsstats.shared.Calc.ReplayRatingDto> replayRatingDtos,
                                                                        int replayAppendId,
                                                                        int replayPlayerAppendId)
     {

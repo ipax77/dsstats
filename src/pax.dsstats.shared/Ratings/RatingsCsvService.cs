@@ -15,6 +15,11 @@ public static class RatingsCsvService
         {
             foreach (var entCalc in ent.Value.Values)
             {
+                if (Data.SoftBanDsstatsIds.ContainsKey(entCalc.PlayerId))
+                {
+                    entCalc.Mmr -= 1000.0;
+                }
+
                 i++;
                 var main = entCalc.CmdrCounts.OrderByDescending(o => o.Value).FirstOrDefault();
                 sb.Append($"{i},");
