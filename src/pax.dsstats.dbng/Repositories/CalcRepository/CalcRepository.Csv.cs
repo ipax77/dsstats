@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Text;
 using MySqlConnector;
+using pax.dsstats.shared;
 using pax.dsstats.shared.Calc;
 
 namespace dsstats.ratings.db;
@@ -23,6 +24,11 @@ public partial class CalcRepository
                 if (!playerIdDic.TryGetValue(entCalc.PlayerId, out var playerId))
                 {
                     continue;
+                }
+
+                if (Data.SoftBanDsstatsIds.ContainsKey(playerId))
+                {
+                    entCalc.Mmr -= 1000.0;
                 }
 
                 i++;

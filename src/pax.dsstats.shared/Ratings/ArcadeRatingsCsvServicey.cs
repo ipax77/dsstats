@@ -14,6 +14,11 @@ public static class ArcadeRatingsCsvService
         {
             foreach (var entCalc in ent.Value.Values)
             {
+                if (Data.SoftBanArcadeIds.ContainsKey(entCalc.PlayerId))
+                {
+                    entCalc.Mmr -= 1000.0;
+                }
+
                 i++;
                 // var main = entCalc.CmdrCounts.OrderByDescending(o => o.Value).FirstOrDefault();
                 var main = new KeyValuePair<Commander, int>(Commander.None, 0);

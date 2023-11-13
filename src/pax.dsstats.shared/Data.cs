@@ -1,5 +1,6 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+using pax.dsstats.shared.Arcade;
 
 namespace pax.dsstats.shared;
 
@@ -978,6 +979,47 @@ public static class Data
         "ZergMissileWeaponsLevel2",
         "ZergMissileWeaponsLevel3"
 }.AsReadOnly();
+
+    public static IReadOnlyDictionary<PlayerId, bool> SoftBans = new Dictionary<PlayerId, bool>()
+    {
+        { new PlayerId(4408073, 1, 2), true}, // MemoriLuvLow
+        { new PlayerId(10195430, 1, 2), true }, //HenyaMyWaifu
+        { new PlayerId(5310262, 1, 1), true }, //SunayStinks
+        { new PlayerId(10392393, 1, 2), true }, //EnTaroGura
+        { new PlayerId(12788234, 1, 1), true }, //Amemiya
+        { new PlayerId(9846569, 1, 2), true }, //Zergling
+        { new PlayerId(9207965, 1, 2), true }, //kun
+        { new PlayerId(12967800, 1, 1), true }, //AAAAAAAAAAAA
+        { new PlayerId(1608587, 2, 3), true }, //Amemiya
+        { new PlayerId(10570273, 1, 2), true }, //holymackerel
+    };
+
+    public static IReadOnlyDictionary<int, bool> SoftBanDsstatsIds = new Dictionary<int, bool>()
+    {
+        { 13642, true }, // MemoriLuvLow
+        { 86515, true }, //	HenyaMyWaifu
+        { 123640, true }, //	SunayStinks
+        { 128536, true }, //	EnTaroGura
+        { 128563, true }, //	Amemiya
+        { 151223, true }, //	Zergling
+        { 188323, true }, //	kun
+        { 196041, true }, //	AAAAAAAAAAAA
+        { 196042, true }, //	Amemiya
+        { 199097, true }, //	holymackerel
+    };
+
+    public static IReadOnlyDictionary<int, bool> SoftBanArcadeIds = new Dictionary<int, bool>()
+    {
+        { 44376, true }, //	Zergling
+        { 26005, true }, //	SunayStinks
+        { 35247, true }, //	MemoriLuvLow
+        { 306232, true }, //	kun
+        { 322834, true }, //	holymackerel
+        { 71165, true }, //	HenyaMyWaifu
+        { 69116, true }, //	EnTaroGura
+        { 84364, true }, //	Amemiya
+    };
+
     public static bool IsMaui { get; set; }
     public static int MauiWidth { get; set; }
     public static int MauiHeight { get; set; }
