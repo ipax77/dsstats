@@ -28,6 +28,8 @@ public class ComboReplayRating
     public int ReplayId { get; set; }
     public virtual Replay Replay { get; set; } = null!;
     public bool IsPreRating { get; set; }
+    public int AvgRating { get; set; }
+    // public virtual ComboReplayAvgRating? AvgRating { get; set; }
 }
 
 public class ComboReplayPlayerRating

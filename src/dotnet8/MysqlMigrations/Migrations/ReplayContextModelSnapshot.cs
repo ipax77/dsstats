@@ -288,6 +288,9 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("ArcadeReplayId")
                         .HasColumnType("int");
 
+                    b.Property<int>("AvgRating")
+                        .HasColumnType("int");
+
                     b.Property<float>("ExpectationToWin")
                         .HasColumnType("float");
 
@@ -586,6 +589,33 @@ namespace MysqlMigrations.Migrations
                     b.ToTable((string)null);
 
                     b.ToView("GroupByHelper", (string)null);
+                });
+
+            modelBuilder.Entity("dsstats.db8.MaterializedArcadeReplay", b =>
+                {
+                    b.Property<int>("MaterializedArcadeReplayId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("ArcadeReplayId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<int>("Duration")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GameMode")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WinnerTeam")
+                        .HasColumnType("int");
+
+                    b.HasKey("MaterializedArcadeReplayId");
+
+                    b.ToTable("MaterializedArcadeReplays");
                 });
 
             modelBuilder.Entity("dsstats.db8.NoUploadResult", b =>
@@ -1123,6 +1153,9 @@ namespace MysqlMigrations.Migrations
                 {
                     b.Property<int>("ReplayRatingId")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("AvgRating")
                         .HasColumnType("int");
 
                     b.Property<float>("ExpectationToWin")

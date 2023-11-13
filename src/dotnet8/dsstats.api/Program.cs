@@ -5,7 +5,7 @@ using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
 using dsstats.db8services.Import;
-using dsstats.ratings.lib;
+using dsstats.ratings;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.RateLimiting;
@@ -65,12 +65,12 @@ builder.Services.AddDbContext<ReplayContext>(options =>
 builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
-builder.Services.AddSingleton<CalcService>();
+builder.Services.AddSingleton<IRatingService, RatingService>();
+builder.Services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
 builder.Services.AddSingleton<ImportService>();
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 
-builder.Services.AddScoped<ICalcRepository, CalcRepository>();
 builder.Services.AddScoped<IWinrateService, WinrateService>();
 builder.Services.AddScoped<ITimelineService, TimelineService>();
 builder.Services.AddScoped<ISynergyService, SynergyService>();
@@ -105,14 +105,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    //var calcRepository = scope.ServiceProvider.GetRequiredService<ICalcRepository>();
-    //calcRepository.DebugDeleteContinueTest().Wait();
+    // var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+    // context.Database.Migrate();
 
-    //var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
-    //await calcService.GenerateRatings(RatingCalcType.Dsstats, true);
 
-    //var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-    //importService.Init().Wait();
 }
 
 app.UseHttpsRedirection();

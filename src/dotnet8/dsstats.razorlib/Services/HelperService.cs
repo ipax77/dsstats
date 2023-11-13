@@ -182,6 +182,26 @@ public static class HelperService
         return (Math.Round(sumTeam1 * 100.0 / middleInfo.Duration, 2),
             Math.Round(sumTeam2 * 100.0 / middleInfo.Duration, 2));
     }
+
+    public static string GetGameMode(ReplayListDto replay)
+    {
+        if (!replay.TournamentEdition)
+        {
+            return replay.GameMode.ToString();
+        }
+        else
+        {
+            if (replay.GameMode == GameMode.Commanders)
+            {
+                return "Cmdrs TE";
+            }
+            if (replay.GameMode == GameMode.Standard)
+            {
+                return "Std TE";
+            }
+            return $"{replay.GameMode} TE";
+        }
+    }
 }
 
 public record ReplaysToonIdRequest

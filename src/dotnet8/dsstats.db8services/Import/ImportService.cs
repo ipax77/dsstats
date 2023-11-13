@@ -53,9 +53,22 @@ public partial class ImportService
         }
     }
 
+    public async Task<Dictionary<PlayerId, int>> GetPlayerIdDictionary()
+    {
+        if (!IsInit)
+        {
+            await Init();
+        }
+        return PlayerIds;
+    }
+
     public async Task<int> GetPlayerIdAsync(PlayerId playerId, string name)
     {
-        await Init();
+        if (!IsInit)
+        {
+            await Init();
+        }
+
         await playersSs.WaitAsync();
         try
         {

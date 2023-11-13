@@ -11,8 +11,8 @@ using Blazored.Toast;
 using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Storage;
 using dsstats.maui.WinUI;
-using dsstats.ratings.lib;
 using dsstats.db8services.Import;
+using dsstats.ratings;
 
 namespace dsstats.maui
 {
@@ -68,10 +68,10 @@ namespace dsstats.maui
             builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
             builder.Services.AddSingleton<ConfigService>();
             builder.Services.AddSingleton<DsstatsService>();
-            builder.Services.AddSingleton<CalcService>();
             builder.Services.AddSingleton<ImportService>();
+            builder.Services.AddSingleton<IRatingService, RatingService>();
+            builder.Services.AddSingleton<IRatingsSaveService, Services.RatingsSaveService>();
 
-            builder.Services.AddScoped<ICalcRepository, CalcRepository>();
             builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 
             builder.Services.AddKeyedScoped<IWinrateService, db8services.WinrateService>("local");

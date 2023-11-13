@@ -72,11 +72,11 @@ public class UploadTests
         services.AddMemoryCache();
         services.AddAutoMapper(typeof(AutoMapperProfile));
 
-        services.AddSingleton<CalcService>();
+        services.AddSingleton<IRatingService, RatingService>();
+        services.AddSingleton<RatingsSaveService>();
         services.AddSingleton<ImportService>();
         services.AddSingleton<UploadService>();
 
-        services.AddScoped<ICalcRepository, CalcRepository>();
         services.AddScoped<IReplayRepository, ReplayRepository>();
 
         serviceProvider = services.BuildServiceProvider();

@@ -1,5 +1,6 @@
 ﻿
 using dsstats.db8;
+using dsstats.ratings;
 using dsstats.ratings.lib;
 using dsstats.shared;
 using dsstats.shared.Calc;
@@ -14,7 +15,7 @@ public partial class ImportService
     public async Task SetPreRatings()
     {
         using var scope = serviceProvider.CreateAsyncScope();
-        var calcRepository = scope.ServiceProvider.GetRequiredService<ICalcRepository>();
+        var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 
         DsstatsCalcRequest request = new()
         {
@@ -24,35 +25,45 @@ public partial class ImportService
             Take = 101
         };
 
-        var calcDtos = await calcRepository.GetDsstatsCalcDtos(request);
+        var calcDtos = await ratingService.GetDsstatsCalcDtos(request);
 
         if (calcDtos.Count == 0)
         {
             return;
         }
 
-        var dsstatsMmrIdRatings = await GetDsstatsMmrIdRatings(calcDtos);
-        var comboMmrIdRatings = await GetComboMmrIdRatings(calcDtos);
-
-        CalcRatingRequest dsstatsRatingRequest = new()
+        CalcRatingRequest dsRequest = new()
         {
             RatingCalcType = RatingCalcType.Dsstats,
-            CalcDtos = calcDtos,
-            MmrIdRatings = dsstatsMmrIdRatings
+            MmrIdRatings = await GetDsstatsMmrIdRatings(calcDtos)
         };
 
-        CalcRatingRequest comboRatingRequest = new()
+        CalcRatingRequest cbRequest = new()
         {
             RatingCalcType = RatingCalcType.Combo,
-            CalcDtos = calcDtos,
-            MmrIdRatings = comboMmrIdRatings
+            MmrIdRatings = await GetComboMmrIdRatings(calcDtos)
         };
 
-        var dsstatsResult = CalcService.GeneratePlayerRatings(dsstatsRatingRequest);
-        var comboResult = CalcService.GeneratePlayerRatings(comboRatingRequest);
+        List<shared.Calc.ReplayRatingDto> dsReplayRatings = new();
+        List<shared.Calc.ReplayRatingDto> cbReplayRatings = new();
 
-        await SaveDsstatsPreRatings(dsstatsResult.DsstatsRatingDtos);
-        await SaveComboPreRatings(comboResult.DsstatsRatingDtos);
+        foreach (var calcDto in calcDtos)
+        {
+            var dsRating = Ratings.ProcessReplay(calcDto, dsRequest);
+            if (dsRating is not null)
+            {
+                dsReplayRatings.Add(dsRating);
+            }
+
+            var cbRating = Ratings.ProcessReplay(calcDto, cbRequest);
+            if (cbRating is not null)
+            {
+                cbReplayRatings.Add(cbRating);
+            }
+        }
+
+        await SaveDsstatsPreRatings(dsReplayRatings);
+        await SaveComboPreRatings(cbReplayRatings);
     }
 
 
@@ -107,6 +118,7 @@ public partial class ImportService
                 LeaverType = (LeaverType)ratingDto.LeaverType,
                 ExpectationToWin = ratingDto.ExpectationToWin,
                 ReplayId = ratingDto.ReplayId,
+                AvgRating = Convert.ToInt32(ratingDto.RepPlayerRatings.Average(a => a.Rating)),
                 IsPreRating = true,
             });
 
@@ -198,7 +210,7 @@ public partial class ImportService
                     Consistency = plRating.Consistency,
                     Confidence = plRating.Confidence,
                     IsUploader = plRating.IsUploader,
-                    CmdrCounts = CalcRepository.GetFakeCmdrDic(plRating.Main, plRating.MainCount, plRating.Games)
+                    CmdrCounts = RatingService.GetFakeCmdrDic(plRating.Main, plRating.MainCount, plRating.Games)
                 };
             }
         }

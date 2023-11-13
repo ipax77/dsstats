@@ -105,8 +105,8 @@ public partial class ReplaysService : IReplaysService
 
         var query = GetReplaysQueriable(request);
         query = FilterReplays(request, query);
-
-        return await query.CountAsync(token);
+        var list = FilterRatings(request, query);
+        return await list.CountAsync(token);
     }
 
     public async Task<ReplaysResponse> GetReplays(ReplaysRequest request, CancellationToken token = default)
@@ -118,40 +118,64 @@ public partial class ReplaysService : IReplaysService
 
         try
         {
-
             var query = GetReplaysQueriable(request);
             query = FilterReplays(request, query);
-            query = SortReplays(request, query);
+            var list = FilterRatings(request, query);
+            list = SortReplays(request, list);
 
-
-            if (request.PlayerId is not null)
-            {
-                return await GetReplaysForPlayerId(query, request, token);
-            }
-
-            var replays = await query
+            var replays = await list
                 .Skip(request.Skip)
                 .Take(request.Take)
-                .Select(s => new ReplayListDto()
-                {
-                    GameTime = s.GameTime,
-                    Duration = s.Duration,
-                    WinnerTeam = s.WinnerTeam,
-                    GameMode = s.GameMode,
-                    TournamentEdition = s.TournamentEdition,
-                    ReplayHash = s.ReplayHash,
-                    DefaultFilter = s.DefaultFilter,
-                    CommandersTeam1 = s.CommandersTeam1,
-                    CommandersTeam2 = s.CommandersTeam2,
-                    MaxLeaver = s.Maxleaver
-                })
                 .ToListAsync(token);
 
-            return new() { Replays = replays };
+            ReplaysResponse response = new() { Replays = replays };
+            await AddPlayerInfos(request, response, token);
+            return response;
         }
         catch (OperationCanceledException) { }
 
         return new();
+    }
+
+    private async Task AddPlayerInfos(ReplaysRequest request, ReplaysResponse response, CancellationToken token)
+    {
+        if (request.PlayerId is null)
+        {
+            return;
+        }
+
+        var hashes = response.Replays.Select(s => s.ReplayHash).ToList();
+
+        var plquery = from r in context.Replays
+                      from rp in r.ReplayPlayers
+                      join rpr in context.ComboReplayPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
+                      where hashes.Contains(r.ReplayHash)
+                          && rp.Player.ToonId == request.PlayerId.ToonId
+                          && rp.Player.RealmId == request.PlayerId.RealmId
+                          && rp.Player.RegionId == request.PlayerId.RegionId
+                      select new
+                      {
+                          r.ReplayHash,
+                          Info = new ReplayPlayerInfo()
+                          {
+                              Name = rp.Name,
+                              Pos = rp.GamePos,
+                              Commander = rp.Race,
+                              RatingChange = rpr.Change
+                          }
+                      };
+        var infos = await plquery.ToListAsync(token);
+
+        foreach (var info in infos)
+        {
+            var replay = response.Replays.FirstOrDefault(f => f.ReplayHash == info.ReplayHash);
+            if (replay is null)
+            {
+                continue;
+            }
+            replay.PlayerInfo = info.Info;
+        }
+        response.PlayerId = request.PlayerId;
     }
 
     private async Task<ReplaysResponse> GetReplaysForPlayerId(IQueryable<Replay> query,
@@ -491,6 +515,34 @@ public partial class ReplaysService : IReplaysService
                 {
                     replays = replays.AppendOrderByDescending(order.Property);
                 }
+            }
+        }
+        return replays;
+    }
+
+    private IQueryable<ReplayListDto> SortReplays(ReplaysRequest request, IQueryable<ReplayListDto> replays)
+    {
+        if (request.Orders.Count == 0)
+        {
+            return replays.OrderByDescending(o => o.GameTime);
+        }
+
+        foreach (var order in request.Orders)
+        {
+            var propertyInfo = typeof(ReplayListDto).GetProperty(order.Property);
+
+            if (propertyInfo is null)
+            {
+                continue;
+            }
+
+            if (order.Ascending)
+            {
+                replays = replays.AppendOrderBy(order.Property);
+            }
+            else
+            {
+                replays = replays.AppendOrderByDescending(order.Property);
             }
         }
         return replays;

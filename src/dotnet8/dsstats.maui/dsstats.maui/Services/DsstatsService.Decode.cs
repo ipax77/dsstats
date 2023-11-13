@@ -1,4 +1,5 @@
 ﻿using dsstats.ratings.lib;
+using dsstats.shared.Interfaces;
 using System.Collections.Concurrent;
 
 namespace dsstats.maui.Services;
@@ -154,13 +155,13 @@ public partial class DsstatsService
     private async Task ProduceRatings()
     {
         using var scope = scopeFactory.CreateAsyncScope();
-        var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
+        var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 
         var decodeInfoStart = GetDecodeInfo(true);
         decodeInfoStart.Calculating = true;
         OnDecodeStateChanged(decodeInfoStart);
 
-        await calcService.GenerateRatings(shared.RatingCalcType.Dsstats);
+        await ratingService.ProduceRatings(shared.RatingCalcType.Dsstats);
     }
 
     private void SetupDecodeJob(int newReplaysCount)

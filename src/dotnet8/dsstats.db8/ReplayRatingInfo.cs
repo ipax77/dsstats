@@ -15,6 +15,7 @@ public class ReplayRating
     public int ReplayId { get; set; }
     public Replay Replay { get; set; } = null!;
     public bool IsPreRating { get; set; }
+    public int AvgRating { get; set; }
     public virtual ICollection<RepPlayerRating> RepPlayerRatings { get; set; }
 }
 

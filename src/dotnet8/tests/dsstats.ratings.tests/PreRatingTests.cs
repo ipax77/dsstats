@@ -49,10 +49,10 @@ public class PreRatingTests
         services.AddMemoryCache();
         services.AddAutoMapper(typeof(AutoMapperProfile));
 
-        services.AddSingleton<CalcService>();
+        services.AddSingleton<IRatingService, RatingService>();
+        services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
         services.AddSingleton<ImportService>();
 
-        services.AddScoped<ICalcRepository, CalcRepository>();
         services.AddScoped<IReplayRepository, ReplayRepository>();
 
         serviceProvider = services.BuildServiceProvider();
@@ -65,7 +65,7 @@ public class PreRatingTests
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
         var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-        var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
+        var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 
         context.Database.EnsureDeleted();
         context.Database.Migrate();
@@ -78,8 +78,8 @@ public class PreRatingTests
             replayRepository.SaveReplay(replay, new(), new()).Wait();
         }
 
-        calcService.GenerateRatings(RatingCalcType.Dsstats, recalc: true).Wait();
-        calcService.GenerateRatings(RatingCalcType.Combo).Wait();
+        ratingService.ProduceRatings(RatingCalcType.Dsstats, recalc: true).Wait();
+        ratingService.ProduceRatings(RatingCalcType.Combo).Wait();
 
         for (int i = 0; i < 10; i++)
         {
@@ -135,7 +135,7 @@ public class PreRatingTests
     }
 
     [TestMethod]
-    public void T02SinglePreRatingTest()
+    public void T03SinglePreRatingTest()
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();

@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace dsstats.shared;
 
@@ -38,8 +37,9 @@ public record ReplayListDto
     public string CommandersTeam1 { get; init; } = string.Empty;
     public string CommandersTeam2 { get; init; } = string.Empty;
     public int MaxLeaver { get; init; }
-    public double Exp2Win { get; init; }
-    public ReplayPlayerInfo? PlayerInfo { get; init; }
+    public double? Exp2Win { get; init; }
+    public int AvgRating { get; init; }
+    public ReplayPlayerInfo? PlayerInfo { get; set; }
 }
 
 public record ReplayPlayerInfo
@@ -79,6 +79,7 @@ public record ReplaysFilter
     public string CommanderNames { get; set; } = string.Empty;
     public string PlayerNames { get; set; } = string.Empty;
     public List<ReplaysPosFilter> PosFilters { get; set; } = new();
+    public ReplaysRatingRequest? ReplaysRatingRequest { get; set; }
 
     public void Reset()
     {
@@ -88,6 +89,7 @@ public record ReplaysFilter
         CommanderNames = string.Empty;
         PlayerNames = string.Empty;
         PosFilters.Clear();
+        ReplaysRatingRequest = null;
     }
 }
 
@@ -106,4 +108,14 @@ public record ReplaysPosUnitFilter
     public string Name { get; set; } = string.Empty;
     public int Count { get; set; }
     public bool Min { get; set; } = true;
+}
+
+public record ReplaysRatingRequest
+{
+    public RatingCalcType RatingCalcType { set; get; } = RatingCalcType.Combo;
+    public RatingType RatingType { set; get; } = RatingType.Cmdr;
+    public bool WithoutLeavers { get; set; }
+    public int AvgMinRating { get; set; }
+    public int FromExp2Win { get; set; }
+    public int ToExp2Win { get; set; }
 }

@@ -1,27 +1,61 @@
-﻿
-using dsstats.db8;
+﻿using dsstats.db8;
 using dsstats.shared;
 using dsstats.shared.Calc;
+using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Data.SQLite;
 
-namespace dsstats.db8services;
+namespace dsstats.maui.Services;
 
-public partial class CalcRepository
+internal class RatingsSaveService : IRatingsSaveService
 {
-    public async Task WriteRatingsToSqlite(Dictionary<int, Dictionary<PlayerId, CalcRating>> mmrIdRatings,
-                                           List<shared.Calc.ReplayRatingDto> replayRatingDtos,
-                                           int replayAppendId,
-                                           int replayPlayerAppendId,
-                                           bool isRecalc)
+    private readonly string connectionString;
+    private readonly IServiceScopeFactory scopeFactory;
+    private readonly ILogger<RatingsSaveService> logger;
+
+    public RatingsSaveService(IServiceScopeFactory scopeFactory, ILogger<RatingsSaveService> logger)
     {
-        await UpdateSqlitePlayers(mmrIdRatings, isRecalc);
-        await UpdateSqliteReplayRatings(replayRatingDtos, replayAppendId);
-        await UpdateSqliteRepPlayerRatings(replayRatingDtos, replayAppendId, replayPlayerAppendId);
+        var scope = scopeFactory.CreateScope();
+        var options = scope.ServiceProvider.GetRequiredService<IOptions<DbImportOptions>>();
+        connectionString = options.Value.ImportConnectionString;
+        this.scopeFactory = scopeFactory;
+        this.logger = logger;
+    }
+
+    public Task SaveArcadePlayerRatings(Dictionary<int, Dictionary<PlayerId, CalcRating>> mmrIdRatings)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<(int, int)> SaveArcadeStepResult(List<shared.Calc.ReplayRatingDto> ratings, int replayRatingId = 0, int replayPlayerRatingId = 0)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task SaveComboPlayerRatings(Dictionary<int, Dictionary<PlayerId, CalcRating>> mmrIdRatings)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<(int, int)> SaveComboStepResult(List<shared.Calc.ReplayRatingDto> ratings, int replayRatingId = 0, int replayPlayerRatingId = 0)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task SaveDsstatsPlayerRatings(Dictionary<int, Dictionary<PlayerId, CalcRating>> mmrIdRatings, bool isContinue)
+    {
+        await UpdateSqlitePlayers(mmrIdRatings, !isContinue);
         await SetSqlitePlayerRatingPos();
         await SetSqliteRatingChange();
+    }
+
+    public async Task<(int, int)> SaveDsstatsStepResult(List<shared.Calc.ReplayRatingDto> ratings, int replayRatingId = 0, int replayPlayerRatingId = 0)
+    {
+        int repId = await UpdateSqliteReplayRatings(ratings, replayRatingId);
+        int repPlId =  await UpdateSqliteRepPlayerRatings(ratings, replayRatingId, replayPlayerRatingId);
+        return (repId, repPlId);
     }
 
     private async Task UpdateSqlitePlayers(Dictionary<int, Dictionary<PlayerId, CalcRating>> mmrIdRatings, bool isRecalc)
@@ -31,7 +65,12 @@ public partial class CalcRepository
             await DeletePlayerRatingsTable();
         }
 
-        var playerIdDic = await GetPlayerIdDic(RatingCalcType.Dsstats);
+        using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var playerIdDic = (await context.Players
+            .Select(s => new { PlayerId = new PlayerId(s.ToonId, s.RealmId, s.RegionId), Id = s.PlayerId })
+            .ToListAsync())
+            .ToDictionary(k => k.PlayerId, v => v.Id);
 
         try
         {
@@ -135,12 +174,13 @@ public partial class CalcRepository
                                                                    {nameof(ReplayRating.LeaverType)},
                                                                    {nameof(ReplayRating.ExpectationToWin)},
                                                                    {nameof(ReplayRating.ReplayId)},
+                                                                   {nameof(ReplayRating.AvgRating)},
                                                                    {nameof(ReplayRating.IsPreRating)})
-                VALUES ($value1,$value2,$value3,$value4,$value5,0)
+                VALUES ($value1,$value2,$value3,$value4,$value5,$value6,0)
             ";
 
             List<SQLiteParameter> parameters = new List<SQLiteParameter>();
-            for (int i = 1; i <= 5; i++)
+            for (int i = 1; i <= 6; i++)
             {
                 var parameter = command.CreateParameter();
                 parameter.ParameterName = $"$value{i}";
@@ -158,6 +198,7 @@ public partial class CalcRepository
                 parameters[2].Value = replayRatingDto.LeaverType;
                 parameters[3].Value = replayRatingDto.ExpectationToWin;
                 parameters[4].Value = replayRatingDto.ReplayId;
+                parameters[5].Value = Convert.ToInt32(replayRatingDto.RepPlayerRatings.Average(a => a.Rating));
                 await command.ExecuteNonQueryAsync();
             }
             await transaction.CommitAsync();
@@ -228,7 +269,7 @@ public partial class CalcRepository
     private async Task SetSqliteRatingChange()
     {
         Dictionary<int, PlayerRatingChange> ratingChanges = new();
-        using var scope = serviceScopeFactory.CreateScope();
+        using var scope = scopeFactory.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
         foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
@@ -319,6 +360,32 @@ public partial class CalcRepository
             RatingChangeTimePeriod.Past10Days => 5,
             _ => 10
         };
+    }
+
+    private async Task SetSqlitePlayerRatingPos()
+    {
+        using var connection = new SQLiteConnection(connectionString);
+        await connection.OpenAsync();
+
+        foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+        {
+            if (ratingType == RatingType.None)
+            {
+                continue;
+            }
+            var command = connection.CreateCommand();
+
+            command.CommandText =
+            $@"
+                UPDATE {nameof(ReplayContext.PlayerRatings)} as c
+                SET {nameof(PlayerRating.Pos)} = c2.rn
+                FROM(SELECT c2.*, row_number() OVER(ORDER BY {nameof(PlayerRating.Rating)} DESC, {nameof(PlayerRating.PlayerId)}) AS rn
+                FROM {nameof(ReplayContext.PlayerRatings)} as c2 WHERE c2.{nameof(PlayerRating.RatingType)} = {(int)ratingType}) c2
+                WHERE c.{nameof(PlayerRating.RatingType)} = {(int)ratingType} AND c.{nameof(PlayerRating.PlayerRatingId)} = c2.{nameof(PlayerRating.PlayerRatingId)};
+            ";
+
+            await command.ExecuteNonQueryAsync();
+        }
     }
 
     private async Task DeletePlayerRatingsTable()

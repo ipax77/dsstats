@@ -30,6 +30,7 @@ public class ReplayContext : DbContext
     public virtual DbSet<GroupByHelper> GroupByHelpers { get; set; } = null!;
     public virtual DbSet<FunStatsMemory> FunStatMemories { get; set; } = null!;
     public virtual DbSet<ArcadeReplay> ArcadeReplays { get; set; } = null!;
+    public virtual DbSet<MaterializedArcadeReplay> MaterializedArcadeReplays { get; set; } = null!;
     public virtual DbSet<ArcadeReplayPlayer> ArcadeReplayPlayers { get; set; } = null!;
     public virtual DbSet<ArcadePlayer> ArcadePlayers { get; set; } = null!;
     public virtual DbSet<ArcadeReplayRating> ArcadeReplayRatings { get; set; } = null!;
@@ -41,7 +42,6 @@ public class ReplayContext : DbContext
     public virtual DbSet<ComboPlayerRating> ComboPlayerRatings { get; set; } = null!;
     public virtual DbSet<ComboReplayRating> ComboReplayRatings { get; set; } = null!;
     public virtual DbSet<ComboReplayPlayerRating> ComboReplayPlayerRatings { get; set; } = null!;
-
 
     public int Week(DateTime date) => throw new InvalidOperationException($"{nameof(Week)} cannot be called client side.");
     public int Strftime(string arg, DateTime date) => throw new InvalidOperationException($"{nameof(Strftime)} cannot be called client side.");
@@ -70,7 +70,6 @@ public class ReplayContext : DbContext
 
             entity.HasIndex(e => e.ReplayHash)
                 .IsUnique();
-
         });
 
         modelBuilder.Entity<ReplayPlayer>(entity =>

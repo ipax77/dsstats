@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.ratings.tests", "te
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqliteMigrations", "dsstats.maui\SqliteMigrations\SqliteMigrations.csproj", "{C0A93A55-C62F-4F5E-B14B-51F29332536A}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.ratings", "dsstats.ratings\dsstats.ratings.csproj", "{4ABC4B7B-9FEA-4AD9-B385-3CADFDFBDA25}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +59,10 @@ Global
 		{C0A93A55-C62F-4F5E-B14B-51F29332536A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C0A93A55-C62F-4F5E-B14B-51F29332536A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C0A93A55-C62F-4F5E-B14B-51F29332536A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4ABC4B7B-9FEA-4AD9-B385-3CADFDFBDA25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4ABC4B7B-9FEA-4AD9-B385-3CADFDFBDA25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4ABC4B7B-9FEA-4AD9-B385-3CADFDFBDA25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4ABC4B7B-9FEA-4AD9-B385-3CADFDFBDA25}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

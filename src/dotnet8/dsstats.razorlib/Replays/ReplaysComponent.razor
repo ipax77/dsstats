@@ -131,21 +131,23 @@
                                 </th>
                                 @if (Request.PlayerId is not null)
                                 {
-                                    <th><i class="bi bi-arrow-down-up"></i></th>
-                                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Exp2Win"))">
-                                        <SortArrow Property="Exp2Win">
-                                            Exp2Win
-                                        </SortArrow>
+                                    <th>
+                                        <span class="bi bi-arrow-down-up"></span>
                                     </th>
                                 }
-                                else
+                                @if (Request.Filter?.ReplaysRatingRequest is not null)
                                 {
-                                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "WinnerTeam"))">
-                                        <SortArrow Property="WinnerTeam">
-                                            Winner
+                                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "AvgRating"))">
+                                        <SortArrow Property="AvgRating">
+                                            AvgRating
                                         </SortArrow>
                                     </th>
                                 }
+                                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Exp2Win"))">
+                                    <SortArrow Property="Exp2Win">
+                                        Exp2Win
+                                    </SortArrow>
+                                </th>
                                 <th scope="col" class="pointer" @onclick="@(e => SortList(e, "MaxLeaver"))">
                                     <SortArrow Property="MaxLeaver">
                                         MaxLeaver
@@ -184,35 +186,35 @@
                                         <td>
                                             <ReplayTeam Team="@replay.CommandersTeam2" PlayerPos="GetPlayerPos(replay, 2)" />
                                         </td>
-                                        @if (Request.PlayerId is not null)
+                                        @if (replay.PlayerInfo is not null)
                                         {
                                             <td>
-                                                @if (replay.PlayerInfo is not null)
-                                                {
-                                                    <div>
-                                                        <span class="@(replay.PlayerInfo.RatingChange >= 0 ? "text-success" : "text-danger")">
-                                                            @replay.PlayerInfo.RatingChange.ToString("N1", CultureInfo.InvariantCulture)
-                                                        </span>
-                                                    </div>
-                                                }
-                                            </td>
-                                            <td>
-                                                @if (replay.Exp2Win > 0)
-                                                {
-                                                    <div>
-                                                        <span class="@(replay.Exp2Win >= 0.5 ? "text-success" : "text-danger")">
-                                                            @((replay.Exp2Win * 100).ToString("N0", CultureInfo.InvariantCulture))%
-                                                        </span>
-                                                    </div>
-                                                }
+
+                                                <div>
+                                                    <span class="@(replay.PlayerInfo.RatingChange >= 0 ? "text-success" : "text-danger")">
+                                                        @replay.PlayerInfo.RatingChange.ToString("N1", CultureInfo.InvariantCulture)
+                                                    </span>
+                                                </div>
                                             </td>
                                         }
-                                        else
+                                        @if (Request.Filter?.ReplaysRatingRequest is not null)
                                         {
-                                            <td>@replay.WinnerTeam</td>
+                                            <td>
+                                                <span class="text-warning">@replay.AvgRating</span>
+                                            </td>
                                         }
+                                        <td>
+                                            @if (replay.Exp2Win is not null)
+                                            {
+                                                <div>
+                                                    <span class="@(replay.Exp2Win >= 0.5 ? "text-success" : "text-danger")">
+                                                        @((replay.Exp2Win.Value * 100).ToString("N0", CultureInfo.InvariantCulture))%
+                                                    </span>
+                                                </div>
+                                            }
+                                        </td>
                                         <td>@TimeSpan.FromSeconds(replay.MaxLeaver).ToString(@"mm\:ss")</td>
-                                        <td>@replay.GameMode</td>
+                                        <td>@HelperService.GetGameMode(replay)</td>
                                     </tr>
                                 </ItemContent>
                                 <Placeholder>

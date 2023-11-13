@@ -53,12 +53,12 @@ public record Sc2ArcadeRequest
 
 public record CalcDto
 {
-    public int DsstatsReplayId { get; set; }
-    public int Sc2ArcadeReplayId { get; set; }
+    public int ReplayId { get; set; }
     public DateTime GameTime { get; init; }
     public int GameMode { get; set; }
     public int Duration { get; init; }
     public bool TournamentEdition { get; init; }
+    public bool IsArcade { get; init; }
     public List<PlayerCalcDto> Players { get; init; } = new();
 }
 

@@ -1,7 +1,6 @@
 using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
-using dsstats.ratings.lib;
 using dsstats.shared;
 using dsstats.shared.Calc;
 using dsstats.shared.Extensions;
@@ -58,9 +57,8 @@ public class RatingsTests
         services.AddMemoryCache();
         services.AddAutoMapper(typeof(AutoMapperProfile));
 
-        services.AddSingleton<CalcService>();
-
-        services.AddScoped<ICalcRepository, CalcRepository>();
+        services.AddSingleton<IRatingService, RatingService>();
+        services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
         services.AddScoped<IReplayRepository, ReplayRepository>();
 
         serviceProvider = services.BuildServiceProvider();
@@ -73,7 +71,7 @@ public class RatingsTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
+        var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 
         context.Database.EnsureDeleted();
         context.Database.Migrate();
@@ -85,7 +83,7 @@ public class RatingsTests
         var playerCount = context.Players.Count();
         Assert.AreEqual(6, playerCount);
 
-        calcService.GenerateRatings(RatingCalcType.Dsstats, true).Wait();
+        ratingService.ProduceRatings(RatingCalcType.Dsstats, true).Wait();
 
         var ratings = context.PlayerRatings
             .Where(x => x.PlayerId > 0)
@@ -113,7 +111,7 @@ public class RatingsTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
+        var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 
 
         using var md5 = MD5.Create();
@@ -122,7 +120,7 @@ public class RatingsTests
             var replay = GetBasicReplayDto(md5);
             replayRepository.SaveReplay(replay, new(), new()).Wait();
         }
-        var result = calcService.GenerateRatings(RatingCalcType.Dsstats, true).GetAwaiter().GetResult();
+        ratingService.ProduceRatings(RatingCalcType.Dsstats, true).GetAwaiter().GetResult();
 
         var replayRatings = context.ReplayRatings.Count();
 
@@ -135,7 +133,7 @@ public class RatingsTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
+        var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 
         var replayRatingsBefore = context.ReplayRatings
             .Count();
@@ -146,12 +144,12 @@ public class RatingsTests
             var replay = GetBasicReplayDto(md5);
             replayRepository.SaveReplay(replay, new(), new()).Wait();
         }
-        var result = calcService.GenerateRatings(RatingCalcType.Dsstats).GetAwaiter().GetResult();
+        ratingService.ProduceRatings(RatingCalcType.Dsstats).GetAwaiter().GetResult();
 
         var replayRatingsAfter = context.ReplayRatings
             .Count();
 
-        Assert.AreEqual(replayRatingsAfter, replayRatingsBefore + 10);
+        Assert.AreEqual(replayRatingsBefore + 10, replayRatingsAfter);
     }
 
     [TestMethod]
@@ -160,7 +158,7 @@ public class RatingsTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
+        var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 
         DateTime startTime = DateTime.UtcNow;
 
@@ -170,14 +168,17 @@ public class RatingsTests
         for (int i = 0; i < 10; i++)
         {
             var replay = GetBasicReplayDto(md5);
-            var pl1 = replay.ReplayPlayers.Where(x => x.GamePos == 1).First();
-            var testpl = pl1 with { Player = player };
-            replay.ReplayPlayers.Remove(pl1);
-            replay.ReplayPlayers.Add(testpl);
-
+            var testPl = replay.ReplayPlayers.Where(x => x.Player == player).FirstOrDefault();
+            if (testPl is null)
+            {
+                var pl1 = replay.ReplayPlayers.Where(x => x.GamePos == 1).First();
+                var testpl = pl1 with { Player = player };
+                replay.ReplayPlayers.Remove(pl1);
+                replay.ReplayPlayers.Add(testpl);
+            }
             replayRepository.SaveReplay(replay, new(), new()).Wait();
         }
-        var continueResult = calcService.GenerateRatings(RatingCalcType.Dsstats).GetAwaiter().GetResult();
+        ratingService.ProduceRatings(RatingCalcType.Dsstats).GetAwaiter().GetResult();
 
         var testPlContinueRating = context.PlayerRatings
             .Where(x => x.Player.ToonId == player.ToonId
@@ -188,7 +189,7 @@ public class RatingsTests
 
         Assert.IsTrue(testPlContinueRating > 0);
 
-        var recalcResult = calcService.GenerateRatings(RatingCalcType.Dsstats, recalc: true).GetAwaiter().GetResult();
+        ratingService.ProduceRatings(RatingCalcType.Dsstats, recalc: true).GetAwaiter().GetResult();
 
         var testPlRecalcRating = context.PlayerRatings
             .Where(x => x.Player.ToonId == player.ToonId
@@ -202,16 +203,16 @@ public class RatingsTests
 
 
 
-    [TestMethod]
-    public void T05NothingToDoTest()
-    {
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-        var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
+    //[TestMethod]
+    //public void T05NothingToDoTest()
+    //{
+    //    using var scope = serviceProvider.CreateScope();
+    //    var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+    //    var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 
-        var result = calcService.GenerateRatings(RatingCalcType.Dsstats).GetAwaiter().GetResult();
-        Assert.IsTrue(result.NothingToDo);
-    }
+    //    ratingService.ProduceRatings(RatingCalcType.Dsstats).GetAwaiter().GetResult();
+    //    Assert.IsTrue(result.NothingToDo);
+    //}
 
     [TestMethod]
     public void T06PlayerMultiRatingTest()
@@ -219,7 +220,7 @@ public class RatingsTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
+        var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 
         using var md5 = MD5.Create();
 
@@ -237,7 +238,7 @@ public class RatingsTests
         stdReplay.ReplayPlayers.Add(firstStdPlayer with { Player = player });
         replayRepository.SaveReplay(stdReplay, new(), new()).Wait();
 
-        calcService.GenerateRatings(RatingCalcType.Dsstats, true).Wait();
+        ratingService.ProduceRatings(RatingCalcType.Dsstats, true).Wait();
 
         var ratings = context.PlayerRatings
             .Where(x => x.Player.ToonId == player.ToonId
@@ -259,9 +260,7 @@ public class RatingsTests
         stdReplay2.ReplayPlayers.Add(firstStdPlayer2 with { Player = player });
         replayRepository.SaveReplay(stdReplay2, new(), new()).Wait();
 
-        var result = calcService.GenerateRatings(RatingCalcType.Dsstats).GetAwaiter().GetResult();
-
-        Assert.IsTrue(result.Continue);
+        ratingService.ProduceRatings(RatingCalcType.Dsstats).GetAwaiter().GetResult();
 
         var ratings2 = context.PlayerRatings
             .Where(x => x.Player.ToonId == player.ToonId
@@ -278,7 +277,7 @@ public class RatingsTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
+        var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 
         using var md5 = MD5.Create();
 
@@ -321,9 +320,9 @@ public class RatingsTests
         stdReplay.ReplayPlayers.Add(firstStdPlayer with { Player = player });
         replayRepository.SaveReplay(stdReplay, new(), new()).Wait();
 
-        calcService.GenerateRatings(RatingCalcType.Dsstats, true).Wait();
-        calcService.GenerateRatings(RatingCalcType.Arcade, true).Wait();
-        calcService.GenerateRatings(RatingCalcType.Combo, true).Wait();
+        ratingService.ProduceRatings(RatingCalcType.Dsstats, true).Wait();
+        ratingService.ProduceRatings(RatingCalcType.Arcade, true).Wait();
+        ratingService.ProduceRatings(RatingCalcType.Combo, true).Wait();
 
         var ratings = context.ComboPlayerRatings
             .Where(x => x.Player.ToonId == player.ToonId
@@ -345,9 +344,9 @@ public class RatingsTests
         stdReplay2.ReplayPlayers.Add(firstStdPlayer2 with { Player = player });
         replayRepository.SaveReplay(stdReplay2, new(), new()).Wait();
 
-        calcService.GenerateRatings(RatingCalcType.Dsstats).Wait();
-        calcService.GenerateRatings(RatingCalcType.Arcade).Wait();
-        var result = calcService.GenerateRatings(RatingCalcType.Combo).GetAwaiter().GetResult();
+        ratingService.ProduceRatings(RatingCalcType.Dsstats).Wait();
+        ratingService.ProduceRatings(RatingCalcType.Arcade).Wait();
+        ratingService.ProduceRatings(RatingCalcType.Combo).GetAwaiter().GetResult();
 
         var ratings2 = context.ComboPlayerRatings
             .Where(x => x.Player.ToonId == player.ToonId

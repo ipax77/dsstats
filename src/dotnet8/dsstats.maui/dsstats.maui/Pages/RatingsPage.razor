@@ -1,8 +1,9 @@
 ﻿@page "/ratings"
 @using dsstats.shared
+@using dsstats.shared.Interfaces
 @using dsstats.razorlib.Players
 @using dsstats.ratings.lib
-@inject CalcService calcService
+@inject IRatingService ratingService
 @inject IToastService toastService
 <div>
     <div class="d-flex">
@@ -47,7 +48,7 @@
         toastService.ShowWarning("Starting local rating recalculation");
         await Task.Run(async () =>
         {
-            await calcService.GenerateRatings(RatingCalcType.Dsstats, true);
+            await ratingService.ProduceRatings(RatingCalcType.Dsstats, true);
         });
         toastService.ShowSuccess("Ratings recalculated.");
         isLoading = false;

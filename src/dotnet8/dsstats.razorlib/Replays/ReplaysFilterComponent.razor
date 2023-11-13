@@ -1,4 +1,5 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms
+@using dsstats.razorlib.Services
 @using dsstats.shared
 
 <div>
@@ -133,6 +134,67 @@
                 <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => Filter.PosFilters.Add(new())">Add Pos Filter</button>
             </div>
         }
+        @if (Filter.ReplaysRatingRequest is null)
+        {
+            <div class="mt-2">
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => Filter.ReplaysRatingRequest = new()">Add Rating Filter</button>
+            </div>
+        }
+        else
+        {
+            <div class="mt-1 p-1 border rounded">
+                <div>
+                    <span class="bi bi-x-lg text-warning pointer" @onclick="e => Filter.ReplaysRatingRequest = null"></span>
+                    <small>Ratings Filter</small>
+                </div>
+                <div class="form-group">
+                    <InputSelect class="form-select text-light bgchart" @bind-Value="Filter.ReplaysRatingRequest.RatingType">
+                        @foreach (RatingType rt in Enum.GetValues(typeof(RatingType)))
+                        {
+                            if (rt == RatingType.None)
+                            {
+                                continue;
+                            }
+                            <option value="@rt">@Data.GetRatingTypeLongName(rt)</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="form-group">
+                    <div class="form-control">
+                        <label class="form-label">
+                            AvgMinRating
+                            <InputNumber placeholder="Count" min="0" max="2500" @bind-Value="Filter.ReplaysRatingRequest.AvgMinRating" style="max-width: 100px;" />
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="form-control">
+                        <label class="form-label">
+                            From-/ToExp2Win
+                            <div class="d-flex">
+                                <div>
+                                    <InputNumber placeholder="Count" min="0" max="100" @bind-Value="Filter.ReplaysRatingRequest.FromExp2Win" style="max-width: 50px;" />
+                                </div>
+                                <div>
+                                    -
+                                </div>
+                                <div>
+                                    <InputNumber placeholder="Count" min="0" max="100" @bind-Value="Filter.ReplaysRatingRequest.ToExp2Win" style="max-width: 50px;" />
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-check form-switch">
+                    <label class="form-check-label">
+                        WithoutLeavers
+                        <InputCheckbox class="form-check-input" @bind-Value="Filter.ReplaysRatingRequest.WithoutLeavers">
+                        </InputCheckbox>
+                    </label>
+                </div>
+            </div>
+        }
+
         <div class="mt-2 btn-group bgchart p-2 rounded">
             <button type="submit" class="btn btn-outline-warning">Filter</button>
             <button type="button" class="btn btn-sm btn-outline-primary" @onclick="Reset">Reset</button>

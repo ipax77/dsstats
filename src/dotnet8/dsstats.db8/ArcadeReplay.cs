@@ -4,6 +4,18 @@ using System.ComponentModel.DataAnnotations;
 
 namespace dsstats.db8;
 
+public class MaterializedArcadeReplay
+{
+    [Key]
+    public int MaterializedArcadeReplayId { get; set; }
+    public int ArcadeReplayId { get; set; }
+    public GameMode GameMode { get; set; }
+    [Precision(0)]
+    public DateTime CreatedAt { get; set; }
+    public int Duration { get; set; }
+    public int WinnerTeam { get; set; }
+}
+
 public class ArcadeReplay
 {
     public ArcadeReplay()
@@ -109,6 +121,7 @@ public class ArcadeReplayRating
     public float ExpectationToWin { get; set; } // WinnerTeam
     public int ArcadeReplayId { get; set; }
     public ArcadeReplay ArcadeReplay { get; set; } = null!;
+    public int AvgRating { get; set; }
     public virtual ICollection<ArcadeReplayPlayerRating> ArcadeReplayPlayerRatings { get; set; }
 }
 

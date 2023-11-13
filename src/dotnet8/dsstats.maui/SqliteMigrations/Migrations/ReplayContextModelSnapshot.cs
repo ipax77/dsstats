@@ -286,6 +286,9 @@ namespace SqliteMigrations.Migrations
                     b.Property<int>("ArcadeReplayId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("AvgRating")
+                        .HasColumnType("INTEGER");
+
                     b.Property<float>("ExpectationToWin")
                         .HasColumnType("REAL");
 
@@ -403,6 +406,9 @@ namespace SqliteMigrations.Migrations
                 {
                     b.Property<int>("ComboReplayRatingId")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AvgRating")
                         .HasColumnType("INTEGER");
 
                     b.Property<double>("ExpectationToWin")
@@ -584,6 +590,33 @@ namespace SqliteMigrations.Migrations
                     b.ToTable((string)null);
 
                     b.ToView("GroupByHelper", (string)null);
+                });
+
+            modelBuilder.Entity("dsstats.db8.MaterializedArcadeReplay", b =>
+                {
+                    b.Property<int>("MaterializedArcadeReplayId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ArcadeReplayId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Duration")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("GameMode")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WinnerTeam")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("MaterializedArcadeReplayId");
+
+                    b.ToTable("MaterializedArcadeReplays");
                 });
 
             modelBuilder.Entity("dsstats.db8.NoUploadResult", b =>
@@ -924,6 +957,8 @@ namespace SqliteMigrations.Migrations
 
                     b.HasIndex("FileName");
 
+                    b.HasIndex("GameTime");
+
                     b.HasIndex("Imported");
 
                     b.HasIndex("Maxkillsum");
@@ -1119,6 +1154,9 @@ namespace SqliteMigrations.Migrations
                 {
                     b.Property<int>("ReplayRatingId")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AvgRating")
                         .HasColumnType("INTEGER");
 
                     b.Property<float>("ExpectationToWin")

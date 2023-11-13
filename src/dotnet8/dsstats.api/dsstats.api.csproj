@@ -15,6 +15,7 @@
     <ProjectReference Include="..\dsstats.db8services\dsstats.db8services.csproj" />
     <ProjectReference Include="..\dsstats.db8\dsstats.db8.csproj" />
     <ProjectReference Include="..\dsstats.ratings.lib\dsstats.ratings.lib.csproj" />
+    <ProjectReference Include="..\dsstats.ratings\dsstats.ratings.csproj" />
     <ProjectReference Include="..\dsstats.shared\dsstats.shared.csproj" />
     <ProjectReference Include="..\MysqlMigrations\MysqlMigrations.csproj" />
   </ItemGroup>
