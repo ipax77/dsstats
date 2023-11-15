@@ -64,7 +64,8 @@ public static class ArcadeRatingsCsvService
             sbReplay.Append($"{(int)replayRatingDto.RatingType},");
             sbReplay.Append($"{(int)replayRatingDto.LeaverType},");
             sbReplay.Append($"{replayRatingDto.ExpectationToWin.ToString(CultureInfo.InvariantCulture)},");
-            sbReplay.Append($"{replayRatingDto.ReplayId}");
+            sbReplay.Append($"{replayRatingDto.ReplayId},");
+            sbReplay.Append($"{Convert.ToInt32(replayRatingDto.RepPlayerRatings.Average(a => a.Rating))}");
             sbReplay.Append(Environment.NewLine);
 
             foreach (var rpr in replayRatingDto.RepPlayerRatings)
