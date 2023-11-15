@@ -70,7 +70,8 @@ public partial class CalcRepository
             sbReplay.Append($"{replayRatingDto.LeaverType},");
             sbReplay.Append($"{replayRatingDto.ExpectationToWin.ToString(CultureInfo.InvariantCulture)},");
             sbReplay.Append($"{replayRatingDto.ReplayId},");
-            sbReplay.Append("0");
+            sbReplay.Append("0,");
+            sbReplay.Append($"{Convert.ToInt32(replayRatingDto.RepPlayerRatings.Average(a => a.Rating))}");
             sbReplay.Append(Environment.NewLine);
 
             foreach (var rpr in replayRatingDto.RepPlayerRatings)

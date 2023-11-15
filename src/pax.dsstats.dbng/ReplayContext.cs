@@ -32,6 +32,7 @@ public class ReplayContext : DbContext
     public virtual DbSet<GroupByHelper> GroupByHelpers { get; set; } = null!;
     public virtual DbSet<FunStatsMemory> FunStatMemories { get; set; } = null!;
     public virtual DbSet<ArcadeReplay> ArcadeReplays { get; set; } = null!;
+    public virtual DbSet<MaterializedArcadeReplay> MaterializedArcadeReplays { get; set; } = null!;
     public virtual DbSet<ArcadeReplayPlayer> ArcadeReplayPlayers { get; set; } = null!;
     public virtual DbSet<ArcadePlayer> ArcadePlayers { get; set; } = null!;
     public virtual DbSet<ArcadeReplayRating> ArcadeReplayRatings { get; set; } = null!;
