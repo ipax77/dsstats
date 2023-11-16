@@ -18,7 +18,7 @@ class Program
     {
         var services = new ServiceCollection();
 
-        var serverVersion = new MySqlServerVersion(new Version(5, 7, 42));
+        var serverVersion = new MySqlServerVersion(new Version(5, 7, 44));
         var jsonStrg = File.ReadAllText("/data/localserverconfig.json");
         var json = JsonSerializer.Deserialize<JsonElement>(jsonStrg);
         var config = json.GetProperty("ServerConfig");
@@ -32,7 +32,7 @@ class Program
         {
             options.SetMinimumLevel(LogLevel.Information);
             options.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
-            options.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Information);
+            options.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
             options.AddConsole();
         });
 
