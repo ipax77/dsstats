@@ -101,8 +101,8 @@ builder.Services.AddTransient<CmdrsService>();
 builder.Services.AddTransient<TourneyService>();
 builder.Services.AddTransient<IArcadeService, ArcadeService>();
 
-builder.Services.AddHostedService<CacheBackgroundService>();
-builder.Services.AddHostedService<RatingsBackgroundService>();
+// builder.Services.AddHostedService<CacheBackgroundService>();
+// builder.Services.AddHostedService<RatingsBackgroundService>();
 
 builder.Services.AddHttpClient("sc2arcardeClient")
     .ConfigureHttpClient(options =>
@@ -118,13 +118,14 @@ using var scope = app.Services.CreateScope();
 var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
 mapper.ConfigurationProvider.AssertConfigurationIsValid();
 
-using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-// context.Database.EnsureDeleted();
-context.Database.Migrate();
-
 // SEED
 if (app.Environment.IsProduction())
 {
+    using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+    // context.Database.EnsureDeleted();
+    context.Database.SetCommandTimeout(TimeSpan.FromSeconds(600));
+    context.Database.Migrate();
+
     var buildService = scope.ServiceProvider.GetRequiredService<BuildService>();
     buildService.SeedBuildsCache().GetAwaiter().GetResult();
 
