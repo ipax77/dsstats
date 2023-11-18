@@ -26,7 +26,7 @@ public class UploadController : ControllerBase
     [Route("GetLatestReplayDate")]
     public async Task<ActionResult<DateTime>> GetLatestReplayDate(UploaderDto uploaderDto)
     {
-        var latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto);
+        var latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto, forwardToDev);
         if (latestReplay == null)
         {
             return Unauthorized();
