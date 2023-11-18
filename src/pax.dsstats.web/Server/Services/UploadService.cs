@@ -127,7 +127,7 @@ public partial class UploadService
         return blobFilename;
     }
 
-    public async Task<DateTime?> CreateOrUpdateUploader(UploaderDto uploader)
+    public async Task<DateTime?> CreateOrUpdateUploader(UploaderDto uploader, bool forwardToDev)
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -150,7 +150,10 @@ public partial class UploadService
             var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
             int uploaderId = await importService.CreateUploader(dbUploader);
 
-            await CreateUploaderPlayers(context, uploaderId, uploader.BattleNetInfos.SelectMany(s => s.PlayerUploadDtos).ToList());
+            if (!forwardToDev)
+            {
+                await CreateUploaderPlayers(context, uploaderId, uploader.BattleNetInfos.SelectMany(s => s.PlayerUploadDtos).ToList());
+            }
         }
         else
         {
