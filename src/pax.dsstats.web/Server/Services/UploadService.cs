@@ -127,7 +127,7 @@ public partial class UploadService
         return blobFilename;
     }
 
-    public async Task<DateTime?> CreateOrUpdateUploader(UploaderDto uploader, bool forwardToDev)
+    public async Task<DateTime?> CreateOrUpdateUploader(UploaderDto uploader, bool forwardToDev = false)
     {
         using var scope = serviceProvider.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
