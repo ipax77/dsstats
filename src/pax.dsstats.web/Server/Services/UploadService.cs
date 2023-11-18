@@ -24,6 +24,24 @@ public partial class UploadService
         this.logger = logger;
     }
 
+    public async Task<(string appVersion, List<RequestNames>)> GetRequestNames(Guid appGuid)
+    {
+        using var scope = serviceProvider.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var result = await context.Players
+            .Where(x => x.Uploader != null && x.Uploader.AppGuid == appGuid)
+            .Select(s =>  new RequestNames(s.Name, s.ToonId, s.RegionId, s.RealmId))
+            .ToListAsync();
+
+        var appVersion = (await context.Uploaders
+            .Where(x => x.AppGuid == appGuid)
+            .Select(s => s.AppVersion)
+            .FirstOrDefaultAsync()) ?? "unknown";
+
+        return (appVersion, result);
+    }
+
     public async Task<bool> ImportReplays(string gzipbase64String, Guid appGuid, DateTime latestReplay, bool dry = false)
     {
         string blobFile = string.Empty;
