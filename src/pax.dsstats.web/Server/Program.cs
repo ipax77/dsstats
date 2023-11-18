@@ -18,6 +18,8 @@ using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services;
 using pax.dsstats.web.Server.Services.Arcade;
 using pax.dsstats.web.Server.Services.Import;
+using System.Net.Http.Headers;
+using System.Net.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -108,6 +110,14 @@ builder.Services.AddHttpClient("sc2arcardeClient")
     .ConfigureHttpClient(options =>
     {
         options.BaseAddress = new Uri("https://api.sc2arcade.com");
+        options.DefaultRequestHeaders.Add("Accept", "application/json");
+    });
+
+builder.Services.AddHttpClient("dev")
+    .ConfigureHttpClient(options =>
+    {
+        options.BaseAddress = new Uri("https://dsstats-dev.pax77.org");
+        options.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("DS8upload77");
         options.DefaultRequestHeaders.Add("Accept", "application/json");
     });
 
