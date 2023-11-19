@@ -26,14 +26,32 @@ public class UploadController : ControllerBase
     [Route("GetLatestReplayDate")]
     public async Task<ActionResult<DateTime>> GetLatestReplayDate(UploaderDto uploaderDto)
     {
-        var latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto, forwardToDev);
-        if (latestReplay == null)
+        if (forwardToDev)
         {
-            return Unauthorized();
+            try
+            {
+                var httpClient = httpClientFactory.CreateClient("dev");
+                var result = await httpClient.PostAsJsonAsync("api/v1/Upload/GetLatestReplayDate", uploaderDto);
+                result.EnsureSuccessStatusCode();
+                return DateTime.UtcNow;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError("failed forwading latest replay date: {error}", ex.Message);
+            }
+            return BadRequest();
         }
         else
         {
-            return latestReplay.Value;
+            var latestReplay = await uploadService.CreateOrUpdateUploader(uploaderDto, forwardToDev);
+            if (latestReplay == null)
+            {
+                return Unauthorized();
+            }
+            else
+            {
+                return latestReplay.Value;
+            }
         }
     }
 
