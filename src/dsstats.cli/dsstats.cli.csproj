@@ -1,32 +1,22 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <Compile Remove="MmrService\**" />
-    <EmbeddedResource Remove="MmrService\**" />
-    <None Remove="MmrService\**" />
+    <ProjectReference Include="..\dsstats.db8\dsstats.db8.csproj" />
+    <ProjectReference Include="..\dsstats.shared\dsstats.shared.csproj" />
+    <ProjectReference Include="..\dsstats.ratings.lib\dsstats.ratings.lib.csproj" />
+    <ProjectReference Include="..\dsstats.db8services\dsstats.db8services.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\pax.dsstats.dbng\pax.dsstats.dbng.csproj" />
-    <ProjectReference Include="..\pax.dsstats.shared\pax.dsstats.shared.csproj" />
-    <ProjectReference Include="..\pax.dsstats.parser\pax.dsstats.parser.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="IronPython.StdLib" Version="2.7.12" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.19" />
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
-    <PackageReference Include="s2protocol.NET" Version="0.6.11" />
+    <PackageReference Include="LinqKit" Version="1.2.4" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
   </ItemGroup>
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackAsTool>true</PackAsTool>
-    <ToolCommandName>botsay</ToolCommandName>
-    <PackageOutputPath>./nupkg</PackageOutputPath>    
   </PropertyGroup>
 
 </Project>

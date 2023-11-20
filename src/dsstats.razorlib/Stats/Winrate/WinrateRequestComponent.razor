@@ -1,0 +1,128 @@
+﻿@using dsstats.shared
+@using Microsoft.AspNetCore.Components.Forms
+@using dsstats.shared.Interfaces
+@inject NavigationManager NavigationManager
+@inject IRemoteToggleService remoteToggleService
+@implements IDisposable;
+
+<EditForm EditContext="editContext">
+    <div class="row">
+        <div class="col-auto">
+            <label class="form-label">
+                Time Period
+                <InputSelect class="form-select" @bind-Value="Request.TimePeriod">
+                    @foreach (TimePeriod time in Data.GetTimePeriods(Data.TimePeriodGet.NoNone))
+                    {
+                        <option value="@time">@Data.GetTimePeriodLongName(time)</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Type
+                <InputSelect class="form-select" @bind-Value="Request.RatingType">
+                    <option value="@RatingType.Cmdr">Commanders</option>
+                    <option value="@RatingType.Std">Standard</option>
+                    <option value="@RatingType.CmdrTE">Commanders TE</option>
+                    <option value="@RatingType.StdTE">Standard TE</option>
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Interest
+                <InputSelect class="form-select" @bind-Value="Request.Interest">
+                    <option value="@Commander.None">All</option>
+                    @if (Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)
+                    {
+                        @foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.Std))
+                        {
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                    else
+                    {
+                        @foreach (var cmdr in Data.GetCommanders(Data.CmdrGet.NoStd))
+                        {
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto align-self-center me-2">
+            @if (remoteToggleService.IsMaui)
+            {
+                <div class="form-check form-switch">
+                    <label class="form-check-label">
+                        FromServer
+                        <input class="form-check-input" value="@remoteToggleService.FromServer" @onchange="ToggleFromServer" />
+                    </label>
+                </div>
+                <div class="form-check form-switch">
+                    <label class="form-check-label">
+                        My Players
+                        <InputCheckbox class="form-check-input" @bind-Value="Request.MauiPlayers">
+                        </InputCheckbox>
+                    </label>
+                </div>
+            }
+            <div class="d-flex">
+                <div class="form-check form-switch">
+                    <label class="form-check-label">
+                        ComboRatings
+                        <InputCheckbox class="form-check-input" @bind-Value="Request.ComboRating">
+                        </InputCheckbox>
+                    </label>
+                </div>
+                <div class="ms-2">
+                    <span class="bi bi-info-circle pointer"
+                          onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/ComboRatings'">
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+
+@code {
+    [CascadingParameter]
+    public WinrateRequest Request { get; set; } = default!;
+    EditContext editContext = null!;
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    protected override void OnInitialized()
+    {
+        editContext = new(Request);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        if (e.FieldIdentifier.FieldName == nameof(WinrateRequest.RatingType))
+        {
+            Request.Interest = Commander.None;
+        }
+        OnRequestChanged.InvokeAsync();
+    }
+
+    private void ToggleFromServer(ChangeEventArgs e)
+    {
+        if (e.Value is bool value)
+        {
+            remoteToggleService.SetFromServer(value);
+            OnRequestChanged.InvokeAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+
+}

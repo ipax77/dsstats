@@ -1,9 +1,9 @@
 name: Dsstats Tests
 on:
   push:
-    branches: [ dev, master ]
+    branches: [ master, dev ]
   pull_request:
-    branches: [ dev, master ]
+    branches: [ master, dev ]
 jobs:
   tests:
     timeout-minutes: 60
@@ -14,17 +14,20 @@ jobs:
         run: |
           sudo mkdir -p /data/mysqlfiles \
           && sudo mkdir -p /data/temp \
+          && sudo mkdir -p /data/ds/replayblobs \
           && sudo chmod 777 /data/mysqlfiles \
           && sudo chmod 777 /data/temp \
-          && sudo cp ./src/pax.dsstats.web/Server/appsettings.Development.json /data/localserverconfig.json      
+          && sudo chmod 777 /data/ds/replayblobs \
+          && sudo cp ./src/tests/appsettings.Development.json /data/localserverconfig.json      
       - uses: isbang/compose-action@v1.4.1
         with:
-          compose-file: "./src/pax.dsstats.web/docker/docker-compose.yml"
+          compose-file: "./src/tests/docker/docker-compose.yml"
           services: mysql
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '6.0.x'
-      - run: dotnet build ./src/pax.dsstats.web/dsstats.Tests/dsstats.Tests.csproj
+          dotnet-version: '8.0.x'
+      - run: dotnet build ./src/tests/dsstats.ratings.tests/dsstats.ratings.tests.csproj
       - name: Run your tests
-        run: dotnet test ./src/pax.dsstats.web/dsstats.Tests/dsstats.Tests.csproj --no-build
+        run: dotnet test ./src/tests/dsstats.ratings.tests/dsstats.ratings.tests.csproj --no-build
+

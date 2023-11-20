@@ -1,0 +1,48 @@
+﻿@page "/"
+@using dsstats.shared
+
+@if (DEBUG)
+{
+    <div class="btn-group">
+        <button type="button" class="btn btn-danger" @onclick="e => dsstatsService.DeleteRecentReplays(50)">Delete Replays</button>
+    </div>
+}
+<div class="btn-group border border-3 rounded-2 border-light p-2 bgchart">
+    @if (dsstatsService.Decoding)
+    {
+        <button type="button" class="btn btn-outline-warning" @onclick="e => dsstatsService.CancelDecoding()">StopDecoding</button>
+    }
+    else
+    {
+        <button type="button" class="btn btn-outline-danger" @onclick="dsstatsService.DecodeNewReplays">Decode</button>
+
+    }
+    <button type="button" class="btn btn-outline-success" @onclick="e => dsstatsService.ScanForNewReplays()">Scan</button>
+    <button type="button" class="btn btn-outline-info" @onclick="Upload">Upload</button>
+</div>
+<div>
+    @if (currentReplay is not null)
+    {
+        <div class="d-flex flex-row bgchart2">
+            <div class="p-2">
+                @if (isLatestreplay)
+                {
+                    <h4 class="text-warning">Latest Replay</h4>
+                }
+                else
+                {
+                    <h4 class="text-warning">Recent Replay</h4>
+                }
+            </div>
+        </div>
+        <dsstats.razorlib.Replays.ReplayComponent Replay="currentReplay" IsCloseable="false" IsScrollable="true"
+                         OnScrollRequest="LoadNextReplay" />
+    }
+</div>
+
+<div class="mt-2">
+    @if (interestPlayer is not null)
+    {
+        <dsstats.razorlib.Players.PlayerDetails PlayerId="interestPlayer" RatingType="RatingType.Cmdr" RatingCalcType="RatingCalcType.Dsstats" />
+    }
+</div>

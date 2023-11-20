@@ -1,222 +1,200 @@
-﻿using System.Diagnostics;
-using System.IO.Compression;
-using System.Reflection;
-using System.Text;
+﻿using dsstats.db8;
+using dsstats.db8.AutoMapper;
+using dsstats.ratings.lib;
+using dsstats.db8services;
+using dsstats.shared;
+using dsstats.shared.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using System.Text.Json;
-using pax.dsstats.parser;
-using pax.dsstats.shared;
-using s2protocol.NET;
+using AutoMapper;
+using LinqKit;
 
 namespace dsstats.cli;
+
 class Program
 {
-    public static readonly string assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
-    private static readonly CancellationTokenSource cts = new();
-
-    static async Task Main(string[] args)
+    static void Main(string[] args)
     {
-        Console.CancelKeyPress += Console_CancelKeyPress;
-        AppDomain.CurrentDomain.ProcessExit += AppDomain_ProcessExit;
+        var services = new ServiceCollection();
 
-        // DEBUG
-        if (args.Length == 0)
-        {
-            // await Decode("C:\\Users\\pax77\\Documents\\StarCraft II\\Accounts\\107095918\\2-S2-1-226401\\Replays\\Multiplayer", "/data/ds/errorReplay/dummy", 8);
-            //await CompareDb.CompareJsonToDb("/data/ds/errorReplay/dummy");
+        var serverVersion = new MySqlServerVersion(new Version(5, 7, 42));
+        var jsonStrg = File.ReadAllText("/data/localserverconfig.json");
+        var json = JsonSerializer.Deserialize<JsonElement>(jsonStrg);
+        var config = json.GetProperty("ServerConfig");
+        var connectionString = config.GetProperty("DsstatsConnectionString").GetString();
+        var importConnectionString = config.GetProperty("ImportConnectionString").GetString() ?? "";
 
-            //var mmrService = new MmrService.MmrService();
-            //await mmrService.DerivationTest();
-        }
-
-        if (args.Length < 2)
-        {
-            WriteHowToUse();
-            return;
-        }
-
-        if (args[0] == "decode")
-        {
-            if (!Directory.Exists(args[1]) || !Directory.Exists(args[2]))
-            {
-                Console.WriteLine($"Directory not found :(");
-            }
-            await Decode(args[1], args[2]);
-        }
-        else if (args[0] == "unzip")
-        {
-            if (args.Length != 3)
-            {
-                WriteHowToUse();
-                return;
-            }
-            await Unzip(args[1], args[2]);
-        }
-        else if (args[0] == "tourneyjob")
-        {
-            if (args.Length == 3 && int.TryParse(args[1], out int cores))
-            {
-                if (!Directory.Exists(args[2]))
+        services.AddOptions<DbImportOptions>()
+            .Configure(x =>
                 {
-                    Console.WriteLine($"tourney folder {args[2]} not found.");
-                    return;
-                }
-                Stopwatch sw = Stopwatch.StartNew();
-                try
-                {
-                    TourneyService.DecodeTourneyFolders(cores, args[2], cts.Token).Wait();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"tourneyjob failed: {ex.Message}");
-                }
-                sw.Stop();
-                Console.WriteLine($"tourneyjob done in {sw.ElapsedMilliseconds}ms");
-            }
-            else
+                    x.ImportConnectionString = importConnectionString;
+                    x.IsSqlite = false;
+                });
+
+        services.AddLogging(options =>
+        {
+            options.SetMinimumLevel(LogLevel.Information);
+            options.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
+            options.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Information);
+            options.AddConsole();
+        });
+
+        services.AddDbContext<ReplayContext>(options =>
+        {
+            options.UseMySql(connectionString, serverVersion, p =>
             {
-                WriteHowToUse();
-            }
-        }
-        else if (args[0] == "sitemap")
-        {
-            if (args.Length == 3)
-            {
-                SitemapService.GenerateSitemap(args[1], args[2]);
-            }
-            else if (args.Length == 4)
-            {
-                SitemapService.GenerateSitemap(args[1], args[2], args[3]);
-            }
-        }
-        else
-        {
-            if (args.Length > 0)
-            {
-                Console.WriteLine($"arg: {args[0]}");
-            }
-            WriteHowToUse();
-            return;
-        }
+                p.CommandTimeout(600);
+                p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
+                p.EnablePrimitiveCollectionsSupport();
+            });
+        });
+
+        services.AddMemoryCache();
+        services.AddAutoMapper(typeof(AutoMapperProfile));
+
+        services.AddScoped<IWinrateService, WinrateService>();
+        services.AddScoped<IReplaysService, ReplaysService>();
+        // services.AddScoped<IDsstatsService, DsstatsService>();
+        // services.AddScoped<IArcadeService, ArcadeService>();
+        services.AddScoped<IPlayerService, PlayerService>();
+        services.AddScoped<IBuildService, BuildService>();
+        services.AddScoped<ICmdrInfoService, CmdrInfoService>();
+
+        var serviceProvider = services.BuildServiceProvider();
+
+        Stopwatch sw = Stopwatch.StartNew();
+
+        TestQuery(serviceProvider);
+
+        sw.Stop();
+        Console.WriteLine($"job done in {sw.ElapsedMilliseconds} ms.");
+
+        Console.ReadLine();
     }
 
-    private static void AppDomain_ProcessExit(object? sender, EventArgs e)
+    private static void TestQuery(ServiceProvider serviceProvider)
     {
-        cts.Cancel();
-        cts.Dispose();
-    }
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-    private static void Console_CancelKeyPress(object? sender, ConsoleCancelEventArgs e)
-    {
-        cts.Cancel();
-        cts.Dispose();
-    }
-
-    private static void WriteHowToUse()
-    {
-        var versionString = Assembly.GetEntryAssembly()?
-                                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
-                                .InformationalVersion
-                                .ToString();
-
-        Console.WriteLine($"dsstats.cli v{versionString}");
-        Console.WriteLine("-------------");
-        Console.WriteLine("\nUsage:");
-        Console.WriteLine("  decode <replayPath> <outputPath>");
-        Console.WriteLine("  unzip <base64Zipfile> <outputPath>");
-        Console.WriteLine("  tourneyjob <int:cpuCoresToUse>");
-        Console.WriteLine("  sitemap <pagesFolder> <outputPath> <optional:baseUri>");
-    }
-
-    private static async Task Unzip(string base64Zipfile, string outputPath)
-    {
-        if (!File.Exists(base64Zipfile))
+        List<PlayerId> playerIds = new() 
         {
-            Console.WriteLine($"file not found: {base64Zipfile}");
-            return;
-        }
-
-        if (!Directory.Exists(outputPath))
-        {
-            Console.WriteLine($"directory not found: {outputPath}");
-            return;
-        }
-
-        var bytes = Convert.FromBase64String(await File.ReadAllTextAsync(base64Zipfile, Encoding.UTF8));
-        using var msi = new MemoryStream(bytes);
-        var mso = new MemoryStream();
-        using (var gs = new GZipStream(msi, CompressionMode.Decompress))
-        {
-            await gs.CopyToAsync(mso);
-        }
-        mso.Position = 0;
-
-        var replays = await JsonSerializer
-            .DeserializeAsync<List<ReplayDto>>(mso);
-
-        var outputFile = Path.Combine(outputPath, $"{Path.GetFileNameWithoutExtension(base64Zipfile)}.json");
-        await File.WriteAllTextAsync(outputFile, JsonSerializer.Serialize(replays, new JsonSerializerOptions { WriteIndented = true }));
-    }
-
-    private static async Task Decode(string replaysPath, string outputPath, int threads = 8)
-    {
-        ReplayDecoder decoder = new(assemblyPath);
-
-        ReplayDecoderOptions decoderOptions = new()
-        {
-            Initdata = true,
-            Details = true,
-            Metadata = true,
-            MessageEvents = false,
-            TrackerEvents = true,
-            GameEvents = false,
-            AttributeEvents = false
+            new(10188255, 1, 1),
+            new(226401, 1, 2)
         };
 
-        var replayPaths = Directory.GetFiles(replaysPath, "Direct Strike*.SC2Replay", SearchOption.TopDirectoryOnly);
+        var aPlayerIds = playerIds.Select(s => new { s.ToonId, s.RealmId, s.RegionId });
 
-        await foreach (var decodeResult in decoder.DecodeParallelWithErrorReport(replayPaths, threads, decoderOptions, cts.Token))
+        var query = from r in context.Replays
+        from rp in r.ReplayPlayers
+        join rr in context.ReplayRatings on r.ReplayId equals rr.ReplayId
+        join rpr in context.RepPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
+        where r.GameTime > new DateTime(2023, 1, 22)
+            && rr.RatingType == RatingType.Cmdr
+            && aPlayerIds.Contains(new { rp.Player.ToonId, rp.Player.RealmId, rp.Player.RegionId })
+        select r;
+
+        var list = query
+            .ToList();
+    }
+
+        private static void TestQuery2(ServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        List<PlayerId> playerIds = new() 
         {
-            if (cts.IsCancellationRequested)
-            {
-                break;
-            }
+            new(10188255, 1, 1),
+            new(226401, 1, 2)
+        };
 
-            if (decodeResult.Sc2Replay == null)
-            {
-                Console.WriteLine($"failed decoding {decodeResult.ReplayPath}: {decodeResult.Exception}");
-                continue;
-            }
+        
+        var query = from r in context.Replays
+                    from rp in r.ReplayPlayers
+                    where r.GameTime > new DateTime(2023, 1, 22)
+                    select rp;
 
-            try
-            {
-                var dsRep = Parse.GetDsReplay(decodeResult.Sc2Replay);
-                if (dsRep != null)
-                {
-                    var dtoRep = Parse.GetReplayDto(dsRep);
-                    SaveReplay(dtoRep, outputPath);
-                }
-                else
-                {
-                    Console.WriteLine($"failed parsing sc2Replay (null): {decodeResult.ReplayPath}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"failed parsing sc2Replay: {ex.Message}");
-            }
+        var predicate = PredicateBuilder.New<ReplayPlayer>(true);
+
+        foreach (var playerId in playerIds)
+        {
+            // predicate = predicate.Or(o => playerIds.Contains())
         }
     }
 
-    private static void SaveReplay(ReplayDto? replayDto, string outputPath)
+    private static async Task<bool> CreateRatings(RatingCalcType ratingCalcType, ServiceProvider serviceProvider)
     {
-        if (replayDto == null || String.IsNullOrEmpty(replayDto.FileName))
+        using var scope = serviceProvider.CreateScope();
+        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+        // var calcService = scope.ServiceProvider.GetRequiredService<CalcService>();
+
+        // logger.LogInformation("Producing {type} ratings", ratingCalcType.ToString());
+        // await calcService.GenerateRatings(ratingCalcType, recalc: true);
+
+        return true;
+    }
+
+    public static async Task CreateAdjustTestData(ServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+
+        var replays1 = await context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Upgrades)
+                    .ThenInclude(i => i.Upgrade)
+            .Where(x =>
+                x.GameTime > new DateTime(2023, 1, 1)
+                && x.ResultCorrected
+                && x.WinnerTeam == 1)
+            .OrderByDescending(o => o.ReplayId)
+            .Take(5)
+            .AsNoTracking()
+            .ToListAsync();
+
+        var replays2 = await context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Upgrades)
+                    .ThenInclude(i => i.Upgrade)
+            .Where(x =>
+                x.GameTime > new DateTime(2023, 1, 1)
+                && x.ResultCorrected
+                && x.WinnerTeam == 2)
+            .OrderByDescending(o => o.ReplayId)
+            .Take(5)
+            .AsNoTracking()
+            .ToListAsync();
+
+        for (int i = 0; i < replays1.Count; i++)
         {
-            return;
+            var replay = replays1[i];
+            ResetReplayWinner(replay);
+            var replayDto = mapper.Map<ReplayDto>(replay);
+            var json = JsonSerializer.Serialize(replayDto);
+            File.WriteAllText($"/data/ds/adjustTestTeam1_{i}.json", json);
         }
-        var json = JsonSerializer.Serialize(replayDto, new JsonSerializerOptions() { WriteIndented = true });
-        var outputFileName = Path.Combine(outputPath, Path.GetFileNameWithoutExtension(replayDto.FileName) + ".json");
-        var tempFileName = Path.Combine(outputPath, Path.GetFileNameWithoutExtension(replayDto.FileName) + ".temp");
-        File.WriteAllText(tempFileName, json);
-        File.Move(tempFileName, outputFileName);
+
+        for (int i = 0; i < replays2.Count; i++)
+        {
+            var replay = replays2[i];
+            ResetReplayWinner(replay);
+            var replayDto = mapper.Map<ReplayDto>(replay);
+            var json = JsonSerializer.Serialize(replayDto);
+            File.WriteAllText($"/data/ds/adjustTestTeam2_{i}.json", json);
+        }
+    }
+
+    private static void ResetReplayWinner(Replay replay)
+    {
+        replay.WinnerTeam = 0;
+        foreach (var rp in replay.ReplayPlayers)
+        {
+            rp.PlayerResult = PlayerResult.None;
+        }
     }
 }

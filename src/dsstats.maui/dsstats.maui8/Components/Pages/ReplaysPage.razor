@@ -1,0 +1,19 @@
+﻿@page "/replays"
+@using dsstats.maui8.Services
+@using dsstats.shared
+@inject NavigationManager NavigationManager
+@inject ConfigService configService
+
+<PageTitle>dsstats - replays</PageTitle>
+
+<div class="d-flex" style="overflow: auto">
+@foreach (var name in configService.GetRequestNames())
+{
+    <div class="ms-1 p-2 border border-warning rounded pointer" @onclick="e => ShowReplays(name)">
+        <span>@name.Name @Data.GetRegionString(name.RegionId)</span>
+    </div>
+}
+</div>
+
+<dsstats.razorlib.Replays.ReplaysComponent @ref="replaysComponent" Request="Request" OnRequestChanged="SetParameters" />
+

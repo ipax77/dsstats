@@ -1,0 +1,63 @@
+﻿@using dsstats.maui8.Services
+@inject IJSRuntime JSRuntime
+@inject ConfigService configService
+@inject IToastService toastService
+
+<div class="modal" id="uploadaskmodal" tabindex="-1" aria-labelledby="uploadaskmodal" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bgchart2">
+                <h5 class="modal-title">Thank you for using this app!</h5>
+            </div>
+            <div class="modal-body">
+                <p>
+                    If you love Direct Strike and like to help balance the game it would be very nice if the statistics were uploaded from time to time.
+                </p>
+                <p>
+                    Would you like to allow the application to upload your Direct Strike replay data to the <a href="https://dsstats.pax77.org">dsstats website</a>?
+                </p>
+                <div class="btn-group">
+                    <button class="btn btn-primary" @onclick="AllowUploads">Allow Uploads</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    private void AllowUploads()
+    {
+        configService.AppOptions.UploadCredential = true;
+        configService.UpdateConfig(configService.AppOptions);
+        toastService.ShowSuccess("Thank you for allowing uploading! You can change the credentials in the settings at any time.");
+        JSRuntime.InvokeVoidAsync("closeModalById", "uploadaskmodal");
+    }
+
+    public void Show()
+    {
+        if (configService.AppOptions.UploadCredential)
+        {
+            return;
+        }
+
+        if (configService.AppOptions.UploadAskTime != DateTime.MinValue
+            && (DateTime.UtcNow - configService.AppOptions.UploadAskTime).TotalDays < 30)
+        {
+            return;
+        }
+
+        configService.AppOptions.UploadAskTime = DateTime.UtcNow;
+        configService.UpdateConfig(configService.AppOptions);
+        JSRuntime.InvokeVoidAsync("openModalById", "uploadaskmodal");
+    }
+
+    public void Hide()
+    {
+
+        JSRuntime.InvokeVoidAsync("closeModalById", "uploadaskmodal");
+    }
+}

@@ -1,0 +1,30 @@
+﻿@using dsstats.shared;
+
+<div class="@(WinnerTeam ? "d-flex border-start border-3 border-success" : "d-flex border-start border-3 border-danger")">
+    @for (int i = 0; i < cmdrs.Count; i++)
+    {
+        @if (i + 1 == PlayerPos)
+        {
+            <div class="border border-warning border-2 preload-@(((Commander)cmdrs[i]).ToString().ToLower())" alt="@((Commander)cmdrs[i])" style="width: 30px; height: 30px;"></div>
+        }
+        else
+        {
+            <div class="preload-@(((Commander)cmdrs[i]).ToString().ToLower())" alt="@((Commander)cmdrs[i])" style="width: 30px; height: 30px;"></div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Team { get; set; } = string.Empty;
+
+    [Parameter]
+    public int PlayerPos { get; set; }
+
+    [Parameter]
+    public bool WinnerTeam { get; set; }
+
+    List<int> cmdrs => Team.Split('|', StringSplitOptions.RemoveEmptyEntries)
+    .Select(s => Convert.ToInt32(s))
+    .ToList();
+}

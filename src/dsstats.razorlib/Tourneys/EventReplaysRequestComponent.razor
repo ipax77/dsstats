@@ -1,0 +1,98 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject ITourneysService tourneysService
+@inject IJSRuntime IJSRuntime
+
+<div>
+    <EditForm EditContext="editContext">
+        <div class="row">
+            <div class="col-auto">
+                <label>
+                    Tournament
+                    <InputSelect class="form-select" @bind-Value="replaysRequest.Tournament">
+                        <option value="" selected>All</option>
+                        @foreach (var tournament in tournaments)
+                        {
+                            <option value="@tournament.Name">@tournament.Name</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+@*             <div class="col-auto">
+                <label class="form-label">
+                    Search:
+                    <InputText class="form-control" placeholder="Zagara Kerrigan" @bind-Value="replaysRequest.SearchString"></InputText>
+                </label>
+            </div>
+            <div class="col-auto align-self-center p-0">
+                <span class="oi @(replaysRequest.LinkSearch ? "oi-link-intact" : "oi-link-broken") text-light"
+                      style="font-size: 1rem;"
+                      data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Link cmdr and player"
+                      @onclick="SetLink">
+                </span>
+            </div>
+            <div class="col-auto">
+                <div>
+                    <label class="form-label">
+                        Players/Team:
+                        <InputText class="form-control" placeholder="PAX Feralan" @bind-Value="replaysRequest.SearchPlayers"></InputText>
+                    </label>
+                </div>
+                @if (!String.IsNullOrEmpty(replaysRequest.ToonIdName))
+                {
+                    <span class="small text-warning">@(replaysRequest.ToonIdWith > 0 ? "with" : "vs") @replaysRequest.ToonIdName</span>
+                }
+                <div>
+                </div>
+            </div>
+            <div class="col-auto">
+                <div style="max-width: 150px;">
+                    <label for="playercountrange" class="form-label">PlayerCount @(replaysRequest.PlayerCount == 0 ? "All" : replaysRequest.PlayerCount)</label>
+                    <input type="range" class="form-range" min="0" max="6" step="2" value="0" id="playercountrange" @onchange="PlayerCountChange">
+                </div>
+            </div> *@
+            <div class="col-auto mt-3">
+                <button type="button" class="btn btn-outline-primary" @onclick="Reset">Reset</button>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [CascadingParameter]
+    [EditorRequired]
+    public TourneysReplaysRequest replaysRequest { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnFieldChanged { get; set; }
+
+    [Parameter]
+    public bool WithMmrChange { get; set; }
+
+    private List<TourneyDto> tournaments = new();
+    private EditContext editContext = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        editContext = new EditContext(replaysRequest);
+        editContext.OnFieldChanged += FieldChanged;
+
+        tournaments = await tourneysService.GetTourneys();
+
+        await base.OnInitializedAsync();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        OnFieldChanged.InvokeAsync();
+    }
+
+    private void Reset()
+    {
+        replaysRequest.Tournament = string.Empty;
+        StateHasChanged();
+        OnFieldChanged.InvokeAsync();
+    }
+}

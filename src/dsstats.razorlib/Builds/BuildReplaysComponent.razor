@@ -1,0 +1,182 @@
+﻿@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IBuildService buildService
+
+<div class="d-flex justify-content-between">
+    <div>
+        @if (isLoading)
+        {
+            <div class="spinner-border spinner-border-sm text-danger" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        }
+    </div>
+    <div class="me-1">
+        <div class="ms-2">
+            # @totalCount.ToString("N0")
+        </div>
+    </div>
+</div>
+<div class="table-responsive tableFixHead text-nowrap" style="max-width: 900px; max-height: 60vh;" tabindex="1">
+
+    <table class="tptable table table-sm">
+        <thead class="user-select-none">
+            <tr>
+                <th>GameTime</th>
+                <th>Duration</th>
+                <th>Team1</th>
+                <th>Team2</th>
+                <th><i class="bi bi-arrow-down-up"></i></th>
+                <th>MaxLeaver</th>
+                <th>GameMode</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (totalCount == 0)
+            {
+                <tr>
+                    <td colspan="8">
+                        <div>No data found.</div>
+                    </td>
+                </tr>
+            }
+            else
+            {
+                <Virtualize @ref="virtualizeComponent" ItemsProvider="LoadReplays" Context="replay" ItemSize="47"
+                            SpacerElement="tr">
+                    <ItemContent>
+                        <tr @key="replay" id="@replay.ReplayHash" class="pointer @(replayHash == replay.ReplayHash ? "table-primary" : "")" height="47px"
+                            @onclick="e => RequestReplay(replay.ReplayHash)">
+                            <td>@replay.GameTime.ToString("yyyy-MM-dd")</td>
+                            <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+                            <td>
+                                <div>
+                                    <dsstats.razorlib.Replays.ReplayTeam Team="@replay.CommandersTeam1"
+                                                                         PlayerPos="GetPlayerPos(replay, 1)"
+                                                                         WinnerTeam="replay.WinnerTeam == 1"/>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <dsstats.razorlib.Replays.ReplayTeam Team="@replay.CommandersTeam2"
+                                                                         PlayerPos="GetPlayerPos(replay, 2)"
+                                                                         WinnerTeam="replay.WinnerTeam == 2"/>
+                                </div>
+                            </td>
+                            <td>
+                                @if (replay.PlayerInfo is not null)
+                                {
+                                    <div>
+                                        <span class="@(replay.PlayerInfo.RatingChange >= 0 ? "oi oi-arrow-top text-success" : "oi oi-arrow-bottom text-danger")">
+                                            @replay.PlayerInfo.RatingChange.ToString("N1")
+                                        </span>
+                                    </div>
+                                }
+                            </td>
+                            <td>@TimeSpan.FromSeconds(replay.MaxLeaver).ToString(@"mm\:ss")</td>
+                            <td>@GetGameMode(replay)</td>
+                        </tr>
+                    </ItemContent>
+                    <Placeholder>
+                        <tr height="47px">
+                            <td colspan="8">Loading ...</td>
+                        </tr>
+                    </Placeholder>
+                </Virtualize>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public BuildRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<string> OnReplayRequest { get; set; }
+
+    protected override void OnInitialized()
+    {
+        _ = SetCount();
+        base.OnInitialized();
+    }
+
+    int totalCount = 0;
+    bool isLoading;
+    string? replayHash = null;
+
+    Virtualize<ReplayListDto>? virtualizeComponent;
+
+    private async Task SetCount()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        totalCount = await buildService.GetReplaysCount(Request);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async ValueTask<ItemsProviderResult<ReplayListDto>> LoadReplays(ItemsProviderRequest prRequest)
+    {
+        var skip = prRequest.StartIndex;
+        var take = Math.Min(prRequest.Count, totalCount - prRequest.StartIndex);
+
+        var replays = await buildService.GetReplays(Request, skip, take, prRequest.CancellationToken);
+        return new ItemsProviderResult<ReplayListDto>(replays, totalCount);
+    }
+
+    public async Task Reload()
+    {
+        await SetCount();
+        if (virtualizeComponent != null)
+        {
+            await InvokeAsync(async () =>
+            {
+                await virtualizeComponent.RefreshDataAsync();
+                StateHasChanged();
+            });
+        }
+    }
+
+    private void RequestReplay(string hash)
+    {
+        replayHash = hash;
+        OnReplayRequest.InvokeAsync(hash);
+    }
+
+    private int GetPlayerPos(ReplayListDto replay, int team)
+    {
+        if (replay.PlayerInfo is null)
+        {
+            return 0;
+        }
+
+        return (replay.PlayerInfo.Pos, team) switch
+        {
+            ( <= 3, 1) => replay.PlayerInfo.Pos,
+            ( > 3, 2) => replay.PlayerInfo.Pos - 3,
+            _ => 0
+        };
+    }
+
+    private string GetGameMode(ReplayListDto replay)
+    {
+        if (!replay.TournamentEdition)
+        {
+            return replay.GameMode.ToString();
+        }
+        else
+        {
+            if (replay.GameMode == GameMode.Commanders)
+            {
+                return "Cmdrs TE";
+            }
+            if (replay.GameMode == GameMode.Standard)
+            {
+                return "Std TE";
+            }
+            return $"{replay.GameMode} TE";
+        }
+    }
+}

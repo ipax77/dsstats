@@ -1,0 +1,164 @@
+﻿@using System.Globalization;
+@using Microsoft.JSInterop;
+@using dsstats.razorlib.Services
+@using dsstats.shared;
+@inject IJSRuntime JSRuntime
+
+<div class="card d-inline-block @(interestPlayer == null ? "" : "visually-hidden")">
+    <div class="card-header bgchart2">
+        <div class="row fw-bolder">
+            <div class="col">@Replay.CreatedAt.ToString("yyyy-MM-dd")</div>
+            <div class="col">Duration @TimeSpan.FromSeconds(Replay.Duration).ToString(@"hh\:mm\:ss")</div>
+            <div class="col">Region @Data.GetRegionString(Replay.RegionId)</div>
+            <div class="col">Mode @Replay.GameMode</div>
+            <div class="col-2"><span class="oi oi-x text-danger pointer" @onclick="e => OnCloseRequested.InvokeAsync()"></span></div>
+        </div>
+    </div>
+    <div class="card-body bgchart">
+        <div class="row">
+            @for (int i = 1; i <= 2; i++)
+            {
+                <div class="col-auto">
+                    <div class="d-flex">
+                        @if (Replay.WinnerTeam == i)
+                        {
+                            <div>
+                                <span class="badge bg-success" style="font-size: 1.1rem;">
+                                    Team @i
+                                </span>
+                            </div>
+                            @if (Replay.ArcadeReplayRating != null)
+                            {
+                                <div class="ms-2">
+                                    <span class="badge bg-secondary" style="font-size: 1.1rem;">
+                                        <small>Expectation to win</small>
+                                        <span class="fw-bold @(Replay.ArcadeReplayRating.ExpectationToWin > 0.5 ? "text-success" : "text-danger")">
+                                            @Replay.ArcadeReplayRating.ExpectationToWin.ToString("P0", CultureInfo.InvariantCulture)
+                                        </span>
+                                    </span>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div>
+                                <span class="badge bg-danger" style="font-size: 1.2rem;">
+                                    Team @i
+                                </span>
+                            </div>
+                            @if (Replay.ArcadeReplayRating != null)
+                            {
+                                <div class="ms-2">
+                                    <span class="badge bg-secondary" style="font-size: 1.2rem;">
+                                        <small>Expectation to win</small>
+                                        <span class="fw-bold @(Replay.ArcadeReplayRating.ExpectationToWin < 0.5 ? "text-success" : "text-danger")">
+                                            @((1 - Replay.ArcadeReplayRating.ExpectationToWin).ToString("P0", CultureInfo.InvariantCulture))
+                                        </span>
+                                    </span>
+                                </div>
+                            }
+                        }
+                    </div>
+                    <div class="table-responsive">
+                        <table class="tptable table w-auto">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Change</th>
+                                    <th>Name</th>
+                                    <th>Rating</th>
+                                    <th>Games</th>
+                                    <th><span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Consistency">Cons</span></th>
+                                    <th><span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Confidence">Conf</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var player in Replay.ArcadeReplayPlayers.Where(x => x.Team == i).OrderBy(o => o.SlotNumber))
+                                {
+                                    var plRating = Replay.ArcadeReplayRating?.ArcadeReplayPlayerRatings.FirstOrDefault(f => f.GamePos == player.SlotNumber);
+                                    <tr class="pointer" @onclick="@(() => interestPlayer = new(player.ArcadePlayer.ProfileId, player.ArcadePlayer.RealmId, player.ArcadePlayer.RegionId))">
+                                        <td>@player.SlotNumber</td>
+                                        <td>
+                                            @if (plRating != null)
+                                            {
+                                                <span class="oi @(plRating.RatingChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">
+                                                    @plRating.RatingChange.ToString("N1", CultureInfo.InvariantCulture)
+                                                </span>
+                                            }
+                                        </td>
+                                        <td class="@(player.PlayerResult == PlayerResult.None ? "table-danger" : "")">
+                                            <span class="d-inline-block text-truncate text-decoration-underline"
+                                                style="max-width: 120px;" data-bs-toggle="tooltip" data-bs-placement="top"
+                                                data-bs-title="@HelperService.SanitizePlayerName(player.Name)">
+                                                @player.Name
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (plRating != null)
+                                            {
+                                                <span class="text-warning">@plRating.Rating.ToString("N2", CultureInfo.InvariantCulture)</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @plRating?.Games
+                                        </td>
+                                        <td>@plRating?.Consistency</td>
+                                        <td>@plRating?.Confidence</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="card-footer bgchart2">
+        <button type="button" class="btn btn-sm btn-danger" @onclick="e => OnCloseRequested.InvokeAsync()">Close</button>
+    </div>
+</div>
+
+@if (interestPlayer is not null)
+{
+    <dsstats.razorlib.Players.Profile.ProfileComponent PlayerId="interestPlayer" RatingType="ratingType"
+                                                       RatingCalcType="RatingCalcType.Arcade"
+                                                       OnCloseRequested="ClosePlayerDetails" />
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public ArcadeReplayDto Replay { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnCloseRequested { get; set; }
+
+    private PlayerId? interestPlayer = null;
+    RatingType ratingType = RatingType.Cmdr;
+
+    protected override void OnInitialized()
+    {
+        if (Replay.GameMode == GameMode.Standard)
+        {
+            ratingType = RatingType.Std;
+        }
+        else
+        {
+            ratingType = RatingType.Cmdr;
+        }
+        base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            JSRuntime.InvokeVoidAsync("enableTooltips");
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    private void ClosePlayerDetails()
+    {
+        interestPlayer = null;
+    }
+}
