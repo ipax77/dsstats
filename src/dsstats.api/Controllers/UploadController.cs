@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace dsstats.api.Controllers;
 
 [ApiController]
-[Route("api8/v1/[controller]")]
+[Route("api/v1/[controller]")]
 [ServiceFilter(typeof(AuthenticationFilterAttribute))]
 public class UploadController : Controller
 {
