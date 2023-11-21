@@ -23,11 +23,25 @@
                         </tr>
                         <tr>
                             <td>Main</td>
-                            <td>@(Rating.Games == 0 || Rating.MainCount * 100.0 / Rating.Games < 10.5 ? "Random" : Rating.Main.ToString())</td>
+                            @if (MvpInfo is not null)
+                            {
+                                <td>@(Rating.Games == 0 || MvpInfo.MainCount * 100.0 / MvpInfo.Games < 10.5 ? "Random" : MvpInfo.Main.ToString())</td>
+                            }
+                            else
+                            {
+                                <td>@(Rating.Games == 0 || Rating.MainCount * 100.0 / Rating.Games < 10.5 ? "Random" : Rating.Main.ToString())</td>
+                            }
                         </tr>
                         <tr>
                             <td>Main %</td>
-                            <td>@HelperService.GetPercentageString(Rating.MainCount, Rating.Games)</td>
+                            @if (MvpInfo is not null)
+                            {
+                                <td>@HelperService.GetPercentageString(MvpInfo.MainCount, MvpInfo.Games)</td>
+                            }
+                            else
+                            {
+                                <td>@HelperService.GetPercentageString(Rating.MainCount, Rating.Games)</td>
+                            }
                         </tr>
                         <tr>
                             <td>Winrate</td>
@@ -35,7 +49,14 @@
                         </tr>
                         <tr>
                             <td>Mvp</td>
-                            <td colspan="2">@HelperService.GetPercentageString(Rating.Mvp, Rating.Games)</td>
+                            @if (MvpInfo is not null)
+                            {
+                                <td colspan="2">@HelperService.GetPercentageString(MvpInfo.Mvp, MvpInfo.Games)</td>
+                            }
+                            else
+                            {
+                                <td colspan="2">@HelperService.GetPercentageString(Rating.Mvp, Rating.Games)</td>
+                            }
                         </tr>
                         <tr>
                             <td>Consistency</td>

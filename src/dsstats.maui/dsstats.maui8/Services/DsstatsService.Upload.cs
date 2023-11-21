@@ -14,7 +14,7 @@ namespace dsstats.maui8.Services;
 
 public partial class DsstatsService
 {
-    private readonly string uploaderController = "api/v1/Upload";
+    private readonly string uploaderController = "api8/v1/Upload";
     private readonly SemaphoreSlim uploadSs = new(1, 1);
 
     public async Task<bool> UploadReplays()
@@ -121,7 +121,8 @@ public partial class DsstatsService
     {
         var httpClient = new HttpClient();
         // httpClient.BaseAddress = new Uri("https://localhost:7048");
-        httpClient.BaseAddress = new Uri("https://dsstats-dev.pax77.org");
+        // httpClient.BaseAddress = new Uri("https://dsstats-dev.pax77.org");
+        httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
         httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("DS8upload77");
         return httpClient;
