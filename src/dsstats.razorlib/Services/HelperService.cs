@@ -202,6 +202,26 @@ public static class HelperService
             return $"{replay.GameMode} TE";
         }
     }
+
+    public static string GetGameMode(GameMode gameMode, bool tournamentEdition)
+    {
+        if (!tournamentEdition)
+        {
+            return gameMode.ToString();
+        }
+        else
+        {
+            if (gameMode == GameMode.Commanders)
+            {
+                return "Cmdrs TE";
+            }
+            if (gameMode == GameMode.Standard)
+            {
+                return "Std TE";
+            }
+            return $"{gameMode} TE";
+        }
+    }
 }
 
 public record ReplaysToonIdRequest

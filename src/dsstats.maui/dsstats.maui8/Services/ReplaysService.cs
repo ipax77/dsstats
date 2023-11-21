@@ -7,14 +7,17 @@ public class ReplaysService : IReplaysService
 {
     private readonly IReplaysService localReplaysService;
     private readonly IReplaysService remoteReplaysService;
+    private readonly DsstatsService dsstatsService;
     private readonly IRemoteToggleService remoteToggleService;
 
     public ReplaysService([FromKeyedServices("local")] IReplaysService localReplaysService,
                           [FromKeyedServices("remote")] IReplaysService remoteReplaysService,
+                          DsstatsService dsstatsService,
                           IRemoteToggleService remoteToggleService)
     {
         this.localReplaysService = localReplaysService;
         this.remoteReplaysService = remoteReplaysService;
+        this.dsstatsService = dsstatsService;
         this.remoteToggleService = remoteToggleService;
     }
 
@@ -58,7 +61,9 @@ public class ReplaysService : IReplaysService
     {
         if (remoteToggleService.FromServer || comboRating)
         {
-            return await remoteReplaysService.GetReplayRating(replayHash, comboRating);
+            var rating = await remoteReplaysService.GetReplayRating(replayHash, comboRating);
+            dsstatsService.AddRemoteRating(replayHash, rating);
+            return rating;
         }
         else
         {

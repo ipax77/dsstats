@@ -22,6 +22,7 @@ public partial class Home : ComponentBase, IDisposable
     ReplayDto? currentReplay = null;
     PlayerId? interestPlayer = null;
     bool isLatestreplay = true;
+    SessionComponent? sessionComponent;
 
     bool DEBUG = true;
 

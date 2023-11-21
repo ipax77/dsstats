@@ -20,24 +20,29 @@
     <button type="button" class="btn btn-outline-success" @onclick="e => dsstatsService.ScanForNewReplays()">Scan</button>
     <button type="button" class="btn btn-outline-info" @onclick="Upload">Upload</button>
 </div>
-<div>
-    @if (currentReplay is not null)
-    {
-        <div class="d-flex flex-row bgchart2">
-            <div class="p-2">
-                @if (isLatestreplay)
-                {
-                    <h4 class="text-warning">Latest Replay</h4>
-                }
-                else
-                {
-                    <h4 class="text-warning">Recent Replay</h4>
-                }
+<div class="row">
+    <div class="col-auto">
+        @if (currentReplay is not null)
+        {
+            <div class="d-flex flex-row bgchart2">
+                <div class="p-2">
+                    @if (isLatestreplay)
+                    {
+                        <h4 class="text-warning">Latest Replay</h4>
+                    }
+                    else
+                    {
+                        <h4 class="text-warning">Recent Replay</h4>
+                    }
+                </div>
             </div>
-        </div>
-        <dsstats.razorlib.Replays.ReplayComponent Replay="currentReplay" IsCloseable="false" IsScrollable="true"
-                         OnScrollRequest="LoadNextReplay" />
-    }
+            <dsstats.razorlib.Replays.ReplayComponent Replay="currentReplay" IsCloseable="false" IsScrollable="true"
+                                                      OnScrollRequest="LoadNextReplay" />
+        }
+    </div>
+    <div class="col-auto">
+        <SessionComponent />
+    </div>
 </div>
 
 <div class="mt-2">

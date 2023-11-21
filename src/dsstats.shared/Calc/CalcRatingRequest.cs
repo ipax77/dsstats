@@ -15,7 +15,8 @@ public record CalcRatingRequest
     public FrozenDictionary<PlayerId, bool> BannedPlayers { get; init; } = new Dictionary<PlayerId, bool>()
             {
                 { new(466786, 2, 2), true }, // SabreWolf
-                { new(9774911, 1, 2), true } // Baka
+                { new(9774911, 1, 2), true }, // Baka
+                { new(3768192, 1, 1), true } // Henz
             }.ToFrozenDictionary();
     public FrozenDictionary<PlayerId, bool> SoftBannedPlayers { get; init; } = new Dictionary<PlayerId, bool>()
             {

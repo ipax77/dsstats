@@ -1,0 +1,118 @@
+﻿@using System.Globalization
+@using dsstats.maui8.Services
+@using dsstats.razorlib.Services
+@inject DsstatsService dsstatsService
+
+<div class="card d-inline-block">
+    <div class="card-header bgchart2">
+        <div class="d-flex">
+            <div>
+                @if (isLoading)
+                {
+                    <div class="spinner-border spinner-border-sm text-danger" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="ms-3">
+                    </div>
+                }
+            </div>
+            <div class="ms-1">
+                <h4 class="card-title">Session Progress</h4>
+            </div>
+        </div>
+        <div class="">
+            <div class="form-check form-switch user-select-none">
+                <label class="form-check-label">
+                    Remote
+                    <input class="form-check-input" type="checkbox" @bind="remote" @bind:after="LoadData">
+                </label>
+            </div>
+        </div>
+        <div class="">
+            @if (infos.Count > 0)
+            {
+                var sum = infos.Sum(s => remote ? s.RemoteRatingGain : s.LocalRatingGain);
+                <h5>Rating Gain <span class="@(sum < 0 ? "text-danger" : "text-success")">@sum.ToString("N2", CultureInfo.InvariantCulture)</span></h5>
+            }
+        </div>
+        <div class="">
+            <h5>Time Played @TimeSpan.FromSeconds(infos.Sum(s => s.Duration)).ToString(@"hh\:mm\:ss")</h5>
+        </div>
+    </div>
+    <div class="card-body  bgchart">
+        <div class="table-responsive" style="max-height: 500px; overflow: auto;">
+            <table class="tptable table table-sm">
+                <thead>
+                    <tr>
+                        <th><span class="bi bi-arrow-down-up"></span></th>
+                        <th>Cmdr</th>
+                        <th>GameMode</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var info in infos)
+                    {
+                        <tr>
+                            <td>
+                                @if (remote)
+                                {
+                                    <span class="@(info.RemoteRatingGain < 0 ? "text-danger" :"text-success")">
+                                        @info.RemoteRatingGain.ToString("N2", CultureInfo.InvariantCulture)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="@(info.LocalRatingGain < 0 ? "text-danger" :"text-success")">
+                                        @info.LocalRatingGain.ToString("N2", CultureInfo.InvariantCulture)
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <div class="preload-@(info.Commander.ToString().ToLower())"
+                                     alt="@info.Commander" style="width: 30px; height: 30px;"></div>
+                            </td>
+                            <td>
+                                @HelperService.GetGameMode(info.GameMode, info.TournamentEdition)
+                            </td>
+                            <td>
+                                @TimeSpan.FromSeconds(info.Duration).ToString(@"hh\:mm\:ss")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+@code {
+    List<SessionReplayInfo> infos = [];
+    bool remote;
+    bool isLoading;
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    public void Update()
+    {
+        _ = LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        infos = await dsstatsService.GetSessionReplayInfos(remote);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+}
