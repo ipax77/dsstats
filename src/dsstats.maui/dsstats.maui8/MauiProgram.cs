@@ -54,7 +54,8 @@ namespace dsstats.maui8
                 });
 
             // builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7048") });
-            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats-dev.pax77.org") });
+            // builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats-dev.pax77.org") });
+            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats.pax77.org") });
             builder.Services.AddMemoryCache();
             builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
             builder.Services.AddChartJs(options =>

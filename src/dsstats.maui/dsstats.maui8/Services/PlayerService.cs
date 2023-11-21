@@ -131,4 +131,9 @@ public class PlayerService : IPlayerService
             return await localPlayerService.GetPlayerIdCommandersPlayed(playerId, ratingType, token);
         }
     }
+
+    public Task<DistributionResponse> GetDistribution(DistributionRequest request)
+    {
+        throw new NotImplementedException();
+    }
 }
