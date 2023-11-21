@@ -23,6 +23,7 @@ public partial class Home : ComponentBase, IDisposable
     PlayerId? interestPlayer = null;
     bool isLatestreplay = true;
     SessionComponent? sessionComponent;
+    bool showSessionProgress = true;
 
     bool DEBUG = true;
 
@@ -64,6 +65,7 @@ public partial class Home : ComponentBase, IDisposable
         interestPlayer = repPlayers.FirstOrDefault(f => appPlayers.Contains(f));
 
         await InvokeAsync(() => StateHasChanged());
+        sessionComponent?.Update();
     }
 
     private async Task LoadNextReplay(bool next)

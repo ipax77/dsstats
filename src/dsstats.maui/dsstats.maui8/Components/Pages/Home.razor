@@ -41,7 +41,22 @@
         }
     </div>
     <div class="col-auto">
-        <SessionComponent />
+        <button class="btn btn-sm btn-outline-light bgchart"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#ReplaysFilter"
+                aria-expanded="false"
+                aria-controls="SessionComponent"
+                @onclick="e => showSessionProgress = !showSessionProgress">
+            <span class="bi @(showSessionProgress ? "bi-chevron-down" : "bi-chevron-up")"></span>
+            Session Progress
+        </button>
+        <div class="collapse show" id="SessionComponent">
+        @if (showSessionProgress)
+        {
+            <SessionComponent @ref="sessionComponent" />
+        }
+        </div>
     </div>
 </div>
 

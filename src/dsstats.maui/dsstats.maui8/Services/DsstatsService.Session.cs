@@ -11,8 +11,8 @@ public partial class DsstatsService
     private readonly Dictionary<string, SessionReplayInfo> sessionReplayInfos = [];
     private readonly ConcurrentDictionary<string, ReplayRatingDto?> remoteRatings = [];
 
-    // private readonly DateTime sessionStart = DateTime.UtcNow;
-    private readonly DateTime sessionStart = new DateTime(2023, 11, 20);
+    private readonly DateTime sessionStart = DateTime.UtcNow;
+    // private readonly DateTime sessionStart = new DateTime(2023, 11, 20);
 
     public async Task<List<SessionReplayInfo>> GetSessionReplayInfos(bool remote)
     {
