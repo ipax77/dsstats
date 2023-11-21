@@ -59,7 +59,7 @@ public class UploadController : ControllerBase
                     Base64ReplayBlob = uploadDto.Base64ReplayBlob
                 };
 
-                var result = await httpClient.PostAsJsonAsync("api/v1/Upload/ImportReplays", uploadDevDto);
+                var result = await httpClient.PostAsJsonAsync("api8/v1/Upload/ImportReplays", uploadDevDto);
                 result.EnsureSuccessStatusCode();
                 return Ok();
             }

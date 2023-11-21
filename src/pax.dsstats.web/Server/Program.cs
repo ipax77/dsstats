@@ -116,7 +116,7 @@ builder.Services.AddHttpClient("sc2arcardeClient")
 builder.Services.AddHttpClient("dev")
     .ConfigureHttpClient(options =>
     {
-        options.BaseAddress = new Uri("https://dsstats-dev.pax77.org");
+        options.BaseAddress = new Uri("https://dsstats.pax77.org");
         options.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("DS8upload77");
         options.DefaultRequestHeaders.Add("Accept", "application/json");
     });
