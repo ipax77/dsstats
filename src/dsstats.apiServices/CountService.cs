@@ -9,7 +9,7 @@ public class CountService : ICountService
 {
     private readonly HttpClient httpClient;
     private readonly ILogger<CountService> logger;
-    private readonly string statsController = "api/v1/stats";
+    private readonly string statsController = "api8/v1/stats";
 
     public CountService(HttpClient httpClient, ILogger<CountService> logger)
     {

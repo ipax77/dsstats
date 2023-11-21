@@ -77,18 +77,14 @@ public record ReplaysFilter
     public int Playercount { get; set; }
     public bool TournamentEdition { get; set; }
     public List<GameMode> GameModes { get; set; } = new() { GameMode.None };
-    public string CommanderNames { get; set; } = string.Empty;
-    public string PlayerNames { get; set; } = string.Empty;
     public List<ReplaysPosFilter> PosFilters { get; set; } = new();
     public ReplaysRatingRequest? ReplaysRatingRequest { get; set; }
 
     public void Reset()
     {
-        Playercount = 6;
+        Playercount = 0;
         TournamentEdition = false;
         GameModes = new() { GameMode.None };
-        CommanderNames = string.Empty;
-        PlayerNames = string.Empty;
         PosFilters.Clear();
         ReplaysRatingRequest = null;
     }

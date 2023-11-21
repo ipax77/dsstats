@@ -9,7 +9,7 @@ public class ReplaysService : IReplaysService
 {
     private readonly HttpClient httpClient;
     private readonly ILogger<ReplaysService> logger;
-    private readonly string replaysController = "api/v1/replays";
+    private readonly string replaysController = "api8/v1/replays";
 
     public ReplaysService(HttpClient httpClient, ILogger<ReplaysService> logger)
     {

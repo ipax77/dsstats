@@ -9,7 +9,7 @@ public class BuildService : IBuildService
 {
     private readonly HttpClient httpClient;
     private readonly ILogger<BuildService> logger;
-    private readonly string buildController = "api/v1/builds";
+    private readonly string buildController = "api8/v1/builds";
 
     public BuildService(HttpClient httpClient, ILogger<BuildService> logger)
     {

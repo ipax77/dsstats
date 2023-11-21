@@ -9,7 +9,7 @@ public class ArcadeService : IArcadeService
 {
     private readonly HttpClient httpClient;
     private readonly ILogger<ArcadeService> logger;
-    private readonly string arcadeController = "api/v1/arcade/";
+    private readonly string arcadeController = "api8/v1/arcade/";
 
     public ArcadeService(HttpClient httpClient, ILogger<ArcadeService> logger)
     {

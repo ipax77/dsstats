@@ -133,6 +133,13 @@ public partial class UploadService
             {
                 var id = await importService.GetPlayerIdAsync(new(rn.ToonId, rn.RealmId, rn.RegionId), rn.Name);
                 playerIds.Add(id);
+
+                // PezaUkraine fix
+                if (rn.ToonId == 2474605 && rn.RegionId == 2 && rn.RealmId == 1)
+                {
+                    var id2 = await importService.GetPlayerIdAsync(new(rn.ToonId, rn.RealmId, 2), rn.Name);
+                    playerIds.Add(id2);
+                }
             }
 
             foreach (var player in uploader.Players.ToArray())

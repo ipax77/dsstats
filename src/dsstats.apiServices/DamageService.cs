@@ -10,7 +10,7 @@ public class DamageService : IDamageService
 {
     private readonly HttpClient httpClient;
     private readonly ILogger<DamageService> logger;
-    private readonly string statsController = "api/v1/stats";
+    private readonly string statsController = "api8/v1/stats";
 
     public DamageService(HttpClient httpClient, ILogger<DamageService> logger)
     {

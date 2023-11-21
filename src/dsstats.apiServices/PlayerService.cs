@@ -10,7 +10,7 @@ public class PlayerService : IPlayerService
 {
     private readonly HttpClient httpClient;
     private readonly ILogger<PlayerService> logger;
-    private readonly string playerController = "api/v1/player";
+    private readonly string playerController = "api8/v1/player";
 
     public PlayerService(HttpClient httpClient, ILogger<PlayerService> logger)
     {

@@ -9,7 +9,7 @@ public class SynergyService : ISynergyService
 {
     private readonly HttpClient httpClient;
     private readonly ILogger<SynergyService> logger;
-    private readonly string statsController = "api/v1/stats";
+    private readonly string statsController = "api8/v1/stats";
 
     public SynergyService(HttpClient httpClient, ILogger<SynergyService> logger)
     {

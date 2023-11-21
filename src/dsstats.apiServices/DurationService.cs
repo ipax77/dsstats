@@ -10,7 +10,7 @@ public class DurationService : IDurationService
 {
     private readonly HttpClient httpClient;
     private readonly ILogger<DurationService> logger;
-    private readonly string statsController = "api/v1/stats";
+    private readonly string statsController = "api8/v1/stats";
 
     public DurationService(HttpClient httpClient, ILogger<DurationService> logger)
     {

@@ -5,7 +5,7 @@ namespace dsstats.api.Controllers;
 
 [EnableRateLimiting("fixed")]
 [ApiController]
-[Route("api/v1/[controller]")]
+[Route("api8/v1/[controller]")]
 public class DsstatsController : Controller
 {
     //private readonly IDsstatsService dsstatsService;

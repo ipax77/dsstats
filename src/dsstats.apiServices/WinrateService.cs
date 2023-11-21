@@ -10,7 +10,7 @@ public class WinrateService : IWinrateService
 {
     private readonly HttpClient httpClient;
     private readonly ILogger<WinrateService> logger;
-    private readonly string statsController = "api/v1/stats";
+    private readonly string statsController = "api8/v1/stats";
 
     public WinrateService(HttpClient httpClient, ILogger<WinrateService> logger)
     {

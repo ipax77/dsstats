@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace dsstats.api.Controllers;
 
 [ApiController]
-[Route("api/v1/[controller]")]
+[Route("api8/v1/[controller]")]
 public class CmdrInfoController : Controller
 {
     private readonly ICmdrInfoService cmdrInfoService;

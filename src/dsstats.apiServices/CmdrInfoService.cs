@@ -9,7 +9,7 @@ public class CmdrInfoService : ICmdrInfoService
 {
     private readonly HttpClient httpClient;
     private readonly ILogger<CmdrInfoService> logger;
-    private readonly string cmdrInfoController = "api/v1/cmdrinfo";
+    private readonly string cmdrInfoController = "api8/v1/cmdrinfo";
 
     public CmdrInfoService(HttpClient httpClient, ILogger<CmdrInfoService> logger)
     {

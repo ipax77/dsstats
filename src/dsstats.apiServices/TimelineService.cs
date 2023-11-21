@@ -9,7 +9,7 @@ public class TimelineService : ITimelineService
 {
     private readonly HttpClient httpClient;
     private readonly ILogger<TimelineService> logger;
-    private readonly string statsController = "api/v1/stats";
+    private readonly string statsController = "api8/v1/stats";
 
     public TimelineService(HttpClient httpClient, ILogger<TimelineService> logger)
     {
