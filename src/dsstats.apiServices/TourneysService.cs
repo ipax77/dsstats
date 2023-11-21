@@ -7,7 +7,7 @@ namespace dsstats.apiServices;
 
 public class TourneysService(HttpClient httpClient, ILogger<TourneysService> logger) : ITourneysService
 {
-    private readonly string tourneysController = "/api/v1/tourneys";
+    private readonly string tourneysController = "api8/v1/tourneys";
 
     public Task<(string, string)?> DownloadReplay(string replayHash)
     {
