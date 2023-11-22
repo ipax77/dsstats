@@ -1,6 +1,7 @@
 ﻿using Blazored.Toast.Services;
 using dsstats.db8services;
 using dsstats.maui8.Services;
+using dsstats.razorlib.Players;
 using dsstats.shared;
 using Microsoft.AspNetCore.Components;
 
@@ -24,8 +25,9 @@ public partial class Home : ComponentBase, IDisposable
     bool isLatestreplay = true;
     SessionComponent? sessionComponent;
     bool showSessionProgress = true;
+    PlayerDetails? playerDetails;
 
-    bool DEBUG = true;
+    bool DEBUG = false;
 
     protected override void OnInitialized()
     {
@@ -63,6 +65,12 @@ public partial class Home : ComponentBase, IDisposable
             .ToList();
 
         interestPlayer = repPlayers.FirstOrDefault(f => appPlayers.Contains(f));
+
+        if (interestPlayer is not null)
+        {
+            playerDetails?.Update(interestPlayer,
+                Data.GetReplayRatingType(currentReplay.GameMode, currentReplay.TournamentEdition));
+        }
 
         await InvokeAsync(() => StateHasChanged());
         sessionComponent?.Update();

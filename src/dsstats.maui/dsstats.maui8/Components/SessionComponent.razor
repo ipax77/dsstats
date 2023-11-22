@@ -54,7 +54,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var info in infos)
+                    @foreach (var info in infos.OrderByDescending(o => o.GameTime))
                     {
                         <tr>
                             <td>

@@ -258,6 +258,13 @@
         base.OnInitialized();
     }
 
+    public void Update(PlayerId playerId, RatingType ratingType)
+    {
+        PlayerId = playerId;
+        RatingType = ratingType;
+        _ = LoadData();
+    }
+
     private async Task LoadData()
     {
         isLoading = true;

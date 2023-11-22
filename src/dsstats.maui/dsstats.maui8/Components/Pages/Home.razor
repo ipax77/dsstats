@@ -61,8 +61,10 @@
 </div>
 
 <div class="mt-2">
+    <AppPlayersComponent ActivePlayer="interestPlayer" />
     @if (interestPlayer is not null)
     {
-        <dsstats.razorlib.Players.PlayerDetails PlayerId="interestPlayer" RatingType="RatingType.Cmdr" RatingCalcType="RatingCalcType.Dsstats" />
+        <dsstats.razorlib.Players.PlayerDetails @ref="playerDetails"
+            PlayerId="interestPlayer" RatingType="RatingType.Cmdr" RatingCalcType="RatingCalcType.Dsstats" />
     }
 </div>

@@ -1,0 +1,87 @@
+﻿@using System.Collections.Frozen
+@using System.Globalization
+@using dsstats.maui8.Services
+@using dsstats.shared
+@inject DsstatsService dsstatsService
+
+<div class="d-flex" style="max-width: 80vw; overflow-y: auto;">
+    @if (infos is not null)
+    {
+        foreach (var info in infos)
+        {
+            var playerId = new PlayerId(info.Key.ToonId, info.Key.RealmId, info.Key.RegionId);
+            <div class="card d-inline-block bg-transparent border rounded @(ActivePlayer == playerId ? "border-2 border-secondary" : "")"
+                 @onclick="e =>RequestPlayer(playerId)">
+                <div class="card-header bgchart2">
+                    <h5 class="text-warning">@info.Key.Name @Data.GetRegionString(info.Key.RegionId)</h5>
+                </div>
+                <div class="card-body bgchart">
+                    <div class="table-responsive tableFixHead">
+                        <table class="tptable table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Pos</th>
+                                    <th>Rating</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var rating in info.Value)
+                                {
+                                    <tr>
+                                        <td>@rating.Key</td>
+                                        <td>
+                                            <span class="text-truncate text-danger"
+                                                  style="display: block; width: 40px;">
+                                                #@rating.Value.LocalPos
+                                            </span>
+                                        </td>
+                                        <td><span class="text-warning fw-bold">@rating.Value.LocalRating.ToString("N2", CultureInfo.InvariantCulture)</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+
+@code {
+    [Parameter]
+    public EventCallback<PlayerId> OnPlayerRequested { get; set; }
+
+    [Parameter, EditorRequired]
+    public PlayerId ActivePlayer { get; set; } = default!;
+
+    FrozenDictionary<RequestNames, Dictionary<RatingType, AppPlayerRatingInfo>>? infos = null;
+    bool remote;
+    bool all;
+
+    protected override void OnInitialized()
+    {
+        _ = GetRatings();
+        base.OnInitialized();
+    }
+
+    public void UpdatePlayer(PlayerId playerId)
+    {
+        ActivePlayer = playerId;
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task GetRatings()
+    {
+        infos = await dsstatsService.GetAppPlayers(remote, all);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void RequestPlayer(PlayerId playerId)
+    {
+        ActivePlayer = playerId;
+        OnPlayerRequested.InvokeAsync(ActivePlayer);
+        StateHasChanged();
+    }
+}
