@@ -19,6 +19,8 @@ public partial class TopRowComponent : ComponentBase, IDisposable
     public ConfigService configService { get; set; } = default!;
     [Inject]
     public IToastService toastService { get; set; } = default!;
+    [Inject]
+    public IUpdateService updateService { get; set; } = default!;
 
     string currentLocation = "Home";
     DecodeInfoEventArgs? decodeInfo = null;
@@ -26,6 +28,7 @@ public partial class TopRowComponent : ComponentBase, IDisposable
     List<DecodeError> decodeErrorsList = new();
     DecodeErrorModal? decodeErrorModal;
     UploadAskModal? uploadAskModal;
+    int updateDownloadProgress = 0;
 
     protected override void OnInitialized()
     {
@@ -34,11 +37,11 @@ public partial class TopRowComponent : ComponentBase, IDisposable
         NavigationManager.LocationChanged += NavigationManager_LocationChanged;
 
         // DEBUG
-        decodeErrors.Add(new()
-        {
-            ReplayPath = "TestPath",
-            Error = "TestError"
-        });
+        //decodeErrors.Add(new()
+        //{
+        //    ReplayPath = "TestPath",
+        //    Error = "TestError"
+        //});
 
         base.OnInitialized();
     }
@@ -98,6 +101,48 @@ public partial class TopRowComponent : ComponentBase, IDisposable
         dsstatsService.ScanStateChanged -= DssstatsService_ScanStateChanged;
         dsstatsService.DecodeStateChanged -= DssstatsService_DecodeStateChanged;
         NavigationManager.LocationChanged -= NavigationManager_LocationChanged;
+    }
+
+    public async Task CheckForUpdates(bool init = false)
+    {
+        if (init)
+        {
+            if (!configService.AppOptions.CheckForUpdates)
+            {
+                return;
+            }
+            await Task.Delay(5000);
+        }
+
+        var updateAvailable = await updateService.CheckForUpdates();
+
+        if (updateAvailable)
+        {
+            if (Application.Current != null && Application.Current.MainPage != null)
+            {
+                bool answer = await Application.Current.MainPage.DisplayAlert("New Version Available!", "Would you like to update now?", "Yes", "No");
+                if (answer)
+                {
+                    updateService.UpdateProgress += UpdateService_UpdateProgress;
+                    var updateResult = await updateService.UpdateApp();
+                    if (!updateResult)
+                    {
+                        updateService.UpdateProgress -= UpdateService_UpdateProgress;
+                        await Application.Current.MainPage.DisplayPromptAsync("Update Failed", ":(");
+                    }
+                }
+            }
+        }
+        else
+        {
+            toastService.ShowInfo("Your version is up to date.");
+        }
+    }
+
+    private void UpdateService_UpdateProgress(object? sender, UpdateProgressEvent e)
+    {
+        updateDownloadProgress = e.Progress;
+        InvokeAsync(() => StateHasChanged());
     }
 
     public record DecodeState

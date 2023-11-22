@@ -72,6 +72,8 @@ namespace dsstats.maui8
             builder.Services.AddSingleton<ImportService>();
             builder.Services.AddSingleton<IRatingService, RatingService>();
             builder.Services.AddSingleton<IRatingsSaveService, Services.RatingsSaveService>();
+            builder.Services.AddSingleton<IUpdateService, GitHubUpdateService>();
+            // builder.Services.AddSingleton<IUpdateService, StoreUpdateService>();
 
             builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 

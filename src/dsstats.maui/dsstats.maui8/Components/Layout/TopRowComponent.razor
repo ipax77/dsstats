@@ -1,4 +1,5 @@
-﻿
+﻿@using dsstats.shared
+
 <div class="top-row px-4">
     <div class="row">
         <div class="col-auto">
@@ -78,8 +79,25 @@
                 </div>
             }
         }
-        <div class="col-auto">
+@*         <div class="col-auto">
             <h4><span class="badge bg-info">@currentLocation</span></h4>
+        </div> *@
+        <div class="ms-auto col-auto">
+            @if (updateDownloadProgress > 0)
+            {
+                <div class="progress" style="width: 150px;">
+                    <div class="progress-bar bg-success text-warning" role="progressbar" aria-label="Update progress"  style="width: @(updateDownloadProgress)%" aria-valuenow="@updateDownloadProgress" aria-valuemin="0" aria-valuemax="100">
+                        Update
+                    </div>
+                </div>
+            }
+            else
+            {
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => CheckForUpdates()">Check for Updates</button>
+            }
+            <span class="badge bg-light p-1 mt-1">
+                v@(Data.WasmVersion)
+            </span>
         </div>
     </div>
 </div>
