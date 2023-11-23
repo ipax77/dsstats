@@ -14,14 +14,15 @@ public partial class PlayerService
             GameModesPlayed = await GetPlayerIdArcadeGameModeCounts(playerId, token),
             Ratings = await GetPlayerIdComboRatings(playerId, token),
             Commanders = await GetPlayerIdCommandersPlayed(playerId, ratingType, token),
-            ChartDtos = await GetArcadePlayerRatingChartData(playerId, ratingType, token),
+            ChartDtos = await GetPlayerRatingChartData(playerId, RatingCalcType.Combo, ratingType, token),
             MvpInfo = await GetMvpInfo(playerId, ratingType)
         };
 
         (summary.CmdrPercentileRank, summary.StdPercentileRank) =
             await GetPercentileRank(
                 summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType.Cmdr)?.Pos ?? 0,
-                summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType.Std)?.Pos ?? 0);
+                summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType.Std)?.Pos ?? 0,
+                RatingCalcType.Combo);
 
         return summary;
     }

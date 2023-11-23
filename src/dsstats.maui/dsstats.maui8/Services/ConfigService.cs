@@ -104,12 +104,9 @@ public partial class ConfigService
 
     public void RemoveReplaysFromIgnoreList(List<string> replayPaths)
     {
-        foreach (var replayPath in replayPaths)
+        foreach (var replayPath in replayPaths.ToArray())
         {
-            if (AppOptions.IgnoreReplays.Contains(replayPath))
-            {
-                AppOptions.IgnoreReplays.Remove(replayPath);
-            }
+            AppOptions.IgnoreReplays.Remove(replayPath);
         }
         UpdateConfig(AppOptions);
     }

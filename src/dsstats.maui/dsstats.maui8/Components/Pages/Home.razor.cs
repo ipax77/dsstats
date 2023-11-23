@@ -2,6 +2,7 @@
 using dsstats.db8services;
 using dsstats.maui8.Services;
 using dsstats.razorlib.Players;
+using dsstats.razorlib.Players.Profile;
 using dsstats.shared;
 using Microsoft.AspNetCore.Components;
 
@@ -25,7 +26,10 @@ public partial class Home : ComponentBase, IDisposable
     bool isLatestreplay = true;
     SessionComponent? sessionComponent;
     bool showSessionProgress = true;
-    PlayerDetails? playerDetails;
+    bool showPlayers = true;
+    // PlayerDetails? playerDetails;
+    ProfileComponent? playerDetails;
+    AppPlayersComponent? appPlayersComponent;
 
     bool DEBUG = false;
 
@@ -69,7 +73,9 @@ public partial class Home : ComponentBase, IDisposable
         if (interestPlayer is not null)
         {
             playerDetails?.Update(interestPlayer,
+                RatingCalcType.Dsstats,
                 Data.GetReplayRatingType(currentReplay.GameMode, currentReplay.TournamentEdition));
+            appPlayersComponent?.UpdatePlayer(interestPlayer);
         }
 
         await InvokeAsync(() => StateHasChanged());
@@ -119,6 +125,13 @@ public partial class Home : ComponentBase, IDisposable
         {
             _ = dsstatsService.UploadReplays();
         }
+    }
+
+    private void PlayerRequest(PlayerId playerId)
+    {
+        interestPlayer = playerId;
+        var ratingType = currentReplay is null ? RatingType.Cmdr : Data.GetReplayRatingType(currentReplay.GameMode, currentReplay.TournamentEdition);
+        playerDetails?.Update(playerId, RatingCalcType.Dsstats, ratingType);
     }
 
     public void Dispose()

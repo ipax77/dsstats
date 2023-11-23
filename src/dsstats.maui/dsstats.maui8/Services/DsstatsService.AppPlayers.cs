@@ -9,7 +9,7 @@ public partial class DsstatsService
 {
     private readonly Dictionary<RequestNames, Dictionary<RatingType, AppPlayerRatingInfo>> appPlayerInfos = [];
 
-    public async Task<FrozenDictionary<RequestNames, Dictionary<RatingType, AppPlayerRatingInfo>>> GetAppPlayers(bool remote, bool all)
+    public async Task<FrozenDictionary<RequestNames, Dictionary<RatingType, AppPlayerRatingInfo>>> GetAppPlayers()
     {
         using var scope = scopeFactory.CreateAsyncScope();
         var configService = scope.ServiceProvider.GetRequiredService<ConfigService>();

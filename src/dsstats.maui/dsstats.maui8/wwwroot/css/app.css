@@ -308,3 +308,21 @@ a, .btn-link {
     width: 30px;
     background-size: cover;
 }
+
+.ismobile {
+    display: none;
+}
+
+.isdesktop {
+    display: block;
+}
+
+@media only screen and (max-width: 1275px) {
+    .ismobile {
+        display: block;
+    }
+
+    .isdesktop {
+        display: none;
+    }
+}

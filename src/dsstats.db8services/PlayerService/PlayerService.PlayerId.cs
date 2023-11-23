@@ -13,6 +13,11 @@ public partial class PlayerService
                                                                     RatingCalcType ratingCalcType,
                                                                     CancellationToken token = default)
     {
+        if (IsSqlite)
+        {
+            return await GetPlayerPlayerIdDsstatsSummary(playerId, ratingType, token);
+        }
+
         return ratingCalcType switch
         {
             RatingCalcType.Dsstats => await GetPlayerPlayerIdDsstatsSummary(playerId, ratingType, token),
@@ -29,13 +34,14 @@ public partial class PlayerService
             GameModesPlayed = await GetPlayerIdGameModeCounts(playerId, token),
             Ratings = await GetPlayerIdDsstatsRatings(playerId, token),
             Commanders = await GetPlayerIdCommandersPlayed(playerId, ratingType, token),
-            ChartDtos = await GetPlayerRatingChartData(playerId, ratingType, token)
+            ChartDtos = await GetPlayerRatingChartData(playerId, RatingCalcType.Dsstats, ratingType, token)
         };
 
         (summary.CmdrPercentileRank, summary.StdPercentileRank) =
             await GetPercentileRank(
                 summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType.Cmdr)?.Pos ?? 0,
-                summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType.Std)?.Pos ?? 0);
+                summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType.Std)?.Pos ?? 0,
+                RatingCalcType.Dsstats);
 
         return summary;
     }

@@ -47,6 +47,17 @@
                     </select>
                 </label>
             </div>
+            @if (RemoteToggleService.IsMaui)
+            {
+                <div class="ms-2 align-self-center">
+                    <div class="form-check form-switch">
+                        <label class="form-check-label">
+                            Server Details
+                            <input type="checkbox" checked="@RemoteToggleService.FromServer" class="form-check-input" @onchange="ToggleFromServer" />
+                        </label>
+                    </div>
+                </div>
+            }
         </div>
     </div>
 

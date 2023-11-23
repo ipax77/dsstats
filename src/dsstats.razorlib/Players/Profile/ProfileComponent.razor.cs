@@ -8,13 +8,16 @@ namespace dsstats.razorlib.Players.Profile;
 public partial class ProfileComponent : ComponentBase
 {
     [Inject]
-    public IPlayerService playerService { get; set; } = default!;
+    public IPlayerService PlayerService { get; set; } = default!;
 
     [Inject]
     public NavigationManager NavigationManager { get; set; } = default!;
 
     [Inject]
     public IJSRuntime JSRuntime { get; set; } = default!;
+
+    [Inject]
+    public IRemoteToggleService RemoteToggleService { get; set; } = default!;
 
     [Parameter, EditorRequired]
     public PlayerId PlayerId { get; set; } = default!;
@@ -45,6 +48,10 @@ public partial class ProfileComponent : ComponentBase
     }
     protected override void OnInitialized()
     {
+        if (RemoteToggleService.IsMaui)
+        {
+            RatingCalcType = RatingCalcType.Dsstats;
+        }
         _ = LoadData();
         base.OnInitialized();
     }
@@ -53,7 +60,8 @@ public partial class ProfileComponent : ComponentBase
     {
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
-        summary = await playerService.GetPlayerPlayerIdSummary(PlayerId, RatingType, RatingCalcType);
+
+        summary = await PlayerService.GetPlayerPlayerIdSummary(PlayerId, RatingType, RatingCalcType);
 
         if (summary.Ratings.Count > 0)
         {
@@ -63,6 +71,7 @@ public partial class ProfileComponent : ComponentBase
             if (interestRating != null)
             {
                 playerRatingDetailChart?.Update(RatingType, RatingCalcType, RatingCalcType == RatingCalcType.Combo ? 0 : interestRating.Rating);
+                playerCmdrCounts?.Update(RatingType);
             }
         }
         ratingDetails = null;
@@ -74,7 +83,7 @@ public partial class ProfileComponent : ComponentBase
     {
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
-        ratingDetails = await playerService.GetPlayerIdPlayerRatingDetails(PlayerId, RatingType, RatingCalcType);
+        ratingDetails = await PlayerService.GetPlayerIdPlayerRatingDetails(PlayerId, RatingType, RatingCalcType);
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
         await JSRuntime.InvokeVoidAsync("scrollToElementId", "playerdetails");
@@ -89,11 +98,19 @@ public partial class ProfileComponent : ComponentBase
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
 
-        var cmdrsAvgGain = await playerService.GetPlayerIdPlayerCmdrAvgGain(PlayerId, RatingType, timePeriod, default);
+        var cmdrsAvgGain = await PlayerService.GetPlayerIdPlayerCmdrAvgGain(PlayerId, RatingType, timePeriod, default);
         ratingDetails.CmdrsAvgGain.Clear();
         ratingDetails.CmdrsAvgGain.AddRange(cmdrsAvgGain);
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Update(PlayerId playerId, RatingCalcType ratingCalcType, RatingType ratingType)
+    {
+        PlayerId = playerId;
+        RatingCalcType = ratingCalcType;
+        RatingType = ratingType;
+        _ = LoadData();
     }
 
     private void ChangeRating(PlayerRatingDetailDto rating)
@@ -106,6 +123,15 @@ public partial class ProfileComponent : ComponentBase
         shouldRender = true;
         ratingDetails = null;
         InvokeAsync(() => StateHasChanged());
+    }
+
+    private void ToggleFromServer(ChangeEventArgs e)
+    {
+        if (e.Value is bool value)
+        {
+            RemoteToggleService.SetFromServer(value);
+            _ = LoadData();
+        }
     }
 
     private void ShowReplays()

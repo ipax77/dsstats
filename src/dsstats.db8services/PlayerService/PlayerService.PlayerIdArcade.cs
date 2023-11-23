@@ -14,45 +14,17 @@ public partial class PlayerService
             GameModesPlayed = await GetPlayerIdArcadeGameModeCounts(playerId, token),
             Ratings = await GetPlayerIdArcadeRatings(playerId, token),
             Commanders = await GetPlayerIdCommandersPlayed(playerId, ratingType, token),
-            ChartDtos = await GetArcadePlayerRatingChartData(playerId, ratingType, token),
+            ChartDtos = await GetPlayerRatingChartData(playerId, RatingCalcType.Arcade, ratingType, token),
             MvpInfo = await GetMvpInfo(playerId, ratingType)
         };
 
         (summary.CmdrPercentileRank, summary.StdPercentileRank) =
             await GetPercentileRank(
                 summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType.Cmdr)?.Pos ?? 0,
-                summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType.Std)?.Pos ?? 0);
+                summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType.Std)?.Pos ?? 0, 
+                RatingCalcType.Arcade);
 
         return summary;
-    }
-
-    public async Task<List<ReplayPlayerChartDto>> GetArcadePlayerRatingChartData(PlayerId playerId, RatingType ratingType, CancellationToken token)
-    {
-        var replaysQuery = from p in context.ArcadePlayers
-                           from rp in p.ArcadeReplayPlayers
-                           join r in context.ArcadeReplays on rp.ArcadeReplayId equals r.ArcadeReplayId
-                           join rr in context.ArcadeReplayRatings on r.ArcadeReplayId equals rr.ArcadeReplayId
-                           join rpr in context.ArcadeReplayPlayerRatings on rp.ArcadeReplayPlayerId equals rpr.ArcadeReplayPlayerId
-                           orderby r.CreatedAt
-                           where p.ProfileId == playerId.ToonId
-                            && p.RegionId == playerId.RegionId
-                            && p.RealmId == playerId.RealmId
-                            && rr.RatingType == ratingType
-                           group new { rp, rpr } by new { Year = r.CreatedAt.Year, Week = context.Week(r.CreatedAt) } into g
-                           select new ReplayPlayerChartDto()
-                           {
-                               Replay = new ReplayChartDto()
-                               {
-                                   Year = g.Key.Year,
-                                   Week = g.Key.Week,
-                               },
-                               ReplayPlayerRatingInfo = new RepPlayerRatingChartDto()
-                               {
-                                   Rating = Math.Round(g.Average(a => a.rpr.Rating)),
-                                   Games = g.Max(m => m.rpr.Games)
-                               }
-                           };
-        return await replaysQuery.ToListAsync(token);
     }
 
     private async Task<List<PlayerRatingDetailDto>> GetPlayerIdArcadeRatings(PlayerId playerId, CancellationToken token)

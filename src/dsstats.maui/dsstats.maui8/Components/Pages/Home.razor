@@ -3,8 +3,12 @@
 
 @if (DEBUG)
 {
-    <div class="btn-group">
-        <button type="button" class="btn btn-danger" @onclick="e => dsstatsService.DeleteRecentReplays(50)">Delete Replays</button>
+    <div>
+        <h4>DEBUG</h4>
+        <div class="btn-group">
+            <button type="button" class="btn btn-danger" @onclick="e => dsstatsService.DeleteRecentReplays(50)">Delete Replays</button>
+            <button type="button" class="btn btn-danger" @onclick="e => dsstatsService.DEBUGProduceReplayError()">ProduceReplayError</button>
+        </div>
     </div>
 }
 <div class="btn-group border border-3 rounded-2 border-light p-2 bgchart">
@@ -44,7 +48,7 @@
         <button class="btn btn-sm btn-outline-light bgchart"
                 type="button"
                 data-bs-toggle="collapse"
-                data-bs-target="#ReplaysFilter"
+                data-bs-target="#SessionComponent"
                 aria-expanded="false"
                 aria-controls="SessionComponent"
                 @onclick="e => showSessionProgress = !showSessionProgress">
@@ -52,19 +56,39 @@
             Session Progress
         </button>
         <div class="collapse show" id="SessionComponent">
-        @if (showSessionProgress)
-        {
-            <SessionComponent @ref="sessionComponent" />
-        }
+            @if (showSessionProgress)
+            {
+                <SessionComponent @ref="sessionComponent" />
+            }
         </div>
     </div>
 </div>
 
 <div class="mt-2">
-    <AppPlayersComponent ActivePlayer="interestPlayer" />
+    <div class="col-auto">
+        <button class="btn btn-sm btn-outline-light bgchart"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#AppPlayers"
+                aria-expanded="false"
+                aria-controls="AppPlayers"
+                @onclick="e => showPlayers = !showPlayers">
+            <span class="bi @(showPlayers ? "bi-chevron-down" : "bi-chevron-up")"></span>
+            Players
+        </button>
+    </div>
+    <div class="collapse show" id="AppPlayers">
+        @if (showPlayers)
+        {
+            <AppPlayersComponent @ref="appPlayersComponent" ActivePlayer="interestPlayer" OnPlayerRequested="PlayerRequest" />
+        }
+    </div>
     @if (interestPlayer is not null)
     {
-        <dsstats.razorlib.Players.PlayerDetails @ref="playerDetails"
-            PlayerId="interestPlayer" RatingType="RatingType.Cmdr" RatingCalcType="RatingCalcType.Dsstats" />
+        <div class="mt-1">
+@*             <dsstats.razorlib.Players.PlayerDetails @ref="playerDetails"
+                                                PlayerId="interestPlayer" RatingType="RatingType.Cmdr" RatingCalcType="RatingCalcType.Dsstats" /> *@
+            <dsstats.razorlib.Players.Profile.ProfileComponent @ref="playerDetails" PlayerId="interestPlayer" RatingCalcType="RatingCalcType.Dsstats" RatingType="RatingType.Cmdr" />
+        </div>
     }
 </div>

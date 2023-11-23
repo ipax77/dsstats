@@ -41,6 +41,18 @@ public partial class DsstatsService
         EventHandler<ScanEventArgs>? handler = ScanStateChanged;
         handler?.Invoke(this, e);
     }
+
+    public void DEBUGProduceReplayError()
+    {
+        OnDecodeStateChanged(new()
+        {
+            DecodeError = new()
+            {
+                ReplayPath = $"/path/to/my/replay{Random.Shared.Next(1, 10000)}",
+                Error = "TestError"
+            }
+        });
+    }
 }
 
 public class ScanEventArgs : EventArgs

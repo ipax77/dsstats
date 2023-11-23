@@ -24,7 +24,7 @@ public partial class TopRowComponent : ComponentBase, IDisposable
 
     string currentLocation = "Home";
     DecodeInfoEventArgs? decodeInfo = null;
-    ConcurrentBag<DecodeError> decodeErrors = new();
+    ConcurrentDictionary<DecodeError, bool> decodeErrors = new();
     List<DecodeError> decodeErrorsList = new();
     DecodeErrorModal? decodeErrorModal;
     UploadAskModal? uploadAskModal;
@@ -51,7 +51,7 @@ public partial class TopRowComponent : ComponentBase, IDisposable
         if (firstRender)
         {
             _ = InitScan();
-            _ = CheckForUpdates();
+            _ = CheckForUpdates(true);
         }
         base.OnAfterRender(firstRender);
     }
@@ -64,7 +64,7 @@ public partial class TopRowComponent : ComponentBase, IDisposable
         }
         if (e.DecodeError is not null)
         {
-            decodeErrors.Add(e.DecodeError);
+            decodeErrors.TryAdd(e.DecodeError, true);
         }
         if (e.Finished)
         {
@@ -93,18 +93,16 @@ public partial class TopRowComponent : ComponentBase, IDisposable
 
     private void ShowErrors()
     {
-        decodeErrorsList = decodeErrors.ToList();
+        decodeErrorsList = decodeErrors.Keys.ToList();
         decodeErrorModal?.Show();
     }
 
-    private void RemoveErrors(List<DecodeError> decodeErrors)
+    private void RemoveErrors(List<DecodeError> removedDecodeErrors)
     {
-        foreach (var decodeError in decodeErrors)
+        foreach (var decodeError in removedDecodeErrors)
         {
-            if (decodeErrorsList.Contains(decodeError))
-            {
-                decodeErrorsList.Remove(decodeError);
-            }
+            //decodeErrorsList.Remove(decodeError);
+            decodeErrors.TryRemove(decodeError, out var _);
         }
         InvokeAsync(() => StateHasChanged());
     }
@@ -146,7 +144,7 @@ public partial class TopRowComponent : ComponentBase, IDisposable
                 }
             }
         }
-        else
+        else if (!init)
         {
             toastService.ShowInfo("Your version is up to date.");
         }

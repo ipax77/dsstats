@@ -2,6 +2,7 @@
 @using dsstats.shared.Interfaces
 @using pax.BlazorChartJs
 @inject IPlayerService playerService
+@inject IRemoteToggleService remoteToggleService
 
 <ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="EventTriggered" />
 
@@ -15,7 +16,7 @@
     [Parameter, EditorRequired]
     public List<CommanderInfo> CommanderInfos { get; set; } = default!;
 
-    Dictionary<RatingType, List<CommanderInfo>> rpCommanderInfos = new();
+    Dictionary<ChartTypeMemory, List<CommanderInfo>> rpCommanderInfos = new();
 
     bool dataReady;
     bool chartReady;
@@ -29,7 +30,7 @@
 
         if (CommanderInfos.Count > 0)
         {
-            rpCommanderInfos[RatingType] = new(CommanderInfos);
+            rpCommanderInfos[new(RatingType, remoteToggleService.FromServer)] = new(CommanderInfos);
             dataReady = true;
             SetupChart();
         }
@@ -48,7 +49,7 @@
             rpCommanderInfos.Clear();
         }
 
-        if (rpCommanderInfos.ContainsKey(ratingType))
+        if (rpCommanderInfos.ContainsKey(new(RatingType, remoteToggleService.FromServer)))
         {
             SetupChart();
         }
@@ -60,7 +61,7 @@
 
     private async Task LoadData()
     {
-        rpCommanderInfos[RatingType] = await playerService.GetPlayerIdCommandersPlayed(PlayerId, RatingType, default);
+        rpCommanderInfos[new(RatingType, remoteToggleService.FromServer)] = await playerService.GetPlayerIdCommandersPlayed(PlayerId, RatingType, default);
         dataReady = true;
         SetupChart();
     }
@@ -92,14 +93,14 @@
             chartConfig.UpdateChartOptions();
         }
 
-        if (!rpCommanderInfos.ContainsKey(RatingType) || rpCommanderInfos[RatingType].Count == 0)
+        if (!rpCommanderInfos.ContainsKey(new(RatingType, remoteToggleService.FromServer)) || rpCommanderInfos[new(RatingType, remoteToggleService.FromServer)].Count == 0)
         {
             chartConfig.SetLabels(new List<string>());
             return;
         }
 
-        chartConfig.SetLabels(rpCommanderInfos[RatingType].Select(s => s.Cmdr.ToString()).ToList());
-        var dataset = GetDataset(rpCommanderInfos[RatingType]);
+        chartConfig.SetLabels(rpCommanderInfos[new(RatingType, remoteToggleService.FromServer)].Select(s => s.Cmdr.ToString()).ToList());
+        var dataset = GetDataset(rpCommanderInfos[new(RatingType, remoteToggleService.FromServer)]);
         chartConfig.AddDataset(dataset);
     }
 
@@ -143,5 +144,17 @@
                     }
                 }
             };
+    }
+
+    public record ChartTypeMemory
+    {
+        public ChartTypeMemory(RatingType ratingType, bool remote)
+        {
+            RatingType = ratingType;
+            Remote = remote;
+        }
+
+        public RatingType RatingType { get; init; }
+        public bool Remote { get; init; }
     }
 }

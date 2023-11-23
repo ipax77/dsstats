@@ -4,6 +4,7 @@
 @using dsstats.shared.Interfaces;
 @inject IPlayerService playerService
 @inject IJSRuntime JSRuntime
+@inject IRemoteToggleService remoteToggleService
 @implements IDisposable
 
 <ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="EventTriggered" />
@@ -42,7 +43,7 @@
                         "import", "./_content/dsstats.razorlib/js/timeChart.js").AsTask());
         if (ChartDtos.Count > 0)
         {
-            rpChartDtos[new(RatingType, RatingCalcType)] = new(ChartDtos);
+            rpChartDtos[new(RatingType, RatingCalcType, remoteToggleService.FromServer)] = new(ChartDtos);
             dataReady = true;
             SetupChart();
         }
@@ -63,7 +64,7 @@
             rpChartDtos.Clear();
         }
 
-        if (rpChartDtos.ContainsKey(new(RatingType, RatingCalcType)))
+        if (rpChartDtos.ContainsKey(new(RatingType, RatingCalcType, remoteToggleService.FromServer)))
         {
             SetupChart();
         }
@@ -75,7 +76,7 @@
 
     private async Task LoadData()
     {
-        rpChartDtos[new(RatingType, RatingCalcType)] = await playerService.GetPlayerRatingChartData(PlayerId, RatingCalcType, RatingType, default);
+        rpChartDtos[new(RatingType, RatingCalcType, remoteToggleService.FromServer)] = await playerService.GetPlayerRatingChartData(PlayerId, RatingCalcType, RatingType, default);
         dataReady = true;
         SetupChart();
     }
@@ -107,12 +108,12 @@
             }
         }
 
-        if (!rpChartDtos.ContainsKey(new(RatingType, RatingCalcType)) || !rpChartDtos[new(RatingType, RatingCalcType)].Any())
+        if (!rpChartDtos.ContainsKey(new(RatingType, RatingCalcType, remoteToggleService.FromServer)) || !rpChartDtos[new(RatingType, RatingCalcType, remoteToggleService.FromServer)].Any())
         {
             return;
         }
 
-        (var ratingData, var gamesData) = GetChartData(rpChartDtos[new(RatingType, RatingCalcType)]);
+        (var ratingData, var gamesData) = GetChartData(rpChartDtos[new(RatingType, RatingCalcType, remoteToggleService.FromServer)]);
 
         chartConfig.SetLabels(ratingData.Select(s => s.X).ToList());
 
@@ -410,13 +411,15 @@
 
     public record ChartTypeMemory
     {
-        public ChartTypeMemory(RatingType ratingType, RatingCalcType ratingCalcType)
+        public ChartTypeMemory(RatingType ratingType, RatingCalcType ratingCalcType, bool remote)
         {
             RatingType = ratingType;
             RatingCalcType = ratingCalcType;
+            Remote = remote;
         }
 
         public RatingType RatingType { get; init; }
         public RatingCalcType RatingCalcType { get; init; }
+        public bool Remote { get; init; }
     }
 }

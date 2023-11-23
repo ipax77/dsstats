@@ -20,18 +20,15 @@
                 }
             </div>
             <div class="ms-1">
-                <h4 class="card-title">Session Progress</h4>
+                <div class="form-check form-switch user-select-none">
+                    <label class="form-check-label">
+                        Remote
+                        <input class="form-check-input" type="checkbox" @bind="remote" @bind:after="LoadData">
+                    </label>
+                </div>
             </div>
         </div>
-        <div class="">
-            <div class="form-check form-switch user-select-none">
-                <label class="form-check-label">
-                    Remote
-                    <input class="form-check-input" type="checkbox" @bind="remote" @bind:after="LoadData">
-                </label>
-            </div>
-        </div>
-        <div class="">
+        <div class="mt-1">
             @if (infos.Count > 0)
             {
                 var sum = infos.Sum(s => remote ? s.RemoteRatingGain : s.LocalRatingGain);
@@ -49,7 +46,7 @@
                     <tr>
                         <th><span class="bi bi-arrow-down-up"></span></th>
                         <th>Cmdr</th>
-                        <th>GameMode</th>
+                        <th>Mode</th>
                         <th>Duration</th>
                     </tr>
                 </thead>
@@ -76,10 +73,11 @@
                                      alt="@info.Commander" style="width: 30px; height: 30px;"></div>
                             </td>
                             <td>
-                                @HelperService.GetGameMode(info.GameMode, info.TournamentEdition)
+                                @HelperService.GetTinyGameMode(info.GameMode, info.TournamentEdition)
                             </td>
                             <td>
-                                @TimeSpan.FromSeconds(info.Duration).ToString(@"hh\:mm\:ss")
+                                @(info.Duration >= 3600 ? TimeSpan.FromSeconds(info.Duration).ToString(@"hh\:mm\:ss")
+                                    : TimeSpan.FromSeconds(info.Duration).ToString(@"mm\:ss"))
                             </td>
                         </tr>
                     }

@@ -222,6 +222,29 @@ public static class HelperService
             return $"{gameMode} TE";
         }
     }
+
+    public static string GetTinyGameMode(GameMode gameMode, bool tournamentEdition)
+    {
+        if (!tournamentEdition)
+        {
+            return gameMode switch
+            {
+                GameMode.Commanders => "Cmdrs",
+                GameMode.CommandersHeroic => "Heroic",
+                GameMode.Standard => "Std",
+                _ => "Unrated"
+            };
+        }
+        else
+        {
+            return gameMode switch
+            {
+                GameMode.Commanders => "Cmdrs TE",
+                GameMode.Standard => "Std TE",
+                _ => "Unrated"
+            };
+        }
+    }
 }
 
 public record ReplaysToonIdRequest

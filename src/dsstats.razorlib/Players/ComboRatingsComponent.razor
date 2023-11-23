@@ -5,6 +5,7 @@
 @using dsstats.razorlib.Services
 @using System.Globalization
 @inject IPlayerService playerService
+@inject IRemoteToggleService remoteToggleService
 
 <div class="@(Request.PlayerId == null ? "" : "visually-hidden")">
     <CascadingValue Value="Request">
@@ -186,26 +187,29 @@
                 </table>
             </div>
         </div>
-        <div class="col-auto mt-4">
-            <div class="ms-2">
-                <button class="btn btn-sm btn-outline-light bgchart"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#Distribution"
-                        aria-expanded="false"
-                        aria-controls="Distribution"
-                        @onclick="ShowHideDistribution">
-                    <span class="bi @(showDistribution ? "bi-chevron-down" : "bi-chevron-up")"></span>
-                    Rating Distribution
-                </button>
-            </div>
-            <div class="collapse" id="Distribution">
-                @if (showDistribution)
-                {
-                    <dsstats.razorlib.Distribution.DistributionComponent Request="distributionRequest" />
-                }
+        @if (!remoteToggleService.IsMaui)
+        {
+            <div class="col-auto mt-4">
+                <div class="ms-2">
+                    <button class="btn btn-sm btn-outline-light bgchart"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#Distribution"
+                    aria-expanded="false"
+                    aria-controls="Distribution"
+                    @onclick="ShowHideDistribution">
+                        <span class="bi @(showDistribution ? "bi-chevron-down" : "bi-chevron-up")"></span>
+                        Rating Distribution
+                    </button>
+                </div>
+                <div class="collapse" id="Distribution">
+                    @if (showDistribution)
+                    {
+                        <dsstats.razorlib.Distribution.DistributionComponent Request="distributionRequest" />
+                    }
             </div>
         </div>
+        }
     </div>
 </div>
 @* @if (Request.PlayerId is not null)

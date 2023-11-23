@@ -7,20 +7,20 @@ namespace dsstats.db8services;
 
 public partial class PlayerService
 {
-    private async Task<(double cmdrRank, double stdRank)> GetPercentileRank(int cmdrPos, int stdPos)
+    private async Task<(double cmdrRank, double stdRank)> GetPercentileRank(int cmdrPos, int stdPos, RatingCalcType ratingCalcType)
     {
         double cmdrRank = 0;
         double stdRank = 0;
 
         if (cmdrPos != 0)
         {
-            var maxPos = await GetMaxPos(RatingType.Cmdr);
+            var maxPos = await GetMaxPos(RatingType.Cmdr, ratingCalcType);
             cmdrRank = CalculatePercentileRank(maxPos, cmdrPos);
         }
 
         if (stdPos != 0)
         {
-            var maxPos = await GetMaxPos(RatingType.Std);
+            var maxPos = await GetMaxPos(RatingType.Std, ratingCalcType);
             stdRank = CalculatePercentileRank(maxPos, stdPos);
         }
 
@@ -40,17 +40,31 @@ public partial class PlayerService
         return (double)lowerPlayers / totalPlayers * 100;
     }
 
-    private async Task<int> GetMaxPos(RatingType ratingType)
+    private async Task<int> GetMaxPos(RatingType ratingType, RatingCalcType ratingCalcType)
     {
-        var memKey = $"MaxPos{ratingType}";
+        var memKey = $"MaxPos{ratingCalcType}{ratingType}";
 
         if (!memoryCache.TryGetValue(memKey, out int maxPos))
         {
-            maxPos = await context.PlayerRatings
+            maxPos = ratingCalcType switch
+            {
+                RatingCalcType.Dsstats =>  await context.PlayerRatings
                 .Where(x => x.RatingType == ratingType)
                 .OrderByDescending(o => o.Pos)
                 .Select(s => s.Pos)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(),
+                RatingCalcType.Arcade => await context.ArcadePlayerRatings
+                .Where(x => x.RatingType == ratingType)
+                .OrderByDescending(o => o.Pos)
+                .Select(s => s.Pos)
+                .FirstOrDefaultAsync(),
+                RatingCalcType.Combo => await context.ComboPlayerRatings
+                .Where(x => x.RatingType == ratingType)
+                .OrderByDescending(o => o.Pos)
+                .Select(s => s.Pos)
+                .FirstOrDefaultAsync(),
+                _ => 0
+            };
 
             if (maxPos > 0)
             {
