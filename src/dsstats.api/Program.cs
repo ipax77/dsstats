@@ -29,7 +29,8 @@ builder.Services.AddCors(options =>
                       {
                           policy.WithOrigins("https://dsstats.pax77.org",
                                              "https://dsstats-dev.pax77.org",
-                                             "https://localhost:7257")
+                                             "https://localhost:7257",
+                                             "https://localhost:7227")
                           .AllowAnyHeader()
                           .AllowAnyMethod();
                       });

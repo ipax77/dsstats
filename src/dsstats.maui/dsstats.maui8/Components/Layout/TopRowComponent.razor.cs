@@ -46,6 +46,16 @@ public partial class TopRowComponent : ComponentBase, IDisposable
         base.OnInitialized();
     }
 
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ = InitScan();
+            _ = CheckForUpdates();
+        }
+        base.OnAfterRender(firstRender);
+    }
+
     private void DssstatsService_DecodeStateChanged(object? sender, DecodeInfoEventArgs e)
     {
         if (!string.IsNullOrEmpty(e.Info))
@@ -62,15 +72,6 @@ public partial class TopRowComponent : ComponentBase, IDisposable
         }
         decodeInfo = e;
         InvokeAsync(() => StateHasChanged());
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        if (firstRender)
-        {
-            _ = InitScan();
-        }
-        base.OnAfterRender(firstRender);
     }
 
     private async Task InitScan()
