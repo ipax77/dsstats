@@ -1,4 +1,5 @@
 ﻿using dsstats.shared;
+using System.Security.Permissions;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -12,6 +13,11 @@ public partial class ConfigService
 
     public ConfigService()
     {
+        AppOptions = SetupConfig();
+    }
+
+    public AppOptions SetupConfig()
+    {
         if (!File.Exists(ConfigFile))
         {
             AppOptions = new();
@@ -19,12 +25,15 @@ public partial class ConfigService
         }
         else
         {
+            string content = string.Empty;
             try
             {
-                var config = JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(ConfigFile));
+                content = File.ReadAllText(ConfigFile);
+
+                var config = JsonSerializer.Deserialize<AppConfig>(content);
                 if (config == null)
                 {
-                    AppOptions = new();
+                    AppOptions = TrySetOptionsFromV6(content);
                     InitOptions();
                 }
                 else
@@ -34,7 +43,7 @@ public partial class ConfigService
             }
             catch
             {
-                AppOptions = new();
+                AppOptions = TrySetOptionsFromV6(content);
                 InitOptions();
             }
         }
@@ -43,6 +52,8 @@ public partial class ConfigService
             .Except(AppOptions.IgnoreProfiles)
             .Distinct()
             .ToList();
+
+        return AppOptions;
     }
 
     public List<RequestNames> GetRequestNames()
@@ -75,7 +86,7 @@ public partial class ConfigService
                 .Except(AppOptions.IgnoreProfiles)
                 .Distinct()
                 .ToList();
-            }
+        }
     }
 
     public void InitOptions()
@@ -225,6 +236,41 @@ public partial class ConfigService
         catch
         {
             return null;
+        }
+    }
+
+    private static bool ConfigVersionExists(string configFileContent)
+    {
+        using JsonDocument doc = JsonDocument.Parse(configFileContent);
+        return doc.RootElement.TryGetProperty("ConfigVersion", out _);
+    }
+
+    private AppOptions TrySetOptionsFromV6(string content)
+    {
+        try
+        {
+            var optionsV6 = JsonSerializer.Deserialize<UserSettingsV6>(content);
+            if (optionsV6 is null)
+            {
+                return new();
+            }
+            else
+            {
+                return new()
+                {
+                    AppGuid = optionsV6.AppGuid,
+                    CPUCores = optionsV6.CpuCoresUsedForDecoding,
+                    UploadCredential = optionsV6.AllowCleanUploads,
+                    AutoDecode = optionsV6.AutoScanForNewReplays,
+                    ReplayStartName = optionsV6.ReplayStartName,
+                    CheckForUpdates = optionsV6.CheckForUpdates,
+                    Sc2Profiles = GetInitialNamesAndFolders()
+                };
+            }
+        }
+        catch
+        {
+            return new();
         }
     }
 

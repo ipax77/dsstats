@@ -97,6 +97,18 @@ public partial class TopRowComponent : ComponentBase, IDisposable
         decodeErrorModal?.Show();
     }
 
+    private void RemoveErrors(List<DecodeError> decodeErrors)
+    {
+        foreach (var decodeError in decodeErrors)
+        {
+            if (decodeErrorsList.Contains(decodeError))
+            {
+                decodeErrorsList.Remove(decodeError);
+            }
+        }
+        InvokeAsync(() => StateHasChanged());
+    }
+
     public void Dispose()
     {
         dsstatsService.ScanStateChanged -= DssstatsService_ScanStateChanged;

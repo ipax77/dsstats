@@ -18,6 +18,8 @@ namespace dsstats.maui8
 {
     public static class MauiProgram
     {
+        public static readonly string DbName = "dsstats3.db";
+
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
@@ -35,7 +37,7 @@ namespace dsstats.maui8
     		builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
-            var sqliteConnectionString = $"Data Source={Path.Combine(FileSystem.Current.AppDataDirectory, "dsstats.db")}";
+            var sqliteConnectionString = $"Data Source={Path.Combine(FileSystem.Current.AppDataDirectory, DbName)}";
             // var sqliteConnectionString = "Data Source=/data/ds/dsstats.db";
             builder.Services.AddDbContext<ReplayContext>(options => options
                 .UseSqlite(sqliteConnectionString, sqlOptions =>
@@ -65,6 +67,7 @@ namespace dsstats.maui8
             });
             builder.Services.AddBlazoredToast();
             builder.Services.AddSingleton<IFolderPicker>(FolderPicker.Default);
+            builder.Services.AddSingleton<IFilePicker>(FilePicker.Default);
 
             builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
             builder.Services.AddSingleton<ConfigService>();
@@ -75,6 +78,7 @@ namespace dsstats.maui8
             builder.Services.AddSingleton<IUpdateService, GitHubUpdateService>();
             // builder.Services.AddSingleton<IUpdateService, StoreUpdateService>();
 
+            builder.Services.AddScoped<BackupService>();
             builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 
             builder.Services.AddKeyedScoped<IWinrateService, MauiWinrateService>("local");
@@ -93,7 +97,6 @@ namespace dsstats.maui8
             builder.Services.AddKeyedScoped<IBuildService, apiServices.BuildService>("remote");
             builder.Services.AddScoped<IBuildService, Services.BuildService>();
 
-            builder.Services.AddScoped<IArcadeService, apiServices.ArcadeService>();
 
             var app = builder.Build();
 

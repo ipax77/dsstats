@@ -4,8 +4,10 @@
 @using dsstats.maui8.Services;
 @inject ConfigService configService
 @inject IFolderPicker folderPicker
+@inject IFilePicker filePicker
 @inject NavigationManager NavigationManager
 @inject IToastService toastService
+@inject BackupService backupService
 @implements IDisposable
 
 <PageTitle>Config</PageTitle>
@@ -167,10 +169,28 @@
     </div>
 </div>
 <div class="sticky-bottom mt-2 mb-4">
-    <div class="btn-group">
-        <button type="button" class="btn btn-success" @onclick="SaveSettings">Save</button>
-        <button type="button" class="btn btn-warning" @onclick="Undo">Undo</button>
-        <button type="button" class="btn btn-danger" @onclick="HardReset">Reset</button>
+    <div class="row">
+        <div class="col-auto">
+            <div class="btn-group">
+                <button type="button" class="btn btn-success" @onclick="SaveSettings">Save</button>
+                <button type="button" class="btn btn-warning" @onclick="Undo">Undo</button>
+                <button type="button" class="btn btn-danger" @onclick="HardReset">Reset</button>
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary" @onclick="Backup">Backup</button>
+                <button type="button" class="btn btn-dark" @onclick="Restore">Restore</button>
+            </div>
+        </div>
+        <div class="col-auto">
+            @if (isLoading)
+            {
+                <div class="spinner-border spinner-border-sm text-danger" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            }
+        </div>
     </div>
 </div>
 
@@ -180,6 +200,7 @@
     EditContext editContext = null!;
     private bool hasChanges;
     private string addName = string.Empty;
+    bool isLoading;
 
     List<Sc2Profile> profiles = new();
 
@@ -286,6 +307,60 @@
         configService.UpdateConfig(options);
         hasChanges = false;
         toastService.ShowSuccess("Settings saved.");
+    }
+
+    public async Task Backup()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        var result = await backupService.Backup();
+
+        if (result == BackupResult.Success)
+        {
+            toastService.ShowSuccess("Backup successful.");
+        }
+        else if (result == BackupResult.Canceled)
+        {
+            toastService.ShowInfo("Backup canceled.");
+        }
+        else
+        {
+            toastService.ShowError("Backup failed.");
+        }
+
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+
+    }
+
+    public async Task Restore()
+    {
+        var pickResult = await filePicker.PickAsync(new PickOptions()
+        {
+            PickerTitle = "Select dsstats backup file",
+        });
+        if (pickResult is not null)
+        {
+            var result = await backupService.Restore(pickResult.FullPath);
+            if (result == RestoreResult.Success)
+            {
+                toastService.ShowSuccess("Backup restore successful.");
+                editContext.OnFieldChanged -= FieldChanged;
+                options = configService.SetupConfig() with { };
+                configService.UpdateConfig(options);
+                editContext = new(options);
+                editContext.OnFieldChanged += FieldChanged;
+                await InvokeAsync(() => StateHasChanged());
+            }
+            else if (result == RestoreResult.Canceled)
+            {
+                toastService.ShowInfo("Backup restore canceled.");
+            }
+            else
+            {
+                toastService.ShowError("Backup restore failed.");
+            }
+        }
     }
 
     public void Dispose()

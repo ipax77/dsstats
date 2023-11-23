@@ -56,9 +56,14 @@
     [Parameter, EditorRequired]
     public List<DecodeError> DecodeErrors { get; set; } = default!;
 
+    [Parameter]
+    public EventCallback<List<DecodeError>> OnErrorsRemoved { get; set; }
+
+
     private void AddAllReplaysToIgnoreList()
     {
         configService.AddReplaysToIgnoreList(DecodeErrors.Select(s => s.ReplayPath).ToList());
+        OnErrorsRemoved.InvokeAsync(DecodeErrors);
         DecodeErrors.Clear();
         toastService.ShowSuccess("Replays added to the ignore list. You can manage the list in the Settings.");
     }
@@ -67,6 +72,7 @@
     {
         configService.AddReplaysToIgnoreList([decodeError.ReplayPath]);
         DecodeErrors.Remove(decodeError);
+        OnErrorsRemoved.InvokeAsync([decodeError]);
         toastService.ShowSuccess("Replay added to the ignore list. You can manage the list in the Settings.");
     }
 

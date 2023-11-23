@@ -120,6 +120,18 @@ public class PlayerService : IPlayerService
         }
     }
 
+    public async Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId, RatingCalcType ratingCalcType, RatingType ratingType, CancellationToken token)
+    {
+        if (remoteToggleService.FromServer)
+        {
+            return await remotePlayerService.GetPlayerRatingChartData(playerId, ratingCalcType, ratingType, token);
+        }
+        else
+        {
+            return await localPlayerService.GetPlayerRatingChartData(playerId, ratingCalcType, ratingType, token);
+        }
+    }
+
     public async Task<List<CommanderInfo>> GetPlayerIdCommandersPlayed(PlayerId playerId, RatingType ratingType, CancellationToken token)
     {
         if (remoteToggleService.FromServer)
@@ -136,4 +148,6 @@ public class PlayerService : IPlayerService
     {
         throw new NotImplementedException();
     }
+
+
 }
