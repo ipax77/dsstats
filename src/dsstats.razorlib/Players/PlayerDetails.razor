@@ -149,7 +149,8 @@
             </div>
             <div class="col-auto bgchart p-1 border border-secondary rounded"
                 style="position: relative; width: 50vw; min-width: 600px; max-width: 800px; height: calc(70vw * 0.5); min-height: 300px; max-height: 400px;">
-                <PlayerRatingDetailChart @ref="playerRatingDetailChart" PlayerId="PlayerId" IsArcade="false"
+                <PlayerRatingDetailChart @ref="playerRatingDetailChart" PlayerId="PlayerId"
+                    RatingCalcType="RatingCalcType"
                     RatingType="RatingType"
                     CurrentRating="RatingCalcType == RatingCalcType.Combo ? 0 : interestRating.Rating"
                     ChartDtos="summary.ChartDtos" />
