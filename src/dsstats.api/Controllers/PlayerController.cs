@@ -122,6 +122,16 @@ public class PlayerController : Controller
     }
 
     [HttpPost]
+    [Route("playerratingchartdata/{ratingType:int}/{ratingCalcType:int}")]
+    public async Task<ActionResult<List<ReplayPlayerChartDto>>> GetPlayerRatingChartData(PlayerId playerId,
+                                                                                     int ratingType,
+                                                                                     int ratingCalcType,
+                                                                                     CancellationToken token = default)
+    {
+        return await playerService.GetPlayerRatingChartData(playerId, (RatingCalcType)ratingCalcType, (RatingType)ratingType, token);
+    }
+
+    [HttpPost]
     [Route("playercommandersplayed/{ratingType:int}")]
     public async Task<ActionResult<List<CommanderInfo>>> GetPlayerIdCommandersPlayed(PlayerId playerId,
                                                                        int ratingType,

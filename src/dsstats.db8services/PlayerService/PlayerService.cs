@@ -167,4 +167,152 @@ public partial class PlayerService : IPlayerService
 
         return await query.ToListAsync();
     }
+
+    public async Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId,
+                                                                       RatingCalcType ratingCalcType,
+                                                                       RatingType ratingType,
+                                                                       CancellationToken token)
+    {
+        if (IsSqlite)
+        {
+            return await GetSqlitePlayerRatingChartData(playerId, ratingType, token);
+        }
+
+        return ratingCalcType switch
+        {
+            RatingCalcType.Combo => await GetComboPlayerRatingChartData(playerId, ratingType, token),
+            RatingCalcType.Arcade => await GetArcadelayerRatingChartData(playerId, ratingType, token),
+            RatingCalcType.Dsstats => await GetDsstatsPlayerRatingChartData(playerId, ratingType, token),
+            _ => new()
+        };
+    }
+
+    public async Task<List<ReplayPlayerChartDto>> GetArcadelayerRatingChartData(PlayerId playerId,
+                                                           RatingType ratingType,
+                                                           CancellationToken token)
+    {
+        var query = from p in context.ArcadePlayers
+                    from rp in p.ArcadeReplayPlayers
+                    join r in context.ArcadeReplays on rp.ArcadeReplayId equals r.ArcadeReplayId
+                    join rr in context.ArcadeReplayRatings on r.ArcadeReplayId equals rr.ArcadeReplayId
+                    join rpr in context.ArcadeReplayPlayerRatings on rp.ArcadeReplayPlayerId equals rpr.ArcadeReplayPlayerId
+                    where p.ProfileId == playerId.ToonId
+                     && p.RealmId == playerId.RealmId
+                     && p.RegionId == playerId.RegionId
+                     && rr.RatingType == ratingType
+                    group new { r, rpr } by new { r.CreatedAt.Year, Week = context.Week(r.CreatedAt) } into g
+                    select new ReplayPlayerChartDto()
+                    {
+                        Replay = new()
+                        {
+                            Year = g.Key.Year,
+                            Week = g.Key.Week,
+                        },
+                        ReplayPlayerRatingInfo = new()
+                        {
+                            Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),
+                            Games = g.Max(m => m.rpr.Games)
+                        }
+                    };
+        return await query.ToListAsync(token);
+    }
+
+    public async Task<List<ReplayPlayerChartDto>> GetComboPlayerRatingChartData(PlayerId playerId,
+                                                           RatingType ratingType,
+                                                           CancellationToken token)
+    {
+        var query = from p in context.Players
+                    from rp in p.ReplayPlayers
+                    join r in context.Replays on rp.ReplayId equals r.ReplayId
+                    join rr in context.ComboReplayRatings on r.ReplayId equals rr.ReplayId
+                    join rpr in context.ComboReplayPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
+                    where p.ToonId == playerId.ToonId
+                     && p.RealmId == playerId.RealmId
+                     && p.RegionId == playerId.RegionId
+                     && rr.RatingType == ratingType
+                    group new { r, rpr } by new { r.GameTime.Year, Week = context.Week(r.GameTime) } into g
+                    select new ReplayPlayerChartDto()
+                    {
+                        Replay = new()
+                        {
+                            Year = g.Key.Year,
+                            Week = g.Key.Week,
+                        },
+                        ReplayPlayerRatingInfo = new()
+                        {
+                            Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),
+                            Games = g.Max(m => m.rpr.Games)
+                        }
+                    };
+        return await query.ToListAsync(token);
+    }
+
+    public async Task<List<ReplayPlayerChartDto>> GetDsstatsPlayerRatingChartData(PlayerId playerId,
+                                                               RatingType ratingType,
+                                                               CancellationToken token)
+    {
+        var query = from p in context.Players
+                    from rp in p.ReplayPlayers
+                    join r in context.Replays on rp.ReplayId equals r.ReplayId
+                    join rr in context.ReplayRatings on r.ReplayId equals rr.ReplayId
+                    join rpr in context.RepPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
+                    where p.ToonId == playerId.ToonId
+                     && p.RealmId == playerId.RealmId
+                     && p.RegionId == playerId.RegionId
+                     && rr.RatingType == ratingType
+                    group new { r, rpr } by new { r.GameTime.Year, Week = context.Week(r.GameTime) } into g
+                    select new ReplayPlayerChartDto()
+                    {
+                        Replay = new()
+                        {
+                            Year = g.Key.Year,
+                            Week = g.Key.Week,
+                        },
+                        ReplayPlayerRatingInfo = new()
+                        {
+                            Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),
+                            Games = g.Max(m => m.rpr.Games)
+                        }
+                    };
+        return await query.ToListAsync(token);
+    }
+
+    public async Task<List<ReplayPlayerChartDto>> GetSqlitePlayerRatingChartData(PlayerId playerId,
+                                                                   RatingType ratingType,
+                                                                   CancellationToken token)
+    {
+        var query = from p in context.Players
+                    from rp in p.ReplayPlayers
+                    join r in context.Replays on rp.ReplayId equals r.ReplayId
+                    join rr in context.ReplayRatings on r.ReplayId equals rr.ReplayId
+                    join rpr in context.RepPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
+                    where p.ToonId == playerId.ToonId
+                     && p.RealmId == playerId.RealmId
+                     && p.RegionId == playerId.RegionId
+                     && rr.RatingType == ratingType
+                    group new
+                    {
+                        r,
+                        rpr
+                    } by new
+                    {
+                        r.GameTime.Year,
+                        Week = context.Strftime("'%W'", r.GameTime)
+                    } into g
+                    select new ReplayPlayerChartDto()
+                    {
+                        Replay = new()
+                        {
+                            Year = g.Key.Year,
+                            Week = g.Key.Week,
+                        },
+                        ReplayPlayerRatingInfo = new()
+                        {
+                            Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),
+                            Games = g.Max(m => m.rpr.Games)
+                        }
+                    };
+        return await query.ToListAsync(token);
+    }
+                               
 }

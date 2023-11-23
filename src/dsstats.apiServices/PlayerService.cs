@@ -157,6 +157,26 @@ public class PlayerService : IPlayerService
         return new();
     }
 
+    public async Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId,
+                                                                       RatingCalcType ratingCalcType,
+                                                                       RatingType ratingType,
+                                                                       CancellationToken token = default)
+    {
+        try
+        {
+            var response =
+             await httpClient.PostAsJsonAsync($"{playerController}/playerratingchartdata/{(int)ratingCalcType}/{(int)ratingType}", playerId);
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<List<ReplayPlayerChartDto>>() ?? new();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("Failed getting player rating chart data: {error}", ex.Message);
+        }
+        return new();
+    }
+
     public async Task<List<CommanderInfo>> GetPlayerIdCommandersPlayed(PlayerId playerId,
                                                                        RatingType ratingType,
                                                                        CancellationToken token)

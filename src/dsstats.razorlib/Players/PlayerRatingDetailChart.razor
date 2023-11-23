@@ -2,7 +2,6 @@
 @using pax.BlazorChartJs
 @using dsstats.shared;
 @using dsstats.shared.Interfaces;
-@inject IArcadeService arcadeService
 @inject IPlayerService playerService
 @inject IJSRuntime JSRuntime
 @implements IDisposable
@@ -17,15 +16,15 @@
     public RatingType RatingType { get; set; }
 
     [Parameter, EditorRequired]
-    public double CurrentRating { get; set; }
+    public RatingCalcType RatingCalcType { get; set; }
 
     [Parameter, EditorRequired]
-    public bool IsArcade { get; set; }
+    public double CurrentRating { get; set; }
 
     [Parameter, EditorRequired]
     public List<ReplayPlayerChartDto> ChartDtos { get; set; } = default!;
 
-    Dictionary<RatingType, List<ReplayPlayerChartDto>> rpChartDtos = new();
+    Dictionary<ChartTypeMemory, List<ReplayPlayerChartDto>> rpChartDtos = new();
 
     bool dataReady;
     bool chartReady;
@@ -43,7 +42,7 @@
                         "import", "./_content/dsstats.razorlib/js/timeChart.js").AsTask());
         if (ChartDtos.Count > 0)
         {
-            rpChartDtos[RatingType] = new(ChartDtos);
+            rpChartDtos[new(RatingType, RatingCalcType)] = new(ChartDtos);
             dataReady = true;
             SetupChart();
         }
@@ -53,9 +52,10 @@
         }
     }
 
-    public void Update(RatingType ratingType, double currentRating, bool force = false)
+    public void Update(RatingType ratingType, RatingCalcType ratingCalcType, double currentRating, bool force = false)
     {
         RatingType = ratingType;
+        RatingCalcType = ratingCalcType;
         CurrentRating = currentRating;
 
         if (force)
@@ -63,7 +63,7 @@
             rpChartDtos.Clear();
         }
 
-        if (rpChartDtos.ContainsKey(ratingType))
+        if (rpChartDtos.ContainsKey(new(RatingType, RatingCalcType)))
         {
             SetupChart();
         }
@@ -75,14 +75,7 @@
 
     private async Task LoadData()
     {
-        if (IsArcade)
-        {
-            rpChartDtos[RatingType] = await arcadeService.GetPlayerRatingChartData(PlayerId, RatingType);
-        }
-        else
-        {
-            rpChartDtos[RatingType] = await playerService.GetPlayerRatingChartData(PlayerId, RatingType, default);
-        }
+        rpChartDtos[new(RatingType, RatingCalcType)] = await playerService.GetPlayerRatingChartData(PlayerId, RatingCalcType, RatingType, default);
         dataReady = true;
         SetupChart();
     }
@@ -114,12 +107,12 @@
             }
         }
 
-        if (!rpChartDtos.ContainsKey(RatingType) || !rpChartDtos[RatingType].Any())
+        if (!rpChartDtos.ContainsKey(new(RatingType, RatingCalcType)) || !rpChartDtos[new(RatingType, RatingCalcType)].Any())
         {
             return;
         }
 
-        (var ratingData, var gamesData) = GetChartData(rpChartDtos[RatingType]);
+        (var ratingData, var gamesData) = GetChartData(rpChartDtos[new(RatingType, RatingCalcType)]);
 
         chartConfig.SetLabels(ratingData.Select(s => s.X).ToList());
 
@@ -413,5 +406,17 @@
     {
         public string X { get; set; } = string.Empty;
         public int Y { get; set; }
-    }    
+    }
+
+    public record ChartTypeMemory
+    {
+        public ChartTypeMemory(RatingType ratingType, RatingCalcType ratingCalcType)
+        {
+            RatingType = ratingType;
+            RatingCalcType = ratingCalcType;
+        }
+
+        public RatingType RatingType { get; init; }
+        public RatingCalcType RatingCalcType { get; init; }
+    }
 }
