@@ -165,7 +165,7 @@ public class PlayerService : IPlayerService
         try
         {
             var response =
-             await httpClient.PostAsJsonAsync($"{playerController}/playerratingchartdata/{(int)ratingCalcType}/{(int)ratingType}", playerId);
+             await httpClient.PostAsJsonAsync($"{playerController}/playerratingchartdata/{(int)ratingType}/{(int)ratingCalcType}", playerId);
 
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<List<ReplayPlayerChartDto>>() ?? new();

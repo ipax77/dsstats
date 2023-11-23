@@ -187,7 +187,7 @@ public partial class PlayerService : IPlayerService
         };
     }
 
-    public async Task<List<ReplayPlayerChartDto>> GetArcadelayerRatingChartData(PlayerId playerId,
+    private async Task<List<ReplayPlayerChartDto>> GetArcadelayerRatingChartData(PlayerId playerId,
                                                            RatingType ratingType,
                                                            CancellationToken token)
     {
@@ -217,7 +217,7 @@ public partial class PlayerService : IPlayerService
         return await query.ToListAsync(token);
     }
 
-    public async Task<List<ReplayPlayerChartDto>> GetComboPlayerRatingChartData(PlayerId playerId,
+    private async Task<List<ReplayPlayerChartDto>> GetComboPlayerRatingChartData(PlayerId playerId,
                                                            RatingType ratingType,
                                                            CancellationToken token)
     {
@@ -247,7 +247,7 @@ public partial class PlayerService : IPlayerService
         return await query.ToListAsync(token);
     }
 
-    public async Task<List<ReplayPlayerChartDto>> GetDsstatsPlayerRatingChartData(PlayerId playerId,
+    private async Task<List<ReplayPlayerChartDto>> GetDsstatsPlayerRatingChartData(PlayerId playerId,
                                                                RatingType ratingType,
                                                                CancellationToken token)
     {
@@ -277,7 +277,7 @@ public partial class PlayerService : IPlayerService
         return await query.ToListAsync(token);
     }
 
-    public async Task<List<ReplayPlayerChartDto>> GetSqlitePlayerRatingChartData(PlayerId playerId,
+    private async Task<List<ReplayPlayerChartDto>> GetSqlitePlayerRatingChartData(PlayerId playerId,
                                                                    RatingType ratingType,
                                                                    CancellationToken token)
     {
