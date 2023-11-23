@@ -12,16 +12,14 @@
                     <thead>
                         <tr>
                             <th>GameMode</th>
-                            <th>Players</th>
                             <th>Games</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var gameMode in Summary.GameModesPlayed.OrderByDescending(o => o.Count))
+                        @foreach (var gameMode in gameModeCounts.OrderByDescending(o => o.Count))
                         {
                             <tr>
                                 <td>@gameMode.GameMode</td>
-                                <td>@HelperService.GetPlayerCountString(gameMode.PlayerCount)</td>
                                 <td>@gameMode.Count</td>
                             </tr>
                         }
@@ -34,15 +32,15 @@
                 <table class="tptable table table-sm w-auto">
                     <thead>
                         <tr>
-                            @foreach (var gameMode in Summary.GameModesPlayed.OrderByDescending(o => o.Count))
+                            @foreach (var gameMode in gameModeCounts.OrderByDescending(o => o.Count))
                             {
-                                <th>@gameMode.GameMode @HelperService.GetPlayerCountString(gameMode.PlayerCount)</th>
+                                <th>@gameMode.GameMode</th>
                             }
                         </tr>
                     </thead>
                     <tbody>
                         <tr class="text-center">
-                            @foreach (var gameMode in Summary.GameModesPlayed.OrderByDescending(o => o.Count))
+                            @foreach (var gameMode in gameModeCounts.OrderByDescending(o => o.Count))
                             {
                                 <td>@gameMode.Count</td>
                             }
@@ -58,4 +56,15 @@
 @code {
     [Parameter, EditorRequired]
     public PlayerDetailSummary Summary { get; set; } = default!;
+
+    List<GameModeCount> gameModeCounts => Summary.GameModesPlayed
+            .GroupBy(g => g.GameMode)
+            .Select(s => new GameModeCount() { GameMode = s.Key, Count = s.Sum(t => t.Count) })
+            .ToList();
+
+    public record GameModeCount
+    {
+        public GameMode GameMode { get; set; }
+        public int Count { get; set; }
+    }
 }
