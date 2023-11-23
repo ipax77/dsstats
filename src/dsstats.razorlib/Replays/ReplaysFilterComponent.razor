@@ -3,7 +3,7 @@
 @using dsstats.shared
 
 <div>
-    <EditForm EditContext="editContext" OnValidSubmit="ValidSubmit">
+    <EditForm EditContext="editContext" FormName="ReplaysFilterForm" OnValidSubmit="ValidSubmit">
         <div class="form-group">
             <InputSelect class="form-select" aria-label="playercount" @bind-Value="Filter.Playercount">
                 <option value="0">Any Playercount</option>

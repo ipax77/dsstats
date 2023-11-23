@@ -14,7 +14,7 @@
         </div>
         <div class="d-flex flex-row justify-content-between">
             <div>
-            <EditForm EditContext="editContext">
+            <EditForm EditContext="editContext" FormName="PlayerCmdrsAvgGainForm">
                 <label class="form-label">
                     <InputSelect class="form-select form-select-sm" @bind-Value="timePeriod">
                         @foreach (TimePeriod time in Data.GetTimePeriods(Data.TimePeriodGet.NoNone))

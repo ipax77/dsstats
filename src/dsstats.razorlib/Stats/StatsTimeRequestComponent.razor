@@ -5,7 +5,7 @@
 <div>
     @if (Request.Filter.Time is not null)
     {
-        <EditForm EditContext="editContext" OnValidSubmit="ValidSubmit">
+        <EditForm EditContext="editContext" FormName="StatsTimeRequestForm" OnValidSubmit="ValidSubmit">
             <DataAnnotationsValidator />
             <ValidationSummary />
             <div class="row">
