@@ -6,13 +6,15 @@
 
 <PageTitle>dsstats - replays</PageTitle>
 
-<div class="d-flex" style="overflow: auto">
-@foreach (var name in configService.GetRequestNames())
-{
-    <div class="ms-1 p-2 border border-warning rounded pointer" @onclick="e => ShowReplays(name)">
-        <span>@name.Name @Data.GetRegionString(name.RegionId)</span>
-    </div>
-}
+<div class="d-flex mb-1" style="overflow-x: auto">
+    @foreach (var name in configService.GetRequestNames())
+    {
+        var playerId = new PlayerId(name.ToonId, name.RealmId, name.RegionId);
+        <div class="ms-1 p-2 border border rounded pointer bgchart text-center @(Request.PlayerId == playerId ? "border-3 border-primary" : "border-secondary")"
+             @onclick="e => ShowReplays(name)" style="min-width: 80px;">
+            <span>@name.Name @Data.GetRegionString(name.RegionId)</span>
+        </div>
+    }
 </div>
 
 <dsstats.razorlib.Replays.ReplaysComponent @ref="replaysComponent" Request="Request" OnRequestChanged="SetParameters" />
