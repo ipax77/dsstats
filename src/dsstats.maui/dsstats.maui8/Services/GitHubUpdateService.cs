@@ -6,8 +6,8 @@ namespace dsstats.maui8.Services;
 public class GitHubUpdateService(ILogger<GitHubUpdateService> logger) : IUpdateService
 {
     private static readonly string packageUri = "https://github.com/ipax77/dsstats/releases/latest/download/";
-    public static readonly Version CurrentVersion = new Version(0, 5, 0);
-    private Version latestVersion = new Version(0, 0, 0);
+    public static readonly Version CurrentVersion = new Version(0, 5, 0, 0);
+    private Version latestVersion = new Version(0, 0, 0, 0);
     private readonly object lockobject = new();
 
     public EventHandler<UpdateProgressEvent>? UpdateProgress;
