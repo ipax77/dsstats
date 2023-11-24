@@ -22,18 +22,33 @@
         <Nullable>enable</Nullable>
 
         <!-- Display name -->
-        <ApplicationTitle>dsstats.maui8</ApplicationTitle>
+        <ApplicationTitle>dsstats.maui</ApplicationTitle>
 
         <!-- App Identifier -->
-        <ApplicationId>com.companyname.dsstats.maui8</ApplicationId>
-
+        <ApplicationId>com.companyname.sc2dsstats</ApplicationId>
+		<ApplicationIdGuid>32172F77-64E0-4DED-AF1C-39125CA1088D</ApplicationIdGuid>
+		
         <!-- Versions -->
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
         <ApplicationVersion>1</ApplicationVersion>
 
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
         <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+
+		<!--GitHub-->
+		<GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+		<PackageCertificateThumbprint>4CCF5C69DA656900B956B8F9D8D6C415382DE326</PackageCertificateThumbprint>
+		<AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
+		<AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
+		<AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
+		<GenerateTestArtifacts>True</GenerateTestArtifacts>
+		<HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
     </PropertyGroup>
+
+	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows' and '$(Configuration)' == 'Release'">
+		<AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
+		<PackageCertificateThumbprint>4CCF5C69DA656900B956B8F9D8D6C415382DE326</PackageCertificateThumbprint>
+	</PropertyGroup>
 
     <ItemGroup>
         <!-- App Icon -->
