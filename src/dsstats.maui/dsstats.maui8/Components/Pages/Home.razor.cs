@@ -44,13 +44,18 @@ public partial class Home : ComponentBase, IDisposable
     {
         if (e.Finished)
         {
-            _ = LoadLatestReplay();
+            _ = LoadLatestReplay(true);
         }
         InvokeAsync(() => StateHasChanged());
     }
 
-    private async Task LoadLatestReplay()
+    private async Task LoadLatestReplay(bool afterDecode = false)
     {
+        if (afterDecode)
+        {
+            await Task.Delay(400);
+        }
+
         currentReplay = await replayRepository.GetLatestReplay();
 
         if (currentReplay is null)

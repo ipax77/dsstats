@@ -16,9 +16,12 @@ public partial class DsstatsService
 {
     private readonly string uploaderController = "api8/v1/Upload";
     private readonly SemaphoreSlim uploadSs = new(1, 1);
+    private UploadStatus uploadStatus = UploadStatus.None;
 
     public async Task<bool> UploadReplays()
     {
+        uploadStatus = UploadStatus.None;
+
         using var scope = scopeFactory.CreateAsyncScope();
         var configService = scope.ServiceProvider.GetRequiredService<ConfigService>();
 
@@ -28,6 +31,7 @@ public partial class DsstatsService
         }
 
         var decodeInfo = GetDecodeInfo();
+        uploadStatus = UploadStatus.Uploading;
         decodeInfo.UploadStatus = UploadStatus.Uploading;
         OnDecodeStateChanged(decodeInfo);
 
@@ -52,6 +56,7 @@ public partial class DsstatsService
             if (replays.Count == 0)
             {
                 decodeInfo.UploadStatus = UploadStatus.UploadSuccess;
+                uploadStatus = UploadStatus.UploadSuccess;
                 OnDecodeStateChanged(decodeInfo);
                 return true;
             }
@@ -92,10 +97,12 @@ public partial class DsstatsService
             logger.LogError("failed uploading replays: {error}", ex.Message);
             if (ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
             {
+                uploadStatus = UploadStatus.Forbidden;
                 decodeInfo.UploadStatus = UploadStatus.Forbidden;
             }
             else
             {
+                uploadStatus = UploadStatus.UploadError;
                 decodeInfo.UploadStatus = UploadStatus.UploadError;
             }
             OnDecodeStateChanged(decodeInfo);
@@ -104,6 +111,7 @@ public partial class DsstatsService
         catch (Exception ex)
         {
             logger.LogError("failed uploading replays: {error}", ex.Message);
+            uploadStatus = UploadStatus.UploadError;
             decodeInfo.UploadStatus = UploadStatus.UploadError;
             OnDecodeStateChanged(decodeInfo);
             return false;
@@ -112,6 +120,7 @@ public partial class DsstatsService
         {
             uploadSs.Release();
         }
+        uploadStatus = UploadStatus.UploadSuccess;
         decodeInfo.UploadStatus = UploadStatus.UploadSuccess;
         OnDecodeStateChanged(decodeInfo);
         return true;

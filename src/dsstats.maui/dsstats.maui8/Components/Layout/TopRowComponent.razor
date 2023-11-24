@@ -21,11 +21,7 @@
         @if (decodeInfo is not null)
         {
             <div class="col-auto">
-                @if (decodeInfo.Finished && decodeInfo.Done > 0)
-                {
-                    <h4><span class="badge bg-success">Decoded @decodeInfo.Done Replay@((decodeInfo.Done > 1 ? "s" : "")) in @decodeInfo.Elapsed.ToString(@"hh\:mm\:ss")</span></h4>
-                }
-                else if (decodeInfo.Calculating)
+                @if (decodeInfo.Calculating)
                 {
                     <h4><span class="badge bg-success">Calculating Ratings ..</span></h4>
                 }
@@ -33,7 +29,7 @@
                 {
                     <h4><span class="badge bg-success">Writing to database ..</span></h4>
                 }
-                else if (!decodeInfo.Finished && decodeInfo.Total > 0)
+                else if (decodeInfo.Total > 0 && dsstatsService.Decoding)
                 {
                     int percentage = decodeInfo.Total == 0 ? 0 : Convert.ToInt32(decodeInfo.Done * 100.0 / decodeInfo.Total);
                     <div>
@@ -48,6 +44,10 @@
                             </div>
                         </div>
                     </div>
+                }
+                else if (decodeInfo.Done > 0)
+                {
+                    <h4><span class="badge bg-success">Decoded @decodeInfo.Done Replay@((decodeInfo.Done > 1 ? "s" : "")) in @decodeInfo.Elapsed.ToString(@"hh\:mm\:ss")</span></h4>
                 }
             </div>
             @if (decodeInfo.UploadStatus != Services.UploadStatus.None)

@@ -1,5 +1,4 @@
-﻿using dsstats.ratings.lib;
-using dsstats.shared.Interfaces;
+﻿using dsstats.shared.Interfaces;
 using System.Collections.Concurrent;
 
 namespace dsstats.maui8.Services;
@@ -107,6 +106,7 @@ public partial class DsstatsService
                 Done = ctsDecode == null || ctsDecode.IsCancellationRequested ? doneDecoding : todoDecoding,
                 Total = todoDecoding,
                 Elapsed = elapsed,
+                UploadStatus = uploadStatus,
                 Eta = TimeSpan.Zero
             };
         }
@@ -128,6 +128,7 @@ public partial class DsstatsService
             Done = finished ? todoDecoding : doneDecoding,
             Total = todoDecoding,
             Elapsed = elapsed,
+            UploadStatus = uploadStatus,
             Eta = TimeSpan.FromSeconds(smoothedEtaInSeconds)
         };
     }
