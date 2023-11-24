@@ -139,7 +139,7 @@ public partial class TopRowComponent : ComponentBase, IDisposable
                     if (!updateResult)
                     {
                         updateService.UpdateProgress -= UpdateService_UpdateProgress;
-                        await Application.Current.MainPage.DisplayPromptAsync("Update Failed", ":(");
+                        await Application.Current.MainPage.DisplayAlert("Update Failed", ":(", "Ok");
                     }
                 }
             }
