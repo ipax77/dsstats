@@ -36,7 +36,7 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 </details>
 
-<details open="open"><summary>v1.2.5</summary>
+<details><summary>v1.2.5</summary>
 
 >- SC2 Patch 5.0.12 - protocol 91115 - s2protocol.NET v0.6.12
 
