@@ -30,7 +30,34 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v1.2.2</summary>
+<details open="open"><summary>v2.0.0</summary>
+
+>- Upgrade to dotnet 8
+
+</details>
+
+<details open="open"><summary>v1.2.5</summary>
+
+>- SC2 Patch 5.0.12 - protocol 91115 - s2protocol.NET v0.6.12
+
+</details>
+
+<details><summary>v1.2.4</summary>
+
+>- Sanitize player names for css
+
+</details>
+
+<details><summary>v1.2.3</summary>
+
+>- Layout redesign
+>- Stats redesign
+>- Fix Player RealmId
+>- Advanced replay filter
+
+</details>
+
+<details><summary>v1.2.2</summary>
 
 >- MAUI progress information with online data
 >- Web - new Replays with PreRating
