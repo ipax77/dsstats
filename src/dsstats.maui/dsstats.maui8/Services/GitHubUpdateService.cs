@@ -9,6 +9,7 @@ public class GitHubUpdateService(ILogger<GitHubUpdateService> logger) : IUpdateS
     public static readonly Version CurrentVersion = new Version(0, 5, 0, 0);
     private Version latestVersion = new Version(0, 0, 0, 0);
     private readonly object lockobject = new();
+    private readonly bool logToFile = false;
 
     public EventHandler<UpdateProgressEvent>? UpdateProgress;
 
@@ -54,12 +55,15 @@ public class GitHubUpdateService(ILogger<GitHubUpdateService> logger) : IUpdateS
                 && newVersion is not null)
             {
                 latestVersion = newVersion;
+                LogMessage($"version check: {newVersion}");
                 return latestVersion > CurrentVersion;
             }
         }
         catch (Exception ex)
         {
             logger.LogError("latest version check failed: {error}", ex.Message);
+            LogMessage(ex.Message);
+
         }
         return false;
     }
@@ -89,8 +93,23 @@ public class GitHubUpdateService(ILogger<GitHubUpdateService> logger) : IUpdateS
         catch (Exception ex)
         {
             logger.LogError("app update failed: {error}", ex.Message);
+            LogMessage(ex.Message);
         }
         return false;
+    }
+
+    private void LogMessage(string message)
+    {
+        if (!logToFile)
+        {
+            return;
+        }
+
+        var logfile = Path.Combine(FileSystem.Current.AppDataDirectory, "log.txt");
+        lock (lockobject)
+        {
+            File.AppendAllLines(logfile, [message]);
+        }
     }
 }
 
