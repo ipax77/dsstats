@@ -22,7 +22,7 @@
         <Nullable>enable</Nullable>
 
         <!-- Display name -->
-        <ApplicationTitle>dsstats.maui</ApplicationTitle>
+        <ApplicationTitle>sc2dsstats</ApplicationTitle>
 
         <!-- App Identifier -->
         <ApplicationId>com.companyname.sc2dsstats</ApplicationId>
