@@ -1,9 +1,9 @@
 name: Dsstats Tests
 on:
   push:
-    branches: [ master, dev ]
+    branches: [ main, dev ]
   pull_request:
-    branches: [ master, dev ]
+    branches: [ main, dev ]
 jobs:
   tests:
     timeout-minutes: 60
