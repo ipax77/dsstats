@@ -17,11 +17,11 @@
                     <div class="d-flex">
                         <div>
                             <span class="bi bi-arrow-left pointer"
-                                @onclick="e => OnScrollRequest.InvokeAsync(false)"></span>
+                                  @onclick="e => OnScrollRequest.InvokeAsync(false)"></span>
                         </div>
                         <div class="ms-1">
                             <span class="bi bi-arrow-right pointer"
-                                @onclick="e => OnScrollRequest.InvokeAsync(true)"></span>
+                                  @onclick="e => OnScrollRequest.InvokeAsync(true)"></span>
                         </div>
                     </div>
                 </div>
@@ -52,7 +52,7 @@
         @if (showMiddleChart)
         {
             <div class="bgchart"
-                style="position: relative; width: 70vw; min-width: 600px; max-width: 1200px; height: calc(70vw * 0.5); min-height: 300px; max-height: 600px;">
+                 style="position: relative; width: 70vw; min-width: 600px; max-width: 1200px; height: calc(70vw * 0.5); min-height: 300px; max-height: 600px;">
                 <ReplayMiddleChart MiddleInfo="middleInfo" OnCloseRequest="ShowHideMiddleChart" />
             </div>
         }
@@ -61,13 +61,13 @@
                 <CascadingValue Value="showRating">
                     <div class="col-auto">
                         <ReplayTeamTable @ref="teamTable1" Replay="Replay" MiddleInfo="middleInfo" Team="1"
-                            OnBuildRequest="ShowHideBuild" OnPlayerDetailsRequest="ShowPlayerDetails"
-                            OnMiddleChartRequest="ShowHideMiddleChart" />
+                                         OnBuildRequest="ShowHideBuild" OnPlayerDetailsRequest="ShowPlayerDetails"
+                                         OnMiddleChartRequest="ShowHideMiddleChart" />
                     </div>
                     <div class="col-auto">
                         <ReplayTeamTable @ref="teamTable2" Replay="Replay" MiddleInfo="middleInfo" Team="2"
-                            OnBuildRequest="ShowHideBuild" OnPlayerDetailsRequest="ShowPlayerDetails"
-                            OnMiddleChartRequest="ShowHideMiddleChart" />
+                                         OnBuildRequest="ShowHideBuild" OnPlayerDetailsRequest="ShowPlayerDetails"
+                                         OnMiddleChartRequest="ShowHideMiddleChart" />
                     </div>
                 </CascadingValue>
             </CascadingValue>
@@ -93,12 +93,12 @@
                     <label class="form-check-label">
                         Combo Rating
                         <input class="form-check-input" type="checkbox" checked="@comboRating"
-                            @onchange="ChangeRatingType">
+                               @onchange="ChangeRatingType">
                     </label>
                 </div>
                 <div class="ms-2">
                     <span class="bi bi-info-circle pointer"
-                        onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/ComboRatings'">
+                          onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/ComboRatings'">
                     </span>
                 </div>
             </div>
@@ -121,17 +121,21 @@
                     <span class="fw-bold">Breakpoint</span>
                 </div>
                 <div class="col-auto">
-                    <div class="btn-group bgchart" role="group" aria-label="bptogglegroup">
-                        @foreach (Breakpoint bp in AvailableBreakpoints[breakpointsCount])
-                        {
-                            <input type="radio" class="btn-check" name="bptoggle" id="@($"bp{bp}")"
-                                   checked="@(Breakpoint == bp)"
-                                   autocomplete="off" @onchange="e => SetBreakpoint(e, bp)">
-                            <label class="btn btn-outline-light check-label" for="@($"bp{bp}")">
-                                @(bp == Breakpoint.All ? "Game End" : $"{bp}")
-                            </label>
-                        }
-                    </div>
+                    <form @formname="replaybptoggles">
+                        <fieldset>
+                            <div class="btn-group bgchart" role="group" aria-label="bptogglegroup">
+                                @foreach (Breakpoint bp in AvailableBreakpoints[breakpointsCount])
+                                {
+                                    <input type="radio" class="btn-check" name="bptoggle" id="@($"bp{bp}")"
+                                           checked="@(Breakpoint == bp)"
+                                           autocomplete="off" @onchange="e => SetBreakpoint(e, bp)">
+                                    <label class="btn btn-outline-light check-label" for="@($"bp{bp}")">
+                                        @(bp == Breakpoint.All ? "Game End" : $"{bp}")
+                                    </label>
+                                }
+                            </div>
+                        </fieldset>
+                    </form>
                 </div>
             </div>
         }
@@ -152,7 +156,9 @@
             {
                 <div class="col-2">
                     <button type="button" class="btn btn-sm btn-danger"
-                        @onclick="e => OnCloseRequested.InvokeAsync()">Close</button>
+                            @onclick="e => OnCloseRequested.InvokeAsync()">
+                        Close
+                    </button>
                 </div>
             }
 
@@ -169,7 +175,7 @@
             {
                 <div class="col-2">
                     <a class="btn btn-sm btn-dark"
-                        href="@($"{NavigationManager.BaseUri}replays?replay={Replay.ReplayHash}")">
+                       href="@($"{NavigationManager.BaseUri}replays?replay={Replay.ReplayHash}")">
                         Link
                     </a>
                 </div>

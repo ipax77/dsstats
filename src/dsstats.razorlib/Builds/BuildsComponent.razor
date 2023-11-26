@@ -107,21 +107,25 @@
                             <span class="fw-bold">Breakpoint</span>
                         </div>
                         <div class="col-auto">
-                            <div class="btn-group bgchart" role="group" aria-label="bptogglegroup">
-                                @foreach (Breakpoint bp in Enum.GetValues(typeof(Breakpoint)))
-                                {
-                                    @if (bp == Breakpoint.None)
-                                    {
-                                        continue;
-                                    }
-                                    <input type="radio" class="btn-check" name="bptoggle" id="@($"bp{bp}")"
-                                           checked="@(Request.Breakpoint == bp)"
-                                           autocomplete="off" @onchange="e => SetBreakpoint(e, bp)">
-                                    <label class="btn btn-outline-light check-label" for="@($"bp{bp}")">
-                                        @(bp == Breakpoint.All ? "Game End" : $"{bp}")
-                                    </label>
-                                }
-                            </div>
+                            <form @formname="buildbptoggles">
+                                <fieldset>
+                                    <div class="btn-group bgchart" role="group" aria-label="bptogglegroup">
+                                        @foreach (Breakpoint bp in Enum.GetValues(typeof(Breakpoint)))
+                                        {
+                                            @if (bp == Breakpoint.None)
+                                            {
+                                                continue;
+                                            }
+                                            <input type="radio" class="btn-check" name="bptoggle" id="@($"buildbp{bp}")"
+                                                   checked="@(Request.Breakpoint == bp)"
+                                                   autocomplete="off" @onchange="e => SetBreakpoint(e, bp)">
+                                            <label class="btn btn-outline-light check-label" for="@($"buildbp{bp}")">
+                                                @(bp == Breakpoint.All ? "Game End" : $"{bp}")
+                                            </label>
+                                        }
+                                    </div>
+                                </fieldset>
+                            </form>
                         </div>
                     </div>
                 </div>
