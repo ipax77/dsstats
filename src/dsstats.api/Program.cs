@@ -142,7 +142,7 @@ if (app.Environment.IsDevelopment())
     //ratingService.ProduceRatings(RatingCalcType.Dsstats, true).Wait();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 app.UseCors(MyAllowSpecificOrigins);
 
