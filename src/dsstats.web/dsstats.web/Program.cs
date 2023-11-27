@@ -13,11 +13,8 @@ if (builder.Environment.IsDevelopment())
 }
 if (builder.Environment.IsProduction())
 {
-#if STAGING
     builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats-dev.pax77.org") });
-#else
-    builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats.pax77.org") });
-#endif
+    // builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats.pax77.org") });
 }
 
 builder.Services.AddChartJs(options =>

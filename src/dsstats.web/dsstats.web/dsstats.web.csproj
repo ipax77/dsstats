@@ -6,10 +6,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DefineConstants>$(DefineConstants);STAGING</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\dsstats.apiServices\dsstats.apiServices.csproj" />
     <ProjectReference Include="..\..\dsstats.razorlib\dsstats.razorlib.csproj" />
