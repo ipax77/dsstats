@@ -1,7 +1,6 @@
 ﻿using Blazored.Toast.Services;
 using dsstats.db8services;
 using dsstats.maui8.Services;
-using dsstats.razorlib.Players;
 using dsstats.razorlib.Players.Profile;
 using dsstats.shared;
 using Microsoft.AspNetCore.Components;
@@ -53,7 +52,7 @@ public partial class Home : ComponentBase, IDisposable
     {
         if (afterDecode)
         {
-            await Task.Delay(400);
+            await Task.Delay(600);
         }
 
         currentReplay = await replayRepository.GetLatestReplay();
