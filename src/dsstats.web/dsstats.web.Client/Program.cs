@@ -8,12 +8,15 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
 if (builder.HostEnvironment.IsDevelopment())
 {
-    builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7048") });
+    builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5116") });
 }
 if (builder.HostEnvironment.IsProduction())
 {
+#if STAGING
+    builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats-dev.pax77.org") });
+#else
     builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats.pax77.org") });
-    // builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats-dev.pax77.org") });
+#endif
 }
 
 builder.Services.AddChartJs(options =>
