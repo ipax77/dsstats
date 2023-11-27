@@ -107,7 +107,9 @@ builder.Services.AddScoped<ICmdrInfoService, CmdrInfoService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<ITourneysService, TourneysService>();
 
+#if !STAGING
 builder.Services.AddHostedService<TimedHostedService>();
+#endif
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
