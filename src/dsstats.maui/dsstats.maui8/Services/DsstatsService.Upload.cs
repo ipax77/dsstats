@@ -43,6 +43,7 @@ public partial class DsstatsService
             UploadDto uploadDto = new()
             {
                 AppGuid = configService.AppOptions.AppGuid,
+                AppVersion = GitHubUpdateService.CurrentVersion.ToString(),
                 RequestNames = configService.GetRequestNames(),
                 Base64ReplayBlob = ""
             };
