@@ -70,7 +70,7 @@
 
     private ChartJsDataset GetDataset(List<CountEnt> counts)
     {
-        return new CustomDougnutDataset()
+        return new DoughnutDataset()
         {
             Data = counts.Select(s => s.Matchups).Cast<object>().ToList(),
             BackgroundColor = new IndexableOption<string>(counts
@@ -103,11 +103,6 @@
             iconPlugins.BarIcons = icons;
             chartConfig.UpdateChartOptions();
         }
-    }
-
-    public record CustomDougnutDataset : DoughnutDataset
-    {
-        public StringOrDoubleValue? Cutout { get; set; }
     }
 
     private IconsChartJsConfig GetChartConfig()

@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34316.72
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.web", "dsstats.web\dsstats.web.csproj", "{AD13ED16-01BB-4E8C-94EF-FF4E94EBAEE0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.web", "dsstats.web\dsstats.web.csproj", "{AD13ED16-01BB-4E8C-94EF-FF4E94EBAEE0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.web.Client", "dsstats.web.Client\dsstats.web.Client.csproj", "{7EC8E146-6EB3-4F5D-8EC7-D0C8381E7969}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.web.Client", "dsstats.web.Client\dsstats.web.Client.csproj", "{7EC8E146-6EB3-4F5D-8EC7-D0C8381E7969}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.shared", "..\dsstats.shared\dsstats.shared.csproj", "{969733A2-48C6-4E3E-9FFF-651AB54AD7B8}"
 EndProject
