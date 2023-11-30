@@ -84,17 +84,60 @@ class Program
                 return;
             }
         }
+        else if (args.Length == 2)
+        {
+            if (args[0] == "delete")
+            {
+                var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+                DeleteReplay(args[1], context, logger);
+            }
+            else
+            {
+                logger.LogError("allowed parameters: delete <replayHash>");
+                return;
+            }
+        }
         else
         {
             logger.LogError("allowed parameters: dsstats|sc2arcade|combo");
             return;
         }
 
-
-
-
         sw.Stop();
         logger.LogWarning("job done in {ms} ms ({min} min)", sw.ElapsedMilliseconds, Math.Round(sw.Elapsed.TotalMinutes, 2));
     }
 
+    private static void DeleteReplay(string replayHash, ReplayContext context, ILogger<Program> logger)
+    {
+        try
+        {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+            var replay = context.Replays
+                .Include(i => i.ReplayPlayers)
+                    .ThenInclude(i => i.Spawns)
+                        .ThenInclude(i => i.Units)
+                .Include(i => i.ReplayRatingInfo)
+                    .ThenInclude(i => i.RepPlayerRatings)
+                .Include(i => i.ComboReplayRating)
+                .Include(i => i.ReplayPlayers)
+                    .ThenInclude(i => i.ComboReplayPlayerRating)
+                .FirstOrDefault(f => f.ReplayHash == replayHash);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+
+            if (replay is not null)
+            {
+                context.Replays.Remove(replay);
+                context.SaveChanges();
+                logger.LogWarning("replay {hash} removed.", replayHash);
+            }
+            else
+            {
+                logger.LogWarning("replay {hash} not found.", replayHash);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed removing replay {hash}: {error}", replayHash, ex.Message);
+        }
+    }
 }
