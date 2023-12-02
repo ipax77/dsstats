@@ -39,6 +39,35 @@ public static class ReplayExtensions
         replay.ReplayHash = GetMd5Hash(md5hash, sb.ToString());
     }
 
+    public static void GenHashV2(this ReplayDto replay, MD5 md5hash)
+    {
+        if (replay.ReplayPlayers.Count == 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(replay));
+        }
+
+        StringBuilder sb = new();
+        foreach (var pl in replay.ReplayPlayers.OrderBy(o => o.GamePos))
+        {
+            if (pl.Player == null)
+            {
+                throw new ArgumentOutOfRangeException(nameof(replay));
+            }
+            sb.Append(pl.GamePos.ToString());
+            sb.Append(pl.Race.ToString());
+            sb.Append(Data.GetPlayerIdString(new(pl.Player.ToonId, pl.Player.RealmId, pl.Player.RegionId)));
+        }
+        sb.Append(replay.GameMode.ToString());
+        sb.Append(replay.Playercount.ToString());
+        sb.Append(replay.Minarmy.ToString() + '|');
+        sb.Append(replay.Minkillsum.ToString() + "|");
+        sb.Append(replay.Maxkillsum.ToString() + "|");
+        sb.Append(replay.Bunker.ToString() + "|");
+        sb.Append(replay.Cannon.ToString());
+
+        replay.ReplayHash = GetMd5Hash(md5hash, sb.ToString());
+    }
+
     public static string GenHash(this SpawnDto spawn, ReplayDto replay)
     {
         StringBuilder sb = new();
