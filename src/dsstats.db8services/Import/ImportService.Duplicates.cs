@@ -19,13 +19,6 @@ public partial class ImportService
             .Select(s => s.LastSpawnHash ?? "xxx")
             .ToList();
 
-        //var lsDupReplays = await context.ReplayPlayers
-        //    .Where(x => !replayHashes.Contains(x.Replay.ReplayHash)
-        //        && x.LastSpawnHash != null && lastSpawnHashes.Contains(x.LastSpawnHash))
-        //    .Select(s => s.Replay)
-        //    .Distinct()
-        //    .ToListAsync();
-
         var lsDupReplaysQuery = context.Replays
             .Include(i => i.ReplayPlayers)
             .Where(x => !replayHashes.Contains(x.ReplayHash));

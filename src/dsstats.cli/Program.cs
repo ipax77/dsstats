@@ -65,7 +65,7 @@ class Program
         {
             options.SetMinimumLevel(LogLevel.Information);
             options.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
-            options.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Information);
+            options.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
             options.AddConsole();
         });
 
@@ -77,8 +77,9 @@ class Program
                 p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
                 // p.EnablePrimitiveCollectionsSupport();
             })
-            .EnableDetailedErrors()
-            .EnableSensitiveDataLogging();
+            //.EnableDetailedErrors()
+            //.EnableSensitiveDataLogging()
+            ;
         });
 
         services.AddMemoryCache();
@@ -105,8 +106,7 @@ class Program
         // TestReplayHashV2(serviceProvider);
         // CheckDups("92722fb3aa4fef611ebb9896702e821a", "b28ca9eee507e3729612ba1489f1ba00", serviceProvider);
         // CheckLastSpawnHash("92722fb3aa4fef611ebb9896702e821a", "b28ca9eee507e3729612ba1489f1ba00", serviceProvider);
-        // TestLastSpawnHash(serviceProvider);
-        ImportTest(serviceProvider);
+        TestLastSpawnHash(serviceProvider);
 
         sw.Stop();
         Console.WriteLine($"job done in {sw.ElapsedMilliseconds} ms.");
@@ -143,7 +143,7 @@ class Program
         Dictionary<string, KeyValuePair<string, int>> replayHashes = new();
         MD5 md5hash = MD5.Create();
         int skip = 0;
-        int take = 2000;
+        int take = 5000;
 
         var replays = context.Replays
             .Include(i => i.ReplayPlayers)
@@ -156,10 +156,10 @@ class Program
             .AsSplitQuery()
             .ToList();
 
-        //while (replays.Count > 0)
-        //{
+        while (replays.Count > 0)
+        {
 
-        foreach (var replay in replays)
+            foreach (var replay in replays)
         {
             foreach (var rp in replay.ReplayPlayers)
             {
@@ -179,17 +179,18 @@ class Program
             }
         }
 
-        //skip += take;
-        //replays = context.Replays
-        //.Include(i => i.ReplayPlayers)
-        //    .ThenInclude(i => i.Player)
-        //.AsNoTracking()
-        //.OrderByDescending(o => o.GameTime)
-        //    .ThenBy(o => o.ReplayId)
-        //.Skip(skip)
-        //.Take(take)
-        //.ToList();
-        //}
+            skip += take;
+            replays = context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Player)
+            .OrderByDescending(o => o.GameTime)
+                .ThenBy(o => o.ReplayId)
+            .Skip(skip)
+            .Take(take)
+            .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
+            .AsSplitQuery()
+            .ToList();
+        }
     }
 
     public static void TestReplayHashV2(ServiceProvider serviceProvider)
