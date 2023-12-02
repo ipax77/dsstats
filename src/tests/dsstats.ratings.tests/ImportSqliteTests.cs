@@ -82,7 +82,7 @@ public class ImportSqliteTests
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
         var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
 
-        context.Database.Migrate();
+        // context.Database.Migrate();
         context.Database.EnsureDeleted();
         context.Database.Migrate();
 

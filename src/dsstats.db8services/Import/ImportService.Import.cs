@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using dsstats.db8;
+using dsstats.db8.Extensions;
 using dsstats.shared;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -55,8 +56,11 @@ public partial class ImportService
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
         for (int i = 0; i < replays.Count; i++)
         {
-            foreach (var rp in replays[i].ReplayPlayers)
+            var replay = replays[i];
+            foreach (var rp in replay.ReplayPlayers)
             {
+                rp.LastSpawnHash = rp.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint.All)?.GenHashV2(rp);
+
                 rp.PlayerId = playerIds[new(rp.Player!.ToonId, rp.Player.RealmId, rp.Player.RegionId)];
                 rp.Player = null;
 

@@ -43,7 +43,7 @@ public class DuplicateTests
         }
 
         var services = new ServiceCollection();
-        var serverVersion = new MySqlServerVersion(new Version(5, 7, 43));
+        var serverVersion = new MySqlServerVersion(new Version(5, 7, 44));
         var jsonStrg = File.ReadAllText("/data/localserverconfig.json");
         var json = JsonSerializer.Deserialize<JsonElement>(jsonStrg);
         var config = json.GetProperty("ServerConfig");
@@ -145,6 +145,126 @@ public class DuplicateTests
                 && x.IsUploader)
             .Count();
         Assert.AreEqual(2, uploders);
+    }
+
+    [TestMethod]
+    public void T03LastSpawnDuplicateTest()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
+        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+
+        var replayCountBefore = context.Replays.Count();
+
+        using var md5 = MD5.Create();
+
+        var replayDto1 = GetBasicReplayDto(md5);
+        var replayDto2 = replayDto1 with { Minincome = replayDto1.Minincome - 2, Duration = replayDto1.Duration - 2 };
+        replayDto2.GenHash(md5);
+
+        Assert.AreNotEqual(replayDto1.ReplayHash, replayDto2.ReplayHash);
+
+        replayDto1.ReplayPlayers.First().IsUploader = true;
+        replayDto2.ReplayPlayers.Last().IsUploader = true;
+
+        var task1 = importService.Import(new() { replayDto1 });
+        var task2 = importService.Import(new() { replayDto2 });
+
+        Task[] tasks = [task1, task2];
+        Task.WaitAll(tasks);
+
+        var replaysCount = context.Replays.Count();
+        Assert.AreEqual(replayCountBefore + 1, replaysCount);
+
+        var uploders = context.ReplayPlayers
+            .Where(x => x.Replay.ReplayHash == replayDto1.ReplayHash
+                && x.IsUploader)
+            .Count();
+        Assert.AreEqual(2, uploders);
+
+        var replay = context.Replays.FirstOrDefault(f => f.ReplayHash == replayDto1.ReplayHash);
+        Assert.IsNotNull(replay);
+
+        Assert.AreEqual(replayDto1.Duration, replay.Duration);
+    }
+
+    [TestMethod]
+    public void T04LastSpawnDuplicateOrder1Test()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
+        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+
+        var replayCountBefore = context.Replays.Count();
+
+        using var md5 = MD5.Create();
+
+        var replayDto1 = GetBasicReplayDto(md5);
+        var replayDto2 = replayDto1 with { Minincome = replayDto1.Minincome - 2, Duration = replayDto1.Duration - 2 };
+        replayDto2.GenHash(md5);
+
+        Assert.AreNotEqual(replayDto1.ReplayHash, replayDto2.ReplayHash);
+
+        replayDto1.ReplayPlayers.First().IsUploader = true;
+        replayDto2.ReplayPlayers.Last().IsUploader = true;
+
+        importService.Import(new() { replayDto1 }).Wait();
+        importService.Import(new() { replayDto2 }).Wait();
+
+        var replaysCount = context.Replays.Count();
+        Assert.AreEqual(replayCountBefore + 1, replaysCount);
+
+        var uploders = context.ReplayPlayers
+            .Where(x => x.Replay.ReplayHash == replayDto1.ReplayHash
+                && x.IsUploader)
+            .Count();
+        Assert.AreEqual(2, uploders);
+
+        var replay = context.Replays.FirstOrDefault(f => f.ReplayHash == replayDto1.ReplayHash);
+        Assert.IsNotNull(replay);
+
+        Assert.AreEqual(replayDto1.Duration, replay.Duration);
+    }
+
+    [TestMethod]
+    public void T05LastSpawnDuplicateOrder2Test()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
+        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+
+        var replayCountBefore = context.Replays.Count();
+
+        using var md5 = MD5.Create();
+
+        var replayDto1 = GetBasicReplayDto(md5);
+        var replayDto2 = replayDto1 with { Minincome = replayDto1.Minincome - 2, Duration = replayDto1.Duration - 2 };
+        replayDto2.GenHash(md5);
+
+        Assert.AreNotEqual(replayDto1.ReplayHash, replayDto2.ReplayHash);
+
+        replayDto1.ReplayPlayers.First().IsUploader = true;
+        replayDto2.ReplayPlayers.Last().IsUploader = true;
+
+        importService.Import(new() { replayDto2 }).Wait();
+        importService.Import(new() { replayDto1 }).Wait();
+
+        var replaysCount = context.Replays.Count();
+        Assert.AreEqual(replayCountBefore + 1, replaysCount);
+
+        var uploders = context.ReplayPlayers
+            .Where(x => x.Replay.ReplayHash == replayDto1.ReplayHash
+                && x.IsUploader)
+            .Count();
+        Assert.AreEqual(2, uploders);
+
+        var replay = context.Replays.FirstOrDefault(f => f.ReplayHash == replayDto1.ReplayHash);
+        Assert.IsNotNull(replay);
+
+        Assert.AreEqual(replayDto1.Duration, replay.Duration);
     }
 
     public ReplayDto GetBasicReplayDto(MD5 md5, GameMode gameMode = GameMode.Commanders)
