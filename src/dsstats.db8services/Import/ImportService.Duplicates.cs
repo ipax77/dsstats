@@ -1,5 +1,6 @@
 ﻿using dsstats.db8;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace dsstats.db8services.Import;
 
@@ -13,6 +14,33 @@ public partial class ImportService
             .Where(x => replayHashes.Contains(x.ReplayHash))
             .ToListAsync();
 
+        var lastSpawnHashes = replays.SelectMany(s => s.ReplayPlayers)
+            .Where(x => !string.IsNullOrEmpty(x.LastSpawnHash))
+            .Select(s => s.LastSpawnHash ?? "xxx")
+            .ToList();
+
+        //var lsDupReplays = await context.ReplayPlayers
+        //    .Where(x => !replayHashes.Contains(x.Replay.ReplayHash)
+        //        && x.LastSpawnHash != null && lastSpawnHashes.Contains(x.LastSpawnHash))
+        //    .Select(s => s.Replay)
+        //    .Distinct()
+        //    .ToListAsync();
+
+        var lsDupReplaysQuery = context.Replays
+            .Include(i => i.ReplayPlayers)
+            .Where(x => !replayHashes.Contains(x.ReplayHash));
+
+        var lsDupReplaysQuery2 = from r in lsDupReplaysQuery
+                           from rp in r.ReplayPlayers
+                           where rp.LastSpawnHash != null && lastSpawnHashes.Contains(rp.LastSpawnHash)
+                           select r;
+
+        var lsDupReplays = await lsDupReplaysQuery2
+            .Distinct()
+            .ToListAsync();
+
+        dupReplays.AddRange(lsDupReplays);
+
         if (dupReplays.Count == 0)
         {
             return 0;
@@ -22,17 +50,29 @@ public partial class ImportService
 
         foreach (var dbReplay in dupReplays)
         {
-            var dupReplay = replays
+            var importReplay = replays
                 .FirstOrDefault(f => f.ReplayHash == dbReplay.ReplayHash);
 
-            if (dupReplay is null)
+            if (importReplay is null && lsDupReplays.Count > 0)
             {
-                throw new ArgumentNullException(nameof(dbReplay));
+                var repLastSpawnHashes = dbReplay.ReplayPlayers
+                    .Where(x => x.LastSpawnHash  != null)
+                    .Select(s => s.LastSpawnHash)
+                    .ToList();
+
+                var query = from r in replays
+                            from rp in r.ReplayPlayers
+                            where !string.IsNullOrEmpty(rp.LastSpawnHash) && repLastSpawnHashes.Contains(rp.LastSpawnHash)
+                            select r;
+
+                importReplay = query.FirstOrDefault();
             }
 
-            if (HandleDuplicate(dbReplay, dupReplay, context))
+            ArgumentNullException.ThrowIfNull(importReplay);
+
+            if (await HandleDuplicate(dbReplay, importReplay, context))
             {
-                replays.Remove(dupReplay);
+                replays.Remove(importReplay);
                 dupsHandled++;
             }
         }
@@ -40,18 +80,29 @@ public partial class ImportService
         return dupsHandled;
     }
 
-    private bool HandleDuplicate(Replay dbReplay, Replay dupReplay, ReplayContext context)
+    private async Task<bool> HandleDuplicate(Replay dbReplay, Replay importReplay, ReplayContext context)
     {
-        if (!DuplicateIsPlausible(dbReplay, dupReplay))
+        if (!DuplicateIsPlausible(dbReplay, importReplay))
         {
             return true;
         }
 
-        foreach (var rp in dupReplay.ReplayPlayers)
+        var keepReplay = dbReplay;
+        var throwReplay = importReplay;
+
+        if (dbReplay.Duration < importReplay.Duration)
+        {
+            keepReplay = importReplay;
+            throwReplay = dbReplay;
+
+            await DeleteReplay(dbReplay.ReplayHash, context);
+        }
+
+        foreach (var rp in throwReplay.ReplayPlayers)
         {
             if (rp.IsUploader)
             {
-                var dbRp = dbReplay.ReplayPlayers
+                var dbRp = keepReplay.ReplayPlayers
                     .FirstOrDefault(f => f.PlayerId == rp.PlayerId);
                 if (dbRp is not null)
                 {
@@ -59,7 +110,7 @@ public partial class ImportService
                 }
             }
         }
-        return true;
+        return keepReplay == dbReplay;
     }
 
     private bool DuplicateIsPlausible(Replay dbReplay, Replay dupReplay)
@@ -69,5 +120,34 @@ public partial class ImportService
             return false;
         }
         return true;
+    }
+
+    private async Task DeleteReplay(string replayHash, ReplayContext context)
+    {
+        try
+        {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+            var replay = await context.Replays
+                .Include(i => i.ReplayPlayers)
+                    .ThenInclude(i => i.Spawns)
+                        .ThenInclude(i => i.Units)
+                .Include(i => i.ReplayRatingInfo)
+                    .ThenInclude(i => i.RepPlayerRatings)
+                .Include(i => i.ComboReplayRating)
+                .Include(i => i.ReplayPlayers)
+                    .ThenInclude(i => i.ComboReplayPlayerRating)
+                .FirstOrDefaultAsync(f => f.ReplayHash == replayHash);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+
+            if (replay is not null)
+            {
+                context.Replays.Remove(replay);
+                await context.SaveChangesAsync();
+            }
+        }
+        catch (Exception)
+        {
+            throw;
+        }
     }
 }
