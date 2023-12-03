@@ -23,20 +23,20 @@
         </div>
     </div>
     <div class="col-auto">
-        @if (response != null)
-        {
-            <div class="border rounded border-secondary bgchart"
-                 style="min-width: 800px; width: 42vw; height: calc(55vw * 0.8); min-height: 640px;">
+        <div class="border rounded border-secondary bgchart"
+             style="min-width: 800px; width: 42vw; height: calc(55vw * 0.8); min-height: 640px;">
+            @if (response != null)
+            {
                 <SynergyChart @ref="synergyChart" Request="Request" Response="response" CmdrSelects="CmdrSelects"></SynergyChart>
-            </div>
-        }
+            }
+        </div>
     </div>
 </div>
 <div class="mt-2 bgchart d-inline-block p-1" style="max-width: 42vw; min-width: 800px;">
     <p class="text-warning">
         This synergy radar chart illustrates the average rating gain of a specific commander when teamed up with the commanders displayed in the chart.
         The values are normalized between 0 and 1 to provide a positive and easily comparable representation of the synergy between the commanders.
-        Higher values indicate stronger synergy, while lower values suggest weaker synergy. 
+        Higher values indicate stronger synergy, while lower values suggest weaker synergy.
         This chart helps you identify which commanders work well together to enhance overall performance.
     </p>
 </div>
@@ -92,7 +92,7 @@
             IsLoading = false;
             await InvokeAsync(() => StateHasChanged());
             await OnRequestChanged.InvokeAsync();
-        } 
+        }
         finally
         {
             ss.Release();

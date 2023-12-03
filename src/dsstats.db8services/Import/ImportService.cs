@@ -1,18 +1,26 @@
 ﻿
 using dsstats.db8;
 using dsstats.shared;
+using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace dsstats.db8services.Import;
 
 public partial class ImportService
 {
     private readonly IServiceProvider serviceProvider;
+    private readonly ILogger<ImportService> logger;
+    private readonly bool IsMaui;
 
-    public ImportService(IServiceProvider serviceProvider)
+    public ImportService(IServiceProvider serviceProvider, ILogger<ImportService> logger)
     {
         this.serviceProvider = serviceProvider;
+        this.logger = logger;
+        using var scope = serviceProvider.CreateScope();
+        var remoteToggleService = scope.ServiceProvider.GetRequiredService<IRemoteToggleService>();
+        IsMaui = remoteToggleService.IsMaui;
     }
 
     Dictionary<string, int> Units = new();

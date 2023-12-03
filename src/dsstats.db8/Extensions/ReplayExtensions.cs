@@ -56,4 +56,28 @@ public static class ReplayExtensions
         using var md5Hash = MD5.Create();
         return shared.Extensions.ReplayExtensions.GetMd5Hash(md5Hash, sb.ToString());
     }
+
+    public static string GenHashV3(this Spawn spawn, Replay replay, ReplayPlayer replayPlayer, MD5 md5Hash)
+    {
+        StringBuilder sb = new();
+
+        sb.Append(string.Join('|', replay.ReplayPlayers
+            .OrderBy(o => o.GamePos)
+            .Select(s => Data.GetPlayerIdString(new(s.Player.ToonId, s.Player.RealmId, s.Player.RegionId)))));
+        sb.Append('|' + Data.GetPlayerIdString(new(replayPlayer.Player.ToonId, replayPlayer.Player.RealmId, replayPlayer.Player.RegionId)));
+        sb.Append('|' + replayPlayer.Race);
+        sb.Append('|' + replayPlayer.GamePos);
+        sb.Append(replay.CommandersTeam1);
+        sb.Append(replay.CommandersTeam2);
+        sb.Append(spawn.Gameloop);
+        sb.Append('|' + spawn.Income);
+        sb.Append('|' + spawn.GasCount);
+        sb.Append('|' + spawn.ArmyValue);
+        sb.Append('|' + spawn.KilledValue);
+        sb.Append('|' + spawn.UpgradeSpent);
+
+        sb.Append(string.Concat(spawn.Units.Select(s => $"{s.Unit.Name}{s.Poss}")));
+
+        return shared.Extensions.ReplayExtensions.GetMd5Hash(md5Hash, sb.ToString());
+    }
 }

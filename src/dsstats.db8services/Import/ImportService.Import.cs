@@ -3,6 +3,7 @@ using dsstats.db8;
 using dsstats.db8.Extensions;
 using dsstats.shared;
 using Microsoft.Extensions.DependencyInjection;
+using System.Security.Cryptography;
 
 namespace dsstats.db8services.Import;
 
@@ -52,14 +53,24 @@ public partial class ImportService
         using var scope = serviceProvider.CreateAsyncScope();
         var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
         var replays = replayDtos.Select(s => mapper.Map<Replay>(s)).ToList();
+        MD5 md5Hash = MD5.Create();
 
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
         for (int i = 0; i < replays.Count; i++)
         {
             var replay = replays[i];
+
+            if (!IsMaui)
+            {
+                foreach (var rp in replay.ReplayPlayers)
+                {
+                    rp.LastSpawnHash = rp.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint.All)?.GenHashV3(replay, rp, md5Hash);
+                }
+            }
+
             foreach (var rp in replay.ReplayPlayers)
             {
-                rp.LastSpawnHash = rp.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint.All)?.GenHashV2(rp);
+                // rp.LastSpawnHash = rp.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint.All)?.GenHashV2(rp);
 
                 rp.PlayerId = playerIds[new(rp.Player!.ToonId, rp.Player.RealmId, rp.Player.RegionId)];
                 rp.Player = null;

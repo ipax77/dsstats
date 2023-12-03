@@ -19,20 +19,24 @@ public partial class ImportService
             .Select(s => s.LastSpawnHash ?? "xxx")
             .ToList();
 
-        var lsDupReplaysQuery = context.Replays
-            .Include(i => i.ReplayPlayers)
-            .Where(x => !replayHashes.Contains(x.ReplayHash));
+        List<Replay> lsDupReplays = [];
+        if (!IsMaui)
+        {
+            var lsDupReplaysQuery = context.Replays
+                .Include(i => i.ReplayPlayers)
+                .Where(x => !replayHashes.Contains(x.ReplayHash));
 
-        var lsDupReplaysQuery2 = from r in lsDupReplaysQuery
-                           from rp in r.ReplayPlayers
-                           where rp.LastSpawnHash != null && lastSpawnHashes.Contains(rp.LastSpawnHash)
-                           select r;
+            var lsDupReplaysQuery2 = from r in lsDupReplaysQuery
+                                     from rp in r.ReplayPlayers
+                                     where rp.LastSpawnHash != null && lastSpawnHashes.Contains(rp.LastSpawnHash)
+                                     select r;
 
-        var lsDupReplays = await lsDupReplaysQuery2
-            .Distinct()
-            .ToListAsync();
+            lsDupReplays = await lsDupReplaysQuery2
+                .Distinct()
+                .ToListAsync();
 
-        dupReplays.AddRange(lsDupReplays);
+            dupReplays.AddRange(lsDupReplays);
+        }
 
         if (dupReplays.Count == 0)
         {
@@ -87,7 +91,7 @@ public partial class ImportService
         {
             keepReplay = importReplay;
             throwReplay = dbReplay;
-
+            logger.LogWarning("deleting replay due to lastSpawnHash: {hash1} for {hash2}", throwReplay.ReplayHash, keepReplay.ReplayHash);
             await DeleteReplay(dbReplay.ReplayHash, context);
         }
 

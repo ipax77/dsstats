@@ -34,7 +34,7 @@
                     data-bs-target="#RatingRange"
                     aria-expanded="false"
                     aria-controls="RatingRange"
-            @onclick="ShowHideRatingRange">
+                    @onclick="ShowHideRatingRange">
                 <span class="oi @(showRatingRange ? "oi-caret-bottom" : "oi-caret-top")"></span>
                 Rating Range
             </button>
@@ -53,14 +53,13 @@
     </div>
     <div class="col-auto">
         <div>
-            @if (response != null)
-            {
-                <div class="border rounded border-secondary bgchart"
-                     style="min-width: 850px; width: 55vw; height: calc(55vw * 0.5); min-height: 425px;">
-
+            <div class="border rounded border-secondary bgchart"
+                 style="min-width: 850px; width: 55vw; height: calc(55vw * 0.5); min-height: 425px;">
+                @if (response != null)
+                {
                     <WinrateChart @ref="winrateChart" Request="Request" Response="orderedResponse"></WinrateChart>
-                </div>
-            }
+                }
+            </div>
         </div>
         <div class="mt-2">
             <div class="btn-group" role="group" aria-label="Chart type toggle group">
@@ -119,10 +118,10 @@
         {
             Interest = response.Interest,
             WinrateEnts = tableOrder.Property == "Winrate" ?
-                                tableOrder.Ascending ? response.WinrateEnts.OrderBy(o => o.Wins * 100.0 / o.Count).ToList()
-                                : response.WinrateEnts.OrderByDescending(o => o.Wins * 100.0 / o.Count).ToList()
-                            : tableOrder.Ascending ? response.WinrateEnts.AsQueryable().AppendOrderBy(tableOrder.Property).ToList()
-                                : response.WinrateEnts.AsQueryable().AppendOrderByDescending(tableOrder.Property).ToList()
+                                    tableOrder.Ascending ? response.WinrateEnts.OrderBy(o => o.Wins * 100.0 / o.Count).ToList()
+                                    : response.WinrateEnts.OrderByDescending(o => o.Wins * 100.0 / o.Count).ToList()
+                                : tableOrder.Ascending ? response.WinrateEnts.AsQueryable().AppendOrderBy(tableOrder.Property).ToList()
+                                    : response.WinrateEnts.AsQueryable().AppendOrderByDescending(tableOrder.Property).ToList()
         };
 
     protected override void OnInitialized()
