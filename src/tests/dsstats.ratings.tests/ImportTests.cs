@@ -1,4 +1,5 @@
-﻿using dsstats.db8;
+﻿using dsstats.api.Services;
+using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
 using dsstats.db8services.Import;
@@ -74,6 +75,7 @@ public class ImportTests
         services.AddSingleton<IRatingService, RatingService>();
         services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
         services.AddSingleton<ImportService>();
+        services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 
         services.AddScoped<IReplayRepository, ReplayRepository>();
 

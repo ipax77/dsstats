@@ -89,6 +89,7 @@ builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<PickBanService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddSingleton<AuthenticationFilterAttributeV6>();
+builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 
 builder.Services.AddScoped<CrawlerService>();
 builder.Services.AddScoped<IWinrateService, WinrateService>();
