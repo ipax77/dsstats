@@ -1,10 +1,8 @@
 ﻿using dsstats.db8;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Concurrent;
 using System.IO.Compression;
-using System.Reflection.Metadata;
 using System.Text;
 using System.Text.Json;
 
@@ -104,6 +102,12 @@ public partial class UploadService
             return false;
         }
         var blobFile = await SaveBlob(uploadDto.Base64ReplayBlob, uploadDto.AppGuid);
+
+        if (string.IsNullOrEmpty(blobFile))
+        {
+            return false;
+        }
+
         ReplayBlobsInQueue.AddOrUpdate(blobFile, true, (k, v) => true);
         return ProduceUploadJob(uploadDto, blobFile);
     }

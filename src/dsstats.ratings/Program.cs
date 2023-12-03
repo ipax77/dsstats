@@ -1,6 +1,11 @@
 ﻿using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text.Json;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using dsstats.db8;
+using dsstats.db8.AutoMapper;
+using dsstats.db8.Extensions;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +25,7 @@ class Program
         var config = json.GetProperty("ServerConfig");
         var importConnectionString = config.GetProperty("ImportConnectionString").GetString() ?? "";
         var mySqlConnectionString = config.GetProperty("DsstatsConnectionString").GetString();
+        // var mySqlConnectionString = config.GetProperty("ProdConnectionString").GetString();
 
         services.AddOptions<DbImportOptions>()
             .Configure(x =>
@@ -44,6 +50,7 @@ class Program
             });
         });
 
+        services.AddAutoMapper(typeof(AutoMapperProfile));
         services.AddSingleton<IRatingService, RatingService>();
         services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
 
@@ -77,6 +84,12 @@ class Program
             {
                 logger.LogInformation("producing combo2 ratings.");
                 ratingService.CombineTest().Wait();
+            }
+            else if (args[0] == "lsdups")
+            {
+                logger.LogInformation("Checking lastSpawnHashes");
+                SetLastSpawnHashes(serviceProvider);
+                CheckLastSpawnHashDuplicates(serviceProvider);
             }
             else
             {
@@ -138,6 +151,174 @@ class Program
         catch (Exception ex)
         {
             logger.LogError("failed removing replay {hash}: {error}", replayHash, ex.Message);
+        }
+    }
+
+    private static void SetLastSpawnHashes(ServiceProvider serviceProvider)
+    {
+        Dictionary<string, string> lastSpawnHashes = new();
+        Dictionary<string, string> lsDups = new();
+
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+        MD5 md5Hash = MD5.Create();
+
+        int skip = 0;
+        int take = 2500;
+
+        var replays = context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Spawns)
+                    .ThenInclude(i => i.Units)
+                        .ThenInclude(i => i.Unit)
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Player)
+            .OrderByDescending(o => o.GameTime)
+                .ThenBy(o => o.ReplayId)
+            .Where(x => x.GameTime > new DateTime(2021, 2, 1))
+            .Skip(skip)
+            .Take(take)
+            .ToList();
+
+        while (replays.Count > 0)
+        {
+            logger.LogInformation("step {skip}/{currentCount}", skip, lsDups.Count);
+
+            foreach (var replay in replays)
+            {
+                foreach (var rp in replay.ReplayPlayers)
+                {
+                    var spawn = rp.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint.All);
+                    if (spawn is null)
+                    {
+                        continue;
+                    }
+                    var lastSpawnHash = spawn.GenHashV3(replay, rp, md5Hash);
+
+                    if (lastSpawnHashes.TryAdd(lastSpawnHash, replay.ReplayHash))
+                    {
+                        rp.LastSpawnHash = lastSpawnHash;
+                    }
+                    else
+                    {
+                        lsDups.TryAdd(replay.ReplayHash, lastSpawnHashes[lastSpawnHash]);
+                        break;
+                    }
+                }
+            }
+            context.SaveChanges();
+
+            skip += take;
+            replays = context.Replays
+                .Include(i => i.ReplayPlayers)
+                    .ThenInclude(i => i.Spawns)
+                        .ThenInclude(i => i.Units)
+                            .ThenInclude(i => i.Unit)
+                .Include(i => i.ReplayPlayers)
+                    .ThenInclude(i => i.Player)
+                .OrderByDescending(o => o.GameTime)
+                    .ThenBy(o => o.ReplayId)
+                .Where(x => x.GameTime > new DateTime(2021, 2, 1))
+                .Skip(skip)
+                .Take(take)
+                .ToList();
+        }
+
+        var json = JsonSerializer.Serialize(lsDups, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText("/data/ds/lsdups.json", json);
+    }
+
+    private static void CheckLastSpawnHashDuplicates(ServiceProvider serviceProvider)
+    {
+        using var mscope = serviceProvider.CreateScope();
+        var logger = mscope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        MD5 md5Hash = MD5.Create();
+
+        var lsDups = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText("/data/ds/lsdups.json")) ?? new(); 
+
+        foreach (var ent in lsDups)
+        {
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+            var replay1 = context.Replays
+                .Include(i => i.ReplayPlayers)
+                    .ThenInclude(i => i.Spawns)
+                        .ThenInclude(i => i.Units)
+                            .ThenInclude(i => i.Unit)
+                .Include(i => i.ReplayPlayers)
+                    .ThenInclude(i => i.Player)
+                .Where(x => x.ReplayHash == ent.Key)
+                .First();
+
+            var replay2 = context.Replays
+                .Include(i => i.ReplayPlayers)
+                    .ThenInclude(i => i.Spawns)
+                        .ThenInclude(i => i.Units)
+                            .ThenInclude(i => i.Unit)
+                .Include(i => i.ReplayPlayers)
+                    .ThenInclude(i => i.Player)
+
+                .Where(x => x.ReplayHash == ent.Value)
+                .First();
+
+            if (Math.Abs((replay1.GameTime - replay2.GameTime).TotalDays) > 1)
+            {
+                logger.LogWarning("dup not plausible: {hash1}|{hash2}", replay1.ReplayHash, replay2.ReplayHash);
+                continue;
+            }
+
+            var keepReplay = replay1;
+            var throwReplay = replay2;
+
+            if (replay2.Duration > replay1.Duration)
+            {
+                keepReplay = replay2;
+                throwReplay = replay1;
+            }
+
+            logger.LogInformation("keepReplay: {hash1}, throwReplay: {hash2}", keepReplay.ReplayHash, throwReplay.ReplayHash);
+
+            bool isPlausible = true;
+            string uploaderPlayerString = string.Empty;
+            foreach (var rp in throwReplay.ReplayPlayers)
+            {
+                var playerId = new PlayerId(rp.Player.ToonId, rp.Player.RealmId, rp.Player.RegionId);
+                var dbRp = keepReplay.ReplayPlayers
+                    .FirstOrDefault(f => new PlayerId(f.Player.ToonId, f.Player.RealmId, f.Player.RegionId) == playerId);
+
+                if (dbRp is null)
+                {
+                    logger.LogWarning("db replay player not found! {hash1}{hash2} => pos: {pos}", replay1.ReplayHash, replay2.ReplayHash, rp.GamePos);
+                    isPlausible = false;
+                    break;
+                }
+
+                if (rp.IsUploader)
+                {
+                    dbRp.IsUploader = true;
+                    uploaderPlayerString = Data.GetPlayerIdString(playerId) ?? "";
+                }
+
+                var spawn = rp.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint.All);
+                if (spawn is null)
+                {
+                    continue;
+                }
+                var lastSpawnHash = spawn.GenHashV3(keepReplay, dbRp, md5Hash);
+                dbRp.LastSpawnHash = lastSpawnHash;
+            }
+
+            if (!isPlausible)
+            {
+                continue;
+            }
+
+            logger.LogWarning("deleting replay {hash} with uploader {uploader}", throwReplay.ReplayHash, uploaderPlayerString);
+            DeleteReplay(throwReplay.ReplayHash, context, logger);
+            context.SaveChanges();
         }
     }
 }

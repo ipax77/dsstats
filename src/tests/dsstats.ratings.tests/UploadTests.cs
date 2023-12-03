@@ -3,7 +3,6 @@ using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
 using dsstats.db8services.Import;
-using dsstats.ratings.lib;
 using dsstats.shared;
 using dsstats.shared.Extensions;
 using dsstats.shared.Interfaces;
@@ -76,6 +75,7 @@ public class UploadTests
         services.AddSingleton<RatingsSaveService>();
         services.AddSingleton<ImportService>();
         services.AddSingleton<UploadService>();
+        services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 
         services.AddScoped<IReplayRepository, ReplayRepository>();
 
@@ -118,18 +118,21 @@ public class UploadTests
 
         ManualResetEvent mre = new ManualResetEvent(false);
 
-        uploadService.BlobImported += (o, e) =>
+        EventHandler<BlobImportEventArgs> blobImportedHandler = (o, e) =>
         {
             Assert.IsTrue(e.Success);
             Assert.IsTrue(File.Exists(e.ReplayBlob + ".done"));
             mre.Set();
         };
 
+        uploadService.BlobImported += blobImportedHandler;
+
         var result = uploadService.Upload(uploadDto).GetAwaiter().GetResult();
 
         Assert.IsTrue(result);
 
         mre.WaitOne(10000);
+        uploadService.BlobImported -= blobImportedHandler;
 
         var count = context.Replays.Count();
         Assert.AreEqual(replayCount, count);
@@ -173,7 +176,7 @@ public class UploadTests
         ManualResetEvent mre = new ManualResetEvent(false);
         int t = 0;
 
-        uploadService.BlobImported += (o, e) =>
+        EventHandler<BlobImportEventArgs> blobImportedHandler = (o, e) =>
         {
             Assert.IsTrue(e.Success);
             Assert.IsTrue(File.Exists(e.ReplayBlob + ".done"));
@@ -184,6 +187,8 @@ public class UploadTests
             }
         };
 
+        uploadService.BlobImported += blobImportedHandler;
+
         List<Task> tasks = new();
 
         foreach (var uploadDto in  uploadDtos)
@@ -192,8 +197,11 @@ public class UploadTests
             tasks.Add(task);
         }
 
-        Task.WaitAll(tasks.ToArray());
-        var waitResult = mre.WaitOne(20000);
+        Task.WaitAll([.. tasks]);
+        var waitResult = mre.WaitOne(30000);
+        
+        uploadService.BlobImported -= blobImportedHandler;
+        Assert.AreEqual(threads, t);
         Assert.IsTrue(waitResult);
 
         int countAfter = context.Replays.Count();
@@ -277,7 +285,6 @@ public class UploadTests
         int countAfter = context.Replays.Count();
         Assert.AreEqual(countBefore + threads, countAfter);
     }
-
 
     public ReplayDto GetBasicReplayDto(MD5 md5, GameMode gameMode = GameMode.Commanders)
     {

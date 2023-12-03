@@ -7,22 +7,31 @@
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
-@if (response != null)
-{
-    <div>
-        <h3 class="text-warning fw-bold"><a href="/stats">Top Commanders</a> past 90 days</h3>
-    </div>
-    <div class="table-responsive tableFixHead">
-        <table class="tptable table table-sm">
-            <thead>
-                <tr>
-                    <th>Commander</th>
-                    <th><spnn data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Average rating gain">AvgGain</spnn></th>
-                    <th>Winrate</th>
-                    <th>Matchups</th>
-                </tr>
-            </thead>
-            <tbody>
+<div>
+    <h3 class="text-warning fw-bold"><a href="/stats">Top Commanders</a> past 90 days</h3>
+</div>
+<div class="table-responsive tableFixHead">
+    <table class="tptable table table-sm">
+        <thead>
+            <tr>
+                <th>Commander</th>
+                <th><spnn data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Average rating gain">AvgGain</spnn></th>
+                <th>Winrate</th>
+                <th>Matchups</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (response is null || response.WinrateEnts.Count == 0)
+            {
+                @for (int i = 0; i < 7; i++)
+                {
+                    <tr>
+                        <td colspan="4"><span style="color: transparent; text-shadow: 0 0 8px #FFF">Loading ...</span></td>
+                    </tr>
+                }
+            }
+            else
+            {
                 @foreach (var item in response.WinrateEnts.OrderByDescending(o => o.AvgGain).Take(7))
                 {
                     <tr>
@@ -37,10 +46,10 @@
                         <td class="text-center">@item.Count</td>
                     </tr>
                 }
-            </tbody>
-        </table>
-    </div>
-}
+            }
+        </tbody>
+    </table>
+</div>
 
 @code {
     private WinrateRequest WinrateRequest = new()

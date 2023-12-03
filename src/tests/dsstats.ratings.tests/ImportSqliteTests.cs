@@ -1,4 +1,5 @@
-﻿using dsstats.db8;
+﻿using dsstats.api.Services;
+using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
 using dsstats.db8services.Import;
@@ -65,6 +66,7 @@ public class ImportSqliteTests
         services.AddMemoryCache();
         services.AddAutoMapper(typeof(AutoMapperProfile));
 
+        services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
         services.AddSingleton<IRatingService, RatingService>();
         services.AddSingleton<RatingsSaveService>();
         services.AddSingleton<ImportService>();
