@@ -45,34 +45,46 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var rating in ratings)
+                @if (ratings.Count == 0)
                 {
-                    <tr height="41px;" class="pointer" @onclick="e => LoadPlayerChart(rating.Player)">
-                        <td>
-                            <span>@Data.GetRegionString(rating.Player.RegionId)</span>
-                        </td>
-                        <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Player.Name</span></td>
-                        <td class="text-warning">
-                            @(ratingsRequest.ComboRating || ratingsRequest.Arcade ? rating.ComboPlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture)
-                                : rating.PlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture))
-                        </td>
-                        <td class="border-start">@rating.ComboPlayerRating.Games</td>
-                        <td>
-                            @(rating.PlayerRating.Games == 0 || rating.PlayerRating.MainCount * 100.0 /
-                                rating.PlayerRating.Games < 10.5 ? "Random" :
-                                rating.PlayerRating.Main.ToString())
-                        </td>
-                        <td>
-                            @if (ratingsRequest.ComboRating || ratingsRequest.Arcade)
-                            {
-                                @HelperService.GetPercentageString(rating.ComboPlayerRating.Wins, rating.ComboPlayerRating.Games)
-                            }
-                            else
-                            {
-                                @HelperService.GetPercentageString(rating.PlayerRating.Wins, rating.PlayerRating.Games)
-                            }
-                        </td>
-                    </tr>
+                    @for (int i = 0; i < 7; i++)
+                    {
+                        <tr>
+                            <td colspan="6"><span style="color: transparent; text-shadow: 0 0 8px #FFF">Loading ...</span></td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    @foreach (var rating in ratings)
+                    {
+                        <tr height="41px;" class="pointer" @onclick="e => LoadPlayerChart(rating.Player)">
+                            <td>
+                                <span>@Data.GetRegionString(rating.Player.RegionId)</span>
+                            </td>
+                            <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Player.Name</span></td>
+                            <td class="text-warning">
+                                @(ratingsRequest.ComboRating || ratingsRequest.Arcade ? rating.ComboPlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture)
+                                    : rating.PlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture))
+                            </td>
+                            <td class="border-start">@rating.ComboPlayerRating.Games</td>
+                            <td>
+                                @(rating.PlayerRating.Games == 0 || rating.PlayerRating.MainCount * 100.0 /
+                                    rating.PlayerRating.Games < 10.5 ? "Random" :
+                                    rating.PlayerRating.Main.ToString())
+                            </td>
+                            <td>
+                                @if (ratingsRequest.ComboRating || ratingsRequest.Arcade)
+                                {
+                                    @HelperService.GetPercentageString(rating.ComboPlayerRating.Wins, rating.ComboPlayerRating.Games)
+                                }
+                                else
+                                {
+                                    @HelperService.GetPercentageString(rating.PlayerRating.Wins, rating.PlayerRating.Games)
+                                }
+                            </td>
+                        </tr>
+                    }
                 }
             </tbody>
         </table>
