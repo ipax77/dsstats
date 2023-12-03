@@ -193,8 +193,10 @@ public class UploadTests
             tasks.Add(task);
         }
 
-        Task.WaitAll(tasks.ToArray());
-        var waitResult = mre.WaitOne(20000);
+        Task.WaitAll([.. tasks]);
+        var waitResult = mre.WaitOne(30000);
+
+        Assert.AreEqual(threads, t);
         Assert.IsTrue(waitResult);
 
         int countAfter = context.Replays.Count();
