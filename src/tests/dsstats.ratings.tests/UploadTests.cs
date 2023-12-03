@@ -3,7 +3,6 @@ using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
 using dsstats.db8services.Import;
-using dsstats.ratings.lib;
 using dsstats.shared;
 using dsstats.shared.Extensions;
 using dsstats.shared.Interfaces;
@@ -119,18 +118,21 @@ public class UploadTests
 
         ManualResetEvent mre = new ManualResetEvent(false);
 
-        uploadService.BlobImported += (o, e) =>
+        EventHandler<BlobImportEventArgs> blobImportedHandler = (o, e) =>
         {
             Assert.IsTrue(e.Success);
             Assert.IsTrue(File.Exists(e.ReplayBlob + ".done"));
             mre.Set();
         };
 
+        uploadService.BlobImported += blobImportedHandler;
+
         var result = uploadService.Upload(uploadDto).GetAwaiter().GetResult();
 
         Assert.IsTrue(result);
 
         mre.WaitOne(10000);
+        uploadService.BlobImported -= blobImportedHandler;
 
         var count = context.Replays.Count();
         Assert.AreEqual(replayCount, count);
@@ -174,7 +176,7 @@ public class UploadTests
         ManualResetEvent mre = new ManualResetEvent(false);
         int t = 0;
 
-        uploadService.BlobImported += (o, e) =>
+        EventHandler<BlobImportEventArgs> blobImportedHandler = (o, e) =>
         {
             Assert.IsTrue(e.Success);
             Assert.IsTrue(File.Exists(e.ReplayBlob + ".done"));
@@ -184,6 +186,8 @@ public class UploadTests
                 mre.Set();
             }
         };
+
+        uploadService.BlobImported += blobImportedHandler;
 
         List<Task> tasks = new();
 
@@ -195,7 +199,8 @@ public class UploadTests
 
         Task.WaitAll([.. tasks]);
         var waitResult = mre.WaitOne(30000);
-
+        
+        uploadService.BlobImported -= blobImportedHandler;
         Assert.AreEqual(threads, t);
         Assert.IsTrue(waitResult);
 
@@ -280,7 +285,6 @@ public class UploadTests
         int countAfter = context.Replays.Count();
         Assert.AreEqual(countBefore + threads, countAfter);
     }
-
 
     public ReplayDto GetBasicReplayDto(MD5 md5, GameMode gameMode = GameMode.Commanders)
     {
