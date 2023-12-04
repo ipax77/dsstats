@@ -85,8 +85,10 @@
         _ = LoadLockedPlayers();
     }
 
-    private async Task LoadLockedPlayers()
+    public async Task LoadLockedPlayers()
     {
+        lockedPlayers.Clear();
+
         if (Request.PlayerId is not null)
         {
             var name = await playerService.GetPlayerIdName(Request.PlayerId);

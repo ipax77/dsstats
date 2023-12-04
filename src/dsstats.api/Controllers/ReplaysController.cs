@@ -35,20 +35,35 @@ public class ReplaysController : Controller
     [Route("replay/{dry}/{hash}")]
     public async Task<ActionResult<ReplayDto?>> GetReplay(bool dry, string hash, CancellationToken token = default)
     {
-        return await replaysService.GetReplay(hash, dry, token);
+        var replay = await replaysService.GetReplay(hash, dry, token);
+        if (replay is null)
+        {
+            return NotFound();
+        }
+        return replay;
     }
 
     [HttpGet]
     [Route("replayrating/{combo}/{hash}")]
     public async Task<ActionResult<ReplayRatingDto?>> GetReplayRating(bool combo, string hash)
     {
-        return await replaysService.GetReplayRating(hash, combo);
+        var rating = await replaysService.GetReplayRating(hash, combo);
+        if (rating is null)
+        {
+            return NotFound();
+        }
+        return rating;
     }
 
     [HttpGet]
     [Route("arcadereplay/{hash}")]
-    public async Task<ArcadeReplayDto?> GetArcadeReplay(string hash, CancellationToken token = default)
+    public async Task<ActionResult<ArcadeReplayDto?>> GetArcadeReplay(string hash, CancellationToken token = default)
     {
-        return await replaysService.GetArcadeReplay(hash, token);
+        var replay = await replaysService.GetArcadeReplay(hash, token);
+        if (replay is null)
+        {
+            return NotFound();
+        }
+        return replay;
     }
 }
