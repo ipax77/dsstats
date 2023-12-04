@@ -205,7 +205,8 @@
 {
     <dsstats.razorlib.Players.Profile.ProfileComponent PlayerId="interestPlayer" RatingType="ratingType"
                                                        RatingCalcType="RatingCalcType.Combo"
-                                                       OnCloseRequested="ClosePlayerDetails" />
+                                                       OnCloseRequested="ClosePlayerDetails"
+                                                       OnPlayerReplaysRequested="OnPlayerReplaysRequested" />
 }
 
 @code {
@@ -222,6 +223,9 @@
     public bool IsScrollable { get; set; }
     [Parameter]
     public EventCallback<bool> OnScrollRequest { get; set; }
+
+    [Parameter]
+    public EventCallback<PlayerReplaysRequest> OnPlayerReplaysRequested { get; set; }
 
     Dictionary<bool, ReplayRatingDto> replayRatings = new();
     ReplayRatingDto? replayRating => replayRatings.ContainsKey(comboRating) ?

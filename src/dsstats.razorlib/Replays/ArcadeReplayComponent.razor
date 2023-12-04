@@ -122,7 +122,8 @@
 {
     <dsstats.razorlib.Players.Profile.ProfileComponent PlayerId="interestPlayer" RatingType="ratingType"
                                                        RatingCalcType="RatingCalcType.Arcade"
-                                                       OnCloseRequested="ClosePlayerDetails" />
+                                                       OnCloseRequested="ClosePlayerDetails"
+                                                       OnPlayerReplaysRequested="OnPlayerReplaysRequested" />
 }
 
 @code {
@@ -131,6 +132,9 @@
 
     [Parameter]
     public EventCallback OnCloseRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<PlayerReplaysRequest> OnPlayerReplaysRequested { get; set; }
 
     private PlayerId? interestPlayer = null;
     RatingType ratingType = RatingType.Cmdr;

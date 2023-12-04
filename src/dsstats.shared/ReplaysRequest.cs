@@ -116,3 +116,11 @@ public record ReplaysRatingRequest
     public int FromExp2Win { get; set; }
     public int ToExp2Win { get; set; }
 }
+
+public record PlayerReplaysRequest
+{
+    public PlayerId PlayerId { get; set; } = null!;
+    public PlayerId? PlayerIdVs { get; set; }
+    public PlayerId? PlayerIdWith { get; set; }
+    public string? ReplayHash { get; set; }
+}

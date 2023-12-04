@@ -30,6 +30,8 @@ public partial class ProfileComponent : ComponentBase
 
     [Parameter]
     public EventCallback OnCloseRequested { get; set; }
+    [Parameter]
+    public EventCallback<PlayerReplaysRequest> OnPlayerReplaysRequested { get; set; }
 
     bool isLoading;
     PlayerDetailSummary summary = new();
@@ -136,44 +138,80 @@ public partial class ProfileComponent : ComponentBase
 
     private void ShowReplays()
     {
-        NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters("replays",
-        new Dictionary<string, object?>()
-            {
+        var currentUri = new Uri(NavigationManager.Uri);
+
+        if (currentUri.AbsolutePath.EndsWith("/replays", StringComparison.OrdinalIgnoreCase))
+        {
+            OnPlayerReplaysRequested.InvokeAsync(new() { PlayerId = PlayerId });
+        }
+        else
+        {
+            NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters("replays",
+            new Dictionary<string, object?>()
+                {
                 {"PlayerId", Data.GetPlayerIdString(PlayerId) }
-            }
-        ));
+                }
+            ));
+        }
     }
 
     private void ShowVsReplays(PlayerId playerIdvs)
     {
-        NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters("replays",
-        new Dictionary<string, object?>()
-            {
-                {"PlayerId", Data.GetPlayerIdString(PlayerId) },
-                {"Vs", Data.GetPlayerIdString(playerIdvs) },
-            }
-        ), true);
+        var currentUri = new Uri(NavigationManager.Uri);
+
+        if (currentUri.AbsolutePath.EndsWith("/replays", StringComparison.OrdinalIgnoreCase))
+        {
+            OnPlayerReplaysRequested.InvokeAsync(new() { PlayerId = PlayerId, PlayerIdVs = playerIdvs });
+        }
+        else
+        {
+            NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters("replays",
+            new Dictionary<string, object?>()
+                {
+                    {"PlayerId", Data.GetPlayerIdString(PlayerId) },
+                    {"Vs", Data.GetPlayerIdString(playerIdvs) },
+                }
+            ), true);
+        }
     }
 
     private void ShowWithReplays(PlayerId playerIdwith)
     {
-        NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters("replays",
-        new Dictionary<string, object?>()
-            {
-                {"PlayerId", Data.GetPlayerIdString(PlayerId) },
-                {"With", Data.GetPlayerIdString(playerIdwith) },
-            }
-        ), true);
+        var currentUri = new Uri(NavigationManager.Uri);
+
+        if (currentUri.AbsolutePath.EndsWith("/replays", StringComparison.OrdinalIgnoreCase))
+        {
+            OnPlayerReplaysRequested.InvokeAsync(new() { PlayerId = PlayerId, PlayerIdWith = playerIdwith });
+        }
+        else
+        {
+            NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters("replays",
+            new Dictionary<string, object?>()
+                {
+                    {"PlayerId", Data.GetPlayerIdString(PlayerId) },
+                    {"With", Data.GetPlayerIdString(playerIdwith) },
+                }
+            ), true);
+        }
     }
 
     private void ShowReplaysWithReplay(string replayHash)
     {
-        NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters("replays",
-        new Dictionary<string, object?>()
-            {
-                {"PlayerId", Data.GetPlayerIdString(PlayerId) },
-                {"Replay", replayHash },
-            }
-        ), true);
+        var currentUri = new Uri(NavigationManager.Uri);
+
+        if (currentUri.AbsolutePath.EndsWith("/replays", StringComparison.OrdinalIgnoreCase))
+        {
+            OnPlayerReplaysRequested.InvokeAsync(new() { PlayerId = PlayerId, ReplayHash = replayHash });
+        }
+        else
+        {
+            NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters("replays",
+            new Dictionary<string, object?>()
+                {
+                    {"PlayerId", Data.GetPlayerIdString(PlayerId) },
+                    {"Replay", replayHash },
+                }
+            ), true);
+        }
     }
 }
