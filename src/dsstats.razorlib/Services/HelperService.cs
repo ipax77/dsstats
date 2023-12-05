@@ -65,6 +65,11 @@ public static class HelperService
             : TimeSpan.FromSeconds(seconds).ToString(@"mm\:ss");
     }
 
+    public static string TimeFromSecondsWithHour(int seconds)
+    {
+        return TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss");
+    }
+
 
     public static List<Commander> GetCommanders(string? cmdrString)
     {
