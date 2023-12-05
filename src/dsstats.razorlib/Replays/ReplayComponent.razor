@@ -51,9 +51,36 @@
     <div class="card-body bgchart">
         @if (showMiddleChart)
         {
-            <div class="bgchart"
-                 style="position: relative; width: 70vw; min-width: 600px; max-width: 1200px; height: calc(70vw * 0.5); min-height: 300px; max-height: 600px;">
-                <ReplayMiddleChart MiddleInfo="middleInfo" OnCloseRequest="ShowHideMiddleChart" />
+            <div class="d-flex">
+                <div class="bgchart"
+                     style="position: relative; width: 70vw; min-width: 500px; max-width: 1100px; height: calc(70vw * 0.5); min-height: 250px; max-height: 550px;">
+                    <ReplayMiddleChart @ref="replayMiddleChart" MiddleInfo="middleInfo" ReplayPlayers="Replay.ReplayPlayers" OnCloseRequest="ShowHideMiddleChart" />
+                </div>
+                <div class="ms-2">
+                    <form name="charttoggles">
+                        <fieldset>
+                            @if (Replay.ReplayPlayers.Any(a => a.TierUpgrades.Length > 0))
+                            {
+                                <div class="form-check form-switch">
+                                    <label class="form-check-label" style="user-select: none;">
+                                        Tier Upgrades
+                                        <input type="checkbox" class="form-check-input" @bind="showTierUps" @bind:after="@(() => replayMiddleChart?.AddTierUpgradeAnnotations(showTierUps))" />
+                                    </label>
+
+                                </div>
+                            }
+                            @if (Replay.ReplayPlayers.Any(a => a.Refineries.Length > 0))
+                            {
+                                <div class="form-check form-switch">
+                                    <label class="form-check-label" style="user-select: none;">
+                                        Refineries
+                                        <input type="checkbox" class="form-check-input" @bind="showRefineries" @bind:after="@(() => replayMiddleChart?.AddGasAnnotations(showRefineries))" />
+                                    </label>
+                                </div>
+                            }
+                        </fieldset>
+                    </form>
+                </div>
             </div>
         }
         <div class="row">
@@ -257,6 +284,10 @@
 
     TouchPoint? referencePoint = null;
 
+    ReplayMiddleChart? replayMiddleChart;
+    bool showTierUps = false;
+    bool showRefineries = false;
+
     protected override void OnParametersSet()
     {
         if (replayHash != Replay.ReplayHash)
@@ -282,6 +313,8 @@
         showReplayPath = false;
         replayRatings.Clear();
         showMiddleChart = false;
+        showTierUps = false;
+        showRefineries = false;
         Breakpoint = Breakpoint.All;
         breakpointsCount = Math.Min(4, Replay.ReplayPlayers.Select(s => s.Spawns.Count).Max());
         buildPlayers.Clear();

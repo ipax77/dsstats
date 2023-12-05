@@ -1,32 +1,45 @@
+@using Microsoft.JSInterop
 @using dsstats.razorlib.Services
 @using dsstats.shared
 @using pax.BlazorChartJs
+@inject IJSRuntime JSRuntime
 
 <ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="ChartEventTriggered">
 </ChartComponent>
 <span class="bi bi-x-lg pointer text-danger" style="position: absolute; top: 0; right: 0; padding: 10px; z-index: 1000;"
-    @onclick="e => OnCloseRequest.InvokeAsync()"></span>
+      @onclick="e => OnCloseRequest.InvokeAsync()"></span>
 
 @code {
     [Parameter, EditorRequired]
     public MiddleInfo MiddleInfo { get; set; } = default!;
 
+    [Parameter, EditorRequired]
+    public ICollection<ReplayPlayerDto> ReplayPlayers { get; set; } = default!;
+
     [Parameter]
     public EventCallback OnCloseRequest { get; set; }
 
     private ChartComponent? chartComponent;
-    private ChartJsConfig chartJsConfig = null!;
+    private CustomChartJsConfig chartJsConfig = null!;
+
+    private Lazy<Task<IJSObjectReference>> moduleTask = null!;
+    bool isRegistered;
+
+    bool chartReady;
 
     protected override void OnInitialized()
     {
+        moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/dsstats.razorlib/js/annotationTimeChart.js").AsTask());
+
         chartJsConfig = new()
             {
                 Type = ChartType.line,
-                Options = new ChartJsOptions()
+                Options = new CustomChartJsOptions()
                 {
                     Responsive = true,
                     MaintainAspectRatio = true,
-                    Plugins = new Plugins()
+                    Plugins = new CustomPlugins()
                     {
                         ArbitraryLines = new List<ArbitraryLineConfig>(),
                         Legend = new Legend()
@@ -84,49 +97,58 @@
                     }
                 }
             };
-        Init();
         base.OnInitialized();
     }
 
-    public void Init()
+    public void SetupChart()
     {
-        List<object> team1mid = new();
-        List<object> team2mid = new();
-        List<int> labels = new();
+        if (!chartReady)
+        {
+            return;
+        }
+
+        List<ChartMiddleData> team1mid = new();
+        List<ChartMiddleData> team2mid = new();
 
         int seconds = 0;
         while (seconds < MiddleInfo.Duration)
         {
             (var mid1, var mid2) = HelperService.GetChartMiddle(MiddleInfo, seconds);
 
-            labels.Add(seconds);
-            team1mid.Add(mid1);
-            team2mid.Add(mid2);
+            var x = $"1970-01-01T{HelperService.TimeFromSecondsWithHour(seconds)}";
+            team1mid.Add(new() { X = x, Y = mid1 });
+            team2mid.Add(new() { X = x, Y = mid2 });
             seconds += 30;
         }
 
-        labels.Add(MiddleInfo.Duration);
+        var xt = $"1970-01-01T{HelperService.TimeFromSecondsWithHour(MiddleInfo.Duration)}";
         (var lmid1, var lmid2) = HelperService.GetChartMiddle(MiddleInfo, MiddleInfo.Duration);
-        team1mid.Add(lmid1);
-        team2mid.Add(lmid2);
+        team1mid.Add(new() { X = xt, Y = lmid1 });
+        team2mid.Add(new() { X = xt, Y = lmid2 });
 
         List<ArbitraryLineConfig> objectives = new();
         if (MiddleInfo.Cannon > 0 && MiddleInfo.Duration > MiddleInfo.Cannon)
         {
-            int nextLabelLoop = labels.First(f => f > MiddleInfo.Cannon);
+            DateTimeOffset date = new DateTime(1970, 1, 1);
+            date = date.Add(TimeSpan.FromSeconds(MiddleInfo.Cannon));
+
             objectives.Add(new()
                 {
-                    XPosition = labels.IndexOf(nextLabelLoop),
+                    XPosition = (int)date.ToUnixTimeMilliseconds(),
                     ArbitraryLineColor = "yellow",
                     Text = "Cannon"
                 });
         }
         if (MiddleInfo.Bunker > 0 && MiddleInfo.Duration > MiddleInfo.Bunker)
         {
-            int nextLabelLoop = labels.First(f => f > MiddleInfo.Bunker);
+            DateTimeOffset date = new DateTime(1970, 1, 1);
+            date = date.Add(TimeSpan.FromSeconds(MiddleInfo.Bunker));
+
+            var x = $"1970-01-01T{HelperService.TimeFromSecondsWithHour(MiddleInfo.Bunker)}";
+
             objectives.Add(new()
                 {
-                    XPosition = labels.IndexOf(nextLabelLoop),
+                    XPosition = (int)date.ToUnixTimeMilliseconds(),
                     ArbitraryLineColor = "yellow",
                     Text = "Bunker"
                 });
@@ -135,29 +157,29 @@
         var team1Dataset = new LineDataset()
             {
                 Label = "Team 1",
-                Data = team1mid,
+                Data = team1mid.OrderBy(o => o.X).Cast<object>().ToList(),
                 BorderColor = MiddleInfo.WinnerTeam == 1 ? "green" : "red",
                 BorderWidth = 3,
                 Fill = false,
-                PointBackgroundColor = new IndexableOption<string>("white"),
-                PointBorderColor = new IndexableOption<string>("yellow"),
-                PointRadius = new IndexableOption<double>(1),
-                PointBorderWidth = new IndexableOption<double>(1),
-                PointHitRadius = new IndexableOption<double>(1),
+                PointBackgroundColor = "white",
+                PointBorderColor = "yellow",
+                PointRadius = 1,
+                PointBorderWidth = 1,
+                PointHitRadius = 1,
                 Tension = 0
             };
         var team2Dataset = new LineDataset()
             {
                 Label = "Team 2",
-                Data = team2mid,
+                Data = team2mid.OrderBy(o => o.X).Cast<object>().ToList(),
                 BorderColor = MiddleInfo.WinnerTeam == 2 ? "green" : "red",
                 BorderWidth = 3,
                 Fill = false,
-                PointBackgroundColor = new IndexableOption<string>("white"),
-                PointBorderColor = new IndexableOption<string>("yellow"),
-                PointRadius = new IndexableOption<double>(1),
-                PointBorderWidth = new IndexableOption<double>(1),
-                PointHitRadius = new IndexableOption<double>(1),
+                PointBackgroundColor = "white",
+                PointBorderColor = "yellow",
+                PointRadius = 1,
+                PointBorderWidth = 1,
+                PointHitRadius = 1,
                 Tension = 0
             };
 
@@ -166,8 +188,6 @@
             chartJsConfig.RemoveDatasets(chartJsConfig.Data.Datasets);
         }
 
-        // chartJsConfig.SetLabels(labels.Select(s => TimeSpan.FromSeconds(s).ToString(@"hh\:mm\:ss")).ToList());
-        chartJsConfig.SetLabels(labels.Select(s => HelperService.TimeFromSeconds(s)).ToList());
         chartJsConfig.AddDatasets(new List<ChartJsDataset>() { team1Dataset, team2Dataset });
 
         if (chartJsConfig.Options?.Plugins?.ArbitraryLines is not null)
@@ -177,8 +197,420 @@
         }
     }
 
-    private void ChartEventTriggered(ChartJsEvent chartEvent)
+    public void AddTierUpgradeArbitraryLines(bool showHide)
     {
+        if (showHide)
+        {
+            List<ArbitraryLineConfig> tierUps = new();
 
+            foreach (var rp in ReplayPlayers)
+            {
+                if (string.IsNullOrEmpty(rp.TierUpgrades))
+                {
+                    continue;
+                }
+
+                DateTimeOffset date = new DateTime(1970, 1, 1);
+
+                var rpUps = rp.TierUpgrades.Split('|', StringSplitOptions.RemoveEmptyEntries);
+
+                for (int i = 0; i < rpUps.Length; i++)
+                {
+                    tierUps.Add(new()
+                        {
+                            XPosition = (int)date.Add(TimeSpan.FromSeconds(Convert.ToInt32(int.Parse(rpUps[i]) / 22.4))).ToUnixTimeMilliseconds(),
+                            ArbitraryLineColor = "blue",
+                            Text = $"Tier{i + 2} {rp.Race} #{rp.GamePos}"
+                        });
+                }
+            }
+
+            if (chartJsConfig.Options?.Plugins?.ArbitraryLines is not null)
+            {
+                tierUps.AddRange(chartJsConfig.Options.Plugins.ArbitraryLines);
+                chartJsConfig.Options.Plugins.ArbitraryLines = tierUps;
+                chartJsConfig.UpdateChartOptions();
+            }
+        }
+        else
+        {
+            if (chartJsConfig.Options?.Plugins?.ArbitraryLines is not null)
+            {
+                var tierUps = chartJsConfig.Options.Plugins.ArbitraryLines.Where(x => x.ArbitraryLineColor == "blue");
+                chartJsConfig.Options.Plugins.ArbitraryLines = chartJsConfig.Options.Plugins.ArbitraryLines.Except(tierUps).ToList();
+                chartJsConfig.UpdateChartOptions();
+            }
+        }
+    }
+
+    public void AddTierUpgradeAnnotations(bool showHide)
+    {
+#pragma warning disable CS8602
+#pragma warning disable CS8604
+        if (showHide)
+        {
+            List<LabelAnnotation> annotations = new();
+
+            foreach (var rp in ReplayPlayers)
+            {
+                if (string.IsNullOrEmpty(rp.TierUpgrades))
+                {
+                    continue;
+                }
+
+                DateTimeOffset date = new DateTime(1970, 1, 1);
+
+                var rpUps = rp.TierUpgrades.Split('|', StringSplitOptions.RemoveEmptyEntries);
+
+                for (int i = 0; i < rpUps.Length; i++)
+                {
+                    var x = (int)date.Add(TimeSpan.FromSeconds(Convert.ToInt32(int.Parse(rpUps[i]) / 22.4))).ToUnixTimeMilliseconds();
+                    annotations.Add(new()
+                        {
+                            XValue = x,
+                            YValue = 0,
+                            XAdjust = 0,
+                            YAdjust = 0,
+                            Position = "start",
+                            Color = "white",
+                            BackgroundColor = MiddleInfo.WinnerTeam == 1 ?
+                                      rp.GamePos <= 3 ? "#00bc8c" : "#e74c3c"
+                                    : rp.GamePos <= 3 ? "#e74c3c" : "#00bc8c",
+                            BorderRadius = 10,
+                            Content = $"#{rp.GamePos} Tier{i + 2} {rp.Race}",
+                            Font = new()
+                            {
+                                Size = 12,
+                            }
+                        });
+                }
+            }
+
+            if (chartJsConfig.Options?.Plugins is not null)
+            {
+                // int xMax = (int)(new DateTimeOffset(new DateTime(1970, 1, 1).AddSeconds(MiddleInfo.Duration)).ToUnixTimeMilliseconds());
+
+                Dictionary<string, object> chartAnnotations = new();
+
+                int i = 0;
+                int j = 0;
+                int prevX = 0;
+
+                foreach (var a in annotations.OrderBy(o => o.XValue))
+                {
+                    if (prevX != 0 && Math.Abs(Math.Abs(prevX) - Math.Abs(a.XValue)) > 150000)
+                    {
+                        j = 0;
+                    }
+
+                    // if (Math.Abs(Math.Abs(a.XValue) - Math.Abs(xMax)) < 60000)
+                    // {
+                    //     a.Rotation = -90;
+                    //     a.XAdjust = -100;
+                    // }
+
+                    prevX = a.XValue;
+                    a.YAdjust = -50 - (j * 24);
+                    chartAnnotations.Add($"label{i + 100}", a);
+                    i++;
+                    j++;
+                }
+                if (chartJsConfig.Options.Plugins.Annotation?.Annotations is null)
+                {
+                    chartJsConfig.Options.Plugins.Annotation = new()
+                        {
+                            Annotations = chartAnnotations
+                        };
+                }
+                else
+                {
+                    foreach (var a in chartAnnotations)
+                    {
+                        chartJsConfig.Options.Plugins.Annotation.Annotations.TryAdd(a.Key, a.Value);
+                    }
+                }
+                chartJsConfig.UpdateChartOptions();
+            }
+        }
+        else
+        {
+            if (chartJsConfig.Options?.Plugins?.Annotation?.Annotations is not null)
+            {
+                foreach (var a in chartJsConfig.Options.Plugins.Annotation.Annotations.ToArray())
+                {
+                    if (a.Value is LabelAnnotation la
+                        && la.Content.Contains(" Tier"))
+                    {
+                        chartJsConfig.Options.Plugins.Annotation.Annotations.Remove(a.Key);
+                    }
+                }
+                chartJsConfig.UpdateChartOptions();
+            }
+        }
+#pragma warning restore CS8602
+#pragma warning restore CS8604
+    }
+
+    public void AddGasAnnotations(bool showHide)
+    {
+#pragma warning disable CS8602
+#pragma warning disable CS8604
+        if (showHide)
+        {
+            List<LabelAnnotation> annotations = new();
+
+            foreach (var rp in ReplayPlayers)
+            {
+                if (string.IsNullOrEmpty(rp.TierUpgrades))
+                {
+                    continue;
+                }
+
+                DateTimeOffset date = new DateTime(1970, 1, 1);
+
+                var refineries = rp.Refineries.Split('|', StringSplitOptions.RemoveEmptyEntries);
+
+                for (int i = 0; i < refineries.Length; i++)
+                {
+                    var x = (int)date.Add(TimeSpan.FromSeconds(Convert.ToInt32(int.Parse(refineries[i]) / 22.4))).ToUnixTimeMilliseconds();
+                    annotations.Add(new()
+                        {
+                            XValue = x,
+                            YValue = 0,
+                            XAdjust = 0,
+                            YAdjust = 0,
+                            Position = "start",
+                            Color = "white",
+                            BackgroundColor = MiddleInfo.WinnerTeam == 1 ?
+                                          rp.GamePos <= 3 ? "#00bc8c" : "#e74c3c"
+                                        : rp.GamePos <= 3 ? "#e74c3c" : "#00bc8c",
+                            BorderRadius = 10,
+                            Content = $"#{rp.GamePos} Gas{i + 1} {rp.Race}",
+                            Font = new()
+                            {
+                                Size = 10,
+                            }
+                        });
+                }
+            }
+
+            if (chartJsConfig.Options?.Plugins is not null)
+            {
+                // int xMax = (int)(new DateTimeOffset(new DateTime(1970, 1, 1).AddSeconds(MiddleInfo.Duration)).ToUnixTimeMilliseconds());
+
+                Dictionary<string, object> chartAnnotations = new();
+
+                int i = 0;
+                int j = 0;
+                int prevX = 0;
+
+                foreach (var a in annotations.OrderBy(o => o.XValue))
+                {
+                    if (prevX != 0 && Math.Abs(Math.Abs(prevX) - Math.Abs(a.XValue)) > 125000)
+                    {
+                        j = 0;
+                    }
+
+                    // if (Math.Abs(Math.Abs(a.XValue) - Math.Abs(xMax)) < 60000)
+                    // {
+                    //     a.Rotation = 90;
+                    //     a.XAdjust = -100;
+                    // }
+
+                    prevX = a.XValue;
+                    a.YAdjust = -50 - (j * 20);
+                    chartAnnotations.Add($"label{i + 1}", a);
+                    i++;
+                    j++;
+                }
+
+                if (chartJsConfig.Options.Plugins.Annotation?.Annotations is null)
+                {
+                    chartJsConfig.Options.Plugins.Annotation = new()
+                        {
+                            Annotations = chartAnnotations
+                        };
+                }
+                else
+                {
+                    foreach (var a in chartAnnotations)
+                    {
+                        chartJsConfig.Options.Plugins.Annotation.Annotations.TryAdd(a.Key, a.Value);
+                    }
+                }
+                chartJsConfig.UpdateChartOptions();
+            }
+        }
+        else
+        {
+            if (chartJsConfig.Options?.Plugins?.Annotation?.Annotations is not null)
+            {
+                foreach (var a in chartJsConfig.Options.Plugins.Annotation.Annotations.ToArray())
+                {
+                    if (a.Value is LabelAnnotation la
+                        && la.Content.Contains(" Gas"))
+                    {
+                        chartJsConfig.Options.Plugins.Annotation.Annotations.Remove(a.Key);
+                    }
+                }
+
+                chartJsConfig.UpdateChartOptions();
+            }
+        }
+#pragma warning restore CS8602
+#pragma warning restore CS8604
+    }
+
+
+    private async void ChartEventTriggered(ChartJsEvent chartEvent)
+    {
+        if (chartEvent is ChartJsInitEvent initEvent)
+        {
+            var success = await RegisterPlugin();
+            chartReady = !success;
+            SetupChart();
+        }
+    }
+
+    private async Task<bool> RegisterPlugin()
+    {
+        if (!isRegistered)
+        {
+            var module = await moduleTask.Value.ConfigureAwait(false);
+            await module.InvokeVoidAsync("registerPlugin")
+                .ConfigureAwait(false);
+
+            isRegistered = true;
+
+            if (chartJsConfig.Options?.Scales?.X != null)
+            {
+                chartJsConfig.Options.Scales.X = new TimeCartesianAxis()
+                    {
+                        Display = true,
+                        Position = "bottom",
+                        Type = "time",
+                        Time = new TimeCartesianAxisTime()
+                        {
+                            Unit = "second",
+                            TooltipFormat = "mm:ss",
+                            DisplayFormats = new
+                            {
+                                millisecond = "mm:ss.SSS",
+                                second = "mm:ss",
+                                minute = "mm",
+                                hour = "HH"
+                            }
+                        },
+                        Title = new Title()
+                        {
+                            Display = true,
+                            Text = "GameTime",
+                            Color = "yellow",
+                        },
+                        Ticks = new TimeCartesianAxisTicks()
+                        {
+                            Color = "yellow",
+                        },
+                        Grid = new ChartJsGrid()
+                        {
+                            Display = true,
+                            Color = "#6B6B6B",
+                            LineWidth = 1,
+                            DrawOnChartArea = true,
+                            TickLength = 8,
+                            TickWidth = 1,
+                            TickColor = "#4E58A0",
+                            Offset = false,
+                        },
+                        Border = new ChartJsAxisBorder()
+                        {
+                            Display = true,
+                            Width = 1,
+                            Color = "#6B6B6B"
+                        }
+                    };
+            }
+            chartJsConfig.ReinitializeChart();
+            return true;
+        }
+        return false;
+    }
+
+    public record ChartMiddleData
+    {
+        public string X { get; set; } = string.Empty;
+        public double Y { get; set; }
+    }
+
+    public class CustomChartJsConfig : ChartJsConfig
+    {
+        public new CustomChartJsOptions? Options { get; set; }
+    }
+
+    public record CustomChartJsOptions : ChartJsOptions
+    {
+        public new CustomPlugins? Plugins { get; set; }
+    }
+
+    public record CustomPlugins : Plugins
+    {
+        public AnnotationsSettings? Annotation { get; set; }
+    }
+
+    public record AnnotationsSettings
+    {
+        public AnnotationCommon? Common { get; set; }
+        public Dictionary<string, object>? Annotations { get; set; }
+    }
+
+    public record AnnotationCommon
+    {
+        public string? DrawTime { get; set; }
+    }
+
+    public record BoxAnnotation
+    {
+        public string? Type { get; set; }
+        public double? XMin { get; set; }
+        public double? XMax { get; set; }
+        public double? YMin { get; set; }
+        public double? YMax { get; set; }
+        public string? BackgroundColor { get; set; }
+    }
+
+    public record PointAnnotation
+    {
+        public string Type { get; set; } = "point";
+        public int XValue { get; set; }
+        public int YValue { get; set; }
+        public string BackgroundColor { get; set; } = "red";
+    }
+
+    public record LabelAnnotation
+    {
+        public string Type { get; set; } = "label";
+        public int XValue { get; set; }
+        public int YValue { get; set; }
+        public int XAdjust { get; set; }
+        public int YAdjust { get; set; }
+        public string? Position { get; set; }
+        public int Rotation { get; set; }
+        public string Color { get; set; } = "black";
+        public string BackgroundColor { get; set; } = "red";
+        public int BorderRadius { get; set; }
+        public string Content { get; set; } = "Sommer";
+        public string TextAlign { get; set; } = "start";
+        public Font? Font { get; set; }
+        public LabelAnnotationCallout? Callout { get; set; }
+    }
+
+    public record LabelAnnotationCallout
+    {
+        public bool Display { get; set; }
+        public int Side { get; set; }
+        public string? BorderColor { get; set; }
+        public int BorderWidth { get; set; } = 1;
+        public int Margin { get; set; } = 5;
+        public string? Position { get; set; }
     }
 }
