@@ -59,19 +59,25 @@
                 <div class="ms-2">
                     <form name="charttoggles">
                         <fieldset>
-                            <div class="form-check form-switch">
-                                <label class="form-check-label">
-                                    Tier Upgrades
-                                    <input type="checkbox" class="form-check-input" @bind="showTierUps" @bind:after="@(() => replayMiddleChart?.AddTierUpgradeAnnotations(showTierUps))" />
-                                </label>
+                            @if (Replay.ReplayPlayers.Any(a => a.TierUpgrades.Length > 0))
+                            {
+                                <div class="form-check form-switch">
+                                    <label class="form-check-label" style="user-select: none;">
+                                        Tier Upgrades
+                                        <input type="checkbox" class="form-check-input" @bind="showTierUps" @bind:after="@(() => replayMiddleChart?.AddTierUpgradeAnnotations(showTierUps))" />
+                                    </label>
 
-                            </div>
-                            <div class="form-check form-switch">
-                                <label class="form-check-label">
-                                    Refineries
-                                    <input type="checkbox" class="form-check-input" @bind="showRefineries" @bind:after="@(() => replayMiddleChart?.AddGasAnnotations(showRefineries))" />
-                                </label>
-                            </div>
+                                </div>
+                            }
+                            @if (Replay.ReplayPlayers.Any(a => a.Refineries.Length > 0))
+                            {
+                                <div class="form-check form-switch">
+                                    <label class="form-check-label" style="user-select: none;">
+                                        Refineries
+                                        <input type="checkbox" class="form-check-input" @bind="showRefineries" @bind:after="@(() => replayMiddleChart?.AddGasAnnotations(showRefineries))" />
+                                    </label>
+                                </div>
+                            }
                         </fieldset>
                     </form>
                 </div>

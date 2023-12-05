@@ -292,13 +292,13 @@
 
                 Dictionary<string, object> chartAnnotations = new();
 
-                int i = chartJsConfig.Options?.Plugins?.Annotation?.Annotations is null ? 0 : chartJsConfig.Options.Plugins.Annotation.Annotations.Count;
+                int i = 0;
                 int j = 0;
                 int prevX = 0;
 
                 foreach (var a in annotations.OrderBy(o => o.XValue))
                 {
-                    if (prevX != 0 && Math.Abs(Math.Abs(prevX) - Math.Abs(a.XValue)) > 100000)
+                    if (prevX != 0 && Math.Abs(Math.Abs(prevX) - Math.Abs(a.XValue)) > 150000)
                     {
                         j = 0;
                     }
@@ -311,7 +311,7 @@
 
                     prevX = a.XValue;
                     a.YAdjust = -50 - (j * 24);
-                    chartAnnotations.Add($"label{i + 1}", a);
+                    chartAnnotations.Add($"label{i + 100}", a);
                     i++;
                     j++;
                 }
@@ -400,13 +400,13 @@
 
                 Dictionary<string, object> chartAnnotations = new();
 
-                int i = chartJsConfig.Options?.Plugins?.Annotation?.Annotations is null ? 0 : chartJsConfig.Options.Plugins.Annotation.Annotations.Count;
+                int i = 0;
                 int j = 0;
                 int prevX = 0;
 
                 foreach (var a in annotations.OrderBy(o => o.XValue))
                 {
-                    if (prevX != 0 && Math.Abs(Math.Abs(prevX) - Math.Abs(a.XValue)) > 80000)
+                    if (prevX != 0 && Math.Abs(Math.Abs(prevX) - Math.Abs(a.XValue)) > 125000)
                     {
                         j = 0;
                     }
