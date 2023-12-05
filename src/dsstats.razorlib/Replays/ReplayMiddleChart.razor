@@ -20,7 +20,7 @@
     public EventCallback OnCloseRequest { get; set; }
 
     private ChartComponent? chartComponent;
-    private ChartJsConfig chartJsConfig = null!;
+    private CustomChartJsConfig chartJsConfig = null!;
 
     private Lazy<Task<IJSObjectReference>> moduleTask = null!;
     bool isRegistered;
@@ -30,16 +30,16 @@
     protected override void OnInitialized()
     {
         moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
-                "import", "./_content/dsstats.razorlib/js/timeChart.js").AsTask());
+                "import", "./_content/dsstats.razorlib/js/annotationTimeChart.js").AsTask());
 
         chartJsConfig = new()
             {
                 Type = ChartType.line,
-                Options = new ChartJsOptions()
+                Options = new CustomChartJsOptions()
                 {
                     Responsive = true,
                     MaintainAspectRatio = true,
-                    Plugins = new Plugins()
+                    Plugins = new CustomPlugins()
                     {
                         ArbitraryLines = new List<ArbitraryLineConfig>(),
                         Legend = new Legend()
@@ -243,6 +243,225 @@
         }
     }
 
+    public void AddTierUpgradeAnnotations(bool showHide)
+    {
+#pragma warning disable CS8602
+#pragma warning disable CS8604
+        if (showHide)
+        {
+            List<LabelAnnotation> annotations = new();
+
+            foreach (var rp in ReplayPlayers)
+            {
+                if (string.IsNullOrEmpty(rp.TierUpgrades))
+                {
+                    continue;
+                }
+
+                DateTimeOffset date = new DateTime(1970, 1, 1);
+
+                var rpUps = rp.TierUpgrades.Split('|', StringSplitOptions.RemoveEmptyEntries);
+
+                for (int i = 0; i < rpUps.Length; i++)
+                {
+                    var x = (int)date.Add(TimeSpan.FromSeconds(Convert.ToInt32(int.Parse(rpUps[i]) / 22.4))).ToUnixTimeMilliseconds();
+                    annotations.Add(new()
+                        {
+                            XValue = x,
+                            YValue = 0,
+                            XAdjust = 0,
+                            YAdjust = 0,
+                            Position = "start",
+                            Color = "white",
+                            BackgroundColor = MiddleInfo.WinnerTeam == 1 ?
+                                      rp.GamePos <= 3 ? "#00bc8c" : "#e74c3c"
+                                    : rp.GamePos <= 3 ? "#e74c3c" : "#00bc8c",
+                            BorderRadius = 10,
+                            Content = $"#{rp.GamePos} Tier{i + 2} {rp.Race}",
+                            Font = new()
+                            {
+                                Size = 12,
+                            }
+                        });
+                }
+            }
+
+            if (chartJsConfig.Options?.Plugins is not null)
+            {
+                // int xMax = (int)(new DateTimeOffset(new DateTime(1970, 1, 1).AddSeconds(MiddleInfo.Duration)).ToUnixTimeMilliseconds());
+
+                Dictionary<string, object> chartAnnotations = new();
+
+                int i = chartJsConfig.Options?.Plugins?.Annotation?.Annotations is null ? 0 : chartJsConfig.Options.Plugins.Annotation.Annotations.Count;
+                int j = 0;
+                int prevX = 0;
+
+                foreach (var a in annotations.OrderBy(o => o.XValue))
+                {
+                    if (prevX != 0 && Math.Abs(Math.Abs(prevX) - Math.Abs(a.XValue)) > 100000)
+                    {
+                        j = 0;
+                    }
+
+                    // if (Math.Abs(Math.Abs(a.XValue) - Math.Abs(xMax)) < 60000)
+                    // {
+                    //     a.Rotation = -90;
+                    //     a.XAdjust = -100;
+                    // }
+
+                    prevX = a.XValue;
+                    a.YAdjust = -50 - (j * 24);
+                    chartAnnotations.Add($"label{i + 1}", a);
+                    i++;
+                    j++;
+                }
+                if (chartJsConfig.Options.Plugins.Annotation?.Annotations is null)
+                {
+                    chartJsConfig.Options.Plugins.Annotation = new()
+                        {
+                            Annotations = chartAnnotations
+                        };
+                }
+                else
+                {
+                    foreach (var a in chartAnnotations)
+                    {
+                        chartJsConfig.Options.Plugins.Annotation.Annotations.TryAdd(a.Key, a.Value);
+                    }
+                }
+                chartJsConfig.UpdateChartOptions();
+            }
+        }
+        else
+        {
+            if (chartJsConfig.Options?.Plugins?.Annotation?.Annotations is not null)
+            {
+                foreach (var a in chartJsConfig.Options.Plugins.Annotation.Annotations.ToArray())
+                {
+                    if (a.Value is LabelAnnotation la
+                        && la.Content.Contains(" Tier"))
+                    {
+                        chartJsConfig.Options.Plugins.Annotation.Annotations.Remove(a.Key);
+                    }
+                }
+                chartJsConfig.UpdateChartOptions();
+            }
+        }
+#pragma warning restore CS8602
+#pragma warning restore CS8604
+    }
+
+    public void AddGasAnnotations(bool showHide)
+    {
+#pragma warning disable CS8602
+#pragma warning disable CS8604
+        if (showHide)
+        {
+            List<LabelAnnotation> annotations = new();
+
+            foreach (var rp in ReplayPlayers)
+            {
+                if (string.IsNullOrEmpty(rp.TierUpgrades))
+                {
+                    continue;
+                }
+
+                DateTimeOffset date = new DateTime(1970, 1, 1);
+
+                var refineries = rp.Refineries.Split('|', StringSplitOptions.RemoveEmptyEntries);
+
+                for (int i = 0; i < refineries.Length; i++)
+                {
+                    var x = (int)date.Add(TimeSpan.FromSeconds(Convert.ToInt32(int.Parse(refineries[i]) / 22.4))).ToUnixTimeMilliseconds();
+                    annotations.Add(new()
+                        {
+                            XValue = x,
+                            YValue = 0,
+                            XAdjust = 0,
+                            YAdjust = 0,
+                            Position = "start",
+                            Color = "white",
+                            BackgroundColor = MiddleInfo.WinnerTeam == 1 ?
+                                          rp.GamePos <= 3 ? "#00bc8c" : "#e74c3c"
+                                        : rp.GamePos <= 3 ? "#e74c3c" : "#00bc8c",
+                            BorderRadius = 10,
+                            Content = $"#{rp.GamePos} Gas{i + 1} {rp.Race}",
+                            Font = new()
+                            {
+                                Size = 10,
+                            }
+                        });
+                }
+            }
+
+            if (chartJsConfig.Options?.Plugins is not null)
+            {
+                // int xMax = (int)(new DateTimeOffset(new DateTime(1970, 1, 1).AddSeconds(MiddleInfo.Duration)).ToUnixTimeMilliseconds());
+
+                Dictionary<string, object> chartAnnotations = new();
+
+                int i = chartJsConfig.Options?.Plugins?.Annotation?.Annotations is null ? 0 : chartJsConfig.Options.Plugins.Annotation.Annotations.Count;
+                int j = 0;
+                int prevX = 0;
+
+                foreach (var a in annotations.OrderBy(o => o.XValue))
+                {
+                    if (prevX != 0 && Math.Abs(Math.Abs(prevX) - Math.Abs(a.XValue)) > 80000)
+                    {
+                        j = 0;
+                    }
+
+                    // if (Math.Abs(Math.Abs(a.XValue) - Math.Abs(xMax)) < 60000)
+                    // {
+                    //     a.Rotation = 90;
+                    //     a.XAdjust = -100;
+                    // }
+
+                    prevX = a.XValue;
+                    a.YAdjust = -50 - (j * 20);
+                    chartAnnotations.Add($"label{i + 1}", a);
+                    i++;
+                    j++;
+                }
+
+                if (chartJsConfig.Options.Plugins.Annotation?.Annotations is null)
+                {
+                    chartJsConfig.Options.Plugins.Annotation = new()
+                        {
+                            Annotations = chartAnnotations
+                        };
+                }
+                else
+                {
+                    foreach (var a in chartAnnotations)
+                    {
+                        chartJsConfig.Options.Plugins.Annotation.Annotations.TryAdd(a.Key, a.Value);
+                    }
+                }
+                chartJsConfig.UpdateChartOptions();
+            }
+        }
+        else
+        {
+            if (chartJsConfig.Options?.Plugins?.Annotation?.Annotations is not null)
+            {
+                foreach (var a in chartJsConfig.Options.Plugins.Annotation.Annotations.ToArray())
+                {
+                    if (a.Value is LabelAnnotation la
+                        && la.Content.Contains(" Gas"))
+                    {
+                        chartJsConfig.Options.Plugins.Annotation.Annotations.Remove(a.Key);
+                    }
+                }
+
+                chartJsConfig.UpdateChartOptions();
+            }
+        }
+#pragma warning restore CS8602
+#pragma warning restore CS8604
+    }
+
+
     private async void ChartEventTriggered(ChartJsEvent chartEvent)
     {
         if (chartEvent is ChartJsInitEvent initEvent)
@@ -321,5 +540,77 @@
     {
         public string X { get; set; } = string.Empty;
         public double Y { get; set; }
+    }
+
+    public class CustomChartJsConfig : ChartJsConfig
+    {
+        public new CustomChartJsOptions? Options { get; set; }
+    }
+
+    public record CustomChartJsOptions : ChartJsOptions
+    {
+        public new CustomPlugins? Plugins { get; set; }
+    }
+
+    public record CustomPlugins : Plugins
+    {
+        public AnnotationsSettings? Annotation { get; set; }
+    }
+
+    public record AnnotationsSettings
+    {
+        public AnnotationCommon? Common { get; set; }
+        public Dictionary<string, object>? Annotations { get; set; }
+    }
+
+    public record AnnotationCommon
+    {
+        public string? DrawTime { get; set; }
+    }
+
+    public record BoxAnnotation
+    {
+        public string? Type { get; set; }
+        public double? XMin { get; set; }
+        public double? XMax { get; set; }
+        public double? YMin { get; set; }
+        public double? YMax { get; set; }
+        public string? BackgroundColor { get; set; }
+    }
+
+    public record PointAnnotation
+    {
+        public string Type { get; set; } = "point";
+        public int XValue { get; set; }
+        public int YValue { get; set; }
+        public string BackgroundColor { get; set; } = "red";
+    }
+
+    public record LabelAnnotation
+    {
+        public string Type { get; set; } = "label";
+        public int XValue { get; set; }
+        public int YValue { get; set; }
+        public int XAdjust { get; set; }
+        public int YAdjust { get; set; }
+        public string? Position { get; set; }
+        public int Rotation { get; set; }
+        public string Color { get; set; } = "black";
+        public string BackgroundColor { get; set; } = "red";
+        public int BorderRadius { get; set; }
+        public string Content { get; set; } = "Sommer";
+        public string TextAlign { get; set; } = "start";
+        public Font? Font { get; set; }
+        public LabelAnnotationCallout? Callout { get; set; }
+    }
+
+    public record LabelAnnotationCallout
+    {
+        public bool Display { get; set; }
+        public int Side { get; set; }
+        public string? BorderColor { get; set; }
+        public int BorderWidth { get; set; } = 1;
+        public int Margin { get; set; } = 5;
+        public string? Position { get; set; }
     }
 }

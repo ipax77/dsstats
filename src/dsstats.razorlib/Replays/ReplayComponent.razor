@@ -57,13 +57,23 @@
                     <ReplayMiddleChart @ref="replayMiddleChart" MiddleInfo="middleInfo" ReplayPlayers="Replay.ReplayPlayers" OnCloseRequest="ShowHideMiddleChart" />
                 </div>
                 <div class="ms-2">
-                    <div class="form-check form-switch">
-                        <label class="form-check-label">
-                            Tier Upgrades
-                            <input type="checkbox" class="form-check-input" @bind="showTierUps" @bind:after="@(() => replayMiddleChart?.AddTierUpgradeArbitraryLines(showTierUps))" />
-                        </label>
+                    <form name="charttoggles">
+                        <fieldset>
+                            <div class="form-check form-switch">
+                                <label class="form-check-label">
+                                    Tier Upgrades
+                                    <input type="checkbox" class="form-check-input" @bind="showTierUps" @bind:after="@(() => replayMiddleChart?.AddTierUpgradeAnnotations(showTierUps))" />
+                                </label>
 
-                    </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <label class="form-check-label">
+                                    Refineries
+                                    <input type="checkbox" class="form-check-input" @bind="showRefineries" @bind:after="@(() => replayMiddleChart?.AddGasAnnotations(showRefineries))" />
+                                </label>
+                            </div>
+                        </fieldset>
+                    </form>
                 </div>
             </div>
         }
@@ -266,6 +276,7 @@
 
     ReplayMiddleChart? replayMiddleChart;
     bool showTierUps = false;
+    bool showRefineries = false;
 
     protected override void OnParametersSet()
     {
@@ -293,6 +304,7 @@
         replayRatings.Clear();
         showMiddleChart = false;
         showTierUps = false;
+        showRefineries = false;
         Breakpoint = Breakpoint.All;
         breakpointsCount = Math.Min(4, Replay.ReplayPlayers.Select(s => s.Spawns.Count).Max());
         buildPlayers.Clear();
