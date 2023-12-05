@@ -146,13 +146,6 @@
 
             var x = $"1970-01-01T{HelperService.TimeFromSecondsWithHour(MiddleInfo.Bunker)}";
 
-            // if (team1mid.FirstOrDefault(f => f.X == x) is null)
-            // {
-            //     (var mid1, var mid2) = HelperService.GetChartMiddle(MiddleInfo, MiddleInfo.Bunker);
-            //     team1mid.Add(new() { X = x, Y = mid1 });
-            //     team2mid.Add(new() { X = x, Y = mid2 });
-            // }
-
             objectives.Add(new()
                 {
                     XPosition = (int)date.ToUnixTimeMilliseconds(),
@@ -202,41 +195,51 @@
             chartJsConfig.Options.Plugins.ArbitraryLines = objectives;
             chartJsConfig.UpdateChartOptions();
         }
-
-        AddTierUpgradeArbitraryLines();
     }
 
-    public void AddTierUpgradeArbitraryLines()
+    public void AddTierUpgradeArbitraryLines(bool showHide)
     {
-        List<ArbitraryLineConfig> tierUps = new();
-
-        foreach (var rp in ReplayPlayers)
+        if (showHide)
         {
-            if (string.IsNullOrEmpty(rp.TierUpgrades))
+            List<ArbitraryLineConfig> tierUps = new();
+
+            foreach (var rp in ReplayPlayers)
             {
-                continue;
+                if (string.IsNullOrEmpty(rp.TierUpgrades))
+                {
+                    continue;
+                }
+
+                DateTimeOffset date = new DateTime(1970, 1, 1);
+
+                var rpUps = rp.TierUpgrades.Split('|', StringSplitOptions.RemoveEmptyEntries);
+
+                for (int i = 0; i < rpUps.Length; i++)
+                {
+                    tierUps.Add(new()
+                        {
+                            XPosition = (int)date.Add(TimeSpan.FromSeconds(Convert.ToInt32(int.Parse(rpUps[i]) / 22.4))).ToUnixTimeMilliseconds(),
+                            ArbitraryLineColor = "blue",
+                            Text = $"Tier{i + 2} {rp.Race} #{rp.GamePos}"
+                        });
+                }
             }
 
-            DateTimeOffset date = new DateTime(1970, 1, 1);
-
-            var rpUps = rp.TierUpgrades.Split('|', StringSplitOptions.RemoveEmptyEntries);
-
-            for (int i = 0; i < rpUps.Length; i++)
+            if (chartJsConfig.Options?.Plugins?.ArbitraryLines is not null)
             {
-                tierUps.Add(new()
-                {
-                    XPosition = (int)date.Add(TimeSpan.FromSeconds(Convert.ToInt32(int.Parse(rpUps[i]) / 22.4))).ToUnixTimeMilliseconds(),
-                    ArbitraryLineColor = "blue",
-                    Text = $"Tier{i+2} {rp.Race} #{rp.GamePos}"
-                });
+                tierUps.AddRange(chartJsConfig.Options.Plugins.ArbitraryLines);
+                chartJsConfig.Options.Plugins.ArbitraryLines = tierUps;
+                chartJsConfig.UpdateChartOptions();
             }
         }
-
-        if (chartJsConfig.Options?.Plugins?.ArbitraryLines is not null)
+        else
         {
-            tierUps.AddRange(chartJsConfig.Options.Plugins.ArbitraryLines);
-            chartJsConfig.Options.Plugins.ArbitraryLines = tierUps;
-            chartJsConfig.UpdateChartOptions();
+            if (chartJsConfig.Options?.Plugins?.ArbitraryLines is not null)
+            {
+                var tierUps = chartJsConfig.Options.Plugins.ArbitraryLines.Where(x => x.ArbitraryLineColor == "blue");
+                chartJsConfig.Options.Plugins.ArbitraryLines = chartJsConfig.Options.Plugins.ArbitraryLines.Except(tierUps).ToList();
+                chartJsConfig.UpdateChartOptions();
+            }
         }
     }
 
