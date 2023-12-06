@@ -14,6 +14,12 @@ public partial class RatingService
 {
     private async Task ProduceComboRatings(bool recalc)
     {
+        if (!recalc)
+        {
+            await ContinueComboRatings();
+            return;
+        }
+
         using var scope = scopeFactory.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var ratingSaveService = scope.ServiceProvider.GetRequiredService<IRatingsSaveService>();

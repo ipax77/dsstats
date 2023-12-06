@@ -8,6 +8,8 @@ using Microsoft.Extensions.Options;
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Frozen;
+using Microsoft.Extensions.Logging;
+using MySqlConnector;
 
 namespace dsstats.ratings;
 
@@ -162,6 +164,105 @@ public partial class RatingsSaveService
             Confidence = calcRating.Confidence,
             PlayerId = playerId,
         };
+    }
+
+    public async Task SaveContinueComboRatings(Dictionary<int, Dictionary<PlayerId, CalcRating>> mmrIdRatings,
+                                               List<shared.Calc.ReplayRatingDto> replayRatings)
+    {
+        using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var options = scope.ServiceProvider.GetRequiredService<IOptions<DbImportOptions>>();
+        var connectionString = options.Value.ImportConnectionString;
+
+        var playerIds = (await context.Players
+            .Select(s => new { s.ToonId, s.RealmId, s.RegionId, s.PlayerId }).ToListAsync())
+            .ToDictionary(k => new PlayerId(k.ToonId, k.RealmId, k.RegionId), v => v.PlayerId);
+
+        await ContinueComboPlayerRatings(mmrIdRatings, playerIds);
+        await ContinueCsv2Mysql(GetFileName(RatingCalcType.Combo,nameof(ReplayContext.ComboReplayRatings)),
+                                nameof(ReplayContext.ComboReplayRatings),
+                                connectionString);
+        await ContinueCsv2Mysql(GetFileName(RatingCalcType.Combo, nameof(ReplayContext.ComboReplayPlayerRatings)),
+                                            nameof(ReplayContext.ComboReplayPlayerRatings),
+                                            connectionString);
+        await SetComboPlayerRatingsPos(connectionString);
+    }
+
+    private async Task ContinueComboPlayerRatings(Dictionary<int, Dictionary<PlayerId, CalcRating>> mmrIdRatings,
+                                         Dictionary<PlayerId, int> playerIdDic)
+    {
+        using var scope = scopeFactory.CreateAsyncScope();
+        var options = scope.ServiceProvider.GetRequiredService<IOptions<DbImportOptions>>();
+        var connectionString = options.Value.ImportConnectionString;
+
+        try
+        {
+            using var connection = new MySqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            using var transaction = connection.BeginTransaction();
+            var command = connection.CreateCommand();
+            command.Transaction = transaction;
+
+            command.CommandText =
+$@"INSERT INTO {nameof(ReplayContext.ComboPlayerRatings)}
+    ({nameof(ComboPlayerRating.ComboPlayerRatingId)},
+    {nameof(ComboPlayerRating.RatingType)},
+    {nameof(ComboPlayerRating.Rating)},
+    {nameof(ComboPlayerRating.Pos)},
+    {nameof(ComboPlayerRating.Games)},
+    {nameof(ComboPlayerRating.Wins)},
+    {nameof(ComboPlayerRating.Consistency)},
+    {nameof(ComboPlayerRating.Confidence)},
+    {nameof(ComboPlayerRating.PlayerId)})
+VALUES ((SELECT t.{nameof(ComboPlayerRating.ComboPlayerRatingId)} 
+    FROM (SELECT * from {nameof(ReplayContext.ComboPlayerRatings)} WHERE {nameof(ComboPlayerRating.RatingType)} = @value1 
+        AND {nameof(ComboPlayerRating.PlayerId)} = @value8) as t),
+    @value1,@value2,@value3,@value4,@value5,@value6,@value7,@value8)
+ON DUPLICATE KEY UPDATE {nameof(ComboPlayerRating.Rating)}=@value2,
+                        {nameof(ComboPlayerRating.Games)}=@value4,
+                        {nameof(ComboPlayerRating.Wins)}=@value5,
+                        {nameof(ComboPlayerRating.Consistency)}=@value6,
+                        {nameof(ComboPlayerRating.Confidence)}=@value7
+            ";
+            command.Transaction = transaction;
+
+            List<MySqlParameter> parameters = new List<MySqlParameter>();
+            for (int i = 1; i <= 8; i++)
+            {
+                var parameter = command.CreateParameter();
+                parameter.ParameterName = $"@value{i}";
+                command.Parameters.Add(parameter);
+                parameters.Add(parameter);
+            }
+
+            foreach (var ent in mmrIdRatings)
+            {
+                foreach (var calcEnt in ent.Value.Values)
+                {
+                    if (!playerIdDic.TryGetValue(calcEnt.PlayerId, out var playerId))
+                    {
+                        continue;
+                    }
+
+                    parameters[0].Value = ent.Key;
+                    parameters[1].Value = calcEnt.Mmr;
+                    parameters[2].Value = 0;
+                    parameters[3].Value = calcEnt.Games;
+                    parameters[4].Value = calcEnt.Wins;
+                    parameters[5].Value = calcEnt.Consistency;
+                    parameters[6].Value = calcEnt.Confidence;
+                    parameters[7].Value = playerId;
+                    command.CommandTimeout = 240;
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+            await transaction.CommitAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed continue comboplayers: {error}", ex.Message);
+        }
     }
 }
 

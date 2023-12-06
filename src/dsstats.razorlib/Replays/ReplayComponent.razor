@@ -347,6 +347,11 @@
     public void ShowHideMiddleChart()
     {
         showMiddleChart = !showMiddleChart;
+        if (!showMiddleChart)
+        {
+            showTierUps = false;
+            showRefineries = false;
+        }
     }
 
     public void ShowHideBuild(ReplayPlayerDto player)

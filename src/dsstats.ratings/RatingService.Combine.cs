@@ -76,10 +76,6 @@ public partial class RatingService
                 }
             }
 
-            // int count = stepRatings.SelectMany(s => s.Value).Count();
-            // logger.LogWarning("step count: {count}", count);
-
-
             (ratingRequest.ReplayRatingAppendId, ratingRequest.ReplayPlayerRatingAppendId) =
                 await ratingSaveService.SaveComboStepResult(impRatings,
                                                    ratingRequest.ReplayRatingAppendId,
@@ -141,8 +137,8 @@ public partial class RatingService
             }
         }
 
-        logger.LogWarning("MultiHashes: {dsMultiHashes}|{acMutliHashes}, hits: {hits}|{reasonableHits}",
-            dsMultiHashes, acMutliHashes, hits, reasonableHits);
+        // logger.LogWarning("MultiHashes: {dsMultiHashes}|{acMutliHashes}, hits: {hits}|{reasonableHits}",
+        //     dsMultiHashes, acMutliHashes, hits, reasonableHits);
         return dsstatsDic;
     }
 

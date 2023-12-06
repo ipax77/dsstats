@@ -80,6 +80,11 @@ class Program
                 logger.LogInformation("producing combo ratings.");
                 ratingService.ProduceRatings(RatingCalcType.Combo, true).Wait();
             }
+            else if (args[0] == "combocontinue")
+            {
+                logger.LogInformation("producing combo ratings.");
+                ratingService.ProduceRatings(RatingCalcType.Combo, false).Wait();
+            }
             else if (args[0] == "combo2")
             {
                 logger.LogInformation("producing combo2 ratings.");
