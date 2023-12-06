@@ -67,11 +67,12 @@ public class TimedHostedService : BackgroundService
                 await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-6), token);
                 await ratingService.ProduceRatings(shared.RatingCalcType.Arcade);
                 await replayRepository.FixArcadePlayerNames();
-                await ratingService.ProduceRatings(shared.RatingCalcType.Combo);
+                await ratingService.ProduceRatings(shared.RatingCalcType.Combo, true);
             }
             else
             {
                 await ratingService.ProduceRatings(shared.RatingCalcType.Dsstats);
+                await ratingService.ProduceRatings(shared.RatingCalcType.Combo, false);
             }
 
             await replayRepository.SetReplayViews();
