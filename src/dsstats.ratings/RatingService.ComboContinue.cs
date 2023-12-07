@@ -56,7 +56,7 @@ public partial class RatingService
                         { 1, new() },
                         { 2, new() },
                         { 3, new() },
-                    { 4, new() }
+                        { 4, new() }
                     },
             BannedPlayers = new Dictionary<PlayerId, bool>().ToFrozenDictionary()
         };

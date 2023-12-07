@@ -31,7 +31,7 @@ public class ComboRatingsTests
         }
 
         var services = new ServiceCollection();
-        var serverVersion = new MySqlServerVersion(new Version(5, 7, 43));
+        var serverVersion = new MySqlServerVersion(new Version(5, 7, 44));
         var jsonStrg = File.ReadAllText("/data/localserverconfig.json");
         var json = JsonSerializer.Deserialize<JsonElement>(jsonStrg);
         var config = json.GetProperty("ServerConfig");
@@ -206,6 +206,81 @@ public class ComboRatingsTests
         Assert.AreEqual(testPlRecalcRating, testPlContinueRating);
     }
 
+    [TestMethod]
+    public void T05AdvancedContinueRecalcRatingTest()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
+
+        DateTime startTime = DateTime.UtcNow;
+
+        var player = GetBasicPlayerDto();
+
+        using var md5 = MD5.Create();
+
+        List<ReplayDto> replays = new();
+
+        for (int i = 0; i < 10; i++)
+        {
+            var replay = GetBasicReplayDto(md5);
+            var testPl = replay.ReplayPlayers.Where(x => x.Player == player).FirstOrDefault();
+            if (testPl is null)
+            {
+                var pl1 = replay.ReplayPlayers.Where(x => x.GamePos == 1).First();
+                var testpl = pl1 with { Player = player };
+                replay.ReplayPlayers.Remove(pl1);
+                replay.ReplayPlayers.Add(testpl);
+            }
+            replays.Add(replay);
+        }
+        importService.Import(replays).Wait();
+
+        ratingService.ProduceRatings(RatingCalcType.Combo, true).GetAwaiter().GetResult();
+
+        for (int i = 0; i < 5; i++)
+        {
+            for (int j = 0; j < Random.Shared.Next(1, 4); j++)
+            {
+                var replay = GetBasicReplayDto(md5);
+                var testPl = replay.ReplayPlayers.Where(x => x.Player == player).FirstOrDefault();
+                if (testPl is null)
+                {
+                    var pl1 = replay.ReplayPlayers.Where(x => x.GamePos == 1).First();
+                    var testpl = pl1 with { Player = player };
+                    replay.ReplayPlayers.Remove(pl1);
+                    replay.ReplayPlayers.Add(testpl);
+                }
+                replays.Add(replay);
+                importService.Import([replay]).Wait();
+            }
+            ratingService.ProduceRatings(RatingCalcType.Combo, false).GetAwaiter().GetResult();
+        }
+
+        var testPlContinueRating = context.ComboPlayerRatings
+            .Where(x => x.Player.ToonId == player.ToonId
+                && x.Player.RealmId == player.RealmId
+                && x.Player.RegionId == player.RegionId)
+            .Select(s => new { s.Rating, s.Consistency, s.Confidence })
+            .FirstOrDefault();
+
+        Assert.IsTrue(testPlContinueRating?.Rating > 0);
+
+        ratingService.ProduceRatings(RatingCalcType.Dsstats, recalc: true).GetAwaiter().GetResult();
+
+        var testPlRecalcRating = context.ComboPlayerRatings
+            .Where(x => x.Player.ToonId == player.ToonId
+                && x.Player.RealmId == player.RealmId
+                && x.Player.RegionId == player.RegionId)
+            .Select(s => new { s.Rating, s.Consistency, s.Confidence })
+            .FirstOrDefault();
+
+        Assert.AreEqual(testPlRecalcRating?.Rating, testPlContinueRating.Rating);
+        Assert.AreEqual(testPlRecalcRating?.Consistency, testPlContinueRating.Consistency);
+        Assert.AreEqual(testPlRecalcRating?.Confidence, testPlContinueRating.Confidence);
+    }
+
     public ArcadeReplayDto GetBasicArcadeReplayDto(GameMode gameMode = GameMode.Commanders)
     {
         int winnerTeam = Random.Shared.Next(1, 3);
@@ -236,13 +311,14 @@ public class ComboRatingsTests
 
     public ReplayDto GetBasicReplayDto(MD5 md5, GameMode gameMode = GameMode.Commanders)
     {
+        int winnerTeam = Random.Shared.Next(1, 3);
         var replay = new ReplayDto()
         {
             FileName = "",
             GameMode = gameMode,
             GameTime = DateTime.UtcNow,
             Duration = 500,
-            WinnerTeam = 1,
+            WinnerTeam = winnerTeam,
             Minkillsum = Random.Shared.Next(100, 1000),
             Maxkillsum = Random.Shared.Next(10000, 20000),
             Minincome = Random.Shared.Next(1000, 2000),
@@ -251,13 +327,13 @@ public class ComboRatingsTests
             CommandersTeam2 = "|10|10|10|",
             Playercount = 6,
             Middle = "",
-            ReplayPlayers = GetBasicReplayPlayerDtos()
+            ReplayPlayers = GetBasicReplayPlayerDtos(winnerTeam)
         };
         replay.GenHash(md5);
         return replay;
     }
 
-    public List<ReplayPlayerDto> GetBasicReplayPlayerDtos()
+    public List<ReplayPlayerDto> GetBasicReplayPlayerDtos(int winnerTeam)
     {
         var players = GetDefaultPlayers();
         return players.Select((s, i) => new ReplayPlayerDto()
@@ -265,7 +341,8 @@ public class ComboRatingsTests
             Name = "Test",
             GamePos = i + 1,
             Team = i + 1 <= 3 ? 1 : 2,
-            PlayerResult = i + 1 <= 3 ? PlayerResult.Win : PlayerResult.Los,
+            PlayerResult = winnerTeam == 1 ? i + 1 <= 3 ? PlayerResult.Win : PlayerResult.Los 
+                : i + 1 <= 3 ? PlayerResult.Los : PlayerResult.Win,
             Duration = 500,
             Race = Commander.Abathur,
             OppRace = Commander.Abathur,
