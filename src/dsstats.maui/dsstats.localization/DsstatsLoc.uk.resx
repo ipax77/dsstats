@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Getting started" xml:space="preserve">
+    <value>Початок</value>
+  </data>
+  <data name="Decoding Replays" xml:space="preserve">
+    <value>Декодування переглядів</value>
+  </data>
+  <data name="Decoding Replays detail" xml:space="preserve">
+    <value>Для використання можливостей додатка вам потрібно декодувати повтори StarCraft 2, витягаючи сиру інформацію з файлів SC2Replay. Запустіть декодування, вибравши кнопку "Нові повтори" у верхньому ряду або кнопку "Декодувати" на головному екрані.</value>
+  </data>
+  <data name="Decoding Process" xml:space="preserve">
+    <value>Процес декодування</value>
+  </data>
+  <data name="Decoding Process detail" xml:space="preserve">
+    <value>Перший етап декодування може зайняти певний час, зазвичай 30-60 хвилин на 1 000 повторень. Тривалість залежить від кількості повторень і можливостей вашого обладнання.</value>
+  </data>
+  <data name="Optimizing Decoding" xml:space="preserve">
+    <value>Оптимізація декодування</value>
+  </data>
+  <data name="Optimizing Decoding detail" xml:space="preserve">
+    <value>Ви можете підвищити швидкість декодування, налаштувавши кількість ядер ЦП на екрані "Налаштування". Зверніть увагу, що під час початкового декодування ці ядра будуть інтенсивно використовуватися.</value>
+  </data>
+  <data name="Decoding Speed" xml:space="preserve">
+    <value>Швидкість декодування</value>
+  </data>
+  <data name="Decoding Speed detail" xml:space="preserve">
+    <value>Після початкового декодування окремі повторення можуть бути оброблені швидко, від 3 до 10 секунд в залежності від тривалості гри.</value>
+  </data>
+  <data name="Automatic Replay Detection" xml:space="preserve">
+    <value>Автоматичне виявлення повторів</value>
+  </data>
+  <data name="Automatic Replay Detection detail" xml:space="preserve">
+    <value>Додаток автоматично визначає та декодує нові повтори в папках, вказаних на екрані "Налаштування", якщо додаток відкритий.</value>
+  </data>
+  <data name="Pause and Resume Functionality" xml:space="preserve">
+    <value>Функціональність паузи та відновлення</value>
+  </data>
+  <data name="Pause and Resume Functionality detail" xml:space="preserve">
+    <value>Декодування може бути призупинено в будь-який момент, і додаток продовжить з останньої позиції під час перезапуску.</value>
+  </data>
+  <data name="Consent for Upload" xml:space="preserve">
+    <value>Згода на завантаження</value>
+  </data>
+  <data name="Consent for Upload detail" xml:space="preserve">
+    <value>Для завантаження повторів на веб-сайт, вам потрібно дати згоду на сторінці 'Налаштування'. Після надання згоди розкодовані повтори автоматично завантажуватимуться, або ви можете вручну натискати кнопку 'Завантажити' на головному екрані.</value>
+  </data>
+  <data name="Comparing Stats" xml:space="preserve">
+    <value>Порівняння статистики</value>
+  </data>
+  <data name="Comparing Stats detail" xml:space="preserve">
+    <value>Досліджуйте статистику гравців та командирів локально або, за згодою, порівнюйте її онлайн з іншими гравцями для комплексного аналізу гри.</value>
+  </data>
+  <data name="Community Support" xml:space="preserve">
+    <value>Підтримка спільноти</value>
+  </data>
+  <data name="Community Support detail" xml:space="preserve">
+    <value>Приєднуйтеся до нашої онлайн-спільноти для додаткової допомоги, оновлень та обговорень, пов'язаних з додатком.</value>
+  </data>
+</root>

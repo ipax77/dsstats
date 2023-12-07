@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Getting started" xml:space="preserve">
+    <value>Getting started</value>
+  </data>
+  <data name="Decoding Replays" xml:space="preserve">
+    <value>Decoding Replays</value>
+  </data>
+  <data name="Decoding Replays detail" xml:space="preserve">
+    <value>To utilize the app's features, you need to decode StarCraft 2 replays, extracting raw data from SC2Replay files. Initiate decoding by selecting the "New Replays" button on the top row or the "Decode" button on the "Home" screen.</value>
+  </data>
+  <data name="Decoding Process" xml:space="preserve">
+    <value>Decoding Process</value>
+  </data>
+  <data name="Decoding Process detail" xml:space="preserve">
+    <value>The initial decoding may take some time, typically 30-60 minutes per 1,000 replays. The duration depends on the number of replays and your hardware capabilities.</value>
+  </data>
+  <data name="Optimizing Decoding" xml:space="preserve">
+    <value>Optimizing Decoding</value>
+  </data>
+  <data name="Optimizing Decoding detail" xml:space="preserve">
+    <value>You can enhance decoding speed by configuring the number of CPU cores in the "Settings" screen. Note that during initial decoding, these cores will be heavily utilized.</value>
+  </data>
+  <data name="Decoding Speed" xml:space="preserve">
+    <value>Decoding Speed</value>
+  </data>
+  <data name="Decoding Speed detail" xml:space="preserve">
+    <value>Post the initial decoding, individual replays can be processed swiftly, ranging from 3-10 seconds based on the game duration.</value>
+  </data>
+  <data name="Automatic Replay Detection" xml:space="preserve">
+    <value>Automatic Replay Detection</value>
+  </data>
+  <data name="Automatic Replay Detection detail" xml:space="preserve">
+    <value>The app automatically identifies and decodes new replays in folders specified in the "Settings" screen if the application is open.</value>
+  </data>
+  <data name="Pause and Resume Functionality" xml:space="preserve">
+    <value>Pause and Resume Functionality</value>
+  </data>
+  <data name="Pause and Resume Functionality detail" xml:space="preserve">
+    <value>Decoding can be paused at any time, and the app will resume from the last position upon restarting.</value>
+  </data>
+  <data name="Consent for Upload" xml:space="preserve">
+    <value>Consent for Upload</value>
+  </data>
+  <data name="Consent for Upload detail" xml:space="preserve">
+    <value>To upload replays to the website, you must grant consent in the 'Settings' page. Once consented, decoded replays will be automatically uploaded, or you can manually press the 'Upload' button on the 'Home' screen.</value>
+  </data>
+  <data name="Comparing Stats" xml:space="preserve">
+    <value>Comparing Stats</value>
+  </data>
+  <data name="Comparing Stats detail" xml:space="preserve">
+    <value>Explore player and commander stats locally or, with consent, compare them online with other players for a comprehensive gaming analysis.</value>
+  </data>
+  <data name="Community Support" xml:space="preserve">
+    <value>Community Support</value>
+  </data>
+  <data name="Community Support detail" xml:space="preserve">
+    <value>Join our online community for additional assistance, updates, and discussions related to the app.</value>
+  </data>
+</root>

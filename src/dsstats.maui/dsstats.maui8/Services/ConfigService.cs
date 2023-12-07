@@ -1,4 +1,5 @@
 ﻿using dsstats.shared;
+using System.Globalization;
 using System.Security.Permissions;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -10,6 +11,16 @@ public partial class ConfigService
     public static readonly string ConfigFile = Path.Combine(FileSystem.Current.AppDataDirectory, "config.json");
     public AppOptions AppOptions { get; private set; }
     private object lockobject = new();
+
+    public List<CultureInfo> SupportedCultures { get; } = new()
+    {
+        new CultureInfo("de"),
+        new CultureInfo("en"),
+        new CultureInfo("es"),
+        new CultureInfo("fr"),
+        new CultureInfo("ru"),
+        new CultureInfo("uk"),
+    };
 
     public ConfigService()
     {
@@ -91,6 +102,8 @@ public partial class ConfigService
 
     public void InitOptions()
     {
+        var currentCulture = CultureInfo.CurrentUICulture;
+        AppOptions.Culture = currentCulture.TwoLetterISOLanguageName;
         UpdateConfig(AppOptions);
     }
 

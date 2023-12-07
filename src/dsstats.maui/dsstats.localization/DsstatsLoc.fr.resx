@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Getting started" xml:space="preserve">
+    <value>Commencer</value>
+  </data>
+  <data name="Decoding Replays" xml:space="preserve">
+    <value>Décodage des relectures</value>
+  </data>
+  <data name="Decoding Replays detail" xml:space="preserve">
+    <value>Pour utiliser les fonctionnalités de l'application, vous devez décoder les rediffusions de StarCraft 2, en extrayant des données brutes des fichiers SC2Replay. Initiez le décodage en sélectionnant le bouton "Nouvelles rediffusions" dans la rangée supérieure ou le bouton "Décoder" sur l'écran d'accueil.</value>
+  </data>
+  <data name="Decoding Process" xml:space="preserve">
+    <value>Processus de décodage</value>
+  </data>
+  <data name="Decoding Process detail" xml:space="preserve">
+    <value>Le décodage initial peut prendre un certain temps, généralement de 30 à 60 minutes par 1 000 rediffusions. La durée dépend du nombre de rediffusions et des capacités de votre matériel.</value>
+  </data>
+  <data name="Optimizing Decoding" xml:space="preserve">
+    <value>Optimisation du décodage</value>
+  </data>
+  <data name="Optimizing Decoding detail" xml:space="preserve">
+    <value>Vous pouvez améliorer la vitesse de décodage en configurant le nombre de cœurs CPU dans l'écran "Paramètres". Notez que pendant le décodage initial, ces cœurs seront fortement sollicités.</value>
+  </data>
+  <data name="Decoding Speed" xml:space="preserve">
+    <value>Vitesse de décodage</value>
+  </data>
+  <data name="Decoding Speed detail" xml:space="preserve">
+    <value>Après le décodage initial, les rediffusions individuelles peuvent être traitées rapidement, de 3 à 10 secondes en fonction de la durée du jeu.</value>
+  </data>
+  <data name="Automatic Replay Detection" xml:space="preserve">
+    <value>Détection automatique des rediffusions</value>
+  </data>
+  <data name="Automatic Replay Detection detail" xml:space="preserve">
+    <value>L'application identifie et décode automatiquement les nouvelles rediffusions dans les dossiers spécifiés dans l'écran "Paramètres" si l'application est ouverte.</value>
+  </data>
+  <data name="Pause and Resume Functionality" xml:space="preserve">
+    <value>Fonctionnalité de Pause et Reprise</value>
+  </data>
+  <data name="Pause and Resume Functionality detail" xml:space="preserve">
+    <value>La décodage peut être mis en pause à tout moment, et l'application reprendra depuis la dernière position lors de la relance.</value>
+  </data>
+  <data name="Consent for Upload" xml:space="preserve">
+    <value>Consentement pour le téléchargement</value>
+  </data>
+  <data name="Consent for Upload detail" xml:space="preserve">
+    <value>Pour télécharger des rediffusions sur le site web, vous devez donner votre consentement dans la page 'Paramètres'. Une fois le consentement donné, les rediffusions décodées seront automatiquement téléchargées, ou vous pouvez appuyer manuellement sur le bouton 'Télécharger' sur l'écran d'accueil.</value>
+  </data>
+  <data name="Comparing Stats" xml:space="preserve">
+    <value>Comparaison des statistiques</value>
+  </data>
+  <data name="Comparing Stats detail" xml:space="preserve">
+    <value>Explorez les statistiques des joueurs et des commandants localement ou, avec consentement, comparez-les en ligne avec d'autres joueurs pour une analyse de jeu complète.</value>
+  </data>
+  <data name="Community Support" xml:space="preserve">
+    <value>Soutien de la communauté</value>
+  </data>
+  <data name="Community Support detail" xml:space="preserve">
+    <value>Rejoignez notre communauté en ligne pour une assistance supplémentaire, des mises à jour et des discussions liées à l'application.</value>
+  </data>
+</root>

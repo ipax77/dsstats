@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Getting started" xml:space="preserve">
+    <value>Начало</value>
+  </data>
+  <data name="Decoding Replays" xml:space="preserve">
+    <value>Декодирование повторов</value>
+  </data>
+  <data name="Decoding Replays detail" xml:space="preserve">
+    <value>Для использования функций приложения вам необходимо декодировать повторы StarCraft 2, извлекая сырые данные из файлов SC2Replay. Инициируйте декодирование, выбрав кнопку "Новые повторы" в верхнем ряду или кнопку "Декодировать" на экране "Главная".</value>
+  </data>
+  <data name="Decoding Process" xml:space="preserve">
+    <value>Процесс декодирования</value>
+  </data>
+  <data name="Decoding Process detail" xml:space="preserve">
+    <value>Первичная декодировка может занять некоторое время, обычно 30-60 минут на 1 000 повторов. Продолжительность зависит от количества повторов и технических возможностей вашего оборудования.</value>
+  </data>
+  <data name="Optimizing Decoding" xml:space="preserve">
+    <value>Оптимизация декодирования</value>
+  </data>
+  <data name="Optimizing Decoding detail" xml:space="preserve">
+    <value>Вы можете увеличить скорость декодирования, настроив количество ядер CPU на экране "Настройки". Обратите внимание, что во время начального декодирования эти ядра будут активно использоваться.</value>
+  </data>
+  <data name="Decoding Speed" xml:space="preserve">
+    <value>Скорость декодирования</value>
+  </data>
+  <data name="Decoding Speed detail" xml:space="preserve">
+    <value>После начального декодирования отдельные повторы могут быть обработаны быстро, в пределах 3-10 секунд в зависимости от продолжительности игры.</value>
+  </data>
+  <data name="Automatic Replay Detection" xml:space="preserve">
+    <value>Автоматическое обнаружение повторов</value>
+  </data>
+  <data name="Automatic Replay Detection detail" xml:space="preserve">
+    <value>Приложение автоматически определяет и декодирует новые повторы в папках, указанных на экране "Настройки", если приложение открыто.</value>
+  </data>
+  <data name="Pause and Resume Functionality" xml:space="preserve">
+    <value>Функция паузы и возобновления</value>
+  </data>
+  <data name="Pause and Resume Functionality detail" xml:space="preserve">
+    <value>Декодирование может быть приостановлено в любое время, и приложение возобновит работу с последней позиции при повторном запуске.</value>
+  </data>
+  <data name="Consent for Upload" xml:space="preserve">
+    <value>Согласие на загрузку</value>
+  </data>
+  <data name="Consent for Upload detail" xml:space="preserve">
+    <value>Для загрузки повторов на веб-сайт, вы должны дать согласие на странице 'Настройки'. После получения согласия декодированные повторы будут автоматически загружены, или вы можете вручную нажать кнопку 'Загрузить' на экране 'Главная'.</value>
+  </data>
+  <data name="Comparing Stats" xml:space="preserve">
+    <value>Сравнение статистики</value>
+  </data>
+  <data name="Comparing Stats detail" xml:space="preserve">
+    <value>Изучайте статистику игрока и командира локально или, с согласия, сравнивайте ее онлайн с другими игроками для комплексного анализа игры.</value>
+  </data>
+  <data name="Community Support" xml:space="preserve">
+    <value>Поддержка сообщества</value>
+  </data>
+  <data name="Community Support detail" xml:space="preserve">
+    <value>Присоединяйтесь к нашему онлайн-сообществу для дополнительной помощи, обновлений и обсуждений, связанных с приложением.</value>
+  </data>
+</root>

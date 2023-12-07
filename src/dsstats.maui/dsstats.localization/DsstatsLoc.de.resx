@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Getting started" xml:space="preserve">
+    <value>Loslegen</value>
+  </data>
+  <data name="Decoding Replays" xml:space="preserve">
+    <value>Wiedergabe entschlüsseln</value>
+  </data>
+  <data name="Decoding Replays detail" xml:space="preserve">
+    <value>Um die Funktionen der App zu nutzen, müssen Sie StarCraft 2-Wiederholungen entschlüsseln und Rohdaten aus SC2Replay-Dateien extrahieren. Starten Sie die Entschlüsselung, indem Sie die Schaltfläche "Neue Wiederholungen" in der obersten Reihe oder die Schaltfläche "Entschlüsseln" auf dem "Startbildschirm" auswählen.</value>
+  </data>
+  <data name="Decoding Process" xml:space="preserve">
+    <value>Entschlüsselungsprozess</value>
+  </data>
+  <data name="Decoding Process detail" xml:space="preserve">
+    <value>Die anfängliche Entschlüsselung kann einige Zeit in Anspruch nehmen, normalerweise 30-60 Minuten pro 1.000 Wiederholungen. Die Dauer hängt von der Anzahl der Wiederholungen und Ihren Hardware-Fähigkeiten ab.</value>
+  </data>
+  <data name="Optimizing Decoding" xml:space="preserve">
+    <value>Entschlüsselung optimieren</value>
+  </data>
+  <data name="Optimizing Decoding detail" xml:space="preserve">
+    <value>Sie können die Decodierungsgeschwindigkeit verbessern, indem Sie die Anzahl der CPU-Kerne auf dem Bildschirm "Einstellungen" konfigurieren. Beachten Sie, dass während der anfänglichen Decodierung diese Kerne stark beansprucht werden.</value>
+  </data>
+  <data name="Decoding Speed" xml:space="preserve">
+    <value>Entschlüsselungsgeschwindigkeit</value>
+  </data>
+  <data name="Decoding Speed detail" xml:space="preserve">
+    <value>Nach der anfänglichen Entschlüsselung können einzelne Wiederholungen schnell verarbeitet werden, je nach Spieldauer zwischen 3 und 10 Sekunden.</value>
+  </data>
+  <data name="Automatic Replay Detection" xml:space="preserve">
+    <value>Automatische Wiederholungserkennung</value>
+  </data>
+  <data name="Automatic Replay Detection detail" xml:space="preserve">
+    <value>Die App erkennt und entschlüsselt automatisch neue Wiederholungen in den auf dem Bildschirm "Einstellungen" angegebenen Ordnern, wenn die Anwendung geöffnet ist.</value>
+  </data>
+  <data name="Pause and Resume Functionality" xml:space="preserve">
+    <value>Funktionalität zum Anhalten und Fortsetzen</value>
+  </data>
+  <data name="Pause and Resume Functionality detail" xml:space="preserve">
+    <value>Die Entschlüsselung kann jederzeit pausiert werden, und die App wird beim Neustart an der letzten Position fortgesetzt.</value>
+  </data>
+  <data name="Consent for Upload" xml:space="preserve">
+    <value>Zustimmung für den Upload</value>
+  </data>
+  <data name="Consent for Upload detail" xml:space="preserve">
+    <value>Um Wiederholungen auf die Website hochzuladen, müssen Sie auf der 'Einstellungen'-Seite zustimmen. Nach der Zustimmung werden entschlüsselte Wiederholungen automatisch hochgeladen, oder Sie können manuell die Schaltfläche 'Hochladen' auf dem 'Startbildschirm' drücken.</value>
+  </data>
+  <data name="Comparing Stats" xml:space="preserve">
+    <value>Statistiken vergleichen</value>
+  </data>
+  <data name="Comparing Stats detail" xml:space="preserve">
+    <value>Spieler- und Kommandantenstatistiken lokal erkunden oder mit Zustimmung online mit anderen Spielern vergleichen, um eine umfassende Spielanalyse durchzuführen.</value>
+  </data>
+  <data name="Community Support" xml:space="preserve">
+    <value>Community-Support</value>
+  </data>
+  <data name="Community Support detail" xml:space="preserve">
+    <value>Treten Sie unserer Online-Community für zusätzliche Unterstützung, Updates und Diskussionen im Zusammenhang mit der App bei.</value>
+  </data>
+</root>

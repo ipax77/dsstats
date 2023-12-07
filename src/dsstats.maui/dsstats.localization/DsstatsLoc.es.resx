@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Getting started" xml:space="preserve">
+    <value>Empezar</value>
+  </data>
+  <data name="Decoding Replays" xml:space="preserve">
+    <value>Descodificación de repeticiones</value>
+  </data>
+  <data name="Decoding Replays detail" xml:space="preserve">
+    <value>Para utilizar las funciones de la aplicación, debes descifrar las repeticiones de StarCraft 2, extrayendo datos sin procesar de los archivos SC2Replay. Inicia el descifrado seleccionando el botón "Nuevas Repeticiones" en la fila superior o el botón "Descifrar" en la pantalla de "Inicio".</value>
+  </data>
+  <data name="Decoding Process" xml:space="preserve">
+    <value>Proceso de descodificación</value>
+  </data>
+  <data name="Decoding Process detail" xml:space="preserve">
+    <value>La decodificación inicial puede llevar algún tiempo, normalmente de 30 a 60 minutos por cada 1,000 repeticiones. La duración depende del número de repeticiones y de las capacidades de su hardware.</value>
+  </data>
+  <data name="Optimizing Decoding" xml:space="preserve">
+    <value>Optimizando la descodificación</value>
+  </data>
+  <data name="Optimizing Decoding detail" xml:space="preserve">
+    <value>Puedes mejorar la velocidad de descodificación configurando el número de núcleos de CPU en la pantalla de "Configuración". Ten en cuenta que durante la decodificación inicial, estos núcleos se utilizarán intensivamente.</value>
+  </data>
+  <data name="Decoding Speed" xml:space="preserve">
+    <value>Velocidad de descodificación</value>
+  </data>
+  <data name="Decoding Speed detail" xml:space="preserve">
+    <value>Después de la decodificación inicial, las repeticiones individuales pueden procesarse rápidamente, variando entre 3 y 10 segundos según la duración del juego.</value>
+  </data>
+  <data name="Automatic Replay Detection" xml:space="preserve">
+    <value>Detección automática de repeticiones</value>
+  </data>
+  <data name="Automatic Replay Detection detail" xml:space="preserve">
+    <value>La aplicación identifica y descodifica automáticamente nuevas repeticiones en las carpetas especificadas en la pantalla de "Configuración" si la aplicación está abierta.</value>
+  </data>
+  <data name="Pause and Resume Functionality" xml:space="preserve">
+    <value>Funcionalidad de Pausa y Continuar</value>
+  </data>
+  <data name="Pause and Resume Functionality detail" xml:space="preserve">
+    <value>La decodificación se puede pausar en cualquier momento, y la aplicación continuará desde la última posición al reiniciar.</value>
+  </data>
+  <data name="Consent for Upload" xml:space="preserve">
+    <value>Consentimiento para cargar</value>
+  </data>
+  <data name="Consent for Upload detail" xml:space="preserve">
+    <value>Para cargar repeticiones en el sitio web, debes otorgar consentimiento en la página de 'Configuración'. Una vez otorgado el consentimiento, las repeticiones decodificadas se cargarán automáticamente, o puedes presionar manualmente el botón 'Cargar' en la pantalla de 'Inicio'.</value>
+  </data>
+  <data name="Comparing Stats" xml:space="preserve">
+    <value>Comparando estadísticas</value>
+  </data>
+  <data name="Comparing Stats detail" xml:space="preserve">
+    <value>Explora estadísticas de jugadores y comandantes localmente o, con consentimiento, compáralas en línea con otros jugadores para un análisis de juego integral.</value>
+  </data>
+  <data name="Community Support" xml:space="preserve">
+    <value>Apoyo comunitario</value>
+  </data>
+  <data name="Community Support detail" xml:space="preserve">
+    <value>Únete a nuestra comunidad en línea para obtener asistencia adicional, actualizaciones y discusiones relacionadas con la aplicación.</value>
+  </data>
+</root>

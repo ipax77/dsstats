@@ -1,59 +1,60 @@
 ﻿@page "/help"
+@using System.Globalization
+@using Microsoft.Extensions.Localization
+@using dsstats.localization
+@using dsstats.shared.Interfaces
+@inject IStringLocalizer<DsstatsLoc> Loc
+@inject IRemoteToggleService remoteToggleService
+@implements IDisposable
 
-<div class="container bgchart">
-    <h3>Getting started</h3>
-    <ul class="list-group">
+<div class="bgchart border rounded p-2">
+    <h3>@Loc["Getting started"]</h3>
+    <ul class="list-group ms-4">
         <li>
-            <h4 class="list-group-item-heading">Decoding Replays:</h4>
+            <h4 class="list-group-item-heading text-warning">@Loc["Decoding Replays"]:</h4>
             <p class="list-group-item-text">
-                To utilize the app's features, you need to decode StarCraft 2 replays, extracting raw data from SC2Replay files.
-                Initiate decoding by selecting the "New Replays" button on the top row or the "Decode" button on the "Home" screen.
+                @Loc["Decoding Replays detail"]
             </p>
         </li>
         <li>
-            <h4 class="list-group-item-heading">Decoding Process:</h4>
+            <h4 class="list-group-item-heading text-warning">@Loc["Decoding Process"]:</h4>
 
-            <p class="list-group-item-text">The initial decoding may take some time, typically 30-60 minutes per 1,000 replays. The duration depends on the number of replays and your hardware capabilities.</p>
+            <p class="list-group-item-text">@Loc["Decoding Process detail"]</p>
         </li>
         <li>
-            <h4 class="list-group-item-heading">Optimizing Decoding:</h4>
+            <h4 class="list-group-item-heading text-warning">@Loc["Optimizing Decoding"]:</h4>
 
-            <p class="list-group-item-text">You can enhance decoding speed by configuring the number of CPU cores in the "Settings" screen. Note that during initial decoding, these cores will be heavily utilized.</p>
+            <p class="list-group-item-text">@Loc["Optimizing Decoding detail"]</p>
         </li>
         <li>
-            <h4 class="list-group-item-heading">Decoding Speed:</h4>
+            <h4 class="list-group-item-heading text-warning">@Loc["Decoding Speed"]:</h4>
 
-            <p class="list-group-item-text">Post the initial decoding, individual replays can be processed swiftly, ranging from 3-10 seconds based on the game duration.</p>
+            <p class="list-group-item-text">@Loc["Decoding Speed detail"]</p>
         </li>
         <li>
-            <h4 class="list-group-item-heading">Automatic Replay Detection:</h4>
+            <h4 class="list-group-item-heading text-warning">@Loc["Automatic Replay Detection"]:</h4>
 
-            <p class="list-group-item-text">The app automatically identifies and decodes new replays in folders specified in the "Settings" screen if the application is open.</p>
+            <p class="list-group-item-text">@Loc["Automatic Replay Detection detail"]</p>
         </li>
         <li>
-            <h4 class="list-group-item-heading">Pause and Resume Functionality:</h4>
+            <h4 class="list-group-item-heading text-warning">@Loc["Pause and Resume Functionality"]:</h4>
 
-            <p class="list-group-item-text">Decoding can be paused at any time, and the app will resume from the last position upon restarting.</p>
+            <p class="list-group-item-text">@Loc["Pause and Resume Functionality detail"]</p>
         </li>
         <li>
-            <h4 class="list-group-item-heading">Consent for Upload:</h4>
+            <h4 class="list-group-item-heading text-warning">@Loc["Consent for Upload"]:</h4>
 
-            <p class="list-group-item-text">To upload replays to the website, you must grant consent in the "Settings" page. Once consented, decoded replays will be automatically uploaded, or you can manually press the "Upload" button on the "Home" screen.</p>
+            <p class="list-group-item-text">@Loc["Consent for Upload detail"]</p>
         </li>
         <li>
-            <h4 class="list-group-item-heading">Comparing Stats:</h4>
+            <h4 class="list-group-item-heading text-warning">@Loc["Comparing Stats"]:</h4>
 
-            <p class="list-group-item-text">Explore player and commander stats locally or, with consent, compare them online with other players for a comprehensive gaming analysis.</p>
+            <p class="list-group-item-text">@Loc["Comparing Stats detail"]</p>
         </li>
         <li>
-            <h4 class="list-group-item-heading">Settings Configuration:</h4>
+            <h4 class="list-group-item-heading text-warning">@Loc["Community Support"]:</h4>
 
-            <p class="list-group-item-text">Familiarize yourself with the "Settings" page to customize decoding preferences, CPU core usage, and consent for online uploads.</p>
-        </li>
-        <li>
-            <h4 class="list-group-item-heading">Community Support:</h4>
-
-            <p class="list-group-item-text">Join our online community for additional assistance, updates, and discussions related to the app.
+            <p class="list-group-item-text">@Loc["Community Support detail"]
                 <a href="https://discord.gg/rKAyaggtqP">
                     <img src="_content/dsstats.razorlib/images/discord.svg" alt="Discord" width="30">
                     <span class="badge bgchart2 text-decoration-underline" style="font-size: 1rem;">
@@ -66,5 +67,19 @@
 </div>
 
 @code {
+    protected override void OnInitialized()
+    {
+        remoteToggleService.CultureChanged += CultureChanged;
+        base.OnInitialized();
+    }
 
+    private void CultureChanged(object? sender, EventArgs e)
+    {
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Dispose()
+    {
+        remoteToggleService.CultureChanged -= CultureChanged;
+    }
 }

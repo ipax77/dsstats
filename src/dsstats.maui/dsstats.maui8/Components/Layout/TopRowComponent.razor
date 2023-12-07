@@ -80,14 +80,32 @@
                 </div>
             }
         }
-@*         <div class="col-auto">
-            <h4><span class="badge bg-info">@currentLocation</span></h4>
+        @*         <div class="col-auto">
+        <h4><span class="badge bg-info">@currentLocation</span></h4>
         </div> *@
         <div class="ms-auto col-auto">
+            @if (currentLocation == "help")
+            {
+                <form name="cultureselect">
+                    <fieldset>
+                        <label class="form-label">
+                            <select class="form-select" @bind="Culture" @bind:after="@(() => SetCulture(Culture))">
+                                @foreach (var culture in configService.SupportedCultures)
+                                {
+                                    @* <option value="@culture">@culture.DisplayName</option> *@
+                                    <option value="@culture">@culture.NativeName</option>
+                                }
+                            </select>
+                        </label>
+                    </fieldset>
+                </form>
+            }
+        </div>
+        <div class="col-auto">
             @if (updateDownloadProgress > 0)
             {
                 <div class="progress" style="width: 150px;">
-                    <div class="progress-bar bg-success text-warning" role="progressbar" aria-label="Update progress"  style="width: @(updateDownloadProgress)%" aria-valuenow="@updateDownloadProgress" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar bg-success text-warning" role="progressbar" aria-label="Update progress" style="width: @(updateDownloadProgress)%" aria-valuenow="@updateDownloadProgress" aria-valuemin="0" aria-valuemax="100">
                         Update
                     </div>
                 </div>

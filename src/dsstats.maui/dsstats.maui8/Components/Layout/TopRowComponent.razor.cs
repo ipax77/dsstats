@@ -4,6 +4,7 @@ using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
 using System.Collections.Concurrent;
+using System.Globalization;
 
 namespace dsstats.maui8.Components.Layout;
 
@@ -29,9 +30,11 @@ public partial class TopRowComponent : ComponentBase, IDisposable
     DecodeErrorModal? decodeErrorModal;
     UploadAskModal? uploadAskModal;
     int updateDownloadProgress = 0;
+    CultureInfo Culture = new CultureInfo("en-US");
 
     protected override void OnInitialized()
     {
+        Culture = CultureInfo.DefaultThreadCurrentUICulture ?? new CultureInfo("en-US");
         dsstatsService.ScanStateChanged += DssstatsService_ScanStateChanged;
         dsstatsService.DecodeStateChanged += DssstatsService_DecodeStateChanged;
         NavigationManager.LocationChanged += NavigationManager_LocationChanged;
@@ -154,6 +157,17 @@ public partial class TopRowComponent : ComponentBase, IDisposable
     {
         updateDownloadProgress = e.Progress;
         InvokeAsync(() => StateHasChanged());
+    }
+
+    private void SetCulture(CultureInfo cultureInfo)
+    {
+        configService.AppOptions.Culture = cultureInfo.Name;
+        configService.UpdateConfig(configService.AppOptions);
+
+        CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+        CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+
+        remoteToggleService.SetCulture(cultureInfo.Name);
     }
 
     public record DecodeState

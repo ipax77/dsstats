@@ -13,6 +13,8 @@ using CommunityToolkit.Maui.Storage;
 using dsstats.db8services.Import;
 using dsstats.ratings;
 using dsstats.maui8.WinUI;
+using System.Globalization;
+using Microsoft.AspNetCore.Builder;
 
 namespace dsstats.maui8
 {
@@ -66,6 +68,7 @@ namespace dsstats.maui8
                 options.ChartJsPluginDatalabelsLocation = "/_content/dsstats.razorlib/js/chartjs-plugin-datalabels.js";
             });
             builder.Services.AddBlazoredToast();
+            builder.Services.AddLocalization();
             builder.Services.AddSingleton<IFolderPicker>(FolderPicker.Default);
             builder.Services.AddSingleton<IFilePicker>(FilePicker.Default);
 
@@ -101,9 +104,24 @@ namespace dsstats.maui8
             var app = builder.Build();
 
             var configService = app.Services.GetRequiredService<ConfigService>();
+
+            var culture = configService.AppOptions.Culture;
+
             using var scope = builder.Services.BuildServiceProvider().CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
             context.Database.Migrate();
+
+            var cultureInfo = new CultureInfo(culture);
+            CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+            CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+
+            //var supportedCultures = configService.SupportedCultures.Select(s => s.TwoLetterISOLanguageName).ToArray();
+            //var localizationOptions = new RequestLocalizationOptions()
+            //    .SetDefaultCulture(supportedCultures[0])
+            //    .AddSupportedCultures(supportedCultures)
+            //    .AddSupportedUICultures(supportedCultures);
+            
+            //app.UseRequestLocalization(localizationOptions);
 
             return app;
         }

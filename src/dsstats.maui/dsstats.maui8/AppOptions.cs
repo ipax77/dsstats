@@ -26,6 +26,7 @@ public record AppOptions
     public DateTime UploadAskTime { get; set; }
     public List<string> IgnoreReplays { get; set; } = new();
     public string ReplayStartName { get; set; } = "Direct Strike";
+    public string Culture { get; set; } = "en";
 }
 
 public record Sc2Profile
