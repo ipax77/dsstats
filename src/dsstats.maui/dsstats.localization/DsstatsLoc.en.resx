@@ -65,7 +65,7 @@
     <value>Decoding Replays</value>
   </data>
   <data name="Decoding Replays detail" xml:space="preserve">
-    <value>To utilize the app's features, you need to decode StarCraft 2 replays, extracting raw data from SC2Replay files. Initiate decoding by selecting the "New Replays" button on the top row or the "Decode" button on the "Home" screen.</value>
+    <value>To utilize the app's features, you need to decode StarCraft 2 replays, extracting raw data from SC2Replay files. Initiate decoding by selecting the 'New Replays' button on the top row or the 'Decode' button on the 'Home' screen.</value>
   </data>
   <data name="Decoding Process" xml:space="preserve">
     <value>Decoding Process</value>
@@ -77,7 +77,7 @@
     <value>Optimizing Decoding</value>
   </data>
   <data name="Optimizing Decoding detail" xml:space="preserve">
-    <value>You can enhance decoding speed by configuring the number of CPU cores in the "Settings" screen. Note that during initial decoding, these cores will be heavily utilized.</value>
+    <value>You can enhance decoding speed by configuring the number of CPU cores in the 'Settings' screen. Note that during initial decoding, these cores will be heavily utilized.</value>
   </data>
   <data name="Decoding Speed" xml:space="preserve">
     <value>Decoding Speed</value>
@@ -89,7 +89,7 @@
     <value>Automatic Replay Detection</value>
   </data>
   <data name="Automatic Replay Detection detail" xml:space="preserve">
-    <value>The app automatically identifies and decodes new replays in folders specified in the "Settings" screen if the application is open.</value>
+    <value>The app automatically identifies and decodes new replays in folders specified in the 'Settings' screen if the application is open.</value>
   </data>
   <data name="Pause and Resume Functionality" xml:space="preserve">
     <value>Pause and Resume Functionality</value>
@@ -114,5 +114,59 @@
   </data>
   <data name="Community Support detail" xml:space="preserve">
     <value>Join our online community for additional assistance, updates, and discussions related to the app.</value>
+  </data>
+  <data name="Decode" xml:space="preserve">
+    <value>Decode</value>
+  </data>
+  <data name="Scan" xml:space="preserve">
+    <value>Scan</value>
+  </data>
+  <data name="Upload" xml:space="preserve">
+    <value>Upload</value>
+  </data>
+  <data name="StopDecoding" xml:space="preserve">
+    <value>StopDecoding</value>
+  </data>
+  <data name="Latest Replay" xml:space="preserve">
+    <value>Latest Replay</value>
+  </data>
+  <data name="Recent Replay" xml:space="preserve">
+    <value>Recent Replay</value>
+  </data>
+  <data name="Session Progress" xml:space="preserve">
+    <value>Session Progress</value>
+  </data>
+  <data name="Replays" xml:space="preserve">
+    <value>Replays</value>
+  </data>
+  <data name="New Replays" xml:space="preserve">
+    <value>New Replays</value>
+  </data>
+  <data name="Check for Updates" xml:space="preserve">
+    <value>Check for Updates</value>
+  </data>
+  <data name="Errors" xml:space="preserve">
+    <value>Errors</value>
+  </data>
+  <data name="Calculating Ratings" xml:space="preserve">
+    <value>Calculating Ratings</value>
+  </data>
+  <data name="Writing to database" xml:space="preserve">
+    <value>Writing to database</value>
+  </data>
+  <data name="Decoded {0} Replay(s) in {1}" xml:space="preserve">
+    <value>Decoded {0} Replay(s) in {1}</value>
+  </data>
+  <data name="Uploading" xml:space="preserve">
+    <value>Uploading</value>
+  </data>
+  <data name="Upload successful" xml:space="preserve">
+    <value>Upload successful</value>
+  </data>
+  <data name="Upload failed. Please try again later." xml:space="preserve">
+    <value>Upload failed. Please try again later.</value>
+  </data>
+  <data name="Upload forbidden due to Disable/Delete." xml:space="preserve">
+    <value>Upload forbidden due to Disable/Delete.</value>
   </data>
 </root>

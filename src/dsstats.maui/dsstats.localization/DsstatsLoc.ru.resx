@@ -65,7 +65,7 @@
     <value>Декодирование повторов</value>
   </data>
   <data name="Decoding Replays detail" xml:space="preserve">
-    <value>Для использования функций приложения вам необходимо декодировать повторы StarCraft 2, извлекая сырые данные из файлов SC2Replay. Инициируйте декодирование, выбрав кнопку "Новые повторы" в верхнем ряду или кнопку "Декодировать" на экране "Главная".</value>
+    <value>Для использования функций приложения вам необходимо декодировать повторы StarCraft 2, извлекая сырые данные из файлов SC2Replay. Инициируйте декодирование, выбрав кнопку 'Новые повторы' в верхнем ряду или кнопку 'Декодировать' на экране 'Главная'.</value>
   </data>
   <data name="Decoding Process" xml:space="preserve">
     <value>Процесс декодирования</value>
@@ -77,7 +77,7 @@
     <value>Оптимизация декодирования</value>
   </data>
   <data name="Optimizing Decoding detail" xml:space="preserve">
-    <value>Вы можете увеличить скорость декодирования, настроив количество ядер CPU на экране "Настройки". Обратите внимание, что во время начального декодирования эти ядра будут активно использоваться.</value>
+    <value>Вы можете увеличить скорость декодирования, настроив количество ядер CPU на экране 'Настройки'. Обратите внимание, что во время начального декодирования эти ядра будут активно использоваться.</value>
   </data>
   <data name="Decoding Speed" xml:space="preserve">
     <value>Скорость декодирования</value>
@@ -89,7 +89,7 @@
     <value>Автоматическое обнаружение повторов</value>
   </data>
   <data name="Automatic Replay Detection detail" xml:space="preserve">
-    <value>Приложение автоматически определяет и декодирует новые повторы в папках, указанных на экране "Настройки", если приложение открыто.</value>
+    <value>Приложение автоматически определяет и декодирует новые повторы в папках, указанных на экране 'Настройки', если приложение открыто.</value>
   </data>
   <data name="Pause and Resume Functionality" xml:space="preserve">
     <value>Функция паузы и возобновления</value>
@@ -114,5 +114,59 @@
   </data>
   <data name="Community Support detail" xml:space="preserve">
     <value>Присоединяйтесь к нашему онлайн-сообществу для дополнительной помощи, обновлений и обсуждений, связанных с приложением.</value>
+  </data>
+  <data name="Decode" xml:space="preserve">
+    <value>Декодировать</value>
+  </data>
+  <data name="Scan" xml:space="preserve">
+    <value>Сканировать</value>
+  </data>
+  <data name="Upload" xml:space="preserve">
+    <value>Загрузить</value>
+  </data>
+  <data name="StopDecoding" xml:space="preserve">
+    <value>Остановить декодирование</value>
+  </data>
+  <data name="Latest Replay" xml:space="preserve">
+    <value>Последняя повтор</value>
+  </data>
+  <data name="Recent Replay" xml:space="preserve">
+    <value>Недавнее повторение</value>
+  </data>
+  <data name="Session Progress" xml:space="preserve">
+    <value>Прогресс сессии</value>
+  </data>
+  <data name="Replays" xml:space="preserve">
+    <value>Повторы</value>
+  </data>
+  <data name="New Replays" xml:space="preserve">
+    <value>Новые повторы</value>
+  </data>
+  <data name="Check for Updates" xml:space="preserve">
+    <value>Проверить наличие обновлений</value>
+  </data>
+  <data name="Errors" xml:space="preserve">
+    <value>Ошибки</value>
+  </data>
+  <data name="Calculating Ratings" xml:space="preserve">
+    <value>Вычисление рейтингов</value>
+  </data>
+  <data name="Writing to database" xml:space="preserve">
+    <value>Запись в базу данных</value>
+  </data>
+  <data name="Decoded {0} Replay(s) in {1}" xml:space="preserve">
+    <value>Декодировано {0} повторов за {1}</value>
+  </data>
+  <data name="Uploading" xml:space="preserve">
+    <value>Загрузка (Zagruzka)</value>
+  </data>
+  <data name="Upload successful" xml:space="preserve">
+    <value>Загрузка успешна</value>
+  </data>
+  <data name="Upload failed. Please try again later." xml:space="preserve">
+    <value>Ошибка загрузки. Пожалуйста, попробуйте снова позже.</value>
+  </data>
+  <data name="Upload forbidden due to Disable/Delete." xml:space="preserve">
+    <value>Загрузка запрещена из-за Отключения/Удаления.</value>
   </data>
 </root>

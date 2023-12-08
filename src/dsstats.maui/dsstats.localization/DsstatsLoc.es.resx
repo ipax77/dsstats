@@ -65,7 +65,7 @@
     <value>Descodificación de repeticiones</value>
   </data>
   <data name="Decoding Replays detail" xml:space="preserve">
-    <value>Para utilizar las funciones de la aplicación, debes descifrar las repeticiones de StarCraft 2, extrayendo datos sin procesar de los archivos SC2Replay. Inicia el descifrado seleccionando el botón "Nuevas Repeticiones" en la fila superior o el botón "Descifrar" en la pantalla de "Inicio".</value>
+    <value>Para utilizar las funciones de la aplicación, debes descifrar las repeticiones de StarCraft 2, extrayendo datos sin procesar de los archivos SC2Replay. Inicia el descifrado seleccionando el botón 'Nuevas Repeticiones' en la fila superior o el botón 'Descifrar' en la pantalla de 'Inicio'.</value>
   </data>
   <data name="Decoding Process" xml:space="preserve">
     <value>Proceso de descodificación</value>
@@ -77,7 +77,7 @@
     <value>Optimizando la descodificación</value>
   </data>
   <data name="Optimizing Decoding detail" xml:space="preserve">
-    <value>Puedes mejorar la velocidad de descodificación configurando el número de núcleos de CPU en la pantalla de "Configuración". Ten en cuenta que durante la decodificación inicial, estos núcleos se utilizarán intensivamente.</value>
+    <value>Puedes mejorar la velocidad de descodificación configurando el número de núcleos de CPU en la pantalla de 'Configuración'. Ten en cuenta que durante la decodificación inicial, estos núcleos se utilizarán intensivamente.</value>
   </data>
   <data name="Decoding Speed" xml:space="preserve">
     <value>Velocidad de descodificación</value>
@@ -89,7 +89,7 @@
     <value>Detección automática de repeticiones</value>
   </data>
   <data name="Automatic Replay Detection detail" xml:space="preserve">
-    <value>La aplicación identifica y descodifica automáticamente nuevas repeticiones en las carpetas especificadas en la pantalla de "Configuración" si la aplicación está abierta.</value>
+    <value>La aplicación identifica y descodifica automáticamente nuevas repeticiones en las carpetas especificadas en la pantalla de 'Configuración' si la aplicación está abierta.</value>
   </data>
   <data name="Pause and Resume Functionality" xml:space="preserve">
     <value>Funcionalidad de Pausa y Continuar</value>
@@ -114,5 +114,59 @@
   </data>
   <data name="Community Support detail" xml:space="preserve">
     <value>Únete a nuestra comunidad en línea para obtener asistencia adicional, actualizaciones y discusiones relacionadas con la aplicación.</value>
+  </data>
+  <data name="Decode" xml:space="preserve">
+    <value>Decodificar</value>
+  </data>
+  <data name="Scan" xml:space="preserve">
+    <value>Escanear</value>
+  </data>
+  <data name="Upload" xml:space="preserve">
+    <value>Cargar</value>
+  </data>
+  <data name="StopDecoding" xml:space="preserve">
+    <value>Detener decodificación</value>
+  </data>
+  <data name="Latest Replay" xml:space="preserve">
+    <value>Última Repetición</value>
+  </data>
+  <data name="Recent Replay" xml:space="preserve">
+    <value>Repetición Reciente</value>
+  </data>
+  <data name="Session Progress" xml:space="preserve">
+    <value>Progreso de Sesión</value>
+  </data>
+  <data name="Replays" xml:space="preserve">
+    <value>Repeticiones</value>
+  </data>
+  <data name="New Replays" xml:space="preserve">
+    <value>Nuevas Repeticiones</value>
+  </data>
+  <data name="Check for Updates" xml:space="preserve">
+    <value>Buscar actualizaciones</value>
+  </data>
+  <data name="Errors" xml:space="preserve">
+    <value>Errores</value>
+  </data>
+  <data name="Calculating Ratings" xml:space="preserve">
+    <value>Calculando Calificaciones</value>
+  </data>
+  <data name="Writing to database" xml:space="preserve">
+    <value>Escribiendo en la base de datos</value>
+  </data>
+  <data name="Decoded {0} Replay(s) in {1}" xml:space="preserve">
+    <value>Decodificado {0} repetición(es) en {1}</value>
+  </data>
+  <data name="Uploading" xml:space="preserve">
+    <value>Subiendo</value>
+  </data>
+  <data name="Upload successful" xml:space="preserve">
+    <value>Carga exitosa</value>
+  </data>
+  <data name="Upload failed. Please try again later." xml:space="preserve">
+    <value>Error al cargar. Por favor, inténtelo de nuevo más tarde.</value>
+  </data>
+  <data name="Upload forbidden due to Disable/Delete." xml:space="preserve">
+    <value>Carga prohibida debido a Desactivar/Eliminar.</value>
   </data>
 </root>

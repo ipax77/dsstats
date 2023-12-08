@@ -1,6 +1,5 @@
 ﻿using dsstats.shared;
 using System.Globalization;
-using System.Security.Permissions;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -64,6 +63,11 @@ public partial class ConfigService
             .Distinct()
             .ToList();
 
+        if (string.IsNullOrEmpty(AppOptions.Culture))
+        {
+            AppOptions.Culture = "iv";
+        }
+
         return AppOptions;
     }
 
@@ -90,7 +94,8 @@ public partial class ConfigService
         lock (lockobject)
         {
             AppOptions = config with { };
-            var json = JsonSerializer.Serialize(new AppConfig() { AppOptions = AppOptions });
+            var json = JsonSerializer.Serialize(new AppConfig() { AppOptions = AppOptions },
+                new JsonSerializerOptions() { WriteIndented = true });
             File.WriteAllText(ConfigFile, json);
 
             AppOptions.ActiveProfiles = AppOptions.Sc2Profiles

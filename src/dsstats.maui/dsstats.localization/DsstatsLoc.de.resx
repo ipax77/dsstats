@@ -65,7 +65,7 @@
     <value>Wiedergabe entschlüsseln</value>
   </data>
   <data name="Decoding Replays detail" xml:space="preserve">
-    <value>Um die Funktionen der App zu nutzen, müssen Sie StarCraft 2-Wiederholungen entschlüsseln und Rohdaten aus SC2Replay-Dateien extrahieren. Starten Sie die Entschlüsselung, indem Sie die Schaltfläche "Neue Wiederholungen" in der obersten Reihe oder die Schaltfläche "Entschlüsseln" auf dem "Startbildschirm" auswählen.</value>
+    <value>Um die Funktionen der App zu nutzen, müssen Sie StarCraft 2-Wiederholungen entschlüsseln und Rohdaten aus SC2Replay-Dateien extrahieren. Starten Sie die Entschlüsselung, indem Sie die Schaltfläche 'Neue Wiederholungen' in der obersten Reihe oder die Schaltfläche 'Entschlüsseln' auf dem 'Startbildschirm' auswählen.</value>
   </data>
   <data name="Decoding Process" xml:space="preserve">
     <value>Entschlüsselungsprozess</value>
@@ -77,7 +77,7 @@
     <value>Entschlüsselung optimieren</value>
   </data>
   <data name="Optimizing Decoding detail" xml:space="preserve">
-    <value>Sie können die Decodierungsgeschwindigkeit verbessern, indem Sie die Anzahl der CPU-Kerne auf dem Bildschirm "Einstellungen" konfigurieren. Beachten Sie, dass während der anfänglichen Decodierung diese Kerne stark beansprucht werden.</value>
+    <value>Sie können die Decodierungsgeschwindigkeit verbessern, indem Sie die Anzahl der CPU-Kerne auf dem Bildschirm 'Einstellungen' konfigurieren. Beachten Sie, dass während der anfänglichen Decodierung diese Kerne stark beansprucht werden.</value>
   </data>
   <data name="Decoding Speed" xml:space="preserve">
     <value>Entschlüsselungsgeschwindigkeit</value>
@@ -89,7 +89,7 @@
     <value>Automatische Wiederholungserkennung</value>
   </data>
   <data name="Automatic Replay Detection detail" xml:space="preserve">
-    <value>Die App erkennt und entschlüsselt automatisch neue Wiederholungen in den auf dem Bildschirm "Einstellungen" angegebenen Ordnern, wenn die Anwendung geöffnet ist.</value>
+    <value>Die App erkennt und entschlüsselt automatisch neue Wiederholungen in den auf dem Bildschirm 'Einstellungen' angegebenen Ordnern, wenn die Anwendung geöffnet ist.</value>
   </data>
   <data name="Pause and Resume Functionality" xml:space="preserve">
     <value>Funktionalität zum Anhalten und Fortsetzen</value>
@@ -114,5 +114,59 @@
   </data>
   <data name="Community Support detail" xml:space="preserve">
     <value>Treten Sie unserer Online-Community für zusätzliche Unterstützung, Updates und Diskussionen im Zusammenhang mit der App bei.</value>
+  </data>
+  <data name="Decode" xml:space="preserve">
+    <value>Entschlüsseln</value>
+  </data>
+  <data name="Scan" xml:space="preserve">
+    <value>Scannen</value>
+  </data>
+  <data name="Upload" xml:space="preserve">
+    <value>Hochladen</value>
+  </data>
+  <data name="StopDecoding" xml:space="preserve">
+    <value>Entschlüsselung stoppen</value>
+  </data>
+  <data name="Latest Replay" xml:space="preserve">
+    <value>Neueste Wiederholung</value>
+  </data>
+  <data name="Recent Replay" xml:space="preserve">
+    <value>Aktuelle Wiederholung</value>
+  </data>
+  <data name="Session Progress" xml:space="preserve">
+    <value>Sitzungsfortschritt</value>
+  </data>
+  <data name="Replays" xml:space="preserve">
+    <value>Wiederholungen</value>
+  </data>
+  <data name="New Replays" xml:space="preserve">
+    <value>Neue Wiederholungen</value>
+  </data>
+  <data name="Check for Updates" xml:space="preserve">
+    <value>Nach Updates suchen</value>
+  </data>
+  <data name="Errors" xml:space="preserve">
+    <value>Fehler</value>
+  </data>
+  <data name="Calculating Ratings" xml:space="preserve">
+    <value>Berechnung der Bewertungen</value>
+  </data>
+  <data name="Writing to database" xml:space="preserve">
+    <value>In die Datenbank schreiben</value>
+  </data>
+  <data name="Decoded {0} Replay(s) in {1}" xml:space="preserve">
+    <value>{0} Wiederholung(en) in {1} entschlüsselt</value>
+  </data>
+  <data name="Uploading" xml:space="preserve">
+    <value>Hochladen</value>
+  </data>
+  <data name="Upload successful" xml:space="preserve">
+    <value>Erfolgreich hochgeladen</value>
+  </data>
+  <data name="Upload failed. Please try again later." xml:space="preserve">
+    <value>Hochladen fehlgeschlagen. Bitte versuchen Sie es später erneut.</value>
+  </data>
+  <data name="Upload forbidden due to Disable/Delete." xml:space="preserve">
+    <value>Hochladen aufgrund von Deaktivieren/Löschen untersagt.</value>
   </data>
 </root>

@@ -65,7 +65,7 @@
     <value>Décodage des relectures</value>
   </data>
   <data name="Decoding Replays detail" xml:space="preserve">
-    <value>Pour utiliser les fonctionnalités de l'application, vous devez décoder les rediffusions de StarCraft 2, en extrayant des données brutes des fichiers SC2Replay. Initiez le décodage en sélectionnant le bouton "Nouvelles rediffusions" dans la rangée supérieure ou le bouton "Décoder" sur l'écran d'accueil.</value>
+    <value>Pour utiliser les fonctionnalités de l'application, vous devez décoder les rediffusions de StarCraft 2, en extrayant des données brutes des fichiers SC2Replay. Initiez le décodage en sélectionnant le bouton 'Nouvelles rediffusions' dans la rangée supérieure ou le bouton 'Décoder' sur l'écran d'accueil.</value>
   </data>
   <data name="Decoding Process" xml:space="preserve">
     <value>Processus de décodage</value>
@@ -77,7 +77,7 @@
     <value>Optimisation du décodage</value>
   </data>
   <data name="Optimizing Decoding detail" xml:space="preserve">
-    <value>Vous pouvez améliorer la vitesse de décodage en configurant le nombre de cœurs CPU dans l'écran "Paramètres". Notez que pendant le décodage initial, ces cœurs seront fortement sollicités.</value>
+    <value>Vous pouvez améliorer la vitesse de décodage en configurant le nombre de cœurs CPU dans l'écran 'Paramètres'. Notez que pendant le décodage initial, ces cœurs seront fortement sollicités.</value>
   </data>
   <data name="Decoding Speed" xml:space="preserve">
     <value>Vitesse de décodage</value>
@@ -89,7 +89,7 @@
     <value>Détection automatique des rediffusions</value>
   </data>
   <data name="Automatic Replay Detection detail" xml:space="preserve">
-    <value>L'application identifie et décode automatiquement les nouvelles rediffusions dans les dossiers spécifiés dans l'écran "Paramètres" si l'application est ouverte.</value>
+    <value>L'application identifie et décode automatiquement les nouvelles rediffusions dans les dossiers spécifiés dans l'écran 'Paramètres' si l'application est ouverte.</value>
   </data>
   <data name="Pause and Resume Functionality" xml:space="preserve">
     <value>Fonctionnalité de Pause et Reprise</value>
@@ -114,5 +114,59 @@
   </data>
   <data name="Community Support detail" xml:space="preserve">
     <value>Rejoignez notre communauté en ligne pour une assistance supplémentaire, des mises à jour et des discussions liées à l'application.</value>
+  </data>
+  <data name="Decode" xml:space="preserve">
+    <value>Décoder</value>
+  </data>
+  <data name="Scan" xml:space="preserve">
+    <value>Scanner</value>
+  </data>
+  <data name="Upload" xml:space="preserve">
+    <value>Télécharger</value>
+  </data>
+  <data name="StopDecoding" xml:space="preserve">
+    <value>Arrêter le décodage</value>
+  </data>
+  <data name="Latest Replay" xml:space="preserve">
+    <value>Dernière Rediffusion</value>
+  </data>
+  <data name="Recent Replay" xml:space="preserve">
+    <value>Rediffusion Récente</value>
+  </data>
+  <data name="Session Progress" xml:space="preserve">
+    <value>Progression de la Session</value>
+  </data>
+  <data name="Replays" xml:space="preserve">
+    <value>Rediffusions</value>
+  </data>
+  <data name="New Replays" xml:space="preserve">
+    <value>Nouvelles Rediffusions</value>
+  </data>
+  <data name="Check for Updates" xml:space="preserve">
+    <value>Vérifier les mises à jour</value>
+  </data>
+  <data name="Errors" xml:space="preserve">
+    <value>Erreurs</value>
+  </data>
+  <data name="Calculating Ratings" xml:space="preserve">
+    <value>Calcul des Évaluations</value>
+  </data>
+  <data name="Writing to database" xml:space="preserve">
+    <value>Écriture dans la base de données</value>
+  </data>
+  <data name="Decoded {0} Replay(s) in {1}" xml:space="preserve">
+    <value>Décodé {0} rediffusion(s) en {1}</value>
+  </data>
+  <data name="Uploading" xml:space="preserve">
+    <value>Envoi</value>
+  </data>
+  <data name="Upload successful" xml:space="preserve">
+    <value>Téléchargement réussi</value>
+  </data>
+  <data name="Upload failed. Please try again later." xml:space="preserve">
+    <value>Échec du téléchargement. Veuillez réessayer plus tard.</value>
+  </data>
+  <data name="Upload forbidden due to Disable/Delete." xml:space="preserve">
+    <value>Téléchargement interdit en raison de la désactivation/suppression.</value>
   </data>
 </root>

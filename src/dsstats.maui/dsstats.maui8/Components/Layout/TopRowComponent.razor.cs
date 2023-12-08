@@ -30,11 +30,17 @@ public partial class TopRowComponent : ComponentBase, IDisposable
     DecodeErrorModal? decodeErrorModal;
     UploadAskModal? uploadAskModal;
     int updateDownloadProgress = 0;
-    CultureInfo Culture = new CultureInfo("en-US");
+    CultureInfo Culture = new CultureInfo("en");
+    CultureInfo defaultCulture = new CultureInfo("iv");
 
     protected override void OnInitialized()
     {
-        Culture = CultureInfo.DefaultThreadCurrentUICulture ?? new CultureInfo("en-US");
+        Culture = new CultureInfo(configService.AppOptions.Culture);
+        if (!configService.SupportedCultures.Contains(Culture))
+        {
+            Culture = defaultCulture;
+        }
+
         dsstatsService.ScanStateChanged += DssstatsService_ScanStateChanged;
         dsstatsService.DecodeStateChanged += DssstatsService_DecodeStateChanged;
         NavigationManager.LocationChanged += NavigationManager_LocationChanged;
