@@ -169,4 +169,130 @@
   <data name="Upload forbidden due to Disable/Delete." xml:space="preserve">
     <value>Завантаження заборонено через Вимкнення/Видалення.</value>
   </data>
+  <data name="Home" xml:space="preserve">
+    <value>Головна</value>
+  </data>
+  <data name="Stats" xml:space="preserve">
+    <value>Статистика</value>
+  </data>
+  <data name="Builds" xml:space="preserve">
+    <value>Композиції</value>
+  </data>
+  <data name="Ratings" xml:space="preserve">
+    <value>Рейтинги</value>
+  </data>
+  <data name="Replays1" xml:space="preserve">
+    <value>Повтори</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Налаштування</value>
+  </data>
+  <data name="Help" xml:space="preserve">
+    <value>Допомога</value>
+  </data>
+  <data name="Info" xml:space="preserve">
+    <value>Інформація</value>
+  </data>
+  <data name="Report Issues or Suggestions" xml:space="preserve">
+    <value>Повідомити про проблеми чи запропонувати ідеї</value>
+  </data>
+  <data name="Upload Replays to {0}" xml:space="preserve">
+    <value>Завантажити повтори на {0}</value>
+  </data>
+  <data name="Auto decode - detect new replays and start decoding after each game" xml:space="preserve">
+    <value>Автоматичне декодування - виявлення нових повторів та початок декодування після кожної гри</value>
+  </data>
+  <data name="Check for updates on App start" xml:space="preserve">
+    <value>Перевіряти оновлення при запуску додатка</value>
+  </data>
+  <data name="CPU Cores - used for decoding new replays (available CPU-Cores: {0})" xml:space="preserve">
+    <value>Ядра ЦП - використовуються для декодування нових повторів (доступні ядра ЦП: {0})</value>
+  </data>
+  <data name="SC2Profiles (deactivate the profiles that should not be decoded and uploaded)" xml:space="preserve">
+    <value>SC2Profiles (деактивувати профілі, які не повинні бути декодовані та вивантажені)</value>
+  </data>
+  <data name="Custom folders with replays to be decoded and uploaded" xml:space="preserve">
+    <value>Користувацькі папки з повторами для декодування та вивантаження</value>
+  </data>
+  <data name="Replay Start Name" xml:space="preserve">
+    <value>Ім'я початку повтору</value>
+  </data>
+  <data name="Replay Start Name desc" xml:space="preserve">
+    <value>Початок імені файлу повторів Direct Strike - Значення за замовчуванням - 'Direct Strike', але може відрізнятися в залежності від вашої мови</value>
+  </data>
+  <data name="Replays on Ignore list (skipped during decoding and uploading)" xml:space="preserve">
+    <value>Повтори в списку ігнорування (пропущені під час декодування та вивантаження)</value>
+  </data>
+  <data name="UnIgnore" xml:space="preserve">
+    <value>Скасувати ігнорування</value>
+  </data>
+  <data name="Reset Ignorelist" xml:space="preserve">
+    <value>Скинути список ігнорування</value>
+  </data>
+  <data name="App folder" xml:space="preserve">
+    <value>Папка додатка</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Зберегти</value>
+  </data>
+  <data name="Undo" xml:space="preserve">
+    <value>Скасувати</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Скинути</value>
+  </data>
+  <data name="Backup" xml:space="preserve">
+    <value>Резервна копія</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>Відновити</value>
+  </data>
+  <data name="Setting changes not saved!" xml:space="preserve">
+    <value>Зміни налаштувань не збережено!</value>
+  </data>
+  <data name="Would you like to save the changes, now?" xml:space="preserve">
+    <value>Бажаєте зберегти зміни зараз?</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Так</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Ні</value>
+  </data>
+  <data name="Settings changes undone." xml:space="preserve">
+    <value>Зміни налаштувань скасовано.</value>
+  </data>
+  <data name="Settings reset to default." xml:space="preserve">
+    <value>Налаштування скинуті на заводські.</value>
+  </data>
+  <data name="Settings saved." xml:space="preserve">
+    <value>Налаштування збережено.</value>
+  </data>
+  <data name="Backup successful." xml:space="preserve">
+    <value>Резервне копіювання успішно виконано.</value>
+  </data>
+  <data name="Backup canceled." xml:space="preserve">
+    <value>Резервне копіювання скасовано.</value>
+  </data>
+  <data name="Backup failed." xml:space="preserve">
+    <value>Резервне копіювання не вдалося.</value>
+  </data>
+  <data name="Backup restore successful." xml:space="preserve">
+    <value>Відновлення резервної копії успішно виконано.</value>
+  </data>
+  <data name="Backup restore canceled." xml:space="preserve">
+    <value>Скасування відновлення резервної копії.</value>
+  </data>
+  <data name="Backup restore failed." xml:space="preserve">
+    <value>Відновлення резервної копії не вдалося.</value>
+  </data>
+  <data name="Activate" xml:space="preserve">
+    <value>Активувати</value>
+  </data>
+  <data name="Deactivate" xml:space="preserve">
+    <value>Деактивувати</value>
+  </data>
+  <data name="Add Folder" xml:space="preserve">
+    <value>Додати папку</value>
+  </data>
 </root>

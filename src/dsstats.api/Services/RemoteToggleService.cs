@@ -13,7 +13,7 @@ public class RemoteToggleService : IRemoteToggleService
 
 #pragma warning disable CS0414 // dummy for server side, only useful for maui
     public event EventHandler? FromServerChanged = null;
-    public event EventHandler? CultureChanged;
+    public event EventHandler? CultureChanged = null;
 
     public void SetCulture(string culture)
     {

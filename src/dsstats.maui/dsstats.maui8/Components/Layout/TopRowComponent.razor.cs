@@ -1,8 +1,10 @@
 using Blazored.Toast.Services;
+using dsstats.localization;
 using dsstats.maui8.Services;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.Extensions.Localization;
 using System.Collections.Concurrent;
 using System.Globalization;
 
@@ -22,6 +24,8 @@ public partial class TopRowComponent : ComponentBase, IDisposable
     public IToastService toastService { get; set; } = default!;
     [Inject]
     public IUpdateService updateService { get; set; } = default!;
+    [Inject]
+    public IStringLocalizer<DsstatsLoc> Loc { get; set; } = default!;
 
     string currentLocation = "Home";
     DecodeInfoEventArgs? decodeInfo = null;
@@ -140,7 +144,7 @@ public partial class TopRowComponent : ComponentBase, IDisposable
         {
             if (Application.Current != null && Application.Current.MainPage != null)
             {
-                bool answer = await Application.Current.MainPage.DisplayAlert("New Version Available!", "Would you like to update now?", "Yes", "No");
+                bool answer = await Application.Current.MainPage.DisplayAlert(Loc["New Version Available!"], Loc["Would you like to update now?"], Loc["Yes"], Loc["No"]);
                 if (answer)
                 {
                     updateService.UpdateProgress += UpdateService_UpdateProgress;
@@ -148,14 +152,14 @@ public partial class TopRowComponent : ComponentBase, IDisposable
                     if (!updateResult)
                     {
                         updateService.UpdateProgress -= UpdateService_UpdateProgress;
-                        await Application.Current.MainPage.DisplayAlert("Update Failed", ":(", "Ok");
+                        await Application.Current.MainPage.DisplayAlert(Loc["Update Failed"], ":(", "Ok");
                     }
                 }
             }
         }
         else if (!init)
         {
-            toastService.ShowInfo("Your version is up to date.");
+            toastService.ShowInfo(Loc["Your version is up to date."]);
         }
     }
 

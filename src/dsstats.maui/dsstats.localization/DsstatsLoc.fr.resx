@@ -169,4 +169,130 @@
   <data name="Upload forbidden due to Disable/Delete." xml:space="preserve">
     <value>Téléchargement interdit en raison de la désactivation/suppression.</value>
   </data>
+  <data name="Home" xml:space="preserve">
+    <value>Accueil</value>
+  </data>
+  <data name="Stats" xml:space="preserve">
+    <value>Statistiques</value>
+  </data>
+  <data name="Builds" xml:space="preserve">
+    <value>Compositions</value>
+  </data>
+  <data name="Ratings" xml:space="preserve">
+    <value>Évaluations</value>
+  </data>
+  <data name="Replays1" xml:space="preserve">
+    <value>Rejouer</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Paramètres</value>
+  </data>
+  <data name="Help" xml:space="preserve">
+    <value>Aide</value>
+  </data>
+  <data name="Info" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="Report Issues or Suggestions" xml:space="preserve">
+    <value>Signaler des problèmes ou faire des suggestions</value>
+  </data>
+  <data name="Upload Replays to {0}" xml:space="preserve">
+    <value>Télécharger les rediffusions sur {0}</value>
+  </data>
+  <data name="Auto decode - detect new replays and start decoding after each game" xml:space="preserve">
+    <value>Décodage automatique - détecter de nouvelles rediffusions et commencer le décodage après chaque partie</value>
+  </data>
+  <data name="Check for updates on App start" xml:space="preserve">
+    <value>Vérifier les mises à jour au démarrage de l'application</value>
+  </data>
+  <data name="CPU Cores - used for decoding new replays (available CPU-Cores: {0})" xml:space="preserve">
+    <value>Cœurs de CPU - utilisés pour décoder de nouvelles rediffusions (cœurs de CPU disponibles : {0})</value>
+  </data>
+  <data name="SC2Profiles (deactivate the profiles that should not be decoded and uploaded)" xml:space="preserve">
+    <value>SC2Profiles (désactiver les profils qui ne doivent pas être décodés et téléchargés)</value>
+  </data>
+  <data name="Custom folders with replays to be decoded and uploaded" xml:space="preserve">
+    <value>Dossiers personnalisés avec des rediffusions à décoder et à télécharger</value>
+  </data>
+  <data name="Replay Start Name" xml:space="preserve">
+    <value>Nom de démarrage de la rediffusion</value>
+  </data>
+  <data name="Replay Start Name desc" xml:space="preserve">
+    <value>Le début du nom de fichier des rediffusions de Direct Strike - La valeur par défaut est 'Direct Strike', mais peut être différente en fonction de votre langue</value>
+  </data>
+  <data name="Replays on Ignore list (skipped during decoding and uploading)" xml:space="preserve">
+    <value>Rediffusions sur la liste d'ignorées (ignorées lors du décodage et du téléchargement)</value>
+  </data>
+  <data name="UnIgnore" xml:space="preserve">
+    <value>Réactiver</value>
+  </data>
+  <data name="Reset Ignorelist" xml:space="preserve">
+    <value>Réinitialiser la liste d'ignorées</value>
+  </data>
+  <data name="App folder" xml:space="preserve">
+    <value>Dossier de l'application</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="Undo" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Réinitialiser</value>
+  </data>
+  <data name="Backup" xml:space="preserve">
+    <value>Sauvegarde</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>Restaurer</value>
+  </data>
+  <data name="Setting changes not saved!" xml:space="preserve">
+    <value>Changements de paramètres non enregistrés !</value>
+  </data>
+  <data name="Would you like to save the changes, now?" xml:space="preserve">
+    <value>Voulez-vous enregistrer les modifications maintenant ?</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Oui</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Non</value>
+  </data>
+  <data name="Settings changes undone." xml:space="preserve">
+    <value>Changements de paramètres annulés.</value>
+  </data>
+  <data name="Settings reset to default." xml:space="preserve">
+    <value>Paramètres réinitialisés par défaut.</value>
+  </data>
+  <data name="Settings saved." xml:space="preserve">
+    <value>Paramètres enregistrés.</value>
+  </data>
+  <data name="Backup successful." xml:space="preserve">
+    <value>Sauvegarde réussie.</value>
+  </data>
+  <data name="Backup canceled." xml:space="preserve">
+    <value>Sauvegarde annulée.</value>
+  </data>
+  <data name="Backup failed." xml:space="preserve">
+    <value>Échec de la sauvegarde.</value>
+  </data>
+  <data name="Backup restore successful." xml:space="preserve">
+    <value>Restauration de sauvegarde réussie.</value>
+  </data>
+  <data name="Backup restore canceled." xml:space="preserve">
+    <value>Annulation de la restauration de sauvegarde.</value>
+  </data>
+  <data name="Backup restore failed." xml:space="preserve">
+    <value>Échec de la restauration de sauvegarde.</value>
+  </data>
+  <data name="Activate" xml:space="preserve">
+    <value>Activer</value>
+  </data>
+  <data name="Deactivate" xml:space="preserve">
+    <value>Désactiver</value>
+  </data>
+  <data name="Add Folder" xml:space="preserve">
+    <value>Ajouter un dossier</value>
+  </data>
 </root>

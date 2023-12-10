@@ -65,10 +65,10 @@
     <value>Decoding Replays</value>
   </data>
   <data name="Decoding Replays detail" xml:space="preserve">
-    <value>To utilize the app's features, you need to decode StarCraft 2 replays, extracting raw data from SC2Replay files. Initiate decoding by selecting the "New Replays" button on the top row or the "Decode" button on the "Home" screen.</value>
+    <value>To utilize the app's features, you need to decode StarCraft 2 replays, extracting raw data from SC2Replay files. Initiate decoding by selecting the 'New Replays' button on the top row or the 'Decode' button on the 'Home' screen.</value>
   </data>
-  <data name="Decoding Process " xml:space="preserve">
-    <value>Decoding Process </value>
+  <data name="Decoding Process" xml:space="preserve">
+    <value>Decoding Process</value>
   </data>
   <data name="Decoding Process detail" xml:space="preserve">
     <value>The initial decoding may take some time, typically 30-60 minutes per 1,000 replays. The duration depends on the number of replays and your hardware capabilities.</value>
@@ -77,7 +77,7 @@
     <value>Optimizing Decoding</value>
   </data>
   <data name="Optimizing Decoding detail" xml:space="preserve">
-    <value>You can enhance decoding speed by configuring the number of CPU cores in the "Settings" screen. Note that during initial decoding, these cores will be heavily utilized.</value>
+    <value>You can enhance decoding speed by configuring the number of CPU cores in the 'Settings' screen. Note that during initial decoding, these cores will be heavily utilized.</value>
   </data>
   <data name="Decoding Speed" xml:space="preserve">
     <value>Decoding Speed</value>
@@ -89,13 +89,13 @@
     <value>Automatic Replay Detection</value>
   </data>
   <data name="Automatic Replay Detection detail" xml:space="preserve">
-    <value>The app automatically identifies and decodes new replays in folders specified in the "Settings" screen if the application is open. </value>
+    <value>The app automatically identifies and decodes new replays in folders specified in the 'Settings' screen if the application is open.</value>
   </data>
   <data name="Pause and Resume Functionality" xml:space="preserve">
     <value>Pause and Resume Functionality</value>
   </data>
   <data name="Pause and Resume Functionality detail" xml:space="preserve">
-    <value>Decoding can be paused at any time, and the app will resume from the last position upon restarting. </value>
+    <value>Decoding can be paused at any time, and the app will resume from the last position upon restarting.</value>
   </data>
   <data name="Consent for Upload" xml:space="preserve">
     <value>Consent for Upload</value>
@@ -114,5 +114,185 @@
   </data>
   <data name="Community Support detail" xml:space="preserve">
     <value>Join our online community for additional assistance, updates, and discussions related to the app.</value>
+  </data>
+  <data name="Decode" xml:space="preserve">
+    <value>Decode</value>
+  </data>
+  <data name="Scan" xml:space="preserve">
+    <value>Scan</value>
+  </data>
+  <data name="Upload" xml:space="preserve">
+    <value>Upload</value>
+  </data>
+  <data name="StopDecoding" xml:space="preserve">
+    <value>StopDecoding</value>
+  </data>
+  <data name="Latest Replay" xml:space="preserve">
+    <value>Latest Replay</value>
+  </data>
+  <data name="Recent Replay" xml:space="preserve">
+    <value>Recent Replay</value>
+  </data>
+  <data name="Session Progress" xml:space="preserve">
+    <value>Session Progress</value>
+  </data>
+  <data name="Replays" xml:space="preserve">
+    <value>Replays</value>
+  </data>
+  <data name="New Replays" xml:space="preserve">
+    <value>New Replays</value>
+  </data>
+  <data name="Check for Updates" xml:space="preserve">
+    <value>Check for Updates</value>
+  </data>
+  <data name="Errors" xml:space="preserve">
+    <value>Errors</value>
+  </data>
+  <data name="Calculating Ratings" xml:space="preserve">
+    <value>Calculating Ratings</value>
+  </data>
+  <data name="Writing to database" xml:space="preserve">
+    <value>Writing to database</value>
+  </data>
+  <data name="Decoded {0} Replay(s) in {1}" xml:space="preserve">
+    <value>Decoded {0} Replay(s) in {1}</value>
+  </data>
+  <data name="Uploading" xml:space="preserve">
+    <value>Uploading</value>
+  </data>
+  <data name="Upload successful" xml:space="preserve">
+    <value>Upload successful</value>
+  </data>
+  <data name="Upload failed. Please try again later." xml:space="preserve">
+    <value>Upload failed. Please try again later.</value>
+  </data>
+  <data name="Upload forbidden due to Disable/Delete." xml:space="preserve">
+    <value>Upload forbidden due to Disable/Delete.</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="Stats" xml:space="preserve">
+    <value>Stats</value>
+  </data>
+  <data name="Builds" xml:space="preserve">
+    <value>Builds</value>
+  </data>
+  <data name="Ratings" xml:space="preserve">
+    <value>Ratings</value>
+  </data>
+  <data name="Replays1" xml:space="preserve">
+    <value>Replays</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Help" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="Info" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="Report Issues or Suggestions" xml:space="preserve">
+    <value>Report Issues or Suggestions</value>
+  </data>
+  <data name="Upload Replays to {0}" xml:space="preserve">
+    <value>Upload Replays to {0}</value>
+  </data>
+  <data name="Auto decode - detect new replays and start decoding after each game" xml:space="preserve">
+    <value>Auto decode - detect new replays and start decoding after each game</value>
+  </data>
+  <data name="Check for updates on App start" xml:space="preserve">
+    <value>Check for updates on App start</value>
+  </data>
+  <data name="CPU Cores - used for decoding new replays (available CPU-Cores: {0})" xml:space="preserve">
+    <value>CPU Cores - used for decoding new replays (available CPU-Cores: {0})</value>
+  </data>
+  <data name="SC2Profiles (deactivate the profiles that should not be decoded and uploaded)" xml:space="preserve">
+    <value>SC2Profiles (deactivate the profiles that should not be decoded and uploaded)</value>
+  </data>
+  <data name="Custom folders with replays to be decoded and uploaded" xml:space="preserve">
+    <value>Custom folders with replays to be decoded and uploaded</value>
+  </data>
+  <data name="Replay Start Name" xml:space="preserve">
+    <value>Replay Start Name</value>
+  </data>
+  <data name="Replay Start Name desc" xml:space="preserve">
+    <value>The beginning of the filename of the Direct Strike replays - The default value is 'Direct Strike' but might be different depending on your language</value>
+  </data>
+  <data name="Replays on Ignore list (skipped during decoding and uploading)" xml:space="preserve">
+    <value>Replays on Ignore list (skipped during decoding and uploading)</value>
+  </data>
+  <data name="UnIgnore" xml:space="preserve">
+    <value>UnIgnore</value>
+  </data>
+  <data name="Reset Ignorelist" xml:space="preserve">
+    <value>Reset Ignorelist</value>
+  </data>
+  <data name="App folder" xml:space="preserve">
+    <value>App folder</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="Backup" xml:space="preserve">
+    <value>Backup</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>Restore</value>
+  </data>
+  <data name="Setting changes not saved!" xml:space="preserve">
+    <value>Setting changes not saved!</value>
+  </data>
+  <data name="Would you like to save the changes, now?" xml:space="preserve">
+    <value>Would you like to save the changes, now?</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="Settings changes undone." xml:space="preserve">
+    <value>Settings changes undone.</value>
+  </data>
+  <data name="Settings reset to default." xml:space="preserve">
+    <value>Settings reset to default.</value>
+  </data>
+  <data name="Settings saved." xml:space="preserve">
+    <value>Settings saved.</value>
+  </data>
+  <data name="Backup successful." xml:space="preserve">
+    <value>Backup successful.</value>
+  </data>
+  <data name="Backup canceled." xml:space="preserve">
+    <value>Backup canceled.</value>
+  </data>
+  <data name="Backup failed." xml:space="preserve">
+    <value>Backup failed.</value>
+  </data>
+  <data name="Backup restore successful." xml:space="preserve">
+    <value>Backup restore successful.</value>
+  </data>
+  <data name="Backup restore canceled." xml:space="preserve">
+    <value>Backup restore canceled.</value>
+  </data>
+  <data name="Backup restore failed." xml:space="preserve">
+    <value>Backup restore failed.</value>
+  </data>
+  <data name="Activate" xml:space="preserve">
+    <value>Activate</value>
+  </data>
+  <data name="Deactivate" xml:space="preserve">
+    <value>Deactivate</value>
+  </data>
+  <data name="Add Folder" xml:space="preserve">
+    <value>Add Folder</value>
   </data>
 </root>

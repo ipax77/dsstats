@@ -43,6 +43,10 @@ internal class Program
                 CreateResxFile(localizations, property, cultureName);
             }
         }
+
+        var defaultLang = Path.Combine(Environment.CurrentDirectory, $"DsstatsLoc.en.resx");
+        var defaultFile = Path.Combine(Environment.CurrentDirectory, $"DsstatsLoc.resx");
+        File.Copy(defaultLang, defaultFile, true);
     }
 
     private static void CreateResxFile(List<DsstatsLocalization> localizations, PropertyInfo propertyInfo, string cultureName)

@@ -1,27 +1,31 @@
-﻿@using dsstats.maui8.Services
+﻿@using Microsoft.Extensions.Localization
+@using dsstats.localization
+@using dsstats.maui8.Services
+@using dsstats.shared.Interfaces
 @inject IJSRuntime JSRuntime
 @inject ConfigService configService
 @inject IToastService toastService
+@inject IStringLocalizer<DsstatsLoc> Loc
 
 <div class="modal" id="uploadaskmodal" tabindex="-1" aria-labelledby="uploadaskmodal" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bgchart2">
-                <h5 class="modal-title">Thank you for using this app!</h5>
+                <h5 class="modal-title">@Loc["Thank you for using this app!"]</h5>
             </div>
             <div class="modal-body">
                 <p>
-                    If you love Direct Strike and like to help balance the game it would be very nice if the statistics were uploaded from time to time.
+                    @Loc["If you love Direct Strike and like to help balance the game it would be very nice if the statistics were uploaded from time to time."]
                 </p>
                 <p>
-                    Would you like to allow the application to upload your Direct Strike replay data to the <a href="https://dsstats.pax77.org">dsstats website</a>?
+                    @Loc["Would you like to allow the application to upload your Direct Strike replay data to {0}", "dsstats.pax77.org"] <a href="https://dsstats.pax77.org">Link</a>?
                 </p>
                 <div class="btn-group">
-                    <button class="btn btn-primary" @onclick="AllowUploads">Allow Uploads</button>
+                    <button class="btn btn-primary" @onclick="AllowUploads">@Loc["Allow Uploads"]</button>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@Loc["Close"]</button>
             </div>
         </div>
     </div>
@@ -33,7 +37,7 @@
     {
         configService.AppOptions.UploadCredential = true;
         configService.UpdateConfig(configService.AppOptions);
-        toastService.ShowSuccess("Thank you for allowing uploading! You can change the credentials in the settings at any time.");
+        toastService.ShowSuccess(Loc["Thank you for allowing uploading! You can change the credentials in the settings at any time."]);
         JSRuntime.InvokeVoidAsync("closeModalById", "uploadaskmodal");
     }
 

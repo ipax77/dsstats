@@ -169,4 +169,130 @@
   <data name="Upload forbidden due to Disable/Delete." xml:space="preserve">
     <value>Carga prohibida debido a Desactivar/Eliminar.</value>
   </data>
+  <data name="Home" xml:space="preserve">
+    <value>Inicio</value>
+  </data>
+  <data name="Stats" xml:space="preserve">
+    <value>Estadísticas</value>
+  </data>
+  <data name="Builds" xml:space="preserve">
+    <value>Composiciones</value>
+  </data>
+  <data name="Ratings" xml:space="preserve">
+    <value>Calificaciones</value>
+  </data>
+  <data name="Replays1" xml:space="preserve">
+    <value>Partidas</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Configuración</value>
+  </data>
+  <data name="Help" xml:space="preserve">
+    <value>Ayuda</value>
+  </data>
+  <data name="Info" xml:space="preserve">
+    <value>Información</value>
+  </data>
+  <data name="Report Issues or Suggestions" xml:space="preserve">
+    <value>Informar problemas o sugerencias</value>
+  </data>
+  <data name="Upload Replays to {0}" xml:space="preserve">
+    <value>Subir repeticiones a {0}</value>
+  </data>
+  <data name="Auto decode - detect new replays and start decoding after each game" xml:space="preserve">
+    <value>Decodificación automática: detectar nuevas repeticiones y comenzar la decodificación después de cada juego</value>
+  </data>
+  <data name="Check for updates on App start" xml:space="preserve">
+    <value>Verificar actualizaciones al iniciar la aplicación</value>
+  </data>
+  <data name="CPU Cores - used for decoding new replays (available CPU-Cores: {0})" xml:space="preserve">
+    <value>Núcleos de CPU - utilizados para decodificar nuevas repeticiones (núcleos de CPU disponibles: {0})</value>
+  </data>
+  <data name="SC2Profiles (deactivate the profiles that should not be decoded and uploaded)" xml:space="preserve">
+    <value>SC2Profiles (desactivar los perfiles que no deben descifrarse y subirse)</value>
+  </data>
+  <data name="Custom folders with replays to be decoded and uploaded" xml:space="preserve">
+    <value>Carpetas personalizadas con repeticiones que deben descifrarse y subirse</value>
+  </data>
+  <data name="Replay Start Name" xml:space="preserve">
+    <value>Nombre de inicio de repetición</value>
+  </data>
+  <data name="Replay Start Name desc" xml:space="preserve">
+    <value>El comienzo del nombre de archivo de las repeticiones de Direct Strike - El valor predeterminado es 'Direct Strike', pero puede ser diferente según tu idioma</value>
+  </data>
+  <data name="Replays on Ignore list (skipped during decoding and uploading)" xml:space="preserve">
+    <value>Repeticiones en la lista de ignorados (omitidas durante la decodificación y subida)</value>
+  </data>
+  <data name="UnIgnore" xml:space="preserve">
+    <value>Quitar de ignorados</value>
+  </data>
+  <data name="Reset Ignorelist" xml:space="preserve">
+    <value>Restablecer lista de ignorados</value>
+  </data>
+  <data name="App folder" xml:space="preserve">
+    <value>Carpeta de la aplicación</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="Undo" xml:space="preserve">
+    <value>Deshacer</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Restablecer</value>
+  </data>
+  <data name="Backup" xml:space="preserve">
+    <value>Copia de seguridad</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>Restaurar</value>
+  </data>
+  <data name="Setting changes not saved!" xml:space="preserve">
+    <value>¡Cambios en la configuración no guardados!</value>
+  </data>
+  <data name="Would you like to save the changes, now?" xml:space="preserve">
+    <value>¿Le gustaría guardar los cambios ahora?</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Sí</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="Settings changes undone." xml:space="preserve">
+    <value>Cambios en la configuración deshechos.</value>
+  </data>
+  <data name="Settings reset to default." xml:space="preserve">
+    <value>Configuración restablecida a los valores predeterminados.</value>
+  </data>
+  <data name="Settings saved." xml:space="preserve">
+    <value>Configuración guardada.</value>
+  </data>
+  <data name="Backup successful." xml:space="preserve">
+    <value>Copia de seguridad realizada con éxito.</value>
+  </data>
+  <data name="Backup canceled." xml:space="preserve">
+    <value>Copia de seguridad cancelada.</value>
+  </data>
+  <data name="Backup failed." xml:space="preserve">
+    <value>Copia de seguridad fallida.</value>
+  </data>
+  <data name="Backup restore successful." xml:space="preserve">
+    <value>Restauración de copia de seguridad realizada con éxito.</value>
+  </data>
+  <data name="Backup restore canceled." xml:space="preserve">
+    <value>Restauración de copia de seguridad cancelada.</value>
+  </data>
+  <data name="Backup restore failed." xml:space="preserve">
+    <value>Restauración de copia de seguridad fallida.</value>
+  </data>
+  <data name="Activate" xml:space="preserve">
+    <value>Activar</value>
+  </data>
+  <data name="Deactivate" xml:space="preserve">
+    <value>Desactivar</value>
+  </data>
+  <data name="Add Folder" xml:space="preserve">
+    <value>Agregar carpeta</value>
+  </data>
 </root>

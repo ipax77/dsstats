@@ -1,4 +1,11 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using Microsoft.Extensions.Localization
+@using dsstats.localization
+@using dsstats.shared.Interfaces
+@inject IStringLocalizer<DsstatsLoc> Loc
+@inject IRemoteToggleService remoteToggleService
+@implements IDisposable
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">dsstats.maui</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
@@ -11,42 +18,42 @@
     <nav class="flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill" aria-hidden="true"></span> Home
+                <span class="bi bi-house-door-fill" aria-hidden="true"></span> @Loc["Home"]
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="stats">
-                <span class="bi bi-bar-chart-line" aria-hidden="true"></span> Stats
+                <span class="bi bi-bar-chart-line" aria-hidden="true"></span> @Loc["Stats"]
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="builds">
-                <span class="bi bi-person-gear me-1" aria-hidden="true"></span> Builds
+                <span class="bi bi-person-gear me-1" aria-hidden="true"></span> @Loc["Builds"]
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="ratings">
-                <span class="bi bi-people me-1" aria-hidden="true"></span> Ratings
+                <span class="bi bi-people me-1" aria-hidden="true"></span> @Loc["Ratings"]
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="replays">
-                <span class="bi bi bi-list-columns" aria-hidden="true"></span> Replays
+                <span class="bi bi bi-list-columns" aria-hidden="true"></span> @Loc["Replays1"]
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="settings">
-                <span class="bi bi-gear" aria-hidden="true"></span> Settings
+                <span class="bi bi-gear" aria-hidden="true"></span> @Loc["Settings"]
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="help">
-                <span class="bi bi-question-circle me-1" aria-hidden="true"></span> Help
+                <span class="bi bi-question-circle me-1" aria-hidden="true"></span> @Loc["Help"]
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="info">
-                <span class="bi bi-info-circle me-1" aria-hidden="true"></span> Info
+                <span class="bi bi-info-circle me-1" aria-hidden="true"></span> @Loc["Info"]
             </NavLink>
         </div>
         <div class="nav-item px-3 mt-5">
@@ -55,7 +62,7 @@
                     <img src="_content/dsstats.razorlib/images/GitHub-Mark-Light-64px.png" alt="github" />
                 </div>
                 <button type="button" class="btn btn-outline-light" style="max-width: 200px;" @onclick="BrowserOpenIssues">
-                    Report Issues or Suggestions
+                    @Loc["Report Issues or Suggestions"]
                 </button>
             </div>
         </div>
@@ -66,6 +73,17 @@
     private bool collapseNavMenu = true;
 
     private string NavMenuCssClass => collapseNavMenu ? "collapse" : "";
+
+    protected override void OnInitialized()
+    {
+        remoteToggleService.CultureChanged += CultureChanged;
+        base.OnInitialized();
+    }
+
+    public void CultureChanged(object? sender, EventArgs e)
+    {
+        InvokeAsync(() => StateHasChanged());
+    }
 
     private void ToggleNavMenu()
     {
@@ -83,5 +101,10 @@
         {
             // An unexpected error occured. No browser may be installed on the device.
         }
+    }
+
+    public void Dispose()
+    {
+        remoteToggleService.CultureChanged -= CultureChanged;
     }
 }

@@ -28,7 +28,7 @@ public partial class DsstatsService
     {
         if (ctsDecode != null && !ctsDecode.IsCancellationRequested)
         {
-            OnDecodeStateChanged(new() { Info = "Already decoding." });
+            OnDecodeStateChanged(new() { Info = Loc["Already decoding."] });
             return;
         }
 
@@ -36,7 +36,7 @@ public partial class DsstatsService
 
         if (newReplayPaths.Count == 0)
         {
-            OnDecodeStateChanged(new() { Info = "No new replays found." });
+            OnDecodeStateChanged(new() { Info = Loc["No new replays found."] });
             return;
         }
 
@@ -91,7 +91,7 @@ public partial class DsstatsService
         {
             ctsDecode.Cancel();
             CleanUpDecodeJob();
-            OnDecodeStateChanged(new() { Info = "Decoding canceled." });
+            OnDecodeStateChanged(new() { Info = Loc["Decoding canceled."] });
         }
     }
 
@@ -154,7 +154,7 @@ public partial class DsstatsService
         notifyTimer = new Timer(TimerElapsed, null, 0, 1000);
 
         var decodeInfo = GetDecodeInfo();
-        decodeInfo.Info = "Start decoding.";
+        decodeInfo.Info = Loc["Start decoding."];
         OnDecodeStateChanged(decodeInfo);
     }
 
