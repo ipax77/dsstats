@@ -295,4 +295,100 @@
   <data name="Add Folder" xml:space="preserve">
     <value>Ajouter un dossier</value>
   </data>
+  <data name="Thank you for using this app!" xml:space="preserve">
+    <value>Merci d'utiliser cette application !</value>
+  </data>
+  <data name="If you love Direct Strike and like to help balance the game, it would be very nice if the statistics were uploaded from time to time." xml:space="preserve">
+    <value>Si vous aimez Direct Strike et que vous voulez aider à équilibrer le jeu, ce serait très bien si les statistiques étaient téléchargées de temps en temps.</value>
+  </data>
+  <data name="Would you like to allow the application to upload your Direct Strike replay data to {0}?" xml:space="preserve">
+    <value>Souhaitez-vous autoriser l'application à télécharger les données de vos rediffusions Direct Strike sur {0} ?</value>
+  </data>
+  <data name="Allow Uploads" xml:space="preserve">
+    <value>Autoriser les téléchargements</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Fermer</value>
+  </data>
+  <data name="Thank you for allowing uploading! You can change the credentials in the settings at any time." xml:space="preserve">
+    <value>Merci d'avoir autorisé le téléchargement ! Vous pouvez changer les identifiants dans les paramètres à tout moment.</value>
+  </data>
+  <data name="Error Replays" xml:space="preserve">
+    <value>Replays d'erreur</value>
+  </data>
+  <data name="Add All to Ignore List" xml:space="preserve">
+    <value>Ajouter tout à la liste d'ignorés</value>
+  </data>
+  <data name="Ignore" xml:space="preserve">
+    <value>Ignorer</value>
+  </data>
+  <data name="Replays added to the ignore list. You can manage the list in the Settings." xml:space="preserve">
+    <value>Replays ajoutés à la liste d'ignorés. Vous pouvez gérer la liste dans les paramètres.</value>
+  </data>
+  <data name="Replay added to the ignore list. You can manage the list in the Settings." xml:space="preserve">
+    <value>Replay ajouté à la liste d'ignorés. Vous pouvez gérer la liste dans les paramètres.</value>
+  </data>
+  <data name="New Version Available!" xml:space="preserve">
+    <value>Nouvelle version disponible !</value>
+  </data>
+  <data name="Would you like to update now?" xml:space="preserve">
+    <value>Voulez-vous mettre à jour maintenant ?</value>
+  </data>
+  <data name="Update Failed" xml:space="preserve">
+    <value>Échec de la mise à jour</value>
+  </data>
+  <data name="Your version is up to date." xml:space="preserve">
+    <value>Votre version est à jour.</value>
+  </data>
+  <data name="Recalculate Ratings" xml:space="preserve">
+    <value>Recalculer les notes</value>
+  </data>
+  <data name="Starting local rating recalculation" xml:space="preserve">
+    <value>Démarrage du recalcul des notes locales</value>
+  </data>
+  <data name="Ratings recalculated." xml:space="preserve">
+    <value>Notes recalculées.</value>
+  </data>
+  <data name="Already decoding." xml:space="preserve">
+    <value>Déjà en cours de décodage.</value>
+  </data>
+  <data name="New replay detected." xml:space="preserve">
+    <value>Nouvelle rediffusion détectée.</value>
+  </data>
+  <data name="No new replays found." xml:space="preserve">
+    <value>Aucune nouvelle rediffusion trouvée.</value>
+  </data>
+  <data name="Decoding canceled." xml:space="preserve">
+    <value>Décodage annulé.</value>
+  </data>
+  <data name="Start decoding." xml:space="preserve">
+    <value>Démarrer le décodage.</value>
+  </data>
+  <data name="Fan Project for analyzing Starcraft II Direct Strike Replays" xml:space="preserve">
+    <value>Projet de fan pour analyser les rediffusions de Starcraft II Direct Strike</value>
+  </data>
+  <data name="All code including this app is open source (GPL-v3) and available on GitHub" xml:space="preserve">
+    <value>Tout le code, y compris cette application, est open source (GPL-v3) et disponible sur GitHub</value>
+  </data>
+  <data name="Project History" xml:space="preserve">
+    <value>Histoire du projet</value>
+  </data>
+  <data name="Some time ago I 'briefly' described how the project came about and how it developed in the beginning" xml:space="preserve">
+    <value>Il y a quelque temps, j'ai 'brièvement' décrit comment le projet a vu le jour et comment il s'est développé au début</value>
+  </data>
+  <data name="For me, the project is a very good opportunity to try out the latest technologies, especially dotnet core, entity framework core, and Blazor" xml:space="preserve">
+    <value>Pour moi, le projet est une très bonne opportunité de tester les dernières technologies, en particulier dotnet core, entity framework core et Blazor</value>
+  </data>
+  <data name="Contact" xml:space="preserve">
+    <value>Contact</value>
+  </data>
+  <data name="If you have any questions about the project or if you're interested in similar work, feel free to reach out:" xml:space="preserve">
+    <value>Si vous avez des questions sur le projet ou si vous êtes intéressé par un travail similaire, n'hésitez pas à nous contacter:</value>
+  </data>
+  <data name="Send email" xml:space="preserve">
+    <value>Envoyer un e-mail</value>
+  </data>
+  <data name="Players" xml:space="preserve">
+    <value>Joueurs</value>
+  </data>
 </root>
