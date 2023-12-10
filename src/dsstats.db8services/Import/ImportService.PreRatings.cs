@@ -14,6 +14,11 @@ public partial class ImportService
 {
     public async Task SetPreRatings()
     {
+        if (IsMaui)
+        {
+            return;
+        }
+
         using var scope = serviceProvider.CreateAsyncScope();
         var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 

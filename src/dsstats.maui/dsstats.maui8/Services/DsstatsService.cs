@@ -1,4 +1,6 @@
 ﻿
+using dsstats.localization;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 
 namespace dsstats.maui8.Services;
@@ -6,12 +8,14 @@ namespace dsstats.maui8.Services;
 public partial class DsstatsService
 {
     private readonly IServiceScopeFactory scopeFactory;
+    private readonly IStringLocalizer<DsstatsLoc> Loc;
     private readonly ILogger<DsstatsService> logger;
     private readonly WatchService watchService;
 
-    public DsstatsService(IServiceScopeFactory scopeFactory, ILogger<DsstatsService> logger)
+    public DsstatsService(IServiceScopeFactory scopeFactory, IStringLocalizer<DsstatsLoc> loc, ILogger<DsstatsService> logger)
     {
         this.scopeFactory = scopeFactory;
+        Loc = loc;
         this.logger = logger;
         using var scope = scopeFactory.CreateScope();
         var configService = scope.ServiceProvider.GetRequiredService<ConfigService>();
@@ -24,10 +28,10 @@ public partial class DsstatsService
     {
         if (ctsDecode != null && !ctsDecode.IsCancellationRequested)
         {
-            OnDecodeStateChanged(new() { Info = "Already decoding." });
+            OnDecodeStateChanged(new() { Info = Loc["Already decoding."] });
             return;
         }
-        OnDecodeStateChanged(new() { Info = "New replay detected." });
+        OnDecodeStateChanged(new() { Info = Loc["New replay detected."] });
         SetupDecodeJob(1);
         _ = StartDecodeJob(new List<string>() { e.Path }).ConfigureAwait(false);
     }

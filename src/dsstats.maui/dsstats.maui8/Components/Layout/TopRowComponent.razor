@@ -1,4 +1,6 @@
 ﻿@using dsstats.maui8.Services
+@using Microsoft.Extensions.Localization
+@using dsstats.localization
 @using dsstats.shared
 
 <div class="top-row px-4 bgchart">
@@ -6,17 +8,21 @@
         <div class="col-auto">
             <h4>
                 <span class="badge bg-success pointer" @onclick="@(() => NavigationManager.NavigateTo("replays"))">
-                    Replays @dsstatsService.DbReplaysCount
+                    @Loc["Replays"] @dsstatsService.DbReplaysCount
                 </span>
             </h4>
         </div>
         <div class="col-auto">
-            <h4><span class="badge bg-warning pointer" @onclick="e => dsstatsService.DecodeNewReplays()">New Replays @dsstatsService.NewReplaysCount</span></h4>
+            <h4>
+                <span class="badge bg-warning pointer" @onclick="e => dsstatsService.DecodeNewReplays()">
+                    @Loc["New Replays"] @dsstatsService.NewReplaysCount
+                </span>
+            </h4>
         </div>
         <div class="col-auto">
             @if (decodeErrors.Count > 0)
             {
-                <h4><span class="badge bg-danger pointer" @onclick="ShowErrors">Errors @decodeErrors.Count</span></h4>
+                <h4><span class="badge bg-danger pointer" @onclick="ShowErrors">@Loc["Errors"] @decodeErrors.Count</span></h4>
             }
         </div>
         @if (decodeInfo is not null)
@@ -24,11 +30,11 @@
             <div class="col-auto">
                 @if (decodeInfo.Calculating)
                 {
-                    <h4><span class="badge bg-success">Calculating Ratings ..</span></h4>
+                    <h4><span class="badge bg-success">@Loc["Calculating Ratings"] ..</span></h4>
                 }
                 else if (decodeInfo.Saving)
                 {
-                    <h4><span class="badge bg-success">Writing to database ..</span></h4>
+                    <h4><span class="badge bg-success">@Loc["Writing to database"] ..</span></h4>
                 }
                 else if (decodeInfo.Total > 0 && dsstatsService.Decoding)
                 {
@@ -48,7 +54,12 @@
                 }
                 else if (decodeInfo.Done > 0)
                 {
-                    <h4><span class="badge bg-success">Decoded @decodeInfo.Done Replay@((decodeInfo.Done > 1 ? "s" : "")) in @decodeInfo.Elapsed.ToString(@"hh\:mm\:ss")</span></h4>
+                    <h4>
+                        <span class="badge bg-success">
+                            @* Decoded @decodeInfo.Done Replay@((decodeInfo.Done > 1 ? "s" : "")) in @decodeInfo.Elapsed.ToString(@"hh\:mm\:ss") *@
+                            @Loc["Decoded {0} Replay(s) in {1}", decodeInfo.Done, decodeInfo.Elapsed.ToString(@"hh\:mm\:ss")]
+                        </span>
+                    </h4>
                 }
             </div>
             @if (decodeInfo.UploadStatus != Services.UploadStatus.None)
@@ -61,40 +72,52 @@
                                 <span class="visually-hidden">Uploading...</span>
                             </div>
                             <div class="mt-1">
-                                Uploading
+                                @Loc["Uploading"]
                             </div>
                         </div>
                     }
                     else if (decodeInfo.UploadStatus == Services.UploadStatus.UploadSuccess)
                     {
-                        <span class="bi bi-check2-circle text-success">&nbsp;</span> @("Upload successful")
+                        <span class="bi bi-check2-circle text-success">&nbsp;</span> @Loc["Upload successful"]
                     }
                     else if (decodeInfo.UploadStatus == Services.UploadStatus.UploadError)
                     {
-                        <span class="bi bi-exclamation-triangle text-danger">&nbsp;</span> @("Upload failed. Please try again later.")
+                        <span class="bi bi-exclamation-triangle text-danger">&nbsp;</span> @Loc["Upload failed. Please try again later."]
                     }
                     else if (decodeInfo.UploadStatus == Services.UploadStatus.Forbidden)
                     {
-                        <span class="bi bi-exclamation-triangle text-danger">&nbsp;</span> @("Upload forbidden due to Disable/Delete.")
+                        <span class="bi bi-exclamation-triangle text-danger">&nbsp;</span> @Loc["Upload forbidden due to Disable/Delete."]
                     }
                 </div>
             }
         }
-@*         <div class="col-auto">
-            <h4><span class="badge bg-info">@currentLocation</span></h4>
-        </div> *@
         <div class="ms-auto col-auto">
+            <form name="cultureselect">
+                <fieldset>
+                    <label class="form-label">
+                        <select class="form-select" required @bind="Culture" @bind:after="@(() => SetCulture(Culture))">
+                            <option value="@defaultCulture" disabled>Language</option>
+                            @foreach (var culture in configService.SupportedCultures)
+                            {
+                                <option value="@culture">@culture.NativeName</option>
+                            }
+                        </select>
+                    </label>
+                </fieldset>
+            </form>
+        </div>
+        <div class="col-auto">
             @if (updateDownloadProgress > 0)
             {
                 <div class="progress" style="width: 150px;">
-                    <div class="progress-bar bg-success text-warning" role="progressbar" aria-label="Update progress"  style="width: @(updateDownloadProgress)%" aria-valuenow="@updateDownloadProgress" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar bg-success text-warning" role="progressbar" aria-label="Update progress" style="width: @(updateDownloadProgress)%" aria-valuenow="@updateDownloadProgress" aria-valuemin="0" aria-valuemax="100">
                         Update
                     </div>
                 </div>
             }
             else
             {
-                <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => CheckForUpdates()">Check for Updates</button>
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="e => CheckForUpdates()">@Loc["Check for Updates"]</button>
             }
             <span class="badge bg-light p-1 mt-1">
                 v@(GitHubUpdateService.CurrentVersion)

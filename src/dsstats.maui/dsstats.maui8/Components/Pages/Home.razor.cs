@@ -2,7 +2,9 @@
 using dsstats.db8services;
 using dsstats.maui8.Services;
 using dsstats.razorlib.Players.Profile;
+using dsstats.razorlib.Replays;
 using dsstats.shared;
+using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 
 namespace dsstats.maui8.Components.Pages;
@@ -19,6 +21,8 @@ public partial class Home : ComponentBase, IDisposable
     public NavigationManager NavigationManager { get; set; } = default!;
     [Inject]
     public IToastService toastService { get; set; } = default!;
+    [Inject]
+    public IRemoteToggleService remoteToggleService { get; set; } = default!;
 
     ReplayDto? currentReplay = null;
     PlayerId? interestPlayer = null;
@@ -29,14 +33,20 @@ public partial class Home : ComponentBase, IDisposable
     // PlayerDetails? playerDetails;
     ProfileComponent? playerDetails;
     AppPlayersComponent? appPlayersComponent;
-
+    ReplayComponent? replayComponent;
     bool DEBUG = false;
 
     protected override void OnInitialized()
     {
         _ = LoadLatestReplay();
         dsstatsService.DecodeStateChanged += DssstatsService_DecodeStateChanged;
+        remoteToggleService.CultureChanged += RemoteToggleService_CultureChanged;
         base.OnInitialized();
+    }
+
+    private void RemoteToggleService_CultureChanged(object? sender, EventArgs e)
+    {
+        InvokeAsync(() => StateHasChanged());
     }
 
     private void DssstatsService_DecodeStateChanged(object? sender, DecodeInfoEventArgs e)
@@ -50,11 +60,6 @@ public partial class Home : ComponentBase, IDisposable
 
     private async Task LoadLatestReplay(bool afterDecode = false)
     {
-        if (afterDecode)
-        {
-            await Task.Delay(600);
-        }
-
         currentReplay = await replayRepository.GetLatestReplay();
 
         if (currentReplay is null)
@@ -81,8 +86,7 @@ public partial class Home : ComponentBase, IDisposable
                 Data.GetReplayRatingType(currentReplay.GameMode, currentReplay.TournamentEdition));
             appPlayersComponent?.UpdatePlayer(interestPlayer);
         }
-
-        await InvokeAsync(() => StateHasChanged());
+        replayComponent?.Init();
         sessionComponent?.Update();
     }
 
@@ -141,5 +145,6 @@ public partial class Home : ComponentBase, IDisposable
     public void Dispose()
     {
         dsstatsService.DecodeStateChanged -= DssstatsService_DecodeStateChanged;
+        remoteToggleService.CultureChanged -= RemoteToggleService_CultureChanged;
     }
 }

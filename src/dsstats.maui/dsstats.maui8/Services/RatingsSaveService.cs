@@ -424,4 +424,9 @@ internal class RatingsSaveService : IRatingsSaveService
         using var delCommand = new SQLiteCommand($"DELETE FROM {nameof(ReplayContext.PlayerRatingChanges)};", connection);
         await delCommand.ExecuteNonQueryAsync();
     }
+
+    public Task SaveContinueComboRatings(Dictionary<int, Dictionary<PlayerId, CalcRating>> mmrIdRatings, List<shared.Calc.ReplayRatingDto> replayRatings)
+    {
+        throw new NotImplementedException();
+    }
 }

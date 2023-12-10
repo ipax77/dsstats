@@ -14,7 +14,7 @@ public partial class RatingService
     public async Task ContinueComboRatings()
     {
         // DEBUG - TODO
-        await DebugDeleteComboRatings();
+        // await DebugDeleteComboRatings();
 
         using var scope = scopeFactory.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
@@ -27,6 +27,11 @@ public partial class RatingService
             .FirstOrDefaultAsync();
 
         logger.LogWarning(latestComboRating.ToString());
+
+        if (latestComboRating == default)
+        {
+            return;
+        }
 
         DsstatsCalcRequest dsstatsRequest = new()
         {
@@ -56,10 +61,12 @@ public partial class RatingService
                         { 1, new() },
                         { 2, new() },
                         { 3, new() },
-                    { 4, new() }
+                        { 4, new() }
                     },
             BannedPlayers = new Dictionary<PlayerId, bool>().ToFrozenDictionary()
         };
+        
+        await CleanupComboPreRatings(context);
 
         ratingRequest.ReplayPlayerRatingAppendId = await context.ComboReplayPlayerRatings
             .OrderByDescending(o => o.ComboReplayPlayerRatingId)
@@ -72,7 +79,6 @@ public partial class RatingService
 
         ratingRequest.MmrIdRatings = await GetComboMmrIdRatings(calcDtos);
 
-        await CleanupComboPreRatings(context);
         
         List<shared.Calc.ReplayRatingDto> replayRatings = new();
         
@@ -205,7 +211,7 @@ public partial class RatingService
              && request.GameModes.Contains((int)x.GameMode)
              && x.TournamentEdition == false
              && x.GameTime >= request.FromDate
-             && (x.ComboReplayRating == null || x.ComboReplayRating.IsPreRating))
+             && x.ComboReplayRating == null)
             .OrderBy(o => o.GameTime)
                 .ThenBy(o => o.ReplayId)
             .Select(s => new RawCalcDto()
