@@ -1,7 +1,10 @@
-﻿@using dsstats.maui8.Services
+﻿@using Microsoft.Extensions.Localization
+@using dsstats.localization
+@using dsstats.maui8.Services
 @inject IJSRuntime JSRuntime
 @inject ConfigService configService
 @inject IToastService toastService
+@inject IStringLocalizer<DsstatsLoc> Loc
 
 <div class="modal" id="decodeerrormodal" tabindex="-1" aria-labelledby="decodeerrormodal" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -12,7 +15,7 @@
                     <div class="col-auto ms-2">
                         <button type="button" class="btn btn-sm btn-outline-warning"
                                 @onclick="AddAllReplaysToIgnoreList">
-                            Add All to Ignore List
+                            @Loc["Add All to Ignore List"]
                         </button>
                     </div>
                 </div>
@@ -34,7 +37,7 @@
                                 <tr>
                                     <td>
                                         <button type="button" class="btn btn-sm btn-outline-warning" @onclick="e => AddReplayToIgnoreList(ent)">
-                                            Ignore
+                                            @Loc["Ignore"]"
                                         </button>
                                     </td>
                                     <td>@ent.ReplayPath</td>
@@ -46,7 +49,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@Loc["Close"]</button>
             </div>
         </div>
     </div>
@@ -65,7 +68,7 @@
         configService.AddReplaysToIgnoreList(DecodeErrors.Select(s => s.ReplayPath).ToList());
         OnErrorsRemoved.InvokeAsync(DecodeErrors);
         DecodeErrors.Clear();
-        toastService.ShowSuccess("Replays added to the ignore list. You can manage the list in the Settings.");
+        toastService.ShowSuccess(Loc["Replays added to the ignore list. You can manage the list in the Settings."]);
     }
 
     private void AddReplayToIgnoreList(DecodeError decodeError)
@@ -73,7 +76,7 @@
         configService.AddReplaysToIgnoreList([decodeError.ReplayPath]);
         DecodeErrors.Remove(decodeError);
         OnErrorsRemoved.InvokeAsync([decodeError]);
-        toastService.ShowSuccess("Replay added to the ignore list. You can manage the list in the Settings.");
+        toastService.ShowSuccess(Loc["Replay added to the ignore list. You can manage the list in the Settings."]);
     }
 
     public void Show()

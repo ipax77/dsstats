@@ -1,34 +1,53 @@
 ﻿@page "/info"
+@using Microsoft.Extensions.Localization
+@using dsstats.localization
+@using dsstats.shared.Interfaces
+@inject IRemoteToggleService remoteToggleService
+@inject IStringLocalizer<DsstatsLoc> Loc
+@implements IDisposable
 
 <PageTitle>dsstats - info</PageTitle>
 
 <div class="container p-2 border bgchart">
 
     <h3>
-        Fan Project for analyzing <a href="https://starcraft2.com/">Starcarft II</a>
-        <a href="https://www.patreon.com/Tya">Direct Strike</a> Replays
+        @Loc["Fan Project for analyzing Starcraft II Direct Strike Replays"]
     </h3>
 
     <p>
-        All code including this app is open source (GPL-v3) and available on <a href="https://github.com/ipax77/dsstats">GitHub</a>
+        @Loc["All code including this app is open source (GPL-v3) and available on GitHub"] <a href="https://github.com/ipax77/dsstats">Link</a>
     </p>
 
-    <h3>Project History</h3>
+    <h3>@Loc["Project History"]</h3>
     <p>
-        Some time ago I 'briefly' described how the project came about and how it developed in the beginning
+        @Loc["Some time ago I 'briefly' described how the project came about and how it developed in the beginning"]
         <a href="https://www.reddit.com/r/dotnetcore/comments/dap9dj/my_way_to_net_core_30/">History of origin (Reddit)</a>.
         <br />
-        For me, the project is a very good opportunity to try out the latest technologies, especially dotnet core, entity framework core and Blazor.
+        @Loc["For me, the project is a very good opportunity to try out the latest technologies, especially dotnet core, entity framework core, and Blazor"]
     </p>
 
-    <h3>Contact</h3>
+    <h3>@Loc["Contact"]</h3>
     <p>
-        If you have any questions about the project or if you're interested in similar work, feel free to reach out:
+        @Loc["If you have any questions about the project or if you're interested in similar work, feel free to reach out:"]
         <br />
-        <a href="mailto:ph.ilipp@web.de">Send email</a>
+        <a href="mailto:ph.ilipp@web.de">@Loc["Send email"]</a>
     </p>
 </div>
 
 @code {
+    protected override void OnInitialized()
+    {
+        remoteToggleService.CultureChanged += CultureChanged;
+        base.OnInitialized();
+    }
 
+    private void CultureChanged(object? sender, EventArgs e)
+    {
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Dispose()
+    {
+        remoteToggleService.CultureChanged -= CultureChanged;
+    }
 }

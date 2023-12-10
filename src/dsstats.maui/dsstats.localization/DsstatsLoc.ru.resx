@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Getting started" xml:space="preserve">
+    <value>Начало</value>
+  </data>
+  <data name="Decoding Replays" xml:space="preserve">
+    <value>Декодирование повторов</value>
+  </data>
+  <data name="Decoding Replays detail" xml:space="preserve">
+    <value>Для использования функций приложения вам необходимо декодировать повторы StarCraft 2, извлекая сырые данные из файлов SC2Replay. Инициируйте декодирование, выбрав кнопку 'Новые повторы' в верхнем ряду или кнопку 'Декодировать' на экране 'Главная'.</value>
+  </data>
+  <data name="Decoding Process" xml:space="preserve">
+    <value>Процесс декодирования</value>
+  </data>
+  <data name="Decoding Process detail" xml:space="preserve">
+    <value>Первичная декодировка может занять некоторое время, обычно 30-60 минут на 1 000 повторов. Продолжительность зависит от количества повторов и технических возможностей вашего оборудования.</value>
+  </data>
+  <data name="Optimizing Decoding" xml:space="preserve">
+    <value>Оптимизация декодирования</value>
+  </data>
+  <data name="Optimizing Decoding detail" xml:space="preserve">
+    <value>Вы можете увеличить скорость декодирования, настроив количество ядер CPU на экране 'Настройки'. Обратите внимание, что во время начального декодирования эти ядра будут активно использоваться.</value>
+  </data>
+  <data name="Decoding Speed" xml:space="preserve">
+    <value>Скорость декодирования</value>
+  </data>
+  <data name="Decoding Speed detail" xml:space="preserve">
+    <value>После начального декодирования отдельные повторы могут быть обработаны быстро, в пределах 3-10 секунд в зависимости от продолжительности игры.</value>
+  </data>
+  <data name="Automatic Replay Detection" xml:space="preserve">
+    <value>Автоматическое обнаружение повторов</value>
+  </data>
+  <data name="Automatic Replay Detection detail" xml:space="preserve">
+    <value>Приложение автоматически определяет и декодирует новые повторы в папках, указанных на экране 'Настройки', если приложение открыто.</value>
+  </data>
+  <data name="Pause and Resume Functionality" xml:space="preserve">
+    <value>Функция паузы и возобновления</value>
+  </data>
+  <data name="Pause and Resume Functionality detail" xml:space="preserve">
+    <value>Декодирование может быть приостановлено в любое время, и приложение возобновит работу с последней позиции при повторном запуске.</value>
+  </data>
+  <data name="Consent for Upload" xml:space="preserve">
+    <value>Согласие на загрузку</value>
+  </data>
+  <data name="Consent for Upload detail" xml:space="preserve">
+    <value>Для загрузки повторов на веб-сайт, вы должны дать согласие на странице 'Настройки'. После получения согласия декодированные повторы будут автоматически загружены, или вы можете вручную нажать кнопку 'Загрузить' на экране 'Главная'.</value>
+  </data>
+  <data name="Comparing Stats" xml:space="preserve">
+    <value>Сравнение статистики</value>
+  </data>
+  <data name="Comparing Stats detail" xml:space="preserve">
+    <value>Изучайте статистику игрока и командира локально или, с согласия, сравнивайте ее онлайн с другими игроками для комплексного анализа игры.</value>
+  </data>
+  <data name="Community Support" xml:space="preserve">
+    <value>Поддержка сообщества</value>
+  </data>
+  <data name="Community Support detail" xml:space="preserve">
+    <value>Присоединяйтесь к нашему онлайн-сообществу для дополнительной помощи, обновлений и обсуждений, связанных с приложением.</value>
+  </data>
+  <data name="Decode" xml:space="preserve">
+    <value>Декодировать</value>
+  </data>
+  <data name="Scan" xml:space="preserve">
+    <value>Сканировать</value>
+  </data>
+  <data name="Upload" xml:space="preserve">
+    <value>Загрузить</value>
+  </data>
+  <data name="StopDecoding" xml:space="preserve">
+    <value>Остановить декодирование</value>
+  </data>
+  <data name="Latest Replay" xml:space="preserve">
+    <value>Последняя повтор</value>
+  </data>
+  <data name="Recent Replay" xml:space="preserve">
+    <value>Недавнее повторение</value>
+  </data>
+  <data name="Session Progress" xml:space="preserve">
+    <value>Прогресс сессии</value>
+  </data>
+  <data name="Replays" xml:space="preserve">
+    <value>Повторы</value>
+  </data>
+  <data name="New Replays" xml:space="preserve">
+    <value>Новые повторы</value>
+  </data>
+  <data name="Check for Updates" xml:space="preserve">
+    <value>Проверить наличие обновлений</value>
+  </data>
+  <data name="Errors" xml:space="preserve">
+    <value>Ошибки</value>
+  </data>
+  <data name="Calculating Ratings" xml:space="preserve">
+    <value>Вычисление рейтингов</value>
+  </data>
+  <data name="Writing to database" xml:space="preserve">
+    <value>Запись в базу данных</value>
+  </data>
+  <data name="Decoded {0} Replay(s) in {1}" xml:space="preserve">
+    <value>Декодировано {0} повторов за {1}</value>
+  </data>
+  <data name="Uploading" xml:space="preserve">
+    <value>Загрузка (Zagruzka)</value>
+  </data>
+  <data name="Upload successful" xml:space="preserve">
+    <value>Загрузка успешна</value>
+  </data>
+  <data name="Upload failed. Please try again later." xml:space="preserve">
+    <value>Ошибка загрузки. Пожалуйста, попробуйте снова позже.</value>
+  </data>
+  <data name="Upload forbidden due to Disable/Delete." xml:space="preserve">
+    <value>Загрузка запрещена из-за Отключения/Удаления.</value>
+  </data>
+  <data name="Home" xml:space="preserve">
+    <value>Главная</value>
+  </data>
+  <data name="Stats" xml:space="preserve">
+    <value>Статистика</value>
+  </data>
+  <data name="Builds" xml:space="preserve">
+    <value>Композиции</value>
+  </data>
+  <data name="Ratings" xml:space="preserve">
+    <value>Рейтинги</value>
+  </data>
+  <data name="Replays1" xml:space="preserve">
+    <value>Повторы</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Настройки</value>
+  </data>
+  <data name="Help" xml:space="preserve">
+    <value>Помощь</value>
+  </data>
+  <data name="Info" xml:space="preserve">
+    <value>Информация</value>
+  </data>
+  <data name="Report Issues or Suggestions" xml:space="preserve">
+    <value>Сообщить о проблемах или предложениях</value>
+  </data>
+  <data name="Upload Replays to {0}" xml:space="preserve">
+    <value>Загрузить повторы на {0}</value>
+  </data>
+  <data name="Auto decode - detect new replays and start decoding after each game" xml:space="preserve">
+    <value>Автоматическая декодировка - обнаружение новых повторов и начало декодирования после каждой игры</value>
+  </data>
+  <data name="Check for updates on App start" xml:space="preserve">
+    <value>Проверять обновления при запуске приложения</value>
+  </data>
+  <data name="CPU Cores - used for decoding new replays (available CPU-Cores: {0})" xml:space="preserve">
+    <value>Ядра ЦП - используются для декодирования новых повторов (доступные ядра ЦП: {0})</value>
+  </data>
+  <data name="SC2Profiles (deactivate the profiles that should not be decoded and uploaded)" xml:space="preserve">
+    <value>SC2Profiles (отключить профили, которые не должны быть декодированы и загружены)</value>
+  </data>
+  <data name="Custom folders with replays to be decoded and uploaded" xml:space="preserve">
+    <value>Пользовательские папки с повторами для декодирования и загрузки</value>
+  </data>
+  <data name="Replay Start Name" xml:space="preserve">
+    <value>Имя начала повтора</value>
+  </data>
+  <data name="Replay Start Name desc" xml:space="preserve">
+    <value>Начало имени файла повторов Direct Strike - Значение по умолчанию - 'Direct Strike', но может отличаться в зависимости от вашего языка</value>
+  </data>
+  <data name="Replays on Ignore list (skipped during decoding and uploading)" xml:space="preserve">
+    <value>Повторы в списке игнорирования (пропущены при декодировании и загрузке)</value>
+  </data>
+  <data name="UnIgnore" xml:space="preserve">
+    <value>Отменить игнорирование</value>
+  </data>
+  <data name="Reset Ignorelist" xml:space="preserve">
+    <value>Сбросить список игнорирования</value>
+  </data>
+  <data name="App folder" xml:space="preserve">
+    <value>Папка приложения</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Сохранить (Sozhranit')</value>
+  </data>
+  <data name="Undo" xml:space="preserve">
+    <value>Отменить</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Сбросить</value>
+  </data>
+  <data name="Backup" xml:space="preserve">
+    <value>Резервная копия</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>Восстановить</value>
+  </data>
+  <data name="Setting changes not saved!" xml:space="preserve">
+    <value>Изменения настроек не сохранены!</value>
+  </data>
+  <data name="Would you like to save the changes, now?" xml:space="preserve">
+    <value>Хотите сохранить изменения сейчас?</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Да</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Нет</value>
+  </data>
+  <data name="Settings changes undone." xml:space="preserve">
+    <value>Изменения настроек отменены.</value>
+  </data>
+  <data name="Settings reset to default." xml:space="preserve">
+    <value>Настройки сброшены на значения по умолчанию.</value>
+  </data>
+  <data name="Settings saved." xml:space="preserve">
+    <value>Настройки сохранены.</value>
+  </data>
+  <data name="Backup successful." xml:space="preserve">
+    <value>Резервное копирование выполнено успешно.</value>
+  </data>
+  <data name="Backup canceled." xml:space="preserve">
+    <value>Резервное копирование отменено.</value>
+  </data>
+  <data name="Backup failed." xml:space="preserve">
+    <value>Резервное копирование не удалось.</value>
+  </data>
+  <data name="Backup restore successful." xml:space="preserve">
+    <value>Восстановление резервной копии выполнено успешно.</value>
+  </data>
+  <data name="Backup restore canceled." xml:space="preserve">
+    <value>Восстановление резервной копии отменено.</value>
+  </data>
+  <data name="Backup restore failed." xml:space="preserve">
+    <value>Восстановление резервной копии не удалось.</value>
+  </data>
+  <data name="Activate" xml:space="preserve">
+    <value>Активировать</value>
+  </data>
+  <data name="Deactivate" xml:space="preserve">
+    <value>Деактивировать</value>
+  </data>
+  <data name="Add Folder" xml:space="preserve">
+    <value>Добавить папку</value>
+  </data>
+  <data name="Thank you for using this app!" xml:space="preserve">
+    <value>Спасибо за использование этого приложения!</value>
+  </data>
+  <data name="If you love Direct Strike and like to help balance the game, it would be very nice if the statistics were uploaded from time to time." xml:space="preserve">
+    <value>Если вы любите Direct Strike и хотите помочь балансировать игру, было бы очень хорошо, если статистика время от времени загружалась.</value>
+  </data>
+  <data name="Would you like to allow the application to upload your Direct Strike replay data to {0}?" xml:space="preserve">
+    <value>Хотите разрешить приложению загружать данные повторов Direct Strike на {0}?</value>
+  </data>
+  <data name="Allow Uploads" xml:space="preserve">
+    <value>Разрешить загрузки</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="Thank you for allowing uploading! You can change the credentials in the settings at any time." xml:space="preserve">
+    <value>Спасибо за разрешение загрузки! Вы можете изменить учетные данные в любое время в настройках.</value>
+  </data>
+  <data name="Error Replays" xml:space="preserve">
+    <value>Ошибка повторов</value>
+  </data>
+  <data name="Add All to Ignore List" xml:space="preserve">
+    <value>Добавить все в список игнорирования</value>
+  </data>
+  <data name="Ignore" xml:space="preserve">
+    <value>Игнорировать</value>
+  </data>
+  <data name="Replays added to the ignore list. You can manage the list in the Settings." xml:space="preserve">
+    <value>Повторы добавлены в список игнорирования. Вы можете управлять списком в настройках.</value>
+  </data>
+  <data name="Replay added to the ignore list. You can manage the list in the Settings." xml:space="preserve">
+    <value>Повтор добавлен в список игнорирования. Вы можете управлять списком в настройках.</value>
+  </data>
+  <data name="New Version Available!" xml:space="preserve">
+    <value>Доступна новая версия!</value>
+  </data>
+  <data name="Would you like to update now?" xml:space="preserve">
+    <value>Хотите обновить сейчас?</value>
+  </data>
+  <data name="Update Failed" xml:space="preserve">
+    <value>Обновление не удалось</value>
+  </data>
+  <data name="Your version is up to date." xml:space="preserve">
+    <value>Ваша версия обновлена.</value>
+  </data>
+  <data name="Recalculate Ratings" xml:space="preserve">
+    <value>Пересчитать рейтинги</value>
+  </data>
+  <data name="Starting local rating recalculation" xml:space="preserve">
+    <value>Начать пересчет локального рейтинга</value>
+  </data>
+  <data name="Ratings recalculated." xml:space="preserve">
+    <value>Рейтинги пересчитаны.</value>
+  </data>
+  <data name="Already decoding." xml:space="preserve">
+    <value>Уже декодируется.</value>
+  </data>
+  <data name="New replay detected." xml:space="preserve">
+    <value>Обнаружен новый повтор.</value>
+  </data>
+  <data name="No new replays found." xml:space="preserve">
+    <value>Новые повторы не найдены.</value>
+  </data>
+  <data name="Decoding canceled." xml:space="preserve">
+    <value>Декодирование отменено.</value>
+  </data>
+  <data name="Start decoding." xml:space="preserve">
+    <value>Начать декодирование.</value>
+  </data>
+  <data name="Fan Project for analyzing Starcraft II Direct Strike Replays" xml:space="preserve">
+    <value>Фан-проект для анализа повторов Starcraft II Direct Strike</value>
+  </data>
+  <data name="All code including this app is open source (GPL-v3) and available on GitHub" xml:space="preserve">
+    <value>Весь код, включая это приложение, является открытым исходным кодом (GPL-v3) и доступен на GitHub</value>
+  </data>
+  <data name="Project History" xml:space="preserve">
+    <value>История проекта</value>
+  </data>
+  <data name="Some time ago I 'briefly' described how the project came about and how it developed in the beginning" xml:space="preserve">
+    <value>Некоторое время назад я 'кратко' описал, как проект появился и как он развивался в начале</value>
+  </data>
+  <data name="For me, the project is a very good opportunity to try out the latest technologies, especially dotnet core, entity framework core, and Blazor" xml:space="preserve">
+    <value>Для меня проект - отличная возможность попробовать последние технологии, особенно dotnet core, entity framework core и Blazor</value>
+  </data>
+  <data name="Contact" xml:space="preserve">
+    <value>Контакты</value>
+  </data>
+  <data name="If you have any questions about the project or if you're interested in similar work, feel free to reach out:" xml:space="preserve">
+    <value>Если у вас есть вопросы по проекту или вас интересует похожая работа, не стесняйтесь связаться:</value>
+  </data>
+  <data name="Send email" xml:space="preserve">
+    <value>Отправить письмо</value>
+  </data>
+  <data name="Players" xml:space="preserve">
+    <value>Игроки</value>
+  </data>
+</root>

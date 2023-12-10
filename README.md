@@ -30,7 +30,15 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v2.0.0</summary>
+<details open="open"><summary>v2.0.2</summary>
+
+>- App localization for de, en, es, fr, ru and last but not least uk.
+>- Replay middle chart with optional tier/refiniery info
+>- ChartJs v4.4.1 - pax.BlazorChartJs v0.8.2
+
+</details>
+
+<details><summary>v2.0.0</summary>
 
 >- Upgrade to dotnet 8
 

@@ -1,5 +1,8 @@
 ﻿@page "/"
+@using Microsoft.Extensions.Localization
+@using dsstats.localization
 @using dsstats.shared
+@inject IStringLocalizer<DsstatsLoc> Loc
 
 @if (DEBUG)
 {
@@ -14,15 +17,15 @@
 <div class="btn-group border border-3 rounded-2 border-light p-2 bgchart">
     @if (dsstatsService.Decoding)
     {
-        <button type="button" class="btn btn-outline-warning" @onclick="e => dsstatsService.CancelDecoding()">StopDecoding</button>
+        <button type="button" class="btn btn-outline-warning" @onclick="e => dsstatsService.CancelDecoding()">@Loc["StopDecoding"]</button>
     }
     else
     {
-        <button type="button" class="btn btn-outline-danger" @onclick="dsstatsService.DecodeNewReplays">Decode</button>
+        <button type="button" class="btn btn-outline-danger" @onclick="dsstatsService.DecodeNewReplays">@Loc["Decode"]</button>
 
     }
-    <button type="button" class="btn btn-outline-success" @onclick="e => dsstatsService.ScanForNewReplays()">Scan</button>
-    <button type="button" class="btn btn-outline-info" @onclick="Upload">Upload</button>
+    <button type="button" class="btn btn-outline-success" @onclick="e => dsstatsService.ScanForNewReplays()">@Loc["Scan"]</button>
+    <button type="button" class="btn btn-outline-info" @onclick="Upload">@Loc["Upload"]</button>
 </div>
 <div class="row">
     <div class="col-auto">
@@ -32,16 +35,22 @@
                 <div class="p-2">
                     @if (isLatestreplay)
                     {
-                        <h4 class="text-warning">Latest Replay</h4>
+                        <h4 class="text-warning">@Loc["Latest Replay"]</h4>
                     }
                     else
                     {
-                        <h4 class="text-warning">Recent Replay</h4>
+                        <h4 class="text-warning">@Loc["Recent Replay"]</h4>
                     }
                 </div>
             </div>
-            <dsstats.razorlib.Replays.ReplayComponent Replay="currentReplay" IsCloseable="false" IsScrollable="true"
-                                                      OnScrollRequest="LoadNextReplay" />
+            <dsstats.razorlib.Replays.ReplayComponent @ref="replayComponent" Replay="currentReplay" IsCloseable="false" IsScrollable="true"
+            OnScrollRequest="LoadNextReplay" />
+        }
+        else
+        {
+            <div class="mt-4 bgchart p-2 border rounded">
+                <h3><a href="help">@Loc["Getting started"] <span class="bi bi-question-circle text-white"></span></a></h3>
+            </div>
         }
     </div>
     <div class="col-auto">
@@ -53,7 +62,7 @@
                 aria-controls="SessionComponent"
                 @onclick="e => showSessionProgress = !showSessionProgress">
             <span class="bi @(showSessionProgress ? "bi-chevron-down" : "bi-chevron-up")"></span>
-            Session Progress
+            @Loc["Session Progress"]
         </button>
         <div class="collapse show" id="SessionComponent">
             @if (showSessionProgress)
@@ -74,7 +83,7 @@
                 aria-controls="AppPlayers"
                 @onclick="e => showPlayers = !showPlayers">
             <span class="bi @(showPlayers ? "bi-chevron-down" : "bi-chevron-up")"></span>
-            Players
+            @Loc["Players"]
         </button>
     </div>
     <div class="collapse show" id="AppPlayers">

@@ -1,10 +1,13 @@
 ﻿@page "/ratings"
+@using Microsoft.Extensions.Localization
+@using dsstats.localization
 @using dsstats.shared
 @using dsstats.shared.Interfaces
 @using dsstats.razorlib.Players
 @using dsstats.ratings.lib
 @inject IRatingService ratingService
 @inject IToastService toastService
+@inject IStringLocalizer<DsstatsLoc> Loc
 <div>
     <div class="d-flex">
         <div>
@@ -21,7 +24,7 @@
         </div>
 
         <div>
-            <button type="button" class="btn btn-sm btn-outline-warning" @onclick="Recalc">Recalculate Ratings</button>
+            <button type="button" class="btn btn-sm btn-outline-warning" @onclick="Recalc">@Loc["Recalculate Ratings"]</button>
         </div>
     </div>
 </div>
@@ -45,13 +48,13 @@
         }
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
-        toastService.ShowWarning("Starting local rating recalculation");
+        toastService.ShowWarning(Loc["Starting local rating recalculation"]);
         await Task.Run(async () =>
         {
             await ratingService.ProduceRatings(RatingCalcType.Dsstats, true);
         });
-        toastService.ShowSuccess("Ratings recalculated.");
-        isLoading = false;
+        toastService.ShowSuccess(Loc["Ratings recalculated."]);
+    isLoading = false;
         await InvokeAsync(() => StateHasChanged());
     }
 }

@@ -1,13 +1,18 @@
 ﻿@page "/settings"
 
 @using CommunityToolkit.Maui.Storage;
+@using Microsoft.Extensions.Localization
+@using dsstats.localization
 @using dsstats.maui8.Services;
+@using dsstats.shared.Interfaces
 @inject ConfigService configService
 @inject IFolderPicker folderPicker
 @inject IFilePicker filePicker
 @inject NavigationManager NavigationManager
 @inject IToastService toastService
 @inject BackupService backupService
+@inject IStringLocalizer<DsstatsLoc> Loc;
+@inject IRemoteToggleService remoteToggleService
 @implements IDisposable
 
 <PageTitle>Config</PageTitle>
@@ -18,25 +23,25 @@
             <div class="d-inline-block p-2 bgchart border rounded">
                 <div class="form-check form-switch">
                     <label class="form-check-label">
-                        Upload Replays to <a href="https://dsstats.pax77.org">https://dsstats.pax77.org</a>
+                        @Loc["Upload Replays to {0}", "dsstats.pax77.org"] <a href="https://dsstats.pax77.org">Link</a>
                         <InputCheckbox class="form-check-input" @bind-Value="options.UploadCredential" />
                     </label>
                 </div>
                 <div class="form-check form-switch">
                     <label class="form-check-label">
-                        Auto decode - detect new replays and start decoding after each game
+                        @Loc["Auto decode - detect new replays and start decoding after each game"]
                         <InputCheckbox class="form-check-input" @bind-Value="options.AutoDecode" />
                     </label>
                 </div>
                 <div class="form-check form-switch">
                     <label class="form-check-label">
-                        Check for updates on App start
+                        @Loc["Check for updates on App start"]
                         <InputCheckbox class="form-check-input" @bind-Value="options.CheckForUpdates" />
                     </label>
                 </div>
                 <label class="col-form-label">
                     <InputNumber class="form-control" @bind-Value="options.CPUCores" style="max-width: 150px;"></InputNumber>
-                    CPU Cores - used for decoding new replays (available CPU-Cores: @Environment.ProcessorCount)
+                    @Loc["CPU Cores - used for decoding new replays (available CPU-Cores: {0})", Environment.ProcessorCount]
                 </label>
             </div>
         </div>
@@ -46,7 +51,7 @@
                     <table class="tptable table table-sm w-auto">
                         <thead class="user-select-none">
                             <tr>
-                                <th colspan="6">SC2Profiles (deactivate the profiles that should not be decoded and uploaded)</th>
+                                <th colspan="6">@Loc["SC2Profiles (deactivate the profiles that should not be decoded and uploaded)"]</th>
                             </tr>
                             <tr>
                                 <th>Name</th>
@@ -70,7 +75,7 @@
                                     <td>
                                         <button type="button" class="@(ignore ? "btn btn-sm btn-success" : "btn btn-sm btn-outline-danger")"
                                             @onclick:stopPropagation @onclick="e => DeOrActivateProfile(profile, ignore)">
-                                            @(ignore ? "Activate" : "Deactivate")
+                                            @(ignore ? Loc["Activate"] : Loc["Deactivate"])
                                         </button>
                                     </td>
                                 </tr>
@@ -86,7 +91,7 @@
                     <table class="tptable table table-sm w-auto">
                         <thead>
                             <tr>
-                                <th>Custom folders with replays to be decoded and uploaded</th>
+                                <th>@Loc["Custom folders with replays to be decoded and uploaded"]</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -102,7 +107,7 @@
                         <tfoot>
                             <tr>
                                 <td colspan="2">
-                                    <button type="button" class="btn btn-sm btn-primary" @onclick="e => PickFolder()">Add Folder</button>
+                                    <button type="button" class="btn btn-sm btn-primary" @onclick="e => PickFolder()">@Loc["Add Folder"]</button>
                                 </td>
                             </tr>
                         </tfoot>
@@ -113,9 +118,9 @@
         <div>
             <div class="d-inline-block p-2 bgchart border rounded mt-2">
                 <label class="col-form-label">
-                    Replay Start Name
+                    @Loc["Replay Start Name"]
                     <InputText class="form-control" style="max-width: 400px;" @bind-Value="options.ReplayStartName"></InputText>
-                    <small>The beginning of the filename of the Direct Strike replays - The default value is "Direct Strike" but might be different depending on your language</small>
+                    <small>@Loc["Replay Start Name desc"]</small>
                 </label>
             </div>
         </div>
@@ -123,7 +128,7 @@
         {
             <div>
                 <div class="d-inline-block p-2 bgchart border rounded mt-2">
-                    <h4>Replays on Ignore list (skipped during decoding and uploading)</h4>
+                    <h4>@Loc["Replays on Ignore list (skipped during decoding and uploading)"]</h4>
                     <div class="tableFixHead table-responsive" style="max-height: 600px; overflow: auto;">
                         <table class="tptable table table-sm w-auto">
                             <thead>
@@ -140,7 +145,7 @@
                                         <td>
                                             <button type="button" class="btn btn-sm btn-outline-warning"
                                                 @onclick="e => RemoveIgnoreReplay(replayPath)">
-                                                UnIgnore
+                                                @Loc["UnIgnore"]
                                             </button>
                                         </td>
                                     </tr>
@@ -151,7 +156,7 @@
                     <div>
                         <button type="button" class="btn btn-outline-warning"
                                 @onclick="RemoveAllIgnoreReplays">
-                            Reset Ignorelist
+                            @Loc["Reset Ignorelist"]
                         </button>
                     </div>
                 </div>
@@ -163,7 +168,7 @@
 <div>
     <div class="d-inline-block p-2 bgchart border rounded mt-2">
         <label class="col-form-label">
-            App folder
+            @Loc["App folder"]
             <input type="text" style="min-width: 800px;" class="form-control" disabled value="@Path.GetDirectoryName(ConfigService.ConfigFile)" />
         </label>
     </div>
@@ -172,15 +177,15 @@
     <div class="row">
         <div class="col-auto">
             <div class="btn-group">
-                <button type="button" class="btn btn-success" @onclick="SaveSettings">Save</button>
-                <button type="button" class="btn btn-warning" @onclick="Undo">Undo</button>
-                <button type="button" class="btn btn-danger" @onclick="HardReset">Reset</button>
+                <button type="button" class="btn btn-success" @onclick="SaveSettings">@Loc["Save"]</button>
+                <button type="button" class="btn btn-warning" @onclick="Undo">@Loc["Undo"]</button>
+                <button type="button" class="btn btn-danger" @onclick="HardReset">@Loc["Reset"]</button>
             </div>
         </div>
         <div class="col-auto">
             <div class="btn-group">
-                <button type="button" class="btn btn-primary" @onclick="Backup">Backup</button>
-                <button type="button" class="btn btn-dark" @onclick="Restore">Restore</button>
+                <button type="button" class="btn btn-primary" @onclick="Backup">@Loc["Backup"]</button>
+                <button type="button" class="btn btn-dark" @onclick="Restore">@Loc["Restore"]</button>
             </div>
         </div>
         <div class="col-auto">
@@ -211,6 +216,7 @@
         editContext = new(options);
         editContext.OnFieldChanged += FieldChanged;
         NavigationManager.LocationChanged += LocationChanged;
+        remoteToggleService.CultureChanged += CultureChanged;
     }
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
@@ -232,12 +238,19 @@
 
         if (Application.Current != null && Application.Current.MainPage != null)
         {
-            bool answer = await Application.Current.MainPage.DisplayAlert("Setting changes not saved!", "Would you like to save the changes, now?", "Yes", "No");
+            bool answer = await Application.Current.MainPage
+                .DisplayAlert(Loc["Setting changes not saved!"],
+                    Loc["Would you like to save the changes, now?"], Loc["Yes"], Loc["No"]);
             if (answer)
             {
                 SaveSettings();
             }
         }
+    }
+
+    private void CultureChanged(object? sender, EventArgs e)
+    {
+        InvokeAsync(() => StateHasChanged());
     }
 
     private async Task PickFolder(CancellationToken cancellationToken = default)
@@ -290,7 +303,7 @@
     {
         options = configService.AppOptions with { };
         hasChanges = false;
-        toastService.ShowSuccess("Settings changes undone.");
+        toastService.ShowSuccess(Loc["Settings changes undone."]);
     }
 
     private void HardReset()
@@ -298,7 +311,7 @@
         configService.InitOptions();
         options = configService.AppOptions with { };
         hasChanges = true;
-        toastService.ShowWarning("Settings reset to default");
+        toastService.ShowWarning(Loc["Settings reset to default."]);
     }
 
 
@@ -306,7 +319,7 @@
     {
         configService.UpdateConfig(options);
         hasChanges = false;
-        toastService.ShowSuccess("Settings saved.");
+        toastService.ShowSuccess(Loc["Settings saved."]);
     }
 
     public async Task Backup()
@@ -317,15 +330,15 @@
 
         if (result == BackupResult.Success)
         {
-            toastService.ShowSuccess("Backup successful.");
+            toastService.ShowSuccess(Loc["Backup successful."]);
         }
         else if (result == BackupResult.Canceled)
         {
-            toastService.ShowInfo("Backup canceled.");
+            toastService.ShowInfo(Loc["Backup canceled."]);
         }
         else
         {
-            toastService.ShowError("Backup failed.");
+            toastService.ShowError(Loc["Backup failed."]);
         }
 
         isLoading = false;
@@ -344,7 +357,7 @@
             var result = await backupService.Restore(pickResult.FullPath);
             if (result == RestoreResult.Success)
             {
-                toastService.ShowSuccess("Backup restore successful.");
+                toastService.ShowSuccess(Loc["Backup restore successful."]);
                 editContext.OnFieldChanged -= FieldChanged;
                 options = configService.SetupConfig() with { };
                 configService.UpdateConfig(options);
@@ -354,11 +367,11 @@
             }
             else if (result == RestoreResult.Canceled)
             {
-                toastService.ShowInfo("Backup restore canceled.");
+                toastService.ShowInfo(Loc["Backup restore canceled."]);
             }
             else
             {
-                toastService.ShowError("Backup restore failed.");
+                toastService.ShowError(Loc["Backup restore failed."]);
             }
         }
     }
@@ -367,5 +380,6 @@
     {
         NavigationManager.LocationChanged -= LocationChanged;
         editContext.OnFieldChanged -= FieldChanged;
+        remoteToggleService.CultureChanged -= CultureChanged;
     }
 }

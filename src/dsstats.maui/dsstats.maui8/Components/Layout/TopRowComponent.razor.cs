@@ -1,9 +1,12 @@
 using Blazored.Toast.Services;
+using dsstats.localization;
 using dsstats.maui8.Services;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.Extensions.Localization;
 using System.Collections.Concurrent;
+using System.Globalization;
 
 namespace dsstats.maui8.Components.Layout;
 
@@ -21,6 +24,8 @@ public partial class TopRowComponent : ComponentBase, IDisposable
     public IToastService toastService { get; set; } = default!;
     [Inject]
     public IUpdateService updateService { get; set; } = default!;
+    [Inject]
+    public IStringLocalizer<DsstatsLoc> Loc { get; set; } = default!;
 
     string currentLocation = "Home";
     DecodeInfoEventArgs? decodeInfo = null;
@@ -29,9 +34,17 @@ public partial class TopRowComponent : ComponentBase, IDisposable
     DecodeErrorModal? decodeErrorModal;
     UploadAskModal? uploadAskModal;
     int updateDownloadProgress = 0;
+    CultureInfo Culture = new CultureInfo("en");
+    CultureInfo defaultCulture = new CultureInfo("iv");
 
     protected override void OnInitialized()
     {
+        Culture = new CultureInfo(configService.AppOptions.Culture);
+        if (!configService.SupportedCultures.Contains(Culture))
+        {
+            Culture = defaultCulture;
+        }
+
         dsstatsService.ScanStateChanged += DssstatsService_ScanStateChanged;
         dsstatsService.DecodeStateChanged += DssstatsService_DecodeStateChanged;
         NavigationManager.LocationChanged += NavigationManager_LocationChanged;
@@ -131,7 +144,7 @@ public partial class TopRowComponent : ComponentBase, IDisposable
         {
             if (Application.Current != null && Application.Current.MainPage != null)
             {
-                bool answer = await Application.Current.MainPage.DisplayAlert("New Version Available!", "Would you like to update now?", "Yes", "No");
+                bool answer = await Application.Current.MainPage.DisplayAlert(Loc["New Version Available!"], Loc["Would you like to update now?"], Loc["Yes"], Loc["No"]);
                 if (answer)
                 {
                     updateService.UpdateProgress += UpdateService_UpdateProgress;
@@ -139,14 +152,14 @@ public partial class TopRowComponent : ComponentBase, IDisposable
                     if (!updateResult)
                     {
                         updateService.UpdateProgress -= UpdateService_UpdateProgress;
-                        await Application.Current.MainPage.DisplayAlert("Update Failed", ":(", "Ok");
+                        await Application.Current.MainPage.DisplayAlert(Loc["Update Failed"], ":(", "Ok");
                     }
                 }
             }
         }
         else if (!init)
         {
-            toastService.ShowInfo("Your version is up to date.");
+            toastService.ShowInfo(Loc["Your version is up to date."]);
         }
     }
 
@@ -154,6 +167,17 @@ public partial class TopRowComponent : ComponentBase, IDisposable
     {
         updateDownloadProgress = e.Progress;
         InvokeAsync(() => StateHasChanged());
+    }
+
+    private void SetCulture(CultureInfo cultureInfo)
+    {
+        configService.AppOptions.Culture = cultureInfo.Name;
+        configService.UpdateConfig(configService.AppOptions);
+
+        CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+        CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+
+        remoteToggleService.SetCulture(cultureInfo.Name);
     }
 
     public record DecodeState

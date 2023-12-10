@@ -8,62 +8,60 @@ public partial class DsstatsService
 {
     public async Task<List<string>> ScanForNewReplays(bool ordered = false)
     {
-        var dbReplayPaths = await GetDbReplayPaths();
-        var hdReplayPaths = await GetHdReplayPaths(ordered);
+        using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var configService = scope.ServiceProvider.GetRequiredService<ConfigService>();
 
-        var newReplayPaths = hdReplayPaths.Except(dbReplayPaths).ToList();
+        var dbReplayPaths = await GetDbReplayPaths(context);
+        var hdReplayPaths = await GetHdReplayPaths(configService.GetReplayFolders(),
+                                                   configService.AppOptions.ReplayStartName,
+                                                   ordered);
+        hdReplayPaths.ExceptWith(configService.AppOptions.IgnoreReplays);
+        hdReplayPaths.ExceptWith(dbReplayPaths);
 
-        NewReplaysCount = newReplayPaths.Count;
+        NewReplaysCount = hdReplayPaths.Count;
         DbReplaysCount = dbReplayPaths.Count;
 
         OnScanStateChanged(new() { DbReplays = DbReplaysCount, NewReplays = NewReplaysCount });
 
-        return newReplayPaths;
+        return hdReplayPaths.ToList();
     }
 
-    private async Task<List<string>> GetDbReplayPaths()
+    private async Task<List<string>> GetDbReplayPaths(ReplayContext context)
     {
-        using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
         return await context.Replays
             .Select(s => s.FileName)
             .ToListAsync();
     }
 
-    private async Task<List<string>> GetHdReplayPaths(bool ordered)
+    private async Task<HashSet<string>> GetHdReplayPaths(List<string> folders, string filenameStart, bool ordered)
     {
-        using var scope = scopeFactory.CreateAsyncScope();
-        var configService = scope.ServiceProvider.GetRequiredService<ConfigService>();
-
-        var folders = configService.GetReplayFolders();
-        var filenameStart = configService.AppOptions.ReplayStartName;
-
-        var replayPaths = new List<string>();
+        var replayInfos = new List<FileInfo>();
 
         await Task.Run(() =>
         {
             foreach (var folder in folders)
             {
-                var replayFiles = Directory.GetFiles(folder, $"{filenameStart}*.SC2Replay", SearchOption.TopDirectoryOnly);
+                if (!Directory.Exists(folder))
+                {
+                    continue;
+                }
 
-                replayFiles = replayFiles.Where(file => !File.GetAttributes(file).HasFlag(FileAttributes.Directory)).ToArray();
-
-                replayPaths.AddRange(replayFiles);
+                var fileInfos = new DirectoryInfo(folder)
+                    .GetFiles($"{filenameStart}*.SC2Replay", SearchOption.AllDirectories);
+                replayInfos.AddRange(fileInfos);
             }
         });
 
         if (ordered)
         {
-            replayPaths = replayPaths.OrderByDescending(path =>
-            {
-                var fileInfo = new FileInfo(path);
-                return fileInfo.CreationTime;
-            }).ToList();
+            return replayInfos
+                .OrderByDescending(o => o.CreationTime).Select(s => s.FullName)
+                .ToHashSet();
         }
-
-        return replayPaths
-            .Except(configService.AppOptions.IgnoreReplays)
-            .ToList();
+        else
+        {
+            return replayInfos.Select(s => s.FullName).ToHashSet();
+        }
     }
 }

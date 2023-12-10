@@ -63,6 +63,8 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Localization" Version="2.2.0" />
+        <PackageReference Include="Microsoft.Extensions.Localization" Version="8.0.0" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
@@ -79,6 +81,7 @@
       <ProjectReference Include="..\..\dsstats.ratings.lib\dsstats.ratings.lib.csproj" />
       <ProjectReference Include="..\..\dsstats.razorlib\dsstats.razorlib.csproj" />
       <ProjectReference Include="..\..\dsstats.shared\dsstats.shared.csproj" />
+      <ProjectReference Include="..\dsstats.localization\dsstats.localization.csproj" />
       <ProjectReference Include="..\pax.dsstats.parser\pax.dsstats.parser.csproj" />
       <ProjectReference Include="..\SqliteMigrations\SqliteMigrations.csproj" />
     </ItemGroup>

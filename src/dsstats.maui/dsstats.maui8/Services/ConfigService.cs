@@ -1,5 +1,5 @@
 ﻿using dsstats.shared;
-using System.Security.Permissions;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -10,6 +10,16 @@ public partial class ConfigService
     public static readonly string ConfigFile = Path.Combine(FileSystem.Current.AppDataDirectory, "config.json");
     public AppOptions AppOptions { get; private set; }
     private object lockobject = new();
+
+    public List<CultureInfo> SupportedCultures { get; } = new()
+    {
+        new CultureInfo("de"),
+        new CultureInfo("en"),
+        new CultureInfo("es"),
+        new CultureInfo("fr"),
+        new CultureInfo("ru"),
+        new CultureInfo("uk"),
+    };
 
     public ConfigService()
     {
@@ -53,6 +63,11 @@ public partial class ConfigService
             .Distinct()
             .ToList();
 
+        if (string.IsNullOrEmpty(AppOptions.Culture))
+        {
+            AppOptions.Culture = "iv";
+        }
+
         return AppOptions;
     }
 
@@ -79,7 +94,8 @@ public partial class ConfigService
         lock (lockobject)
         {
             AppOptions = config with { };
-            var json = JsonSerializer.Serialize(new AppConfig() { AppOptions = AppOptions });
+            var json = JsonSerializer.Serialize(new AppConfig() { AppOptions = AppOptions },
+                new JsonSerializerOptions() { WriteIndented = true });
             File.WriteAllText(ConfigFile, json);
 
             AppOptions.ActiveProfiles = AppOptions.Sc2Profiles
@@ -91,6 +107,8 @@ public partial class ConfigService
 
     public void InitOptions()
     {
+        var currentCulture = CultureInfo.CurrentUICulture;
+        AppOptions.Culture = currentCulture.TwoLetterISOLanguageName;
         UpdateConfig(AppOptions);
     }
 
