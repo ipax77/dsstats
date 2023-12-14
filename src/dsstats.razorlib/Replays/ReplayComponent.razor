@@ -80,6 +80,15 @@
                                     </label>
                                 </div>
                             }
+                            @if (Replay.ReplayPlayers.Any(a => a.Duration < Replay.Duration - 90))
+                            {
+                                <div class="form-check form-switch">
+                                    <label class="form-check-label" style="user-select: none;">
+                                        Leavers
+                                        <input type="checkbox" class="form-check-input" @bind="showLeavers" @bind:after="@(() => replayMiddleChart?.AddLeaverAnnotations(showLeavers))" />
+                                    </label>
+                                </div>
+                            }
                         </fieldset>
                     </form>
                 </div>
@@ -295,6 +304,7 @@
     ReplayMiddleChart? replayMiddleChart;
     bool showTierUps = false;
     bool showRefineries = false;
+    bool showLeavers = false;
 
     protected override void OnParametersSet()
     {
@@ -332,6 +342,7 @@
         showMiddleChart = false;
         showTierUps = false;
         showRefineries = false;
+        showLeavers = false;
         Breakpoint = Breakpoint.All;
         breakpointsCount = Math.Min(4, Replay.ReplayPlayers.Select(s => s.Spawns.Count).Max());
         buildPlayers.Clear();
@@ -368,6 +379,7 @@
         {
             showTierUps = false;
             showRefineries = false;
+            showLeavers = false;
         }
     }
 

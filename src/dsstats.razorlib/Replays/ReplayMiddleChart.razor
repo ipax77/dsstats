@@ -197,52 +197,6 @@
         }
     }
 
-    public void AddTierUpgradeArbitraryLines(bool showHide)
-    {
-        if (showHide)
-        {
-            List<ArbitraryLineConfig> tierUps = new();
-
-            foreach (var rp in ReplayPlayers)
-            {
-                if (string.IsNullOrEmpty(rp.TierUpgrades))
-                {
-                    continue;
-                }
-
-                DateTimeOffset date = new DateTime(1970, 1, 1);
-
-                var rpUps = rp.TierUpgrades.Split('|', StringSplitOptions.RemoveEmptyEntries);
-
-                for (int i = 0; i < rpUps.Length; i++)
-                {
-                    tierUps.Add(new()
-                        {
-                            XPosition = (int)date.Add(TimeSpan.FromSeconds(Convert.ToInt32(int.Parse(rpUps[i]) / 22.4))).ToUnixTimeMilliseconds(),
-                            ArbitraryLineColor = "blue",
-                            Text = $"Tier{i + 2} {rp.Race} #{rp.GamePos}"
-                        });
-                }
-            }
-
-            if (chartJsConfig.Options?.Plugins?.ArbitraryLines is not null)
-            {
-                tierUps.AddRange(chartJsConfig.Options.Plugins.ArbitraryLines);
-                chartJsConfig.Options.Plugins.ArbitraryLines = tierUps;
-                chartJsConfig.UpdateChartOptions();
-            }
-        }
-        else
-        {
-            if (chartJsConfig.Options?.Plugins?.ArbitraryLines is not null)
-            {
-                var tierUps = chartJsConfig.Options.Plugins.ArbitraryLines.Where(x => x.ArbitraryLineColor == "blue");
-                chartJsConfig.Options.Plugins.ArbitraryLines = chartJsConfig.Options.Plugins.ArbitraryLines.Except(tierUps).ToList();
-                chartJsConfig.UpdateChartOptions();
-            }
-        }
-    }
-
     public void AddTierUpgradeAnnotations(bool showHide)
     {
 #pragma warning disable CS8602
@@ -288,8 +242,6 @@
 
             if (chartJsConfig.Options?.Plugins is not null)
             {
-                // int xMax = (int)(new DateTimeOffset(new DateTime(1970, 1, 1).AddSeconds(MiddleInfo.Duration)).ToUnixTimeMilliseconds());
-
                 Dictionary<string, object> chartAnnotations = new();
 
                 int i = 0;
@@ -302,12 +254,6 @@
                     {
                         j = 0;
                     }
-
-                    // if (Math.Abs(Math.Abs(a.XValue) - Math.Abs(xMax)) < 60000)
-                    // {
-                    //     a.Rotation = -90;
-                    //     a.XAdjust = -100;
-                    // }
 
                     prevX = a.XValue;
                     a.YAdjust = -50 - (j * 24);
@@ -361,7 +307,7 @@
 
             foreach (var rp in ReplayPlayers)
             {
-                if (string.IsNullOrEmpty(rp.TierUpgrades))
+                if (string.IsNullOrEmpty(rp.Refineries))
                 {
                     continue;
                 }
@@ -396,8 +342,6 @@
 
             if (chartJsConfig.Options?.Plugins is not null)
             {
-                // int xMax = (int)(new DateTimeOffset(new DateTime(1970, 1, 1).AddSeconds(MiddleInfo.Duration)).ToUnixTimeMilliseconds());
-
                 Dictionary<string, object> chartAnnotations = new();
 
                 int i = 0;
@@ -410,12 +354,6 @@
                     {
                         j = 0;
                     }
-
-                    // if (Math.Abs(Math.Abs(a.XValue) - Math.Abs(xMax)) < 60000)
-                    // {
-                    //     a.Rotation = 90;
-                    //     a.XAdjust = -100;
-                    // }
 
                     prevX = a.XValue;
                     a.YAdjust = -50 - (j * 20);
@@ -449,6 +387,101 @@
                 {
                     if (a.Value is LabelAnnotation la
                         && la.Content.Contains(" Gas"))
+                    {
+                        chartJsConfig.Options.Plugins.Annotation.Annotations.Remove(a.Key);
+                    }
+                }
+
+                chartJsConfig.UpdateChartOptions();
+            }
+        }
+#pragma warning restore CS8602
+#pragma warning restore CS8604
+    }
+
+    public void AddLeaverAnnotations(bool showHide)
+    {
+#pragma warning disable CS8602
+#pragma warning disable CS8604
+        if (showHide)
+        {
+            List<LabelAnnotation> annotations = new();
+
+            foreach (var rp in ReplayPlayers)
+            {
+                if (rp.Duration > MiddleInfo.Duration - 90)
+                {
+                    continue;
+                }
+
+                DateTimeOffset date = new DateTime(1970, 1, 1);
+
+                var x = (int)date.Add(TimeSpan.FromSeconds(rp.Duration)).ToUnixTimeMilliseconds();
+                annotations.Add(new()
+                    {
+                        XValue = x,
+                        YValue = 0,
+                        XAdjust = 0,
+                        YAdjust = 0,
+                        Position = "start",
+                        Color = "white",
+                        BackgroundColor = "#BF40BF",
+                        BorderRadius = 10,
+                        Content = $"#{rp.GamePos} left",
+                        Font = new()
+                        {
+                            Size = 12,
+                        }
+                    });
+            }
+
+            if (chartJsConfig.Options?.Plugins is not null)
+            {
+                Dictionary<string, object> chartAnnotations = new();
+
+                int i = 0;
+                int j = 0;
+                int prevX = 0;
+
+                foreach (var a in annotations.OrderBy(o => o.XValue))
+                {
+                    if (prevX != 0 && Math.Abs(Math.Abs(prevX) - Math.Abs(a.XValue)) > 125000)
+                    {
+                        j = 0;
+                    }
+
+                    prevX = a.XValue;
+                    a.YAdjust = -50 - (j * 20);
+                    chartAnnotations.Add($"label{i + 1000}", a);
+                    i++;
+                    j++;
+                }
+
+                if (chartJsConfig.Options.Plugins.Annotation?.Annotations is null)
+                {
+                    chartJsConfig.Options.Plugins.Annotation = new()
+                        {
+                            Annotations = chartAnnotations
+                        };
+                }
+                else
+                {
+                    foreach (var a in chartAnnotations)
+                    {
+                        chartJsConfig.Options.Plugins.Annotation.Annotations.TryAdd(a.Key, a.Value);
+                    }
+                }
+                chartJsConfig.UpdateChartOptions();
+            }
+        }
+        else
+        {
+            if (chartJsConfig.Options?.Plugins?.Annotation?.Annotations is not null)
+            {
+                foreach (var a in chartJsConfig.Options.Plugins.Annotation.Annotations.ToArray())
+                {
+                    if (a.Value is LabelAnnotation la
+                        && la.Content.Contains(" left"))
                     {
                         chartJsConfig.Options.Plugins.Annotation.Annotations.Remove(a.Key);
                     }
