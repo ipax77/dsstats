@@ -5,7 +5,6 @@ namespace dsstats.maui8.Services;
 
 public class StoreUpdateService(ILogger<StoreUpdateService> logger) : IUpdateService
 {
-    private IReadOnlyList<StorePackageUpdate>? availableUpdates = null;
     private readonly object lockobject = new();
 
     public EventHandler<UpdateProgressEvent>? UpdateProgress;
@@ -39,7 +38,7 @@ public class StoreUpdateService(ILogger<StoreUpdateService> logger) : IUpdateSer
         try
         {
             var storeContext = StoreContext.GetDefault();
-            availableUpdates = await storeContext.GetAppAndOptionalStorePackageUpdatesAsync();
+            var availableUpdates = await storeContext.GetAppAndOptionalStorePackageUpdatesAsync();
             ArgumentNullException.ThrowIfNull(availableUpdates);
 
             return availableUpdates.Count > 0;
@@ -53,14 +52,13 @@ public class StoreUpdateService(ILogger<StoreUpdateService> logger) : IUpdateSer
 
     public async Task<bool> UpdateApp()
     {
-        if (availableUpdates is null || availableUpdates.Count == 0)
-        {
-            return true;
-        }
-
         try
         {
             var storeContext = StoreContext.GetDefault();
+
+            var availableUpdates = await storeContext.GetAppAndOptionalStorePackageUpdatesAsync();
+            ArgumentNullException.ThrowIfNull(availableUpdates);
+
             var progress = new Progress<StorePackageUpdateStatus>(progress => 
                 OnUpdateProgress(new() { Progress = Convert.ToInt32(progress.PackageDownloadProgress * 100.0) }));
 
