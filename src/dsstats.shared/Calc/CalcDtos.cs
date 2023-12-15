@@ -56,6 +56,7 @@ public record CalcDto
     public int ReplayId { get; set; }
     public DateTime GameTime { get; init; }
     public int GameMode { get; set; }
+    public int WinnerTeam { get; init; }
     public int Duration { get; init; }
     public bool TournamentEdition { get; init; }
     public bool IsArcade { get; init; }
@@ -66,7 +67,7 @@ public record PlayerCalcDto
 {
     public int ReplayPlayerId { get; init; }
     public int GamePos { get; init; }
-    public int PlayerResult { get; init; }
+    public int PlayerResult { get; set; }
     public bool IsLeaver { get; init; }
     public bool IsMvp { get; init; }
     public int Team { get; init; }

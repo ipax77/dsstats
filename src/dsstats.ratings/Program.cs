@@ -61,6 +61,11 @@ class Program
 
         logger.LogInformation("ratings start.");
 
+        if (args.Length == 0)
+        {
+            args = ["combo"];
+        }
+
         Stopwatch sw = Stopwatch.StartNew();
         if (args.Length == 1)
         {
