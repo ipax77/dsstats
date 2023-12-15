@@ -40,8 +40,6 @@ public partial class RatingService
             BannedPlayers = new Dictionary<PlayerId, bool>().ToFrozenDictionary()
         };
 
-        // var arcadeCalcDtos = await GetArcadeCalcDtos(dsstatsRequest, context);
-
         await CreateMaterializedReplays();
         var arcadeCalcDtos = await GetMaterializedArcadeCalcDtos(dsstatsRequest, context);
 
@@ -51,7 +49,9 @@ public partial class RatingService
         {
             for (int i = 0; i < arcadeCalcDtos.Count; i++)
             {
-                var rating = ratings.lib.Ratings.ProcessReplay(arcadeCalcDtos[i], ratingRequest);
+                var calcDto = arcadeCalcDtos[i];
+                CorrectPlayerResults(calcDto);
+                var rating = ratings.lib.Ratings.ProcessReplay(calcDto, ratingRequest);
                 if (rating is not null)
                 {
                     replayRatings.Add(rating);
@@ -64,7 +64,6 @@ public partial class RatingService
                                                    ratingRequest.ReplayPlayerRatingAppendId);
             replayRatings = new();
             dsstatsRequest.Skip += dsstatsRequest.Take;
-            // arcadeCalcDtos = await GetArcadeCalcDtos(dsstatsRequest, context);
             arcadeCalcDtos = await GetMaterializedArcadeCalcDtos(dsstatsRequest, context);
         }
 
@@ -137,6 +136,7 @@ public partial class RatingService
                         GameTime = r.CreatedAt,
                         Duration = r.Duration,
                         GameMode = (int)r.GameMode,
+                        WinnerTeam = r.WinnerTeam,
                         Players = context.ArcadeReplayPlayers
                             .Where(x => x.ArcadeReplayId == r.ArcadeReplayId)
                             .Select(t => new PlayerCalcDto()
@@ -148,11 +148,18 @@ public partial class RatingService
                                 PlayerId = new(t.ArcadePlayer.ProfileId, t.ArcadePlayer.RealmId, t.ArcadePlayer.RegionId)
                             }).ToList()
                     };
-
         return await query
             .AsSplitQuery()
             .Skip(request.Skip)
             .Take(request.Take)
             .ToListAsync();
+    }
+
+    private static void CorrectPlayerResults(CalcDto calcDto)
+    {
+        foreach (var pl in calcDto.Players)
+        {
+            pl.PlayerResult = pl.Team == calcDto.WinnerTeam ? 1 : 2;
+        }
     }
 }

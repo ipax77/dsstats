@@ -58,6 +58,10 @@ public partial class RatingService
             for (int i = 0; i < comboCalcDtos.Count; i++)
             {
                 var calcDto = comboCalcDtos[i];
+                if (calcDto.IsArcade)
+                {
+                    CorrectPlayerResults(calcDto);
+                }
                 var rating = ratings.lib.Ratings.ProcessReplay(calcDto, ratingRequest);
                 if (rating is not null && !calcDto.IsArcade)
                 {
@@ -245,6 +249,7 @@ public partial class RatingService
                             GameTime = r.CreatedAt,
                             Duration = r.Duration,
                             GameMode = (int)r.GameMode,
+                            WinnerTeam = r.WinnerTeam,
                             TournamentEdition = false,
                             IsArcade = true,
                             Players = context.ArcadeReplayPlayers
