@@ -5,7 +5,8 @@
 
 <PageTitle>dsstats - builds</PageTitle>
 
-<dsstats.razorlib.Builds.BuildsComponent Request="Request" OnRequestChanged="RequestChanged" />
+@* <dsstats.razorlib.Builds.BuildsComponent Request="Request" OnRequestChanged="RequestChanged" /> *@
+<dsstats.razorlib.Builds.Unitmaps.UnitmapComponent Request="mapRequest" />
 
 @code {
     [SupplyParameterFromQuery]
@@ -37,6 +38,8 @@
         FromRating = 1600,
         ToRating = 2500
     };
+
+    UnitmapRequest mapRequest = new();
 
     protected override void OnInitialized()
     {

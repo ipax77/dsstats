@@ -38,6 +38,7 @@ builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<IBuildService, BuildService>();
 builder.Services.AddScoped<ICmdrInfoService, CmdrInfoService>();
 builder.Services.AddScoped<ITourneysService, TourneysService>();
+builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
