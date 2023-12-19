@@ -56,20 +56,22 @@ public sealed record NormalizedArea
 
 public record RotatedArea
 {
-    private double angle;
-    private int offsetX;
-    private int offsetY;
+    private readonly double angle;
+    private readonly int offsetX;
+    private readonly int offsetY;
 
     public RotatedArea(Area area)
     {
         Area = area;
-        angle = Math.Atan2(area.West.Y - area.South.Y, area.West.X - area.South.X);
+        angle = Math.Atan2(Math.Abs(area.West.Y - area.South.Y), Math.Abs(area.West.X - area.South.X));
+        // angle = Math.Atan2(area.South.Y - area.West.Y, area.South.X - area.West.X);
+        // angle = Math.Atan2(area.West.X - area.South.X, area.West.Y - area.South.Y);
 
         // Rotate the points counterclockwise around the origin
-        Point rotatedSouth = RotatePoint(area.South, angle);
-        Point rotatedWest = RotatePoint(area.West, angle);
-        Point rotatedNorth = RotatePoint(area.North, angle);
-        Point rotatedEast = RotatePoint(area.East, angle);
+        Point rotatedSouth = RotatePoint(area.South);
+        Point rotatedWest = RotatePoint(area.West);
+        Point rotatedNorth = RotatePoint(area.North);
+        Point rotatedEast = RotatePoint(area.East);
 
         // Translate the rectangle so that the new West becomes (0, 0)
         offsetX = -rotatedWest.X;
@@ -89,21 +91,11 @@ public record RotatedArea
 
     public Point GetNormalizedPoint(Point areaPoint)
     {
-        // Reverse the translation
-        int reversedX = areaPoint.X - offsetX;
-        int reversedY = areaPoint.Y - offsetY;
-
-        // Reverse the rotation
-        double cosAngle = Math.Cos(-angle);
-        double sinAngle = Math.Sin(-angle);
-
-        int x = (int)(cosAngle * reversedX - sinAngle * reversedY);
-        int y = (int)(sinAngle * reversedX + cosAngle * reversedY);
-
-        return new Point(x, y);
+        var rotatedPoint = RotatePoint(areaPoint);
+        return new(rotatedPoint.X + offsetX, rotatedPoint.Y + offsetY);
     }
 
-    private static Point RotatePoint(Point point, double angle)
+    private Point RotatePoint(Point point)
     {
         // Rotate a point counterclockwise around the origin
         double cosAngle = Math.Cos(angle);
@@ -111,6 +103,18 @@ public record RotatedArea
 
         int x = (int)(cosAngle * point.X - sinAngle * point.Y);
         int y = (int)(sinAngle * point.X + cosAngle * point.Y);
+
+        return new Point(x, y);
+    }
+
+    private Point UnRotatePoint(Point rotatedPoint)
+    {
+        // Rotate a point clockwise around the origin
+        double cosAngle = Math.Cos(-angle);
+        double sinAngle = Math.Sin(-angle);
+
+        int x = (int)(cosAngle * rotatedPoint.X + sinAngle * rotatedPoint.Y);
+        int y = (int)(-sinAngle * rotatedPoint.X + cosAngle * rotatedPoint.Y);
 
         return new Point(x, y);
     }

@@ -72,7 +72,7 @@ else
         }
 
         var module = await moduleTask.Value.ConfigureAwait(false);
-        await module.InvokeVoidAsync("drawGrid", 0, 0, 860, 430, 50, "blue", 1)
+        await module.InvokeVoidAsync("drawGrid", 0, 0, 860, 430, 35, "blue", 1)
             .ConfigureAwait(false);
 
         if (unitmap is null || unitmap.Infos.Count == 0)
@@ -88,16 +88,17 @@ else
         {
             int count = info.UnitCounts.Max(m => m.Value);
             var color = GetColor(count, max);
-            var point = GetScaledPoint(info.Point.X, info.Point.Y,  430, 860);
-            await module.InvokeVoidAsync("drawCellInfo", point.X, point.Y, 50, color)
+            var point = GetScaledPoint(info.Point.X, info.Point.Y, 25, 17, 860, 430);
+            var text = count < max / 2 ? "" : info.UnitCounts.First(f => f.Value == count).Key;
+            await module.InvokeVoidAsync("drawCellInfo", point.X, point.Y, 34, color, text)
                 .ConfigureAwait(false);
         }
     }
 
-    private static Point GetScaledPoint(int x, int y, double width, double height)
+    private static Point GetScaledPoint(int x, int y, double orgWidth, double orgHeight, double scaledWidth, double scaledHeight)
     {
-        int scaledX = Math.Abs((int)((x / 100.0) * width));
-        int scaledY = Math.Abs((int)((y / 50.0) * height));
+        int scaledX = Math.Abs((int)((x / orgWidth) * scaledWidth));
+        int scaledY = Math.Abs((int)((y / orgHeight) * scaledHeight));
         return new(scaledX, scaledY);
     }
 
@@ -107,9 +108,12 @@ else
         {
             return "#dd2916FF";
         }
+
         int p = Convert.ToInt32(count * 100.0 / maxcount);
         p = Math.Max(0, Math.Min(100, p));
-        int transparency = (int)(255 - (p * 2.55));
+
+        int transparency = (int)(p * 2.55);
+
         return $"#dd2916{transparency:X2}";
     }
 

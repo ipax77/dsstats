@@ -24,7 +24,25 @@ export function drawGrid(x, y, width, height, gridCellSize, color, lineWidth = 1
     ctx.restore();
 }
 
-export function drawCellInfo(x, y, gridCellSize, color) {
+export function drawCellInfo(x, y, gridCellSize, color, text) {
+    var scene = document.getElementById("canvas");
+    var ctx = scene.getContext("2d");
+
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x + gridCellSize / 2, y + gridCellSize / 2, gridCellSize / 2, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "white";
+    ctx.font = "12px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x + gridCellSize / 2, y + gridCellSize / 2);
+
+    ctx.restore();
+}
+
+export function drawCellInfo2(x, y, gridCellSize, color) {
     var scene = document.getElementById("canvas");
     var ctx = scene.getContext("2d");
 
