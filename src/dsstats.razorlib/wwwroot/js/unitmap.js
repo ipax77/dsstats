@@ -42,12 +42,57 @@ export function drawCellInfo(x, y, gridCellSize, color, text) {
     ctx.restore();
 }
 
-export function drawCellInfo2(x, y, gridCellSize, color) {
-    var scene = document.getElementById("canvas");
+export function drawCellInfos(points, gridCellSize, color, team, canvasId) {
+    var scene = document.getElementById(canvasId);
     var ctx = scene.getContext("2d");
-
+    ctx.clearRect(0, 0, scene.width, scene.height);
     ctx.save();
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, gridCellSize, gridCellSize);
+
+    points.forEach((point) => {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(point.x + gridCellSize / 2, point.y + gridCellSize / 2, gridCellSize / 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.save();
+
+        ctx.translate(point.x + gridCellSize / 2, point.y + gridCellSize / 2);
+        ctx.rotate(-Math.PI / 4);
+        ctx.fillStyle = "white";
+        ctx.font = "12px Arial";
+        ctx.textAlign = "start";
+        ctx.textBaseline = "middle";
+        ctx.fillText(point.name, 0, 0);
+        ctx.restore();
+    });
+
     ctx.restore();
+    drawArrows(ctx, scene.width, scene.height, team, 15);
+}
+
+function drawArrows(context, width, height, team, arrowSize) {
+    if (team === 1) {
+        drawArrow(context, arrowSize, arrowSize, arrowSize, arrowSize);
+        drawArrow(context, width - arrowSize, arrowSize, arrowSize, arrowSize);
+    } else {
+        drawArrow(context, arrowSize, height - arrowSize, arrowSize, arrowSize, Math.PI);
+        drawArrow(context, width - arrowSize, height - arrowSize, arrowSize, arrowSize, Math.PI);
+    }
+}
+
+function drawArrow(context, x, y, width, height, rotation = 0) {
+    context.save();
+    context.translate(x, y);
+    context.rotate(rotation);
+
+    context.beginPath();
+    context.moveTo(-width / 2, height / 2);
+    context.lineTo(0, -height / 2);
+    context.lineTo(width / 2, height / 2);
+    context.closePath();
+
+    // You can set the fillStyle and strokeStyle as per your requirements
+    context.fillStyle = "white";
+    context.fill();
+
+    context.restore();
 }

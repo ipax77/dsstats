@@ -1,0 +1,125 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.shared
+@using System.Globalization
+@using dsstats.razorlib.Services
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<div class="bgchart">
+    <canvas id="@guid.ToString()" width="773" height="500" style="z-index: 999;">
+    </canvas>
+</div>
+
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public SpawnDto? Spawn { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public int Team { get; set; }
+
+    private string Interest = "";
+
+    private readonly RotatedArea area1 = new(Area.SpawnArea1);
+    private readonly RotatedArea area2 = new(Area.SpawnArea2);
+    private Guid guid = Guid.NewGuid();
+
+    private Lazy<Task<IJSObjectReference>> moduleTask = null!;
+    bool isInit = false;
+
+    protected override void OnParametersSet()
+    {
+        if (isInit)
+        {
+            _ = DrawUnits();
+        }
+        base.OnParametersSet();
+    }
+
+    protected override void OnInitialized()
+    {
+        moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/dsstats.razorlib/js/unitmap.js").AsTask());
+        base.OnInitialized();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ = DrawUnits();
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    List<MapUnit> GetUnits()
+    {
+        List<MapUnit> units = new();
+
+        if (Spawn == null)
+        {
+            return units;
+        }
+
+        foreach (var unit in Spawn.Units)
+        {
+            if (!String.IsNullOrEmpty(unit.Poss))
+            {
+                var poss = unit.Poss.Split(",");
+                for (int i = 0; i < poss.Length; i += 2)
+                {
+                    units.Add(new(unit.Unit.Name, int.Parse(poss[i]), int.Parse(poss[i + 1])));
+                }
+            }
+        }
+
+        return units;
+    }
+
+    private async Task DrawUnits()
+    {
+        var module = await moduleTask.Value.ConfigureAwait(false);
+        List<MapUnit> units = new();
+
+        foreach (var unit in GetUnits())
+        {
+            var mapedPoint = Team == 1 ? area1.GetNormalizedPoint(new(unit.X, unit.Y)) : 
+                area2.GetNormalizedPoint(new(unit.X, unit.Y));
+            Console.WriteLine(mapedPoint);
+            var scaledPoint = GetScaledPoint(mapedPoint.X, mapedPoint.Y, 25, 17, 773, 500);
+            units.Add(new(unit.Name, scaledPoint.X, scaledPoint.Y - 100));
+        }
+
+        await module.InvokeVoidAsync("drawCellInfos", units, 30, "red", Team, guid.ToString())
+            .ConfigureAwait(false);
+        isInit = true;
+    }
+
+    private static Point GetScaledPoint(int x, int y, double orgWidth, double orgHeight, double scaledWidth, double scaledHeight)
+    {
+        int scaledX = Math.Abs((int)((x / orgWidth) * scaledWidth));
+        int scaledY = Math.Abs((int)((y / orgHeight) * scaledHeight));
+        return new(scaledX, scaledY);
+    }
+
+    private record MapUnit
+    {
+        public MapUnit(string name, int x, int y)
+        {
+            Name = name;
+            X = x;
+            Y = y;
+        }
+
+        public string Name { get; init; }
+        public int X { get; init; }
+        public int Y { get; init; }
+    }
+
+    public void Dispose()
+    {
+        moduleTask.Value.Dispose();
+    }
+}
