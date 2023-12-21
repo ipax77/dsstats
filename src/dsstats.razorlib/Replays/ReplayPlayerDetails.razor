@@ -45,7 +45,8 @@
     <div class="card-body bgchart2">
         <div class="collapse" id="@($"Player{Player.GamePos}Map")">
             @* <ReplayPlayerMap Spawn="Spawn" Team="@Player.Team" /> *@
-            <ReplayPlayerCanvasMap Spawn="Spawn" Team="Player.Team" />
+            @* <ReplayPlayerCanvasMap Spawn="Spawn" Team="Player.Team" /> *@
+            <ReplayPlayerChartMap Spawn="Spawn" Team="Player.Team" />
         </div>
         <div class="collapse" id="@($"Player{Player.GamePos}Gas")">
             <ReplayPlayerGas Player="Player" TeamIncome="Player.Team == 1 ? MiddleInfo.Team1Income : MiddleInfo.Team2Income" />

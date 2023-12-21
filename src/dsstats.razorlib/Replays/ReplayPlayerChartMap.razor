@@ -1,0 +1,386 @@
+﻿@using Microsoft.JSInterop
+@using System.Text.Json
+@using dsstats.shared
+@using System.Globalization
+@using dsstats.razorlib.Services
+@using pax.BlazorChartJs
+@using static dsstats.razorlib.Replays.ReplayMiddleChart
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<div class="bgchart" style="height: 500px; width: 900px;">
+    <ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered" />
+</div>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public SpawnDto? Spawn { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public int Team { get; set; }
+
+    private CustomChartJsConfig chartConfig = null!;
+    private ChartComponent? chartComponent;
+
+    private bool chartIsReady;
+    private bool annotationsRegistered;
+
+    List<MapUnit> mapUnits = new();
+
+    private readonly RotatedArea area1 = new(Area.SpawnArea1);
+    private readonly RotatedArea area2 = new(Area.SpawnArea2);
+
+    private Lazy<Task<IJSObjectReference>> moduleTask = null!;
+
+    protected override void OnParametersSet()
+    {
+        if (chartIsReady && annotationsRegistered)
+        {
+            mapUnits = GetUnits();
+            Update();
+        }
+        base.OnParametersSet();
+    }
+
+    protected override void OnInitialized()
+    {
+        moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import", "./_content/dsstats.razorlib/js/annotationChart.js").AsTask());
+        chartConfig = GetBubbleChartConfig();
+        mapUnits = GetUnits();
+        base.OnInitialized();
+    }
+
+    List<MapUnit> GetUnits()
+    {
+        List<MapUnit> units = new();
+
+        if (Spawn == null)
+        {
+            return units;
+        }
+
+        foreach (var unit in Spawn.Units)
+        {
+            if (!String.IsNullOrEmpty(unit.Poss))
+            {
+                var poss = unit.Poss.Split(",");
+                for (int i = 0; i < poss.Length; i += 2)
+                {
+                    Point point = new(int.Parse(poss[i]), int.Parse(poss[i + 1]));
+                    Point nPoint = Team == 1 ? area1.GetNormalizedPoint(point) : area2.GetNormalizedPoint(point);
+                    units.Add(new(unit.Unit.Name, nPoint.X, nPoint.Y));
+                }
+            }
+        }
+
+        return units;
+    }
+
+    public async void Update()
+    {
+        if (!chartIsReady)
+        {
+            return;
+        }
+
+        if (chartConfig.Data.Datasets.Any())
+        {
+            chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
+        }
+
+        var module = await moduleTask.Value.ConfigureAwait(false);
+        if (!annotationsRegistered)
+        {
+            // await module.InvokeVoidAsync("registerPlugin");
+            annotationsRegistered = true;
+        }
+
+        var unitGroups = mapUnits.GroupBy(g => g.Name);
+        List<ChartJsDataset> datasets = new();
+        int i = 0;
+        foreach (var group in unitGroups.OrderByDescending(o => o.Count()))
+        {
+            var items = group.ToList();
+            if (items.Count == 0)
+            {
+                continue;
+            }
+            var color = GetColor(i);
+            var radius = GetRadius(items[0]);
+            datasets.Add(GetBubbleChartDataset(items, color, radius));
+            i++;
+        }
+
+        chartConfig.AddDatasets(datasets);
+        // await module.InvokeVoidAsync("drawArrows", Team, chartConfig.ChartJsConfigGuid);
+        await module.InvokeVoidAsync("setChartTooltips", chartConfig.ChartJsConfigGuid);
+        await module.InvokeVoidAsync("drawChartBorder", chartConfig.ChartJsConfigGuid);
+    }
+
+    private async void ChartEventTriggered(ChartJsEvent e)
+    {
+        if (e is ChartJsInitEvent initEvent)
+        {
+            var success = await RegisterPlugin();
+            chartIsReady = !success;
+            Update();
+        }
+        else if (e is ChartJsLabelHoverEvent hoverEvent)
+        {
+            if (hoverEvent.Value != null
+                && hoverEvent.Value is JsonElement jsonElement)
+            {
+                if (jsonElement.TryGetProperty("label", out JsonElement labelEle))
+                {
+                    Console.Write(labelEle.GetString());
+                }
+            }
+        }
+    }
+
+    private int FindClosestPoint(double x, double y)
+    {
+        int closestIndex = -1;
+        double closestDistance = double.MaxValue;
+
+        for (int i = 0; i < mapUnits.Count; i++)
+        {
+            var item = mapUnits[i];
+            double distance = Math.Sqrt(Math.Pow(x - item.X, 2) + Math.Pow(y - item.Y, 2));
+            if (distance < closestDistance)
+            {
+                closestIndex = i;
+                closestDistance = distance;
+            }
+        }
+
+        return closestIndex;
+    }
+
+    public void AnimateBubble(int index)
+    {
+        if (!chartIsReady)
+        {
+            return;
+        }
+        JSRuntime.InvokeVoidAsync("bubblePointHover", chartConfig.ChartJsConfigGuid, index);
+    }
+
+    private ChartJsDataset GetBubbleChartDataset(List<MapUnit> units, string color, double radius)
+    {
+        var label = units.FirstOrDefault()?.Name ?? "Unknown";
+        return new BubbleDataset()
+            {
+                Label = label,
+                Data = units.Select(s => (object)(new CmdrBubbleDataPoint()
+                {
+                    X = s.X,
+                    Y = s.Y,
+                    R = radius,
+                    Label = label
+                })).ToList(),
+                BorderWidth = 2,
+                BorderColor = $"{color}CC",
+                BackgroundColor = $"{color}80",
+                HoverBorderColor = $"{color}FF",
+                HoverBorderWidth = 4,
+            };
+    }
+
+    private double GetRadius(MapUnit unitMap)
+    {
+        return unitMap.Name switch
+        {
+            "Zergling" => 3,
+            "Hydralisk" => 6,
+            "Lurker" => 12,
+            "Torrasque" => 15,
+            "Kerrigan" => 20,
+            _ => 5
+        };
+    }
+
+    private string GetColor(int index)
+    {
+        return index switch
+        {
+            0 => "#A93226",
+            1 => "#884EA0",
+            2 => "#2471A3",
+            3 => "#17A589",
+            4 => "#D4AC0D",
+            5 => "#BA4A00",
+            6 => "#633974",
+            7 => "#0E6655",
+            8 => "#9A7D0A",
+            9 => "#873600",
+            10 => "#D0D3D4",
+            _ => "#EC7063"
+        };
+    }
+
+    public CustomChartJsConfig GetBubbleChartConfig()
+    {
+        return new()
+            {
+                Type = ChartType.bubble,
+                Data = new ChartJsData()
+                {
+                    Datasets = new List<ChartJsDataset>()
+                },
+                Options = new CustomChartJsOptions()
+                {
+                    Responsive = true,
+                    MaintainAspectRatio = true,
+                    OnHoverEvent = true,
+                    Plugins = new()
+                    {
+                        Title = new()
+                        {
+                            Display = false,
+                        },
+                        Legend = new Legend()
+                        {
+                            Display = true,
+                            Position = "right"
+                        }
+                    },
+                    Scales = new ChartJsOptionsScales()
+                    {
+                        X = new LinearAxis()
+                        {
+                            Type = "linear",
+                            Position = "bottom",
+                            Title = new()
+                            {
+                                Display = false,
+                            },
+                            Ticks = new LinearAxisTick()
+                            {
+                                Display = false,
+                            },
+                            Grid = new ChartJsGrid()
+                            {
+                                Display = false,
+                            },
+                            Border = new ChartJsAxisBorder()
+                            {
+                                Display = false,
+                            },
+                            SuggestedMin = 0,
+                            SuggestedMax = 25
+                        },
+                        Y = new LinearAxis()
+                        {
+                            Title = new()
+                            {
+                                Display = false,
+                            },
+                            Ticks = new LinearAxisTick()
+                            {
+                                Display = false,
+                            },
+                            Grid = new ChartJsGrid()
+                            {
+                                Display = false,
+                            },
+                            Border = new ChartJsAxisBorder()
+                            {
+                                Display = false,
+                            },
+                            SuggestedMin = 0,
+                            SuggestedMax = 17
+                        }
+                    }
+                }
+            };
+    }
+
+    private async Task<bool> RegisterPlugin()
+    {
+        if (!annotationsRegistered)
+        {
+            var module = await moduleTask.Value.ConfigureAwait(false);
+            await module.InvokeVoidAsync("registerPlugin")
+                .ConfigureAwait(false);
+
+            annotationsRegistered = true;
+
+            if (chartConfig.Options?.Plugins is null)
+            {
+                return true;
+            };
+            chartConfig.Options.Plugins.Annotation = new()
+                {
+                    Annotations = new()
+                    {
+                        { "arrow1", new LabelAnnotation()
+                        {
+                            XValue = 1,
+                            YValue = Team == 1 ? 1 : 17,
+                            XAdjust = 0,
+                            YAdjust = 0,
+                            Position = "start",
+                            Color = "#080808E6",
+                            BackgroundColor = "#dee2e6",
+                            BorderRadius = 10,
+                            Content = Team == 2 ? "^" : "v",
+                            Font = new()
+                            {
+                                Size = 12,
+                            }
+                        } },
+                        { "arrow2", new LabelAnnotation()
+                        {
+                            XValue = 24,
+                            YValue = Team == 1 ? 1 : 17,
+                            XAdjust = 0,
+                            YAdjust = 0,
+                            Position = "start",
+                            Color = "#080808E6",
+                            BackgroundColor = "#dee2e6",
+                            BorderRadius = 10,
+                            Content = Team == 2 ? "^" : "v",
+                            Font = new()
+                            {
+                                Size = 12,
+                            }
+                        } }
+                    }
+                };
+            chartConfig.ReinitializeChart();
+            return true;
+        }
+        return false;
+    }
+
+    public record CmdrBubbleDataPoint : BubbleDataPoint
+    {
+        public string Label { get; set; } = string.Empty;
+    }
+
+    private record MapUnit
+    {
+        public MapUnit(string name, int x, int y)
+        {
+            Name = name;
+            X = x;
+            Y = y;
+        }
+
+        public string Name { get; init; }
+        public int X { get; init; }
+        public int Y { get; init; }
+    }
+
+    public void Dispose()
+    {
+        if (moduleTask.IsValueCreated)
+        {
+            moduleTask.Value.Dispose();
+        }
+    }
+}
