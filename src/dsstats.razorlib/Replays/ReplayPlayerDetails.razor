@@ -13,8 +13,8 @@
             </div>
             <div>
                 <button class="btn btn-sm btn-outline-light bgchart" type="button" data-bs-toggle="collapse"
-                    data-bs-target="@($"#Player{Player.GamePos}Map")" aria-expanded="false"
-                    aria-controls="@($"Player{Player.GamePos}Map")" @onclick="e => showMap = !showMap">
+                        data-bs-target="@($"#Player{Player.GamePos}Map")" aria-expanded="false"
+                        aria-controls="@($"Player{Player.GamePos}Map")" @onclick="e => showMap = !showMap">
                     <span class="oi @(showMap ? "bi-chevron-down" : "bi-chevron-up")"></span>
                     Map
                 </button>
@@ -22,29 +22,34 @@
         </div>
         <div class="d-flex justify-content-between">
             <img src="@HelperService.GetImageSrc(Player.Race)" alt="@Player.Race" title="@Player.Race" width="30"
-                height="30" />
+                 height="30" />
             <div class="ms-1 me-1">
                 <button class="btn btn-sm btn-outline-info bgchart" type="button" data-bs-toggle="collapse"
-                    data-bs-target="@($"#Player{Player.GamePos}Gas")" aria-expanded="false"
-                    aria-controls="@($"Player{Player.GamePos}Gas")" @onclick="e => showGas = !showGas">
+                        data-bs-target="@($"#Player{Player.GamePos}Gas")" aria-expanded="false"
+                        aria-controls="@($"Player{Player.GamePos}Gas")" @onclick="e => showGas = !showGas">
                     <span class="bi @(showGas ? "bi-chevron-down" : "bi-chevron-up")"></span>
                     Gas @Spawn?.GasCount
-                </button>                
+                </button>
             </div>
             <div class="">
                 <button class="btn btn-sm btn-outline-light bgchart" type="button" data-bs-toggle="collapse"
-                    data-bs-target="@($"#Player{Player.GamePos}Upgrades")" aria-expanded="false"
-                    aria-controls="@($"Player{Player.GamePos}Upgrades")" @onclick="e => showUpgrades = !showUpgrades">
+                        data-bs-target="@($"#Player{Player.GamePos}Upgrades")" aria-expanded="false"
+                        aria-controls="@($"Player{Player.GamePos}Upgrades")" @onclick="e => showUpgrades = !showUpgrades">
                     <span class="bi @(showUpgrades ? "bi-chevron-down" : "bi-chevron-up")"></span>
                     Upgrades @Spawn?.UpgradeSpent
-                </button>                   
+                </button>
             </div>
         </div>
     </div>
 
     <div class="card-body bgchart2">
         <div class="collapse" id="@($"Player{Player.GamePos}Map")">
-            <ReplayPlayerMap Spawn="Spawn" Team="@Player.Team" />
+            <div class="bgchart" style="height: 600px; width: 500px;">
+                @if (showMap)
+                {
+                    <ReplayPlayerChartMap Spawn="Spawn" Team="Player.Team" />
+                }
+            </div>
         </div>
         <div class="collapse" id="@($"Player{Player.GamePos}Gas")">
             <ReplayPlayerGas Player="Player" TeamIncome="Player.Team == 1 ? MiddleInfo.Team1Income : MiddleInfo.Team2Income" />

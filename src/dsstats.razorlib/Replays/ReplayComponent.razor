@@ -181,7 +181,7 @@
             <CascadingValue Value="Breakpoint">
                 @foreach (var player in buildPlayers.OrderBy(o => o.GamePos))
                 {
-                    <div class="col-auto p-1">
+                    <div @key="@($"{Replay.ReplayHash}|{player.GamePos}")" class="col-auto p-1">
                         <ReplayPlayerDetails Player="player" MiddleInfo="middleInfo"></ReplayPlayerDetails>
                     </div>
                 }

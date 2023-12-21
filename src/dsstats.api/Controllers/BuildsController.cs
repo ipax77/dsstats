@@ -11,10 +11,12 @@ namespace dsstats.api.Controllers;
 public class BuildsController : Controller
 {
     private readonly IBuildService buildService;
+    private readonly IUnitmapService unitmapService;
 
-    public BuildsController(IBuildService buildService)
+    public BuildsController(IBuildService buildService, IUnitmapService unitmapService)
     {
         this.buildService = buildService;
+        this.unitmapService = unitmapService;
     }
 
     [HttpPost]
@@ -49,5 +51,12 @@ public class BuildsController : Controller
     public async Task<List<ReplayListDto>> GetReplays([FromBody] BuildRequest request, int skip, int take, CancellationToken token)
     {
         return await buildService.GetReplays(request, skip, take, token);
+    }
+
+    [HttpPost]
+    [Route("unitmap")]
+    public async Task<ActionResult<Unitmap>> GetUnitmap(UnitmapRequest request, CancellationToken token = default)
+    {
+        return await unitmapService.GetUnitMap(request);
     }
 }
