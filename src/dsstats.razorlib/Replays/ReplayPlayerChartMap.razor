@@ -8,9 +8,7 @@
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
-<div class="bgchart" style="height: 500px; width: 900px;">
-    <ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered" />
-</div>
+<ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered" />
 
 @code {
     [Parameter]
@@ -29,8 +27,8 @@
 
     List<MapUnit> mapUnits = new();
 
-    private readonly RotatedArea area1 = new(Area.SpawnArea1);
-    private readonly RotatedArea area2 = new(Area.SpawnArea2);
+    // private readonly RotatedArea area1 = new(Area.SpawnArea1);
+    // private readonly RotatedArea area2 = new(Area.SpawnArea2);
 
     private Lazy<Task<IJSObjectReference>> moduleTask = null!;
 
@@ -74,13 +72,34 @@
                 for (int i = 0; i < poss.Length; i += 2)
                 {
                     Point point = new(int.Parse(poss[i]), int.Parse(poss[i + 1]));
-                    Point nPoint = Team == 1 ? area1.GetNormalizedPoint(point) : area2.GetNormalizedPoint(point);
-                    units.Add(new(unit.Unit.Name, nPoint.X, nPoint.Y));
+                    // Point nPoint = Team == 1 ? area1.GetNormalizedPoint(point) : area2.GetNormalizedPoint(point);
+                    (var x, var y) = GetRotatedPoint(point);
+                    units.Add(new(unit.Unit.Name, x, y));
                 }
             }
         }
 
         return units;
+    }
+
+    private (double x, double y) GetRotatedPoint(Point point)
+    {
+        (var x, var y) = RotatePoint(point);
+        x = Team == 2 ? (x - 62.23907) / 2.0 : (x - 176.79037) / 2.0;
+        y = y - 107.97919;
+        return new(Math.Round((-x + 8), 2), Math.Round(y, 2));
+    }
+
+    public static (double, double) RotatePoint(Point pointToRotate)
+    {
+        double centerX = 128.0;
+        double centerY = 120.0;
+        double angleInRadians = -45 * (Math.PI / 180);
+        double cosTheta = Math.Cos(angleInRadians);
+        double sinTheta = Math.Sin(angleInRadians);
+        var x = (cosTheta * (pointToRotate.X - centerX) - sinTheta * (pointToRotate.Y - centerY) + centerX);
+        var y = (sinTheta * (pointToRotate.X - centerX) + cosTheta * (pointToRotate.Y - centerY) + centerY);
+        return (x, y);
     }
 
     public async void Update()
@@ -176,6 +195,10 @@
     private ChartJsDataset GetBubbleChartDataset(List<MapUnit> units, string color, double radius)
     {
         var label = units.FirstOrDefault()?.Name ?? "Unknown";
+        // if (label.Length > 10)
+        // {
+        //     label = label.Substring(0, 10);
+        // }
         return new BubbleDataset()
             {
                 Label = label,
@@ -208,14 +231,14 @@
         {
             UnitSize.VerySmall => 3,
             UnitSize.Small => 6,
-            UnitSize.Normal => 12,
+            UnitSize.Normal => 10,
             UnitSize.Big => 15,
             UnitSize.Hero => 20,
             UnitSize.VeryBig => 25,
-            UnitSize.AirSmall => 8,
-            UnitSize.AirNormal => 13.5,
-            UnitSize.AirBig => 17,
-            UnitSize.AirVeryBig => 27,
+            UnitSize.AirSmall => 9,
+            UnitSize.AirNormal => 14,
+            UnitSize.AirBig => 19,
+            UnitSize.AirVeryBig => 25,
             _ => 12
         };
     }
@@ -252,9 +275,9 @@
                 },
                 Options = new CustomChartJsOptions()
                 {
-                    Responsive = true,
-                    MaintainAspectRatio = true,
-                    OnHoverEvent = true,
+                    // Responsive = true,
+                    MaintainAspectRatio = false,
+                    // OnHoverEvent = true,
                     Plugins = new()
                     {
                         Title = new()
@@ -264,7 +287,12 @@
                         Legend = new Legend()
                         {
                             Display = true,
-                            Position = "right"
+                            Position = Team == 1 ? "left" : "right",
+                            MaxWidth = 100,
+                            Labels = new Labels()
+                            {
+                                BoxWidth = 20,
+                            }
                         }
                     },
                     Scales = new ChartJsOptionsScales()
@@ -290,7 +318,7 @@
                                 Display = false,
                             },
                             SuggestedMin = 0,
-                            SuggestedMax = 25
+                            SuggestedMax = 8
                         },
                         Y = new LinearAxis()
                         {
@@ -311,7 +339,7 @@
                                 Display = false,
                             },
                             SuggestedMin = 0,
-                            SuggestedMax = 17
+                            SuggestedMax = 25
                         }
                     }
                 }
@@ -338,34 +366,34 @@
                     {
                         { "arrow1", new LabelAnnotation()
                         {
-                            XValue = 1,
-                            YValue = Team == 1 ? 1 : 17,
+                            XValue = Team == 1 ? 7.5 : 0.2,
+                            YValue = 1,
                             XAdjust = 0,
                             YAdjust = 0,
                             Position = "start",
                             Color = "#080808E6",
                             BackgroundColor = "#dee2e6",
                             BorderRadius = 10,
-                            Content = Team == 2 ? "^" : "v",
+                            Content = Team == 2 ? "<" : ">",
                             Font = new()
                             {
-                                Size = 12,
+                                Size = 14,
                             }
                         } },
                         { "arrow2", new LabelAnnotation()
                         {
-                            XValue = 24,
-                            YValue = Team == 1 ? 1 : 17,
+                            XValue = Team == 1 ? 7.5 : 0.2,
+                            YValue = 25,
                             XAdjust = 0,
                             YAdjust = 0,
                             Position = "start",
                             Color = "#080808E6",
                             BackgroundColor = "#dee2e6",
                             BorderRadius = 10,
-                            Content = Team == 2 ? "^" : "v",
+                            Content = Team == 2 ? "<" : ">",
                             Font = new()
                             {
-                                Size = 12,
+                                Size = 14,
                             }
                         } }
                     }
@@ -383,7 +411,7 @@
 
     private record MapUnit
     {
-        public MapUnit(string name, int x, int y)
+        public MapUnit(string name, double x, double y)
         {
             Name = name;
             X = x;
@@ -391,8 +419,8 @@
         }
 
         public string Name { get; init; }
-        public int X { get; init; }
-        public int Y { get; init; }
+        public double X { get; init; }
+        public double Y { get; init; }
     }
 
     public void Dispose()

@@ -63,7 +63,7 @@ export function setChartTooltips(chartId) {
         if (tooltipItem == undefined) {
             return "";
         } else {
-            return tooltipItem.raw.label
+            return tooltipItem.raw.label + " " + tooltipItem.raw.x + "|" + tooltipItem.raw.y;
         }
     };
 }
