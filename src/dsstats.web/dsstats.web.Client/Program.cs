@@ -37,5 +37,6 @@ builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<IBuildService, BuildService>();
 builder.Services.AddScoped<ICmdrInfoService, CmdrInfoService>();
 builder.Services.AddScoped<ITourneysService, TourneysService>();
+builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 
 await builder.Build().RunAsync();

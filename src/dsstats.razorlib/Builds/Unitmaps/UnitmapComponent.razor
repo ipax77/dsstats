@@ -1,0 +1,124 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IUnitmapService unitmapService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<h3>Unitmap</h3>
+@if (isLoading)
+{
+    <div class="spinner-border spinner-border-sm text-danger" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+}
+else
+{
+    <div>
+        <button type="button" class="btn btn-sm btn-outline-warning" @onclick="LoadData">Reload</button>
+    </div>
+}
+<div>
+    <canvas id="canvas" width="860" height="430"></canvas>
+</div>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public UnitmapRequest Request { get; set; } = default!;
+
+
+    Unitmap? unitmap = null;
+    bool isLoading;
+    bool dataReady;
+    bool jsReady;
+
+    private Lazy<Task<IJSObjectReference>> moduleTask = null!;
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/dsstats.razorlib/js/unitmap.js").AsTask());
+        base.OnInitialized();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            jsReady = true;
+            await PrepareGrid();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        unitmap = await unitmapService.GetUnitMap(Request);
+        dataReady = true;
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+        await PrepareGrid();
+    }
+
+    private async Task PrepareGrid()
+    {
+        if (!dataReady || !jsReady)
+        {
+            return;
+        }
+
+        var module = await moduleTask.Value.ConfigureAwait(false);
+        await module.InvokeVoidAsync("drawGrid", 0, 0, 860, 430, 35, "blue", 1)
+            .ConfigureAwait(false);
+
+        if (unitmap is null || unitmap.Infos.Count == 0)
+        {
+            return;
+        }
+
+        int max = unitmap.Infos.SelectMany(s => s.UnitCounts).Max(m => m.Value);
+        int yMin = Math.Abs(unitmap.Infos.Min(m => m.Point.Y));
+        int xMin = Math.Abs(unitmap.Infos.Min(m => m.Point.Y));
+
+        foreach (var info in unitmap.Infos)
+        {
+            int count = info.UnitCounts.Max(m => m.Value);
+            var color = GetColor(count, max);
+            var point = GetScaledPoint(info.Point.X, info.Point.Y, 25, 17, 860, 430);
+            var text = count < max / 2 ? "" : info.UnitCounts.First(f => f.Value == count).Key;
+            await module.InvokeVoidAsync("drawCellInfo", point.X, point.Y, 34, color, text)
+                .ConfigureAwait(false);
+        }
+    }
+
+    private static Point GetScaledPoint(int x, int y, double orgWidth, double orgHeight, double scaledWidth, double scaledHeight)
+    {
+        int scaledX = Math.Abs((int)((x / orgWidth) * scaledWidth));
+        int scaledY = Math.Abs((int)((y / orgHeight) * scaledHeight));
+        return new(scaledX, scaledY);
+    }
+
+    private static string GetColor(int count, int maxcount)
+    {
+        if (maxcount == 0)
+        {
+            return "#dd2916FF";
+        }
+
+        int p = Convert.ToInt32(count * 100.0 / maxcount);
+        p = Math.Max(0, Math.Min(100, p));
+
+        int transparency = (int)(p * 2.55);
+
+        return $"#dd2916{transparency:X2}";
+    }
+
+    public void Dispose()
+    {
+        moduleTask.Value.Dispose();
+    }
+}

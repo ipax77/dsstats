@@ -255,7 +255,7 @@
                         j = 0;
                     }
 
-                    prevX = a.XValue;
+                    prevX = (int)a.XValue;
                     a.YAdjust = -50 - (j * 24);
                     chartAnnotations.Add($"label{i + 100}", a);
                     i++;
@@ -355,7 +355,7 @@
                         j = 0;
                     }
 
-                    prevX = a.XValue;
+                    prevX = (int)a.XValue;
                     a.YAdjust = -50 - (j * 20);
                     chartAnnotations.Add($"label{i + 1}", a);
                     i++;
@@ -450,7 +450,7 @@
                         j = 0;
                     }
 
-                    prevX = a.XValue;
+                    prevX = (int)a.XValue;
                     a.YAdjust = -50 - (j * 20);
                     chartAnnotations.Add($"label{i + 1000}", a);
                     i++;
@@ -622,8 +622,8 @@
     public record LabelAnnotation
     {
         public string Type { get; set; } = "label";
-        public int XValue { get; set; }
-        public int YValue { get; set; }
+        public double XValue { get; set; }
+        public double YValue { get; set; }
         public int XAdjust { get; set; }
         public int YAdjust { get; set; }
         public string? Position { get; set; }

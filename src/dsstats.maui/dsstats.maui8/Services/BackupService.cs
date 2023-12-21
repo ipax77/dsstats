@@ -1,11 +1,13 @@
 ﻿using dsstats.db8;
+using dsstats.localization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using System.IO.Compression;
 
 namespace dsstats.maui8.Services;
 
-public class BackupService(ILogger<BackupService> logger, IServiceScopeFactory scopeFactory)
+public class BackupService(ILogger<BackupService> logger, IStringLocalizer<DsstatsLoc> Loc, IServiceScopeFactory scopeFactory)
 {
     public async Task<BackupResult> Backup()
     {
@@ -34,7 +36,8 @@ public class BackupService(ILogger<BackupService> logger, IServiceScopeFactory s
 
             if (Application.Current != null && Application.Current.MainPage != null)
             {
-                bool answer = await Application.Current.MainPage.DisplayAlert("Backup", $"Should a backup be created at this location now? {zipFile}", "Yes", "No");
+                bool answer = await Application.Current.MainPage.DisplayAlert(Loc["Backup"],
+                    Loc["Should a backup be created at this location now?"] + $" {zipFile}", Loc["Yes"], Loc["No"]);
                 if (!answer)
                 {
                     return BackupResult.Canceled;
@@ -71,7 +74,7 @@ public class BackupService(ILogger<BackupService> logger, IServiceScopeFactory s
             logger.LogError("failed creating backup: {error}", ex.Message);
             if (Application.Current != null && Application.Current.MainPage != null)
             {
-                await Application.Current.MainPage.DisplayPromptAsync("Backup Failed", ex.Message);
+                await Application.Current.MainPage.DisplayPromptAsync(Loc["Backup failed."], ex.Message);
             }
             return BackupResult.Error;
         }
@@ -93,7 +96,8 @@ public class BackupService(ILogger<BackupService> logger, IServiceScopeFactory s
 
             if (Application.Current != null && Application.Current.MainPage != null)
             {
-                bool answer = await Application.Current.MainPage.DisplayAlert("Restore Database?", "The current data will be overwritten.", "Yes", "No");
+                bool answer = await Application.Current.MainPage.DisplayAlert(Loc["Restore Database?"],
+                    Loc["The current data will be overwritten."], Loc["Yes"], Loc["No"]);
                 if (!answer)
                 {
                     return RestoreResult.Canceled;
@@ -137,13 +141,13 @@ public class BackupService(ILogger<BackupService> logger, IServiceScopeFactory s
             }
             if (Application.Current != null && Application.Current.MainPage != null)
             {
-                await Application.Current.MainPage.DisplayAlert("Restore Failed", ex.Message, "OK");
+                await Application.Current.MainPage.DisplayAlert(Loc["Backup restore failed."], ex.Message, "OK");
             }
             return RestoreResult.Error;
         }
         if (Application.Current != null && Application.Current.MainPage != null)
         {
-            await Application.Current.MainPage.DisplayAlert("Restore Success", "Please check if the settings are as expected.", "OK");
+            await Application.Current.MainPage.DisplayAlert(Loc["Backup restore successful."], Loc["Please check if the settings are as expected."], "OK");
         }
         return RestoreResult.Success;
     }
