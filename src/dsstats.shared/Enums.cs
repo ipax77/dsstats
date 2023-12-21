@@ -117,3 +117,17 @@ public enum DamageChartType
     MVP = 1,
     Army = 2,
 }
+
+public enum UnitSize
+{
+    VerySmall = 0,
+    Small = 1,
+    Normal = 2,
+    Big = 3,
+    Hero = 4,
+    VeryBig = 5,
+    AirSmall = 6,
+    AirNormal = 7,
+    AirBig = 8,
+    AirVeryBig = 9
+}

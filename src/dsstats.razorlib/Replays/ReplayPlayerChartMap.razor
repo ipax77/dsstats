@@ -38,8 +38,12 @@
     {
         if (chartIsReady && annotationsRegistered)
         {
-            mapUnits = GetUnits();
-            Update();
+            var units = GetUnits();
+            if (units != mapUnits)
+            {
+                mapUnits = units;
+                Update();
+            }
         }
         base.OnParametersSet();
     }
@@ -192,16 +196,31 @@
 
     private double GetRadius(MapUnit unitMap)
     {
-        return unitMap.Name switch
+        UnitSize unitSize = UnitSize.Normal;
+
+        if (Data.UnitSizes.TryGetValue(unitMap.Name, out var sizeObj)
+            && sizeObj is UnitSize size)
         {
-            "Zergling" => 3,
-            "Hydralisk" => 6,
-            "Lurker" => 12,
-            "Torrasque" => 15,
-            "Kerrigan" => 20,
-            _ => 5
+            unitSize = size;
+        }
+
+        return unitSize switch
+        {
+            UnitSize.VerySmall => 3,
+            UnitSize.Small => 6,
+            UnitSize.Normal => 12,
+            UnitSize.Big => 15,
+            UnitSize.Hero => 20,
+            UnitSize.VeryBig => 25,
+            UnitSize.AirSmall => 8,
+            UnitSize.AirNormal => 13.5,
+            UnitSize.AirBig => 17,
+            UnitSize.AirVeryBig => 27,
+            _ => 12
         };
     }
+
+
 
     private string GetColor(int index)
     {
