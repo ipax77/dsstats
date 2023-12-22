@@ -1,7 +1,6 @@
 import * as annotationPlugin from './chartjs-plugin-annotation.min.js';
 
 export async function registerPlugin() {
-    // await import('./chartjs-plugin-annotation.min.js');
     Chart.register(annotationPlugin);
 }
 
