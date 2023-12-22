@@ -1,0 +1,98 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.shared
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<div class="row">
+    @foreach (var detail in replayPlayerDetails.OrderBy(o => o.ReplayPlayer.GamePos))
+    {
+        <div class="col-auto p-1">
+            <ReplayPlayerDetails @key="@detail.ReplayPlayer.GetHashCode()"
+                                 @ref="@detail.ReplayPlayerDetails"
+                                 Breakpoint="breakpoint"
+                                 Player="detail.ReplayPlayer" MiddleInfo="MiddleInfo"
+                                 moduleTask="moduleTask" />
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public MiddleInfo MiddleInfo { get; set; } = default!;
+
+    private List<ReplayPlayerDetailListItem> replayPlayerDetails = new();
+    private Breakpoint breakpoint = Breakpoint.All;
+
+    private Lazy<Task<IJSObjectReference>> moduleTask = null!;
+
+    protected override void OnInitialized()
+    {
+        moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import", "./_content/dsstats.razorlib/js/annotationChart.js").AsTask());
+        base.OnInitialized();
+    }
+
+    public void AddReplayPlayer(ReplayPlayerDto player)
+    {
+        if (!replayPlayerDetails.Any(a => a.ReplayPlayer == player))
+        {
+            replayPlayerDetails.Add(new() { ReplayPlayer = player });
+            InvokeAsync(() => StateHasChanged());
+        }
+    }
+
+    public void RemoveReplayPlayer(ReplayPlayerDto player)
+    {
+        var replayPlayerDetail = replayPlayerDetails.FirstOrDefault(f => f.ReplayPlayer == player);
+        if (replayPlayerDetail is not null)
+        {
+            replayPlayerDetails.Remove(replayPlayerDetail);
+            InvokeAsync(() => StateHasChanged());
+        }
+    }
+
+    public void AddOrRemovePlayer(ReplayPlayerDto player)
+    {
+        var replayPlayerDetail = replayPlayerDetails.FirstOrDefault(f => f.ReplayPlayer == player);
+        if (replayPlayerDetail is not null)
+        {
+            replayPlayerDetails.Remove(replayPlayerDetail);
+        }
+        else
+        {
+            replayPlayerDetails.Add(new() { ReplayPlayer = player });
+        }
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    public void SetBreakpoint(Breakpoint bp)
+    {
+        breakpoint = bp;
+        foreach (var detail in replayPlayerDetails)
+        {
+            detail.ReplayPlayerDetails?.Update(breakpoint);
+        }
+    }
+
+    public void Reset(MiddleInfo middleInfo)
+    {
+        replayPlayerDetails.Clear();
+        breakpoint = Breakpoint.All;
+        MiddleInfo = middleInfo;
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Dispose()
+    {
+        if (moduleTask.IsValueCreated)
+        {
+            moduleTask.Value.Dispose();
+        }
+    }
+
+    public record ReplayPlayerDetailListItem
+    {
+        public ReplayPlayerDto ReplayPlayer { get; set; } = null!;
+        public ReplayPlayerDetails? ReplayPlayerDetails { get; set; }
+    }
+}
