@@ -146,10 +146,7 @@
     private ChartJsDataset GetBubbleChartDataset(List<MapUnit> units, string color, double radius)
     {
         var label = units.FirstOrDefault()?.Name ?? "Unknown";
-        // if (label.Length > 10)
-        // {
-        //     label = label.Substring(0, 10);
-        // }
+
         return new BubbleDataset()
             {
                 Label = label,
@@ -317,7 +314,7 @@
                     {
                         { "arrow1", new LabelAnnotation()
                         {
-                            XValue = Team == 1 ? 7.6 : 0.2,
+                            XValue = Team == 1 ? 7.5 : 0.2,
                             YValue = 1.3,
                             XAdjust = 0,
                             YAdjust = 0,
@@ -333,7 +330,7 @@
                         } },
                         { "arrow2", new LabelAnnotation()
                         {
-                            XValue = Team == 1 ? 7.6 : 0.2,
+                            XValue = Team == 1 ? 7.5 : 0.2,
                             YValue = 25,
                             XAdjust = 0,
                             YAdjust = 0,
