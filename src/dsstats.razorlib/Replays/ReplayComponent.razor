@@ -152,7 +152,7 @@
                 }
             </div>
         </div>
-        @if (buildPlayers.Count > 0)
+        @if (hasBuilds)
         {
             <div class="row">
                 <div class="col-auto text-center align-self-center">
@@ -177,16 +177,7 @@
                 </div>
             </div>
         }
-        <div class="row">
-            <CascadingValue Value="Breakpoint">
-                @foreach (var player in buildPlayers.OrderBy(o => o.GamePos))
-                {
-                    <div @key="@($"{Replay.ReplayHash}|{player.GamePos}")" class="col-auto p-1">
-                        <ReplayPlayerDetails Player="player" MiddleInfo="middleInfo"></ReplayPlayerDetails>
-                    </div>
-                }
-            </CascadingValue>
-        </div>
+        <ReplayPlayersDetailContainer @ref="replayPlayersDetailContainer" MiddleInfo="middleInfo" />
     </div>
     <div class="card-footer bgchart2">
         <div class="row fw-bolder text-white-50" style="max-width: 1100px;">
@@ -280,7 +271,6 @@
     ReplayTeamTable? teamTable1;
     ReplayTeamTable? teamTable2;
 
-    List<ReplayPlayerDto> buildPlayers = new();
     private bool showMiddleChart = false;
     Breakpoint Breakpoint = Breakpoint.All;
     int breakpointsCount = 1;
@@ -306,6 +296,9 @@
     bool showRefineries = false;
     bool showLeavers = false;
 
+    ReplayPlayersDetailContainer? replayPlayersDetailContainer;
+    bool hasBuilds;
+
     protected override void OnParametersSet()
     {
         if (replayHash != Replay.ReplayHash)
@@ -327,8 +320,6 @@
 
     public void Init()
     {
-        buildPlayers.Clear();
-        InvokeAsync(() => StateHasChanged());
         if (remoteToggleService.IsMaui || Replay.TournamentEdition)
         {
             comboRating = false;
@@ -345,9 +336,11 @@
         showTierUps = false;
         showRefineries = false;
         showLeavers = false;
+        hasBuilds = false;
         Breakpoint = Breakpoint.All;
         breakpointsCount = Math.Min(4, Replay.ReplayPlayers.Select(s => s.Spawns.Count).Max());
         middleInfo = Replay.GetMiddleInfo();
+        replayPlayersDetailContainer?.Reset(middleInfo);
         teamTable1?.Uncheck();
         teamTable2?.Uncheck();
         _ = LoadRating();
@@ -386,14 +379,8 @@
 
     public void ShowHideBuild(ReplayPlayerDto player)
     {
-        if (buildPlayers.Contains(player))
-        {
-            buildPlayers.Remove(player);
-        }
-        else
-        {
-            buildPlayers.Add(player);
-        }
+        hasBuilds = true;
+        replayPlayersDetailContainer?.AddOrRemovePlayer(player);
     }
 
     private void ChangeRatingType(ChangeEventArgs e)
@@ -454,5 +441,7 @@
     private void SetBreakpoint(ChangeEventArgs e, Breakpoint breakpoint)
     {
         Breakpoint = breakpoint;
+        replayPlayersDetailContainer?.SetBreakpoint(breakpoint);
+
     }
 }

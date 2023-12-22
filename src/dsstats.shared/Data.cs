@@ -1029,7 +1029,7 @@ public static class Data
             { "BroodMutalisk", UnitSize.AirSmall },
             { "BroodQueen", UnitSize.Normal },
             { "Brutalisk", UnitSize.VeryBig },
-            { "Cannonball", UnitSize.Big },
+            { "Cannonball", UnitSize.Normal },
             { "Capjack", UnitSize.Normal },
             { "Carrier", UnitSize.AirBig },
             { "Centurion", UnitSize.VerySmall },

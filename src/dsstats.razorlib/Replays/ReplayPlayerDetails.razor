@@ -1,3 +1,4 @@
+@using Microsoft.JSInterop
 @using dsstats.shared
 @using dsstats.razorlib.Services
 
@@ -47,7 +48,7 @@
             <div class="bgchart" style="height: 600px; width: 500px;">
                 @if (showMap)
                 {
-                    <ReplayPlayerChartMap Spawn="Spawn" Team="Player.Team" />
+                    <ReplayPlayerChartMap @ref="replayPlayerChartMap" Spawn="Spawn" Team="Player.Team" moduleTask="moduleTask" />
                 }
             </div>
         </div>
@@ -80,7 +81,7 @@
 </div>
 
 @code {
-    [CascadingParameter]
+    [Parameter, EditorRequired]
     public Breakpoint Breakpoint { get; set; }
 
     [Parameter, EditorRequired]
@@ -89,19 +90,31 @@
     [Parameter, EditorRequired]
     public MiddleInfo MiddleInfo { get; set; } = default!;
 
-    bool IsWinner => Player.PlayerResult == PlayerResult.Win;
+    [Parameter, EditorRequired]
+    public Lazy<Task<IJSObjectReference>> moduleTask { get; set; } = default!;
 
-    SpawnDto? Spawn => Player.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint);
+    bool IsWinner;
+
+    SpawnDto? Spawn = null;
 
     bool showMap = false;
     bool showUpgrades = false;
     bool showGas = false;
+    ReplayPlayerChartMap? replayPlayerChartMap;
 
-    public void Reset()
+    protected override void OnInitialized()
     {
-        showMap = false;
-        showUpgrades = false;
-        showGas = false;
+        IsWinner = Player.PlayerResult == PlayerResult.Win;
+        Spawn = Player.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint);
+        base.OnInitialized();
+    }
+
+    public void Update(Breakpoint breakpoint)
+    {
+        Breakpoint = breakpoint;
+        IsWinner = Player.PlayerResult == PlayerResult.Win;
+        Spawn = Player.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint);
+        replayPlayerChartMap?.Update(Spawn, Player.Team);
     }
 
     List<KeyValuePair<string, byte>> GetUnits()

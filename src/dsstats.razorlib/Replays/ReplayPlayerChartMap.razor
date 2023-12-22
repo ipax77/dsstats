@@ -6,7 +6,6 @@
 @using pax.BlazorChartJs
 @using static dsstats.razorlib.Replays.ReplayMiddleChart
 @inject IJSRuntime JSRuntime
-@implements IDisposable
 
 <ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered" />
 
@@ -19,52 +18,34 @@
     [EditorRequired]
     public int Team { get; set; }
 
+    [Parameter, EditorRequired]
+    public Lazy<Task<IJSObjectReference>> moduleTask { get; set; } = default!;
+
     private CustomChartJsConfig chartConfig = null!;
     private ChartComponent? chartComponent;
 
     private bool chartIsReady;
     private bool annotationsRegistered;
 
-    List<MapUnit> mapUnits = new();
-
     // private readonly RotatedArea area1 = new(Area.SpawnArea1);
     // private readonly RotatedArea area2 = new(Area.SpawnArea2);
 
-    private Lazy<Task<IJSObjectReference>> moduleTask = null!;
-
-    protected override void OnParametersSet()
-    {
-        if (chartIsReady && annotationsRegistered)
-        {
-            var units = GetUnits();
-            if (units != mapUnits)
-            {
-                mapUnits = units;
-                Update();
-            }
-        }
-        base.OnParametersSet();
-    }
-
     protected override void OnInitialized()
     {
-        moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
-            "import", "./_content/dsstats.razorlib/js/annotationChart.js").AsTask());
         chartConfig = GetBubbleChartConfig();
-        mapUnits = GetUnits();
         base.OnInitialized();
     }
 
-    List<MapUnit> GetUnits()
+    List<MapUnit> GetUnits(SpawnDto? spawn, int team)
     {
         List<MapUnit> units = new();
 
-        if (Spawn == null)
+        if (spawn == null)
         {
             return units;
         }
 
-        foreach (var unit in Spawn.Units)
+        foreach (var unit in spawn.Units)
         {
             if (!String.IsNullOrEmpty(unit.Poss))
             {
@@ -73,7 +54,7 @@
                 {
                     Point point = new(int.Parse(poss[i]), int.Parse(poss[i + 1]));
                     // Point nPoint = Team == 1 ? area1.GetNormalizedPoint(point) : area2.GetNormalizedPoint(point);
-                    (var x, var y) = GetRotatedPoint(point);
+                    (var x, var y) = GetRotatedPoint(point, team);
                     units.Add(new(unit.Unit.Name, x, y));
                 }
             }
@@ -82,12 +63,12 @@
         return units;
     }
 
-    private (double x, double y) GetRotatedPoint(Point point)
+    private (double x, double y) GetRotatedPoint(Point point, int team)
     {
         (var x, var y) = RotatePoint(point);
-        x = Team == 2 ? (x - 62.23907) / 2.0 : (x - 176.79037) / 2.0;
+        x = team == 2 ? (x - 62.23907) / 2.0 : (x - 176.79037) / 2.0;
         y = y - 107.97919;
-        return new(Math.Round((-x + 8), 2), Math.Round(y, 2));
+        return new(Math.Round((-x + 8 - 0.1), 2), Math.Round(y + 0.5, 2));
     }
 
     public static (double, double) RotatePoint(Point pointToRotate)
@@ -102,7 +83,7 @@
         return (x, y);
     }
 
-    public async void Update()
+    public async void Update(SpawnDto? spawn, int team)
     {
         if (!chartIsReady)
         {
@@ -114,14 +95,12 @@
             chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
         }
 
-        var module = await moduleTask.Value.ConfigureAwait(false);
-        if (!annotationsRegistered)
+        if (spawn is null)
         {
-            // await module.InvokeVoidAsync("registerPlugin");
-            annotationsRegistered = true;
+            return;
         }
 
-        var unitGroups = mapUnits.GroupBy(g => g.Name);
+        var unitGroups = GetUnits(spawn, team).GroupBy(g => g.Name);
         List<ChartJsDataset> datasets = new();
         int i = 0;
         foreach (var group in unitGroups.OrderByDescending(o => o.Count()))
@@ -138,7 +117,7 @@
         }
 
         chartConfig.AddDatasets(datasets);
-        // await module.InvokeVoidAsync("drawArrows", Team, chartConfig.ChartJsConfigGuid);
+        var module = await moduleTask.Value.ConfigureAwait(false);
         await module.InvokeVoidAsync("setChartTooltips", chartConfig.ChartJsConfigGuid);
         await module.InvokeVoidAsync("drawChartBorder", chartConfig.ChartJsConfigGuid);
     }
@@ -149,7 +128,7 @@
         {
             var success = await RegisterPlugin();
             chartIsReady = !success;
-            Update();
+            Update(Spawn, Team);
         }
         else if (e is ChartJsLabelHoverEvent hoverEvent)
         {
@@ -162,34 +141,6 @@
                 }
             }
         }
-    }
-
-    private int FindClosestPoint(double x, double y)
-    {
-        int closestIndex = -1;
-        double closestDistance = double.MaxValue;
-
-        for (int i = 0; i < mapUnits.Count; i++)
-        {
-            var item = mapUnits[i];
-            double distance = Math.Sqrt(Math.Pow(x - item.X, 2) + Math.Pow(y - item.Y, 2));
-            if (distance < closestDistance)
-            {
-                closestIndex = i;
-                closestDistance = distance;
-            }
-        }
-
-        return closestIndex;
-    }
-
-    public void AnimateBubble(int index)
-    {
-        if (!chartIsReady)
-        {
-            return;
-        }
-        JSRuntime.InvokeVoidAsync("bubblePointHover", chartConfig.ChartJsConfigGuid, index);
     }
 
     private ChartJsDataset GetBubbleChartDataset(List<MapUnit> units, string color, double radius)
@@ -366,8 +317,8 @@
                     {
                         { "arrow1", new LabelAnnotation()
                         {
-                            XValue = Team == 1 ? 7.5 : 0.2,
-                            YValue = 1,
+                            XValue = Team == 1 ? 7.6 : 0.2,
+                            YValue = 1.3,
                             XAdjust = 0,
                             YAdjust = 0,
                             Position = "start",
@@ -382,7 +333,7 @@
                         } },
                         { "arrow2", new LabelAnnotation()
                         {
-                            XValue = Team == 1 ? 7.5 : 0.2,
+                            XValue = Team == 1 ? 7.6 : 0.2,
                             YValue = 25,
                             XAdjust = 0,
                             YAdjust = 0,
@@ -421,13 +372,5 @@
         public string Name { get; init; }
         public double X { get; init; }
         public double Y { get; init; }
-    }
-
-    public void Dispose()
-    {
-        if (moduleTask.IsValueCreated)
-        {
-            moduleTask.Value.Dispose();
-        }
     }
 }
