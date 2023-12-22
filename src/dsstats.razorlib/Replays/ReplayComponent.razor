@@ -327,6 +327,8 @@
 
     public void Init()
     {
+        buildPlayers.Clear();
+        InvokeAsync(() => StateHasChanged());
         if (remoteToggleService.IsMaui || Replay.TournamentEdition)
         {
             comboRating = false;
@@ -345,7 +347,6 @@
         showLeavers = false;
         Breakpoint = Breakpoint.All;
         breakpointsCount = Math.Min(4, Replay.ReplayPlayers.Select(s => s.Spawns.Count).Max());
-        buildPlayers.Clear();
         middleInfo = Replay.GetMiddleInfo();
         teamTable1?.Uncheck();
         teamTable2?.Uncheck();
