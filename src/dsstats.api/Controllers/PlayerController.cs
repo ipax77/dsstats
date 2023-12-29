@@ -10,10 +10,12 @@ namespace dsstats.api.Controllers;
 public class PlayerController : Controller
 {
     private readonly IPlayerService playerService;
+    private readonly IReviewService reviewService;
 
-    public PlayerController(IPlayerService playerService)
+    public PlayerController(IPlayerService playerService, IReviewService reviewService)
     {
         this.playerService = playerService;
+        this.reviewService = reviewService;
     }
 
     [HttpGet]
@@ -145,5 +147,12 @@ public class PlayerController : Controller
     public async Task<ActionResult<DistributionResponse>> GetDistribution(DistributionRequest request)
     {
         return await playerService.GetDistribution(request);
+    }
+
+    [HttpPost]
+    [Route("review")]
+    public async Task<ActionResult<ReviewResponse>> GetReview(ReviewRequest request, CancellationToken token)
+    {
+        return await reviewService.GetReview(request, token);
     }
 }

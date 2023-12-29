@@ -38,5 +38,6 @@ builder.Services.AddScoped<IBuildService, BuildService>();
 builder.Services.AddScoped<ICmdrInfoService, CmdrInfoService>();
 builder.Services.AddScoped<ITourneysService, TourneysService>();
 builder.Services.AddScoped<IUnitmapService, UnitmapService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
 
 await builder.Build().RunAsync();

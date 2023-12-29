@@ -211,27 +211,31 @@ public record ReplayPlayerChartDto
 
 public record ReplayChartDto
 {
-    public DateTime GameTime => GetDateTime();
-    public int Year { get; set; }
-    public int Week { get; set; }
+    public ReplayChartDto() { }
 
-    private DateTime GetDateTime()
+    public ReplayChartDto(int year, int week)
     {
         DayOfWeek dayOfWeek = DayOfWeek.Monday;
 
-        DateTime dateOfMonday = new DateTime(Year, 1, 1)
-            .AddDays((Week - 1) * 7)
-            .AddDays(-(int)(new GregorianCalendar().GetDayOfWeek(new DateTime(Year, 1, 1))) + (int)dayOfWeek + 7);
+        DateTime dateOfMonday = new DateTime(year, 1, 1)
+            .AddDays((week - 1) * 7)
+            .AddDays(-(int)(new GregorianCalendar().GetDayOfWeek(new DateTime(year, 1, 1))) + (int)dayOfWeek + 7);
 
-        if (dateOfMonday.Year < Year)
+        if (dateOfMonday.Year < year)
         {
             dateOfMonday = dateOfMonday.AddDays(7);
         }
 
-        DateTime startOfWeek = dateOfMonday;
-
-        return startOfWeek;
+        GameTime = dateOfMonday;
     }
+
+    public ReplayChartDto(int year, int month, int day)
+    {
+        GameTime = new DateTime(year, month, day);
+    }
+
+    public DateTime GameTime { get; init; }
+    public RatingType RatingType { get; set; }
 }
 
 public record RepPlayerRatingChartDto

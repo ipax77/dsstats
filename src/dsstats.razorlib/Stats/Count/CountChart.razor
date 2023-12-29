@@ -11,6 +11,9 @@
     [Parameter, EditorRequired]
     public CountResponse Response { get; set; } = default!;
 
+    [Parameter]
+    public bool DisplayTitle { get; set; } = true;
+
     IconsChartJsConfig chartConfig = null!;
     bool dataReady;
     bool chartReady;
@@ -125,7 +128,7 @@
                         },
                         Title = new()
                         {
-                            Display = true,
+                            Display = DisplayTitle,
                             Position = "top",
                             Text = new IndexableOption<string>("Commander Matchups"),
                             Color = "white",

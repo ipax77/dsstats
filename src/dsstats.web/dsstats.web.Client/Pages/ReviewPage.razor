@@ -1,0 +1,36 @@
+﻿@using dsstats.shared
+@page "/review/2023"
+
+<PageTitle>dsstats - review 2023</PageTitle>
+
+<dsstats.razorlib.Players.Profile.ReviewComponent RequestName="RequestName" Year="2023" />
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? PlayerId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Name { get; set; }
+
+    private RequestNames RequestName = new("PAX", 226401, 2, 1);
+
+    protected override void OnInitialized()
+    {
+        SetRequest();
+        base.OnInitialized();
+    }
+
+    private void SetRequest()
+    {
+        if (!string.IsNullOrEmpty(PlayerId))
+        {
+            var playerId = Data.GetPlayerId(PlayerId);
+            if (playerId is not null)
+            {
+                RequestName = new(Name ?? "", playerId.ToonId, playerId.RegionId, playerId.RealmId);
+            }
+        }
+    }
+}
