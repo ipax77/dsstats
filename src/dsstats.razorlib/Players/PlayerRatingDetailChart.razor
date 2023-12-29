@@ -25,6 +25,9 @@
     [Parameter, EditorRequired]
     public List<ReplayPlayerChartDto> ChartDtos { get; set; } = default!;
 
+    [Parameter]
+    public bool WithoutTitle { get; set; }
+
     Dictionary<ChartTypeMemory, List<ReplayPlayerChartDto>> rpChartDtos = new();
 
     bool dataReady;
@@ -240,7 +243,7 @@
 
     private ChartJsConfig GetLineChartConfig()
     {
-        return new()
+        var config = new ChartJsConfig()
             {
                 Type = ChartType.line,
                 Data = new ChartJsData()
@@ -261,7 +264,7 @@
                         ArbitraryLines = new List<ArbitraryLineConfig>(),
                         Title = new Title()
                         {
-                            Display = true,
+                            Display = !WithoutTitle,
                             Text = new IndexableOption<string>($"Ratings {Data.GetRatingTypeLongName(RatingType)}"),
                             Color = "#4E58A0",
                             Font = new Font()
@@ -386,6 +389,13 @@
                     }
                 }
             };
+
+        if (WithoutTitle)
+        {
+            config.Options.Animation = false;
+        }
+
+        return config;
     }
 
     public void Dispose()

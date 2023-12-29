@@ -150,7 +150,7 @@ public static class Data
             RatingType.Std => "Standard 3v3",
             RatingType.CmdrTE => "Cmdrs 3v3 TE",
             RatingType.StdTE => "Std 3v3 TE",
-            RatingType.None => "No Rating",
+            RatingType.None => "No Rating (Brawl, no 3v3)",
             _ => ""
         };
     }

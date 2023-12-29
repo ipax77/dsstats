@@ -110,7 +110,7 @@
 
     private IconsChartJsConfig GetChartConfig()
     {
-        return new()
+        var config = new IconsChartJsConfig()
             {
                 Type = ChartType.doughnut,
                 Options = new()
@@ -152,5 +152,10 @@
                     }
                 },
             };
+        if (!DisplayTitle)
+        {
+            config.Options.Animation = false;
+        }
+        return config;
     }
 }
