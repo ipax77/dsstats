@@ -155,4 +155,11 @@ public class PlayerController : Controller
     {
         return await reviewService.GetReview(request, token);
     }
+
+    [HttpPost]
+    [Route("reviewratingtypeinfo")]
+    public async Task<ActionResult<ReviewResponse>> GetReviewRatingTypeInfo(ReviewRequest request, CancellationToken token)
+    {
+        return await reviewService.GetReviewRatingTypeInfo(request, token);
+    }
 }

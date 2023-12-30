@@ -17,6 +17,7 @@ public class ReviewService(ReplayContext context, ILogger<ReviewService> logger)
         (var winStreak, var losStreak) = await GetLongestStreak(playerId, token);
         var cmdrsPlayed = await GetPlayerIdCommandersPlayed(playerId, ratingType, year, token);
         var ratingInfos = await GetPlayerRatingChartData(playerId, ratingType, year, token);
+        (var longestReplay, var mostCompetitiveReplay) = await GetLongestAndMostCompetitiveReplayHash(playerId, year, token);
 
         return new()
         {
@@ -24,6 +25,25 @@ public class ReviewService(ReplayContext context, ILogger<ReviewService> logger)
             TotalGames = await GetTotalGames(playerId, year, token),
             LongestWinStreak = winStreak,
             LongestLosStreak = losStreak,
+            CommanderInfos = cmdrsPlayed,
+            RatingInfos = ratingInfos,
+            LongestReplay = longestReplay,
+            MostCompetitiveReplay = mostCompetitiveReplay,
+            GreatestComebackReplay = await GetGreatestComebackReplayHash(playerId, year, token)
+        };
+    }
+
+    public async Task<ReviewResponse> GetReviewRatingTypeInfo(ReviewRequest request, CancellationToken token = default)
+    {
+        PlayerId playerId = new(226401, 1, 2);
+        int year = 2023;
+        RatingType ratingType = request.RatingType;
+
+        var cmdrsPlayed = await GetPlayerIdCommandersPlayed(playerId, ratingType, year, token);
+        var ratingInfos = await GetPlayerRatingChartData(playerId, ratingType, year, token);
+        return new()
+        {
+            RatingType = request.RatingType,
             CommanderInfos = cmdrsPlayed,
             RatingInfos = ratingInfos,
         };
@@ -203,6 +223,77 @@ public class ReviewService(ReplayContext context, ILogger<ReviewService> logger)
         return (0, 0);
     }
 
+    private async Task<(string?, string?)> GetLongestAndMostCompetitiveReplayHash(PlayerId playerId, int year, CancellationToken token)
+    {
+        (var fromDate, var toDate) = GetFromTo(year);
+
+        var query = from p in context.Players
+                    from rp in p.ReplayPlayers
+                    join r in context.Replays on rp.ReplayId equals r.ReplayId
+                    where r.GameTime >= fromDate && r.GameTime < toDate
+                     && p.ToonId == playerId.ToonId
+                     && p.RealmId == playerId.RealmId
+                     && p.RegionId == playerId.RegionId
+                     && r.DefaultFilter
+                    select r;
+
+        var longestReplay = await query.OrderByDescending(o => o.Duration)
+            .Select(s => s.ReplayHash)
+            .FirstOrDefaultAsync(token);
+
+        var mostCompetitiveReplay = await query.OrderByDescending(o => o.Middle.Length)
+            .Select(s => s.ReplayHash)
+            .FirstOrDefaultAsync(token);
+
+        return (longestReplay, mostCompetitiveReplay);
+    }
+
+    private async Task<string?> GetGreatestComebackReplayHash(PlayerId playerId, int year, CancellationToken token)
+    {
+        (var fromDate, var toDate) = GetFromTo(year);
+
+        var query = from p in context.Players
+                    from rp in p.ReplayPlayers
+                    join r in context.Replays on rp.ReplayId equals r.ReplayId
+                    where r.GameTime >= fromDate && r.GameTime < toDate
+                     && p.ToonId == playerId.ToonId
+                     && p.RealmId == playerId.RealmId
+                     && p.RegionId == playerId.RegionId
+                     && r.DefaultFilter
+                    select rp;
+
+        var infos = from rp in query
+                    where rp.Replay.DefaultFilter 
+                        && rp.PlayerResult == PlayerResult.Win 
+                        && rp.Replay.Duration > 360 
+                        && rp.Replay.Middle.Length > 0
+                    select new
+                    {
+                        rp.Replay.ReplayHash,
+                        rp.Replay.Middle,
+                        rp.Replay.Duration,
+                        rp.Replay.WinnerTeam
+                    };
+        var linfos = await infos.ToListAsync(token);
+
+        double minMid = 100;
+        string? replayHash = null;
+        foreach (var info in linfos)
+        {
+            (int startTeam, int[] gameloops, int totalGameloops) = GetMiddleInfo(info.Middle, info.Duration);
+            (var mid1, var mid2) = GetChartMiddle(startTeam, gameloops, totalGameloops);
+
+            var plMid = info.WinnerTeam == 1 ? mid1 : mid2;
+            if (plMid > 0 && plMid < minMid)
+            {
+                minMid = plMid;
+                replayHash = info.ReplayHash;
+            }
+        }
+
+        return replayHash;
+    }
+
     private (DateTime, DateTime) GetFromTo(int year)
     {
         var from = new DateTime(year, 1, 1);
@@ -210,5 +301,85 @@ public class ReviewService(ReplayContext context, ILogger<ReviewService> logger)
         return (from, to);
     }
 
+    private static (int, int[], int) GetMiddleInfo(string middleString, int duration)
+    {
+        int totalGameloops = (int)(duration * 22.4);
+
+        if (!String.IsNullOrEmpty(middleString))
+        {
+            var ents = middleString.Split('|').Where(x => !String.IsNullOrEmpty(x)).ToArray();
+            var ients = ents.Select(s => int.Parse(s)).ToList();
+            ients.Add(totalGameloops);
+            int startTeam = ients[0];
+            ients.RemoveAt(0);
+            return (startTeam, ients.ToArray(), totalGameloops);
+        }
+        return (0, Array.Empty<int>(), totalGameloops);
+    }
+
+    private static (double, double) GetChartMiddle(int startTeam, int[] gameloops, int gameloop)
+    {
+        if (gameloops.Length < 2)
+        {
+            return (0, 0);
+        }
+
+        int sumTeam1 = 0;
+        int sumTeam2 = 0;
+        bool isFirstTeam = startTeam == 1;
+        int lastLoop = 0;
+        bool hasInfo = false;
+
+        for (int i = 0; i < gameloops.Length; i++)
+        {
+            if (lastLoop > gameloop)
+            {
+                hasInfo = true;
+                break;
+            }
+
+            isFirstTeam = !isFirstTeam;
+            if (lastLoop > 0)
+            {
+                if (isFirstTeam)
+                {
+                    sumTeam1 += gameloops[i] - lastLoop;
+                }
+                else
+                {
+                    sumTeam2 += gameloops[i] - lastLoop;
+                }
+            }
+            lastLoop = gameloops[i];
+        }
+
+        if (hasInfo)
+        {
+            if (isFirstTeam)
+            {
+                sumTeam1 -= lastLoop - gameloop;
+            }
+            else
+            {
+                sumTeam2 -= lastLoop - gameloop;
+            }
+        }
+        else if (gameloops.Length > 0)
+        {
+            if (isFirstTeam)
+            {
+                sumTeam1 -= gameloops[^1] - gameloop;
+            }
+            else
+            {
+                sumTeam2 -= gameloops[^1] - gameloop;
+            }
+        }
+
+        sumTeam1 = Math.Max(sumTeam1, 0);
+        sumTeam2 = Math.Max(sumTeam2, 0);
+
+        return (Math.Round(sumTeam1 * 100.0 / (double)gameloops[^1], 2), Math.Round(sumTeam2 * 100.0 / (double)gameloops[^1], 2));
+    }
 }
 

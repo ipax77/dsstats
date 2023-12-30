@@ -13,6 +13,9 @@ public record ReviewResponse
     public int LongestLosStreak { get; set; }
     public List<CommanderReviewInfo> CommanderInfos { get; set; } = new();
     public List<ReplayPlayerReviewDto> RatingInfos { get; set; } = new();
+    public string? LongestReplay { get; set; }
+    public string? MostCompetitiveReplay { get; set; }
+    public string? GreatestComebackReplay { get; set; }
 }
 
 public record ReplayPlayerReviewDto

@@ -1,8 +1,10 @@
 ﻿@using System.Globalization
+@using dsstats.razorlib.Replays
 @using dsstats.razorlib.Stats.Count
 @using dsstats.shared
 @using dsstats.shared.Interfaces
 @inject IReviewService reviewService
+@inject IReplaysService replaysService
 
 <div class="container-fluid" style="background-color: #080808CC;">
     <div>
@@ -97,6 +99,23 @@
         </div>
     }
 </div>
+<div class="mt-1">
+    @if (longestReplay is not null)
+    {
+        <h3 class="mt-1 text-warning p-1 bgchart2">Longest Replay - @TimeSpan.FromSeconds(longestReplay.Duration).ToString(@"hh\:mm\:ss")</h3>
+        <ReplayComponent Replay="longestReplay" />
+    }
+    @if (mostCompetivieReplay is not null)
+    {
+        <h3 class="mt-1 text-warning p-1 bgchart2">Most Competitive Replay</h3>
+        <ReplayComponent Replay="mostCompetivieReplay" />
+    }
+    @if (greatestComebackReplay is not null)
+    {
+        <h3 class="mt-1 text-warning p-1 bgchart2">Greatest Comeback Replay</h3>
+        <ReplayComponent Replay="greatestComebackReplay" />
+    }
+</div>
 
 
 @code {
@@ -117,6 +136,10 @@
     CountChart? countChart;
     PlayerRatingDetailChart? playerRatingDetailChart;
 
+    ReplayDto? longestReplay;
+    ReplayDto? mostCompetivieReplay;
+    ReplayDto? greatestComebackReplay;
+
     RatingType ratingType = RatingType.Cmdr;
 
     protected override void OnInitialized()
@@ -129,13 +152,40 @@
     {
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
-        review = await reviewService.GetReview(new()
-            {
-                RatingType = ratingType
-            });
+        if (review is null)
+        {
+            review = await reviewService.GetReview(new()
+                {
+                    RatingType = ratingType
+                });
+        }
+        else
+        {
+            var reviewInfo = await reviewService.GetReviewRatingTypeInfo(new()
+                {
+                    RatingType = ratingType
+                });
+            review.RatingType = ratingType;
+            review.CommanderInfos = reviewInfo.CommanderInfos;
+            review.RatingInfos = reviewInfo.RatingInfos;
+        }
         countChart?.SetupChart(GetCountResponse());
         playerRatingDetailChart?.Update(ratingType, GetRatings());
         isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+
+        if (longestReplay is null && review.LongestReplay is not null)
+        {
+            longestReplay = await replaysService.GetReplay(review.LongestReplay);
+        }
+        if (mostCompetivieReplay is null && review.MostCompetitiveReplay is not null)
+        {
+            mostCompetivieReplay = await replaysService.GetReplay(review.MostCompetitiveReplay);
+        }
+        if (greatestComebackReplay is null && review.GreatestComebackReplay is not null)
+        {
+            greatestComebackReplay = await replaysService.GetReplay(review.GreatestComebackReplay);
+        }
         await InvokeAsync(() => StateHasChanged());
     }
 

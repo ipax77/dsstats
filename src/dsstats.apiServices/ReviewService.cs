@@ -24,4 +24,20 @@ public class ReviewService(HttpClient httpClient, ILogger<ReviewService> logger)
         }
         return new();
     }
+
+    public async Task<ReviewResponse> GetReviewRatingTypeInfo(ReviewRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{playerController}/reviewratingtypeinfo", request, token);
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadFromJsonAsync<ReviewResponse>();
+            return content ?? new();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting review: {error}", ex.Message);
+        }
+        return new();
+    }
 }
