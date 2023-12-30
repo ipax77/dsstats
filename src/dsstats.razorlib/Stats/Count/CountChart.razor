@@ -71,6 +71,20 @@
         JSRuntime.InvokeVoidAsync("setChartLabelsToLabel", chartConfig.ChartJsConfigGuid);
     }
 
+    public void ResetChart(CountResponse response)
+    {
+        var data = response.CountEnts
+            .OrderByDescending(o => o.Matchups)
+            .ToList();
+
+        chartConfig.Data.Datasets.Clear();
+        chartConfig.Data.Labels = data.Select(s => s.Commander.ToString()).ToList();
+        chartConfig.Data.Datasets.Add(GetDataset(data));
+        SetIcons(data);
+        chartConfig.ReinitializeChart();
+        JSRuntime.InvokeVoidAsync("setChartLabelsToLabel", chartConfig.ChartJsConfigGuid);
+    }
+
     private ChartJsDataset GetDataset(List<CountEnt> counts)
     {
         return new DoughnutDataset()

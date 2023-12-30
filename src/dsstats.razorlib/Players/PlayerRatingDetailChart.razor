@@ -77,13 +77,25 @@
         }
     }
 
-    public void Update(RatingType ratingType, List<ReplayPlayerChartDto> chartDtos)
+    public void Reset(RatingType ratingType, List<ReplayPlayerChartDto> chartDtos)
     {
         RatingType = ratingType;
 
         var key = new ChartTypeMemory(RatingType, RatingCalcType, remoteToggleService.FromServer);
         rpChartDtos[key] = chartDtos;
-        SetupChart();
+
+        chartConfig.Data.Datasets.Clear();
+        (var ratingData, var gamesData) = GetChartData(rpChartDtos[new(RatingType, RatingCalcType, remoteToggleService.FromServer)]);
+
+        chartConfig.Data.Labels = ratingData.Select(s => s.X).ToList();
+
+        var lineDataset = GetLineDataset(ratingData);
+        var countDataset = GetCountDataset(gamesData);
+
+        chartConfig.Data.Datasets.Add(lineDataset);
+        chartConfig.Data.Datasets.Add(countDataset);
+
+        chartConfig.ReinitializeChart();
     }
 
     private async Task LoadData()

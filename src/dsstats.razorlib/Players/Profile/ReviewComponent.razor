@@ -1,10 +1,12 @@
 ﻿@using System.Globalization
+@using Microsoft.JSInterop
 @using dsstats.razorlib.Replays
 @using dsstats.razorlib.Stats.Count
 @using dsstats.shared
 @using dsstats.shared.Interfaces
 @inject IReviewService reviewService
 @inject IReplaysService replaysService
+@inject IJSRuntime JSRuntime
 
 <div class="container-fluid" style="background-color: #080808CC;">
     <div>
@@ -142,6 +144,7 @@
 
     RatingType ratingType = RatingType.Cmdr;
 
+
     protected override void OnInitialized()
     {
         _ = LoadData();
@@ -169,8 +172,8 @@
             review.CommanderInfos = reviewInfo.CommanderInfos;
             review.RatingInfos = reviewInfo.RatingInfos;
         }
-        countChart?.SetupChart(GetCountResponse());
-        playerRatingDetailChart?.Update(ratingType, GetRatings());
+        countChart?.ResetChart(GetCountResponse());
+        playerRatingDetailChart?.Reset(ratingType, GetRatings());
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
 

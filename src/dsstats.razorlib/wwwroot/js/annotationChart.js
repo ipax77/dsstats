@@ -4,6 +4,11 @@ export async function registerPlugin() {
     Chart.register(annotationPlugin);
 }
 
+export async function registerChartWithPlugin() {
+    const { Chart } = await import('chart.js');
+    Chart.register(annotationPlugin);
+}
+
 export function setChartTooltips(chartId) {
     const chart = Chart.getChart(chartId);
 
@@ -49,3 +54,7 @@ const chartAreaBorder = {
         ctx.restore();
     }
 };
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
