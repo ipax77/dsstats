@@ -1,4 +1,5 @@
 ﻿@using System.Globalization
+@using dsstats.razorlib.Stats.Count
 @using dsstats.shared
 @using dsstats.shared.Interfaces
 @inject IReviewService reviewService
@@ -28,62 +29,67 @@
     @if (review is not null)
     {
         <div class="mt-2">
-            <h3>@review.CommanderInfos.Sum(s => s.Count) Games Played</h3>
-            <div class="row">
-                @foreach (var ent in counts.OrderBy(o => (int)o.Key))
-                {
-                    @if (ent.Key == RatingType.None)
-                    {
-                        continue;
-                    }
-                    <div class="col-auto mt-1">
-                        <h4 class="text-warning d-inline-block p-1 bgchart2">@ent.Value.CountEnts.Sum(s => s.Matchups) on @Data.GetRatingTypeLongName(@ent.Key)</h4>
-                        <div class="bgchart p-1 border border-secondary rounded"
-                             style="position: relative; width: 12.5vw; min-width: 400px; max-width: 600px; height: 12.5vw; min-height: 400px; max-height: 600px;">
-                            <dsstats.razorlib.Stats.Count.CountChart Response="ent.Value" DisplayTitle="false" />
-                        </div>
+            <h3>@review.TotalGames Games Played</h3>
+            <h4>Longest Win Streak: @review.LongestWinStreak</h4>
+            <h4>Longest Loss Streak: @review.LongestLosStreak</h4>
 
-                        @if (ratings.TryGetValue(ent.Key, out var typeRatings)
-                            && typeRatings is not null
-                            && typeRatings.Count > 0)
-                        {
-                            <div>
-                                <table class="tptable table table-sm">
-                                    <tbody>
-                                        <tr>
-                                            <td>Top Rating</td>
-                                            <td>@typeRatings.Max(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N2", CultureInfo.InvariantCulture)</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Avg Rating</td>
-                                            <td>@typeRatings.Average(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N2", CultureInfo.InvariantCulture)</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Min Rating</td>
-                                            <td>@typeRatings.Min(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N2", CultureInfo.InvariantCulture)</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="bgchart p-1 border border-secondary rounded"
-                                 style="position: relative; width: 30vw; min-width: 600px; max-width: 1200px; height: calc(30vw * 0.5); min-height: 300px; max-height: 600px;">
-                                <PlayerRatingDetailChart PlayerId="PlayerId"
-                                                         RatingType="ent.Key"
-                                                         RatingCalcType="RatingCalcType.Dsstats"
-                                                         CurrentRating="0"
-                                                         ChartDtos="typeRatings"
-                                                         WithoutTitle="true" />
-                            </div>
-                        }
+            <div class="mt-1">
+                <form @formname="reviewRatingTypeToggle">
+                    <fieldset>
+                        <div class="btn-group bgchart" role="group" aria-label="bptogglegroup">
+                            @foreach (RatingType rt in Enum.GetValues(typeof(RatingType)))
+                            {
+                                <input type="radio" class="btn-check" name="bptoggle" id="@($"reviewrt{rt}")"
+                                       checked="@(ratingType == rt)"
+                                       autocomplete="off" @onchange="e => SetRatingType(e, rt)">
+                                <label class="btn btn-outline-light check-label" for="@($"reviewrt{rt}")">
+                                    @Data.GetRatingTypeLongName(rt)
+                                </label>
+                            }
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+
+            <div class="row">
+                <div class="col-auto mt-1">
+                    <h4 class="text-warning d-inline-block p-1 bgchart2">@review.CommanderInfos.Sum(s => s.Count) on @Data.GetRatingTypeLongName(review.RatingType)</h4>
+                    <div class="bgchart p-1 border border-secondary rounded"
+                         style="position: relative; width: 12.5vw; min-width: 400px; max-width: 600px; height: 12.5vw; min-height: 400px; max-height: 600px;">
+                        <CountChart @ref="countChart" Response="GetCountResponse()" DisplayTitle="false" />
                     </div>
-                }
-                @if (counts.ContainsKey(RatingType.None))
+                </div>
+
+                @if (review.RatingInfos.Count > 0)
                 {
+                    var typeRatings = GetRatings();
                     <div class="col-auto mt-1">
-                        <h4 class="text-warning d-inline-block p-1 bgchart2">@counts[RatingType.None].CountEnts.Sum(s => s.Matchups) on @Data.GetRatingTypeLongName(RatingType.None)</h4>
+                        <div>
+                            <table class="tptable table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <td>Top Rating</td>
+                                        <td>@typeRatings.Max(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N0", CultureInfo.InvariantCulture)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Avg Rating</td>
+                                        <td>@typeRatings.Average(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N0", CultureInfo.InvariantCulture)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Min Rating</td>
+                                        <td>@typeRatings.Min(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N0", CultureInfo.InvariantCulture)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                         <div class="bgchart p-1 border border-secondary rounded"
-                             style="position: relative; width: 12.5vw; min-width: 400px; max-width: 600px; height: 12.5vw; min-height: 400px; max-height: 600px;">
-                            <dsstats.razorlib.Stats.Count.CountChart Response="counts[RatingType.None]" DisplayTitle="false" />
+                             style="position: relative; width: 30vw; min-width: 600px; max-width: 1200px; height: calc(30vw * 0.5); min-height: 300px; max-height: 600px;">
+                            <PlayerRatingDetailChart @ref="playerRatingDetailChart" PlayerId="PlayerId"
+                                                     RatingType="review.RatingType"
+                                                     RatingCalcType="RatingCalcType.Dsstats"
+                                                     CurrentRating="0"
+                                                     ChartDtos="typeRatings"
+                                                     WithoutTitle="true" />
                         </div>
                     </div>
                 }
@@ -108,8 +114,10 @@
     ReviewResponse? review;
     private bool isLoading;
 
-    Dictionary<RatingType, CountResponse> counts = new();
-    Dictionary<RatingType, List<ReplayPlayerChartDto>> ratings = new();
+    CountChart? countChart;
+    PlayerRatingDetailChart? playerRatingDetailChart;
+
+    RatingType ratingType = RatingType.Cmdr;
 
     protected override void OnInitialized()
     {
@@ -122,45 +130,55 @@
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
         review = await reviewService.GetReview(new()
-        {
-
-        });
-        counts = GetCountResponses();
-        ratings = GetRatingResponses();
+            {
+                RatingType = ratingType
+            });
+        countChart?.SetupChart(GetCountResponse());
+        playerRatingDetailChart?.Update(ratingType, GetRatings());
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
     }
 
-    private Dictionary<RatingType, CountResponse> GetCountResponses()
+    private void SetRatingType(ChangeEventArgs e, RatingType rt)
     {
-        if (review is null || review.CommanderInfos.Count == 0)
-        {
-            return new();
-        }
-
-        return review.CommanderInfos.GroupBy(g => g.RatingType)
-            .ToDictionary(k => k.Key, v => new CountResponse()
-                {
-                    CountEnts = v.Select(s => new CountEnt()
-                    {
-                        Commander = s.Cmdr,
-                        Matchups = s.Count
-                    }).ToList()
-                });
+        ratingType = rt;
+        _ = LoadData();
     }
 
-    private Dictionary<RatingType, List<ReplayPlayerChartDto>> GetRatingResponses()
+    private CountResponse GetCountResponse()
     {
-        if (review is null || review.RatingInfos.Count == 0)
+        ArgumentNullException.ThrowIfNull(review);
+        if (review.CommanderInfos.Count == 0)
         {
             return new();
         }
 
-        return review.RatingInfos.GroupBy(g => g.Replay.RatingType)
-            .ToDictionary(k => k.Key, v => v.Select(s => new ReplayPlayerChartDto()
+        return new()
+            {
+                CountEnts = review.CommanderInfos.Select(s => new CountEnt()
+                {
+                    Commander = s.Cmdr,
+                    Matchups = s.Count
+                }).ToList()
+            };
+    }
+
+    private List<ReplayPlayerChartDto> GetRatings()
+    {
+        ArgumentNullException.ThrowIfNull(review);
+        if (review.CommanderInfos.Count == 0)
+        {
+            return new();
+        }
+
+        return review.RatingInfos.Select(s => new ReplayPlayerChartDto()
             {
                 Replay = s.Replay,
-                ReplayPlayerRatingInfo = s.ReplayPlayerRatingInfo
-            }).ToList());
+                ReplayPlayerRatingInfo = new()
+                {
+                    Rating = s.ReplayPlayerRatingInfo?.Rating ?? 0,
+                    Games = s.ReplayPlayerRatingInfo?.Games ?? 0
+                }
+            }).ToList();
     }
 }
