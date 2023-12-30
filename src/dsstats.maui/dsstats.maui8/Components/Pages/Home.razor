@@ -72,32 +72,34 @@
         </div>
     </div>
 </div>
-
-<div class="mt-2">
-    <div class="col-auto">
-        <button class="btn btn-sm btn-outline-light bgchart"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#AppPlayers"
-                aria-expanded="false"
-                aria-controls="AppPlayers"
-                @onclick="e => showPlayers = !showPlayers">
-            <span class="bi @(showPlayers ? "bi-chevron-down" : "bi-chevron-up")"></span>
-            @Loc["Players"]
-        </button>
-    </div>
-    <div class="collapse show" id="AppPlayers">
-        @if (showPlayers)
+@if (isChartAnnotationPluginRegistered)
+{
+    <div class="mt-2">
+        <div class="col-auto">
+            <button class="btn btn-sm btn-outline-light bgchart"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#AppPlayers"
+            aria-expanded="false"
+            aria-controls="AppPlayers"
+            @onclick="e => showPlayers = !showPlayers">
+                <span class="bi @(showPlayers ? "bi-chevron-down" : "bi-chevron-up")"></span>
+                @Loc["Players"]
+            </button>
+        </div>
+        <div class="collapse show" id="AppPlayers">
+            @if (showPlayers)
+            {
+                <AppPlayersComponent @ref="appPlayersComponent" ActivePlayer="interestPlayer" OnPlayerRequested="PlayerRequest" />
+            }
+        </div>
+        @if (interestPlayer is not null)
         {
-            <AppPlayersComponent @ref="appPlayersComponent" ActivePlayer="interestPlayer" OnPlayerRequested="PlayerRequest" />
+            <div class="mt-1">
+                @*             <dsstats.razorlib.Players.PlayerDetails @ref="playerDetails"
+                                                PlayerId="interestPlayer" RatingType="RatingType.Cmdr" RatingCalcType="RatingCalcType.Dsstats" /> *@
+                <dsstats.razorlib.Players.Profile.ProfileComponent @ref="playerDetails" PlayerId="interestPlayer" RatingCalcType="RatingCalcType.Dsstats" RatingType="RatingType.Cmdr" />
+            </div>
         }
     </div>
-    @if (interestPlayer is not null)
-    {
-        <div class="mt-1">
-@*             <dsstats.razorlib.Players.PlayerDetails @ref="playerDetails"
-                                                PlayerId="interestPlayer" RatingType="RatingType.Cmdr" RatingCalcType="RatingCalcType.Dsstats" /> *@
-            <dsstats.razorlib.Players.Profile.ProfileComponent @ref="playerDetails" PlayerId="interestPlayer" RatingCalcType="RatingCalcType.Dsstats" RatingType="RatingType.Cmdr" />
-        </div>
-    }
-</div>
+}
