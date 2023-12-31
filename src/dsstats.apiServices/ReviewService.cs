@@ -40,4 +40,32 @@ public class ReviewService(HttpClient httpClient, ILogger<ReviewService> logger)
         }
         return new();
     }
+
+    public async Task<ReviewYearResponse> GetYearRatingTypeReview(RatingType ratingType, int year, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.GetFromJsonAsync<ReviewYearResponse>($"{playerController}/reviewyearratingtypeinfo/{(int)ratingType}");
+            return response ?? new();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting year review: {error}", ex.Message);
+        }
+        return new();
+    }
+
+    public async Task<ReviewYearResponse> GetYearReview(RatingType ratingType, int year, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.GetFromJsonAsync<ReviewYearResponse>($"{playerController}/reviewyear/{(int)ratingType}");
+            return response ?? new();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting year review: {error}", ex.Message);
+        }
+        return new();
+    }
 }

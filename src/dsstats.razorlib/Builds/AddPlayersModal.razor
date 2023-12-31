@@ -13,24 +13,33 @@
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h4>Add Players (maximum 5)</h4>
-                <div class="row">
-                    <div class="col-auto me-2">
-                        <button type="button" class="btn btn-outline-warning"
-                            @onclick="AddPlayers">Add Players</button>
-                    </div>
-                    @foreach (var player in addPlayers)
-                    {
-                        <div class="col-auto">
-                            <input type="checkbox" class="btn-check" id="@($"{player.Name}-x-{player.ToonId}")"
-                                autocomplete="off" @onclick="e => RemovePlayer(player)">
-                            <label class="btn btn-primary" for="@($"{player.Name}-{player.ToonId}")">
-                                @player.Name @Data.GetRegionString(player.RegionId)
-                                <i class="bi bi-x-lg text-danger" @onclick="e => RemovePlayer(player)"></i>
-                            </label>
+                @if (SinglePlayer)
+                {
+                    <h4>Select Player</h4>
+                }
+                else
+                {
+                    <h4>Add Players (maximum 5)</h4>
+                    <div class="row">
+                        <div class="col-auto me-2">
+                            <button type="button" class="btn btn-outline-warning"
+                                    @onclick="AddPlayers">
+                                Add Players
+                            </button>
                         </div>
-                    }
-                </div>
+                        @foreach (var player in addPlayers)
+                        {
+                            <div class="col-auto">
+                                <input type="checkbox" class="btn-check" id="@($"{player.Name}-x-{player.ToonId}")"
+                                       autocomplete="off" @onclick="e => RemovePlayer(player)">
+                                <label class="btn btn-primary" for="@($"{player.Name}-{player.ToonId}")">
+                                    @player.Name @Data.GetRegionString(player.RegionId)
+                                    <i class="bi bi-x-lg text-danger" @onclick="e => RemovePlayer(player)"></i>
+                                </label>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
             <div class="modal-body">
                 <div>
@@ -110,7 +119,7 @@
                             else
                             {
                                 <Virtualize @ref="virtualize" Context="rating" ItemsProvider="LoadRatings"
-                                    OverscanCount="10" ItemSize="41" SpacerElement="tr">
+                                            OverscanCount="10" ItemSize="41" SpacerElement="tr">
                                     <ItemContent>
                                         <tr height="41px;" class="pointer" @onclick="e => AddPlayer(rating.Player)">
                                             <td>
@@ -187,6 +196,9 @@
     [Parameter]
     public EventCallback<List<RequestNames>> OnPlayersSelected { get; set; }
 
+    [Parameter]
+    public bool SinglePlayer { get; set; }
+
     private RatingsRequest Request = new()
         {
             Type = RatingType.Cmdr,
@@ -242,9 +254,15 @@
             return;
         }
         RequestNames requestNames = new(player.Name, player.ToonId, player.RegionId, player.RealmId);
+
         if (!addPlayers.Contains(requestNames))
         {
             addPlayers.Add(requestNames);
+        }
+
+        if (SinglePlayer)
+        {
+            AddPlayers();
         }
     }
 

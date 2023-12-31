@@ -2,17 +2,28 @@
 using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace dsstats.db8services;
 
-public class ReviewService(ReplayContext context, ILogger<ReviewService> logger) : IReviewService
+public partial class ReviewService(ReplayContext context, IMemoryCache memoryCache, ILogger<ReviewService> logger) : IReviewService
 {
     public async Task<ReviewResponse> GetReview(ReviewRequest request, CancellationToken token = default)
     {
-        PlayerId playerId = new(226401, 1, 2);
+        PlayerId playerId = new(request.RequestName.ToonId, request.RequestName.RealmId, request.RequestName.RegionId);
         int year = 2023;
         RatingType ratingType = request.RatingType;
+
+        var isUploader = await IsUploader(playerId);
+
+        if (!isUploader)
+        {
+            return new()
+            {
+                IsUploader = false
+            };
+        }
 
         (var winStreak, var losStreak) = await GetLongestStreak(playerId, token);
         var cmdrsPlayed = await GetPlayerIdCommandersPlayed(playerId, ratingType, year, token);
@@ -29,15 +40,26 @@ public class ReviewService(ReplayContext context, ILogger<ReviewService> logger)
             RatingInfos = ratingInfos,
             LongestReplay = longestReplay,
             MostCompetitiveReplay = mostCompetitiveReplay,
-            GreatestComebackReplay = await GetGreatestComebackReplayHash(playerId, year, token)
+            GreatestComebackReplay = await GetGreatestComebackReplayHash(playerId, year, token),
+            IsUploader = true
         };
     }
 
     public async Task<ReviewResponse> GetReviewRatingTypeInfo(ReviewRequest request, CancellationToken token = default)
     {
-        PlayerId playerId = new(226401, 1, 2);
+        PlayerId playerId = new(request.RequestName.ToonId, request.RequestName.RealmId, request.RequestName.RegionId);
         int year = 2023;
         RatingType ratingType = request.RatingType;
+
+        var isUploader = await IsUploader(playerId);
+
+        if (!isUploader)
+        {
+            return new()
+            {
+                IsUploader = false
+            };
+        }
 
         var cmdrsPlayed = await GetPlayerIdCommandersPlayed(playerId, ratingType, year, token);
         var ratingInfos = await GetPlayerRatingChartData(playerId, ratingType, year, token);
@@ -46,7 +68,20 @@ public class ReviewService(ReplayContext context, ILogger<ReviewService> logger)
             RatingType = request.RatingType,
             CommanderInfos = cmdrsPlayed,
             RatingInfos = ratingInfos,
+            IsUploader = true
         };
+    }
+
+    private async Task<bool> IsUploader(PlayerId playerId)
+    {
+        var uploaderId = await context.Players
+            .Where(x => x.ToonId == playerId.ToonId
+                && x.RealmId == playerId.RealmId
+                && x.RegionId == playerId.RegionId)
+            .Select(s => s.UploaderId)
+            .FirstOrDefaultAsync();
+
+        return uploaderId > 0;
     }
 
     private async Task<int> GetTotalGames(PlayerId playerId, int year, CancellationToken token)
