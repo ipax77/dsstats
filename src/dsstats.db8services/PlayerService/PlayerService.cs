@@ -130,11 +130,7 @@ public partial class PlayerService : IPlayerService
                                group new { r, rpr } by new { r.GameTime.Year, Week = context.Strftime("'%W'", r.GameTime) } into g
                                select new ReplayPlayerChartDto()
                                {
-                                   Replay = new()
-                                   {
-                                       Year = g.Key.Year,
-                                       Week = g.Key.Week,
-                                   },
+                                   Replay = new(g.Key.Year, g.Key.Week),
                                    ReplayPlayerRatingInfo = new()
                                    {
                                        Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),
@@ -153,11 +149,7 @@ public partial class PlayerService : IPlayerService
                       group new { r, rpr } by new { r.GameTime.Year, Week = context.Week(r.GameTime) } into g
                       select new ReplayPlayerChartDto()
                       {
-                          Replay = new()
-                          {
-                              Year = g.Key.Year,
-                              Week = g.Key.Week,
-                          },
+                          Replay = new(g.Key.Year, g.Key.Week),
                           ReplayPlayerRatingInfo = new()
                           {
                               Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),
@@ -203,11 +195,7 @@ public partial class PlayerService : IPlayerService
                     group new { r, rpr } by new { r.CreatedAt.Year, Week = context.Week(r.CreatedAt) } into g
                     select new ReplayPlayerChartDto()
                     {
-                        Replay = new()
-                        {
-                            Year = g.Key.Year,
-                            Week = g.Key.Week,
-                        },
+                        Replay = new(g.Key.Year, g.Key.Week),
                         ReplayPlayerRatingInfo = new()
                         {
                             Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),
@@ -233,11 +221,7 @@ public partial class PlayerService : IPlayerService
                     group new { r, rpr } by new { r.GameTime.Year, Week = context.Week(r.GameTime) } into g
                     select new ReplayPlayerChartDto()
                     {
-                        Replay = new()
-                        {
-                            Year = g.Key.Year,
-                            Week = g.Key.Week,
-                        },
+                        Replay = new(g.Key.Year, g.Key.Week),
                         ReplayPlayerRatingInfo = new()
                         {
                             Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),
@@ -263,11 +247,7 @@ public partial class PlayerService : IPlayerService
                     group new { r, rpr } by new { r.GameTime.Year, Week = context.Week(r.GameTime) } into g
                     select new ReplayPlayerChartDto()
                     {
-                        Replay = new()
-                        {
-                            Year = g.Key.Year,
-                            Week = g.Key.Week,
-                        },
+                        Replay = new(g.Key.Year, g.Key.Week),
                         ReplayPlayerRatingInfo = new()
                         {
                             Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),
@@ -301,11 +281,7 @@ public partial class PlayerService : IPlayerService
                     } into g
                     select new ReplayPlayerChartDto()
                     {
-                        Replay = new()
-                        {
-                            Year = g.Key.Year,
-                            Week = g.Key.Week,
-                        },
+                        Replay = new(g.Key.Year, g.Key.Week),
                         ReplayPlayerRatingInfo = new()
                         {
                             Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),

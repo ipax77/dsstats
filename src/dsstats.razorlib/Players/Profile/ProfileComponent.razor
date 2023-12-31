@@ -104,6 +104,16 @@
         }
     </div>
 
+    @if (isUploader)
+    {
+        <div class="mt-1 mb-1">
+            <button type="button" class="btn btn-outline-light btn-lg text-warning fw-bold bgchart"
+                @onclick="ShowReview">
+                <span class="bi bi-person-plus-fill"></span> Player review of 2023
+            </button>
+        </div>
+    }
+
     <div class="mt-3">
         <PlayerRatingCards Ratings="summary.Ratings" RatingType="RatingType" OnRatingSelected="ChangeRating" />
     </div>

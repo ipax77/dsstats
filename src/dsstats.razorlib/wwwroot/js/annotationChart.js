@@ -1,7 +1,11 @@
 import * as annotationPlugin from './chartjs-plugin-annotation.min.js';
 
 export async function registerPlugin() {
-    // await import('./chartjs-plugin-annotation.min.js');
+    Chart.register(annotationPlugin);
+}
+
+export async function registerChartWithPlugin() {
+    const { Chart } = await import('chart.js');
     Chart.register(annotationPlugin);
 }
 
@@ -50,3 +54,7 @@ const chartAreaBorder = {
         ctx.restore();
     }
 };
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}

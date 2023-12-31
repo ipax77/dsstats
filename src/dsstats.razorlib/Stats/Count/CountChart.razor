@@ -11,6 +11,9 @@
     [Parameter, EditorRequired]
     public CountResponse Response { get; set; } = default!;
 
+    [Parameter]
+    public bool DisplayTitle { get; set; } = true;
+
     IconsChartJsConfig chartConfig = null!;
     bool dataReady;
     bool chartReady;
@@ -68,6 +71,20 @@
         JSRuntime.InvokeVoidAsync("setChartLabelsToLabel", chartConfig.ChartJsConfigGuid);
     }
 
+    public void ResetChart(CountResponse response)
+    {
+        var data = response.CountEnts
+            .OrderByDescending(o => o.Matchups)
+            .ToList();
+
+        chartConfig.Data.Datasets.Clear();
+        chartConfig.Data.Labels = data.Select(s => s.Commander.ToString()).ToList();
+        chartConfig.Data.Datasets.Add(GetDataset(data));
+        SetIcons(data);
+        chartConfig.ReinitializeChart();
+        JSRuntime.InvokeVoidAsync("setChartLabelsToLabel", chartConfig.ChartJsConfigGuid);
+    }
+
     private ChartJsDataset GetDataset(List<CountEnt> counts)
     {
         return new DoughnutDataset()
@@ -107,7 +124,7 @@
 
     private IconsChartJsConfig GetChartConfig()
     {
-        return new()
+        var config = new IconsChartJsConfig()
             {
                 Type = ChartType.doughnut,
                 Options = new()
@@ -125,7 +142,7 @@
                         },
                         Title = new()
                         {
-                            Display = true,
+                            Display = DisplayTitle,
                             Position = "top",
                             Text = new IndexableOption<string>("Commander Matchups"),
                             Color = "white",
@@ -149,5 +166,6 @@
                     }
                 },
             };
+        return config;
     }
 }

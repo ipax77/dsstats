@@ -108,6 +108,7 @@ builder.Services.AddScoped<ICmdrInfoService, CmdrInfoService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<ITourneysService, TourneysService>();
 builder.Services.AddScoped<IUnitmapService, UnitmapService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
 
 if (builder.Environment.IsProduction())
 {
