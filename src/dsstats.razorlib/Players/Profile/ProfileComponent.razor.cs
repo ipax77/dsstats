@@ -214,4 +214,15 @@ public partial class ProfileComponent : ComponentBase
             ), true);
         }
     }
+
+    private void ShowReview()
+    {
+        NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters("review/2023",
+        new Dictionary<string, object?>()
+            {
+                            {"PlayerId", Data.GetPlayerIdString(PlayerId) },
+                            {"Name", name }
+            }
+        ), true);
+    }
 }

@@ -46,6 +46,8 @@ public class ReplayContext : DbContext
     public int Week(DateTime date) => throw new InvalidOperationException($"{nameof(Week)} cannot be called client side.");
     public int Strftime(string arg, DateTime date) => throw new InvalidOperationException($"{nameof(Strftime)} cannot be called client side.");
 
+    public virtual DbSet<StreakInfo> StreakInfos { get; set; } = null!;
+
     public ReplayContext(DbContextOptions<ReplayContext> options)
     : base(options)
     {
@@ -53,6 +55,11 @@ public class ReplayContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<StreakInfo>(entity =>
+        {
+            entity.HasNoKey();
+        });
+
         modelBuilder.Entity<Replay>(entity =>
         {
             entity.HasIndex(e => e.FileName);
@@ -208,4 +215,10 @@ public class ReplayContext : DbContext
                     )
                 );
     }
+}
+
+public record StreakInfo
+{
+    public int PlayerResult { get; set; }
+    public double LongestStreak { get; set; }
 }
