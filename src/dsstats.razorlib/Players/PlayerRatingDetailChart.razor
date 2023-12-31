@@ -81,19 +81,24 @@
     {
         RatingType = ratingType;
 
-        var key = new ChartTypeMemory(RatingType, RatingCalcType, remoteToggleService.FromServer);
-        rpChartDtos[key] = chartDtos;
-
         chartConfig.Data.Datasets.Clear();
-        (var ratingData, var gamesData) = GetChartData(rpChartDtos[new(RatingType, RatingCalcType, remoteToggleService.FromServer)]);
+        chartConfig.Data.Labels.Clear();
 
-        chartConfig.Data.Labels = ratingData.Select(s => s.X).ToList();
+        if (chartDtos.Count > 0)
+        {
+            var key = new ChartTypeMemory(RatingType, RatingCalcType, remoteToggleService.FromServer);
+            rpChartDtos[key] = chartDtos;
 
-        var lineDataset = GetLineDataset(ratingData);
-        var countDataset = GetCountDataset(gamesData);
+            (var ratingData, var gamesData) = GetChartData(rpChartDtos[new(RatingType, RatingCalcType, remoteToggleService.FromServer)]);
 
-        chartConfig.Data.Datasets.Add(lineDataset);
-        chartConfig.Data.Datasets.Add(countDataset);
+            chartConfig.Data.Labels = ratingData.Select(s => s.X).ToList();
+
+            var lineDataset = GetLineDataset(ratingData);
+            var countDataset = GetCountDataset(gamesData);
+
+            chartConfig.Data.Datasets.Add(lineDataset);
+            chartConfig.Data.Datasets.Add(countDataset);
+        }
 
         chartConfig.ReinitializeChart();
     }

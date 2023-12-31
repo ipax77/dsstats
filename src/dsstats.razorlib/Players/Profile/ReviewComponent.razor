@@ -27,10 +27,13 @@
                     <span class="visually-hidden">Loading...</span>
                 </div>
             }
+            <div style="height: 50px; width: 50px; position: relative;">
+                <AnnotationChartComponent OnAnnotationsRegistered="SetAnnotationRegistered" />
+            </div>
         </div>
     </div>
 
-    @if (review is not null)
+    @if (review is not null && isChartReady)
     {
         <div class="mt-2">
             <h3>@review.TotalGames Games Played</h3>
@@ -49,6 +52,12 @@
                                 <label class="btn btn-outline-light check-label" for="@($"reviewrt{rt}")">
                                     @Data.GetRatingTypeLongName(rt)
                                 </label>
+                            }
+                            @if (isLoading)
+                            {
+                                <div class="p-2 spinner-border spinner-border-sm text-info mx-2 mt-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
                             }
                         </div>
                     </fieldset>
@@ -104,7 +113,7 @@
 <div class="mt-1">
     @if (longestReplay is not null)
     {
-        <h3 class="mt-1 text-warning p-1 bgchart2">Longest Replay - @TimeSpan.FromSeconds(longestReplay.Duration).ToString(@"hh\:mm\:ss")</h3>
+        <h3 class="mt-1 text-warning p-1 bgchart2">Longest Replay</h3>
         <ReplayComponent Replay="longestReplay" />
     }
     @if (mostCompetivieReplay is not null)
@@ -134,6 +143,7 @@
 
     ReviewResponse? review;
     private bool isLoading;
+    private bool isChartReady;
 
     CountChart? countChart;
     PlayerRatingDetailChart? playerRatingDetailChart;
@@ -149,6 +159,12 @@
     {
         _ = LoadData();
         base.OnInitialized();
+    }
+
+    private void SetAnnotationRegistered()
+    {
+        isChartReady = true;
+        InvokeAsync(() => StateHasChanged());
     }
 
     private async Task LoadData()
@@ -173,7 +189,10 @@
             review.RatingInfos = reviewInfo.RatingInfos;
         }
         countChart?.ResetChart(GetCountResponse());
-        playerRatingDetailChart?.Reset(ratingType, GetRatings());
+        if (review.RatingInfos.Count > 0)
+        {
+            playerRatingDetailChart?.Reset(ratingType, GetRatings());
+        }
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
 
