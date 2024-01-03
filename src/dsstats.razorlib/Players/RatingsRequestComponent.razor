@@ -140,6 +140,14 @@
             Request.ComboRating = false;
             remoteToggleService.SetFromServer(true);
         }
+        else if (e.FieldIdentifier.FieldName == nameof(RatingsRequest.Type))
+        {
+            if (Request.Type == RatingType.CmdrTE || Request.Type == RatingType.StdTE)
+            {
+                Request.ComboRating = false;
+                Request.Arcade = false;
+            }
+        }
 
         OnRequestChanged.InvokeAsync();
     }

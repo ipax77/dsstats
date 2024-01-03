@@ -29,7 +29,7 @@
             <div class="ms-1">
                 <label class="form-label">
                     Rating Type
-                    <select class="form-select text-light bgchart" @bind="RatingType" @bind:after="LoadData">
+                    <select class="form-select text-light bgchart" @bind="RatingType" @bind:after="@(() => LoadData(false))">
                         <option value="@RatingType.Cmdr">Commanders</option>
                         <option value="@RatingType.Std">Standard</option>
                         <option value="@RatingType.CmdrTE">Commanders TE</option>
@@ -40,7 +40,7 @@
             <div class="ms-1">
                 <label class="form-label">
                     Calc Type
-                    <select class="form-select text-light bgchart" @bind="RatingCalcType" @bind:after="LoadData">
+                    <select class="form-select text-light bgchart" @bind="RatingCalcType" @bind:after="@(() => LoadData(false))">
                         <option value="@RatingCalcType.Dsstats">Dsstats</option>
                         <option value="@RatingCalcType.Arcade">Arcade</option>
                         <option value="@RatingCalcType.Combo">Combo</option>

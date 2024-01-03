@@ -58,7 +58,7 @@ public partial class ProfileComponent : ComponentBase
         base.OnInitialized();
     }
 
-    private async Task LoadData()
+    private async Task LoadData(bool forceDetailChartRefresh = false)
     {
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
@@ -72,7 +72,8 @@ public partial class ProfileComponent : ComponentBase
             name = summary.Ratings[0].Player.Name;
             if (interestRating != null)
             {
-                playerRatingDetailChart?.Update(RatingType, RatingCalcType, RatingCalcType == RatingCalcType.Combo ? 0 : interestRating.Rating);
+                playerRatingDetailChart?.Update(RatingType, RatingCalcType, RatingCalcType == RatingCalcType.Combo ? 0 : interestRating.Rating
+                    , forceDetailChartRefresh);
                 playerCmdrCounts?.Update(RatingType);
             }
         }
@@ -107,12 +108,12 @@ public partial class ProfileComponent : ComponentBase
         await InvokeAsync(() => StateHasChanged());
     }
 
-    public void Update(PlayerId playerId, RatingCalcType ratingCalcType, RatingType ratingType)
+    public void Update(PlayerId playerId, RatingCalcType ratingCalcType, RatingType ratingType, bool force = false)
     {
         PlayerId = playerId;
         RatingCalcType = ratingCalcType;
         RatingType = ratingType;
-        _ = LoadData();
+        _ = LoadData(force);
     }
 
     private void ChangeRating(PlayerRatingDetailDto rating)
