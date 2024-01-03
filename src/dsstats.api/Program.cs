@@ -20,7 +20,7 @@ var MyAllowSpecificOrigins = "dsstatsOrigin";
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("/data/localserverconfig.json", optional: true, reloadOnChange: false);
 
-builder.Services.AddLogging(l => l.AddSimpleConsole(o => o.TimestampFormat = "yyyy-MM-ss HH:mm:ss: "));
+builder.Services.AddLogging(l => l.AddSimpleConsole(o => o.TimestampFormat = "yyyy-MM-dd HH:mm:ss: "));
 
 builder.Services.AddCors(options =>
 {

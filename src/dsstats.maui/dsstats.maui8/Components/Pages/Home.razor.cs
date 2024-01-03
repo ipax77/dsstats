@@ -159,7 +159,7 @@ public partial class Home : ComponentBase, IDisposable
     {
         interestPlayer = playerId;
         var ratingType = currentReplay is null ? RatingType.Cmdr : Data.GetReplayRatingType(currentReplay.GameMode, currentReplay.TournamentEdition);
-        playerDetails?.Update(playerId, RatingCalcType.Dsstats, ratingType);
+        playerDetails?.Update(playerId, RatingCalcType.Dsstats, ratingType, true);
     }
 
     public void Dispose()
