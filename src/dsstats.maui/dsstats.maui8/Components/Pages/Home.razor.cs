@@ -40,29 +40,25 @@ public partial class Home : ComponentBase, IDisposable
     bool DEBUG = false;
     bool isChartAnnotationPluginRegistered;
 
-    private Lazy<Task<IJSObjectReference>> moduleTask = null!;
-
     protected override void OnInitialized()
     {
-        moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
-            "import", "./_content/dsstats.razorlib/js/annotationChart.js").AsTask());
         _ = LoadLatestReplay();
         dsstatsService.DecodeStateChanged += DssstatsService_DecodeStateChanged;
         remoteToggleService.CultureChanged += RemoteToggleService_CultureChanged;
         base.OnInitialized();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            var module = await moduleTask.Value.ConfigureAwait(false);
-            await module.InvokeVoidAsync("registerPlugin");
-            isChartAnnotationPluginRegistered = true;
-            await InvokeAsync(() => StateHasChanged());
-        }
-        await base.OnAfterRenderAsync(firstRender);
-    }
+    //protected override async Task OnAfterRenderAsync(bool firstRender)
+    //{
+    //    if (firstRender)
+    //    {
+    //        var module = await moduleTask.Value.ConfigureAwait(false);
+    //        await module.InvokeVoidAsync("registerPlugin");
+    //        isChartAnnotationPluginRegistered = true;
+    //        await InvokeAsync(() => StateHasChanged());
+    //    }
+    //    await base.OnAfterRenderAsync(firstRender);
+    //}
 
     private void RemoteToggleService_CultureChanged(object? sender, EventArgs e)
     {
@@ -160,6 +156,15 @@ public partial class Home : ComponentBase, IDisposable
         interestPlayer = playerId;
         var ratingType = currentReplay is null ? RatingType.Cmdr : Data.GetReplayRatingType(currentReplay.GameMode, currentReplay.TournamentEdition);
         playerDetails?.Update(playerId, RatingCalcType.Dsstats, ratingType, true);
+    }
+
+    private void AnnotationsRegistered()
+    {
+        InvokeAsync(() =>
+        {
+            isChartAnnotationPluginRegistered = true;
+            StateHasChanged();
+        });
     }
 
     public void Dispose()
