@@ -44,7 +44,7 @@
                 </div>
             </div>
             <dsstats.razorlib.Replays.ReplayComponent @ref="replayComponent" Replay="currentReplay" IsCloseable="false" IsScrollable="true"
-            OnScrollRequest="LoadNextReplay" />
+                                                      OnScrollRequest="LoadNextReplay" />
         }
         else
         {
@@ -77,12 +77,12 @@
     <div class="mt-2">
         <div class="col-auto">
             <button class="btn btn-sm btn-outline-light bgchart"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#AppPlayers"
-            aria-expanded="false"
-            aria-controls="AppPlayers"
-            @onclick="e => showPlayers = !showPlayers">
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#AppPlayers"
+                    aria-expanded="false"
+                    aria-controls="AppPlayers"
+                    @onclick="e => showPlayers = !showPlayers">
                 <span class="bi @(showPlayers ? "bi-chevron-down" : "bi-chevron-up")"></span>
                 @Loc["Players"]
             </button>
@@ -97,9 +97,12 @@
         {
             <div class="mt-1">
                 @*             <dsstats.razorlib.Players.PlayerDetails @ref="playerDetails"
-                                                PlayerId="interestPlayer" RatingType="RatingType.Cmdr" RatingCalcType="RatingCalcType.Dsstats" /> *@
+        PlayerId="interestPlayer" RatingType="RatingType.Cmdr" RatingCalcType="RatingCalcType.Dsstats" /> *@
                 <dsstats.razorlib.Players.Profile.ProfileComponent @ref="playerDetails" PlayerId="interestPlayer" RatingCalcType="RatingCalcType.Dsstats" RatingType="RatingType.Cmdr" />
             </div>
         }
     </div>
 }
+<div style="height: 50px; width: 50px; position: relative;">
+    <dsstats.razorlib.Players.Profile.AnnotationChartComponent OnAnnotationsRegistered="AnnotationsRegistered" />
+</div>

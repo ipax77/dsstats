@@ -1,6 +1,7 @@
 ﻿@using Microsoft.JSInterop
 @using pax.BlazorChartJs
 @inject IJSRuntime JSRuntime
+@implements IDisposable
 
 <ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered" />
 
@@ -45,9 +46,17 @@
 
 
             chartConfig.ReinitializeChart();
-            await OnAnnotationsRegistered.InvokeAsync();
+            await InvokeAsync(() => OnAnnotationsRegistered.InvokeAsync());
             return true;
         }
         return false;
+    }
+
+    public void Dispose()
+    {
+        if (moduleTask.IsValueCreated)
+        {
+            moduleTask.Value.Dispose();
+        }
     }
 }
