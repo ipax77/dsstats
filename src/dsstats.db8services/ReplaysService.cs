@@ -555,6 +555,8 @@ public partial class ReplaysService : IReplaysService
             return replays.OrderByDescending(o => o.GameTime);
         }
 
+        int i = 0;
+
         foreach (var order in request.Orders)
         {
             var propertyInfo = typeof(ReplayListDto).GetProperty(order.Property);
@@ -563,6 +565,13 @@ public partial class ReplaysService : IReplaysService
             {
                 continue;
             }
+
+            if (request.Filter?.ReplaysRatingRequest is null 
+                && propertyInfo.Name == nameof(ReplayListDto.AvgRating))
+            {
+                continue;
+            }
+            i++;
 
             if (order.Ascending)
             {
@@ -573,6 +582,12 @@ public partial class ReplaysService : IReplaysService
                 replays = replays.AppendOrderByDescending(order.Property);
             }
         }
+
+        if (i == 0)
+        {
+            return replays.OrderByDescending(o => o.GameTime);
+        }
+
         return replays;
     }
 }
