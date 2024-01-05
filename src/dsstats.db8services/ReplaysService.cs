@@ -450,41 +450,17 @@ public partial class ReplaysService : IReplaysService
         {
             return replays;
         }
-        else if (names.Count == 1)
-        {
-            var name = names[0];
-            replays = from r in replays
-                      from rp in r.ReplayPlayers
-                      where rp.Name == name
-                      select r;
-        }
-        else
-        {
-            var name = names[0];
-            replays = from r in replays
-                      from rp in r.ReplayPlayers
-                      where rp.Name == name
-                      select r;
 
-            for (int i = 1; i < names.Count; i++)
-            {
-                var iname = names[i];
-                replays = replays.Where(x => x.ReplayPlayers.Any(a => a.Name == iname));
-            }
+        for (int i = 0; i < names.Count; i++)
+        {
+            var name = names[i];
+            replays = from r in replays
+                      from rp in r.ReplayPlayers
+                      where rp.Name == name
+                      select r;
         }
+
         return replays.Distinct();
-
-        //var predicate = PredicateBuilder.New<Replay>();
-
-        //foreach (var player in playerEnts)
-        //{
-        //    // predicate = predicate.Or(replay => replay.ReplayPlayers.Any(rp => rp.Name.Contains(player)));
-        //    predicate = predicate.And(replay => replay.ReplayPlayers.Any(rp => rp.Name.Equals(player)));
-        //}
-
-        //replays = replays.Where(predicate);
-
-        //return replays;
     }
 
     private List<Commander> GetCommanders(string commanders)
