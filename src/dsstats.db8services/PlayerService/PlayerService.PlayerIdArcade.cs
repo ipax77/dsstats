@@ -120,13 +120,14 @@ public partial class PlayerService
                                 from t in r.ArcadeReplayPlayers
                                 join p in context.ArcadePlayers on rp.ArcadePlayerId equals p.ArcadePlayerId
                                 join tp in context.ArcadePlayers on t.ArcadePlayerId equals tp.ArcadePlayerId
+                                join rpr in context.ArcadeReplayPlayerRatings on rp.ArcadeReplayPlayerId equals rpr.ArcadeReplayPlayerId
                                 where p.ProfileId == playerId.ToonId
                                     && p.RegionId == playerId.RegionId
                                     && p.RealmId == playerId.RealmId
                                     && t != rp
                                     && t.Team == rp.Team
                                     && tp.ProfileId > 0
-                                group new { t, tp } by new { tp.Name, tp.ArcadePlayerId, tp.ProfileId, tp.RealmId, tp.RegionId } into g
+                                group new { t, tp, rpr } by new { tp.Name, tp.ArcadePlayerId, tp.ProfileId, tp.RealmId, tp.RegionId } into g
                                 orderby g.Count() descending
                                 where g.Count() > 10
                                 select new AracdePlayerTeamResultHelper()
@@ -135,7 +136,8 @@ public partial class PlayerService
                                     Name = g.Key.Name,
                                     ArcadePlayerId = g.Key.ArcadePlayerId,
                                     Count = g.Count(),
-                                    Wins = g.Count(c => c.t.PlayerResult == PlayerResult.Win)
+                                    Wins = g.Count(c => c.t.PlayerResult == PlayerResult.Win),
+                                    AvgGain = Math.Round(g.Average(a => a.rpr.RatingChange), 2)
                                 };
 
         var results = await teammateGroup
@@ -146,7 +148,8 @@ public partial class PlayerService
             Name = s.Name,
             PlayerId = s.PlayerId,
             Count = s.Count,
-            Wins = s.Wins
+            Wins = s.Wins,
+            AvgGain = s.AvgGain
         }).ToList();
     }
 
@@ -158,12 +161,13 @@ public partial class PlayerService
                               from o in r.ArcadeReplayPlayers
                               join p in context.ArcadePlayers on rp.ArcadePlayerId equals p.ArcadePlayerId
                               join op in context.ArcadePlayers on o.ArcadePlayerId equals op.ArcadePlayerId
+                              join rpr in context.ArcadeReplayPlayerRatings on o.ArcadeReplayPlayerId equals rpr.ArcadeReplayPlayerId
                               where p.ProfileId == playerId.ToonId
                                 && p.RegionId == playerId.RegionId
                                 && p.RealmId == playerId.RealmId
                                 && o.Team != rp.Team
                                 && op.ProfileId > 0
-                              group new { o, op } by new { op.Name, op.ArcadePlayerId, op.ProfileId, op.RealmId, op.RegionId } into g
+                              group new { o, op, rpr } by new { op.Name, op.ArcadePlayerId, op.ProfileId, op.RealmId, op.RegionId } into g
                               orderby g.Count() descending
                               where g.Count() > 10
                               select new AracdePlayerTeamResultHelper()
@@ -172,7 +176,8 @@ public partial class PlayerService
                                   Name = g.Key.Name,
                                   ArcadePlayerId = g.Key.ArcadePlayerId,
                                   Count = g.Count(),
-                                  Wins = g.Count(c => c.o.PlayerResult == PlayerResult.Win)
+                                  Wins = g.Count(c => c.o.PlayerResult == PlayerResult.Win),
+                                  AvgGain = Math.Round(g.Average(a => a.rpr.RatingChange), 2)
                               };
 
         var results = await teammateGroup
@@ -183,7 +188,8 @@ public partial class PlayerService
             Name = s.Name,
             PlayerId = s.PlayerId,
             Count = s.Count,
-            Wins = s.Wins
+            Wins = s.Wins,
+            AvgGain = s.AvgGain
         }).ToList();
     }
 
@@ -214,4 +220,5 @@ internal record AracdePlayerTeamResultHelper
     public int ArcadePlayerId { get; set; }
     public int Count { get; set; }
     public int Wins { get; set; }
+    public double AvgGain { get; set; }
 }
