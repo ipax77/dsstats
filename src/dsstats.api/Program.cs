@@ -140,12 +140,6 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-
-    // var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-    // context.Database.Migrate();
-
-    //var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
-    //ratingService.ProduceRatings(RatingCalcType.Dsstats, true).Wait();
 }
 
 // app.UseHttpsRedirection();

@@ -59,4 +59,11 @@ public class BuildsController : Controller
     {
         return await unitmapService.GetUnitMap(request);
     }
+
+    [HttpPost]
+    [Route("replaybuildmap")]
+    public async Task<ActionResult<BuildMapResponse>> GetReplayBuildMap(BuildRequest request, CancellationToken token = default)
+    {
+        return await buildService.GetReplayBuildMap(request, token);
+    }
 }
