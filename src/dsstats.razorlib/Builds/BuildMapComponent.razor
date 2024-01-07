@@ -1,0 +1,253 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.razorlib.Replays
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IBuildService buildService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<div class="ms-2">
+    <button id="buildmapshowhidebutton"
+            class="btn btn-sm btn-outline-light bgchart"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#samplebuildmap"
+            aria-expanded="false"
+            aria-controls="samplebuildmap"
+            @onclick="ShowHide">
+        <span class="bi @(showHide ? "bi bi-chevron-double-down" : "bi-chevron-double-up")"></span>
+        Sample Build
+        @if (isLoading)
+        {
+            <div class="spinner-border spinner-border-sm text-danger" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        }
+        else
+        {
+            <span class="ms-4"></span>
+        }
+    </button>
+</div>
+<div id="samplebuildmap" class="collapse">
+    @if (showHide)
+    {
+        <div class="row">
+            @if (response?.ReplayPlayer?.Team == 1)
+            {
+                <div class="col-auto">
+                    @if (spawn1 is not null && response?.ReplayPlayer is not null)
+                    {
+                        <div class="d-flex bgchart">
+                            <div class="preload-@(response.ReplayPlayer.Race.ToString().ToLower())"
+                                 alt="@(response.ReplayPlayer.Race)"
+                                 style="width: 30px; height: 30px;">
+                            </div>
+                            <div class="ms-1 align-self-center">
+                                @response.ReplayPlayer.Name
+                            </div>
+                        </div>
+                        <div class="bgchart" style="height: 480px; width: 380px;">
+                            <ReplayPlayerChartMap @ref="map1" Spawn="spawn1" Team="response.ReplayPlayer.Team" moduleTask="moduleTask" />
+                        </div>
+                    }
+                </div>
+                <div class="col-auto">
+                    @if (spawn2 is not null && response?.OppReplayPlayer is not null)
+                    {
+                        <div class="d-flex bgchart">
+                            <div class="preload-@(response.OppReplayPlayer.Race.ToString().ToLower())"
+                                 alt="@(response.OppReplayPlayer.Race)"
+                                 style="width: 30px; height: 30px;">
+                            </div>
+                            <div class="ms-1 align-self-center">
+                                @response.OppReplayPlayer.Name
+                            </div>
+                        </div>
+
+                        <div class="bgchart" style="height: 480px; width: 380px;">
+                            <ReplayPlayerChartMap @ref="map2" Spawn="spawn2" Team="response.OppReplayPlayer.Team" moduleTask="moduleTask" />
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="col-auto">
+                    @if (spawn2 is not null && response?.OppReplayPlayer is not null)
+                    {
+                        <div class="d-flex bgchart">
+                            <div class="preload-@(response.OppReplayPlayer.Race.ToString().ToLower())"
+                                 alt="@(response.OppReplayPlayer.Race)"
+                                 style="width: 30px; height: 30px;">
+                            </div>
+                            <div class="ms-1 align-self-center">
+                                @response.OppReplayPlayer.Name
+                            </div>
+                        </div>
+
+                        <div class="bgchart" style="height: 480px; width: 380px;">
+                            <ReplayPlayerChartMap @ref="map2" Spawn="spawn2" Team="response.OppReplayPlayer.Team" moduleTask="moduleTask" />
+                        </div>
+                    }
+                </div>
+                <div class="col-auto">
+                    @if (spawn1 is not null && response?.ReplayPlayer is not null)
+                    {
+                        <div class="d-flex bgchart">
+                            <div class="preload-@(response.ReplayPlayer.Race.ToString().ToLower())"
+                                 alt="@(response.ReplayPlayer.Race)"
+                                 style="width: 30px; height: 30px;">
+                            </div>
+                            <div class="ms-1 align-self-center">
+                                @response.ReplayPlayer.Name
+                            </div>
+                        </div>
+                        <div class="bgchart" style="height: 480px; width: 380px;">
+                            <ReplayPlayerChartMap @ref="map1" Spawn="spawn1" Team="response.ReplayPlayer.Team" moduleTask="moduleTask" />
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div style="height: 430px; width: 760px;">
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public BuildRequest Request { get; set; } = default!;
+
+    BuildMapResponse? response = null!;
+    bool isLoading = false;
+
+    private Lazy<Task<IJSObjectReference>> moduleTask = null!;
+
+    ReplayPlayerChartMap? map1;
+    ReplayPlayerChartMap? map2;
+
+    SpawnDto? spawn1;
+    SpawnDto? spawn2;
+
+    bool showHide;
+
+    protected override void OnInitialized()
+    {
+        moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import", "./_content/dsstats.razorlib/js/annotationChart.js").AsTask());
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        if (!showHide)
+        {
+            return;
+        }
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        response = await buildService.GetReplayBuildMap(Request);
+
+        SetSpawns();
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Update(BuildRequest request, bool bpOnly)
+    {
+        Request = request;
+
+        if (bpOnly)
+        {
+            SetSpawns();
+        }
+        else
+        {
+            _ = LoadData();
+        }
+    }
+
+    public void Update(BuildRequest request, ReplayDto replay)
+    {
+        Request = request;
+
+        var player = replay.ReplayPlayers.FirstOrDefault(f => f.Race == request.Interest
+            && (request.Versus == Commander.None) || f.OppRace == request.Versus);
+
+        if (player is null)
+        {
+            return;
+        }
+
+        var oppPlayer = player.GamePos switch
+        {
+            1 => replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == 4),
+            2 => replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == 5),
+            3 => replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == 6),
+            4 => replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == 1),
+            5 => replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == 2),
+            6 => replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == 3),
+            _ => null
+        };
+
+        response = new()
+            {
+                ReplayPlayer = player,
+                OppReplayPlayer = oppPlayer
+            };
+
+        if (!showHide)
+        {
+            showHide = true;
+            JSRuntime.InvokeVoidAsync("toggleButton", "buildmapshowhidebutton", "samplebuildmap");
+        }
+        SetSpawns();
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    public void SetSpawns()
+    {
+        spawn1 = response?.ReplayPlayer?.Spawns
+            .FirstOrDefault(f => f.Breakpoint == Request.Breakpoint);
+
+        if (spawn1 is null)
+        {
+            spawn1 = response?.ReplayPlayer?.Spawns
+                .FirstOrDefault(f => f.Breakpoint == Breakpoint.All);
+        }
+
+        spawn2 = response?.OppReplayPlayer?.Spawns
+            .FirstOrDefault(f => f.Breakpoint == Request.Breakpoint);
+
+        if (spawn2 is null)
+        {
+            spawn2 = response?.OppReplayPlayer?.Spawns
+                .FirstOrDefault(f => f.Breakpoint == Breakpoint.All);
+        }
+
+        map1?.Update(spawn1, response?.ReplayPlayer?.Team ?? 1);
+        map2?.Update(spawn2, response?.OppReplayPlayer?.Team ?? 2);
+    }
+
+    private void ShowHide()
+    {
+        showHide = !showHide;
+        if (showHide)
+        {
+            _ = LoadData();
+        }
+    }
+
+    public void Dispose()
+    {
+        if (moduleTask.IsValueCreated)
+        {
+            moduleTask.Value.Dispose();
+        }
+    }
+}

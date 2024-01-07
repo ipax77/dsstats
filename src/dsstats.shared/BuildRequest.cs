@@ -45,6 +45,12 @@ public record BuildCounts
     public double Upgrades { get; init; }
 }
 
+public record BuildMapResponse
+{
+    public ReplayPlayerDto? ReplayPlayer { get; set; } = null!;
+    public ReplayPlayerDto? OppReplayPlayer { get; set; } = null!;
+}
+
 public static class BuildRequestExtension
 {
     public static string GenMemKey(this BuildRequest request)
