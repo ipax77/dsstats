@@ -31,7 +31,7 @@ public partial class BuildService
         }
 
         var player = replay.ReplayPlayers.FirstOrDefault(f => f.Race == request.Interest
-            && (request.Versus == Commander.None) || f.OppRace == request.Versus);
+            && (request.Versus == Commander.None || f.OppRace == request.Versus));
 
         if (player is null)
         {
