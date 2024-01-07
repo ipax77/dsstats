@@ -175,7 +175,7 @@
         </div>
         <div class="col-auto" style="min-width: 800px;">
             <div>
-                <BuildMapComponent Request="Request" />
+                <BuildMapComponent @ref="buildMapComponent" Request="Request" />
             </div>
             <div class="ms-2">
                 <button class="btn btn-sm btn-outline-light bgchart"
@@ -192,7 +192,9 @@
             <div class="collapse" id="buildreplays">
                 @if (showReplays)
                 {
-                    <BuildReplaysComponent @ref="buildReplaysComponent" Request="Request" OnReplayRequest="LoadReplay" />
+                    <BuildReplaysComponent @ref="buildReplaysComponent" Request="Request"
+                        OnReplayRequest="LoadReplay" 
+                        OnMapRequest="MapRequest" />
                 }
             </div>
         </div>
@@ -249,7 +251,7 @@
     bool initPlayers = false;
     bool showReplays = false;
 
-    private async Task LoadData(bool init = false)
+    private async Task LoadData(bool init = false, bool bpOnly = false)
     {
         replayDto = null;
         isLoading = true;
@@ -275,7 +277,7 @@
         {
             await OnRequestChanged.InvokeAsync(Request);
             buildReplaysComponent?.Reload();
-            buildMapComponent?.Update(Request);
+            buildMapComponent?.Update(Request, bpOnly);
         }
     }
 
@@ -294,7 +296,7 @@
     private void SetBreakpoint(ChangeEventArgs e, Breakpoint breakpoint)
     {
         Request.Breakpoint = breakpoint;
-        _ = LoadData();
+        _ = LoadData(false, true);
     }
 
     private async Task ByPlayers()
@@ -324,5 +326,18 @@
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
         await JSRuntime.InvokeVoidAsync("scrollToElementId", "replaycontainer");
+    }
+
+    private async Task MapRequest(string replayHash)
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        var replay = await replaySerivce.GetReplay(replayHash);
+        if (replay is not null)
+        {
+            buildMapComponent?.Update(Request, replay);
+        }
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
     }
 }

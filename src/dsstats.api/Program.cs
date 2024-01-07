@@ -140,18 +140,6 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-
-    var buildService = scope.ServiceProvider.GetRequiredService<IBuildService>();
-    var response = buildService.GetBuildMap(new()
-    {
-        RatingType = RatingType.Cmdr,
-        TimePeriod = TimePeriod.Last2Years,
-        Interest = Commander.Abathur,
-        Versus = Commander.Tychus,
-        FromRating = 1600,
-        ToRating = 2500,
-        Breakpoint = Breakpoint.Min10,
-    }, 0).GetAwaiter().GetResult();
 }
 
 // app.UseHttpsRedirection();

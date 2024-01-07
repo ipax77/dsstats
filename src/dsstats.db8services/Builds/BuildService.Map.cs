@@ -6,7 +6,7 @@ namespace dsstats.db8services;
 
 public partial class BuildService
 {
-    public async Task<BuildMapResponse> GetBuildMap(BuildRequest request, int skip, CancellationToken token = default)
+    public async Task<BuildMapResponse> GetReplayBuildMap(BuildRequest request, CancellationToken token = default)
     {
         var replays = GetQueriableReplays(request);
 
@@ -19,37 +19,41 @@ public partial class BuildService
         };
 
         bool skipMinDuration = minDuration == 0;
-        bool skipVersus = request.Versus == Commander.None;
 
-        replays = replays
-            .Where(x => skipMinDuration || x.Duration >= minDuration)
+        var replay = await replays
             .OrderByDescending(o => o.GameTime)
-            .Skip(skip)
-            .Take(1);
+            .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
 
-        var query = skipVersus ?
-                    from r in replays
-                    from rp in r.ReplayPlayers
-                    from sp in rp.Spawns
-                    where sp.Breakpoint == request.Breakpoint
-                        && rp.Race == request.Interest
-                    select sp
-                    : from r in replays
-                    from rp in r.ReplayPlayers
-                    from sp in rp.Spawns
-                    where sp.Breakpoint == request.Breakpoint
-                        && ((rp.Race == request.Interest && rp.OppRace == request.Versus)
-                        || (rp.Race == request.Versus && rp.OppRace == request.Interest))
-                    select sp;
+        if (replay is null)
+        {
+            return new();
+        }
 
-        var spawns = await query
-            .ProjectTo<SpawnDto>(mapper.ConfigurationProvider)
-            .ToListAsync();
+        var player = replay.ReplayPlayers.FirstOrDefault(f => f.Race == request.Interest
+            && (request.Versus == Commander.None) || f.OppRace == request.Versus);
+
+        if (player is null)
+        {
+            return new();
+        }
+
+
+        var oppPlayer = player.GamePos switch
+        {
+            1 => replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == 4),
+            2 => replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == 5),
+            3 => replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == 6),
+            4 => replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == 1),
+            5 => replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == 2),
+            6 => replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == 3),
+            _ => null
+        };
 
         return new()
         {
-            Spawn = spawns.FirstOrDefault(),
-            OppSpawn = skipVersus ? null : spawns.LastOrDefault()
+            ReplayPlayer = player,
+            OppReplayPlayer = oppPlayer
         };
     }
 }

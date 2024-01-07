@@ -47,8 +47,8 @@ public record BuildCounts
 
 public record BuildMapResponse
 {
-    public SpawnDto? Spawn { get; init; } = null!;
-    public SpawnDto? OppSpawn { get; init; } = null!;
+    public ReplayPlayerDto? ReplayPlayer { get; set; } = null!;
+    public ReplayPlayerDto? OppReplayPlayer { get; set; } = null!;
 }
 
 public static class BuildRequestExtension

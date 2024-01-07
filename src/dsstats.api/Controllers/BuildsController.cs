@@ -61,9 +61,9 @@ public class BuildsController : Controller
     }
 
     [HttpPost]
-    [Route("buildmap/{skip:int}")]
-    public async Task<ActionResult<BuildMapResponse>> GetBuildMap(BuildRequest request, int skip, CancellationToken token = default)
+    [Route("replaybuildmap")]
+    public async Task<ActionResult<BuildMapResponse>> GetReplayBuildMap(BuildRequest request, CancellationToken token = default)
     {
-        return await buildService.GetBuildMap(request, skip, token);
+        return await buildService.GetReplayBuildMap(request, token);
     }
 }

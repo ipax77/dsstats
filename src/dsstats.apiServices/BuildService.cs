@@ -91,11 +91,11 @@ public class BuildService : IBuildService
         return 0;
     }
 
-    public async Task<BuildMapResponse> GetBuildMap(BuildRequest request, int skip, CancellationToken token = default)
+    public async Task<BuildMapResponse> GetReplayBuildMap(BuildRequest request, CancellationToken token = default)
     {
         try
         {
-            var response = await httpClient.PostAsJsonAsync($"{buildController}/buildmap/{skip}", request, token);
+            var response = await httpClient.PostAsJsonAsync($"{buildController}/replaybuildmap", request, token);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<BuildMapResponse>() ?? new();
         }
