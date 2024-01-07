@@ -91,7 +91,7 @@ public partial class ImportService
                         Rating = s.Rating,
                         RatingChange = s.RatingChange,
                         Games = s.Games,
-                        Consistency = s.Confidence,
+                        Consistency = s.Consistency,
                         Confidence = s.Confidence,
                         ReplayPlayerId = s.ReplayPlayerId,
                     }).ToList()
@@ -134,7 +134,7 @@ public partial class ImportService
                     Rating = Convert.ToInt32(s.Rating),
                     Change = s.RatingChange,
                     Games = s.Games,
-                    Consistency = s.Confidence,
+                    Consistency = s.Consistency,
                     Confidence = s.Confidence,
                     ReplayPlayerId = s.ReplayPlayerId,
                 }));
