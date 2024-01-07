@@ -90,4 +90,19 @@ public class BuildService : IBuildService
         }
         return 0;
     }
+
+    public async Task<BuildMapResponse> GetBuildMap(BuildRequest request, int skip, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{buildController}/buildmap/{skip}", request, token);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<BuildMapResponse>() ?? new();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting build map: {error}", ex.Message);
+        }
+        return new();
+    }
 }

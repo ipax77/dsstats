@@ -1,0 +1,69 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.razorlib.Replays
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IBuildService buildService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<div class="row">
+    <div class="col-auto">
+        @if (response?.Spawn is not null)
+        {
+            <div class="bgchart" style="height: 500px; width: 410px;">
+                <ReplayPlayerChartMap @ref="map1" Spawn="response.Spawn" Team="1" moduleTask="moduleTask" />
+            </div>
+        }
+    </div>
+    <div class="col-auto">
+        @if (response?.OppSpawn is not null)
+        {
+            <div class="bgchart" style="height: 500px; width: 410px;">
+                <ReplayPlayerChartMap @ref="map2" Spawn="response.OppSpawn" Team="2" moduleTask="moduleTask" />
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public BuildRequest Request { get; set; } = default!;
+
+    BuildMapResponse? response = null!;
+    bool isLoading = false;
+
+    private Lazy<Task<IJSObjectReference>> moduleTask = null!;
+
+    ReplayPlayerChartMap? map1;
+    ReplayPlayerChartMap? map2;
+
+    protected override void OnInitialized()
+    {
+        moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import", "./_content/dsstats.razorlib/js/annotationChart.js").AsTask());
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        response = await buildService.GetBuildMap(Request, 0);
+        map1?.Update(response.Spawn, 1);
+        map2?.Update(response.OppSpawn, 2);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Update(BuildRequest request)
+    {
+        Request = request;
+        _ = LoadData();
+    }
+
+    public void Dispose()
+    {
+        if (moduleTask.IsValueCreated)
+        {
+            moduleTask.Value.Dispose();
+        }
+    }
+}

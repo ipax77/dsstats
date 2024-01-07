@@ -45,6 +45,12 @@ public record BuildCounts
     public double Upgrades { get; init; }
 }
 
+public record BuildMapResponse
+{
+    public SpawnDto? Spawn { get; init; } = null!;
+    public SpawnDto? OppSpawn { get; init; } = null!;
+}
+
 public static class BuildRequestExtension
 {
     public static string GenMemKey(this BuildRequest request)

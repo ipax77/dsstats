@@ -59,4 +59,11 @@ public class BuildsController : Controller
     {
         return await unitmapService.GetUnitMap(request);
     }
+
+    [HttpPost]
+    [Route("buildmap/{skip:int}")]
+    public async Task<ActionResult<BuildMapResponse>> GetBuildMap(BuildRequest request, int skip, CancellationToken token = default)
+    {
+        return await buildService.GetBuildMap(request, skip, token);
+    }
 }

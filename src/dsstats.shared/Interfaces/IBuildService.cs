@@ -8,4 +8,5 @@ public interface IBuildService
     Task<List<RequestNames>> GetTopPlayers(RatingType ratingType);
     Task<int> GetReplaysCount(BuildRequest request, CancellationToken token = default);
     Task<List<ReplayListDto>> GetReplays(BuildRequest request, int skip, int take, CancellationToken token);
+    Task<BuildMapResponse> GetBuildMap(BuildRequest request, int skip, CancellationToken token = default);
 }

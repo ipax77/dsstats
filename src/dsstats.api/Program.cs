@@ -141,11 +141,17 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    // var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-    // context.Database.Migrate();
-
-    //var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
-    //ratingService.ProduceRatings(RatingCalcType.Dsstats, true).Wait();
+    var buildService = scope.ServiceProvider.GetRequiredService<IBuildService>();
+    var response = buildService.GetBuildMap(new()
+    {
+        RatingType = RatingType.Cmdr,
+        TimePeriod = TimePeriod.Last2Years,
+        Interest = Commander.Abathur,
+        Versus = Commander.Tychus,
+        FromRating = 1600,
+        ToRating = 2500,
+        Breakpoint = Breakpoint.Min10,
+    }, 0).GetAwaiter().GetResult();
 }
 
 // app.UseHttpsRedirection();
