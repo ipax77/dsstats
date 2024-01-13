@@ -18,8 +18,11 @@ class Program
         var jsonStrg = File.ReadAllText("/data/localserverconfig.json");
         var json = JsonSerializer.Deserialize<JsonElement>(jsonStrg);
         var config = json.GetProperty("ServerConfig");
-        var connectionString = config.GetProperty("MariaDbImportConnectionString").GetString();
-        var importConnectionString = config.GetProperty("MariaDbImportConnectionString").GetString() ?? "";
+        // var connectionString = config.GetProperty("MariaDbImportConnectionString").GetString();
+        // var importConnectionString = config.GetProperty("MariaDbImportConnectionString").GetString() ?? "";
+        var connectionString = config.GetProperty("DsstatsConnectionString").GetString();
+        var importConnectionString = config.GetProperty("ImportConnectionString").GetString() ?? "";
+
 
         services.AddOptions<DbImportOptions>()
             .Configure(x =>
@@ -64,8 +67,8 @@ class Program
 
         var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
 
-        // crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-2)).Wait();
-        crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1), default).Wait();
+        crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-58), default).Wait();
+        // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1), default).Wait();
 
         Console.WriteLine("done.");
         Console.ReadLine();

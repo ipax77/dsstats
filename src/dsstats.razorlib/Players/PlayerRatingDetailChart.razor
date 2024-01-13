@@ -158,8 +158,20 @@
 
     private (List<ChartRatingData>, List<ChartGamesData>) GetChartData(List<ReplayPlayerChartDto> chartDtos)
     {
-        var ratingData = chartDtos.Select(s => new ChartRatingData() { X = s.Replay.GameTime.ToString("yyyy-MM-dd"), Y = (float)(s.ReplayPlayerRatingInfo?.Rating ?? 0) }).ToList();
-        var gamesData = chartDtos.Select(s => new ChartGamesData() { X = s.Replay.GameTime.ToString("yyyy-MM-dd"), Y = s.ReplayPlayerRatingInfo?.Games ?? 0 }).ToList();
+        var ratingData = chartDtos
+            .Select(s => new ChartRatingData() 
+                { 
+                    X = s.Replay.GameTime.ToString("yyyy-MM-dd"), 
+                    Y = (float)(s.ReplayPlayerRatingInfo?.Rating ?? 0) 
+                })
+            .ToList();
+        var gamesData = chartDtos
+            .Select(s => new ChartGamesData() 
+                { 
+                    X = s.Replay.GameTime.ToString("yyyy-MM-dd"), 
+                    Y = s.ReplayPlayerRatingInfo?.Games ?? 0 
+                })
+            .ToList();
 
         if (CurrentRating != 0)
         {
