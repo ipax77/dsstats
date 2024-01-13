@@ -61,7 +61,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("RegionId", "RealmId", "ProfileId")
                         .IsUnique();
 
-                    b.ToTable("ArcadePlayers");
+                    b.ToTable("ArcadePlayers", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadePlayerRating", b =>
@@ -115,7 +115,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("RatingType");
 
-                    b.ToTable("ArcadePlayerRatings");
+                    b.ToTable("ArcadePlayerRatings", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadePlayerRatingChange", b =>
@@ -141,7 +141,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("ArcadePlayerRatingId")
                         .IsUnique();
 
-                    b.ToTable("ArcadePlayerRatingChanges");
+                    b.ToTable("ArcadePlayerRatingChanges", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadeReplay", b =>
@@ -198,7 +198,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("RegionId", "GameMode", "CreatedAt");
 
-                    b.ToTable("ArcadeReplays");
+                    b.ToTable("ArcadeReplays", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadeReplayPlayer", b =>
@@ -236,7 +236,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("ArcadeReplayId");
 
-                    b.ToTable("ArcadeReplayPlayers");
+                    b.ToTable("ArcadeReplayPlayers", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadeReplayPlayerRating", b =>
@@ -276,7 +276,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("ArcadeReplayRatingId");
 
-                    b.ToTable("ArcadeReplayPlayerRatings");
+                    b.ToTable("ArcadeReplayPlayerRatings", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadeReplayRating", b =>
@@ -305,7 +305,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("ArcadeReplayId")
                         .IsUnique();
 
-                    b.ToTable("ArcadeReplayRatings");
+                    b.ToTable("ArcadeReplayRatings", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.BattleNetInfo", b =>
@@ -324,7 +324,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("UploaderId");
 
-                    b.ToTable("BattleNetInfos");
+                    b.ToTable("BattleNetInfos", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.ComboPlayerRating", b =>
@@ -363,7 +363,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("RatingType");
 
-                    b.ToTable("ComboPlayerRatings");
+                    b.ToTable("ComboPlayerRatings", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.ComboReplayPlayerRating", b =>
@@ -401,7 +401,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("ReplayPlayerId")
                         .IsUnique();
 
-                    b.ToTable("ComboReplayPlayerRatings");
+                    b.ToTable("ComboReplayPlayerRatings", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.ComboReplayRating", b =>
@@ -433,7 +433,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("ReplayId")
                         .IsUnique();
 
-                    b.ToTable("ComboReplayRatings");
+                    b.ToTable("ComboReplayRatings", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.CommanderMmr", b =>
@@ -458,7 +458,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("Race", "OppRace");
 
-                    b.ToTable("CommanderMmrs");
+                    b.ToTable("CommanderMmrs", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.DsUpdate", b =>
@@ -486,7 +486,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("Time");
 
-                    b.ToTable("DsUpdates");
+                    b.ToTable("DsUpdates", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.Event", b =>
@@ -518,7 +518,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Events");
+                    b.ToTable("Events", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.FunStatsMemory", b =>
@@ -574,7 +574,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasKey("FunStatsMemoryId");
 
-                    b.ToTable("FunStatMemories");
+                    b.ToTable("FunStatMemories", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.GroupByHelper", b =>
@@ -615,7 +615,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasKey("MaterializedArcadeReplayId");
 
-                    b.ToTable("MaterializedArcadeReplays");
+                    b.ToTable("MaterializedArcadeReplays", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.NoUploadResult", b =>
@@ -656,7 +656,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("PlayerId");
 
-                    b.ToTable("NoUploadResults");
+                    b.ToTable("NoUploadResults", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.Player", b =>
@@ -701,7 +701,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("RegionId", "RealmId", "ToonId")
                         .IsUnique();
 
-                    b.ToTable("Players");
+                    b.ToTable("Players", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.PlayerRating", b =>
@@ -758,7 +758,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("RatingType");
 
-                    b.ToTable("PlayerRatings");
+                    b.ToTable("PlayerRatings", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.PlayerRatingChange", b =>
@@ -784,7 +784,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("PlayerRatingId")
                         .IsUnique();
 
-                    b.ToTable("PlayerRatingChanges");
+                    b.ToTable("PlayerRatingChanges", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.PlayerUpgrade", b =>
@@ -808,7 +808,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("UpgradeId");
 
-                    b.ToTable("PlayerUpgrades");
+                    b.ToTable("PlayerUpgrades", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.RepPlayerRating", b =>
@@ -848,7 +848,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("ReplayRatingInfoId");
 
-                    b.ToTable("RepPlayerRatings");
+                    b.ToTable("RepPlayerRatings", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.Replay", b =>
@@ -975,7 +975,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("GameTime", "GameMode", "WinnerTeam");
 
-                    b.ToTable("Replays");
+                    b.ToTable("Replays", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.ReplayDownloadCount", b =>
@@ -991,7 +991,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasKey("ReplayDownloadCountId");
 
-                    b.ToTable("ReplayDownloadCounts");
+                    b.ToTable("ReplayDownloadCounts", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.ReplayEvent", b =>
@@ -1035,7 +1035,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("EventId");
 
-                    b.ToTable("ReplayEvents");
+                    b.ToTable("ReplayEvents", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.ReplayPlayer", b =>
@@ -1146,7 +1146,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("Race", "OppRace");
 
-                    b.ToTable("ReplayPlayers");
+                    b.ToTable("ReplayPlayers", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.ReplayRating", b =>
@@ -1180,7 +1180,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("ReplayId")
                         .IsUnique();
 
-                    b.ToTable("ReplayRatings");
+                    b.ToTable("ReplayRatings", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.ReplayViewCount", b =>
@@ -1196,7 +1196,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasKey("ReplayViewCountId");
 
-                    b.ToTable("ReplayViewCounts");
+                    b.ToTable("ReplayViewCounts", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.SkipReplay", b =>
@@ -1212,7 +1212,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasKey("SkipReplayId");
 
-                    b.ToTable("SkipReplays");
+                    b.ToTable("SkipReplays", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.Spawn", b =>
@@ -1249,7 +1249,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("ReplayPlayerId");
 
-                    b.ToTable("Spawns");
+                    b.ToTable("Spawns", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.SpawnUnit", b =>
@@ -1278,7 +1278,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("UnitId");
 
-                    b.ToTable("SpawnUnits");
+                    b.ToTable("SpawnUnits", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.Unit", b =>
@@ -1297,7 +1297,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Units");
+                    b.ToTable("Units", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.Upgrade", b =>
@@ -1319,7 +1319,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Upgrades");
+                    b.ToTable("Upgrades", (string)null);
                 });
 
             modelBuilder.Entity("dsstats.db8.Uploader", b =>
@@ -1383,7 +1383,7 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("AppGuid")
                         .IsUnique();
 
-                    b.ToTable("Uploaders");
+                    b.ToTable("Uploaders", (string)null);
                 });
 
             modelBuilder.Entity("ReplayUploader", b =>

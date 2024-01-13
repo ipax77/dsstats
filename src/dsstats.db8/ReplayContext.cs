@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using Microsoft.EntityFrameworkCore.Storage;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace dsstats.db8;
@@ -188,7 +190,8 @@ public class ReplayContext : DbContext
                     new SqlFunctionExpression("WEEK",
                         new[]
                         {
-                            args.ToArray()[0]
+                            args.ToArray()[0],
+                            new SqlConstantExpression(Expression.Constant(3, typeof(int)), new IntTypeMapping("int")),
                         },
                         true,
                         new[] { false, false },

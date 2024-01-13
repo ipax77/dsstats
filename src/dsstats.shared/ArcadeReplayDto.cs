@@ -215,18 +215,20 @@ public record ReplayChartDto
 
     public ReplayChartDto(int year, int week)
     {
-        DayOfWeek dayOfWeek = DayOfWeek.Monday;
+        DateTime jan1 = new DateTime(year, 1, 1);
+        int daysOffset = DayOfWeek.Monday - jan1.DayOfWeek;
 
-        DateTime dateOfMonday = new DateTime(year, 1, 1)
-            .AddDays((week - 1) * 7)
-            .AddDays(-(int)(new GregorianCalendar().GetDayOfWeek(new DateTime(year, 1, 1))) + (int)dayOfWeek + 7);
+        // Use the first Monday in January to get the first week of the year
+        DateTime firstMonday = jan1.AddDays(daysOffset);
 
-        if (dateOfMonday.Year < year)
-        {
-            dateOfMonday = dateOfMonday.AddDays(7);
-        }
+        var cal = CultureInfo.CurrentCulture.Calendar;
+        int firstWeek = cal.GetWeekOfYear(firstMonday, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
 
-        GameTime = dateOfMonday;
+        // Adjust week number based on MySQL convention
+        var adjustedWeek = (firstWeek == 0) ? week + 1 : week;
+
+        // Calculate the start of the desired week based on the first Monday
+        GameTime = firstMonday.AddDays((adjustedWeek - 1) * 7);
     }
 
     public ReplayChartDto(int year, int month, int day)
