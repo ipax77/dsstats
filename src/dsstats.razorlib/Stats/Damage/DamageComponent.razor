@@ -22,43 +22,47 @@
     </CascadingValue>
 </CascadingValue>
 
-<div class="row mt-2">
-    <div class="col-auto">
-        <div class="btn-group bgchart" role="group" aria-label="bptogglegroup">
-            @foreach (Breakpoint bp in Enum.GetValues(typeof(Breakpoint)))
-            {
-                @if (bp == Breakpoint.None)
-                {
-                    continue;
-                }
-                <input type="radio" class="btn-check" name="bptoggle" id="@($"bp{bp}")"
-                       checked="@(Breakpoint == bp)"
-                       autocomplete="off" @onchange="e => SetBreakpoint(e, bp)">
-                <label class="btn btn-outline-light check-label" for="@($"bp{bp}")">
-                    @(bp == Breakpoint.All ? "Game End" : $"{bp}")
-                </label>
-            }
+<form @formname="damagestatsoptions">
+    <fieldset>
+        <div class="row mt-2">
+            <div class="col-auto">
+                <div class="btn-group bgchart" role="group" aria-label="bptogglegroup">
+                    @foreach (Breakpoint bp in Enum.GetValues(typeof(Breakpoint)))
+                    {
+                        @if (bp == Breakpoint.None)
+                        {
+                            continue;
+                        }
+                        <input type="radio" class="btn-check" name="bptoggle" id="@($"bp{bp}")"
+                               checked="@(breakpoint == bp)"
+                               autocomplete="off" @onchange="e => SetBreakpoint(e, bp)">
+                        <label class="btn btn-outline-light check-label" for="@($"bp{bp}")">
+                            @(bp == Breakpoint.All ? "Game End" : $"{bp}")
+                        </label>
+                    }
+                </div>
+            </div>
+            <div class="col-auto">
+                <div class="btn-group bgchart" role="group" aria-label="dttogglegroup">
+                    @foreach (DamageChartType dt in Enum.GetValues(typeof(DamageChartType)))
+                    {
+                        <input type="radio" class="btn-check" name="dttoggle" id="@($"dt{dt}")"
+                               checked="@(damageChartType == dt)"
+                               autocomplete="off" @onchange="e => SetChartType(e, dt)">
+                        <label class="btn btn-outline-warning check-label" for="@($"dt{dt}")">@dt</label>
+                    }
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="col-auto">
-        <div class="btn-group bgchart" role="group" aria-label="dttogglegroup">
-            @foreach (DamageChartType dt in Enum.GetValues(typeof(DamageChartType)))
-            {
-                <input type="radio" class="btn-check" name="dttoggle" id="@($"dt{dt}")"
-                       checked="@(DamageChartType == dt)"
-                       autocomplete="off" @onchange="e => SetChartType(e, dt)">
-                <label class="btn btn-outline-warning check-label" for="@($"dt{dt}")">@dt</label>
-            }
-        </div>
-    </div>
-</div>
+    </fieldset>
+</form>
 <div class="border rounded border-secondary bgchart"
      style="min-width: 750px; width: 70vw; height: calc(70vw * @(chartHeightCalc.ToString(CultureInfo.InvariantCulture))); min-height: @(chartMinHeight)px;">
     @if (response != null)
     {
         <DamageChart @ref="damageChart" Request="Request"
-                     Breakpoint="Breakpoint"
-                     DamageChartType="DamageChartType"
+                     Breakpoint="breakpoint"
+                     DamageChartType="damageChartType"
                      Response="response"
                      TableOrders="tableOrders" />
     }
@@ -80,7 +84,7 @@
     {
         <CascadingValue Value="Request">
             <CascadingValue Value="tableOrders">
-                <CascadingValue Value="Breakpoint">
+                <CascadingValue Value="breakpoint">
                     <DamageTable @ref="damageTable" Response="response" OnOrderChanged="OrderChanged"></DamageTable>
                 </CascadingValue>
             </CascadingValue>
@@ -102,6 +106,9 @@
     DamageTable? damageTable;
     DamageChart? damageChart;
 
+    Breakpoint breakpoint;
+    DamageChartType damageChartType;
+
     TableOrder tableOrder = new()
         {
             Property = nameof(DamageEnt.Commander),
@@ -116,6 +123,8 @@
 
     protected override void OnInitialized()
     {
+        damageChartType = DamageChartType;
+        breakpoint = Breakpoint;
         tableOrders.Add(tableOrder);
         SetOrder();
         base.OnInitialized();
@@ -139,7 +148,7 @@
 
     private void SetOrder()
     {
-        tableOrder.Property = DamageChartType switch
+        tableOrder.Property = damageChartType switch
         {
             DamageChartType.Damage => nameof(DamageEnt.AvgKills),
             DamageChartType.MVP => nameof(DamageEnt.MvpPercentage),
@@ -150,12 +159,12 @@
 
     private void SetChartType(ChangeEventArgs e, DamageChartType chartType)
     {
-        DamageChartType = chartType;
+        damageChartType = chartType;
         SetOrder();
         damageTable?.Update();
         if (response != null)
         {
-            damageChart?.SetupChart(Request, Breakpoint, DamageChartType, response, tableOrders);
+            damageChart?.SetupChart(Request, breakpoint, damageChartType, response, tableOrders);
         }
         OnRequestChanged.InvokeAsync(Request);
     }
@@ -170,7 +179,7 @@
             await InvokeAsync(() => StateHasChanged());
             response = await damageService.GetDamage(Request, cts.Token);
 
-            damageChart?.SetupChart(Request, Breakpoint, DamageChartType, response, tableOrders);
+            damageChart?.SetupChart(Request, breakpoint, damageChartType, response, tableOrders);
             damageTable?.SetTable(response);
 
             IsLoading = false;
@@ -187,16 +196,16 @@
     {
         if (response != null)
         {
-            damageChart?.SetupChart(Request, Breakpoint, DamageChartType, response, tableOrders);
+            damageChart?.SetupChart(Request, breakpoint, damageChartType, response, tableOrders);
         }
     }
 
     private void SetBreakpoint(ChangeEventArgs e, Breakpoint breakpoint)
     {
-        Breakpoint = breakpoint;
+        this.breakpoint = breakpoint;
         if (response != null)
         {
-            damageChart?.SetupChart(Request, Breakpoint, DamageChartType, response, tableOrders);
+                damageChart?.SetupChart(Request, this.breakpoint, damageChartType, response, tableOrders);
         }
         OnRequestChanged.InvokeAsync(Request);
         // damageTable?.Update();
