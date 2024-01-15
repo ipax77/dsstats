@@ -290,5 +290,5 @@ public partial class PlayerService : IPlayerService
                     };
         return await query.ToListAsync(token);
     }
-                               
+
 }

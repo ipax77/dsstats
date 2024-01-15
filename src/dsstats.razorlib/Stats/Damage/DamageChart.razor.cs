@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Components;
-using pax.BlazorChartJs;
-using dsstats.shared;
+﻿using dsstats.shared;
 using dsstats.shared.Extensions;
+using Microsoft.AspNetCore.Components;
+using pax.BlazorChartJs;
 
 namespace dsstats.razorlib.Stats.Damage;
 
@@ -17,7 +17,7 @@ public partial class DamageChart : ComponentBase
     public DamageChartType DamageChartType { get; set; }
 
     [Parameter, EditorRequired]
-    public DamageResponse Response { get; set;} = default!;
+    public DamageResponse Response { get; set; } = default!;
 
     [Parameter, EditorRequired]
     public List<TableOrder> TableOrders { get; set; } = default!;
@@ -53,7 +53,7 @@ public partial class DamageChart : ComponentBase
         Response = response;
         TableOrders = tableOrders;
 
-        if (!chartReady) 
+        if (!chartReady)
         {
             return;
         }
@@ -86,7 +86,7 @@ public partial class DamageChart : ComponentBase
         {
             datasets.Add(GetMVPDataset());
         }
-        
+
         chartConfig.AddDatasets(datasets);
     }
 

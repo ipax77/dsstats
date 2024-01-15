@@ -3,9 +3,7 @@ using AutoMapper.QueryableExtensions;
 using dsstats.db8;
 using dsstats.shared;
 using dsstats.shared.Extensions;
-using LinqKit;
 using Microsoft.EntityFrameworkCore;
-using System.Xml.Linq;
 
 namespace dsstats.db8services;
 

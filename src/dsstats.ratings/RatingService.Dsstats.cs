@@ -1,10 +1,10 @@
 ﻿using dsstats.db8;
-using dsstats.shared.Calc;
 using dsstats.shared;
+using dsstats.shared.Calc;
+using dsstats.shared.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
-using dsstats.shared.Interfaces;
 
 namespace dsstats.ratings;
 
@@ -25,7 +25,7 @@ public partial class RatingService
         };
 
         await CleanupPreRatings(context);
-        
+
         var ratingRequest = recalc ? new()
         {
             RatingCalcType = RatingCalcType.Dsstats,

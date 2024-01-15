@@ -1,6 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using dsstats.db8;
+﻿using dsstats.db8;
 using dsstats.shared;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 

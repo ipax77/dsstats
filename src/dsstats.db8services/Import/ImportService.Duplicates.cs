@@ -53,7 +53,7 @@ public partial class ImportService
             if (importReplay is null && lsDupReplays.Count > 0)
             {
                 var repLastSpawnHashes = dbReplay.ReplayPlayers
-                    .Where(x => x.LastSpawnHash  != null)
+                    .Where(x => x.LastSpawnHash != null)
                     .Select(s => s.LastSpawnHash)
                     .ToList();
 

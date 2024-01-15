@@ -1,12 +1,12 @@
 ﻿using dsstats.db8;
-using dsstats.shared.Calc;
 using dsstats.shared;
-using Microsoft.Extensions.DependencyInjection;
+using dsstats.shared.Calc;
+using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MySqlConnector;
-using Microsoft.Extensions.Logging;
-using dsstats.shared.Interfaces;
 using System.Collections.Frozen;
 
 namespace dsstats.ratings;

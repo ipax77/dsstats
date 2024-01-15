@@ -1,15 +1,15 @@
-﻿using CsvHelper.Configuration;
-using CsvHelper;
+﻿using CsvHelper;
+using CsvHelper.Configuration;
 using dsstats.db8;
-using dsstats.shared.Calc;
 using dsstats.shared;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using System.Globalization;
+using dsstats.shared.Calc;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Frozen;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MySqlConnector;
+using System.Collections.Frozen;
+using System.Globalization;
 
 namespace dsstats.ratings;
 
@@ -155,7 +155,7 @@ public partial class RatingsSaveService
         }
 
         var playerRatingCsv = GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadePlayerRatings));
-        
+
         using var stream = File.Open(playerRatingCsv, FileMode.Create);
         using var writer = new StreamWriter(stream);
         using var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture)

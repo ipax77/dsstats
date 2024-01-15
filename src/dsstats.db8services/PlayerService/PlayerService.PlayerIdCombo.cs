@@ -115,7 +115,7 @@ public partial class PlayerService
                           from t in r.ReplayPlayers
                           join rr in context.ComboReplayRatings on r.ReplayId equals rr.ReplayId
                           join rpr in context.ComboReplayPlayerRatings on t.ReplayPlayerId equals rpr.ReplayPlayerId
-                          where p.ToonId== playerId.ToonId
+                          where p.ToonId == playerId.ToonId
                               && p.RealmId == playerId.RealmId
                               && p.RegionId == playerId.RegionId
                               && rr.RatingType == ratingType

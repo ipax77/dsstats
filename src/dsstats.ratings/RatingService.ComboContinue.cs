@@ -49,7 +49,7 @@ public partial class RatingService
                     },
             BannedPlayers = new Dictionary<PlayerId, bool>().ToFrozenDictionary()
         };
-        
+
         await CleanupComboPreRatings(context);
 
         ratingRequest.ReplayPlayerRatingAppendId = await context.ComboReplayPlayerRatings
@@ -63,9 +63,9 @@ public partial class RatingService
 
         ratingRequest.MmrIdRatings = await GetComboMmrIdRatings(calcDtos);
 
-        
+
         List<shared.Calc.ReplayRatingDto> replayRatings = new();
-        
+
         for (int i = 0; i < calcDtos.Count; i++)
         {
             var calcDto = calcDtos[i];

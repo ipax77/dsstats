@@ -3,7 +3,6 @@ using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
 using dsstats.db8services.Import;
-using dsstats.ratings.lib;
 using dsstats.shared;
 using dsstats.shared.Extensions;
 using dsstats.shared.Interfaces;

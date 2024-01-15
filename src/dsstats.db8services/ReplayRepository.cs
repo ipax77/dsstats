@@ -7,7 +7,6 @@ using dsstats.shared.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MySqlConnector;
 using System.Diagnostics;
 
 namespace dsstats.db8services;

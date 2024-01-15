@@ -38,7 +38,7 @@ public static class ReplayExtensions
     public static string GenHashV2(this Spawn spawn, ReplayPlayer replayPlayer)
     {
         ArgumentNullException.ThrowIfNull(replayPlayer.Player);
-        
+
         StringBuilder sb = new();
 
         sb.Append(Data.GetPlayerIdString(new(replayPlayer.Player.ToonId, replayPlayer.Player.RealmId, replayPlayer.Player.RegionId)));

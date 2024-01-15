@@ -1,9 +1,4 @@
-﻿using System.Diagnostics;
-using System.Security.Cryptography;
-using System.Text.Json;
-using AutoMapper;
-using AutoMapper.QueryableExtensions;
-using dsstats.db8;
+﻿using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8.Extensions;
 using dsstats.shared;
@@ -11,6 +6,9 @@ using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace dsstats.ratings;
 
@@ -246,7 +244,7 @@ class Program
         var logger = mscope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         MD5 md5Hash = MD5.Create();
 
-        var lsDups = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText("/data/ds/lsdups.json")) ?? new(); 
+        var lsDups = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText("/data/ds/lsdups.json")) ?? new();
 
         foreach (var ent in lsDups)
         {

@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using dsstats.api.Services;
 using dsstats.shared;
-using dsstats.api.Services;
+using Microsoft.AspNetCore.SignalR;
 
 namespace pax.dsstats.web.Server.Hubs;
 

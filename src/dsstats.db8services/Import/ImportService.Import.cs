@@ -109,7 +109,7 @@ public partial class ImportService
 
                 context.Replays.AddRange(replays);
                 await context.SaveChangesAsync();
-                
+
                 await SetPreRatings();
             }
         }

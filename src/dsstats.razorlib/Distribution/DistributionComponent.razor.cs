@@ -90,7 +90,7 @@ namespace dsstats.razorlib.Distribution
             List<int> counts = new();
 
             int count = 0;
-            for (int i = 0; i <  response.MmrDevs.Count; i++)
+            for (int i = 0; i < response.MmrDevs.Count; i++)
             {
                 var mmrDev = response.MmrDevs[i];
                 ratings.Add(mmrDev.Count);

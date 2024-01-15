@@ -38,7 +38,7 @@ public record RepPlayerRatingDto
 public record DsstatsCalcRequest
 {
     public DateTime FromDate { get; set; } = new DateTime(2021, 2, 1);
-    public List<int> GameModes { get; set; } = [ (int)GameMode.Commanders, (int)GameMode.CommandersHeroic, (int)GameMode.Standard ];
+    public List<int> GameModes { get; set; } = [(int)GameMode.Commanders, (int)GameMode.CommandersHeroic, (int)GameMode.Standard];
     public bool Continue { get; set; }
     public int Skip { get; set; }
     public int Take { get; set; }

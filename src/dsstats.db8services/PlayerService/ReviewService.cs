@@ -298,9 +298,9 @@ public partial class ReviewService(ReplayContext context, IMemoryCache memoryCac
                     select rp;
 
         var infos = from rp in query
-                    where rp.Replay.DefaultFilter 
-                        && rp.PlayerResult == PlayerResult.Win 
-                        && rp.Replay.Duration > 360 
+                    where rp.Replay.DefaultFilter
+                        && rp.PlayerResult == PlayerResult.Win
+                        && rp.Replay.Duration > 360
                         && rp.Replay.Middle.Length > 0
                     select new
                     {

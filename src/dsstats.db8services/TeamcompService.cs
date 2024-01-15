@@ -80,14 +80,14 @@ public class TeamcompService : ITeamcompService
         bool withoutOpp = string.IsNullOrEmpty(request.Team2);
 
         return from r in context.Replays
-                     where r.GameTime >= startDate
-                      && (endDate > tillDate || r.GameTime < endDate)
-                      && r.GameMode == GameMode.Standard
-                      && r.Playercount == 6 && r.Duration >= 300 && r.WinnerTeam > 0
-                      && (withoutOpp ? (r.CommandersTeam1 == request.Team1 || r.CommandersTeam2 == request.Team2) 
-                      : ((r.CommandersTeam1 == request.Team1 && r.CommandersTeam2 == request.Team2) 
-                        || (r.CommandersTeam2 == request.Team1 && r.CommandersTeam1 == request.Team2)))
-                     select r;
+               where r.GameTime >= startDate
+                && (endDate > tillDate || r.GameTime < endDate)
+                && r.GameMode == GameMode.Standard
+                && r.Playercount == 6 && r.Duration >= 300 && r.WinnerTeam > 0
+                && (withoutOpp ? (r.CommandersTeam1 == request.Team1 || r.CommandersTeam2 == request.Team2)
+                : ((r.CommandersTeam1 == request.Team1 && r.CommandersTeam2 == request.Team2)
+                  || (r.CommandersTeam2 == request.Team1 && r.CommandersTeam1 == request.Team2)))
+               select r;
     }
 
     public TeamcompService(ReplayContext context, IMemoryCache memoryCache)
