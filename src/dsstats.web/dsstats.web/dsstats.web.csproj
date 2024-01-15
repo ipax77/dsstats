@@ -11,7 +11,7 @@
     <ProjectReference Include="..\..\dsstats.razorlib\dsstats.razorlib.csproj" />
     <ProjectReference Include="..\..\dsstats.shared\dsstats.shared.csproj" />
     <ProjectReference Include="..\dsstats.web.Client\dsstats.web.Client.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.1" />
   </ItemGroup>
 
 </Project>
