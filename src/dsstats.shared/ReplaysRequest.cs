@@ -92,7 +92,7 @@ public record ReplaysFilter
 
 public record ReplaysPosFilter
 {
-    public int GamePos {  set; get; }
+    public int GamePos { set; get; }
     public Commander Commander { get; set; }
     public Commander OppCommander { get; set; }
     public string PlayerNameOrId { get; set; } = string.Empty;

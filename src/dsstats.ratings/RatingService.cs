@@ -5,7 +5,6 @@ using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Diagnostics;
 
 namespace dsstats.ratings;

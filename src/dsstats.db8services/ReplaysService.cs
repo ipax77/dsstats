@@ -566,7 +566,7 @@ public partial class ReplaysService : IReplaysService
                 continue;
             }
 
-            if (request.Filter?.ReplaysRatingRequest is null 
+            if (request.Filter?.ReplaysRatingRequest is null
                 && propertyInfo.Name == nameof(ReplayListDto.AvgRating))
             {
                 continue;

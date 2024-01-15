@@ -109,8 +109,8 @@ public class DurationService : IDurationService
                      && (limits.FromExp2Win <= 0 || rr.ExpectationToWin >= limits.FromExp2Win)
                      && (limits.ToExp2Win <= 0 || rr.ExpectationToWin <= limits.ToExp2Win)
                      && (!request.WithoutLeavers || rr.LeaverType == LeaverType.None)
-                    group new { r, rpr } by new 
-                    { 
+                    group new { r, rpr } by new
+                    {
                         rp.Race,
                         Drange = (r.Duration < 480 ? 1 :
                             r.Duration < 660 ? 2 :

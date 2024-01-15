@@ -290,7 +290,7 @@ public class ComboRatingsTests
             GameMode = gameMode,
             RegionId = 1,
             WinnerTeam = winnerTeam,
-            Duration  = 500,
+            Duration = 500,
             ArcadeReplayPlayers = GetBasicArcadeReplayPlayerDtos(winnerTeam)
         };
     }
@@ -303,7 +303,7 @@ public class ComboRatingsTests
             Name = "Test",
             SlotNumber = i + 1,
             Team = i + 1 <= 3 ? 1 : 2,
-            PlayerResult = winnerTeam == 1 ? i + 1 <= 3 ? PlayerResult.Win : PlayerResult.Los : i + 1 <= 3 
+            PlayerResult = winnerTeam == 1 ? i + 1 <= 3 ? PlayerResult.Win : PlayerResult.Los : i + 1 <= 3
                 ? PlayerResult.Los : PlayerResult.Win,
             ArcadePlayer = s,
         }).ToList();
@@ -341,7 +341,7 @@ public class ComboRatingsTests
             Name = "Test",
             GamePos = i + 1,
             Team = i + 1 <= 3 ? 1 : 2,
-            PlayerResult = winnerTeam == 1 ? i + 1 <= 3 ? PlayerResult.Win : PlayerResult.Los 
+            PlayerResult = winnerTeam == 1 ? i + 1 <= 3 ? PlayerResult.Win : PlayerResult.Los
                 : i + 1 <= 3 ? PlayerResult.Los : PlayerResult.Win,
             Duration = 500,
             Race = Commander.Abathur,

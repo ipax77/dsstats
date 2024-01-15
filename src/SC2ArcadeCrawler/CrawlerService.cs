@@ -1,8 +1,8 @@
-﻿using System.Security.Cryptography;
-using Microsoft.Extensions.Options;
-using dsstats.shared;
+﻿using dsstats.shared;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 
 namespace pax.dsstats.web.Server.Services.Arcade;
 
@@ -13,8 +13,8 @@ public partial class CrawlerService
     private readonly IOptions<DbImportOptions> dbImportOptions;
     private readonly ILogger<CrawlerService> logger;
     private readonly MD5 md5;
-    
-    
+
+
     public CrawlerService(IServiceProvider serviceProvider,
                           IHttpClientFactory httpClientFactory,
                           IOptions<DbImportOptions> dbImportOptions,

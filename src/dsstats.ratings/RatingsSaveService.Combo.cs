@@ -1,15 +1,15 @@
-﻿using CsvHelper.Configuration;
-using CsvHelper;
+﻿using CsvHelper;
+using CsvHelper.Configuration;
 using dsstats.db8;
-using dsstats.shared.Calc;
 using dsstats.shared;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using System.Globalization;
+using dsstats.shared.Calc;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Frozen;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MySqlConnector;
+using System.Collections.Frozen;
+using System.Globalization;
 
 namespace dsstats.ratings;
 
@@ -179,7 +179,7 @@ public partial class RatingsSaveService
             .ToDictionary(k => new PlayerId(k.ToonId, k.RealmId, k.RegionId), v => v.PlayerId);
 
         await ContinueComboPlayerRatings(mmrIdRatings, playerIds);
-        await ContinueCsv2Mysql(GetFileName(RatingCalcType.Combo,nameof(ReplayContext.ComboReplayRatings)),
+        await ContinueCsv2Mysql(GetFileName(RatingCalcType.Combo, nameof(ReplayContext.ComboReplayRatings)),
                                 nameof(ReplayContext.ComboReplayRatings),
                                 connectionString);
         await ContinueCsv2Mysql(GetFileName(RatingCalcType.Combo, nameof(ReplayContext.ComboReplayPlayerRatings)),

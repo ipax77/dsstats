@@ -1,6 +1,4 @@
-﻿
-using AutoMapper.QueryableExtensions;
-using dsstats.db8;
+﻿using dsstats.db8;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
 
@@ -75,7 +73,7 @@ public partial class PlayerService
                 && x.Player.RegionId == playerId.RegionId)
             .Select(s => new MvpInfo()
             {
-                Games= s.Games,
+                Games = s.Games,
                 Mvp = s.Mvp,
                 MainCount = s.MainCount,
                 Main = s.Main
@@ -253,7 +251,7 @@ public partial class PlayerService
                                 Wins = g.Count(c => c.t.PlayerResult == PlayerResult.Win),
                                 AvgGain = Math.Round(g.Average(a => a.rpr.RatingChange), 2)
                             };
-                            
+
 
         var results = await teammateGroup
             .ToListAsync(token);

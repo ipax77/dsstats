@@ -12,7 +12,7 @@ public partial class PlayerService
         if (!memoryCache.TryGetValue(mamKey, out DistributionResponse? response)
             || response is null)
         {
-            response  = await ProduceDistribution(request);
+            response = await ProduceDistribution(request);
             memoryCache.Set(mamKey, response, TimeSpan.FromHours(24));
         }
         return response;

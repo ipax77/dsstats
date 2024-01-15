@@ -28,19 +28,19 @@ public partial class RatingsSaveService
         DateTime bp10d = DateTime.Today.AddDays(-10);
 
         var query = from p in context.ArcadePlayers
-                        from rp in p.ArcadeReplayPlayers
-                        join pr in context.ArcadePlayerRatings on p.ArcadePlayerId equals pr.ArcadePlayerId
-                        join rpr in context.ArcadeReplayPlayerRatings on rp.ArcadeReplayPlayerId equals rpr.ArcadeReplayPlayerId
-                        join rr in context.ArcadeReplayRatings on rp.ArcadeReplayId equals rr.ArcadeReplayId
-                        join r in context.ArcadeReplays on rp.ArcadeReplayId equals r.ArcadeReplayId
-                        where r.CreatedAt > fromDate && pr.RatingType == ratingType && rr.RatingType == ratingType
-                        select new
-                        {
-                            PlayerId = new PlayerId(p.ProfileId, p.RegionId, p.RealmId),
-                            Id = pr.ArcadePlayerRatingId,
-                            GameTime = r.CreatedAt,
-                            Change = rpr.RatingChange
-                        };
+                    from rp in p.ArcadeReplayPlayers
+                    join pr in context.ArcadePlayerRatings on p.ArcadePlayerId equals pr.ArcadePlayerId
+                    join rpr in context.ArcadeReplayPlayerRatings on rp.ArcadeReplayPlayerId equals rpr.ArcadeReplayPlayerId
+                    join rr in context.ArcadeReplayRatings on rp.ArcadeReplayId equals rr.ArcadeReplayId
+                    join r in context.ArcadeReplays on rp.ArcadeReplayId equals r.ArcadeReplayId
+                    where r.CreatedAt > fromDate && pr.RatingType == ratingType && rr.RatingType == ratingType
+                    select new
+                    {
+                        PlayerId = new PlayerId(p.ProfileId, p.RegionId, p.RealmId),
+                        Id = pr.ArcadePlayerRatingId,
+                        GameTime = r.CreatedAt,
+                        Change = rpr.RatingChange
+                    };
 
         Dictionary<PlayerId, ArcadePlayerRatingChange> changes = new();
 

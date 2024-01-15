@@ -19,7 +19,7 @@ public class TourneysService(HttpClient httpClient, ILogger<TourneysService> log
         try
         {
             var result = await httpClient.PostAsJsonAsync($"{tourneysController}/replays", request, token);
-            result .EnsureSuccessStatusCode();
+            result.EnsureSuccessStatusCode();
 
             return await result.Content.ReadFromJsonAsync<List<TourneysReplayListDto>>() ?? new();
         }

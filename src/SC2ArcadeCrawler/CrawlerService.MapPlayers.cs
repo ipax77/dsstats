@@ -66,7 +66,7 @@ public partial class CrawlerService
         }
 
         await context.SaveChangesAsync(token);
-        newPlayers.ForEach(f => arcadePlayerIds[new(f.RegionId, f.RealmId, f.ProfileId)] = f.ArcadePlayerId );
+        newPlayers.ForEach(f => arcadePlayerIds[new(f.RegionId, f.RealmId, f.ProfileId)] = f.ArcadePlayerId);
         return newPlayers.Count;
     }
 }

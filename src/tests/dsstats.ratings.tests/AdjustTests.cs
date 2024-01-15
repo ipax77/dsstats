@@ -100,7 +100,7 @@ public class AdjustTests
     private ReplayDto GetReplayDto(string file)
     {
         var path = Path.Combine(assemblyPath, "testdata", file);
-        
+
         var replay = JsonSerializer.Deserialize<ReplayDto>(File.ReadAllText(path));
         ArgumentNullException.ThrowIfNull(replay);
         return replay;

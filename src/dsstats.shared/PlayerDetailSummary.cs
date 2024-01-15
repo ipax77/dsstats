@@ -11,7 +11,7 @@ public record PlayerDetailSummary
     public List<ReplayPlayerChartDto> ChartDtos { get; set; } = new();
     public double? CmdrPercentileRank { get; set; }
     public double? StdPercentileRank { get; set; }
-    public MvpInfo? MvpInfo {  get; set; }
+    public MvpInfo? MvpInfo { get; set; }
 }
 
 public record MvpInfo

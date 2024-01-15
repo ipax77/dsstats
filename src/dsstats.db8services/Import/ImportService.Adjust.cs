@@ -192,7 +192,7 @@ internal record ReplayRageQuitData
     public int IncomeDiff { get; init; }
     public int ArmyDiff { get; init; }
     public int KillsDiff { get; init; }
-    public bool Cannon {  get; init; }
+    public bool Cannon { get; init; }
     public bool Bunker { get; init; }
     public int LastMiddleTeam { get; init; }
     public int LastMiddleHold { get; init; }

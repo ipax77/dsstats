@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
-using dsstats.db8;
+﻿using dsstats.db8;
 using dsstats.shared;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace pax.dsstats.web.Server.Services.Arcade;
 
@@ -117,7 +117,7 @@ public partial class CrawlerService
                 BnetBucketId = result.BnetBucketId,
                 GameMode = gameMode,
                 CreatedAt = result.CreatedAt,
-                Duration = result.Match.CompletedAt == null || result.ClosedAt == null ? 0 
+                Duration = result.Match.CompletedAt == null || result.ClosedAt == null ? 0
                 : Convert.ToInt32((result.Match.CompletedAt.Value - result.ClosedAt.Value).TotalSeconds),
                 PlayerCount = 6,
                 WinnerTeam = winnerTeam,
@@ -139,7 +139,7 @@ public partial class CrawlerService
 
             foreach (var rp in replay.ArcadeReplayPlayers)
             {
-                var matchPlayer = result.Match.ProfileMatches.FirstOrDefault(f => 
+                var matchPlayer = result.Match.ProfileMatches.FirstOrDefault(f =>
                     f.Profile.RegionId == rp.ArcadePlayer.RegionId
                     && f.Profile.ProfileId == rp.ArcadePlayer.ProfileId
                     && f.Profile.RealmId == rp.ArcadePlayer.RealmId
@@ -148,7 +148,7 @@ public partial class CrawlerService
                 {
                     logger.LogInformation("player match profile not found: RegionId {regionId}, BnetBucketId {bnetBucketId}, BnetRecordId {bnetRecordId}",
                             replay.RegionId, replay.BnetBucketId, replay.BnetRecordId);
-                    continue; 
+                    continue;
                 }
                 rp.Discriminator = matchPlayer.Profile.Discriminator;
                 rp.PlayerResult = GetPlayerResult(matchPlayer.Decision);
@@ -183,7 +183,7 @@ public partial class CrawlerService
 
     private static PlayerResult GetPlayerResult(string decision)
     {
-        return decision switch 
+        return decision switch
         {
             "win" => PlayerResult.Win,
             "loss" => PlayerResult.Los,
@@ -223,7 +223,7 @@ public partial class CrawlerService
                 s.RealmId,
                 s.ProfileId
             }).ToListAsync();
-        
+
         arcadePlayerIds = players.ToDictionary(k => new PlayerId(k.RegionId, k.RealmId, k.ProfileId), v => v.ArcadePlayerId);
     }
 }

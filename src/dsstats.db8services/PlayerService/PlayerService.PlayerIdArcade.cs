@@ -21,7 +21,7 @@ public partial class PlayerService
         (summary.CmdrPercentileRank, summary.StdPercentileRank) =
             await GetPercentileRank(
                 summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType.Cmdr)?.Pos ?? 0,
-                summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType.Std)?.Pos ?? 0, 
+                summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType.Std)?.Pos ?? 0,
                 RatingCalcType.Arcade);
 
         return summary;
@@ -116,29 +116,29 @@ public partial class PlayerService
     {
         var replays = GetArcadeRatingReplays(context, ratingType);
         var teammateGroup = from r in replays
-                                from rp in r.ArcadeReplayPlayers
-                                from t in r.ArcadeReplayPlayers
-                                join p in context.ArcadePlayers on rp.ArcadePlayerId equals p.ArcadePlayerId
-                                join tp in context.ArcadePlayers on t.ArcadePlayerId equals tp.ArcadePlayerId
-                                join rpr in context.ArcadeReplayPlayerRatings on rp.ArcadeReplayPlayerId equals rpr.ArcadeReplayPlayerId
-                                where p.ProfileId == playerId.ToonId
-                                    && p.RegionId == playerId.RegionId
-                                    && p.RealmId == playerId.RealmId
-                                    && t != rp
-                                    && t.Team == rp.Team
-                                    && tp.ProfileId > 0
-                                group new { t, tp, rpr } by new { tp.Name, tp.ArcadePlayerId, tp.ProfileId, tp.RealmId, tp.RegionId } into g
-                                orderby g.Count() descending
-                                where g.Count() > 10
-                                select new AracdePlayerTeamResultHelper()
-                                {
-                                    PlayerId = new(g.Key.ProfileId, g.Key.RealmId, g.Key.RegionId),
-                                    Name = g.Key.Name,
-                                    ArcadePlayerId = g.Key.ArcadePlayerId,
-                                    Count = g.Count(),
-                                    Wins = g.Count(c => c.t.PlayerResult == PlayerResult.Win),
-                                    AvgGain = Math.Round(g.Average(a => a.rpr.RatingChange), 2)
-                                };
+                            from rp in r.ArcadeReplayPlayers
+                            from t in r.ArcadeReplayPlayers
+                            join p in context.ArcadePlayers on rp.ArcadePlayerId equals p.ArcadePlayerId
+                            join tp in context.ArcadePlayers on t.ArcadePlayerId equals tp.ArcadePlayerId
+                            join rpr in context.ArcadeReplayPlayerRatings on rp.ArcadeReplayPlayerId equals rpr.ArcadeReplayPlayerId
+                            where p.ProfileId == playerId.ToonId
+                                && p.RegionId == playerId.RegionId
+                                && p.RealmId == playerId.RealmId
+                                && t != rp
+                                && t.Team == rp.Team
+                                && tp.ProfileId > 0
+                            group new { t, tp, rpr } by new { tp.Name, tp.ArcadePlayerId, tp.ProfileId, tp.RealmId, tp.RegionId } into g
+                            orderby g.Count() descending
+                            where g.Count() > 10
+                            select new AracdePlayerTeamResultHelper()
+                            {
+                                PlayerId = new(g.Key.ProfileId, g.Key.RealmId, g.Key.RegionId),
+                                Name = g.Key.Name,
+                                ArcadePlayerId = g.Key.ArcadePlayerId,
+                                Count = g.Count(),
+                                Wins = g.Count(c => c.t.PlayerResult == PlayerResult.Win),
+                                AvgGain = Math.Round(g.Average(a => a.rpr.RatingChange), 2)
+                            };
 
         var results = await teammateGroup
             .ToListAsync(token);
@@ -157,28 +157,28 @@ public partial class PlayerService
     {
         var replays = GetArcadeRatingReplays(context, ratingType);
         var teammateGroup = from r in replays
-                              from rp in r.ArcadeReplayPlayers
-                              from o in r.ArcadeReplayPlayers
-                              join p in context.ArcadePlayers on rp.ArcadePlayerId equals p.ArcadePlayerId
-                              join op in context.ArcadePlayers on o.ArcadePlayerId equals op.ArcadePlayerId
-                              join rpr in context.ArcadeReplayPlayerRatings on o.ArcadeReplayPlayerId equals rpr.ArcadeReplayPlayerId
-                              where p.ProfileId == playerId.ToonId
-                                && p.RegionId == playerId.RegionId
-                                && p.RealmId == playerId.RealmId
-                                && o.Team != rp.Team
-                                && op.ProfileId > 0
-                              group new { o, op, rpr } by new { op.Name, op.ArcadePlayerId, op.ProfileId, op.RealmId, op.RegionId } into g
-                              orderby g.Count() descending
-                              where g.Count() > 10
-                              select new AracdePlayerTeamResultHelper()
-                              {
-                                  PlayerId = new(g.Key.ProfileId, g.Key.RealmId, g.Key.RegionId),
-                                  Name = g.Key.Name,
-                                  ArcadePlayerId = g.Key.ArcadePlayerId,
-                                  Count = g.Count(),
-                                  Wins = g.Count(c => c.o.PlayerResult == PlayerResult.Win),
-                                  AvgGain = Math.Round(g.Average(a => a.rpr.RatingChange), 2)
-                              };
+                            from rp in r.ArcadeReplayPlayers
+                            from o in r.ArcadeReplayPlayers
+                            join p in context.ArcadePlayers on rp.ArcadePlayerId equals p.ArcadePlayerId
+                            join op in context.ArcadePlayers on o.ArcadePlayerId equals op.ArcadePlayerId
+                            join rpr in context.ArcadeReplayPlayerRatings on o.ArcadeReplayPlayerId equals rpr.ArcadeReplayPlayerId
+                            where p.ProfileId == playerId.ToonId
+                              && p.RegionId == playerId.RegionId
+                              && p.RealmId == playerId.RealmId
+                              && o.Team != rp.Team
+                              && op.ProfileId > 0
+                            group new { o, op, rpr } by new { op.Name, op.ArcadePlayerId, op.ProfileId, op.RealmId, op.RegionId } into g
+                            orderby g.Count() descending
+                            where g.Count() > 10
+                            select new AracdePlayerTeamResultHelper()
+                            {
+                                PlayerId = new(g.Key.ProfileId, g.Key.RealmId, g.Key.RegionId),
+                                Name = g.Key.Name,
+                                ArcadePlayerId = g.Key.ArcadePlayerId,
+                                Count = g.Count(),
+                                Wins = g.Count(c => c.o.PlayerResult == PlayerResult.Win),
+                                AvgGain = Math.Round(g.Average(a => a.rpr.RatingChange), 2)
+                            };
 
         var results = await teammateGroup
             .ToListAsync(token);
