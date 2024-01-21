@@ -131,3 +131,28 @@ public enum UnitSize
     AirBig = 8,
     AirVeryBig = 9
 }
+
+[Flags]
+public enum UnitType
+{
+    None = 0,
+    Armored = 1 << 0,
+    Biological = 1 << 1,
+    Detector = 1 << 2,
+    Frencied = 1 << 3,
+    Heroic = 1 << 4,
+    ImportantHero = 1 << 5,
+    Light = 1 << 6,
+    Massive = 1 << 7,
+    Mechanical = 1 << 8,
+    Psionic = 1 << 9,
+    Structure = 1 << 10
+}
+
+[Flags]
+public enum WeaponTarget
+{
+    None = 0,
+    Air = 1 << 0,
+    Ground = 1 << 1
+}

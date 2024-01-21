@@ -4,6 +4,7 @@ using dsstats.api.Services;
 using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
+using dsstats.db8services.DsData;
 using dsstats.db8services.Import;
 using dsstats.ratings;
 using dsstats.shared;
@@ -109,6 +110,7 @@ builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<ITourneysService, TourneysService>();
 builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<DsDataService>();
 
 if (builder.Environment.IsProduction())
 {
@@ -140,6 +142,9 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    var dsDataService = scope.ServiceProvider.GetRequiredService<DsDataService>();
+    dsDataService.QueryTest();
 }
 
 // app.UseHttpsRedirection();

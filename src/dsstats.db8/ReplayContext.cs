@@ -40,6 +40,9 @@ public class ReplayContext : DbContext
     public virtual DbSet<ArcadeReplayPlayerRating> ArcadeReplayPlayerRatings { get; set; } = null!;
     public virtual DbSet<ArcadePlayerRatingChange> ArcadePlayerRatingChanges { get; set; } = null!;
     public virtual DbSet<DsUpdate> DsUpdates { get; set; } = null!;
+    public virtual DbSet<DsUnit> DsUnits { get; set; } = null!;
+    public virtual DbSet<DsWeapon> DsWeapons { get; set; } = null!;
+    public virtual DbSet<BonusDamage> BonusDamages { get; set; } = null!;
 
     public virtual DbSet<ComboPlayerRating> ComboPlayerRatings { get; set; } = null!;
     public virtual DbSet<ComboReplayRating> ComboReplayRatings { get; set; } = null!;
@@ -180,6 +183,18 @@ public class ReplayContext : DbContext
         modelBuilder.Entity<DsUpdate>(entity =>
         {
             entity.HasIndex(i => i.Time);
+        });
+
+        modelBuilder.Entity<DsUnit>(entity =>
+        {
+            entity.HasIndex(i => i.Name);
+            entity.HasIndex(i => i.Commander);
+            entity.HasIndex(i => new { i.Name, i.Commander });
+        });
+
+        modelBuilder.Entity<BonusDamage>(entity =>
+        {
+            entity.HasIndex(i => i.UnitType);
         });
 
         MethodInfo weekMethodInfo = typeof(ReplayContext)
