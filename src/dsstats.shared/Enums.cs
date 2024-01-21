@@ -156,3 +156,13 @@ public enum WeaponTarget
     Air = 1 << 0,
     Ground = 1 << 1
 }
+
+[Flags]
+public enum AbilityTarget
+{
+    None = 0,
+    Self = 1 << 0,
+    Single = 1 << 1,
+    AOE = 1 << 2,
+    Multiple = 1 << 3,
+}

@@ -6,19 +6,50 @@ using dsstats.db8;
 using dsstats.shared;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace dsstats.db8services.DsData;
 
 public class DsDataService(ReplayContext context, IMapper mapper, ILogger<DsDataService> logger)
 {
-    public void Import()
+    public void ImportUpgrades()
+    {
+        var unitsCsv = @"C:\data\ds\DsData\upgrades.csv";
+        if (!File.Exists(unitsCsv))
+        {
+            return;
+        }
+
+        List<DsUpgradeDto> upgrades = [];
+
+        try
+        {
+            var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                HasHeaderRecord = true,
+            };
+
+            using var reader = new StreamReader(unitsCsv);
+            using var csv = new CsvReader(reader, config);
+
+            csv.Context.RegisterClassMap<DsUpgradeMap>();
+            upgrades = csv.GetRecords<DsUpgradeDto>().ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+        var dbUpgrades = mapper.Map<List<DsUpgrade>>(upgrades.Where(x => !string.IsNullOrEmpty(x.Upgrade)));
+
+        context.DsUpgrades.AddRange(dbUpgrades);
+        context.SaveChanges();
+    }
+
+    public void ImportUnits()
     {
         // todo:
-        // Commander "HNH" (Horner) Enum parsing
-        // UnitType "Important Hero" Enum parsing
         // UnitTargetType - Unit can be attaced by Air and/or Ground
-
-
         var unitsCsv = @"C:\data\ds\DsData\units.csv";
         if (!File.Exists(unitsCsv))
         {
@@ -51,6 +82,88 @@ public class DsDataService(ReplayContext context, IMapper mapper, ILogger<DsData
         context.SaveChanges();
     }
 
+    public void ImportAbilities()
+    {
+        var csvFile = @"C:\data\ds\DsData\abilities.csv";
+
+        if (!File.Exists(csvFile))
+        {
+            return;
+        }
+
+        List<DsAbilitsCsvDto> abilities = [];
+
+        try
+        {
+            var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                HasHeaderRecord = true,
+            };
+
+            using var reader = new StreamReader(csvFile);
+            using var csv = new CsvReader(reader, config);
+
+            csv.Context.RegisterClassMap<DsAbilityMap>();
+            abilities = csv.GetRecords<DsAbilitsCsvDto>().ToList();
+
+            Console.Write(abilities.Count);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+        var dbAbilities = GetDbAbilities(abilities.Where(x => !string.IsNullOrEmpty(x.Name)).ToList());
+        context.DsAbilities.AddRange(dbAbilities);
+        context.SaveChanges();
+    }
+
+    private List<DsAbility> GetDbAbilities(List<DsAbilitsCsvDto> abilities)
+    {
+        List<DsAbility> dbAbilites = [];
+        var units = context.DsUnits.ToList();
+
+        foreach (var ability in abilities)
+        {
+            var dbAbility = mapper.Map<DsAbility>(ability);
+            var unitNames = ability.UnitName.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var unitName in unitNames)
+            {
+                var name = FixAbilityUnitName(unitName, ability.Commander);
+                var unit = units.FirstOrDefault(f => f.Name == name && f.Commander == ability.Commander);
+                if (unit is null)
+                {
+                    if (name != "Builder")
+                    {
+                        logger.LogInformation("Ability unit not found: {name}, {cmdr}", name, ability.Commander);
+                    }
+                }
+                else
+                {
+                    dbAbility.DsUnits.Add(unit);
+                }
+            }
+            dbAbilites.Add(dbAbility);
+        }
+        return dbAbilites;
+    }
+
+    private string FixAbilityUnitName(string name, Commander cmdr)
+    {
+        return (name.Trim(), cmdr) switch
+        {
+            ("Tempest", Commander.Artanis) => "Purifier Tempest",
+            ("Warhound Turret", Commander.Mengsk) => "Warhound",
+            ("Replenishable Magazine", Commander.Raynor) => "Vulture",
+            ("Observer", Commander.Vorazun) => "Oracle",
+            ("Kev Rattlesnake West", Commander.Tychus) => "Kev \"Rattlesnake\" West",
+            ("Miles Blaze Lewis", Commander.Tychus) => "Miles \"Blaze\" Lewis",
+            ("Rob Cannonball Boswell", Commander.Tychus) => "Rob \"Cannonball\" Boswell",
+            _ => name.Trim()
+        };
+    }
+
     public void QueryTest()
     {
         var goodVsLightUnits = context.DsUnits
@@ -79,6 +192,14 @@ public class CommanderConverter : DefaultTypeConverter
         {
             return cmdr;
         }
+        else if (text?.Equals("HNH", StringComparison.OrdinalIgnoreCase) ?? false)
+        {
+            return Commander.Horner;
+        }
+        else if (text?.Equals("Han and Horner", StringComparison.OrdinalIgnoreCase) ?? false)
+        {
+            return Commander.Horner;
+        }
         else
         {
             return Commander.None;
@@ -104,6 +225,10 @@ public class UnitTypeConverter : DefaultTypeConverter
                 if (Enum.TryParse(ents[i].Trim(), out UnitType unitType))
                 {
                     unitTypes.Add(unitType);
+                }
+                else if (ents[i].Trim().Equals("Important Hero", StringComparison.OrdinalIgnoreCase))
+                {
+                    unitTypes.Add(UnitType.ImportantHero);
                 }
             }
             if (unitTypes.Count > 0)
@@ -243,13 +368,121 @@ public class WeaponTypeConverter : DefaultTypeConverter
     }
 }
 
+public class AbilityTargetConverter : DefaultTypeConverter
+{
+    public override object ConvertFromString(string? text, IReaderRow row, MemberMapData memberMapData)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return UnitType.None;
+        }
 
+        var ents = text.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (ents.Length > 0)
+        {
+            List<AbilityTarget> abilityTargets = [];
+            for (int i = 0; i < ents.Length; i++)
+            {
+                if (Enum.TryParse(ents[i].Trim(), true, out AbilityTarget abilityTarget))
+                {
+                    abilityTargets.Add(abilityTarget);
+                }
+            }
+            if (abilityTargets.Count > 0)
+            {
+                AbilityTarget abilityTarget = abilityTargets[0];
+                for (int i = 1; i < abilityTargets.Count; i++)
+                {
+                    abilityTarget |= abilityTargets[i];
+                }
+                return abilityTarget;
+            }
+        }
+
+        return AbilityTarget.None;
+    }
+}
+
+public class CustomIntConverter : DefaultTypeConverter
+{
+    public override object ConvertFromString(string? text, IReaderRow row, MemberMapData memberMapData)
+    {
+        if (int.TryParse(text, out int value))
+        {
+            return value;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+}
+
+public class GlobalTimerConverter : DefaultTypeConverter
+{
+    public override object ConvertFromString(string? text, IReaderRow row, MemberMapData memberMapData)
+    {
+        if (text?.Equals("Yes", StringComparison.OrdinalIgnoreCase) ?? false)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+}
+
+public partial class NameConverter : DefaultTypeConverter
+{
+    public override object ConvertFromString(string? text, IReaderRow row, MemberMapData memberMapData)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return string.Empty;
+        }
+
+        if (text.Contains('(', StringComparison.Ordinal))
+        {
+            string name = NameRx().Replace(text, "");
+            return name.Trim();
+        }
+
+        return text.Trim();
+    }
+
+    [GeneratedRegex(@"(\(.*?\))")]
+    private static partial Regex NameRx();
+}
+
+public partial class TierConverter : DefaultTypeConverter
+{
+    public override object ConvertFromString(string? text, IReaderRow row, MemberMapData memberMapData)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return 0;
+        }
+
+        if (text.Contains("T3", StringComparison.OrdinalIgnoreCase))
+        {
+            return 3;
+        }
+
+        if (text.Contains("T2", StringComparison.OrdinalIgnoreCase))
+        {
+            return 2;
+        }
+
+        return 0;
+    }
+}
 
 public class DsUnitCsvMap : ClassMap<DsUnitDto>
 {
     public DsUnitCsvMap()
     {
-        Map(m => m.Name).Name("Name");
+        Map(m => m.Name).Name("Name").TypeConverter<NameConverter>();
         Map(m => m.Commander).Name("CMDR:").TypeConverter<CommanderConverter>();
         Map(m => m.Tier).Name("Tier").Default(1);
         Map(m => m.Cost).Name("Cost").Default(0);
@@ -267,3 +500,33 @@ public class DsUnitCsvMap : ClassMap<DsUnitDto>
     }
 }
 
+public class DsAbilityMap : ClassMap<DsAbilitsCsvDto>
+{
+    public DsAbilityMap()
+    {
+        Map(m => m.Name).Name("Name:");
+        Map(m => m.Requirements).Name("Requirements:");
+        Map(m => m.Cooldown).Name("Cooldown:").TypeConverter<CustomIntConverter>();
+        Map(m => m.GlobalTimer).Name("Global Timer?").TypeConverter<GlobalTimerConverter>();
+        Map(m => m.EnergyCost).Name("Energy Cost:").Default(0);
+        Map(m => m.CastRange).Name("Cast Range:").TypeConverter<CustomIntConverter>();
+        Map(m => m.AoeRadius).Name("AOE Radius").Default(0);
+        Map(m => m.AbilityTarget).Name("Target:").TypeConverter<AbilityTargetConverter>();
+        Map(m => m.Description).Name("Description:");
+
+        Map(m => m.UnitName).Name("Unit:").TypeConverter<NameConverter>();
+        Map(m => m.Commander).Name("CMDR:").TypeConverter<CommanderConverter>();
+    }
+}
+
+public class DsUpgradeMap : ClassMap<DsUpgradeDto>
+{
+    public DsUpgradeMap()
+    {
+        Map(m => m.Upgrade).Name("Upgrade:").TypeConverter<NameConverter>();
+        Map(m => m.Commander).Name("Cmdr:").TypeConverter<CommanderConverter>();
+        Map(m => m.Cost).Name("Cost:").TypeConverter<CustomIntConverter>();
+        Map(m => m.Description).Name("Description:");
+        Map(m => m.RequiredTier).Name("Requirement:").TypeConverter<TierConverter>();
+    }
+}

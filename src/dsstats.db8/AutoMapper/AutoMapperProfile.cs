@@ -87,5 +87,9 @@ public class AutoMapperProfile : Profile
         CreateMap<DsWeaponDto, DsWeapon>(MemberList.Source);
         CreateMap<BonusDamage, BonusDamageDto>(MemberList.Destination);
         CreateMap<BonusDamageDto,BonusDamage>(MemberList.Source);
+        CreateMap<DsAbility, DsAbilityDto>(MemberList.Destination);
+        CreateMap<DsAbilityDto, DsAbility>(MemberList.Source);
+        CreateMap<DsUpgrade, DsUpgradeDto>(MemberList.Destination);
+        CreateMap<DsUpgradeDto, DsUpgrade>(MemberList.Source);
     }
 }

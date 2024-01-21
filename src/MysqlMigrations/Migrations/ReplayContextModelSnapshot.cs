@@ -19,6 +19,21 @@ namespace MysqlMigrations.Migrations
                 .HasAnnotation("ProductVersion", "8.0.1")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
+            modelBuilder.Entity("DsAbilityDsUnit", b =>
+                {
+                    b.Property<int>("AbilitiesDsAbilityId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DsUnitsDsUnitId")
+                        .HasColumnType("int");
+
+                    b.HasKey("AbilitiesDsAbilityId", "DsUnitsDsUnitId");
+
+                    b.HasIndex("DsUnitsDsUnitId");
+
+                    b.ToTable("DsAbilityDsUnit");
+                });
+
             modelBuilder.Entity("ReplayUploader", b =>
                 {
                     b.Property<int>("ReplaysReplayId")
@@ -336,7 +351,7 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("Damage")
                         .HasColumnType("int");
 
-                    b.Property<int?>("DsWeaponId")
+                    b.Property<int>("DsWeaponId")
                         .HasColumnType("int");
 
                     b.Property<int>("PerUpgrade")
@@ -491,6 +506,55 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("CommanderMmrs");
                 });
 
+            modelBuilder.Entity("dsstats.db8.DsAbility", b =>
+                {
+                    b.Property<int>("DsAbilityId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("AbilityTarget")
+                        .HasColumnType("int");
+
+                    b.Property<float>("AoeRadius")
+                        .HasColumnType("float");
+
+                    b.Property<int>("CastRange")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Commander")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Cooldown")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(310)
+                        .HasColumnType("varchar(310)");
+
+                    b.Property<float>("EnergyCost")
+                        .HasColumnType("float");
+
+                    b.Property<bool>("GlobalTimer")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Requirements")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("DsAbilityId");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("DsAbilities");
+                });
+
             modelBuilder.Entity("dsstats.db8.DsUnit", b =>
                 {
                     b.Property<int>("DsUnitId")
@@ -580,6 +644,38 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("DsUpdates");
                 });
 
+            modelBuilder.Entity("dsstats.db8.DsUpgrade", b =>
+                {
+                    b.Property<int>("DsUpgradeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("Commander")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Cost")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
+
+                    b.Property<int>("RequiredTier")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Upgrade")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("DsUpgradeId");
+
+                    b.HasIndex("Upgrade");
+
+                    b.ToTable("DsUpgrades");
+                });
+
             modelBuilder.Entity("dsstats.db8.DsWeapon", b =>
                 {
                     b.Property<int>("DsWeaponId")
@@ -601,7 +697,7 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("DamagePerUpgrade")
                         .HasColumnType("int");
 
-                    b.Property<int?>("DsUnitId")
+                    b.Property<int>("DsUnitId")
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
@@ -1527,6 +1623,21 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("Uploaders");
                 });
 
+            modelBuilder.Entity("DsAbilityDsUnit", b =>
+                {
+                    b.HasOne("dsstats.db8.DsAbility", null)
+                        .WithMany()
+                        .HasForeignKey("AbilitiesDsAbilityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("dsstats.db8.DsUnit", null)
+                        .WithMany()
+                        .HasForeignKey("DsUnitsDsUnitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ReplayUploader", b =>
                 {
                     b.HasOne("dsstats.db8.Replay", null)
@@ -1626,9 +1737,13 @@ namespace MysqlMigrations.Migrations
 
             modelBuilder.Entity("dsstats.db8.BonusDamage", b =>
                 {
-                    b.HasOne("dsstats.db8.DsWeapon", null)
+                    b.HasOne("dsstats.db8.DsWeapon", "DsWeapon")
                         .WithMany("BonusDamages")
-                        .HasForeignKey("DsWeaponId");
+                        .HasForeignKey("DsWeaponId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DsWeapon");
                 });
 
             modelBuilder.Entity("dsstats.db8.ComboPlayerRating", b =>
@@ -1666,9 +1781,13 @@ namespace MysqlMigrations.Migrations
 
             modelBuilder.Entity("dsstats.db8.DsWeapon", b =>
                 {
-                    b.HasOne("dsstats.db8.DsUnit", null)
+                    b.HasOne("dsstats.db8.DsUnit", "DsUnit")
                         .WithMany("Weapons")
-                        .HasForeignKey("DsUnitId");
+                        .HasForeignKey("DsUnitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DsUnit");
                 });
 
             modelBuilder.Entity("dsstats.db8.NoUploadResult", b =>

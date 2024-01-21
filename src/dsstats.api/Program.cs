@@ -144,7 +144,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 
     var dsDataService = scope.ServiceProvider.GetRequiredService<DsDataService>();
-    dsDataService.QueryTest();
+    //dsDataService.ImportUpgrades();
+    //dsDataService.ImportUnits();
+    //dsDataService.ImportAbilities();
 }
 
 // app.UseHttpsRedirection();

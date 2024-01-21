@@ -1,4 +1,5 @@
 ﻿namespace dsstats.shared;
+
 public record DsUnitDto
 {
     public string Name { get; set; } = string.Empty;
@@ -16,6 +17,26 @@ public record DsUnitDto
     public float EnergyRegen { get; set; }
     public UnitType UnitType { get; set; }
     public List<DsWeaponDto> Weapons { get; set; } = [];
+    public List<DsAbilityDto> Abilities { get; set; } = []; 
+}
+
+public record DsAbilityDto
+{
+    public string Name { get; set; } = string.Empty;
+    public Commander Commander { get; set; }
+    public string Requirements { get; set; } = string.Empty;
+    public int Cooldown { get; set; }
+    public bool GlobalTimer { get; set; }
+    public float EnergyCost { get; set; }
+    public int CastRange { get; set; }
+    public float AoeRadius { get; set; }
+    public AbilityTarget AbilityTarget { get; set; }
+    public string Description { get; set; } = string.Empty;
+}
+
+public record DsAbilitsCsvDto : DsAbilityDto
+{
+    public string UnitName {  get; set; } = string.Empty;
 }
 
 public record DsWeaponDto
@@ -30,9 +51,18 @@ public record DsWeaponDto
     public List<BonusDamageDto> BonusDamages { get; set; } = [];
 }
 
-public class BonusDamageDto
+public record BonusDamageDto
 {
     public UnitType UnitType { get; set; }
     public int Damage { get; set; }
     public int PerUpgrade { get; set; }
+}
+
+public record DsUpgradeDto
+{
+    public string Upgrade { get; set; } = string.Empty;
+    public Commander Commander { get; set; }
+    public int Cost { get; set; }
+    public int RequiredTier { get; set; }
+    public string Description { get; set; } = string.Empty;
 }
