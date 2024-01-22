@@ -110,7 +110,7 @@ builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<ITourneysService, TourneysService>();
 builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
-builder.Services.AddScoped<DsDataService>();
+builder.Services.AddScoped<IDsDataService, DsDataService>();
 
 if (builder.Environment.IsProduction())
 {
@@ -143,7 +143,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    var dsDataService = scope.ServiceProvider.GetRequiredService<DsDataService>();
+    // var dsDataService = scope.ServiceProvider.GetRequiredService<IDsDataService>();
     //dsDataService.ImportUpgrades();
     //dsDataService.ImportUnits();
     //dsDataService.ImportAbilities();

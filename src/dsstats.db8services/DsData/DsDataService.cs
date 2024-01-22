@@ -4,13 +4,14 @@ using CsvHelper.Configuration;
 using CsvHelper.TypeConversion;
 using dsstats.db8;
 using dsstats.shared;
+using dsstats.shared.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace dsstats.db8services.DsData;
 
-public class DsDataService(ReplayContext context, IMapper mapper, ILogger<DsDataService> logger)
+public partial class DsDataService(ReplayContext context, IMapper mapper, ILogger<DsDataService> logger) : IDsDataService
 {
     public void ImportUpgrades()
     {

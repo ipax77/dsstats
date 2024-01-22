@@ -1,0 +1,17 @@
+﻿@page "/dsdata"
+@using dsstats.shared
+
+<PageTitle>dsstats - dsdata</PageTitle>
+
+<dsstats.razorlib.DsData.DsUnitsComponent Request="Request" />
+
+@code {
+    UnitRequest Request = new()
+        {
+            Orders = new()
+            {
+                new() { Property = nameof(DsUnitListDto.Commander), Ascending = true },
+                new() { Property = nameof(DsUnitListDto.Name), Ascending = true },
+            }
+        };
+}

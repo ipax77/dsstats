@@ -20,6 +20,15 @@ public record DsUnitDto
     public List<DsAbilityDto> Abilities { get; set; } = []; 
 }
 
+public record DsUnitListDto
+{
+    public string Name { get; set; } = string.Empty;
+    public Commander Commander { get; set; }
+    public int Tier { get; set; }
+    public int Cost { get; set; }
+    public UnitType UnitType { get; set; }
+}
+
 public record DsAbilityDto
 {
     public string Name { get; set; } = string.Empty;
