@@ -1,0 +1,299 @@
+﻿@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IDsDataService dsDataService
+@implements IDisposable
+
+<div class="@(DetailUnit is null ? "" : "visually-hidden")">
+    <div class="row mt-2" style="width: 75vw; max-width: 1100px;">
+        <div class="col-auto">
+            <form name="dsdatasearch">
+                <div class="d-flex">
+                    <div>
+                        <fieldset>
+                            <label class="form-label">
+                                <input class="form-control bgchart" placeholder="Search" value="@Request.Search" @oninput="SearchChanged" />
+                            </label>
+                            <label class="form-label">
+                                <select class="form-select text-light bgchart" @bind="Request.Commander" @bind:after="@(() => Reload())">
+                                    @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                                    {
+                                        @if (cmdr == Commander.None)
+                                        {
+                                            <option value="@cmdr">All commanders</option>
+                                        }
+                                        <option value="@cmdr">@cmdr</option>
+                                    }
+                                </select>
+                            </label>
+                        </fieldset>
+                    </div>
+                    <div>
+                        <i class="bi bi-x-lg text-danger pointer" @onclick="ResetSearch"></i>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="ml-auto d-flex justify-content-between">
+            <div>
+                @if (isLoading)
+                {
+                    <div class="spinner-border spinner-border-sm text-danger" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                }
+            </div>
+            <div class="me-1">
+                <div class="d-flex bgchart border rounded border-secondary p-1">
+                    <div>
+                        <span class="bi bi-arrow-clockwise text-primary pointer" @onclick="e => Reload()"></span>
+                    </div>
+                    <div class="ms-2">
+                        # @totalCount.ToString("N0")
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="table-responsive tableFixHead text-nowrap" style="max-width: 1150px; max-height: 80vh;" tabindex="1">
+        <table class="tptable table">
+            <thead class="user-select-none">
+                <tr>
+                    <CascadingValue Value="Request.Orders">
+                        <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(DsUnitListDto.Name))">
+                            <SortArrow Property="@nameof(DsUnitListDto.Name)">
+                                @nameof(DsUnitListDto.Name)
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(DsUnitListDto.Commander))">
+                            <SortArrow Property="@nameof(DsUnitListDto.Commander)">
+                                @nameof(DsUnitListDto.Commander)
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(DsUnitListDto.Tier))">
+                            <SortArrow Property="@nameof(DsUnitListDto.Tier)">
+                                @nameof(DsUnitListDto.Tier)
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(DsUnitListDto.Cost))">
+                            <SortArrow Property="@nameof(DsUnitListDto.Cost)">
+                                @nameof(DsUnitListDto.Cost)
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="e => SortList(e, nameof(DsUnitListDto.UnitType))">
+                            <SortArrow Property="@nameof(DsUnitListDto.UnitType)">
+                                @nameof(DsUnitListDto.UnitType)
+                            </SortArrow>
+                        </th>
+                    </CascadingValue>
+                </tr>
+            </thead>
+            <tbody>
+                @if (totalCount == 0)
+                {
+                    <tr>
+                        <td colspan="100">
+                            <div>No data found.</div>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    <Virtualize @ref="virtualizeComponent" ItemsProvider="LoadUnits" Context="unit" ItemSize="47"
+                                SpacerElement="tr" OverscanCount="20">
+                        <ItemContent>
+                            <tr class="pointer" @onclick="e => LoadUnitDetails(unit)">
+                                <td>
+                                    <span class="text-truncate text-warning"
+                                          style="display: block; width: 175px;">@unit.Name</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex">
+                                        <div class="preload-@(((Commander)unit.Commander).ToString().ToLower())" alt="@((Commander)unit.Commander)" style="width: 30px; height: 30px;"></div>
+                                        <div class="small">@unit.Commander</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    @unit.Tier
+                                </td>
+                                <td>
+                                    @unit.Cost
+                                </td>
+                                <td>
+                                    <span class="text-truncate text-info"
+                                          style="display: block; width: 350px;">
+                                        @string.Join(", ", Enum.GetValues(typeof(UnitType)).Cast<UnitType>().Where(x => x != UnitType.None && unit.UnitType.HasFlag(x)))
+                                    </span>
+                                </td>
+                            </tr>
+                        </ItemContent>
+                        <Placeholder>
+                            <tr height="47px">
+                                <td colspan="100">Loading ...</td>
+                            </tr>
+                        </Placeholder>
+                    </Virtualize>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+@if (DetailUnit is not null)
+{
+    <div class="mt-5">
+        <UnitDetailsComponent Unit="DetailUnit" UnitId="unitId" OnClose="CloseDetails" />
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public UnitRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<UnitRequest> OnRequestChanged { get; set; }
+
+    bool isLoading;
+    int totalCount;
+    private Virtualize<DsUnitListDto>? virtualizeComponent;
+    private SemaphoreSlim ss = new(1, 1);
+
+    private DsUnitDto? DetailUnit;
+    bool DEBUG = true;
+    int unitId = 0;
+
+    protected override void OnInitialized()
+    {
+        _ = SetCount();
+        if (!string.IsNullOrEmpty(Request.UnitName))
+        {
+            _ = LoadUnitDetails(new() { Name = Request.UnitName, Commander = Request.Commander });
+        }
+        base.OnInitialized();
+    }
+
+    private async Task SetCount()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        totalCount = await dsDataService.GetUnitsListCount(Request);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task Reload(bool dry = false)
+    {
+        await ss.WaitAsync();
+        try
+        {
+            await SetCount();
+            if (virtualizeComponent != null)
+            {
+                await InvokeAsync(async () =>
+                {
+                    await virtualizeComponent.RefreshDataAsync();
+                    StateHasChanged();
+                });
+            }
+            if (!dry)
+            {
+                await OnRequestChanged.InvokeAsync(Request);
+            }
+        }
+        finally
+        {
+            ss.Release();
+        }
+    }
+
+    private async ValueTask<ItemsProviderResult<DsUnitListDto>> LoadUnits(ItemsProviderRequest prRequest)
+    {
+        Request.Skip = prRequest.StartIndex;
+        Request.Take = Math.Min(prRequest.Count, totalCount - prRequest.StartIndex);
+
+        var units = await dsDataService.GetUnitsList(Request, prRequest.CancellationToken);
+
+        return new ItemsProviderResult<DsUnitListDto>(units, totalCount);
+    }
+
+    private async Task SortList(Microsoft.AspNetCore.Components.Web.MouseEventArgs e, string property)
+    {
+        var exOrder = Request.Orders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                Request.Orders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            Request.Orders.Clear();
+            Request.Orders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+        await Reload();
+    }
+
+    private async Task LoadUnitDetails(DsUnitListDto unit)
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        UnitDetailRequest unitDetailRequest = new()
+            {
+                Name = unit.Name,
+                Commander = unit.Commander
+            };
+        DetailUnit = await dsDataService.GetUnitDetails(unitDetailRequest);
+        if (DetailUnit is not null)
+        {
+            if (DEBUG)
+            {
+                unitId = await dsDataService.GetUnitId(unitDetailRequest);
+            }
+            Request.UnitName = DetailUnit.Name;
+            Request.Commander = DetailUnit.Commander;
+            await OnRequestChanged.InvokeAsync(Request);
+        }
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void CloseDetails()
+    {
+        DetailUnit = null;
+        Request.UnitName = null;
+        Request.Commander = Commander.None;
+        OnRequestChanged.InvokeAsync(Request);
+    }
+
+    private void SearchChanged(ChangeEventArgs e)
+    {
+        if (e.Value is string value)
+        {
+            Request.Search = value;
+            _ = Reload();
+        }
+    }
+
+    private void ResetSearch()
+    {
+        Request.Search = string.Empty;
+        Request.Commander = Commander.None;
+        _ = Reload();
+    }
+
+    public void Dispose()
+    {
+        ss.Dispose();
+    }
+}

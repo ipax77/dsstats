@@ -1,0 +1,282 @@
+﻿@using System.Globalization
+@using dsstats.shared
+
+<div class="container-fluid">
+    <div class="card border-secondary @($"{(Unit.Abilities.Count + Unit.Weapons.Count + Unit.Upgrades.Count <= 1 ? "" : "d-inline-block")}")">
+        <div class="card-header bgchart2">
+            <div class="d-flex">
+                <div>
+                    <div class="preload-@(((Commander)Unit.Commander).ToString().ToLower())" alt="@((Commander)Unit.Commander)" style="width: 30px; height: 30px;"></div>
+                </div>
+                <div class="fw-bold ms-3">
+                    <h4 class="text-warning">@Unit.Name</h4>
+                </div>
+                <div class="ms-3">
+                    <i class="bi bi-x-lg text-danger pointer" @onclick="e => OnClose.InvokeAsync()"></i>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-auto">
+                    @($"T{Unit.Tier}")
+                </div>
+                <div class="col-auto">
+                    @Unit.Cost <img src="_content/dsstats.razorlib/images/pax_mins.png" alt="minerals" />
+                </div>
+                @if (UnitId > 0)
+                {
+                    <div class="col-auto">
+                        UnitId @UnitId
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="card-body bgchart">
+            <div class="row">
+                <div class="col-lg-4 col-xl-3">
+                    <h4 class="fw-bold">Stats</h4>
+                    <div class="table-responsive bgchart">
+                        <table class="table table-sm tptable">
+                            <tbody>
+                                <tr>
+                                    <td>Life</td>
+                                    <td>@Unit.Life</td>
+                                </tr>
+                                <tr>
+                                    <td>Armor</td>
+                                    <td>@Unit.Armor</td>
+                                </tr>
+                                @if (Unit.Shields > 0)
+                                {
+                                    <tr>
+                                        <td>Shields</td>
+                                        <td>@Unit.Shields</td>
+                                    </tr>
+                                    <tr>
+                                        <td>ShieldArmor</td>
+                                        <td>@Unit.ShieldArmor</td>
+                                    </tr>
+                                }
+                                <tr>
+                                    <td>Speed</td>
+                                    <td>@Unit.Speed.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                </tr>
+                                @if (Unit.MaxEnergy > 0)
+                                {
+                                    <tr>
+                                        <td>Starting Energy</td>
+                                        <td>@Unit.StartingEnergy</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Max Energy</td>
+                                        <td>@Unit.MaxEnergy</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Energy Regeneration</td>
+                                        <td>@Unit.EnergyRegen.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                    </tr>
+                                }
+                                @if (Unit.HealthRegen > 0)
+                                {
+                                    <tr>
+                                        <td>Health Regeneration</td>
+                                        <td>@Unit.HealthRegen.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                    </tr>
+                                }
+                                <tr>
+                                    <td>Tags</td>
+                                    <td>
+                                        @string.Join(", ", Enum.GetValues(typeof(UnitType)).Cast<UnitType>().Where(x => x != UnitType.None && Unit.UnitType.HasFlag(x)))
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @if (Unit.Weapons.Count > 0)
+                {
+                    @foreach (var weapon in Unit.Weapons)
+                    {
+                        <div class="col-lg-4 col-xl-3">
+                            <div class="border rounded p-1 mt-1">
+                                <h5 class="text-danger"><span class="fw-bold">@weapon.Name</span></h5>
+                                <div class="table-responsive bgchart">
+                                    <table class="table table-sm tptable">
+                                        <tbody>
+                                            <tr>
+                                                <td>Range</td>
+                                                <td>
+                                                    @if (weapon.Range == 0)
+                                                    {
+                                                        <span>Melee</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        @weapon.Range.ToString("N2", CultureInfo.InvariantCulture)
+                                                    }
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Attack Speed</td>
+                                                <td>@weapon.AttackSpeed.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Damage</td>
+                                                <td>@weapon.Damage @($"{(weapon.DamagePerUpgrade > 0 ? $" (+ {weapon.DamagePerUpgrade} per Upgrade)" : "")}")</td>
+                                            </tr>
+                                            @foreach (var bonusDamage in weapon.BonusDamages)
+                                            {
+                                                <tr>
+                                                    <td></td>
+                                                    <td>
+                                                        + @bonusDamage.Damage vs @bonusDamage.UnitType (+ @bonusDamage.PerUpgrade per Upgrade)
+                                                    </td>
+                                                </tr>
+                                            }
+                                            @if (weapon.Attacks > 0)
+                                            {
+                                                <tr>
+                                                    <td>Attacks</td>
+                                                    <td>@weapon.Attacks</td>
+                                                </tr>
+                                            }
+                                            <tr>
+                                                <td>Targets</td>
+                                                <td>
+                                                    @string.Join(", ", Enum.GetValues(typeof(WeaponTarget)).Cast<WeaponTarget>().Where(x => x != WeaponTarget.None && weapon.CanTarget.HasFlag(x)))
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                @if (Unit.Abilities.Count > 0)
+                {
+                    @foreach (var ability in Unit.Abilities)
+                    {
+                        <div class="col-lg-4 col-xl-3">
+                            <div class="border rounded p-1 mt-1">
+                                <h5 class="text-info"><span class="fw-bold">@ability.Name</span></h5>
+                                <div class="table-responsive bgchart">
+                                    <table class="table table-sm tptable">
+                                        <tbody>
+                                            @if (!string.IsNullOrEmpty(ability.Requirements))
+                                            {
+                                                <tr>
+                                                    <td>Requirements</td>
+                                                    <td>@ability.Requirements</td>
+                                                </tr>
+                                            }
+                                            @if (ability.Cooldown > 0)
+                                            {
+                                                <tr>
+                                                    <td>Cooldown</td>
+                                                    <td>@ability.Cooldown s</td>
+                                                </tr>
+                                            }
+                                            @if (ability.GlobalTimer)
+                                            {
+                                                <tr>
+                                                    <td>GlobalTimer</td>
+                                                    <td>@ability.GlobalTimer</td>
+                                                </tr>
+                                            }
+                                            @if (ability.EnergyCost > 0)
+                                            {
+                                                <tr>
+                                                    <td>EnergyCost</td>
+                                                    <td>@ability.EnergyCost.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                                </tr>
+                                            }
+                                            <tr>
+                                                <td>CastRange</td>
+                                                <td>@ability.CastRange</td>
+                                            </tr>
+                                            @if (ability.AoeRadius > 0)
+                                            {
+                                                <tr>
+                                                    <td>AoeRadius</td>
+                                                    <td>@ability.AoeRadius.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                                </tr>
+                                            }
+                                            <tr>
+                                                <td>Target(s)</td>
+                                                <td>
+                                                    @string.Join(", ", Enum.GetValues(typeof(AbilityTarget)).Cast<AbilityTarget>().Where(x => x != AbilityTarget.None && ability.AbilityTarget.HasFlag(x)))
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div>
+                                    <p>@ability.Description</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                @if (Unit.Upgrades.Count > 0)
+                {
+                    @foreach (var upgrade in Unit.Upgrades)
+                    {
+                        <div class="col-lg-4 col-xl-3">
+                            <div class="border rounded p-1 mt-1">
+                                <h5 class="text-success"><span class="fw-bold">@upgrade.Upgrade</span></h5>
+                                <div class="table-responsive bgchart">
+                                    <table class="table table-sm tptable">
+                                        <tbody>
+                                            <tr>
+                                                <td>Cost</td>
+                                                <td>@upgrade.Cost</td>
+                                            </tr>
+                                            @if (upgrade.RequiredTier > 0)
+                                            {
+                                                <tr>
+                                                    <td>Tier</td>
+                                                    <td>@upgrade.RequiredTier</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div>
+                                    <p>@upgrade.Description</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+            <div class="card-footer bgchart2">
+                <div class="row">
+                    <div class="col-auto">
+                        <button type="button" class="btn btn-sm btn-danger" @onclick="e => OnClose.InvokeAsync()">Close</button>
+                    </div>
+                    <div class="col-auto row ms-2 mt-2">
+                        <div class="col-auto">
+                            <span class="bg-danger rounded d-inline-block" style="width: 20px; height: 15px;"></span> Weapons
+                        </div>
+                        <div class="col-auto">
+                            <span class="bg-info rounded d-inline-block" style="width: 20px; height: 15px;"></span> Abilities
+                        </div>
+                        <div class="col-auto">
+                            <span class="bg-success rounded d-inline-block" style="width: 20px; height: 15px;"></span> Upgrades
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@code {
+    [Parameter, EditorRequired]
+    public DsUnitDto Unit { get; set; } = default!;
+
+    [Parameter]
+    public int UnitId { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+}
