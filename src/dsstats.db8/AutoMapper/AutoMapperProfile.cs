@@ -80,5 +80,18 @@ public class AutoMapperProfile : Profile
             .ForMember(x => x.IsUploader, opt => opt.Ignore());
         CreateMap<ArcadePlayerRatingChange, PlayerRatingChangeDto>();
         CreateMap<ArcadePlayer, ArcadePlayerReplayDto>(MemberList.Destination);
+
+        CreateMap<DsUnit, DsUnitDto>(MemberList.Destination);
+        CreateMap<DsUnitDto, DsUnit>(MemberList.Source);
+        CreateMap<DsWeapon, DsWeaponDto>(MemberList.Destination);
+        CreateMap<DsWeaponDto, DsWeapon>(MemberList.Source);
+        CreateMap<BonusDamage, BonusDamageDto>(MemberList.Destination);
+        CreateMap<BonusDamageDto,BonusDamage>(MemberList.Source);
+        CreateMap<DsAbility, DsAbilityDto>(MemberList.Destination);
+        CreateMap<DsAbilityDto, DsAbility>(MemberList.Source);
+        CreateMap<DsUpgrade, DsUpgradeDto>(MemberList.Destination);
+        CreateMap<DsUpgradeDto, DsUpgrade>(MemberList.Source);
+
+        CreateMap<DsUnit, DsUnitListDto>(MemberList.Destination);
     }
 }
