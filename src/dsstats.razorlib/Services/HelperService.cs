@@ -142,7 +142,7 @@ public static class HelperService
 
     public static (double, double) GetChartMiddle(MiddleInfo middleInfo, int atSecond)
     {
-        if (middleInfo.MiddleChanges.Count < 2)
+        if (middleInfo.MiddleChanges.Count < 1)
         {
             return (0, 0);
         }
