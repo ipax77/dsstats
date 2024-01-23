@@ -31,6 +31,9 @@
                     <div>
                         <i class="bi bi-x-lg text-danger pointer" @onclick="ResetSearch"></i>
                     </div>
+                    <div class="ms-5">
+                        <span class="bgchart">Credit: This implementation is based on <a href="https://docs.google.com/spreadsheets/d/1XOFfyvsNLry3g0HoL1R4amOzvthofBjeDCO-jk24L50" target="_blank" rel="noopener noreferrer">Ideal's DS Excel Bot Beta v3.10</a>. All credits to Ideal for the original work!</span>
+                    </div>
                 </div>
             </form>
         </div>
@@ -158,7 +161,7 @@
     private SemaphoreSlim ss = new(1, 1);
 
     private DsUnitDto? DetailUnit;
-    bool DEBUG = true;
+    bool DEBUG = false;
     int unitId = 0;
 
     protected override void OnInitialized()

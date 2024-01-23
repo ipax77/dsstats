@@ -128,7 +128,7 @@
                                                 <tr>
                                                     <td></td>
                                                     <td>
-                                                        + @bonusDamage.Damage vs @bonusDamage.UnitType (+ @bonusDamage.PerUpgrade per Upgrade)
+                                                        @bonusDamage.Damage vs @bonusDamage.UnitType @($"{(bonusDamage.PerUpgrade > 0 ? $"(+ {bonusDamage.PerUpgrade} per Upgrade)" : "")}")
                                                     </td>
                                                 </tr>
                                             }
