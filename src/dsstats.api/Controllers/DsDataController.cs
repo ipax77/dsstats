@@ -9,6 +9,13 @@ namespace dsstats.api.Controllers;
 public class DsDataController(IDsDataService dsDataService) : Controller
 {
     [HttpPost]
+    [Route("getunitid")]
+    public async Task<ActionResult<int>> GetUnitId(UnitDetailRequest request)
+    {
+        return await dsDataService.GetUnitId(request);
+    }
+
+    [HttpPost]
     [Route("getunitdetails")]
     public async Task<ActionResult<DsUnitDto?>> GetUnitDetails(UnitDetailRequest request, CancellationToken token = default)
     {

@@ -16,8 +16,13 @@ public record DsUnitDto
     public float HealthRegen { get; set; }
     public float EnergyRegen { get; set; }
     public UnitType UnitType { get; set; }
+    public WeaponTarget MovementType { get; set; }
+    public UnitSize Size { get; set; }
+    public UnitColor Color { get; set; }
+    public int UnitId { get; set; }
     public List<DsWeaponDto> Weapons { get; set; } = [];
     public List<DsAbilityDto> Abilities { get; set; } = []; 
+    public List<DsUpgradeDto> Upgrades { get; set; } = [];
 }
 
 public record DsUnitListDto

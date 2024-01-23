@@ -24,6 +24,21 @@ public class DsDataService(HttpClient httpClient, ILogger<DsDataService> logger)
         return null;
     }
 
+    public async Task<int> GetUnitId(UnitDetailRequest request)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{dsDataController}/getunitid", request);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<int>();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting units id: {error}", ex.Message);
+        }
+        return 0;
+    }
+
     public async Task<List<DsUnitListDto>> GetUnitsList(UnitRequest request, CancellationToken token = default)
     {
         try

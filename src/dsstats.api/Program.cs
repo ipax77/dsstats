@@ -143,7 +143,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    // var dsDataService = scope.ServiceProvider.GetRequiredService<IDsDataService>();
+    //var dsDataService = scope.ServiceProvider.GetRequiredService<IDsDataService>();
     //dsDataService.ImportUpgrades();
     //dsDataService.ImportUnits();
     //dsDataService.ImportAbilities();

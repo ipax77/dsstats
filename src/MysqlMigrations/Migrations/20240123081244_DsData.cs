@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace MysqlMigrations.Migrations
 {
     /// <inheritdoc />
-    public partial class dsdata : Migration
+    public partial class DsData : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -57,31 +57,15 @@ namespace MysqlMigrations.Migrations
                     MaxEnergy = table.Column<int>(type: "int", nullable: false),
                     HealthRegen = table.Column<float>(type: "float", nullable: false),
                     EnergyRegen = table.Column<float>(type: "float", nullable: false),
-                    UnitType = table.Column<int>(type: "int", nullable: false)
+                    UnitType = table.Column<int>(type: "int", nullable: false),
+                    MovementType = table.Column<int>(type: "int", nullable: false),
+                    Size = table.Column<int>(type: "int", nullable: false),
+                    Color = table.Column<int>(type: "int", nullable: false),
+                    UnitId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_DsUnits", x => x.DsUnitId);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.CreateTable(
-                name: "DsUpgrades",
-                columns: table => new
-                {
-                    DsUpgradeId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Upgrade = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    Commander = table.Column<int>(type: "int", nullable: false),
-                    Cost = table.Column<int>(type: "int", nullable: false),
-                    RequiredTier = table.Column<int>(type: "int", nullable: false),
-                    Description = table.Column<string>(type: "varchar(300)", maxLength: 300, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_DsUpgrades", x => x.DsUpgradeId);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -119,6 +103,32 @@ namespace MysqlMigrations.Migrations
                         principalTable: "DsUnits",
                         principalColumn: "DsUnitId",
                         onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
+                name: "DsUpgrades",
+                columns: table => new
+                {
+                    DsUpgradeId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Upgrade = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Commander = table.Column<int>(type: "int", nullable: false),
+                    Cost = table.Column<int>(type: "int", nullable: false),
+                    RequiredTier = table.Column<int>(type: "int", nullable: false),
+                    Description = table.Column<string>(type: "varchar(300)", maxLength: 300, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    DsUnitId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DsUpgrades", x => x.DsUpgradeId);
+                    table.ForeignKey(
+                        name: "FK_DsUpgrades_DsUnits_DsUnitId",
+                        column: x => x.DsUnitId,
+                        principalTable: "DsUnits",
+                        principalColumn: "DsUnitId");
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
@@ -207,6 +217,11 @@ namespace MysqlMigrations.Migrations
                 name: "IX_DsUnits_Name_Commander",
                 table: "DsUnits",
                 columns: new[] { "Name", "Commander" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DsUpgrades_DsUnitId",
+                table: "DsUpgrades",
+                column: "DsUnitId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DsUpgrades_Upgrade",

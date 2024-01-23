@@ -7,6 +7,14 @@ namespace dsstats.db8services.DsData;
 
 public partial class DsDataService
 {
+    public async Task<int> GetUnitId(UnitDetailRequest request)
+    {
+        return await context.DsUnits
+            .Where(f => f.Name == request.Name && f.Commander == request.Commander)
+            .Select(s => s.DsUnitId)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<DsUnitDto?> GetUnitDetails(UnitDetailRequest request, CancellationToken token = default)
     {
         return await context.DsUnits

@@ -166,3 +166,9 @@ public enum AbilityTarget
     AOE = 1 << 2,
     Multiple = 1 << 3,
 }
+
+public enum UnitColor
+{
+    None = 0,
+
+}

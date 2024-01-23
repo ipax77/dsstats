@@ -9,6 +9,7 @@ public class DsUnit
     {
         Weapons = new HashSet<DsWeapon>();
         Abilities = new HashSet<DsAbility>();
+        Upgrades = new HashSet<DsUpgrade>();
     }
 
     public int DsUnitId { get; set; }
@@ -27,8 +28,13 @@ public class DsUnit
     public float HealthRegen { get; set; }
     public float EnergyRegen { get; set; }
     public UnitType UnitType { get; set; }
+    public WeaponTarget MovementType { get; set; }
+    public UnitSize Size { get; set; }
+    public UnitColor Color { get; set; }
+    public int UnitId { get; set; }
     public ICollection<DsWeapon> Weapons { get; set; }
     public ICollection<DsAbility> Abilities { get; set; }
+    public ICollection<DsUpgrade> Upgrades { get; set; }
 }
 
 public class DsAbility

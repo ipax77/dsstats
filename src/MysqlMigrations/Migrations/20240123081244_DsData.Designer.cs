@@ -11,8 +11,8 @@ using dsstats.db8;
 namespace MysqlMigrations.Migrations
 {
     [DbContext(typeof(ReplayContext))]
-    [Migration("20240121223213_dsdata")]
-    partial class dsdata
+    [Migration("20240123081244_DsData")]
+    partial class DsData
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -567,6 +567,9 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("Armor")
                         .HasColumnType("int");
 
+                    b.Property<int>("Color")
+                        .HasColumnType("int");
+
                     b.Property<int>("Commander")
                         .HasColumnType("int");
 
@@ -585,6 +588,9 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("MaxEnergy")
                         .HasColumnType("int");
 
+                    b.Property<int>("MovementType")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -596,6 +602,9 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("Shields")
                         .HasColumnType("int");
 
+                    b.Property<int>("Size")
+                        .HasColumnType("int");
+
                     b.Property<float>("Speed")
                         .HasColumnType("float");
 
@@ -603,6 +612,9 @@ namespace MysqlMigrations.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("Tier")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UnitId")
                         .HasColumnType("int");
 
                     b.Property<int>("UnitType")
@@ -664,6 +676,9 @@ namespace MysqlMigrations.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("varchar(300)");
 
+                    b.Property<int?>("DsUnitId")
+                        .HasColumnType("int");
+
                     b.Property<int>("RequiredTier")
                         .HasColumnType("int");
 
@@ -673,6 +688,8 @@ namespace MysqlMigrations.Migrations
                         .HasColumnType("varchar(100)");
 
                     b.HasKey("DsUpgradeId");
+
+                    b.HasIndex("DsUnitId");
 
                     b.HasIndex("Upgrade");
 
@@ -1782,6 +1799,13 @@ namespace MysqlMigrations.Migrations
                     b.Navigation("Replay");
                 });
 
+            modelBuilder.Entity("dsstats.db8.DsUpgrade", b =>
+                {
+                    b.HasOne("dsstats.db8.DsUnit", null)
+                        .WithMany("Upgrades")
+                        .HasForeignKey("DsUnitId");
+                });
+
             modelBuilder.Entity("dsstats.db8.DsWeapon", b =>
                 {
                     b.HasOne("dsstats.db8.DsUnit", "DsUnit")
@@ -1988,6 +2012,8 @@ namespace MysqlMigrations.Migrations
 
             modelBuilder.Entity("dsstats.db8.DsUnit", b =>
                 {
+                    b.Navigation("Upgrades");
+
                     b.Navigation("Weapons");
                 });
 
