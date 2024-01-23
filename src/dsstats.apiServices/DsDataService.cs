@@ -9,6 +9,11 @@ public class DsDataService(HttpClient httpClient, ILogger<DsDataService> logger)
 {
     private readonly string dsDataController = "api8/v1/dsdata";
 
+    public Task<SpawnInfo> GetDsUnitSpawnInfo(SpawnDto spawn, Commander cmdr)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<DsUnitDto?> GetUnitDetails(UnitDetailRequest request, CancellationToken token = default)
     {
         try

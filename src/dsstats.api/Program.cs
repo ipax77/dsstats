@@ -143,10 +143,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    //var dsDataService = scope.ServiceProvider.GetRequiredService<IDsDataService>();
-    //dsDataService.ImportUpgrades();
-    //dsDataService.ImportUnits();
-    //dsDataService.ImportAbilities();
+    var dsDataService = scope.ServiceProvider.GetRequiredService<IDsDataService>();
+    var replayService = scope.ServiceProvider.GetRequiredService<IReplaysService>();
+
+    var replay = replayService.GetReplay("972fa2f6a7ef228a322b08070f180aa4").GetAwaiter().GetResult();
+    var replayPlayer = replay.ReplayPlayers.First(f => f.GamePos == 1);
+
+    var result = dsDataService.GetDsUnitSpawnInfo(replayPlayer.Spawns.Last(), replayPlayer.Race).GetAwaiter().GetResult();
+    Console.WriteLine(result);
 }
 
 // app.UseHttpsRedirection();
