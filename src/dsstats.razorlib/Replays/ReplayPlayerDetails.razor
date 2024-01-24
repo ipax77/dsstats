@@ -1,6 +1,8 @@
 @using Microsoft.JSInterop
 @using dsstats.shared
 @using dsstats.razorlib.Services
+@using dsstats.shared.Interfaces
+@inject IDsDataService dsDataService
 
 <div class="card w-auto">
     <div class="card-header bgchart">
@@ -48,7 +50,7 @@
             <div class="bgchart" style="height: 600px; width: 500px;">
                 @if (showMap)
                 {
-                    <ReplayPlayerChartMap @ref="replayPlayerChartMap" Spawn="Spawn" Team="Player.Team" moduleTask="moduleTask" />
+                    <ReplayPlayerChartMap @ref="replayPlayerChartMap" Spawn="Spawn" SpawnInfo="spawnInfo" Team="Player.Team" moduleTask="moduleTask" />
                 }
             </div>
         </div>
@@ -58,20 +60,54 @@
         <div class="collapse" id="@($"Player{Player.GamePos}Upgrades")">
             <ReplayPlayerUpgrades Player="Player" />
         </div>
+        <div class="row">
+            @if (isLoading)
+            {
+                <div class="col-auto">
+                    <div class="spinner-border spinner-border-sm text-danger" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            }
+            @if (armyValue > 0)
+            {
+                <div class="col-auto">
+                    <h5>
+                        <span class="badge border border-info">
+                            ArmyValue <span class="text-warning">@HelperService.GetBigNumberString(armyValue)</span>
+                        </span>
+                    </h5>
+                </div>
+            }
+            @if (armyLife > 0)
+            {
+                <div class="col-auto">
+                    <h5>
+                        <span class="badge border border-info">
+                            ArmyLife <span class="text-warning">@HelperService.GetBigNumberString(armyLife)</span>
+                        </span>
+                    </h5>
+                </div>
+            }
+        </div>
         <div class="table-responsive w-auto">
             <table class="tptable table table-sm">
                 <thead>
                     <tr>
+                        <th></th>
                         <th>Unit</th>
                         <th>Count</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var unit in GetUnits())
+                    @foreach (var unit in units)
                     {
-                        <tr>
-                            <td>@unit.Key</td>
-                            <td>@unit.Value</td>
+                        <tr @onmouseover="e => HighlightUnit(unit)">
+                            <td>
+                                <span class="rounded d-inline-block" style="width: 20px; height: 15px; background-color: @unit.Color;"></span>
+                            </td>
+                            <td>@unit.Name</td>
+                            <td>@unit.Count</td>
                         </tr>
                     }
                 </tbody>
@@ -94,35 +130,116 @@
     public Lazy<Task<IJSObjectReference>> moduleTask { get; set; } = default!;
 
     bool IsWinner;
+    bool isLoading;
 
     SpawnDto? Spawn = null;
+    SpawnInfo spawnInfo = new();
+    ListBuildUnit? highlightUnit = null;
 
     bool showMap = false;
     bool showUpgrades = false;
     bool showGas = false;
     ReplayPlayerChartMap? replayPlayerChartMap;
 
+    int armyValue = 0;
+    int armyLife = 0;
+    List<ListBuildUnit> units = [];
+
     protected override void OnInitialized()
     {
-        IsWinner = Player.PlayerResult == PlayerResult.Win;
-        Spawn = Player.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint);
+        // IsWinner = Player.PlayerResult == PlayerResult.Win;
+        // Spawn = Player.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint);
+        Update(Breakpoint);
         base.OnInitialized();
     }
 
-    public void Update(Breakpoint breakpoint)
+    public async void Update(Breakpoint breakpoint)
     {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
         Breakpoint = breakpoint;
+        armyValue = 0;
+        armyLife = 0;
+        units.Clear();
+        spawnInfo = new();
+        highlightUnit = null;
         IsWinner = Player.PlayerResult == PlayerResult.Win;
         Spawn = Player.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint);
-        replayPlayerChartMap?.Update(Spawn, Player.Team);
+        if (Spawn is not null)
+        {
+            spawnInfo = await dsDataService.GetSpawnInfo(new SpawnRequest()
+                {
+                    Units = Spawn.Units.Select(s => s.Unit).ToList(),
+                    Commander = Player.Race
+                });
+            SetInfos(Spawn, spawnInfo);
+        }
+        replayPlayerChartMap?.Update(Spawn, spawnInfo, Player.Team);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
     }
 
-    List<KeyValuePair<string, byte>> GetUnits()
+    private void SetInfos(SpawnDto spawnDto, SpawnInfo spawnInfo)
     {
-        if (Spawn == null)
+        if (spawnInfo.BuildUnits.Count == 0 || spawnDto.Units.Count == 0)
         {
-            return new List<KeyValuePair<string, byte>>();
+            return;
         }
-        return Spawn.Units.ToDictionary(x => x.Unit.Name, x => x.Count).OrderByDescending(o => o.Value).ToList();
+
+        int spawnArmyValue = 0;
+        int spawnArmyLife = 0;
+
+        List<ListBuildUnit> spawnUnits = new();
+
+        foreach (var spawnUnit in spawnDto.Units)
+        {
+            if (spawnInfo.BuildUnits.TryGetValue(spawnUnit.Unit.Name, out var buildUnit)
+                && buildUnit is not null)
+            {
+                spawnArmyValue += buildUnit.Cost * spawnUnit.Count;
+                spawnArmyLife += (buildUnit.Life + buildUnit.Shields) * spawnUnit.Count;
+                spawnUnits.Add(new()
+                    {
+                        Name = buildUnit.Name,
+                        ChartName = spawnUnit.Unit.Name,
+                        Count = spawnUnit.Count,
+                        Color = HelperService.GetUnitColor(buildUnit.Color)
+                    });
+            }
+            else
+            {
+                spawnUnits.Add(new()
+                {
+                    Name = spawnUnit.Unit.Name,
+                    ChartName = spawnUnit.Unit.Name,
+                    Count = spawnUnit.Count
+                });
+            }
+        }
+
+        units = spawnUnits.OrderByDescending(o => o.Count).ToList();
+        armyValue = spawnArmyValue;
+        armyLife = spawnArmyLife;
+    }
+
+    private void HighlightUnit(ListBuildUnit unit)
+    {
+        if (highlightUnit == unit)
+        {
+            return;
+        }
+        else
+        {
+            highlightUnit = unit;
+            replayPlayerChartMap?.HighlightUnits(highlightUnit.ChartName);
+        }
+    }
+
+    private record ListBuildUnit
+    {
+        public string Name { get; set; } = string.Empty;
+        public string ChartName { get; set; } = string.Empty;
+        public int Count { get; set; }
+        public string Color { get; set; } = string.Empty;
     }
 }

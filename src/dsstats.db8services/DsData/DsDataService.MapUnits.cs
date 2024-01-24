@@ -1,10 +1,7 @@
-﻿using AutoMapper.QueryableExtensions;
-using dsstats.db8;
+﻿using dsstats.db8;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using System.Collections.Frozen;
-using System.Text;
 
 namespace dsstats.db8services.DsData;
 
@@ -114,14 +111,41 @@ public partial class DsDataService
         { new("HunterKiller", Commander.Zagara), "Hunter Killer" },
     }.ToFrozenDictionary();
 
+    public async Task<SpawnInfo> GetSpawnInfo(SpawnRequest request)
+    {
+        var dsUnits = await dsUnitRepository.GetDsUnits();
+        Dictionary<string, DsUnitBuildDto> buildUnits = [];
+
+        foreach (var unit in request.Units)
+        {
+            var unitName = MapUnitName(unit.Name, request.Commander);
+
+            var dsUnit = dsUnits.FirstOrDefault(f => f.Name.Equals(unitName));
+
+            if (dsUnit is null)
+            {
+                continue;
+            }
+
+            if (!buildUnits.ContainsKey(unit.Name))
+            {
+                buildUnits[unit.Name] = mapper.Map<DsUnitBuildDto>(dsUnit);
+            }
+        }
+
+        return new()
+        {
+            BuildUnits = buildUnits
+        };
+    }
+
     public async Task<SpawnInfo> GetDsUnitSpawnInfo(SpawnDto spawn, Commander cmdr)
     {
-        var dsUnits = await context.DsUnits
-            .Where(x => x.Commander == cmdr)
-            .ToListAsync();
+        var dsUnits = await dsUnitRepository.GetDsUnits();
 
         int armyValue = 0;
         int armyLife = 0;
+        Dictionary<string, DsUnitBuildDto> buildUnits = [];
 
         foreach (var spawnUnit in spawn.Units)
         {
@@ -136,9 +160,19 @@ public partial class DsDataService
 
             armyValue += dsUnit.Cost * spawnUnit.Count;
             armyLife += (dsUnit.Life + dsUnit.Shields) * spawnUnit.Count;
+
+            if (!buildUnits.ContainsKey(spawnUnit.Unit.Name))
+            {
+                buildUnits[spawnUnit.Unit.Name] = mapper.Map<DsUnitBuildDto>(dsUnit);
+            }
         }
 
-        return new() { ArmyTotalVitality = armyLife, ArmyValue = armyValue };
+        return new() 
+        { 
+            ArmyTotalVitality = armyLife,
+            ArmyValue = armyValue,
+            BuildUnits = buildUnits
+        };
     }
 
     private string MapUnitName(string unitName, Commander cmdr)

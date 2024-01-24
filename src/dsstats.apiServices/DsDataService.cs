@@ -14,6 +14,21 @@ public class DsDataService(HttpClient httpClient, ILogger<DsDataService> logger)
         throw new NotImplementedException();
     }
 
+    public async Task<SpawnInfo> GetSpawnInfo(SpawnRequest request)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{dsDataController}/getspawninfo", request);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<SpawnInfo>() ?? new();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting spawn info: {error}", ex.Message);
+        }
+        return new();
+    }
+
     public async Task<DsUnitDto?> GetUnitDetails(UnitDetailRequest request, CancellationToken token = default)
     {
         try
@@ -85,6 +100,11 @@ public class DsDataService(HttpClient httpClient, ILogger<DsDataService> logger)
     }
 
     public void ImportUpgrades()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void SetUnitColors()
     {
         throw new NotImplementedException();
     }

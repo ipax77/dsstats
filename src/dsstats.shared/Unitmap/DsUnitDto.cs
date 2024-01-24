@@ -25,6 +25,18 @@ public record DsUnitDto
     public List<DsUpgradeDto> Upgrades { get; set; } = [];
 }
 
+public record DsUnitBuildDto
+{
+    public string Name { get; set; } = string.Empty;
+    public Commander Commander { get; set; }
+    public int Cost { get; set; }
+    public int Life { get; set; }
+    public int Shields { get; set; }
+    public WeaponTarget MovementType { get; set; }
+    public UnitSize Size { get; set; }
+    public UnitColor Color { get; set; }
+}
+
 public record DsUnitListDto
 {
     public string Name { get; set; } = string.Empty;

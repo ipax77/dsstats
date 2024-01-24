@@ -91,6 +91,7 @@ builder.Services.AddSingleton<PickBanService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddSingleton<AuthenticationFilterAttributeV6>();
 builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
+builder.Services.AddSingleton<DsUnitRepository>();
 
 builder.Services.AddScoped<CrawlerService>();
 builder.Services.AddScoped<IWinrateService, WinrateService>();
@@ -144,13 +145,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 
     var dsDataService = scope.ServiceProvider.GetRequiredService<IDsDataService>();
-    var replayService = scope.ServiceProvider.GetRequiredService<IReplaysService>();
 
-    var replay = replayService.GetReplay("972fa2f6a7ef228a322b08070f180aa4").GetAwaiter().GetResult();
-    var replayPlayer = replay.ReplayPlayers.First(f => f.GamePos == 1);
 
-    var result = dsDataService.GetDsUnitSpawnInfo(replayPlayer.Spawns.Last(), replayPlayer.Race).GetAwaiter().GetResult();
-    Console.WriteLine(result);
 }
 
 // app.UseHttpsRedirection();
