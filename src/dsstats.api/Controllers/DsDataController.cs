@@ -9,6 +9,13 @@ namespace dsstats.api.Controllers;
 public class DsDataController(IDsDataService dsDataService) : Controller
 {
     [HttpPost]
+    [Route("getspawninfo")]
+    public async Task<ActionResult<SpawnInfo>> GetSpawnInfo(SpawnRequest request)
+    {
+        return await dsDataService.GetSpawnInfo(request);
+    }
+
+    [HttpPost]
     [Route("getunitid")]
     public async Task<ActionResult<int>> GetUnitId(UnitDetailRequest request)
     {

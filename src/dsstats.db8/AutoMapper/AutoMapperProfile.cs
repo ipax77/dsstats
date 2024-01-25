@@ -93,5 +93,6 @@ public class AutoMapperProfile : Profile
         CreateMap<DsUpgradeDto, DsUpgrade>(MemberList.Source);
 
         CreateMap<DsUnit, DsUnitListDto>(MemberList.Destination);
+        CreateMap<DsUnit, DsUnitBuildDto>(MemberList.Destination);
     }
 }

@@ -20,11 +20,35 @@ export function setChartTooltips(chartId) {
         if (tooltipItem == undefined) {
             return "";
         } else {
-            return tooltipItem.raw.label + " " + tooltipItem.raw.x + "|" + tooltipItem.raw.y;
+            return tooltipItem.raw.label + " " + tooltipItem.raw.x + "|" + tooltipItem.raw.y + "|" + tooltipItem.raw.r;
             // return tooltipItem.raw.label;
         }
     };
 }
+
+export function setDatasetPointsActive(chartId, datasetIndex) {
+    const chart = Chart.getChart(chartId);
+
+    if (chart.data.datasets.length <= datasetIndex) {
+        return;
+    }
+
+    if (chart.getActiveElements().length > 0) {
+        chart.setActiveElements([]);
+        chart.update();
+    }
+
+    var dataset = chart.data.datasets[datasetIndex];
+
+    var elements = [];
+    for (var i = 0; i < dataset.data.length; i++) {
+        elements.push({ datasetIndex: datasetIndex, index: i });
+    }
+
+    chart.setActiveElements(elements);
+    chart.update();
+}
+
 
 export function drawChartBorder(chartId) {
     const chart = Chart.getChart(chartId);
