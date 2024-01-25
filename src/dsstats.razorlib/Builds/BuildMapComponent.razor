@@ -88,7 +88,7 @@
                         </div>
 
                         <div class="bgchart" style="height: 480px; width: 380px;">
-                            <ReplayPlayerChartMap @ref="map2" Spawn="spawn2" Team="response.OppReplayPlayer.Team" moduleTask="moduleTask" />
+                            <ReplayPlayerChartMap @ref="map2" Spawn="spawn2" SpawnInfo="spawnInfo2" Team="response.OppReplayPlayer.Team" moduleTask="moduleTask" />
                         </div>
                     }
                 </div>
@@ -105,7 +105,7 @@
                             </div>
                         </div>
                         <div class="bgchart" style="height: 480px; width: 380px;">
-                            <ReplayPlayerChartMap @ref="map1" Spawn="spawn1" Team="response.ReplayPlayer.Team" moduleTask="moduleTask" />
+                            <ReplayPlayerChartMap @ref="map1" Spawn="spawn1" SpawnInfo="spawnInfo1" Team="response.ReplayPlayer.Team" moduleTask="moduleTask" />
                         </div>
                     }
                 </div>
@@ -157,7 +157,7 @@
         await InvokeAsync(() => StateHasChanged());
         response = await buildService.GetReplayBuildMap(Request);
 
-        SetSpawns();
+        await SetSpawns();
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
     }
@@ -168,7 +168,7 @@
 
         if (bpOnly)
         {
-            SetSpawns();
+            _ = SetSpawns();
         }
         else
         {

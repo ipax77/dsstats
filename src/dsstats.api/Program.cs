@@ -145,9 +145,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 
     var dsDataService = scope.ServiceProvider.GetRequiredService<IDsDataService>();
-    //dsDataService.AddProtossUnits();
-    //dsDataService.AddZergUnits();
-    //dsDataService.AddTerranUnits();
 }
 
 // app.UseHttpsRedirection();
