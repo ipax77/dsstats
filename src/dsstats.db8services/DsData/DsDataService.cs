@@ -224,6 +224,151 @@ public partial class DsDataService(ReplayContext context,
 
         logger.LogWarning("armoredUnits: {armoredUnits} => units good vs armored: {goodVsArmoredUnits}", armoredUnits.Count, goodVsArmoredUnits.Count);
     }
+
+    public void AddZeratulUnits()
+    {
+        List<DsUnit> units = new()
+        {
+            new()
+            {
+                Name = "Zeratul",
+                Commander = Commander.Zeratul,
+                Cost = 500,
+                Life = 150,
+                Shields = 450,
+                Armor = 1,
+                ShieldArmor = 0,
+                Tier = 2,
+                UnitType = UnitType.Light | UnitType.Biological | UnitType.Psionic | UnitType.Heroic,
+                Color = UnitColor.Color1,
+                Size = UnitSize.Hero,
+                MovementType = WeaponTarget.Ground
+            },
+            new()
+            {
+                Name = "Xel'Naga Ambusher",
+                Commander = Commander.Zeratul,
+                Cost = 250,
+                Life = 100,
+                Shields = 100,
+                Armor = 1,
+                ShieldArmor = 0,
+                Tier = 2,
+                UnitType = UnitType.Armored | UnitType.Mechanical,
+                Color = UnitColor.Color2,
+                Size = UnitSize.Normal,
+                MovementType = WeaponTarget.Ground
+            },
+            new()
+            {
+                Name = "Xel'Naga Shieldguard",
+                Commander = Commander.Zeratul,
+                Cost = 500,
+                Life = 120,
+                Shields = 120,
+                Armor = 1,
+                ShieldArmor = 0,
+                Tier = 2,
+                UnitType = UnitType.Light | UnitType.Mechanical | UnitType.Psionic,
+                Color = UnitColor.Color3,
+                Size = UnitSize.Small,
+                MovementType = WeaponTarget.Ground
+            },
+            new()
+            {
+                Name = "Telbrus",
+                Commander = Commander.Zeratul,
+                Cost = 500,
+                Life = 80,
+                Shields = 80,
+                Armor = 0,
+                ShieldArmor = 0,
+                StartingEnergy = 300,
+                MaxEnergy = 300,
+                UnitType = UnitType.Light | UnitType.Biological,
+                Color = UnitColor.Color4,
+                Size = UnitSize.Small,
+                MovementType = WeaponTarget.Ground
+            },
+            new()
+            {
+                Name = "Honor Guard",
+                Commander = Commander.Zeratul,
+                Cost = 80,
+                Life = 100,
+                Shields = 50,
+                Armor = 1,
+                ShieldArmor = 0,
+                Tier = 2,
+                UnitType = UnitType.Light | UnitType.Biological,
+                Color = UnitColor.Color4,
+                Size = UnitSize.VerySmall,
+                MovementType = WeaponTarget.Ground
+            },
+            new()
+            {
+                Name = "Void Templar",
+                Commander = Commander.Zeratul,
+                Cost = 450,
+                Life = 80,
+                Shields = 320,
+                Armor = 1,
+                ShieldArmor = 0,
+                Tier = 2,
+                UnitType = UnitType.Light | UnitType.Biological | UnitType.Psionic,
+                Color = UnitColor.Color5,
+                Size = UnitSize.Small,
+                MovementType = WeaponTarget.Ground
+            },
+            new()
+            {
+                Name = "Xel'Naga Abrogator",
+                Commander = Commander.Zeratul,
+                Cost = 650,
+                Life = 200,
+                Shields = 200,
+                Armor = 1,
+                ShieldArmor = 0,
+                UnitType = UnitType.Armored | UnitType.Mechanical,
+                Color = UnitColor.Color6,
+                Size = UnitSize.Big,
+                MovementType = WeaponTarget.Ground
+            },
+            new()
+            {
+                Name = "Xel'Naga Watcher",
+                Commander = Commander.Zeratul,
+                Cost = 125,
+                Life = 40,
+                Shields = 20,
+                Armor = 1,
+                ShieldArmor = 0,
+                Tier = 2,
+                UnitType = UnitType.Light | UnitType.Mechanical,
+                Color = UnitColor.Color7,
+                Size = UnitSize.Small,
+                MovementType = WeaponTarget.Air
+            },
+            new()
+            {
+                Name = "Xel'Naga Enforcer",
+                Commander = Commander.Zeratul,
+                Cost = 600,
+                Life = 400,
+                Shields = 200,
+                Armor = 1,
+                ShieldArmor = 0,
+                Tier = 2,
+                UnitType = UnitType.Armored | UnitType.Mechanical,
+                Color = UnitColor.Color8,
+                Size = UnitSize.Normal,
+                MovementType = WeaponTarget.Ground
+            }
+        };
+
+        context.DsUnits.AddRange(units);
+        context.SaveChanges();
+    }
 }
 
 public class CommanderConverter : DefaultTypeConverter

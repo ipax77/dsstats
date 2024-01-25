@@ -112,7 +112,15 @@ public partial class DsDataService
         { new("VoidRay", Commander.Protoss), "Void Ray" },
         { new("HighTemplar", Commander.Protoss), "High Templar" },
         { new("BroodLord", Commander.Zerg), "Brood Lord" },
-        { new("SiegeTank", Commander.Terran), "Siege Tank" },
+        { new("Coop", Commander.Zeratul), "Zeratul" },
+        { new("SummonKarass", Commander.Zeratul), "Telbrus" },
+        { new("Stalker", Commander.Zeratul), "Xel'Naga Ambusher" },
+        { new("Sentry", Commander.Zeratul), "Xel'Naga Shieldguard" },
+        { new("DarkTemplar", Commander.Zeratul), "Void Templar" },
+        { new("Disruptor", Commander.Zeratul), "Xel'Naga Abrogator" },
+        { new("Observer", Commander.Zeratul), "Xel'Naga Watcher" },
+        { new("Immortal", Commander.Zeratul), "Xel'Naga Enforcer" },
+        { new("HonorGuard", Commander.Zeratul), "Honor Guard" },
     }.ToFrozenDictionary();
 
     public async Task<SpawnInfo> GetSpawnInfo(SpawnRequest request)
