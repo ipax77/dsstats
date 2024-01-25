@@ -6,7 +6,6 @@ using dsstats.db8;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.Extensions.Logging;
-using System.Data.Entity;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -25,10 +24,10 @@ public partial class DsDataService(ReplayContext context,
 
         var groups = units.GroupBy(g => g.Commander);
 
-        foreach ( var group in groups)
+        foreach (var group in groups)
         {
             int i = 0;
-            foreach ( var unit in group.OrderBy(o => o.DsUnitId))
+            foreach (var unit in group.OrderBy(o => o.DsUnitId))
             {
                 unit.Color = i switch
                 {

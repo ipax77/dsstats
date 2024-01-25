@@ -109,6 +109,10 @@ public partial class DsDataService
         { new("ShadowGuard", Commander.Vorazun), "Shadow Guard" },
         { new("DarkArchon", Commander.Vorazun), "Dark Archon" },
         { new("HunterKiller", Commander.Zagara), "Hunter Killer" },
+        { new("VoidRay", Commander.Protoss), "Void Ray" },
+        { new("HighTemplar", Commander.Protoss), "High Templar" },
+        { new("BroodLord", Commander.Zerg), "Brood Lord" },
+        { new("SiegeTank", Commander.Terran), "Siege Tank" },
     }.ToFrozenDictionary();
 
     public async Task<SpawnInfo> GetSpawnInfo(SpawnRequest request)
@@ -120,7 +124,7 @@ public partial class DsDataService
         {
             var unitName = MapUnitName(unit.Name, request.Commander);
 
-            var dsUnit = dsUnits.FirstOrDefault(f => f.Name.Equals(unitName));
+            var dsUnit = dsUnits.FirstOrDefault(f => f.Name.Equals(unitName) && f.Commander == request.Commander);
 
             if (dsUnit is null)
             {
