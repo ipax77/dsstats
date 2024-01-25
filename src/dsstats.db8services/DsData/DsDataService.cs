@@ -11,8 +11,49 @@ using System.Text.RegularExpressions;
 
 namespace dsstats.db8services.DsData;
 
-public partial class DsDataService(ReplayContext context, IMapper mapper, ILogger<DsDataService> logger) : IDsDataService
+public partial class DsDataService(ReplayContext context,
+                                   IMapper mapper,
+                                   DsUnitRepository dsUnitRepository,
+                                   ILogger<DsDataService> logger) : IDsDataService
 {
+    public void SetUnitColors()
+    {
+        var units = context.DsUnits
+            .Where(x => x.Cost > 0)
+            .ToList();
+
+        var groups = units.GroupBy(g => g.Commander);
+
+        foreach (var group in groups)
+        {
+            int i = 0;
+            foreach (var unit in group.OrderBy(o => o.DsUnitId))
+            {
+                unit.Color = i switch
+                {
+                    0 => UnitColor.Color1,
+                    1 => UnitColor.Color2,
+                    2 => UnitColor.Color3,
+                    3 => UnitColor.Color4,
+                    4 => UnitColor.Color5,
+                    5 => UnitColor.Color6,
+                    6 => UnitColor.Color7,
+                    7 => UnitColor.Color8,
+                    8 => UnitColor.Color9,
+                    9 => UnitColor.Color10,
+                    10 => UnitColor.Color11,
+                    11 => UnitColor.Color12,
+                    12 => UnitColor.Color13,
+                    13 => UnitColor.Color14,
+                    14 => UnitColor.Color15,
+                    _ => UnitColor.None
+                };
+                i++;
+            }
+        }
+        context.SaveChanges();
+    }
+
     public void ImportUpgrades()
     {
         var unitsCsv = @"C:\data\ds\DsData\upgrades.csv";

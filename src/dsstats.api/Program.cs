@@ -91,6 +91,7 @@ builder.Services.AddSingleton<PickBanService>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddSingleton<AuthenticationFilterAttributeV6>();
 builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
+builder.Services.AddSingleton<DsUnitRepository>();
 
 builder.Services.AddScoped<CrawlerService>();
 builder.Services.AddScoped<IWinrateService, WinrateService>();
@@ -143,10 +144,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    //var dsDataService = scope.ServiceProvider.GetRequiredService<IDsDataService>();
-    //dsDataService.ImportUpgrades();
-    //dsDataService.ImportUnits();
-    //dsDataService.ImportAbilities();
+    var dsDataService = scope.ServiceProvider.GetRequiredService<IDsDataService>();
+    //dsDataService.AddProtossUnits();
+    //dsDataService.AddZergUnits();
+    //dsDataService.AddTerranUnits();
 }
 
 // app.UseHttpsRedirection();

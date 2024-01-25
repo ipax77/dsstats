@@ -14,6 +14,9 @@
     [EditorRequired]
     public SpawnDto? Spawn { get; set; }
 
+    [Parameter, EditorRequired]
+    public SpawnInfo SpawnInfo { get; set; } = default!;
+
     [Parameter]
     [EditorRequired]
     public int Team { get; set; }
@@ -83,7 +86,7 @@
         return (x, y);
     }
 
-    public async void Update(SpawnDto? spawn, int team)
+    public async void Update(SpawnDto? spawn, SpawnInfo spawnInfo, int team)
     {
         if (!chartIsReady)
         {
@@ -110,8 +113,9 @@
             {
                 continue;
             }
-            var color = GetColor(i);
-            var radius = GetRadius(items[0]);
+            (var radius, var color) = GetColorAndRadius(items[0], spawnInfo);
+            // var color = GetColor(i);
+            // var radius = GetRadius(items[0]);
             datasets.Add(GetBubbleChartDataset(items, color, radius));
             i++;
         }
@@ -122,23 +126,41 @@
         await module.InvokeVoidAsync("drawChartBorder", chartConfig.ChartJsConfigGuid);
     }
 
+    public async Task HighlightUnits(string unitName)
+    {
+        var dataset = chartConfig.Data.Datasets
+            .Cast<BubbleDataset>()
+            .FirstOrDefault(f => f.Label == unitName);
+
+        if (dataset is null)
+        {
+            return;
+        }
+
+        var index = chartConfig.Data.Datasets.IndexOf(dataset);
+
+        if (index < 0)
+        {
+            return;
+        }
+
+        var module = await moduleTask.Value.ConfigureAwait(false);
+        await module.InvokeVoidAsync("setDatasetPointsActive", chartConfig.ChartJsConfigGuid, index);
+    }
+
     private async void ChartEventTriggered(ChartJsEvent e)
     {
         if (e is ChartJsInitEvent initEvent)
         {
             var success = await RegisterPlugin();
             chartIsReady = !success;
-            Update(Spawn, Team);
+            Update(Spawn, SpawnInfo, Team);
         }
-        else if (e is ChartJsLabelHoverEvent hoverEvent)
+        else if (e is ChartJsLegendHoverEvent hoverEvent)
         {
-            if (hoverEvent.Value != null
-                && hoverEvent.Value is JsonElement jsonElement)
+            if (!string.IsNullOrEmpty(hoverEvent.Label))
             {
-                if (jsonElement.TryGetProperty("label", out JsonElement labelEle))
-                {
-                    Console.Write(labelEle.GetString());
-                }
+                await HighlightUnits(hoverEvent.Label);
             }
         }
     }
@@ -163,6 +185,37 @@
                 HoverBorderColor = $"{color}FF",
                 HoverBorderWidth = 4,
             };
+    }
+
+    private static (double, string) GetColorAndRadius(MapUnit mapUnit, SpawnInfo spawnInfo)
+    {
+        if (spawnInfo.BuildUnits.TryGetValue(mapUnit.Name, out var buildUnit)
+            && buildUnit is not null)
+        {
+            var radius = buildUnit.Size switch
+            {
+                UnitSize.VerySmall => 3,
+                UnitSize.Small => 6,
+                UnitSize.Normal => 10,
+                UnitSize.Big => 15,
+                UnitSize.Hero => 20,
+                UnitSize.VeryBig => 25,
+                _ => 12
+            };
+
+            if (buildUnit.MovementType.HasFlag(WeaponTarget.Air))
+            {
+                radius += 2;
+            }
+
+            var color = HelperService.GetUnitColor(buildUnit.Color);
+
+            return (radius, color);
+        }
+        else
+        {
+            return (12, "#EC7063");
+        }
     }
 
     private double GetRadius(MapUnit unitMap)
@@ -240,7 +293,8 @@
                             Labels = new Labels()
                             {
                                 BoxWidth = 20,
-                            }
+                            },
+                            OnHoverEvent = true
                         }
                     },
                     Scales = new ChartJsOptionsScales()

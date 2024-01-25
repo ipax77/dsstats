@@ -3,6 +3,7 @@
 @using dsstats.shared
 @using dsstats.shared.Interfaces
 @inject IBuildService buildService
+@inject IDsDataService dsDataService
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
@@ -48,7 +49,7 @@
                             </div>
                         </div>
                         <div class="bgchart" style="height: 480px; width: 380px;">
-                            <ReplayPlayerChartMap @ref="map1" Spawn="spawn1" Team="response.ReplayPlayer.Team" moduleTask="moduleTask" />
+                            <ReplayPlayerChartMap @ref="map1" Spawn="spawn1" SpawnInfo="spawnInfo1" Team="response.ReplayPlayer.Team" moduleTask="moduleTask" />
                         </div>
                     }
                 </div>
@@ -66,7 +67,7 @@
                         </div>
 
                         <div class="bgchart" style="height: 480px; width: 380px;">
-                            <ReplayPlayerChartMap @ref="map2" Spawn="spawn2" Team="response.OppReplayPlayer.Team" moduleTask="moduleTask" />
+                            <ReplayPlayerChartMap @ref="map2" Spawn="spawn2" SpawnInfo="spawnInfo2" Team="response.OppReplayPlayer.Team" moduleTask="moduleTask" />
                         </div>
                     }
                 </div>
@@ -133,6 +134,9 @@
     SpawnDto? spawn1;
     SpawnDto? spawn2;
 
+    SpawnInfo spawnInfo1 = new();
+    SpawnInfo spawnInfo2 = new();
+
     bool showHide;
 
     protected override void OnInitialized()
@@ -172,7 +176,7 @@
         }
     }
 
-    public void Update(BuildRequest request, ReplayDto replay)
+    public async void Update(BuildRequest request, ReplayDto replay)
     {
         Request = request;
 
@@ -204,13 +208,13 @@
         if (!showHide)
         {
             showHide = true;
-            JSRuntime.InvokeVoidAsync("toggleButton", "buildmapshowhidebutton", "samplebuildmap");
+            await JSRuntime.InvokeVoidAsync("toggleButton", "buildmapshowhidebutton", "samplebuildmap");
         }
-        SetSpawns();
-        InvokeAsync(() => StateHasChanged());
+        await SetSpawns();
+        await InvokeAsync(() => StateHasChanged());
     }
 
-    public void SetSpawns()
+    public async Task SetSpawns()
     {
         spawn1 = response?.ReplayPlayer?.Spawns
             .FirstOrDefault(f => f.Breakpoint == Request.Breakpoint);
@@ -230,8 +234,34 @@
                 .FirstOrDefault(f => f.Breakpoint == Breakpoint.All);
         }
 
-        map1?.Update(spawn1, response?.ReplayPlayer?.Team ?? 1);
-        map2?.Update(spawn2, response?.OppReplayPlayer?.Team ?? 2);
+        if (spawn1 is not null && response?.ReplayPlayer is not null)
+        {
+            spawnInfo1 = await dsDataService.GetSpawnInfo(new SpawnRequest()
+            {
+                Units = spawn1.Units.Select(s => s.Unit).ToList(),
+                Commander = response.ReplayPlayer.Race
+            });
+        }
+        else
+        {
+            spawnInfo1 = new();
+        }
+
+        if (spawn2 is not null && response?.OppReplayPlayer is not null)
+        {
+            spawnInfo2 = await dsDataService.GetSpawnInfo(new()
+            {
+                Units = spawn2.Units.Select(s => s.Unit).ToList(),
+                Commander = response.OppReplayPlayer.Race
+            });
+        }
+        else
+        {
+            spawnInfo2 = new();
+        }
+
+        map1?.Update(spawn1, spawnInfo1, response?.ReplayPlayer?.Team ?? 1);
+        map2?.Update(spawn2, spawnInfo2, response?.OppReplayPlayer?.Team ?? 2);
     }
 
     private void ShowHide()
