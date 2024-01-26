@@ -16,6 +16,12 @@ public partial class DsDataService(ReplayContext context,
                                    DsUnitRepository dsUnitRepository,
                                    ILogger<DsDataService> logger) : IDsDataService
 {
+    public void SetUnitIds()
+    {
+
+    }
+
+
     public void SetUnitColors()
     {
         var units = context.DsUnits

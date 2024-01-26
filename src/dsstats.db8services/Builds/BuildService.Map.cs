@@ -15,13 +15,14 @@ public partial class BuildService
             Breakpoint.Min5 => 300,
             Breakpoint.Min10 => 600,
             Breakpoint.Min15 => 900,
-            _ => 0
+            _ => 300
         };
 
         bool skipMinDuration = minDuration == 0;
 
         var replay = await replays
             .OrderByDescending(o => o.GameTime)
+            .Where(x => skipMinDuration || x.Duration >= minDuration)
             .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
             .FirstOrDefaultAsync();
 

@@ -1,0 +1,52 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.razorlib.Replays
+@using dsstats.razorlib.Services
+@using dsstats.shared
+
+<div class="d-flex bgchart">
+    <div class="preload-@(ReplayPlayer.Race.ToString().ToLower())"
+         alt="@(ReplayPlayer.Race)"
+         style="width: 30px; height: 30px;">
+    </div>
+    <div class="ms-1 align-self-center">
+        @ReplayPlayer.Name
+    </div>
+</div>
+<div class="row">
+    <div class="col-auto">
+        <h5>
+            <span class="badge border border-info">
+                ArmyValue <span class="text-warning">@HelperService.GetBigNumberString(SpawnInfo.ArmyValue)</span>
+            </span>
+        </h5>
+    </div>
+    <div class="col-auto">
+        <h5>
+            <span class="badge border border-info">
+                ArmyLife <span class="text-warning">@HelperService.GetBigNumberString(SpawnInfo.ArmyTotalVitality)</span>
+            </span>
+        </h5>
+    </div>
+</div>
+<div class="bgchart" style="height: 480px; width: 380px;">
+    <ReplayPlayerChartMap @ref="replayPlayerChartMap" Spawn="Spawn" SpawnInfo="SpawnInfo" Team="ReplayPlayer.Team" moduleTask="moduleTask" />
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public BuildMapResponse Response { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public ReplayPlayerDto ReplayPlayer { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public SpawnDto Spawn { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public SpawnInfo SpawnInfo { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public Lazy<Task<IJSObjectReference>> moduleTask { get; set; } = default!;
+
+    ReplayPlayerChartMap? replayPlayerChartMap;
+}

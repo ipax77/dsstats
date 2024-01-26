@@ -48,7 +48,8 @@ public partial class BuildService
             Units = result.Select(s => new BuildResponseBreakpointUnit()
             {
                 Name = s.Name,
-                Count = buildCounts.Count == 0 ? s.UnitCount : Math.Round(s.UnitCount / (double)buildCounts.Count, 2)
+                // Count = buildCounts.Count == 0 ? s.UnitCount : Math.Round(s.UnitCount / (double)buildCounts.Count, 2)
+                Count = buildCounts.CmdrCount == 0 ? s.UnitCount : Math.Round(s.UnitCount / (double)buildCounts.CmdrCount, 2)
             }).ToList()
         };
     }
@@ -87,6 +88,7 @@ public partial class BuildService
                     select new BuildCounts()
                     {
                         Count = g.Select(s => s.r.ReplayId).Distinct().Count(),
+                        CmdrCount = g.Count(),
                         Winrate = Math.Round(100.0 * g.Sum(x => x.rp.PlayerResult == PlayerResult.Win ? 1 : 0) / g.Count(), 2),
                         AvgGain = Math.Round(g.Average(x => x.rpr.Change), 2),
                         Duration = Math.Round(g.Average(x => x.r.Duration), 2),

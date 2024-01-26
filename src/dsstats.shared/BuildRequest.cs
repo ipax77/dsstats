@@ -27,6 +27,8 @@ public record BuildResponseBreakpointUnit
 {
     public string Name { get; set; } = string.Empty;
     public double Count { get; set; }
+    public double Cost { get; set; }
+    public double Life { get; set; }
 }
 
 public record BuildResponseReplay
@@ -38,6 +40,7 @@ public record BuildResponseReplay
 public record BuildCounts
 {
     public int Count { get; init; }
+    public int CmdrCount { get; init; }
     public double Winrate { get; init; }
     public double AvgGain { get; init; }
     public double Duration { get; init; }
