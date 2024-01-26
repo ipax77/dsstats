@@ -19,6 +19,7 @@ public partial class BuildService
                     from sp in rp.Spawns
                     from su in sp.Units
                     join rr in context.ReplayRatings on r.ReplayId equals rr.ReplayId
+                    join rpr in context.ComboReplayPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
                     where r.GameTime >= start
                      && (noEnd || r.GameTime < end)
                      && rp.Race == request.Interest
@@ -63,7 +64,6 @@ public partial class BuildService
             Units = result.Select(s => new BuildResponseBreakpointUnit()
             {
                 Name = s.Name,
-                // Count = buildCounts.Count == 0 ? s.UnitCount : Math.Round(s.UnitCount / (double)buildCounts.Count, 2)
                 Count = buildCounts.CmdrCount == 0 ? s.UnitCount : Math.Round(s.UnitCount / (double)buildCounts.CmdrCount, 2)
             }).ToList()
         };
@@ -121,7 +121,6 @@ public partial class BuildService
                             select new BuildCounts()
                             {
                                 Count = g.Select(s => s.r.ReplayId).Distinct().Count(),
-                                CmdrCount = g.Select(s => s.rp.ReplayPlayerId).Distinct().Count(),
                                 Winrate = Math.Round(100.0 * g.Sum(x => x.rp.PlayerResult == PlayerResult.Win ? 1 : 0) / g.Count(), 2),
                                 AvgGain = Math.Round(g.Average(x => x.rpr.Change), 2),
                                 Duration = Math.Round(g.Average(x => x.r.Duration), 2),
@@ -131,6 +130,10 @@ public partial class BuildService
 
 
         var buildCount = await filteredGroup.FirstOrDefaultAsync(token);
+        if (buildCount is not null)
+        {
+            buildCount = buildCount with { CmdrCount = buildCount.Count };
+        }
         return buildCount ?? new();
     }
 
