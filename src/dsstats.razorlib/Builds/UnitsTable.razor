@@ -1,3 +1,5 @@
+@using System.Globalization
+@using dsstats.razorlib.Services
 @using dsstats.shared
 
 <div class="table-responsive tableFixHead text-nowrap" style="max-width: 1150px; max-height: 80vh;" tabindex="1">
@@ -11,12 +13,24 @@
         <tbody>
             @foreach (var (unit, index) in Units.Select((unit, index) => (unit, index)))
             {
+                @if (unit.Cost == 0)
+                {
+                    continue;
+                }
                 <tr class="@((index < 3) ? "text-warning" : "")">
                     <td>@unit.Name</td>
-                    <td>@unit.Count</td>
+                    <td>@unit.Count.ToString("N2", CultureInfo.InvariantCulture)</td>
                 </tr>
             }
         </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2">
+                    &sum; Life <span class="text-warning">@HelperService.GetBigNumberString(Units.Sum(s => s.Life))</span>
+                    Cost <span class="text-warning">@HelperService.GetBigNumberString(Units.Sum(s => s.Cost))</span>
+                </td>
+            </tr>
+        </tfoot>
     </table>
 </div>
 

@@ -28,7 +28,7 @@
     protected override void OnInitialized()
     {
         moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
-            "import", "./_content/dsstats.razorlib/js/annotationChart.js").AsTask());
+            "import", "./_content/dsstats.razorlib/js/annotationChart.js?v=0.5").AsTask());
         base.OnInitialized();
     }
 

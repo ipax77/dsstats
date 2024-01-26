@@ -1,9 +1,8 @@
-﻿using dsstats.shared;
-
-namespace dsstats.shared.Interfaces;
+﻿namespace dsstats.shared.Interfaces;
 
 public interface IDsDataService
 {
+    Task SetBuildResponseLifeAndCost(BuildResponse buildResponse, Commander cmdr);
     Task<SpawnInfo> GetSpawnInfo(SpawnRequest request);
     Task<SpawnInfo> GetDsUnitSpawnInfo(SpawnDto spawn, Commander cmdr);
     Task<int> GetUnitId(UnitDetailRequest request);

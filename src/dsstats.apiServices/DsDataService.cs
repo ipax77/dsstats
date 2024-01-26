@@ -104,6 +104,11 @@ public class DsDataService(HttpClient httpClient, ILogger<DsDataService> logger)
         throw new NotImplementedException();
     }
 
+    public Task SetBuildResponseLifeAndCost(BuildResponse buildResponse, Commander cmdr)
+    {
+        throw new NotImplementedException();
+    }
+
     public void SetUnitColors()
     {
         throw new NotImplementedException();

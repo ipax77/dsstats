@@ -1,5 +1,6 @@
 ﻿@using Microsoft.JSInterop
 @using dsstats.razorlib.Replays
+@using dsstats.razorlib.Services
 @using dsstats.shared
 @using dsstats.shared.Interfaces
 @inject IBuildService buildService
@@ -48,6 +49,22 @@
                                 @response.ReplayPlayer.Name
                             </div>
                         </div>
+                        <div class="row bgchart">
+                            <div class="col-auto">
+                                <h5>
+                                    <span class="badge border border-info">
+                                        ArmyValue <span class="text-warning">@HelperService.GetBigNumberString(spawnInfo1.ArmyValue)</span>
+                                    </span>
+                                </h5>
+                            </div>
+                                <div class="col-auto">
+                                    <h5>
+                                        <span class="badge border border-info">
+                                            ArmyLife <span class="text-warning">@HelperService.GetBigNumberString(spawnInfo1.ArmyTotalVitality)</span>
+                                        </span>
+                                    </h5>
+                                </div>
+                        </div>
                         <div class="bgchart" style="height: 480px; width: 380px;">
                             <ReplayPlayerChartMap @ref="map1" Spawn="spawn1" SpawnInfo="spawnInfo1" Team="response.ReplayPlayer.Team" moduleTask="moduleTask" />
                         </div>
@@ -65,7 +82,22 @@
                                 @response.OppReplayPlayer.Name
                             </div>
                         </div>
-
+                        <div class="row bgchart">
+                            <div class="col-auto">
+                                <h5>
+                                    <span class="badge border border-info">
+                                        ArmyValue <span class="text-warning">@HelperService.GetBigNumberString(spawnInfo2.ArmyValue)</span>
+                                    </span>
+                                </h5>
+                            </div>
+                            <div class="col-auto">
+                                <h5>
+                                    <span class="badge border border-info">
+                                        ArmyLife <span class="text-warning">@HelperService.GetBigNumberString(spawnInfo2.ArmyTotalVitality)</span>
+                                    </span>
+                                </h5>
+                            </div>
+                        </div>
                         <div class="bgchart" style="height: 480px; width: 380px;">
                             <ReplayPlayerChartMap @ref="map2" Spawn="spawn2" SpawnInfo="spawnInfo2" Team="response.OppReplayPlayer.Team" moduleTask="moduleTask" />
                         </div>
@@ -86,7 +118,22 @@
                                 @response.OppReplayPlayer.Name
                             </div>
                         </div>
-
+                        <div class="row bgchart">
+                            <div class="col-auto">
+                                <h5>
+                                    <span class="badge border border-info">
+                                        ArmyValue <span class="text-warning">@HelperService.GetBigNumberString(spawnInfo2.ArmyValue)</span>
+                                    </span>
+                                </h5>
+                            </div>
+                            <div class="col-auto">
+                                <h5>
+                                    <span class="badge border border-info">
+                                        ArmyLife <span class="text-warning">@HelperService.GetBigNumberString(spawnInfo2.ArmyTotalVitality)</span>
+                                    </span>
+                                </h5>
+                            </div>
+                        </div>
                         <div class="bgchart" style="height: 480px; width: 380px;">
                             <ReplayPlayerChartMap @ref="map2" Spawn="spawn2" SpawnInfo="spawnInfo2" Team="response.OppReplayPlayer.Team" moduleTask="moduleTask" />
                         </div>
@@ -102,6 +149,22 @@
                             </div>
                             <div class="ms-1 align-self-center">
                                 @response.ReplayPlayer.Name
+                            </div>
+                        </div>
+                        <div class="row bgchart">
+                            <div class="col-auto">
+                                <h5>
+                                    <span class="badge border border-info">
+                                        ArmyValue <span class="text-warning">@HelperService.GetBigNumberString(spawnInfo1.ArmyValue)</span>
+                                    </span>
+                                </h5>
+                            </div>
+                            <div class="col-auto">
+                                <h5>
+                                    <span class="badge border border-info">
+                                        ArmyLife <span class="text-warning">@HelperService.GetBigNumberString(spawnInfo1.ArmyTotalVitality)</span>
+                                    </span>
+                                </h5>
                             </div>
                         </div>
                         <div class="bgchart" style="height: 480px; width: 380px;">
@@ -123,7 +186,7 @@
     [Parameter, EditorRequired]
     public BuildRequest Request { get; set; } = default!;
 
-    BuildMapResponse? response = null!;
+    BuildMapResponse? response;
     bool isLoading = false;
 
     private Lazy<Task<IJSObjectReference>> moduleTask = null!;
@@ -142,7 +205,7 @@
     protected override void OnInitialized()
     {
         moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
-            "import", "./_content/dsstats.razorlib/js/annotationChart.js").AsTask());
+            "import", "./_content/dsstats.razorlib/js/annotationChart.js?v=0.5").AsTask());
         _ = LoadData();
         base.OnInitialized();
     }
@@ -157,9 +220,8 @@
         await InvokeAsync(() => StateHasChanged());
         response = await buildService.GetReplayBuildMap(Request);
 
-        await SetSpawns();
         isLoading = false;
-        await InvokeAsync(() => StateHasChanged());
+        await SetSpawns();
     }
 
     public void Update(BuildRequest request, bool bpOnly)
@@ -211,7 +273,6 @@
             await JSRuntime.InvokeVoidAsync("toggleButton", "buildmapshowhidebutton", "samplebuildmap");
         }
         await SetSpawns();
-        await InvokeAsync(() => StateHasChanged());
     }
 
     public async Task SetSpawns()
@@ -241,6 +302,7 @@
                 Units = spawn1.Units.Select(s => s.Unit).ToList(),
                 Commander = response.ReplayPlayer.Race
             });
+            spawnInfo1.SetArmyStats(spawn1);
         }
         else
         {
@@ -254,14 +316,17 @@
                 Units = spawn2.Units.Select(s => s.Unit).ToList(),
                 Commander = response.OppReplayPlayer.Race
             });
+            spawnInfo2.SetArmyStats(spawn2);
         }
         else
         {
             spawnInfo2 = new();
         }
 
+
         map1?.Update(spawn1, spawnInfo1, response?.ReplayPlayer?.Team ?? 1);
         map2?.Update(spawn2, spawnInfo2, response?.OppReplayPlayer?.Team ?? 2);
+        await InvokeAsync(() => StateHasChanged());
     }
 
     private void ShowHide()

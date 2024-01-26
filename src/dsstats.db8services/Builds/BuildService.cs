@@ -15,6 +15,7 @@ public partial class BuildService : IBuildService
     private readonly ReplayContext context;
     private readonly IMemoryCache memoryCache;
     private readonly IMapper mapper;
+    private readonly IDsDataService dsDataService;
     private readonly ILogger<BuildService> logger;
     private readonly string connectionString;
     private readonly bool IsSqlite;
@@ -23,6 +24,7 @@ public partial class BuildService : IBuildService
                         IOptions<DbImportOptions> dbOptions,
                         IMemoryCache memoryCache,
                         IMapper mapper,
+                        IDsDataService dsDataService,
                         ILogger<BuildService> logger)
     {
         connectionString = dbOptions.Value.ImportConnectionString;
@@ -30,6 +32,7 @@ public partial class BuildService : IBuildService
         this.context = context;
         this.memoryCache = memoryCache;
         this.mapper = mapper;
+        this.dsDataService = dsDataService;
         this.logger = logger;
     }
 
@@ -45,6 +48,8 @@ public partial class BuildService : IBuildService
                 buildResponse = request.PlayerNames.Count == 0 ?
                     await ProduceBuild(request, token)
                     : await ProducePlayerBuilds(request, token);
+
+                await dsDataService.SetBuildResponseLifeAndCost(buildResponse, request.Interest);
 
                 if (IsSqlite)
                 {

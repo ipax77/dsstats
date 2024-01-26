@@ -19,6 +19,7 @@ public partial class BuildService
                     from sp in rp.Spawns
                     from su in sp.Units
                     join rr in context.ReplayRatings on r.ReplayId equals rr.ReplayId
+                    join rpr in context.ComboReplayPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
                     where r.GameTime >= start
                      && (noEnd || r.GameTime < end)
                      && rp.Race == request.Interest
@@ -49,11 +50,11 @@ public partial class BuildService
                          {
                              g.Key.UnitId,
                              g.Key.Name,
-                             Count = g.Sum(s => s.Count),
+                             UnitCount = g.Sum(s => s.Count),
                          };
 
         var result = await unitsquery
-            .OrderByDescending(o => o.Count)
+            .OrderByDescending(o => o.UnitCount)
             .ToListAsync(token);
         var buildCounts = await GetPlayersCountResult(request, token);
 
@@ -63,7 +64,7 @@ public partial class BuildService
             Units = result.Select(s => new BuildResponseBreakpointUnit()
             {
                 Name = s.Name,
-                Count = buildCounts.Count == 0 ? s.Count : Math.Round(s.Count / (double)buildCounts.Count, 2)
+                Count = buildCounts.CmdrCount == 0 ? s.UnitCount : Math.Round(s.UnitCount / (double)buildCounts.CmdrCount, 2)
             }).ToList()
         };
     }
@@ -129,6 +130,10 @@ public partial class BuildService
 
 
         var buildCount = await filteredGroup.FirstOrDefaultAsync(token);
+        if (buildCount is not null)
+        {
+            buildCount = buildCount with { CmdrCount = buildCount.Count };
+        }
         return buildCount ?? new();
     }
 
@@ -182,6 +187,10 @@ public partial class BuildService
 
 
         var buildCount = await filteredGroup.FirstOrDefaultAsync(token);
+        if (buildCount is not null)
+        {
+            buildCount = buildCount with { CmdrCount = buildCount.Count };
+        }
         return buildCount ?? new();
     }
 

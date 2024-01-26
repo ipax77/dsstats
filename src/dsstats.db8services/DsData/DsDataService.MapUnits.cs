@@ -123,6 +123,27 @@ public partial class DsDataService
         { new("HonorGuard", Commander.Zeratul), "Honor Guard" },
     }.ToFrozenDictionary();
 
+    public async Task SetBuildResponseLifeAndCost(BuildResponse buildResponse, Commander cmdr)
+    {
+        var dsUnits = await dsUnitRepository.GetDsUnits();
+
+        foreach (var buildUnit in buildResponse.Units)
+        {
+            var unitName = MapUnitName(buildUnit.Name, cmdr);
+            var dsUnit = dsUnits.FirstOrDefault(f => f.Name.Equals(unitName, StringComparison.Ordinal)
+                && f.Commander == cmdr);
+
+            if (dsUnit is null)
+            {
+                continue;
+            }
+
+            buildUnit.Name = unitName;
+            buildUnit.Life = Math.Round(dsUnit.Life * buildUnit.Count, 2);
+            buildUnit.Cost = Math.Round(dsUnit.Cost * buildUnit.Count, 2);
+        }
+    }
+
     public async Task<SpawnInfo> GetSpawnInfo(SpawnRequest request)
     {
         var dsUnits = await dsUnitRepository.GetDsUnits();
@@ -132,7 +153,8 @@ public partial class DsDataService
         {
             var unitName = MapUnitName(unit.Name, request.Commander);
 
-            var dsUnit = dsUnits.FirstOrDefault(f => f.Name.Equals(unitName) && f.Commander == request.Commander);
+            var dsUnit = dsUnits.FirstOrDefault(f => f.Name.Equals(unitName, StringComparison.Ordinal) 
+                && f.Commander == request.Commander);
 
             if (dsUnit is null)
             {

@@ -27,6 +27,22 @@ public static class HelperService
         }
     }
 
+    public static string GetBigNumberString(double num)
+    {
+        if (num > 1000000)
+        {
+            return (num / 1000000.0).ToString("N2", CultureInfo.InvariantCulture) + "m";
+        }
+        else if (num > 1000)
+        {
+            return (num / 1000.0).ToString("N2", CultureInfo.InvariantCulture) + "k";
+        }
+        else
+        {
+            return num.ToString("N2", CultureInfo.InvariantCulture);
+        }
+    }
+
     public static string GetPercentageString(int? wins, int? games)
     {
         if (games == null || wins == null || games == 0 || wins == 0)

@@ -1,3 +1,5 @@
+//v0.5
+
 import * as annotationPlugin from './chartjs-plugin-annotation.min.js';
 
 export async function registerPlugin() {
@@ -20,8 +22,8 @@ export function setChartTooltips(chartId) {
         if (tooltipItem == undefined) {
             return "";
         } else {
-            return tooltipItem.raw.label + " " + tooltipItem.raw.x + "|" + tooltipItem.raw.y + "|" + tooltipItem.raw.r;
-            // return tooltipItem.raw.label;
+            // return tooltipItem.raw.label + " " + tooltipItem.raw.x + "|" + tooltipItem.raw.y + "|" + tooltipItem.raw.r;
+            return tooltipItem.raw.label;
         }
     };
 }
