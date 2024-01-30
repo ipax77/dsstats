@@ -109,9 +109,6 @@ public partial class DsDataService
         { new("ShadowGuard", Commander.Vorazun), "Shadow Guard" },
         { new("DarkArchon", Commander.Vorazun), "Dark Archon" },
         { new("HunterKiller", Commander.Zagara), "Hunter Killer" },
-        { new("VoidRay", Commander.Protoss), "Void Ray" },
-        { new("HighTemplar", Commander.Protoss), "High Templar" },
-        { new("BroodLord", Commander.Zerg), "Brood Lord" },
         { new("Coop", Commander.Zeratul), "Zeratul" },
         { new("SummonKarass", Commander.Zeratul), "Telbrus" },
         { new("Stalker", Commander.Zeratul), "Xel'Naga Ambusher" },
@@ -121,6 +118,12 @@ public partial class DsDataService
         { new("Observer", Commander.Zeratul), "Xel'Naga Watcher" },
         { new("Immortal", Commander.Zeratul), "Xel'Naga Enforcer" },
         { new("HonorGuard", Commander.Zeratul), "Honor Guard" },
+        { new("VoidRay", Commander.Protoss), "Void Ray" },
+        { new("HighTemplar", Commander.Protoss), "High Templar" },
+        { new("SiegeTank", Commander.Terran), "Siege Tank" },
+        { new("WidowMine", Commander.Terran), "Widow Mine" },
+        { new("BroodLord", Commander.Zerg), "Brood Lord" },
+        { new("SwarmHost", Commander.Zerg), "Swarm Host" },
     }.ToFrozenDictionary();
 
     public async Task SetBuildResponseLifeAndCost(BuildResponse buildResponse, Commander cmdr)
