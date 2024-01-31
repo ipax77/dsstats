@@ -45,6 +45,18 @@ public class BuildService : IBuildService
         }
     }
 
+    public async Task<BuildMapResponse> GetReplayBuildMap(BuildRequest request, CancellationToken token = default)
+    {
+        if (remoteToggleService.FromServer)
+        {
+            return await remoteBuildService.GetReplayBuildMap(request, token);
+        }
+        else
+        {
+            return await localBuildService.GetReplayBuildMap(request, token);
+        }
+    }
+
     public async Task<List<ReplayListDto>> GetReplays(BuildRequest request, int skip, int take, CancellationToken token)
     {
         if (remoteToggleService.FromServer)
