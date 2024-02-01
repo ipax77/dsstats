@@ -1,5 +1,6 @@
 using AutoMapper;
 using dsstats.api;
+using dsstats.api.AuthContext;
 using dsstats.api.Services;
 using dsstats.db8;
 using dsstats.db8.AutoMapper;
@@ -50,6 +51,7 @@ builder.Services.AddRateLimiter(_ => _
 var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 44));
 var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
 var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"];
+var authConnectionString = builder.Configuration["ServerConfig:DsAuthConnectionString"];
 
 builder.Services.AddOptions<DbImportOptions>()
     .Configure(x => x.ImportConnectionString = importConnectionString ?? "");
@@ -67,6 +69,27 @@ builder.Services.AddDbContext<ReplayContext>(options =>
     //.EnableSensitiveDataLogging()
     ;
 });
+
+builder.Services.AddDbContext<DsAuthContext>(options =>
+{
+    options.UseMySql(authConnectionString, serverVersion, p =>
+    {
+        p.CommandTimeout(30);
+        p.EnableRetryOnFailure();
+        p.MigrationsAssembly("dsstats.api");
+        p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
+    });
+});
+
+builder.Services.AddAuthorization();
+builder.Services
+    .AddIdentityApiEndpoints<DsUser>(options =>
+    {
+        options.User.RequireUniqueEmail = true;
+        options.SignIn.RequireConfirmedEmail = false;
+        // options.Stores.ProtectPersonalData = true; 
+    })
+    .AddEntityFrameworkStores<DsAuthContext>();
 
 builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
@@ -133,6 +156,9 @@ mapper.ConfigurationProvider.AssertConfigurationIsValid();
 //var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 //context.Database.Migrate();
 
+var authContext = scope.ServiceProvider.GetRequiredService<DsAuthContext>();
+authContext.Database.Migrate();
+
 var uploadSerivce = scope.ServiceProvider.GetRequiredService<UploadService>();
 uploadSerivce.ImportInit();
 
@@ -143,8 +169,6 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-
-    var dsDataService = scope.ServiceProvider.GetRequiredService<IDsDataService>();
 }
 
 // app.UseHttpsRedirection();
@@ -155,6 +179,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<PickBanHub>("/hubs/pickban");
+app.MapGroup("/account").MapIdentityApi<DsUser>();
 
 app.Run();
 
