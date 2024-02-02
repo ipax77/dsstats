@@ -11,7 +11,7 @@ using dsstats.api.AuthContext;
 namespace dsstats.api.Migrations
 {
     [DbContext(typeof(DsAuthContext))]
-    [Migration("20240201193718_Init")]
+    [Migration("20240202104348_Init")]
     partial class Init
     {
         /// <inheritdoc />

@@ -10,6 +10,8 @@ using dsstats.db8services.Import;
 using dsstats.ratings;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
@@ -56,6 +58,15 @@ var authConnectionString = builder.Configuration["ServerConfig:DsAuthConnectionS
 builder.Services.AddOptions<DbImportOptions>()
     .Configure(x => x.ImportConnectionString = importConnectionString ?? "");
 
+builder.Services.AddOptions<EMailOptions>()
+    .Configure(x =>
+    {
+        x.Email = builder.Configuration["ServerConfig:EMail:email"] ?? "";
+        x.Smtp = builder.Configuration["ServerConfig:EMail:smtp"] ?? "";
+        x.Port = int.Parse(builder.Configuration["ServerConfig:EMail:port"] ?? "");
+        x.Password = builder.Configuration["ServerConfig:EMail:auth"] ?? "";
+    });
+
 builder.Services.AddDbContext<ReplayContext>(options =>
 {
     options.UseMySql(connectionString, serverVersion, p =>
@@ -82,14 +93,25 @@ builder.Services.AddDbContext<DsAuthContext>(options =>
 });
 
 builder.Services.AddAuthorization();
+
 builder.Services
     .AddIdentityApiEndpoints<DsUser>(options =>
     {
         options.User.RequireUniqueEmail = true;
-        options.SignIn.RequireConfirmedEmail = false;
+        options.SignIn.RequireConfirmedEmail = true;
         // options.Stores.ProtectPersonalData = true; 
     })
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<DsAuthContext>();
+
+//builder.Services.AddIdentityCore<DsUser>(options =>
+//{
+//    options.User.RequireUniqueEmail = true;
+//    options.SignIn.RequireConfirmedEmail = true;
+//})
+//    .AddEntityFrameworkStores<DsAuthContext>()
+//    //.AddRoles<DsRole>()
+//    .AddApiEndpoints();
 
 builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
@@ -136,6 +158,9 @@ builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
 
+//builder.Services.AddScoped<EMailService>();
+builder.Services.AddTransient<IEmailSender, EmailSender>();
+
 if (builder.Environment.IsProduction())
 {
     builder.Services.AddHostedService<TimedHostedService>();
@@ -169,6 +194,9 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    //var emailSerivice = scope.ServiceProvider.GetRequiredService<EMailService>();
+    //emailSerivice.SendEmail("ph.ilipp@web.de", "test", "und es war Sommer").Wait();
 }
 
 // app.UseHttpsRedirection();
@@ -180,6 +208,7 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<PickBanHub>("/hubs/pickban");
 app.MapGroup("/account").MapIdentityApi<DsUser>();
+// app.MapIdentityApi<DsUser>();
 
 app.Run();
 
