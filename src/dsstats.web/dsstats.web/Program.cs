@@ -4,17 +4,31 @@ using dsstats.web.Client.Pages;
 using dsstats.web.Client.Services;
 using dsstats.web.Components;
 using pax.BlazorChartJs;
+using System.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
 
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5116") });
+    builder.Services.AddHttpClient("AuthAPI")
+        .ConfigureHttpClient(options => {
+            options.BaseAddress = new Uri("http://localhost:5116");
+            options.DefaultRequestHeaders.Accept.Clear();
+            options.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        });
 }
 if (builder.Environment.IsProduction())
 {
     builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats-dev.pax77.org") });
     // builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats.pax77.org") });
+
+    builder.Services.AddHttpClient("AuthAPI")
+    .ConfigureHttpClient(options => {
+        options.BaseAddress = new Uri("https://dsstats.pax77.org");
+        options.DefaultRequestHeaders.Accept.Clear();
+        options.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+    });
 }
 
 builder.Services.AddChartJs(options =>

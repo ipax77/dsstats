@@ -10,6 +10,7 @@ using dsstats.db8services.Import;
 using dsstats.ratings;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
+using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.RateLimiting;
@@ -92,8 +93,14 @@ builder.Services.AddDbContext<DsAuthContext>(options =>
     });
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthentication(BearerTokenDefaults.AuthenticationScheme)
+    .AddBearerToken(options =>
+    {
+        options.Validate();
+    });
 
+builder.Services.AddAuthorization();
+    
 builder.Services
     .AddIdentityApiEndpoints<DsUser>(options =>
     {
@@ -203,6 +210,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors(MyAllowSpecificOrigins);
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

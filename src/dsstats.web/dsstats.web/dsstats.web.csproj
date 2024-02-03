@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\dsstats.web.Client\Pages\Auth\LoginComponent.razor.cs" Link="LoginComponent.razor.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\dsstats.apiServices\dsstats.apiServices.csproj" />
     <ProjectReference Include="..\..\dsstats.razorlib\dsstats.razorlib.csproj" />
     <ProjectReference Include="..\..\dsstats.shared\dsstats.shared.csproj" />
