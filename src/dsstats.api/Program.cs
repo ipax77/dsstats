@@ -215,7 +215,10 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<PickBanHub>("/hubs/pickban");
-app.MapGroup("/account").MapIdentityApi<DsUser>();
+app.MapGroup("/account")
+    .MapIdentityApi<DsUser>()
+    .RequireRateLimiting("fixed");
+
 // app.MapIdentityApi<DsUser>();
 
 app.Run();

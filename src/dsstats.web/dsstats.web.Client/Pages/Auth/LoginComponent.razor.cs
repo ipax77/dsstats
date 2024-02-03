@@ -22,20 +22,46 @@ public partial class LoginComponent : ComponentBase, IDisposable
         base.OnInitialized();
     }
 
+    //protected override async Task OnAfterRenderAsync(bool firstRender)
+    //{
+    //    if (firstRender)
+    //    {
+    //        await ((ExternalAuthStateProvider)AuthenticationStateProvider)
+    //            .TryLogin();
+    //    }
+    //    await base.OnAfterRenderAsync(firstRender);
+    //}
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            //_ = ((ExternalAuthStateProvider)AuthenticationStateProvider)
+            //    .TryLogin();
+        }
+        base.OnAfterRender(firstRender);
+    }
+
     private void AuthStateChanged(Task<AuthenticationState> task)
     {
         InvokeAsync(() => StateHasChanged());
     }
 
-    private async Task Login()
+    private async Task TryLogin()
     {
         await ((ExternalAuthStateProvider)AuthenticationStateProvider)
-            .LogInAsync(loginData.Email, loginData.Password);
+            .TryLogin();
+    }
+
+    private async Task Login()
+    {
+          await ((ExternalAuthStateProvider)AuthenticationStateProvider)
+            .LogInAsync(loginData.Email, loginData.Password, loginData.Remember);
     }
 
     private async Task TestRequest()
     {
-        var httpClient = ((ExternalAuthStateProvider)AuthenticationStateProvider).GetApiHttpClient();
+        var httpClient = await ((ExternalAuthStateProvider)AuthenticationStateProvider).GetApiHttpClient();
         try
         {
             var response = await httpClient.GetAsync("api8/v1/managetourney/test1");
@@ -56,6 +82,7 @@ public partial class LoginComponent : ComponentBase, IDisposable
         public string Email { get; set; } = string.Empty;
         [Required]
         public string Password { get; set; } = string.Empty;
+        public bool Remember {  get; set; }
     }
 
     public void Dispose()

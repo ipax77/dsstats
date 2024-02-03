@@ -26,6 +26,12 @@
                 <label for="loginpwd" class="form-label mt-4">Password</label>
                 <InputText type="password" class="form-control" id="loginpwd" placeholder="Password" autocomplete="off" @bind-Value="loginData.Password" />
             </div>
+            <div class="form-check">
+                <InputCheckbox id="rememberMe" class="form-check-input" @bind-Value="loginData.Remember" />
+                <label class="form-check-label" for="rememberMe">
+                    Remember me
+                </label>
+            </div>
             <div class="btn-group mt-1">
                 <button type="submit" class="btn btn-primary">Login</button>
             </div>
@@ -33,6 +39,7 @@
     </div>
 </div>
 
-<div>
+<div class="btn-group mt-1">
     <button type="button" class="btn btn-warning" @onclick="TestRequest">Test</button>
+    <button type="button" class="btn btn-warning" @onclick="TryLogin">TryLogin</button>
 </div>

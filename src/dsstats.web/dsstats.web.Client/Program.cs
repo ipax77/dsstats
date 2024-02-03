@@ -1,3 +1,4 @@
+using Blazored.LocalStorage;
 using dsstats.apiServices;
 using dsstats.shared.Interfaces;
 using dsstats.web.Client.Services;
@@ -41,6 +42,7 @@ builder.Services.AddChartJs(options =>
     options.ChartJsLocation = "/_content/dsstats.razorlib/js/chart.js";
     options.ChartJsPluginDatalabelsLocation = "/_content/dsstats.razorlib/js/chartjs-plugin-datalabels.js";
 });
+builder.Services.AddBlazoredLocalStorage();
 
 builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 

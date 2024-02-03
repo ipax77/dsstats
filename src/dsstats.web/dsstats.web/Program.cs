@@ -1,8 +1,10 @@
+using Blazored.LocalStorage;
 using dsstats.apiServices;
 using dsstats.shared.Interfaces;
 using dsstats.web.Client.Pages;
 using dsstats.web.Client.Services;
 using dsstats.web.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using pax.BlazorChartJs;
 using System.Net.Http.Headers;
 
@@ -31,11 +33,17 @@ if (builder.Environment.IsProduction())
     });
 }
 
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddOptions();
+builder.Services.AddAuthorizationCore();
+builder.Services.AddScoped<AuthenticationStateProvider, ExternalAuthStateProvider>();
+
 builder.Services.AddChartJs(options =>
 {
     options.ChartJsLocation = "/_content/dsstats.razorlib/js/chart.js";
     options.ChartJsPluginDatalabelsLocation = "/_content/dsstats.razorlib/js/chartjs-plugin-datalabels.js";
 });
+builder.Services.AddBlazoredLocalStorage();
 
 builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 
