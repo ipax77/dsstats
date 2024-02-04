@@ -1,5 +1,6 @@
 using Blazored.LocalStorage;
 using dsstats.apiServices;
+using dsstats.shared.Auth;
 using dsstats.shared.Interfaces;
 using dsstats.web.Client.Pages;
 using dsstats.web.Client.Services;
@@ -63,6 +64,8 @@ builder.Services.AddScoped<ITourneysService, TourneysService>();
 builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
+
+builder.Services.AddTransient<IAuthService, AuthService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

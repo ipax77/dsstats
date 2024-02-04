@@ -4,45 +4,11 @@ using System.Net.Http.Json;
 
 namespace dsstats.apiServices;
 
-public interface ILoginResponse { }
-public record LoginSucessResponse : ILoginResponse
-{
-    public TokenInfo TokenInfo { get; set; } = new();
-}
 
-public record LoginFailedResponse : ILoginResponse
-{
-    public string Error { get; set; } = string.Empty;
-}
 
-public interface IRegisterResponse { }
-
-public record RegisterSuccessResponse : IRegisterResponse { }
-public record RegisterFailedResponse : IRegisterResponse
+public class AuthService(HttpClient httpClient, ILogger<AuthService> logger) : IAuthService
 {
-    public ErrorResponse Error { get; set; } = new();
-}
-
-public interface IForgotPasswordResponse { }
-public record ForgotPasswordSuccessResponse : IForgotPasswordResponse { };
-public record ForgotPasswordFailedResponse : IForgotPasswordResponse
-{
-    public ErrorResponse Error { get; set; } = new();
-}
-
-public interface IManageInfoResponse { }
-public record ManageInfoSuccessResponse : IManageInfoResponse
-{
-    public ManageInfoResponse Response { get; set; } = new();
-}
-public record ManageInfoFailedResponse : IManageInfoResponse
-{
-    public ErrorResponse Error { get; set; } = new();
-}
-
-public class AuthService(HttpClient httpClient, ILogger<AuthService> logger)
-{
-    private readonly string authController = "/api8/v1/account";
+    private readonly string authController = "/account";
 
     public async Task<IRegisterResponse> Register(RegisterPayload register)
     {
