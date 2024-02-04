@@ -1,4 +1,5 @@
 ﻿using Blazored.LocalStorage;
+using dsstats.shared.Auth;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
@@ -243,15 +244,7 @@ public record TokenResponse
     public string RefreshToken { get; init; } = string.Empty;
 }
 
-public record ErrorResponse
-{
-    public string Type { get; init; } = string.Empty;
-    public string Title { get; init; } = string.Empty;
-    public int Status { get; init; }
-    public string Details { get; init; } = string.Empty;
-    public string Instance { get; init; } = string.Empty;
-    public Dictionary<string, string> Errors { get; init; } = [];
-}
+
 
 public record UserInfo
 {
