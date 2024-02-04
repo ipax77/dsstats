@@ -33,8 +33,8 @@ class Program
         services.AddLogging(options =>
         {
             options.SetMinimumLevel(LogLevel.Information);
-            options.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
-            options.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
+            options.AddFilter("System.Net.Http.HttpClient", LogLevel.Information);
+            options.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Information);
             options.AddConsole();
         });
 
@@ -66,7 +66,7 @@ class Program
 
         var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
 
-        crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-58), default).Wait();
+        crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-6), default).Wait();
         // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1), default).Wait();
 
         Console.WriteLine("done.");

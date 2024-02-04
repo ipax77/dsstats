@@ -35,7 +35,7 @@ public partial class CrawlerService
 
         List<CrawlInfo> crawlInfos = new()
         {
-            new(regionId: 1, mapId: 208271, handle: "2-S2-1-226401", teMap: false),
+            // new(regionId: 1, mapId: 208271, handle: "2-S2-1-226401", teMap: false),
             new(2, 140436, "2-S2-1-226401", false),
             // new(3, 69942, "2-S2-1-226401", false),
             // new(1, 327974, "2-S2-1-226401", true),
@@ -141,10 +141,19 @@ public partial class CrawlerService
 
     private static int GetWaitTime(HttpResponseMessage response)
     {
-        // Get the rate limit headers
-        // int rateLimit = int.Parse(response.Headers.GetValues("x-ratelimit-limit").FirstOrDefault() ?? "0");
-        int rateLimitRemaining = int.Parse(response.Headers.GetValues("x-ratelimit-remaining").FirstOrDefault() ?? "0");
-        int rateLimitReset = int.Parse(response.Headers.GetValues("x-ratelimit-reset").FirstOrDefault() ?? "0");
+        int rateLimitRemaining = 0;
+        int rateLimitReset = 0;
+        if (response.Headers.TryGetValues("x-ratelimit-remaining", out var remainValues)
+            && int.TryParse(remainValues.FirstOrDefault(), out int _rateLimitRemaining))
+        {
+            rateLimitRemaining = _rateLimitRemaining;
+        }
+
+        if (response.Headers.TryGetValues("x-ratelimit-reset", out var resetValues)
+            && int.TryParse(resetValues.FirstOrDefault(), out int _rateLimitReset))
+        {
+            rateLimitReset = _rateLimitReset;
+        }
 
         if (rateLimitRemaining > 0)
         {
