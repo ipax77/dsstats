@@ -12,9 +12,8 @@ using CommunityToolkit.Maui;
 using CommunityToolkit.Maui.Storage;
 using dsstats.db8services.Import;
 using dsstats.ratings;
-using dsstats.maui8.WinUI;
 using System.Globalization;
-using Microsoft.AspNetCore.Builder;
+using dsstats.db8services.DsData;
 
 namespace dsstats.maui8
 {
@@ -80,6 +79,7 @@ namespace dsstats.maui8
             builder.Services.AddSingleton<IRatingsSaveService, Services.RatingsSaveService>();
             builder.Services.AddSingleton<IUpdateService, StoreUpdateService>();
             // builder.Services.AddSingleton<IUpdateService, StoreUpdateService>();
+            builder.Services.AddSingleton<DsUnitRepository>();
 
             builder.Services.AddScoped<BackupService>();
             builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
@@ -100,6 +100,9 @@ namespace dsstats.maui8
             builder.Services.AddKeyedScoped<IBuildService, apiServices.BuildService>("remote");
             builder.Services.AddScoped<IBuildService, Services.BuildService>();
 
+            builder.Services.AddKeyedScoped<IDsDataService, db8services.DsData.DsDataService>("local");
+            builder.Services.AddKeyedScoped<IDsDataService, apiServices.DsDataService>("remote");
+            builder.Services.AddScoped<IDsDataService, Services.DsDataService>();
 
             var app = builder.Build();
 
