@@ -18,6 +18,8 @@ public class ExternalAuthStateProvider(HttpClient httpClient,
     public override Task<AuthenticationState> GetAuthenticationStateAsync() =>
         Task.FromResult(new AuthenticationState(currentUser));
 
+    public ErrorResponse? ErrorResponse { get; set; }
+
     public Task TryLogin()
     {
         var loginTask = LogInFromStoreAsync();
@@ -190,6 +192,31 @@ public class ExternalAuthStateProvider(HttpClient httpClient,
         }
     }
 
+    public async Task<ErrorResponse> ForgotPassword(string email)
+    {
+        try
+        {
+            var result = await httpClient.PostAsJsonAsync("account/forgotpassword", new { email = email });
+            if (result.IsSuccessStatusCode)
+            {
+                return new() { Type = "ForgotPassword", Status = 200 };
+            }
+            else if (result.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                var content = await result.Content.ReadFromJsonAsync<ErrorResponse>();
+                if (content is not null)
+                {
+                    return content;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("Forgot password failed: {error}", ex.Message);
+        }
+        return new() { Status = 400 };
+    }
+
     public async Task<HttpClient> GetApiHttpClient()
     {
         var httpClient = httpClientFactory.CreateClient("AuthAPI");
@@ -214,6 +241,16 @@ public record TokenResponse
     public string AccessToken { get; init; } = string.Empty;
     public int ExpiresIn { get; init; }
     public string RefreshToken { get; init; } = string.Empty;
+}
+
+public record ErrorResponse
+{
+    public string Type { get; init; } = string.Empty;
+    public string Title { get; init; } = string.Empty;
+    public int Status { get; init; }
+    public string Details { get; init; } = string.Empty;
+    public string Instance { get; init; } = string.Empty;
+    public Dictionary<string, string> Errors { get; init; } = [];
 }
 
 public record UserInfo

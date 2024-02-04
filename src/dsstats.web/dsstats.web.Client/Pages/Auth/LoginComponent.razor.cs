@@ -2,6 +2,7 @@ using dsstats.web.Client.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Forms;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace dsstats.web.Client.Pages.Auth;
@@ -11,9 +12,17 @@ public partial class LoginComponent : ComponentBase, IDisposable
     [Inject]
     private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
 
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    public string? RedirectUrl { get; set; }
+
     EditContext editContext = null!;
     LoginData loginData = new();
     string testResponse = string.Empty;
+
+    ErrorResponse? ErrorResponse = null;
 
     protected override void OnInitialized()
     {
@@ -42,21 +51,66 @@ public partial class LoginComponent : ComponentBase, IDisposable
         base.OnAfterRender(firstRender);
     }
 
-    private void AuthStateChanged(Task<AuthenticationState> task)
+    private async void AuthStateChanged(Task<AuthenticationState> task)
     {
-        InvokeAsync(() => StateHasChanged());
+        //var state = task.Result;
+        //if (state?.User.Identity is not null 
+        //     && state.User.Identity.IsAuthenticated
+        //     && !string.IsNullOrEmpty(RedirectUrl))
+        //{
+        //    NavigationManager.NavigateTo(RedirectUrl);
+        //}
+
+        AuthenticationState state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated ?? false
+            && !string.IsNullOrEmpty(RedirectUrl))
+        {
+            NavigationManager.NavigateTo(RedirectUrl!);
+        }
+
+        await InvokeAsync(() => StateHasChanged());
     }
 
-    private async Task TryLogin()
+    private void TryLogin()
     {
-        await ((ExternalAuthStateProvider)AuthenticationStateProvider)
+        _ = ((ExternalAuthStateProvider)AuthenticationStateProvider)
             .TryLogin();
     }
 
-    private async Task Login()
+    private void Login()
     {
-          await ((ExternalAuthStateProvider)AuthenticationStateProvider)
-            .LogInAsync(loginData.Email, loginData.Password, loginData.Remember);
+        _ = ((ExternalAuthStateProvider)AuthenticationStateProvider)
+          .LogInAsync(loginData.Email, loginData.Password, loginData.Remember);
+    }
+
+    private async Task ForgotPassword()
+    {
+        if (!editContext.Validate())
+        {
+            return;
+        }
+
+        var errorResponse = await ((ExternalAuthStateProvider)AuthenticationStateProvider)
+            .ForgotPassword(loginData.Email);
+        
+        if (errorResponse.Status == 200)
+        {
+            ErrorResponse = errorResponse with { Title = "Please check your emails for the reset code." };
+        }
+        else
+        {
+            ErrorResponse = errorResponse;
+        }
+    }
+
+    private void RegisterNew()
+    {
+
+    }
+
+    private void ResendEmail()
+    {
+
     }
 
     private async Task TestRequest()
@@ -78,11 +132,11 @@ public partial class LoginComponent : ComponentBase, IDisposable
 
     internal record LoginData
     {
-        [Required]
+        [Required, EmailAddress]
         public string Email { get; set; } = string.Empty;
-        [Required]
         public string Password { get; set; } = string.Empty;
-        public bool Remember {  get; set; }
+        public string ResetCode {  get; set; } = string.Empty;
+        public bool Remember { get; set; }
     }
 
     public void Dispose()
