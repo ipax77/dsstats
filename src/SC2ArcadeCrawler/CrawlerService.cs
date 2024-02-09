@@ -35,7 +35,7 @@ public partial class CrawlerService
 
         List<CrawlInfo> crawlInfos = new()
         {
-            // new(regionId: 1, mapId: 208271, handle: "2-S2-1-226401", teMap: false),
+            new(regionId: 1, mapId: 208271, handle: "2-S2-1-226401", teMap: false),
             new(2, 140436, "2-S2-1-226401", false),
             // new(3, 69942, "2-S2-1-226401", false),
             // new(1, 327974, "2-S2-1-226401", true),
