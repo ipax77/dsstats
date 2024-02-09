@@ -35,7 +35,7 @@ public partial class CrawlerService
 
         List<CrawlInfo> crawlInfos = new()
         {
-            // new(regionId: 1, mapId: 208271, handle: "2-S2-1-226401", teMap: false),
+            new(regionId: 1, mapId: 208271, handle: "2-S2-1-226401", teMap: false),
             new(2, 140436, "2-S2-1-226401", false),
             // new(3, 69942, "2-S2-1-226401", false),
             // new(1, 327974, "2-S2-1-226401", true),
@@ -139,7 +139,7 @@ public partial class CrawlerService
         return (int)(DateTime.UtcNow - start).TotalMilliseconds;
     }
 
-    private static int GetWaitTime(HttpResponseMessage response)
+    private static int GetWaitTime_(HttpResponseMessage response)
     {
         int rateLimitRemaining = 0;
         int rateLimitReset = 0;
@@ -164,6 +164,29 @@ public partial class CrawlerService
             return Math.Max(rateLimitReset * 1000, 1000);
         }
     }
+
+    private static int GetWaitTime(HttpResponseMessage response)
+    {
+        if (response.Headers.TryGetValues("x-ratelimit-remaining", out var remainValues)
+            && response.Headers.TryGetValues("x-ratelimit-reset", out var resetValues)
+            && int.TryParse(remainValues.FirstOrDefault(), out int rateLimitRemaining)
+            && int.TryParse(resetValues.FirstOrDefault(), out int rateLimitReset))
+        {
+            if (rateLimitRemaining > 0)
+            {
+                return 0;
+            }
+            else
+            {
+                return rateLimitRemaining * 1000;
+            }
+        }
+        else
+        {
+            return 2000;
+        }
+    }
+
 }
 
 public record CrawlInfo
