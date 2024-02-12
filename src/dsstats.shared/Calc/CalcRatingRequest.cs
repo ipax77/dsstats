@@ -20,16 +20,16 @@ public record CalcRatingRequest
             }.ToFrozenDictionary();
     public FrozenDictionary<PlayerId, bool> SoftBannedPlayers { get; init; } = new Dictionary<PlayerId, bool>()
             {
-                { new PlayerId(4408073, 1, 2), true}, // MemoriLuvLow
-                { new PlayerId(10195430, 1, 2), true }, //HenyaMyWaifu
-                { new PlayerId(5310262, 1, 1), true }, //SunayStinks
-                { new PlayerId(10392393, 1, 2), true }, //EnTaroGura
-                { new PlayerId(12788234, 1, 1), true }, //Amemiya
-                { new PlayerId(9846569, 1, 2), true }, //Zergling
-                { new PlayerId(9207965, 1, 2), true }, //kun
-                { new PlayerId(12967800, 1, 1), true }, //AAAAAAAAAAAA
-                { new PlayerId(1608587, 2, 3), true }, //Amemiya
-                { new PlayerId(10570273, 1, 2), true }, //holymackerel
+                //{ new PlayerId(4408073, 1, 2), true}, // MemoriLuvLow
+                //{ new PlayerId(10195430, 1, 2), true }, //HenyaMyWaifu
+                //{ new PlayerId(5310262, 1, 1), true }, //SunayStinks
+                //{ new PlayerId(10392393, 1, 2), true }, //EnTaroGura
+                //{ new PlayerId(12788234, 1, 1), true }, //Amemiya
+                //{ new PlayerId(9846569, 1, 2), true }, //Zergling
+                //{ new PlayerId(9207965, 1, 2), true }, //kun
+                //{ new PlayerId(12967800, 1, 1), true }, //AAAAAAAAAAAA
+                //{ new PlayerId(1608587, 2, 3), true }, //Amemiya
+                //{ new PlayerId(10570273, 1, 2), true }, //holymackerel
             }.ToFrozenDictionary();
 }
 
