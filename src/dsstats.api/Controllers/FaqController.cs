@@ -12,7 +12,7 @@ namespace dsstats.api.Controllers;
 [Route("api8/v1/[controller]")]
 public class FaqController(IFaqService faqService, IHttpContextAccessor httpContextAccessor)
 {
-    [HttpGet]
+    [HttpPost]
     public async Task<ActionResult<List<FaqDto>>> GetList(FaqRequest request, CancellationToken token = default)
     {
         return await faqService.GetList(request, token);
@@ -26,6 +26,7 @@ public class FaqController(IFaqService faqService, IHttpContextAccessor httpCont
     }
 
     [HttpPost]
+    [Route("create")]
     public async Task<ActionResult<int>> CreateFaq(FaqDto faqDto, string? name)
     {
         return await faqService.CreateFaq(faqDto, name);
@@ -71,7 +72,7 @@ public class FaqController(IFaqService faqService, IHttpContextAccessor httpCont
         }
         else
         {
-            return new OkResult();
+            return new UnauthorizedResult();
         }
     }
 

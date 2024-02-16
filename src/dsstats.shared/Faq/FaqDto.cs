@@ -11,6 +11,7 @@ public record FaqDto
     public string Answer { get; set; } = string.Empty;
     public FaqLevel Level { get; set; }
     public int Upvotes { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
 }
 
 public record FaqListDto

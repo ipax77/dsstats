@@ -1,0 +1,84 @@
+﻿@using Blazored.Toast.Services
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IFaqService faqService
+@inject IToastService toastService
+@implements IDisposable
+
+<div>
+    FAQ
+</div>
+<div>
+    @foreach (var faq in faqs)
+    {
+        <FaqComponent @key="@faq.FaqId" Faq="faq" OnUpvoteRequest="UpvoteRequest" />
+    }
+</div>
+
+@code {
+    [Parameter]
+    public FaqRequest Request { get; set; } = new()
+        {
+            Orders = new()
+        {
+            new()
+            {
+                Property = nameof(FaqDto.Level),
+            },
+            new()
+            {
+                Property = nameof(FaqDto.Question)
+            }
+        },
+            Take = 10
+        };
+
+    private List<FaqDto> faqs = [];
+    bool isLoading = false;
+    private CancellationTokenSource cts = new();
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+
+        faqs = await faqService.GetList(Request, cts.Token);
+
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task UpvoteRequest(int faqId)
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        var response = await faqService.Upvote(faqId, string.Empty);
+        if (response)
+        {
+            toastService.ShowSuccess("Thank you for your upvote!");
+            var faq = faqs.FirstOrDefault(f => f.FaqId == faqId);
+            if (faq is not null)
+            {
+                faq.Upvotes++;
+            }
+        }
+        else
+        {
+            toastService.ShowWarning("☝️ Upvote limit reached today.");
+        }
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}
