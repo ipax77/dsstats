@@ -68,6 +68,7 @@ builder.Services.AddDbContext<ReplayContext>(options =>
     ;
 });
 
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 builder.Services.AddSignalR();
@@ -112,6 +113,7 @@ builder.Services.AddScoped<ITourneysService, TourneysService>();
 builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
+builder.Services.AddScoped<IFaqService, FaqService>();
 
 if (builder.Environment.IsProduction())
 {
