@@ -132,8 +132,8 @@ using var scope = app.Services.CreateScope();
 var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
 mapper.ConfigurationProvider.AssertConfigurationIsValid();
 
-//var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-//context.Database.Migrate();
+var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+context.Database.Migrate();
 
 var uploadSerivce = scope.ServiceProvider.GetRequiredService<UploadService>();
 uploadSerivce.ImportInit();
