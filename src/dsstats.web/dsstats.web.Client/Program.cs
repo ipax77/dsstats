@@ -1,6 +1,8 @@
+using Blazored.Toast;
 using dsstats.apiServices;
 using dsstats.shared.Interfaces;
 using dsstats.web.Client.Services;
+using MathNet.Numerics;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using pax.BlazorChartJs;
 
@@ -22,6 +24,8 @@ builder.Services.AddChartJs(options =>
     options.ChartJsPluginDatalabelsLocation = "/_content/dsstats.razorlib/js/chartjs-plugin-datalabels.js";
 });
 
+builder.Services.AddBlazoredToast();
+
 builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 
 builder.Services.AddScoped<IWinrateService, WinrateService>();
@@ -40,5 +44,6 @@ builder.Services.AddScoped<ITourneysService, TourneysService>();
 builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
+builder.Services.AddScoped<IFaqService, FaqService>();
 
 await builder.Build().RunAsync();

@@ -68,6 +68,7 @@ builder.Services.AddDbContext<ReplayContext>(options =>
     ;
 });
 
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 builder.Services.AddSignalR();
@@ -112,6 +113,7 @@ builder.Services.AddScoped<ITourneysService, TourneysService>();
 builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
+builder.Services.AddScoped<IFaqService, FaqService>();
 
 if (builder.Environment.IsProduction())
 {
@@ -130,8 +132,8 @@ using var scope = app.Services.CreateScope();
 var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
 mapper.ConfigurationProvider.AssertConfigurationIsValid();
 
-//var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-//context.Database.Migrate();
+var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+context.Database.Migrate();
 
 var uploadSerivce = scope.ServiceProvider.GetRequiredService<UploadService>();
 uploadSerivce.ImportInit();
