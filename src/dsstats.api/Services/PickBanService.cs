@@ -74,7 +74,17 @@ public class PickBanService
                 var pick = state.Picks.FirstOrDefault(f => !f.IsLocked && f.Pos == ent.Pos);
                 if (pick != null)
                 {
-                    pick.Commander = ent.Commander;
+                    if (ent.Commander == Commander.None
+                        && state.PickBanMode == PickBanMode.StdRandom)
+                    {
+                        pick.Commander = (Commander)Random.Shared.Next(1, 4);
+                        pick.Random = true;
+                    }
+                    else
+                    {
+                        pick.Commander = ent.Commander;
+                    }
+
                     pick.PlayerName = ent.PlayerName;
                     pick.IsLocked = true;
                     pick.Order = state.Picks
@@ -89,12 +99,9 @@ public class PickBanService
 
     private PickBanState GetPublicPickBanState(PickBanState state)
     {
-        PickBanState publicState = state with { };
+        PickBanState publicState = state with { Bans = [], Picks = [] };
 
-        bool isBansReady = !state.Bans.Any(a => a.Commander == Commander.None);
-        bool isPicksReady = !state.Picks.Any(a => a.Commander == Commander.None);
-
-        if (!isBansReady)
+        if (!state.IsBansReady)
         {
             publicState.Bans = state.Bans.Select(s => s with { Commander = Commander.None }).ToList();
         }
@@ -103,9 +110,11 @@ public class PickBanService
             publicState.Bans = new List<PickBanEnt>(state.Bans);
         }
 
-        if (!isPicksReady)
+        if (!state.IsPicksReady)
         {
-            publicState.Picks = state.Picks.Select(s => s with { Commander = Commander.None, Order = 0, PlayerName = null }).ToList();
+            publicState.Picks = state.Picks.Select(s => s with 
+                { Commander = Commander.None, Random = false, Order = 0, PlayerName = null })
+                .ToList();
         }
         else
         {

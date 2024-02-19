@@ -94,5 +94,9 @@ public class AutoMapperProfile : Profile
 
         CreateMap<DsUnit, DsUnitListDto>(MemberList.Destination);
         CreateMap<DsUnit, DsUnitBuildDto>(MemberList.Destination);
+
+        CreateMap<Faq, FaqDto>(MemberList.Destination);
+        CreateMap<FaqDto, Faq>(MemberList.Source)
+            .ForSourceMember(s => s.FaqId, opt => opt.DoNotValidate());
     }
 }

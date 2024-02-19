@@ -1,3 +1,4 @@
+using Blazored.Toast;
 using dsstats.apiServices;
 using dsstats.shared.Interfaces;
 using dsstats.web.Client.Pages;
@@ -23,6 +24,8 @@ builder.Services.AddChartJs(options =>
     options.ChartJsPluginDatalabelsLocation = "/_content/dsstats.razorlib/js/chartjs-plugin-datalabels.js";
 });
 
+builder.Services.AddBlazoredToast();
+
 builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 
 builder.Services.AddScoped<IWinrateService, WinrateService>();
@@ -41,6 +44,7 @@ builder.Services.AddScoped<ITourneysService, TourneysService>();
 builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
+builder.Services.AddScoped<IFaqService, FaqService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
