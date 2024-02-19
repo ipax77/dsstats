@@ -82,9 +82,7 @@ else
                                     <li class="list-group-item bgchart2">
                                         <div class="d-flex">
                                             <div>
-                                                @(
-                                                    select.Pos + 1
-                                                    )
+                                                @(select.Pos + 1)
                                             </div>
                                             <div class="form-group mx-2">
                                                 @if (select.IsLocked)
@@ -93,7 +91,7 @@ else
                                                         <option value="Commander.None">Ban Cmdr</option>
                                                         @foreach (Commander cmdr in pickBanState.GetOpenCommanders(team))
                                                         {
-                                                            <option value="@cmdr">@cmdr</option>
+                                                            <option value="@cmdr">@(cmdr == Commander.None ? "Random" : cmdr.ToString())</option>
                                                         }
                                                     </select>
                                                 }
@@ -103,7 +101,7 @@ else
                                                         <option value="Commander.None">Ban Cmdr</option>
                                                         @foreach (Commander cmdr in pickBanState.GetOpenCommanders(team))
                                                         {
-                                                            <option value="@cmdr">@cmdr</option>
+                                                            <option value="@cmdr">@(cmdr == Commander.None ? "Random" : cmdr.ToString())</option>
                                                         }
                                                     </select>
                                                 }
@@ -208,14 +206,18 @@ else
                                                     @(teamPos)
                                                 </div>
                                                 <div class="mx-2">
-                                                    @if (select.Commander != Commander.None)
+                                                    @if (select.Commander == Commander.None && !select.Random)
                                                     {
-                                                        <img src="@HelperService.GetImageSrc(select.Commander)" width="30" height="30" />
-                                                        <span class="ms-2">@select.Commander</span>
+                                                        <span class="bi bi-question-lg"></span>
                                                     }
                                                     else
                                                     {
-                                                        <span class="bi bi-question-lg"></span>
+                                                        @if(select.Random)
+                                                        {
+                                                            <i class="bi bi-dice-@((int)select.Commander) text-warning"></i>
+                                                        }
+                                                        <img src="@HelperService.GetImageSrc(select.Commander)" width="30" height="30" />
+                                                        <span class="ms-2">@select.Commander</span>
                                                     }
                                                 </div>
 
@@ -227,21 +229,22 @@ else
                                         <li class="list-group-item bgchart2">
                                             <div class="d-flex">
                                                 <div>
-                                                    @(
-                                                        teamPos
-                                                        )
+                                                    @(teamPos)
                                                 </div>
                                                 <div class="form-group mx-2">
                                                     <select class="form-select" @bind="select.Commander">
-                                                        <option value="@Commander.None">Pick Cmdr</option>
+                                                        @if (pickBanState.PickBanMode != PickBanMode.StdRandom)
+                                                        {
+                                                            <option value="@Commander.None">Pick Cmdr</option>
+                                                        }
                                                         @foreach (Commander cmdr in pickBanState.GetOpenCommanders(team))
                                                         {
-                                                            <option value="@cmdr">@cmdr.ToString()</option>
+                                                            <option value="@cmdr">@(cmdr == Commander.None ? "Random" : cmdr.ToString())</option>
                                                         }
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    @if (select.Commander == Commander.None || select.IsLocked)
+                                                    @if ((pickBanState.PickBanMode != PickBanMode.StdRandom && select.Commander == Commander.None) || select.IsLocked)
                                                     {
                                                         <button type="button" disabled class="btn btn-danger">Lock</button>
                                                     }
@@ -288,7 +291,7 @@ else
     {
         pickBanState = new(PickBanSetting.PickBanMode);
 
-        var uri = httpClient.BaseAddress ?? new Uri("https://dsstats-dev.pax77.org");
+        var uri = httpClient.BaseAddress ?? new Uri("https://dsstats.pax77.org");
         uri = new Uri(uri, "/hubs/pickban");
 
         hubConnection = new HubConnectionBuilder()
@@ -298,13 +301,13 @@ else
         hubConnection.On<int>("VisitorJoined", (count) =>
         {
             pickBanState.Visitors = count;
-            StateHasChanged();
+            InvokeAsync(() => StateHasChanged());
         });
 
         hubConnection.On<int>("VisitorLeft", (count) =>
         {
             pickBanState.Visitors = count;
-            StateHasChanged();
+            InvokeAsync(() => StateHasChanged());
         });
 
         hubConnection.On<int>("CmdrBaned", (pb) =>
@@ -313,7 +316,7 @@ else
             if (pick != null)
             {
                 pick.IsLocked = true;
-                StateHasChanged();
+                InvokeAsync(() => StateHasChanged());
             }
         });
 
@@ -323,14 +326,14 @@ else
             if (pick != null)
             {
                 pick.IsLocked = true;
-                StateHasChanged();
+                InvokeAsync(() => StateHasChanged());
             }
         });
 
         hubConnection.On<PickBanState>("ConnectInfo", (pb) =>
         {
             pickBanState = pb;
-            StateHasChanged();
+            InvokeAsync(() => StateHasChanged());
         });
 
         await hubConnection.StartAsync();
@@ -345,7 +348,7 @@ else
         {
             ent.IsLocked = true;
             await hubConnection.SendAsync("Ban", ent);
-            StateHasChanged();
+            await InvokeAsync(() => StateHasChanged());
         }
     }
 
@@ -356,7 +359,7 @@ else
         {
             ent.IsLocked = true;
             await hubConnection.SendAsync("Lock", ent);
-            StateHasChanged();
+            await InvokeAsync(() => StateHasChanged());
         }
     }
 
@@ -375,7 +378,7 @@ else
                 ent.Commander = Commander.Protoss;
                 ent.IsLocked = true;
                 await hubConnection.SendAsync("Lock", ent);
-                StateHasChanged();
+                await InvokeAsync(() => StateHasChanged());
             }
         }
     }
