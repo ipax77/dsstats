@@ -43,14 +43,15 @@ public class FaqService(HttpClient httpCLient, ILogger<FaqService> logger) : IFa
     {
         try
         {
-            var response = await httpCLient.GetAsync($"{faqController}/count");
-            return await response.Content.ReadFromJsonAsync<int>();
+            var response = await httpCLient.PostAsJsonAsync($"{faqController}/count", request, token);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<int>(token);
         }
         catch (Exception ex)
         {
             logger.LogError("Failed getting FAQ count: {error}", ex.Message);
-            throw;
         }
+        return 0;
     }
 
     public async Task<List<FaqDto>> GetList(FaqRequest request, CancellationToken token = default)
@@ -64,8 +65,8 @@ public class FaqService(HttpClient httpCLient, ILogger<FaqService> logger) : IFa
         catch (Exception ex)
         {
             logger.LogError("Failed getting FAQ list: {error}", ex.Message);
-            throw;
         }
+        return [];
     }
 
     public async Task<bool> UpdateFaq(FaqDto faqDto, string? name)

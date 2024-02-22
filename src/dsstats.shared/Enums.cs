@@ -192,7 +192,7 @@ public enum UnitColor
 public enum FaqLevel
 {
     None = 0,
-    Beginner = 1,
+    Basic = 1,
     Intermediate = 2,
     Advanced = 3
 }
