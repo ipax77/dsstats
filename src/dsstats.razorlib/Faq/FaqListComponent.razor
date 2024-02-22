@@ -80,14 +80,17 @@
             new()
             {
                 Property = nameof(FaqDto.Level),
+                Ascending = true
             },
             new()
             {
                 Property = nameof(FaqDto.Upvotes),
+                Ascending = false
             },
             new()
             {
-                Property = nameof(FaqDto.Question)
+                Property = nameof(FaqDto.Question),
+                Ascending = true
             }
         },
             Take = 20
