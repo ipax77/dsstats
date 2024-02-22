@@ -17,7 +17,7 @@ public class FaqController(IFaqService faqService, IHttpContextAccessor httpCont
         return await faqService.GetList(request, token);
     }
 
-    [HttpGet]
+    [HttpPost]
     [Route("count")]
     public async Task<ActionResult<int>> GetCount(FaqRequest request)
     {

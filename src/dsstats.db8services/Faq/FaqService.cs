@@ -59,6 +59,7 @@ public class FaqService(ReplayContext context, IMapper mapper, IMemoryCache memo
         if (!hasOrders)
         {
             faqs = faqs.OrderBy(o => o.Level)
+                .ThenBy(o => o.Upvotes)
                 .ThenBy(o => o.Question);
         }
 
