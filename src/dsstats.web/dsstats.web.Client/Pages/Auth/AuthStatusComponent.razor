@@ -1,0 +1,68 @@
+﻿@using System.Web
+@using dsstats.web.Client.Services
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<div class="bgchart p-2">
+    <div class="d-flex flex-row-reverse">
+        <AuthorizeView>
+            <Authorized>
+                <div class="ms-4">
+                    <button type="button" class="btn btn-outline-light" @onclick="Logout">Logout</button>
+                </div>
+                <div class="align-self-center">
+                    <span>Hello, @context.User.Identity?.Name</span>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="align-self-center ms-2">
+                    <button type="button" class="btn btn-outline-light" @onclick="Login">Login</button>
+                </div>
+                <div class="align-self-center text-danger">
+                    <span>Not Authorized</span>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string RedirectUrl { get; set; } = string.Empty;
+
+    AuthenticationState? authState = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        if (!authState.User.Identity?.IsAuthenticated ?? true)
+        {
+            if (AuthenticationStateProvider is ExternalAuthStateProvider externalAuthStateProvider
+                && !await externalAuthStateProvider.TryLoginFromStore())
+            {
+                NavigationManager.NavigateTo($"login?RedirectUrl={GetRedirectUrl()}");
+            }
+        }
+
+        await base.OnInitializedAsync();
+    }
+
+    private void Logout()
+    {
+        if (AuthenticationStateProvider is ExternalAuthStateProvider externalAuthStateProvider)
+        {
+            externalAuthStateProvider.Logout();
+        }
+    }
+
+    private void Login()
+    {
+        NavigationManager.NavigateTo($"login?RedirectUrl={GetRedirectUrl()}");
+    }
+
+    private string GetRedirectUrl()
+    {
+        return HttpUtility.UrlEncode(RedirectUrl);
+    }
+}

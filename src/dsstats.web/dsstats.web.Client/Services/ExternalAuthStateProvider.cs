@@ -21,44 +21,88 @@ public class ExternalAuthStateProvider(HttpClient httpClient,
 
     public ErrorResponse? ErrorResponse { get; set; }
 
+    public async Task<bool> TryLoginFromStore()
+    {
+        UserInfo? _userInfo = null;
+        bool success = false;
+
+        try
+        {
+            if (await localStorage.ContainKeyAsync("dsuser"))
+            {
+                _userInfo = await localStorage.GetItemAsync<UserInfo>("dsuser");
+                ArgumentNullException.ThrowIfNull(_userInfo);
+                userInfo = _userInfo;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("try login failed: {error}", ex.Message);
+        }
+
+        if (userInfo is not null)
+        {
+            List<Claim> claims = new()
+                {
+                    new Claim(ClaimTypes.Name, userInfo.Username),
+                    new Claim(ClaimTypes.Email, userInfo.Username)
+                };
+
+            var identity = new ClaimsIdentity(claims, "custom", ClaimsIdentity.DefaultNameClaimType, ClaimsIdentity.DefaultRoleClaimType);
+            currentUser = new ClaimsPrincipal(identity);
+            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+            success = true;
+        }
+
+        return success;
+    }
+
     public Task TryLogin()
     {
-        var loginTask = LogInFromStoreAsync();
-        NotifyAuthenticationStateChanged(loginTask);
-
-        return loginTask;
-
-        async Task<AuthenticationState> LogInFromStoreAsync()
+        try
         {
-            UserInfo? _userInfo = null;
-            try
+            var loginTask = LogInFromStoreAsync();
+            NotifyAuthenticationStateChanged(loginTask);
+
+            return loginTask;
+
+            async Task<AuthenticationState> LogInFromStoreAsync()
             {
-                if (await localStorage.ContainKeyAsync("dsuser"))
+                UserInfo? _userInfo = null;
+                try
                 {
-                    _userInfo = await localStorage.GetItemAsync<UserInfo>("dsuser");
-                    ArgumentNullException.ThrowIfNull(_userInfo);
-                    userInfo = _userInfo;
+                    if (await localStorage.ContainKeyAsync("dsuser"))
+                    {
+                        _userInfo = await localStorage.GetItemAsync<UserInfo>("dsuser");
+                        ArgumentNullException.ThrowIfNull(_userInfo);
+                        userInfo = _userInfo;
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError("try login failed: {error}", ex.Message);
-            }
+                catch (Exception ex)
+                {
+                    logger.LogError("try login failed: {error}", ex.Message);
+                }
 
-            if (userInfo is not null)
-            {
-                List<Claim> claims = new()
-                        {
-                            new Claim(ClaimTypes.Name, userInfo.Username),
-                            new Claim(ClaimTypes.Email, userInfo.Username)
-                        };
+                if (userInfo is not null)
+                {
+                    List<Claim> claims = new()
+                {
+                    new Claim(ClaimTypes.Name, userInfo.Username),
+                    new Claim(ClaimTypes.Email, userInfo.Username)
+                };
 
-                var identity = new ClaimsIdentity(claims, "custom", ClaimsIdentity.DefaultNameClaimType, ClaimsIdentity.DefaultRoleClaimType);
-                currentUser = new ClaimsPrincipal(identity);
+                    var identity = new ClaimsIdentity(claims, "custom", ClaimsIdentity.DefaultNameClaimType, ClaimsIdentity.DefaultRoleClaimType);
+                    currentUser = new ClaimsPrincipal(identity);
+                }
+
+                return new AuthenticationState(currentUser);
             }
-
-            return new AuthenticationState(currentUser);
         }
+        catch (Exception ex)
+        {
+            logger.LogError("try login failed: {error}", ex.Message);
+        }
+        return Task.CompletedTask;
     }
 
     public Task LogInAsync(string email, string password, bool remember = false)
@@ -80,17 +124,29 @@ public class ExternalAuthStateProvider(HttpClient httpClient,
     private async Task<ClaimsPrincipal> LoginWithExternalProviderAsync(string email, string password, bool remember)
     {
         TokenResponse? tokenResponse = null;
+        HttpResponseMessage? response = null;
         try
         {
-            var result = await httpClient.PostAsJsonAsync("account/login", new { email = email, password = password });
-            result.EnsureSuccessStatusCode();
-            tokenResponse = await result.Content.ReadFromJsonAsync<TokenResponse>();
+            response = await httpClient.PostAsJsonAsync("account/login", new { email = email, password = password });
+            response.EnsureSuccessStatusCode();
+            tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
             ArgumentNullException.ThrowIfNull(tokenResponse);
+            ErrorResponse = null;
         }
         catch (Exception ex)
         {
             logger.LogError("login failed: {error}", ex.Message);
-            // todo: error response
+
+            if (response is not null)
+            {
+                try
+                {
+                    var errorResponse = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                    ErrorResponse = errorResponse;
+                }
+                finally { }
+            }
+
             return currentUser;
         }
         finally
@@ -233,6 +289,26 @@ public class ExternalAuthStateProvider(HttpClient httpClient,
         }
 
         return httpClient;
+    }
+
+    public bool TryGetApiHttpClient(out HttpClient? httpClient)
+    {
+        if (userInfo is not null && !userInfo.IsValid())
+        {
+            RefreshToken().Wait();
+        }
+
+        if (userInfo?.IsValid() ?? false)
+        {
+            httpClient = httpClientFactory.CreateClient("AuthAPI");
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", userInfo.TokenResponse.AccessToken);
+            return true;
+        }
+        else
+        {
+            httpClient = null;
+            return false;
+        }
     }
 }
 

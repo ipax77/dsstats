@@ -28,17 +28,17 @@ public class AuthService(HttpClient httpClient, ILogger<AuthService> logger) : I
                 }
                 else
                 {
-                    return new RegisterFailedResponse() { Error = new() { Status = 400, Details = "Register failed." } };
+                    return new RegisterFailedResponse() { Error = new() { Status = 400, Detail = "Register failed." } };
                 }
             }
             else
             {
-                return new RegisterFailedResponse() { Error = new() { Status = (int)response.StatusCode, Details = "Register failed." } };
+                return new RegisterFailedResponse() { Error = new() { Status = (int)response.StatusCode, Detail = "Register failed." } };
             }
         }
         catch (Exception ex)
         {
-            return new RegisterFailedResponse() { Error = new() { Status = 500, Details = ex.Message } };
+            return new RegisterFailedResponse() { Error = new() { Status = 500, Detail = ex.Message } };
         }
     }
 
@@ -119,17 +119,17 @@ public class AuthService(HttpClient httpClient, ILogger<AuthService> logger) : I
                 }
                 else
                 {
-                    return new ForgotPasswordFailedResponse() { Error = new() { Status = 400, Details = "Error was null." } };
+                    return new ForgotPasswordFailedResponse() { Error = new() { Status = 400, Detail = "Error was null." } };
                 }
             }
             else
             {
-                return new ForgotPasswordFailedResponse() { Error = new() { Status = (int)response.StatusCode, Details = "ForgotPassword failed." } };
+                return new ForgotPasswordFailedResponse() { Error = new() { Status = (int)response.StatusCode, Detail = "ForgotPassword failed." } };
             }
         }
         catch (Exception ex)
         {
-            return new ForgotPasswordFailedResponse() { Error = new() { Status = 500, Details = ex.Message } };
+            return new ForgotPasswordFailedResponse() { Error = new() { Status = 500, Detail = ex.Message } };
         }
     }
 
@@ -151,17 +151,17 @@ public class AuthService(HttpClient httpClient, ILogger<AuthService> logger) : I
                 }
                 else
                 {
-                    return new ForgotPasswordFailedResponse() { Error = new() { Status = 400, Details = "Error was null." } };
+                    return new ForgotPasswordFailedResponse() { Error = new() { Status = 400, Detail = "Error was null." } };
                 }
             }
             else
             {
-                return new ForgotPasswordFailedResponse() { Error = new() { Status = (int)response.StatusCode, Details = "Reset password failed." } };
+                return new ForgotPasswordFailedResponse() { Error = new() { Status = (int)response.StatusCode, Detail = "Reset password failed." } };
             }
         }
         catch (Exception ex)
         {
-            return new ForgotPasswordFailedResponse() { Error = new() { Status = 500, Details = ex.Message } };
+            return new ForgotPasswordFailedResponse() { Error = new() { Status = 500, Detail = ex.Message } };
         }
     }
 
@@ -179,7 +179,7 @@ public class AuthService(HttpClient httpClient, ILogger<AuthService> logger) : I
                 }
                 else
                 {
-                    return new ManageInfoFailedResponse() { Error = new() { Status = 500, Details = "Manage result was null." } };
+                    return new ManageInfoFailedResponse() { Error = new() { Status = 500, Detail = "Manage result was null." } };
                 }
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
@@ -191,17 +191,17 @@ public class AuthService(HttpClient httpClient, ILogger<AuthService> logger) : I
                 }
                 else
                 {
-                    return new ManageInfoFailedResponse { Error = new() { Status = 400, Details = "Manage info failed." } };
+                    return new ManageInfoFailedResponse { Error = new() { Status = 400, Detail = "Manage info failed." } };
                 }
             }
             else
             {
-                return new ManageInfoFailedResponse { Error = new() { Status = (int)response.StatusCode, Details = "Manage info failed." } };
+                return new ManageInfoFailedResponse { Error = new() { Status = (int)response.StatusCode, Detail = "Manage info failed." } };
             }
         }
         catch (Exception ex)
         {
-            return new ManageInfoFailedResponse() { Error = new() { Status = 500, Details = ex.Message } };
+            return new ManageInfoFailedResponse() { Error = new() { Status = 500, Detail = ex.Message } };
         }
     }
 }
