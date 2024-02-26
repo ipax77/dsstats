@@ -98,9 +98,26 @@ builder.Services.AddAuthentication(BearerTokenDefaults.AuthenticationScheme)
     {
         options.Validate();
     });
+builder.Services.AddAuthorizationBuilder();
 
-builder.Services.AddAuthorization();
-    
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(DsPolicy.TourneyManager,
+        policy => policy.RequireRole(["Admin", "Tourney"]));
+    options.AddPolicy(DsPolicy.Admin,
+        policy => policy.RequireRole("Admin"));
+});
+
+//builder.Services.AddIdentityCore<DsUser>(options =>
+//    {
+//        options.User.RequireUniqueEmail = true;
+//        options.SignIn.RequireConfirmedEmail = true;
+//    })
+//    .AddRoles<IdentityRole>()
+//    // .AddClaimsPrincipalFactory<DsClaimsFactory>()
+//    .AddEntityFrameworkStores<DsAuthContext>()
+//    .AddApiEndpoints();
+
 builder.Services
     .AddIdentityApiEndpoints<DsUser>(options =>
     {
@@ -110,15 +127,6 @@ builder.Services
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<DsAuthContext>();
-
-//builder.Services.AddIdentityCore<DsUser>(options =>
-//{
-//    options.User.RequireUniqueEmail = true;
-//    options.SignIn.RequireConfirmedEmail = true;
-//})
-//    .AddEntityFrameworkStores<DsAuthContext>()
-//    //.AddRoles<DsRole>()
-//    .AddApiEndpoints();
 
 builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
@@ -144,6 +152,8 @@ builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddSingleton<AuthenticationFilterAttributeV6>();
 builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 builder.Services.AddSingleton<DsUnitRepository>();
+
+builder.Services.AddScoped<UserRepository>();
 
 builder.Services.AddScoped<CrawlerService>();
 builder.Services.AddScoped<IWinrateService, WinrateService>();
@@ -202,8 +212,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    //var emailSerivice = scope.ServiceProvider.GetRequiredService<EMailService>();
-    //emailSerivice.SendEmail("ph.ilipp@web.de", "test", "und es war Sommer").Wait();
+    var userRepository = scope.ServiceProvider.GetRequiredService<UserRepository>();
+    userRepository.Seed().Wait();
 }
 
 // app.UseHttpsRedirection();

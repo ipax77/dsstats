@@ -12,8 +12,15 @@
 
 <AuthorizeView>
     <Authorized>
+        <div>
+            <button type="button" class="btn btn-primary" @onclick="LoadTourneyData">Load Tourney Data</button>
+            <button type="button" class="btn btn-primary" @onclick="CheckRole">CheckRole</button>
+        </div>
+
         <p>under construction</p>
         <p>@data</p>
+        <p>@tourneyData</p>
+        <p>@isInRole</p>
     </Authorized>
     <NotAuthorized>
         <p>NotAuthorized</p>
@@ -22,6 +29,8 @@
 
 @code {
     string data = string.Empty;
+    string tourneyData = string.Empty;
+    string isInRole = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -55,6 +64,57 @@
             {
                 logger.LogError("failed getting data: {error}", ex.Message);
                 data = ex.Message;
+            }
+        }
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task LoadTourneyData()
+    {
+        if (AuthenticationStateProvider is ExternalAuthStateProvider externalAuthStateProvider)
+        {
+            try
+            {
+                if (externalAuthStateProvider.TryGetApiHttpClient(out var httpClient)
+                    && httpClient is not null)
+                {
+                    var controller = "api8/v1/ManageTourney";
+
+                    var response = await httpClient.GetAsync($"{controller}/test3");
+                    response.EnsureSuccessStatusCode();
+                    tourneyData = await response.Content.ReadAsStringAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError("failed getting data: {error}", ex.Message);
+                tourneyData = ex.Message;
+            }
+        }
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task CheckRole()
+    {
+        if (AuthenticationStateProvider is ExternalAuthStateProvider externalAuthStateProvider)
+        {
+            try
+            {
+                if (externalAuthStateProvider.TryGetApiHttpClient(out var httpClient)
+                    && httpClient is not null)
+                {
+                    var controller = "api8/v1/dsuser";
+
+                    var response = await httpClient.GetAsync($"{controller}/isinrole/Admin");
+                    response.EnsureSuccessStatusCode();
+                    var result = await response.Content.ReadFromJsonAsync<bool>();
+                    isInRole = result.ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError("failed getting data: {error}", ex.Message);
+                tourneyData = ex.Message;
             }
         }
         await InvokeAsync(() => StateHasChanged());

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using dsstats.api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace dsstats.api.Controllers;
@@ -22,5 +23,13 @@ public class ManageTourneyController
     public string Test2()
     {
         return "Und es war Winter";
+    }
+
+    [HttpGet]
+    [Route("test3")]
+    [Authorize(Policy = DsPolicy.TourneyManager)]
+    public string Test3()
+    {
+        return "Und es war Herbst";
     }
 }

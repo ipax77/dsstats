@@ -249,48 +249,6 @@ public class ExternalAuthStateProvider(HttpClient httpClient,
         }
     }
 
-    public async Task<ErrorResponse> ForgotPassword(string email)
-    {
-        try
-        {
-            var result = await httpClient.PostAsJsonAsync("account/forgotpassword", new { email = email });
-            if (result.IsSuccessStatusCode)
-            {
-                return new() { Type = "ForgotPassword", Status = 200 };
-            }
-            else if (result.StatusCode == System.Net.HttpStatusCode.BadRequest)
-            {
-                var content = await result.Content.ReadFromJsonAsync<ErrorResponse>();
-                if (content is not null)
-                {
-                    return content;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogError("Forgot password failed: {error}", ex.Message);
-        }
-        return new() { Status = 400 };
-    }
-
-    public async Task<HttpClient> GetApiHttpClient()
-    {
-        var httpClient = httpClientFactory.CreateClient("AuthAPI");
-
-        if (userInfo is not null && !userInfo.IsValid())
-        {
-            await RefreshToken();
-        }
-
-        if (userInfo?.IsValid() ?? false)
-        {
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", userInfo.TokenResponse.AccessToken);
-        }
-
-        return httpClient;
-    }
-
     public bool TryGetApiHttpClient(out HttpClient? httpClient)
     {
         if (userInfo is not null && !userInfo.IsValid())
