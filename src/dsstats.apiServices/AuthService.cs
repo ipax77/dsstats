@@ -133,7 +133,7 @@ public class AuthService(HttpClient httpClient, ILogger<AuthService> logger) : I
         }
     }
 
-    public async Task<IForgotPasswordResponse> ResetPassword(ResetPaylaod reset)
+    public async Task<IForgotPasswordResponse> ResetPassword(ResetPayload reset)
     {
         try
         {

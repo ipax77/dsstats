@@ -1,4 +1,4 @@
-﻿@page "/login"
+﻿@page "/auth/login"
 
 @using dsstats.web.Client.Services
 
@@ -13,6 +13,7 @@
 
 <div class="container">
     <div class="bgchart p-2 rounded" style="min-width: 400px; max-width: 600px;">
+        <h3>Login</h3>
         <div>
             <EditForm EditContext="editContext" FormName="loginform" OnValidSubmit="Login">
                 <DataAnnotationsValidator />
@@ -50,10 +51,11 @@
                 @if (externalAuthStateProvider.ErrorResponse.Status != 200)
                 {
                     <h4 class="text-danger">Login failed.</h4>
+                    <p>@externalAuthStateProvider.ErrorResponse.Detail</p>
                 }
                 else
                 {
-                    <h4 class="text-danger">@externalAuthStateProvider.ErrorResponse.Detail</h4>
+                    <h4 class="text-success">Login successful.</h4>
                 }
             </div>
         }

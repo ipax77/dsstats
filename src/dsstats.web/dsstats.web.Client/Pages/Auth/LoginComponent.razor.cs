@@ -15,6 +15,7 @@ public partial class LoginComponent : ComponentBase, IDisposable
     [Inject]
     private NavigationManager NavigationManager { get; set; } = default!;
 
+
     [SupplyParameterFromQuery]
     public string? RedirectUrl { get; set; }
 
@@ -58,32 +59,19 @@ public partial class LoginComponent : ComponentBase, IDisposable
           .LogInAsync(loginData.Email, loginData.Password, loginData.Remember);
     }
 
-    private async Task ForgotPassword()
+    private void ForgotPassword()
     {
-        if (!editContext.Validate())
-        {
-            return;
-        }
-
-        var errorResponse = await ((ExternalAuthStateProvider)AuthenticationStateProvider)
-            .ForgotPassword(loginData.Email);
-        
-        if (errorResponse.Status == 200)
-        {
-        }
-        else
-        {
-        }
+        NavigationManager.NavigateTo("auth/reset");
     }
 
     private void RegisterNew()
     {
-
+        NavigationManager.NavigateTo("auth/register");
     }
 
     private void ResendEmail()
     {
-
+        NavigationManager.NavigateTo("auth/resendemail");
     }
 
     internal record LoginData

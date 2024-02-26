@@ -9,7 +9,7 @@ public interface IAuthService
     Task<ILoginResponse> Refresh(string refreshToken);
     Task<IRegisterResponse> Register(RegisterPayload register);
     Task<bool> ResendConfirmationEmail(string email);
-    Task<IForgotPasswordResponse> ResetPassword(ResetPaylaod reset);
+    Task<IForgotPasswordResponse> ResetPassword(ResetPayload reset);
 }
 
 public interface ILoginResponse { }

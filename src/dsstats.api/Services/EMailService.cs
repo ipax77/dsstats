@@ -37,7 +37,7 @@ public class EmailSender(IOptions<EMailOptions> options, ILogger<EmailSender> lo
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress("dsstats", options.Value.Email));
         message.To.Add(new MailboxAddress(email, email));
-        message.Subject = subject;
+        message.Subject = "dsstats - " + subject;
         // message.Body = new TextPart("plain") { Text = htmlMessage };
         message.Body = new TextPart("html") { Text = htmlMessage };
 
