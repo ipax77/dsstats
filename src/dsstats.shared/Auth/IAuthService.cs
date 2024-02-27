@@ -10,6 +10,12 @@ public interface IAuthService
     Task<IRegisterResponse> Register(RegisterPayload register);
     Task<bool> ResendConfirmationEmail(string email);
     Task<IForgotPasswordResponse> ResetPassword(ResetPayload reset);
+    Task<bool> IsUserInRole(string role);
+    Task<bool> RequestNewEmail(string newEmail);
+    Task<bool> ChangeEmail(string newEmail, string token);
+    Task<bool> ChangeUserName(string newName);
+    Task<bool> Delete();
+
 }
 
 public interface ILoginResponse { }

@@ -1,6 +1,7 @@
-//v1.10
+//v1.11
 
 const cmdrIconsMap = new Map();
+let dsmodal = null;
 
 function delay(time) {
     return new Promise(resolve => setTimeout(resolve, time));
@@ -363,10 +364,16 @@ function openModalById(id) {
 
 
 function closeModalById(id) {
-    if (dsmodal) {
+    if (dsmodal !== undefined && dsmodal !== null) {
         dsmodal.hide();
+        dsmodal = null;
+    } else {
+        const myModal = bootstrap.Modal.getInstance(document.getElementById(id));
+        myModal.hide();
     }
 }
+
+
 
 function toggleButton(buttonId, elementId) {
     var button = document.getElementById(buttonId);

@@ -6,7 +6,7 @@ namespace dsstats.apiServices;
 
 
 
-public class AuthService(HttpClient httpClient, ILogger<AuthService> logger) : IAuthService
+public partial class AuthService(HttpClient httpClient, ILogger<AuthService> logger) : IAuthService
 {
     private readonly string authController = "/account";
 

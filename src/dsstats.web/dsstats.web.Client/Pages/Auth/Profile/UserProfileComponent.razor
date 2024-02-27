@@ -1,0 +1,93 @@
+﻿@page "/auth/profile"
+@using dsstats.shared.Auth
+@using dsstats.web.Client.Services
+
+@inject IAuthService authService
+@inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider authStateProvider
+
+<AuthStatusComponent RedirectUrl="/auth/profile"></AuthStatusComponent>
+
+<div class="container">
+    <AuthorizeView>
+        <Authorized>
+            <div style="max-width: 600px;">
+                <ul class="list-group">
+                    <li class="list-group-item">
+                        <button type="button" class="btn btn-primary">Change UserName</button>
+                    </li>
+                    <li class="list-group-item">
+                        <button type="button" class="btn btn-primary">Change Email</button>
+                    </li>
+                    <li class="list-group-item">
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            Delete Profile
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="deleteModalLabel">Delete Profile</h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            Deleting your profile deletes all data and cannot be undone. Are you sure you want to continue?
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-danger" @onclick="DeleteProfile">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <p>Please login to edit your profile.</p>
+        </NotAuthorized>
+    </AuthorizeView>
+    <div>
+        @if (!string.IsNullOrEmpty(result))
+        {
+            <p class="@($"{(success ? "text-success" : "text-danger")}")">
+                @result
+            </p>
+        }
+    </div>
+</div>
+
+@code {
+    bool isLoading = false;
+    string result = string.Empty;
+    bool success = false;
+
+    private async Task DeleteProfile()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+
+        // var authResult = await authService.Delete();
+        var authResult = true;
+        if (authResult)
+        {
+            if (authStateProvider is ExternalAuthStateProvider extAuthStateProvider)
+            {
+                extAuthStateProvider.Logout();
+            }
+            success = true;
+            result = "Profile successfully deleted.";
+        }
+        else
+        {
+            success = false;
+            result = "Deleting the profile failed. Please try again later.";
+        }
+
+        await JSRuntime.InvokeVoidAsync("closeModalById", "deleteModal");
+
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+}
