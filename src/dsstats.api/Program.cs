@@ -1,7 +1,8 @@
 using AutoMapper;
 using dsstats.api;
-using dsstats.api.AuthContext;
 using dsstats.api.Services;
+using dsstats.auth;
+using dsstats.auth.Services;
 using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
@@ -10,14 +11,13 @@ using dsstats.db8services.Import;
 using dsstats.ratings;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
-using Microsoft.AspNetCore.Authentication.BearerToken;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services.Arcade;
+using System.Configuration;
+using System.Drawing.Text;
 using System.Threading.RateLimiting;
 
 var MyAllowSpecificOrigins = "dsstatsOrigin";
@@ -55,18 +55,11 @@ var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 44));
 var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
 var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"];
 var authConnectionString = builder.Configuration["ServerConfig:DsAuthConnectionString"];
+var userRolesConfig = builder.Configuration.GetSection("ServerConfig:Auth:UserRoles");
+var userRoles = userRolesConfig.Get<Dictionary<string, List<string>>>();
 
 builder.Services.AddOptions<DbImportOptions>()
     .Configure(x => x.ImportConnectionString = importConnectionString ?? "");
-
-builder.Services.AddOptions<EMailOptions>()
-    .Configure(x =>
-    {
-        x.Email = builder.Configuration["ServerConfig:EMail:email"] ?? "";
-        x.Smtp = builder.Configuration["ServerConfig:EMail:smtp"] ?? "";
-        x.Port = int.Parse(builder.Configuration["ServerConfig:EMail:port"] ?? "");
-        x.Password = builder.Configuration["ServerConfig:EMail:auth"] ?? "";
-    });
 
 builder.Services.AddDbContext<ReplayContext>(options =>
 {
@@ -82,51 +75,17 @@ builder.Services.AddDbContext<ReplayContext>(options =>
     ;
 });
 
-builder.Services.AddDbContext<DsAuthContext>(options =>
+
+
+builder.Services.AddDsstatsAuth(options =>
 {
-    options.UseMySql(authConnectionString, serverVersion, p =>
-    {
-        p.CommandTimeout(30);
-        p.EnableRetryOnFailure();
-        p.MigrationsAssembly("dsstats.api");
-        p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
-    });
+    options.AuthConnectionString = authConnectionString ?? string.Empty;
+    options.Email = builder.Configuration["ServerConfig:EMail:email"] ?? "";
+    options.Smtp = builder.Configuration["ServerConfig:EMail:smtp"] ?? "";
+    options.Port = int.Parse(builder.Configuration["ServerConfig:EMail:port"] ?? "");
+    options.Password = builder.Configuration["ServerConfig:EMail:auth"] ?? "";
+    options.UserRoles = userRoles ?? [];
 });
-
-builder.Services.AddAuthentication(BearerTokenDefaults.AuthenticationScheme)
-    .AddBearerToken(options =>
-    {
-        options.Validate();
-    });
-builder.Services.AddAuthorizationBuilder();
-
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy(DsPolicy.TourneyManager,
-        policy => policy.RequireRole(["Admin", "Tourney"]));
-    options.AddPolicy(DsPolicy.Admin,
-        policy => policy.RequireRole("Admin"));
-});
-
-//builder.Services.AddIdentityCore<DsUser>(options =>
-//    {
-//        options.User.RequireUniqueEmail = true;
-//        options.SignIn.RequireConfirmedEmail = true;
-//    })
-//    .AddRoles<IdentityRole>()
-//    // .AddClaimsPrincipalFactory<DsClaimsFactory>()
-//    .AddEntityFrameworkStores<DsAuthContext>()
-//    .AddApiEndpoints();
-
-builder.Services
-    .AddIdentityApiEndpoints<DsUser>(options =>
-    {
-        options.User.RequireUniqueEmail = true;
-        options.SignIn.RequireConfirmedEmail = true;
-        // options.Stores.ProtectPersonalData = true; 
-    })
-    .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<DsAuthContext>();
 
 builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
@@ -153,8 +112,6 @@ builder.Services.AddSingleton<AuthenticationFilterAttributeV6>();
 builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 builder.Services.AddSingleton<DsUnitRepository>();
 
-builder.Services.AddScoped<UserRepository>();
-
 builder.Services.AddScoped<CrawlerService>();
 builder.Services.AddScoped<IWinrateService, WinrateService>();
 builder.Services.AddScoped<ITimelineService, TimelineService>();
@@ -176,7 +133,6 @@ builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
 
 //builder.Services.AddScoped<EMailService>();
-builder.Services.AddTransient<IEmailSender, EmailSender>();
 
 if (builder.Environment.IsProduction())
 {

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace dsstats.api.Migrations
+namespace dsstats.auth
 {
     /// <inheritdoc />
     public partial class Init : Migration

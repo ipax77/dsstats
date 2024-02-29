@@ -1,10 +1,11 @@
-﻿using dsstats.api.AuthContext;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Security.Claims;
-using System.Security.Cryptography.X509Certificates;
 
-namespace dsstats.api.Services;
+namespace dsstats.auth.Services;
 
 public static class DsPolicy
 {
@@ -14,7 +15,7 @@ public static class DsPolicy
 
 public class UserRepository(RoleManager<IdentityRole> roleManager,
                             UserManager<DsUser> userManager,
-                            IConfiguration configuration,
+                            IOptions<DsstatsAuthOptions> authOptions,
                             IEmailSender emailSender,
                             ILogger<UserRepository> logger)
 {
@@ -39,7 +40,7 @@ public class UserRepository(RoleManager<IdentityRole> roleManager,
 
     private async Task SeedUserRoles()
     {
-        var userRoles = GetUserRoles();
+        var userRoles = authOptions.Value.UserRoles;
         foreach (var ent in userRoles)
         {
             var user = await userManager.FindByEmailAsync(ent.Key);
@@ -55,13 +56,6 @@ public class UserRepository(RoleManager<IdentityRole> roleManager,
                 }
             }
         }
-    }
-
-    private Dictionary<string, List<string>> GetUserRoles()
-    {
-        var userRolesConfig = configuration.GetSection("ServerConfig:Auth:UserRoles");
-        var userRoles = userRolesConfig.Get<Dictionary<string, List<string>>>();
-        return userRoles ?? new();
     }
 
     public async Task<bool> ChangeName(ClaimsPrincipal user, string newName)

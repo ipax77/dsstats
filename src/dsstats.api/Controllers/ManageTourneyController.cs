@@ -1,4 +1,4 @@
-﻿using dsstats.api.Services;
+﻿using dsstats.auth.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

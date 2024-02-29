@@ -2,20 +2,16 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using dsstats.api.AuthContext;
 
 #nullable disable
 
-namespace dsstats.api.Migrations
+namespace dsstats.auth
 {
     [DbContext(typeof(DsAuthContext))]
-    [Migration("20240202104348_Init")]
-    partial class Init
+    partial class DsAuthContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
