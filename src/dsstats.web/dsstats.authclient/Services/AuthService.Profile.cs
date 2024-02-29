@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 using System.Web;
 
-namespace dsstats.apiServices;
+namespace dsstats.authclient;
 
 public partial class AuthService
 {

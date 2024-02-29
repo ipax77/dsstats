@@ -7,15 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\dsstats.web.Client\Pages\Auth\LoginComponent.razor.cs" Link="LoginComponent.razor.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\dsstats.apiServices\dsstats.apiServices.csproj" />
     <ProjectReference Include="..\..\dsstats.razorlib\dsstats.razorlib.csproj" />
     <ProjectReference Include="..\..\dsstats.shared\dsstats.shared.csproj" />
+    <ProjectReference Include="..\dsstats.authclient\dsstats.authclient.csproj" />
     <ProjectReference Include="..\dsstats.web.Client\dsstats.web.Client.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.2" />
   </ItemGroup>
 
 </Project>

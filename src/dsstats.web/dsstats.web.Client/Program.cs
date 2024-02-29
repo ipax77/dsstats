@@ -1,23 +1,20 @@
 using Blazored.LocalStorage;
 using dsstats.apiServices;
-using dsstats.shared.Auth;
 using dsstats.shared.Interfaces;
 using dsstats.web.Client.Services;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using pax.BlazorChartJs;
-using System.Net.Http.Headers;
+using dsstats.authclient;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
 if (builder.HostEnvironment.IsDevelopment())
 {
     builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5116") });
-    builder.Services.AddHttpClient("AuthAPI")
-    .ConfigureHttpClient(options => {
-        options.BaseAddress = new Uri("http://localhost:5116");
-        options.DefaultRequestHeaders.Accept.Clear();
-        options.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+    builder.Services.AddDsstatsAuthClient(options =>
+    {
+        options.ApiBaseUri = new Uri("http://localhost:5116");
     });
 }
 if (builder.HostEnvironment.IsProduction())
@@ -25,18 +22,14 @@ if (builder.HostEnvironment.IsProduction())
     builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats-dev.pax77.org") });
     // builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats.pax77.org") });
 
-    builder.Services.AddHttpClient("AuthAPI")
-        .ConfigureHttpClient(options => {
-            options.BaseAddress = new Uri("https://dsstats.pax77.org");
-            options.DefaultRequestHeaders.Accept.Clear();
-            options.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        });
+    builder.Services.AddDsstatsAuthClient(options =>
+    {
+        options.ApiBaseUri = new Uri("https://dsstats.pax77.org");
+    });
 }
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddOptions();
-builder.Services.AddAuthorizationCore();
-builder.Services.AddScoped<AuthenticationStateProvider, ExternalAuthStateProvider>();
 
 builder.Services.AddChartJs(options =>
 {
@@ -64,6 +57,5 @@ builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
 
-builder.Services.AddTransient<IAuthService, AuthService>();
 
 await builder.Build().RunAsync();

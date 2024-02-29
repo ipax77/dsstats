@@ -1,12 +1,12 @@
 ﻿using Blazored.LocalStorage;
 using dsstats.shared.Auth;
 using Microsoft.AspNetCore.Components.Authorization;
-using System.IdentityModel.Tokens.Jwt;
+using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Claims;
 
-namespace dsstats.web.Client.Services;
+namespace dsstats.authclient.Services;
 
 public class ExternalAuthStateProvider(HttpClient httpClient,
                                        IHttpClientFactory httpClientFactory,
@@ -162,23 +162,6 @@ public class ExternalAuthStateProvider(HttpClient httpClient,
 
         var identity = new ClaimsIdentity(claims, "custom", ClaimsIdentity.DefaultNameClaimType, ClaimsIdentity.DefaultRoleClaimType);
         return new ClaimsPrincipal(identity);
-    }
-
-    private List<Claim>? GetClaimsFromToken(string token)
-    {
-        try
-        {
-            var handler = new JwtSecurityTokenHandler();
-            var jsonToken = handler.ReadJwtToken(token);
-            return jsonToken?.Claims
-                .Select(claim => new Claim(claim.Type, claim.Value))
-                .ToList();
-        }
-        catch (Exception ex)
-        {
-            logger.LogError("failed getting token claims: {error}", ex.Message);
-        }
-        return null;
     }
 
     public async Task RefreshToken()

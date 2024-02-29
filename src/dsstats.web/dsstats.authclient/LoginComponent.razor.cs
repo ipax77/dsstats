@@ -1,11 +1,10 @@
-using dsstats.shared.Auth;
-using dsstats.web.Client.Services;
+using dsstats.authclient.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Forms;
 using System.ComponentModel.DataAnnotations;
 
-namespace dsstats.web.Client.Pages.Auth;
+namespace dsstats.authclient;
 
 public partial class LoginComponent : ComponentBase, IDisposable
 {

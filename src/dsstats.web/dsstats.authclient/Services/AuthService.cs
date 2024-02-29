@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 
-namespace dsstats.apiServices;
+namespace dsstats.authclient;
 
 
 

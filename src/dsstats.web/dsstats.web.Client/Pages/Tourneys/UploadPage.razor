@@ -1,4 +1,6 @@
 ﻿@page "/tourneys/upload"
+@using dsstats.authclient
+@using dsstats.authclient.Services
 @using dsstats.razorlib.Tourneys
 @using dsstats.web.Client.Services
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -8,7 +10,7 @@
 
 <PageTitle>dsstats - tourneys upload</PageTitle>
 
-<dsstats.web.Client.Pages.Auth.AuthStatusComponent RedirectUrl="/tourneys/upload" />
+<AuthStatusComponent RedirectUrl="/tourneys/upload" />
 
 <AuthorizeView>
     <Authorized>

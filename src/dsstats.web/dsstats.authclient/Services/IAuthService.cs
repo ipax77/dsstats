@@ -1,5 +1,7 @@
 ﻿
-namespace dsstats.shared.Auth;
+using dsstats.shared.Auth;
+
+namespace dsstats.authclient;
 
 public interface IAuthService
 {
