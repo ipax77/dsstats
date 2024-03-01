@@ -85,6 +85,7 @@ builder.Services.AddDsstatsAuth(options =>
     options.UserRoles = userRoles ?? [];
 });
 
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 builder.Services.AddSignalR();
@@ -129,6 +130,7 @@ builder.Services.AddScoped<ITourneysService, TourneysService>();
 builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
+builder.Services.AddScoped<IFaqService, FaqService>();
 
 //builder.Services.AddScoped<EMailService>();
 
@@ -149,8 +151,8 @@ using var scope = app.Services.CreateScope();
 var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
 mapper.ConfigurationProvider.AssertConfigurationIsValid();
 
-//var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-//context.Database.Migrate();
+var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+context.Database.Migrate();
 
 var authContext = scope.ServiceProvider.GetRequiredService<DsAuthContext>();
 authContext.Database.Migrate();

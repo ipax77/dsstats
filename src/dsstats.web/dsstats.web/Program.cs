@@ -1,4 +1,5 @@
 using Blazored.LocalStorage;
+using Blazored.Toast;
 using dsstats.apiServices;
 using dsstats.shared.Auth;
 using dsstats.shared.Interfaces;
@@ -40,6 +41,8 @@ builder.Services.AddChartJs(options =>
 });
 builder.Services.AddBlazoredLocalStorage();
 
+builder.Services.AddBlazoredToast();
+
 builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 
 builder.Services.AddScoped<IWinrateService, WinrateService>();
@@ -58,6 +61,7 @@ builder.Services.AddScoped<ITourneysService, TourneysService>();
 builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
+builder.Services.AddScoped<IFaqService, FaqService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

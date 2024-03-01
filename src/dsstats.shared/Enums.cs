@@ -1,4 +1,6 @@
-﻿namespace dsstats.shared;
+﻿using System.Diagnostics.Tracing;
+
+namespace dsstats.shared;
 
 public enum GameMode
 {
@@ -185,4 +187,12 @@ public enum UnitColor
     Color13 = 13,
     Color14 = 14,
     Color15 = 15,
+}
+
+public enum FaqLevel
+{
+    None = 0,
+    Basic = 1,
+    Intermediate = 2,
+    Advanced = 3
 }

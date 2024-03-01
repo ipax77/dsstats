@@ -1,7 +1,9 @@
 using Blazored.LocalStorage;
+using Blazored.Toast;
 using dsstats.apiServices;
 using dsstats.shared.Interfaces;
 using dsstats.web.Client.Services;
+using MathNet.Numerics;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using pax.BlazorChartJs;
 using dsstats.authclient;
@@ -38,6 +40,8 @@ builder.Services.AddChartJs(options =>
 });
 builder.Services.AddBlazoredLocalStorage();
 
+builder.Services.AddBlazoredToast();
+
 builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 
 builder.Services.AddScoped<IWinrateService, WinrateService>();
@@ -56,6 +60,7 @@ builder.Services.AddScoped<ITourneysService, TourneysService>();
 builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
+builder.Services.AddScoped<IFaqService, FaqService>();
 
 
 await builder.Build().RunAsync();

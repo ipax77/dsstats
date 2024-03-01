@@ -139,12 +139,21 @@ public partial class CrawlerService
         return (int)(DateTime.UtcNow - start).TotalMilliseconds;
     }
 
-    private static int GetWaitTime(HttpResponseMessage response)
+    private static int GetWaitTime_(HttpResponseMessage response)
     {
-        // Get the rate limit headers
-        // int rateLimit = int.Parse(response.Headers.GetValues("x-ratelimit-limit").FirstOrDefault() ?? "0");
-        int rateLimitRemaining = int.Parse(response.Headers.GetValues("x-ratelimit-remaining").FirstOrDefault() ?? "0");
-        int rateLimitReset = int.Parse(response.Headers.GetValues("x-ratelimit-reset").FirstOrDefault() ?? "0");
+        int rateLimitRemaining = 0;
+        int rateLimitReset = 0;
+        if (response.Headers.TryGetValues("x-ratelimit-remaining", out var remainValues)
+            && int.TryParse(remainValues.FirstOrDefault(), out int _rateLimitRemaining))
+        {
+            rateLimitRemaining = _rateLimitRemaining;
+        }
+
+        if (response.Headers.TryGetValues("x-ratelimit-reset", out var resetValues)
+            && int.TryParse(resetValues.FirstOrDefault(), out int _rateLimitReset))
+        {
+            rateLimitReset = _rateLimitReset;
+        }
 
         if (rateLimitRemaining > 0)
         {
@@ -155,6 +164,29 @@ public partial class CrawlerService
             return Math.Max(rateLimitReset * 1000, 1000);
         }
     }
+
+    private static int GetWaitTime(HttpResponseMessage response)
+    {
+        if (response.Headers.TryGetValues("x-ratelimit-remaining", out var remainValues)
+            && response.Headers.TryGetValues("x-ratelimit-reset", out var resetValues)
+            && int.TryParse(remainValues.FirstOrDefault(), out int rateLimitRemaining)
+            && int.TryParse(resetValues.FirstOrDefault(), out int rateLimitReset))
+        {
+            if (rateLimitRemaining > 0)
+            {
+                return 0;
+            }
+            else
+            {
+                return rateLimitRemaining * 1000;
+            }
+        }
+        else
+        {
+            return 2000;
+        }
+    }
+
 }
 
 public record CrawlInfo
