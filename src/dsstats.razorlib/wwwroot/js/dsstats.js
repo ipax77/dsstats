@@ -1,6 +1,7 @@
-//v1.10
+//v1.11
 
 const cmdrIconsMap = new Map();
+let dsmodal = null;
 
 function delay(time) {
     return new Promise(resolve => setTimeout(resolve, time));
@@ -363,10 +364,22 @@ function openModalById(id) {
 
 
 function closeModalById(id) {
-    if (dsmodal) {
+    if (dsmodal !== undefined && dsmodal !== null) {
         dsmodal.hide();
+        dsmodal = null;
+    } else {
+        const modalEl = document.getElementById(id);
+        const myModal = bootstrap.Modal.getInstance(modalEl);
+        if (myModal !== undefined && myModal != null) {
+            myModal.hide();
+            modalEl.addEventListener('hidden.bs.modal', () => {
+                modal.dispose();
+            }, { once: true });
+        }
     }
 }
+
+
 
 function toggleButton(buttonId, elementId) {
     var button = document.getElementById(buttonId);
