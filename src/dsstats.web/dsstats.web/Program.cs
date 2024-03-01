@@ -22,9 +22,8 @@ if (builder.Environment.IsDevelopment())
 }
 if (builder.Environment.IsProduction())
 {
-    builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats-dev.pax77.org") });
-    // builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats.pax77.org") });
-
+    builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats.pax77.org") });
+    
     builder.Services.AddDsstatsAuthClient(options =>
     {
         options.ApiBaseUri = new Uri("https://dsstats.pax77.org");
