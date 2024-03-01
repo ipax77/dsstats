@@ -16,8 +16,6 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services.Arcade;
-using System.Configuration;
-using System.Drawing.Text;
 using System.Threading.RateLimiting;
 
 var MyAllowSpecificOrigins = "dsstatsOrigin";
