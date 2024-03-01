@@ -1,6 +1,8 @@
 using AutoMapper;
 using dsstats.api;
 using dsstats.api.Services;
+using dsstats.auth;
+using dsstats.auth.Services;
 using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
@@ -14,6 +16,8 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services.Arcade;
+using System.Configuration;
+using System.Drawing.Text;
 using System.Threading.RateLimiting;
 
 var MyAllowSpecificOrigins = "dsstatsOrigin";
@@ -50,6 +54,9 @@ builder.Services.AddRateLimiter(_ => _
 var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 44));
 var connectionString = builder.Configuration["ServerConfig:DsstatsConnectionString"];
 var importConnectionString = builder.Configuration["ServerConfig:ImportConnectionString"];
+var authConnectionString = builder.Configuration["ServerConfig:DsAuthConnectionString"];
+var userRolesConfig = builder.Configuration.GetSection("ServerConfig:Auth:UserRoles");
+var userRoles = userRolesConfig.Get<Dictionary<string, List<string>>>();
 
 builder.Services.AddOptions<DbImportOptions>()
     .Configure(x => x.ImportConnectionString = importConnectionString ?? "");
@@ -66,6 +73,16 @@ builder.Services.AddDbContext<ReplayContext>(options =>
     //.EnableDetailedErrors()
     //.EnableSensitiveDataLogging()
     ;
+});
+
+builder.Services.AddDsstatsAuth(options =>
+{
+    options.AuthConnectionString = authConnectionString ?? string.Empty;
+    options.Email = builder.Configuration["ServerConfig:EMail:email"] ?? "";
+    options.Smtp = builder.Configuration["ServerConfig:EMail:smtp"] ?? "";
+    options.Port = int.Parse(builder.Configuration["ServerConfig:EMail:port"] ?? "");
+    options.Password = builder.Configuration["ServerConfig:EMail:auth"] ?? "";
+    options.UserRoles = userRoles ?? [];
 });
 
 builder.Services.AddHttpContextAccessor();
@@ -115,6 +132,8 @@ builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
 builder.Services.AddScoped<IFaqService, FaqService>();
 
+//builder.Services.AddScoped<EMailService>();
+
 if (builder.Environment.IsProduction())
 {
     builder.Services.AddHostedService<TimedHostedService>();
@@ -135,6 +154,9 @@ mapper.ConfigurationProvider.AssertConfigurationIsValid();
 var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 context.Database.Migrate();
 
+var authContext = scope.ServiceProvider.GetRequiredService<DsAuthContext>();
+authContext.Database.Migrate();
+
 var uploadSerivce = scope.ServiceProvider.GetRequiredService<UploadService>();
 uploadSerivce.ImportInit();
 
@@ -146,17 +168,24 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    var dsDataService = scope.ServiceProvider.GetRequiredService<IDsDataService>();
+    var userRepository = scope.ServiceProvider.GetRequiredService<UserRepository>();
+    userRepository.Seed().Wait();
 }
 
 // app.UseHttpsRedirection();
 
 app.UseCors(MyAllowSpecificOrigins);
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<PickBanHub>("/hubs/pickban");
+app.MapGroup("/account")
+    .MapIdentityApi<DsUser>()
+    .RequireRateLimiting("fixed");
+
+// app.MapIdentityApi<DsUser>();
 
 app.Run();
 

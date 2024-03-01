@@ -1,28 +1,45 @@
+using Blazored.LocalStorage;
 using Blazored.Toast;
 using dsstats.apiServices;
+using dsstats.shared.Auth;
 using dsstats.shared.Interfaces;
 using dsstats.web.Client.Pages;
 using dsstats.web.Client.Services;
 using dsstats.web.Components;
 using pax.BlazorChartJs;
+using dsstats.authclient;
 
 var builder = WebApplication.CreateBuilder(args);
 
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5116") });
+
+    builder.Services.AddDsstatsAuthClient(options =>
+    {
+        options.ApiBaseUri = new Uri("http://localhost:5116");
+    });
 }
 if (builder.Environment.IsProduction())
 {
     builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats-dev.pax77.org") });
     // builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats.pax77.org") });
+
+    builder.Services.AddDsstatsAuthClient(options =>
+    {
+        options.ApiBaseUri = new Uri("https://dsstats.pax77.org");
+    });
 }
+
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddOptions();
 
 builder.Services.AddChartJs(options =>
 {
     options.ChartJsLocation = "/_content/dsstats.razorlib/js/chart.js";
     options.ChartJsPluginDatalabelsLocation = "/_content/dsstats.razorlib/js/chartjs-plugin-datalabels.js";
 });
+builder.Services.AddBlazoredLocalStorage();
 
 builder.Services.AddBlazoredToast();
 

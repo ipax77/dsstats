@@ -13,6 +13,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.apiServices", "..\d
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.razorlib", "..\dsstats.razorlib\dsstats.razorlib.csproj", "{7FA7D5E7-86DA-4C98-B794-51ACAA9946C6}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.authclient", "dsstats.authclient\dsstats.authclient.csproj", "{A7DE4F15-AFDC-4422-8F53-08A7DE23329A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.authshared", "dsstats.authshared\dsstats.authshared.csproj", "{82B54989-E47A-48D2-9E10-87236FDE204C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +43,14 @@ Global
 		{7FA7D5E7-86DA-4C98-B794-51ACAA9946C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7FA7D5E7-86DA-4C98-B794-51ACAA9946C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7FA7D5E7-86DA-4C98-B794-51ACAA9946C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7DE4F15-AFDC-4422-8F53-08A7DE23329A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7DE4F15-AFDC-4422-8F53-08A7DE23329A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7DE4F15-AFDC-4422-8F53-08A7DE23329A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7DE4F15-AFDC-4422-8F53-08A7DE23329A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{82B54989-E47A-48D2-9E10-87236FDE204C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{82B54989-E47A-48D2-9E10-87236FDE204C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{82B54989-E47A-48D2-9E10-87236FDE204C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{82B54989-E47A-48D2-9E10-87236FDE204C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
