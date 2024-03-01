@@ -1,4 +1,5 @@
 ﻿using dsstats.shared.Auth;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 
@@ -6,7 +7,9 @@ namespace dsstats.authclient;
 
 
 
-public partial class AuthService(HttpClient httpClient, ILogger<AuthService> logger) : IAuthService
+public partial class AuthService(HttpClient httpClient,
+                                 AuthenticationStateProvider authenticationStateProvider,
+                                 ILogger<AuthService> logger) : IAuthService
 {
     private readonly string authController = "/account";
 

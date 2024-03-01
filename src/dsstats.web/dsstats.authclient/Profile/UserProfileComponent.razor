@@ -6,25 +6,33 @@
 @inject IJSRuntime JSRuntime
 @inject AuthenticationStateProvider authStateProvider
 
-<AuthStatusComponent RedirectUrl="/auth/profile"></AuthStatusComponent>
-
-<div class="container">
+<div class="container-fluid">
     <AuthorizeView>
         <Authorized>
-            <div style="max-width: 600px;">
-                <ul class="list-group">
-                    <li class="list-group-item">
-                        <button type="button" class="btn btn-primary">Change UserName</button>
-                    </li>
-                    <li class="list-group-item">
-                        <button type="button" class="btn btn-primary">Change Email</button>
-                    </li>
-                    <li class="list-group-item">
-                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                            Delete Profile
-                        </button>
-                    </li>
-                </ul>
+            <div class="row">
+                <div class="col-auto">
+                    <div style="max-width: 600px;">
+                        <ul class="list-group">
+@*                             <li class="list-group-item">
+                                <button type="button" class="btn btn-primary" @onclick="(() => status = 1)">Change UserName</button>
+                            </li> *@
+@*                             <li class="list-group-item">
+                                <button type="button" class="btn btn-primary" @onclick="(() => status = 2)">Change Email</button>
+                            </li> *@
+                            <li class="list-group-item">
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                    Delete Profile
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    @if (status == 1)
+                    {
+                        <ChangeNameComponent />
+                    }
+                </div>
             </div>
             <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
                 <div class="modal-dialog">
@@ -38,7 +46,7 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            <button type="button" class="btn btn-danger" @onclick="DeleteProfile">Delete</button>
+                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal" @onclick="DeleteProfile">Delete</button>
                         </div>
                     </div>
                 </div>
@@ -62,14 +70,14 @@
     bool isLoading = false;
     string result = string.Empty;
     bool success = false;
+    public int status;
 
     private async Task DeleteProfile()
     {
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
 
-        // var authResult = await authService.Delete();
-        var authResult = true;
+        var authResult = await authService.Delete();
         if (authResult)
         {
             if (authStateProvider is ExternalAuthStateProvider extAuthStateProvider)
@@ -85,9 +93,11 @@
             result = "Deleting the profile failed. Please try again later.";
         }
 
-        await JSRuntime.InvokeVoidAsync("closeModalById", "deleteModal");
+        // await JSRuntime.InvokeVoidAsync("closeModalById", "deleteModal");
 
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
     }
+
+
 }

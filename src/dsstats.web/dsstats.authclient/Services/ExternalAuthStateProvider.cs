@@ -214,22 +214,22 @@ public class ExternalAuthStateProvider(HttpClient httpClient,
 
     public async void Logout()
     {
-        try
-        {
-            var result = await httpClient.PostAsJsonAsync("account/logout", new object());
-            result.EnsureSuccessStatusCode();
-        }
-        catch (Exception ex)
-        {
-            logger.LogError("Logout failed: {error}", ex.Message);
-        }
-        finally
-        {
-            currentUser = new ClaimsPrincipal(new ClaimsIdentity());
-            NotifyAuthenticationStateChanged(
-                Task.FromResult(new AuthenticationState(currentUser)));
-            await SetTokenAndUser(null, string.Empty, false);
-        }
+        //try
+        //{
+        //    var result = await httpClient.PostAsJsonAsync("account/logout", new object());
+        //    result.EnsureSuccessStatusCode();
+        //}
+        //catch (Exception ex)
+        //{
+        //    logger.LogError("Logout failed: {error}", ex.Message);
+        //}
+        //finally
+        //{
+        currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+        NotifyAuthenticationStateChanged(
+            Task.FromResult(new AuthenticationState(currentUser)));
+        await SetTokenAndUser(null, string.Empty, false);
+        //}
     }
 
     public bool TryGetApiHttpClient(out HttpClient? httpClient)

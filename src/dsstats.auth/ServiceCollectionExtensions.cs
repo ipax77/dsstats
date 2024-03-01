@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using System.Security.Claims;
 
 namespace dsstats.auth;
 
@@ -69,6 +70,7 @@ public static class ServiceCollectionExtensions
         services
             .AddIdentityApiEndpoints<DsUser>(options =>
             {
+                options.ClaimsIdentity.UserNameClaimType = ClaimTypes.Email;
                 options.User.RequireUniqueEmail = true;
                 options.SignIn.RequireConfirmedEmail = true;
                 // options.Stores.ProtectPersonalData = true; 

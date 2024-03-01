@@ -13,9 +13,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.apiServices", "..\d
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.razorlib", "..\dsstats.razorlib\dsstats.razorlib.csproj", "{7FA7D5E7-86DA-4C98-B794-51ACAA9946C6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.authclient", "dsstats.authclient\dsstats.authclient.csproj", "{A7DE4F15-AFDC-4422-8F53-08A7DE23329A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.authclient", "dsstats.authclient\dsstats.authclient.csproj", "{A7DE4F15-AFDC-4422-8F53-08A7DE23329A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.authshared", "dsstats.authshared\dsstats.authshared.csproj", "{82B54989-E47A-48D2-9E10-87236FDE204C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.authshared", "dsstats.authshared\dsstats.authshared.csproj", "{82B54989-E47A-48D2-9E10-87236FDE204C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

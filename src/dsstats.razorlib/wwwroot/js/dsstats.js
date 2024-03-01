@@ -368,8 +368,14 @@ function closeModalById(id) {
         dsmodal.hide();
         dsmodal = null;
     } else {
-        const myModal = bootstrap.Modal.getInstance(document.getElementById(id));
-        myModal.hide();
+        const modalEl = document.getElementById(id);
+        const myModal = bootstrap.Modal.getInstance(modalEl);
+        if (myModal !== undefined && myModal != null) {
+            myModal.hide();
+            modalEl.addEventListener('hidden.bs.modal', () => {
+                modal.dispose();
+            }, { once: true });
+        }
     }
 }
 

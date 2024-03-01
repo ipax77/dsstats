@@ -75,8 +75,6 @@ builder.Services.AddDbContext<ReplayContext>(options =>
     ;
 });
 
-
-
 builder.Services.AddDsstatsAuth(options =>
 {
     options.AuthConnectionString = authConnectionString ?? string.Empty;
