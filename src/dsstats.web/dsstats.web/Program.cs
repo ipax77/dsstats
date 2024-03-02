@@ -30,7 +30,6 @@ if (builder.Environment.IsProduction())
     });
 }
 
-builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddOptions();
 
 builder.Services.AddChartJs(options =>

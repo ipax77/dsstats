@@ -2,7 +2,6 @@ using AutoMapper;
 using dsstats.api;
 using dsstats.api.Services;
 using dsstats.auth;
-using dsstats.auth.Services;
 using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
@@ -158,6 +157,9 @@ authContext.Database.Migrate();
 var uploadSerivce = scope.ServiceProvider.GetRequiredService<UploadService>();
 uploadSerivce.ImportInit();
 
+var tourneyService = scope.ServiceProvider.GetRequiredService<ITourneysService>();
+tourneyService.SeedTourneys().Wait();
+
 app.UseRateLimiter();
 
 // Configure the HTTP request pipeline.
@@ -168,9 +170,6 @@ if (app.Environment.IsDevelopment())
 
     // var userRepository = scope.ServiceProvider.GetRequiredService<UserRepository>();
     // userRepository.Seed().Wait();
-
-    var tourneyService = scope.ServiceProvider.GetRequiredService<ITourneysService>();
-    tourneyService.SeedTourneys().Wait();
 }
 
 // app.UseHttpsRedirection();
