@@ -9,7 +9,7 @@ namespace dsstats.decodecli;
 
 class Program
 {
-    static readonly string assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
+    public static readonly string assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
     static readonly string replayFolder = "/data/ds/decode/input";
     static readonly string outputFolder = "/data/ds/decode/output";
     static readonly string errorFolder = "/data/ds/decode/error";
@@ -19,6 +19,12 @@ class Program
 
     static async Task Main(string[] args)
     {
+        if (args.Length > 0)
+        {
+            await Tourney.CreateTourneyJsons(args[0]);
+            return;
+        }
+
         var files = Directory.GetFiles(replayFolder, "*SC2Replay", SearchOption.TopDirectoryOnly);
 
         if (files.Length == 0)

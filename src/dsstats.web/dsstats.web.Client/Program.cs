@@ -28,7 +28,6 @@ if (builder.HostEnvironment.IsProduction())
     });
 }
 
-builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddOptions();
 
 builder.Services.AddChartJs(options =>

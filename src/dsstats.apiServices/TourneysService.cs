@@ -75,4 +75,9 @@ public class TourneysService(HttpClient httpClient, ILogger<TourneysService> log
         }
         return new();
     }
+
+    public Task SeedTourneys()
+    {
+        throw new NotImplementedException();
+    }
 }
