@@ -212,12 +212,19 @@ else
                                                     }
                                                     else
                                                     {
-                                                        @if(select.Random)
+                                                        @if (select.Random)
                                                         {
-                                                            <i class="bi bi-dice-@((int)select.Commander) text-warning"></i>
+                                                            @* <i class="bi bi-dice-@((int)select.Commander) text-warning"></i> *@
+                                                            <div class="d-flex align-items-center">
+                                                                <i class="bi bi-question-square" style="font-size: 28px;"></i>
+                                                                <span class="ms-2">Random</span>
+                                                            </div>
                                                         }
-                                                        <img src="@HelperService.GetImageSrc(select.Commander)" width="30" height="30" />
-                                                        <span class="ms-2">@select.Commander</span>
+                                                        else
+                                                        {
+                                                            <img src="@HelperService.GetImageSrc(select.Commander)" width="30" height="30" />
+                                                            <span class="ms-2">@select.Commander</span>
+                                                        }
                                                     }
                                                 </div>
 

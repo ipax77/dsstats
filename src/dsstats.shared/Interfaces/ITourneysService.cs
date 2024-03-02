@@ -7,4 +7,5 @@ public interface ITourneysService
     Task<List<TourneyDto>> GetTourneys();
     Task<TourneysStatsResponse> GetTourneyStats(TourneysStatsRequest statsRequest, CancellationToken token);
     Task<(string, string)?> DownloadReplay(string replayHash);
+    Task SeedTourneys();
 }

@@ -2,7 +2,6 @@ using AutoMapper;
 using dsstats.api;
 using dsstats.api.Services;
 using dsstats.auth;
-using dsstats.auth.Services;
 using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
@@ -16,8 +15,6 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services.Arcade;
-using System.Configuration;
-using System.Drawing.Text;
 using System.Threading.RateLimiting;
 
 var MyAllowSpecificOrigins = "dsstatsOrigin";
@@ -160,6 +157,9 @@ authContext.Database.Migrate();
 var uploadSerivce = scope.ServiceProvider.GetRequiredService<UploadService>();
 uploadSerivce.ImportInit();
 
+var tourneyService = scope.ServiceProvider.GetRequiredService<ITourneysService>();
+tourneyService.SeedTourneys().Wait();
+
 app.UseRateLimiter();
 
 // Configure the HTTP request pipeline.
@@ -168,8 +168,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    var userRepository = scope.ServiceProvider.GetRequiredService<UserRepository>();
-    userRepository.Seed().Wait();
+    // var userRepository = scope.ServiceProvider.GetRequiredService<UserRepository>();
+    // userRepository.Seed().Wait();
 }
 
 // app.UseHttpsRedirection();

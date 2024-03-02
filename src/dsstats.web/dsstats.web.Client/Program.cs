@@ -3,7 +3,6 @@ using Blazored.Toast;
 using dsstats.apiServices;
 using dsstats.shared.Interfaces;
 using dsstats.web.Client.Services;
-using MathNet.Numerics;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using pax.BlazorChartJs;
 using dsstats.authclient;
@@ -29,7 +28,6 @@ if (builder.HostEnvironment.IsProduction())
     });
 }
 
-builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddOptions();
 
 builder.Services.AddChartJs(options =>
