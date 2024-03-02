@@ -3,10 +3,11 @@ using dsstats.shared;
 using dsstats.shared.Extensions;
 using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace dsstats.db8services;
 
-public class TourneysService(ReplayContext context) : ITourneysService
+public partial class TourneysService(ReplayContext context, IServiceScopeFactory scopeFactory) : ITourneysService
 {
     public async Task<List<TourneyDto>> GetTourneys()
     {

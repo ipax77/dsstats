@@ -166,8 +166,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    var userRepository = scope.ServiceProvider.GetRequiredService<UserRepository>();
-    userRepository.Seed().Wait();
+    // var userRepository = scope.ServiceProvider.GetRequiredService<UserRepository>();
+    // userRepository.Seed().Wait();
+
+    var tourneyService = scope.ServiceProvider.GetRequiredService<ITourneysService>();
+    tourneyService.SeedTourneys().Wait();
 }
 
 // app.UseHttpsRedirection();
