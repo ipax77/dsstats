@@ -143,4 +143,33 @@ public partial class TourneysService
         var result = await importService.Import(replays);
         Console.WriteLine($"{result.Imported} tourney replays imported.");
     }
+
+    public async Task CheckForNewReplays(int eventId)
+    {
+        var tourneyEvent = await context.Events
+            .FirstOrDefaultAsync(f => f.EventId == eventId);
+
+        if (tourneyEvent is null)
+        {
+            return;
+        }
+
+        var replayOsPaths = Directory.GetFiles(Path.Combine(tourneyDir, tourneyEvent.Name), "*.SC2Replay", SearchOption.AllDirectories);
+        var replayPaths = replayOsPaths.Select(s => s.Replace("\\", "/")).ToHashSet();
+
+        var replays = await context.Replays
+            .Where(x => x.ReplayEvent != null
+                && x.ReplayEvent.EventId == eventId)
+            .Select(s => s.FileName)
+            .ToListAsync();
+
+        replayPaths.ExceptWith(replays);
+
+        if (replayPaths.Count == 0)
+        {
+            return;
+        }
+
+
+    }
 }
