@@ -154,12 +154,14 @@ context.Database.Migrate();
 var authContext = scope.ServiceProvider.GetRequiredService<DsAuthContext>();
 authContext.Database.Migrate();
 
-var uploadSerivce = scope.ServiceProvider.GetRequiredService<UploadService>();
-uploadSerivce.ImportInit();
+if (app.Environment.IsProduction())
+{
+    var uploadSerivce = scope.ServiceProvider.GetRequiredService<UploadService>();
+    uploadSerivce.ImportInit();
 
-var tourneyService = scope.ServiceProvider.GetRequiredService<ITourneysService>();
-tourneyService.SeedTourneys().Wait();
-
+    var tourneyService = scope.ServiceProvider.GetRequiredService<ITourneysService>();
+    tourneyService.SeedTourneys().Wait();
+}
 app.UseRateLimiter();
 
 // Configure the HTTP request pipeline.
@@ -168,8 +170,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    // var userRepository = scope.ServiceProvider.GetRequiredService<UserRepository>();
-    // userRepository.Seed().Wait();
+    var tourneyService = scope.ServiceProvider.GetRequiredService<ITourneysService>();
+    tourneyService.SeedTourneys().Wait();
 }
 
 // app.UseHttpsRedirection();
