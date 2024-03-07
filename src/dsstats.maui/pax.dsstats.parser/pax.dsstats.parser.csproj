@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CsvHelper" Version="30.0.1" />
+    <PackageReference Include="CsvHelper" Version="31.0.2" />
     <PackageReference Include="IronPython.StdLib" Version="2.7.12" />
 	<PackageReference Include="s2protocol.NET" Version="0.8.0-rc1.0" />
   </ItemGroup>
