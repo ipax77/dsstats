@@ -21,7 +21,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
-	<PackageReference Include="pax.BlazorChartJs" Version="0.8.3-rc1" />
+	<PackageReference Include="pax.BlazorChartJs" Version="0.8.3" />
   </ItemGroup>
 
   <ItemGroup>
