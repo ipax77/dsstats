@@ -30,7 +30,14 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v2.0.3</summary>
+<details open="open"><summary>v2.0.4</summary>
+
+>- Fixed Maui Replay duplicates import loop - thank you @Jurzal for reporting and helping to fix it!
+>- Unit Names and Colors for Replay-Unit-Map
+
+</details>
+
+<details><summary>v2.0.3</summary>
 
 >- Unit map update
 >- App localization
