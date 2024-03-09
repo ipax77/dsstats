@@ -5,7 +5,7 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap rescap">
 
-<Identity Name="29898PhilippHetzner.141231D0ED353" Publisher="CN=592AF738-4E2A-4BF3-87A7-D07953D08DE9" Version="2.0.4.0" />
+<Identity Name="29898PhilippHetzner.141231D0ED353" Publisher="CN=592AF738-4E2A-4BF3-87A7-D07953D08DE9" Version="2.0.5.0" />
 	
   <Properties>
     <DisplayName>$placeholder$</DisplayName>

@@ -7,11 +7,8 @@ using System.Collections.Frozen;
 
 namespace dsstats.db8services;
 
-public class TeamcompService : ITeamcompService
+public class TeamcompService(ReplayContext context, IMemoryCache memoryCache) : ITeamcompService
 {
-    private readonly ReplayContext context;
-    private readonly IMemoryCache memoryCache;
-
     private static readonly FrozenDictionary<string, bool> stdComps = new Dictionary<string, bool>()
     {
         { "|1|1|1|", true },
@@ -46,7 +43,8 @@ public class TeamcompService : ITeamcompService
     public async Task<int> GetReplaysCount(TeamcompReplaysRequest request, CancellationToken token = default)
     {
         var query = GetReplays(request);
-        return await query.CountAsync(token);
+        return await query
+            .CountAsync(token);
     }
 
     public async Task<List<ReplayListDto>> GetReplays(TeamcompReplaysRequest request, CancellationToken token)
@@ -84,16 +82,11 @@ public class TeamcompService : ITeamcompService
                 && (endDate > tillDate || r.GameTime < endDate)
                 && r.GameMode == GameMode.Standard
                 && r.Playercount == 6 && r.Duration >= 300 && r.WinnerTeam > 0
+                && (!request.TournementEdition || r.TournamentEdition)
                 && (withoutOpp ? (r.CommandersTeam1 == request.Team1 || r.CommandersTeam2 == request.Team2)
                 : ((r.CommandersTeam1 == request.Team1 && r.CommandersTeam2 == request.Team2)
                   || (r.CommandersTeam2 == request.Team1 && r.CommandersTeam1 == request.Team2)))
                select r;
-    }
-
-    public TeamcompService(ReplayContext context, IMemoryCache memoryCache)
-    {
-        this.context = context;
-        this.memoryCache = memoryCache;
     }
 
     public async Task<TeamcompResponse> GetTeamcompResult(TeamcompRequest request, CancellationToken token = default)
@@ -102,7 +95,9 @@ public class TeamcompService : ITeamcompService
         if (!memoryCache.TryGetValue(memKey, out TeamcompResponse? result)
             || result is null)
         {
-            result = await ProduceTeamcompResult(request, token);
+            result = request.TournamentEdition ? 
+                await ProduceTeTeamcompResult(request, token)
+                : await ProduceTeamcompResult(request, token);
             memoryCache.Set(memKey, result, TimeSpan.FromHours(24));
         }
         return result;
@@ -150,6 +145,61 @@ public class TeamcompService : ITeamcompService
                          Count = g.Count(),
                          Wins = g.Count(c => c.r.WinnerTeam == 2),
                          AvgGain = Math.Round(g.Average(a => a.rpr.Change), 2)
+                     };
+
+        var l1 = await group1.ToListAsync(token);
+        var l2 = await group2.ToListAsync(token);
+
+        var items = CombineResults(l1, l2);
+        return new()
+        {
+            Team = request.Interest,
+            Items = items
+        };
+    }
+
+    private async Task<TeamcompResponse> ProduceTeTeamcompResult(TeamcompRequest request, CancellationToken token)
+    {
+        (var startDate, var endDate) = Data.TimeperiodSelected(request.TimePeriod);
+        var tillDate = DateTime.Today.AddDays(-2);
+        var noInterest = string.IsNullOrEmpty(request.Interest);
+
+        var group1 = from r in context.Replays
+                     from rp in r.ReplayPlayers
+                     join rr in context.ReplayRatings on r.ReplayId equals rr.ReplayId
+                     join rpr in context.RepPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
+                     where r.GameTime >= startDate
+                      && (endDate > tillDate || r.GameTime < endDate)
+                      && rr.RatingType == RatingType.StdTE
+                      && (request.WithLeavers || rr.LeaverType == LeaverType.None)
+                      && rp.Team == 1
+                      && (noInterest || r.CommandersTeam2 == request.Interest)
+                     group new { r, rpr } by r.CommandersTeam1 into g
+                     select new TeamGroupResult()
+                     {
+                         Cmdrs = g.Key,
+                         Count = g.Count(),
+                         Wins = g.Count(c => c.r.WinnerTeam == 1),
+                         AvgGain = Math.Round(g.Average(a => a.rpr.RatingChange), 2)
+                     };
+
+        var group2 = from r in context.Replays
+                     from rp in r.ReplayPlayers
+                     join rr in context.ReplayRatings on r.ReplayId equals rr.ReplayId
+                     join rpr in context.RepPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
+                     where r.GameTime >= startDate
+                      && (endDate > tillDate || r.GameTime < endDate)
+                      && rr.RatingType == RatingType.StdTE
+                      && (request.WithLeavers || rr.LeaverType == LeaverType.None)
+                      && rp.Team == 2
+                      && (noInterest || r.CommandersTeam1 == request.Interest)
+                     group new { r, rpr } by r.CommandersTeam2 into g
+                     select new TeamGroupResult()
+                     {
+                         Cmdrs = g.Key,
+                         Count = g.Count(),
+                         Wins = g.Count(c => c.r.WinnerTeam == 2),
+                         AvgGain = Math.Round(g.Average(a => a.rpr.RatingChange), 2)
                      };
 
         var l1 = await group1.ToListAsync(token);
