@@ -12,7 +12,7 @@
     <ProjectReference Include="..\..\dsstats.shared\dsstats.shared.csproj" />
     <ProjectReference Include="..\dsstats.authclient\dsstats.authclient.csproj" />
     <ProjectReference Include="..\dsstats.web.Client\dsstats.web.Client.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.3" />
   </ItemGroup>
 
 </Project>
