@@ -6,9 +6,9 @@ Fan Project for analyzing [Starcarft II](https://starcraft2.com) [Direct Strike]
 
 ## Install instructions
 
-[<img src="images/store.png" alt="store" width="100"/>](https://www.microsoft.com/store/apps/9NNNMB503HN5)
+[<img src="images/store.png" alt="store" width="100"/>](https://apps.microsoft.com/detail/9nnnmb503hn5)
 
-Go to the Microsoft Store and install the [sc2dsstats app](https://www.microsoft.com/store/apps/9NNNMB503HN5) for free.
+Go to the Microsoft Store and install the [sc2dsstats app](https://apps.microsoft.com/detail/9nnnmb503hn5) for free.
 
 The app can be used offline to analyze your stats locally. If you want to upload your replays and contribute to this site, you must give your explicit consent.
 
