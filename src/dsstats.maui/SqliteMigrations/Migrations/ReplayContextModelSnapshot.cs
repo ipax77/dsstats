@@ -15,7 +15,7 @@ namespace SqliteMigrations.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.1");
+            modelBuilder.HasAnnotation("ProductVersion", "8.0.3");
 
             modelBuilder.Entity("DsAbilityDsUnit", b =>
                 {
@@ -760,6 +760,61 @@ namespace SqliteMigrations.Migrations
                         .IsUnique();
 
                     b.ToTable("Events");
+                });
+
+            modelBuilder.Entity("dsstats.db8.Faq", b =>
+                {
+                    b.Property<int>("FaqId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Answer")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Question")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Upvotes")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("FaqId");
+
+                    b.HasIndex("Question");
+
+                    b.ToTable("Faqs");
+                });
+
+            modelBuilder.Entity("dsstats.db8.FaqVote", b =>
+                {
+                    b.Property<int>("FaqVoteId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("FaqId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("FaqVoteId");
+
+                    b.ToTable("FaqVotes");
                 });
 
             modelBuilder.Entity("dsstats.db8.FunStatsMemory", b =>
