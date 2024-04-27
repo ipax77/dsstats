@@ -233,9 +233,19 @@
                     @Replay.FileName
                 </div>
             }
+            <div class="col-auto">
+                <button class="btn btn-sm btn-outline-light" @onclick="e => showLog = !showLog">
+                    <span class="bi @(showLog ? "bi-chevron-down" : "bi-chevron-up")"></span>
+                    Log
+                </button>
+            </div>
         </div>
     </div>
 </div>
+@if (showLog)
+{
+    <ReplayLog Replay="Replay" MiddleInfo="middleInfo" />
+}
 @if (interestPlayer is not null)
 {
     <dsstats.razorlib.Players.Profile.ProfileComponent PlayerId="interestPlayer" RatingType="ratingType"
@@ -277,6 +287,7 @@
     bool showRating = false;
     bool comboRating = true;
     bool showReplayPath = false;
+    bool showLog = false;
     PlayerId? interestPlayer = null;
     RatingType ratingType = RatingType.Cmdr;
 
@@ -331,6 +342,7 @@
         interestPlayer = null;
         showRating = false;
         showReplayPath = false;
+        showLog = false;
         replayRatings.Clear();
         showMiddleChart = false;
         showTierUps = false;
