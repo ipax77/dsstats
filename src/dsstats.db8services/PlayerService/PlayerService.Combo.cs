@@ -130,8 +130,20 @@ public partial class PlayerService
                         : o.ComboPlayerRating.Wins * 100.0 / o.ComboPlayerRating.Games);
                 }
             }
+            else if (order.Property == "Mvp")
+            {
+                if (order.Ascending)
+                {
+                    ratings = ratings.OrderBy(o => o.PlayerRating.Games == 0 ? 0
+                        : o.PlayerRating.Mvp * 100.0 / o.PlayerRating.Games);
+                }
+                else
+                {
+                    ratings = ratings.OrderByDescending(o => o.PlayerRating.Games == 0 ? 0
+                        : o.PlayerRating.Mvp * 100.0 / o.PlayerRating.Games);
+                }
+            }
             else if (order.Property == "Main"
-                || order.Property == "Mvp"
                 || order.Property == "MainCount"
                 || order.Property.StartsWith("PlayerRatingChange"))
             {
