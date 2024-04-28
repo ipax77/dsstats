@@ -107,6 +107,7 @@ builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddSingleton<AuthenticationFilterAttributeV6>();
 builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 builder.Services.AddSingleton<DsUnitRepository>();
+builder.Services.AddSingleton<DecodeService>();
 
 builder.Services.AddScoped<CrawlerService>();
 builder.Services.AddScoped<IWinrateService, WinrateService>();
@@ -170,8 +171,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    var tourneyService = scope.ServiceProvider.GetRequiredService<ITourneysService>();
-    tourneyService.SeedTourneys().Wait();
+    //var decodeService = scope.ServiceProvider.GetRequiredService<DecodeService>();
+    //decodeService.Decode(Guid.NewGuid()).Wait();
 }
 
 // app.UseHttpsRedirection();
