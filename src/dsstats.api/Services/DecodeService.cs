@@ -22,6 +22,26 @@ public class DecodeService(ILogger<DecodeService> logger, IServiceScopeFactory s
         DecodeFinished?.Invoke(this, e);
     }
 
+    public async Task<bool> SaveReplays(Guid guid, List<IFormFile> files)
+    {
+        long size = files.Sum(f => f.Length);
+
+        foreach (var formFile in files)
+        {
+            if (formFile.Length > 0)
+            {
+                var filePath = Path.Combine(replayFolder, "todo", guid.ToString() + "_" + Guid.NewGuid().ToString() + ".SC2Replay");
+
+                using (var stream = File.Create(filePath))
+                {
+                    await formFile.CopyToAsync(stream);
+                }
+            }
+        }
+        _ = Decode(guid);
+        return true;
+    }
+
     public async Task Decode(Guid guid)
     {
         await ss.WaitAsync();
