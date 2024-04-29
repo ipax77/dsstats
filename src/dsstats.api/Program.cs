@@ -171,8 +171,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    //var decodeService = scope.ServiceProvider.GetRequiredService<DecodeService>();
-    //decodeService.Decode(Guid.NewGuid()).Wait();
+    var decodeService = scope.ServiceProvider.GetRequiredService<DecodeService>();
+    decodeService.Decode(Guid.NewGuid()).Wait();
 }
 
 // app.UseHttpsRedirection();
