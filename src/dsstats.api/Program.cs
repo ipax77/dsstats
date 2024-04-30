@@ -1,5 +1,6 @@
 using AutoMapper;
 using dsstats.api;
+using dsstats.api.Hubs;
 using dsstats.api.Services;
 using dsstats.auth;
 using dsstats.db8;
@@ -108,6 +109,7 @@ builder.Services.AddSingleton<AuthenticationFilterAttributeV6>();
 builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 builder.Services.AddSingleton<DsUnitRepository>();
 builder.Services.AddSingleton<DecodeService>();
+builder.Services.AddSingleton<IhService>();
 
 builder.Services.AddScoped<CrawlerService>();
 builder.Services.AddScoped<IWinrateService, WinrateService>();
@@ -184,6 +186,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<PickBanHub>("/hubs/pickban");
+app.MapHub<IhHub>("/hubs/ih");
 app.MapGroup("/account")
     .MapIdentityApi<DsUser>()
     .RequireRateLimiting("fixed");

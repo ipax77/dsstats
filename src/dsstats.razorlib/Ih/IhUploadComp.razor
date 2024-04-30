@@ -16,6 +16,9 @@
     [Parameter, EditorRequired]
     public Guid Guid { get; set; }
 
+    [Parameter]
+    public EventCallback OnDecodeRequested { get; set; }
+
     private int maxAllowedFiles = 3;
     private bool shouldRender;
 
@@ -59,6 +62,7 @@
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("DS8upload77");
                 var response = await httpClient.PostAsync($"/api8/v1/upload/uploadreplays/{Guid}", content);
                 response.EnsureSuccessStatusCode();
+                await OnDecodeRequested.InvokeAsync();
             }
             catch (Exception ex)
             {

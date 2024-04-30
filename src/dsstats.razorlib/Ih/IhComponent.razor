@@ -1,10 +1,17 @@
 ﻿
 <h4>Ih Session @guid</h4>
 
-<IhUploadComp Guid="guid" />
+<IhUploadComp Guid="guid" OnDecodeRequested="DecodeRequested" />
 
-@code {
+<div>
+    <p>@groupState.GroupId</p>
+    <p>Connected: @isConnected</p>
+    <p>Visitors: @groupState.Visitors</p>
+</div>
 
-
-    private Guid guid = Guid.NewGuid();
-}
+<div>
+    @foreach (var replay in groupState.ReplayHashes)
+    {
+        <p>@replay</p>
+    }
+</div>
