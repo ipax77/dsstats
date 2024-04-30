@@ -2,15 +2,36 @@
 @using System.Net.Http.Json
 @using System.Net.Http.Headers
 @using Microsoft.Extensions.Logging
+@using Microsoft.JSInterop
 @inject HttpClient httpClient
+@inject IJSRuntime JSRuntime
 @inject ILogger<IhUploadComp> logger
+@implements IAsyncDisposable
 
-<p>
-    <label>
-        Upload up to @maxAllowedFiles files:
-        <InputFile OnChange="OnInputFileChange" multiple />
-    </label>
-</p>
+<style>
+    .file-drop-zone {
+        display: flex;
+        width: 300px;
+        border: 3px dotted #fb275d;
+        align-items: center;
+        margin-bottom: 2px;
+    }
+
+    .hover {
+        border-style: solid;
+        background-color: #00ca71;
+    }
+
+    ::deep input[type=file] {
+        width: 100%;
+        padding: 20px;
+    }
+</style>
+
+<div @ref="fileDropContainer" class="file-drop-zone @hoverClass" @ondragenter="OnDragEnter" @ondragleave="OnDragLeave" @ondragover="OnDragEnter"
+     dropzone="all">
+    <InputFile @ref="inputFile" class="form-control" OnChange="OnInputFileChange" multiple />
+</div>
 
 @code {
     [Parameter, EditorRequired]
@@ -21,8 +42,25 @@
 
     private int maxAllowedFiles = 3;
     private bool shouldRender;
+    string hoverClass = string.Empty;
+
+    InputFile? inputFile;
+    ElementReference? fileDropContainer;
+
+    IJSObjectReference? _filePasteModule;
+    IJSObjectReference? _filePasteFunctionReference;
 
     protected override bool ShouldRender() => shouldRender;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _filePasteModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./_content/dsstats.razorlib/js/filePaste.js");
+            _filePasteFunctionReference = await _filePasteModule.InvokeAsync<IJSObjectReference>("initializeFilePaste", fileDropContainer, inputFile?.Element);
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
 
     private async Task OnInputFileChange(InputFileChangeEventArgs e)
     {
@@ -71,5 +109,21 @@
         }
 
         shouldRender = true;
+    }
+
+    void OnDragEnter(DragEventArgs e) => hoverClass = "hover";
+    void OnDragLeave(DragEventArgs e) => hoverClass = string.Empty;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_filePasteFunctionReference != null)
+        {
+            await _filePasteFunctionReference.InvokeVoidAsync("dispose");
+            await _filePasteFunctionReference.DisposeAsync();
+        }
+        if (_filePasteModule != null)
+        {
+            await _filePasteModule.DisposeAsync();
+        }
     }
 }
