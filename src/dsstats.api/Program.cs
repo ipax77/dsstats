@@ -1,5 +1,6 @@
 using AutoMapper;
 using dsstats.api;
+using dsstats.api.Hubs;
 using dsstats.api.Services;
 using dsstats.auth;
 using dsstats.db8;
@@ -107,6 +108,8 @@ builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddSingleton<AuthenticationFilterAttributeV6>();
 builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 builder.Services.AddSingleton<DsUnitRepository>();
+builder.Services.AddSingleton<DecodeService>();
+builder.Services.AddSingleton<IhService>();
 
 builder.Services.AddScoped<CrawlerService>();
 builder.Services.AddScoped<IWinrateService, WinrateService>();
@@ -169,9 +172,6 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-
-    var tourneyService = scope.ServiceProvider.GetRequiredService<ITourneysService>();
-    tourneyService.SeedTourneys().Wait();
 }
 
 // app.UseHttpsRedirection();
@@ -183,6 +183,9 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<PickBanHub>("/hubs/pickban");
+app.MapHub<IhHub>("/hubs/ih");
+app.MapHub<UploadHub>("/hubs/upload");
+
 app.MapGroup("/account")
     .MapIdentityApi<DsUser>()
     .RequireRateLimiting("fixed");
