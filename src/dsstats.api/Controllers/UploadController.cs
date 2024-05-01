@@ -1,6 +1,7 @@
 ﻿using dsstats.api.Services;
 using dsstats.shared;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace dsstats.api.Controllers;
 
@@ -35,14 +36,19 @@ public class UploadController(UploadService uploadService, DecodeService decodeS
     [HttpPost]
     [RequestSizeLimit(15728640)]
     [Route("uploadreplays/{guid}")]
-    public async Task<IActionResult> UploadReplays(string guid, [FromForm] List<IFormFile> files)
+    [EnableRateLimiting("fixed")]
+    public async Task<ActionResult<int>> UploadReplays(string guid, [FromForm] List<IFormFile> files)
     {
         if (Guid.TryParse(guid, out var fileGuid))
         {
-            var sccess = await decodeService.SaveReplays(fileGuid, files);
-            if (sccess)
+            var queueCount = await decodeService.SaveReplays(fileGuid, files);
+            if (queueCount >= 0)
             {
-                return Ok();
+                return Ok(queueCount);
+            }
+            else
+            {
+                return StatusCode(500);
             }
         }
         return BadRequest();

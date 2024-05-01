@@ -30,7 +30,7 @@
 
 <div @ref="fileDropContainer" class="file-drop-zone @hoverClass" @ondragenter="OnDragEnter" @ondragleave="OnDragLeave" @ondragover="OnDragEnter"
      dropzone="all">
-    <InputFile @ref="inputFile" class="form-control" OnChange="OnInputFileChange" multiple />
+    <InputFile @ref="inputFile" class="form-control" OnChange="OnInputFileChange" />
 </div>
 
 @code {
@@ -38,9 +38,9 @@
     public Guid Guid { get; set; }
 
     [Parameter]
-    public EventCallback OnDecodeRequested { get; set; }
+    public EventCallback<int> OnDecodeRequested { get; set; }
 
-    private int maxAllowedFiles = 3;
+    private int maxAllowedFiles = 1;
     private bool shouldRender;
     string hoverClass = string.Empty;
 
@@ -100,7 +100,8 @@
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("DS8upload77");
                 var response = await httpClient.PostAsync($"/api8/v1/upload/uploadreplays/{Guid}", content);
                 response.EnsureSuccessStatusCode();
-                await OnDecodeRequested.InvokeAsync();
+                int queueCount = await response.Content.ReadFromJsonAsync<int>();
+                await OnDecodeRequested.InvokeAsync(queueCount);
             }
             catch (Exception ex)
             {

@@ -2,6 +2,7 @@
 using dsstats.shared;
 using pax.dsstats.parser;
 using s2protocol.NET;
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
@@ -15,6 +16,8 @@ public class DecodeService(ILogger<DecodeService> logger, IServiceScopeFactory s
     private readonly SemaphoreSlim ss = new(1, 1);
     private ReplayDecoder? replayDecoder;
     public static readonly string assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
+    private int queueCount = 0;
+    private ConcurrentBag<string> excludeReplays = [];
 
     public EventHandler<DecodeEventArgs>? DecodeFinished;
 
@@ -23,37 +26,54 @@ public class DecodeService(ILogger<DecodeService> logger, IServiceScopeFactory s
         DecodeFinished?.Invoke(this, e);
     }
 
-    public async Task<bool> SaveReplays(Guid guid, List<IFormFile> files)
+    public async Task<int> SaveReplays(Guid guid, List<IFormFile> files)
     {
-        long size = files.Sum(f => f.Length);
-
-        foreach (var formFile in files)
+        try
         {
-            if (formFile.Length > 0)
-            {
-                var filePath = Path.Combine(replayFolder, "todo", guid.ToString() + "_" + Guid.NewGuid().ToString() + ".SC2Replay");
+            long size = files.Sum(f => f.Length);
 
-                using (var stream = File.Create(filePath))
+            foreach (var formFile in files)
+            {
+                if (formFile.Length > 0)
                 {
-                    await formFile.CopyToAsync(stream);
+                    var fileGuid = Guid.NewGuid();
+                    var filePath = Path.Combine(replayFolder, "todo", guid.ToString() + "_" + fileGuid.ToString() + ".SC2Replay");
+                    var tmpFilePath = Path.Combine(replayFolder, "todo", guid.ToString() + "_" + fileGuid.ToString() + ".tmp");
+
+                    {
+                        using var stream = File.Create(tmpFilePath);
+                        await formFile.CopyToAsync(stream);
+                    }
+                    File.Move(tmpFilePath, filePath);
                 }
             }
+            _ = Decode(guid);
+
+            logger.LogWarning($"replays saved ({size})", size);
+            return queueCount;
         }
-        _ = Decode(guid);
-        return true;
+        catch (Exception ex)
+        {
+            logger.LogError("failed saving replays: {error}", ex.Message);
+        }
+        return -1;
     }
 
     public async Task Decode(Guid guid)
     {
+        Interlocked.Increment(ref queueCount);
         await ss.WaitAsync();
         List<IhReplay> replays = [];
+        string? error = null;
 
         try
         {
             var replayPaths = Directory.GetFiles(Path.Combine(replayFolder, "todo"), "*SC2Replay");
+            replayPaths = replayPaths.Except(excludeReplays).ToArray();
 
             if (replayPaths.Length == 0)
             {
+                error = "No replays found.";
                 return;
             }
 
@@ -77,6 +97,7 @@ public class DecodeService(ILogger<DecodeService> logger, IServiceScopeFactory s
                 if (result.Sc2Replay is null)
                 {
                     Error(result);
+                    error = "failed decoding replays.";
                     continue;
                 }
 
@@ -87,6 +108,7 @@ public class DecodeService(ILogger<DecodeService> logger, IServiceScopeFactory s
                 if (sc2Replay is null)
                 {
                     Error(result);
+                    error = "failed decoding replays.";
                     continue;
                 }
 
@@ -95,23 +117,26 @@ public class DecodeService(ILogger<DecodeService> logger, IServiceScopeFactory s
                 if (replayDto is null)
                 {
                     Error(result);
+                    error = "failed decoding replays.";
                     continue;
                 }
 
                 File.Move(result.ReplayPath, Path.Combine(replayFolder, "done", Path.GetFileName(result.ReplayPath)));
-                replays.Add(new IhReplay() {  Replay = replayDto, Metadata = metaData });
+                replays.Add(new IhReplay() { Replay = replayDto, Metadata = metaData });
             }
 
             if (replays.Count > 0)
             {
                 using var scope = scopeFactory.CreateScope();
                 var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+                replays.ForEach(f => f.Replay.FileName = string.Empty);
                 await importService.Import(replays.Select(s => s.Replay).ToList());
             }
         }
         catch (Exception ex)
         {
             logger.LogError("failed decoding replays: {error}", ex.Message);
+            error = "failed decoding replays.";
         }
         finally
         {
@@ -119,15 +144,25 @@ public class DecodeService(ILogger<DecodeService> logger, IServiceScopeFactory s
             OnDecodeFinished(new()
             {
                 Guid = guid,
-                IhReplays = replays
+                IhReplays = replays,
+                Error = error,
             });
+            Interlocked.Decrement(ref queueCount);
         }
     }
 
     private void Error(DecodeParallelResult result)
     {
-        logger.LogError("failed decoding replay: {path}", result.ReplayPath);
-        File.Move(result.ReplayPath, Path.Combine(replayFolder, "error", Path.GetFileName(result.ReplayPath)));
+        logger.LogError("failed decoding replay: {path}, {error}", result.ReplayPath, result.Exception);
+        try
+        {
+            File.Move(result.ReplayPath, Path.Combine(replayFolder, "error", Path.GetFileName(result.ReplayPath)));
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning("failed moving error replay: {error}", ex.Message);
+            excludeReplays.Add(result.ReplayPath);
+        }
     }
 
     private ReplayMetadata GetMetaData(Sc2Replay replay)
@@ -180,7 +215,7 @@ public class DecodeService(ILogger<DecodeService> logger, IServiceScopeFactory s
         };
     }
 
-    private Commander GetSelectedRace(string selectedRace)
+    private static Commander GetSelectedRace(string selectedRace)
     {
         var race = selectedRace switch
         {
@@ -192,12 +227,12 @@ public class DecodeService(ILogger<DecodeService> logger, IServiceScopeFactory s
         return GetRace(race);
     }
 
-    private PlayerId GetPlayerId(s2protocol.NET.Models.Toon toon)
+    private static PlayerId GetPlayerId(s2protocol.NET.Models.Toon toon)
     {
         return new(toon.Id, toon.Realm, toon.Region);
     }
 
-    private PlayerId GetPlayerId(string toonHandle)
+    private static PlayerId GetPlayerId(string toonHandle)
     {
         Regex rx = new(@"(\d)-S2-(\d)-(\d+)");
         var match = rx.Match(toonHandle);
@@ -211,7 +246,7 @@ public class DecodeService(ILogger<DecodeService> logger, IServiceScopeFactory s
         return new();
     }
 
-    private Commander GetRace(string race)
+    private static Commander GetRace(string race)
     {
         if (Enum.TryParse(typeof(Commander), race, out var cmdrObj)
             && cmdrObj is Commander cmdr)
@@ -226,6 +261,7 @@ public class DecodeEventArgs : EventArgs
 {
     public Guid Guid { get; set; }
     public List<IhReplay> IhReplays { get; set; } = [];
+    public string? Error { get; set; }
 }
 
 public record IhReplay

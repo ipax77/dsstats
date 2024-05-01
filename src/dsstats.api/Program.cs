@@ -172,9 +172,6 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-
-    var decodeService = scope.ServiceProvider.GetRequiredService<DecodeService>();
-    decodeService.Decode(Guid.NewGuid()).Wait();
 }
 
 // app.UseHttpsRedirection();
@@ -187,6 +184,8 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<PickBanHub>("/hubs/pickban");
 app.MapHub<IhHub>("/hubs/ih");
+app.MapHub<UploadHub>("/hubs/upload");
+
 app.MapGroup("/account")
     .MapIdentityApi<DsUser>()
     .RequireRateLimiting("fixed");
