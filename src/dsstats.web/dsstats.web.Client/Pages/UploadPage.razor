@@ -1,0 +1,152 @@
+﻿@page "/upload"
+@using Microsoft.AspNetCore.SignalR.Client
+@using dsstats.razorlib.Replays
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject HttpClient httpClient
+@inject IReplaysService replaysService
+@implements IDisposable
+
+<PageTitle>dsstats - upload</PageTitle>
+
+<div class="container">
+    <h4>Upload Replays</h4>
+
+    <p>You can upload one replay here:</p>
+    <dsstats.razorlib.Ih.IhUploadComp Guid="guid" OnDecodeRequested="DecodeRequested" />
+    <small class="text-info bgchart2 p-1">By uploading replays you agree, that the replay data can be used for player and commander stats on this website.</small>
+
+    <div>
+        @if (decoding)
+        {
+            <div class="d-flex">
+                <div class="spinner-border spinner-border-sm text-danger" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="ms-2">
+                    Queue position: @queueCount
+                </div>
+            </div>
+        }
+        @if (replays.Count > 0)
+        {
+            <div class="mt-2">
+                @foreach (var replay in replays)
+                {
+                    <div>
+                        <ReplayComponent Replay="replay" IsCloseable="false" IsScrollable="false" />
+                    </div>
+                }
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <p class="text-danger">
+                @errorMessage
+            </p>
+        }
+    </div>
+
+    <div class="mt-3 bgchart p-2 rounded" style="max-width: 500px;">
+        <p>
+            To upload all your replays you can use the free Windows desktop application:
+            <div>
+                <a href="https://apps.microsoft.com/detail/9nnnmb503hn5">
+                    <img src="_content/dsstats.razorlib/images/store.png" alt="Microsoft Store" width="100" />
+                </a>
+                <a href="https://apps.microsoft.com/detail/9nnnmb503hn5">
+                    dsstats app
+                </a>
+            </div>
+        </p>
+        <p>Or the Windows service:</p>
+        <div>
+            <a href="https://github.com/ipax77/dsstats.service">
+                <img src="_content/dsstats.razorlib/images/GitHub-Mark-Light-64px.png" alt="GitHub" height="45" />
+            </a>
+            <a href="https://github.com/ipax77/dsstats.service">
+                dsstats.service
+            </a>
+        </div>
+    </div>
+</div>
+
+@code {
+    Guid guid = Guid.NewGuid();
+
+    private HubConnection? hubConnection;
+    private bool isConnected => hubConnection?.State == HubConnectionState.Connected;
+    private string errorMessage = string.Empty;
+    private bool decoding = false;
+    private List<ReplayDto> replays = [];
+    private CancellationTokenSource cts = new();
+    private int queueCount = 0;
+
+    protected override void OnInitialized()
+    {
+        var uri = httpClient.BaseAddress ?? new Uri("https://dsstats.pax77.org");
+        uri = new Uri(uri, "/hubs/upload");
+
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(uri)
+            .Build();
+
+        hubConnection.On<string>("DecodeFailed", (error) =>
+        {
+            errorMessage = error;
+            decoding = false;
+            InvokeAsync(() => StateHasChanged());
+        });
+
+        hubConnection.On<List<string>>("NewReplays", (replayHashes) =>
+        {
+            _ = LoadReplays(replayHashes);
+        });
+
+        base.OnInitialized();
+    }
+
+    private async void DecodeRequested(int count)
+    {
+        if (count < 0)
+        {
+            errorMessage = "Upload failed.";
+            await InvokeAsync(() => StateHasChanged());
+            return;
+        }
+
+        queueCount = count;
+        decoding = true;
+        replays.Clear();
+        await InvokeAsync(() => StateHasChanged());
+        if (hubConnection is not null && !isConnected)
+        {
+            await hubConnection.StartAsync();
+        }
+        if (hubConnection is not null && isConnected)
+        {
+            await hubConnection.SendAsync("DecodeRequest", guid);
+        }
+    }
+
+    private async Task LoadReplays(List<string> replayHashes)
+    {
+        foreach (var replayHash in replayHashes)
+        {
+            var replay = await replaysService.GetReplay(replayHash, true, cts.Token);
+            if (replay is not null)
+            {
+                replays.Add(replay);
+            }
+        }
+        decoding = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        hubConnection?.DisposeAsync();
+        cts.Dispose();
+    }
+}
