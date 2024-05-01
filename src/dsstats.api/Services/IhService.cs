@@ -4,11 +4,9 @@ using System.Collections.Concurrent;
 
 namespace dsstats.api.Services;
 
-public class IhService(IServiceScopeFactory scopeFactory)
+public partial class IhService(IServiceScopeFactory scopeFactory)
 {
     private ConcurrentDictionary<Guid, GroupState> groups = [];
-
-
 
     public GroupState? CreateOrVisitGroup(Guid groupId)
     {
