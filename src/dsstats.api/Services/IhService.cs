@@ -7,6 +7,8 @@ namespace dsstats.api.Services;
 public partial class IhService(IServiceScopeFactory scopeFactory)
 {
     private ConcurrentDictionary<Guid, GroupState> groups = [];
+    private ConcurrentDictionary<Guid, List<IhReplay>> groupReplays = [];
+    SemaphoreSlim decodeSS = new(1, 1);
 
     public GroupState? CreateOrVisitGroup(Guid groupId)
     {
@@ -19,6 +21,12 @@ public partial class IhService(IServiceScopeFactory scopeFactory)
         {
             groupState = groups.AddOrUpdate(groupId, new GroupState() { GroupId = groupId, Visitors = 1 },
                 (k, v) => v = v with { Visitors = 1 });
+        }
+
+        if (!groupReplays.TryGetValue(groupId,out List<IhReplay>? replays)
+            || replays is null)
+        {
+            groupReplays.AddOrUpdate(groupId, [], (k, v) => v = []);
         }
         return groupState;
     }
@@ -55,6 +63,8 @@ public partial class IhService(IServiceScopeFactory scopeFactory)
 
     public async Task<List<string>> GetDecodeResultAsync(Guid guid)
     {
+        List<IhReplay> replays = [];
+
         if (groups.TryGetValue(guid, out GroupState? groupState)
             && groupState is not null)
         {
@@ -87,11 +97,27 @@ public partial class IhService(IServiceScopeFactory scopeFactory)
             }
 
             var result = await completionSource.Task;
-            var hashes = result.Select(s => s.Replay.ReplayHash).ToList();
-            groupState.ReplayHashes.UnionWith(result.Select(s => s.Replay.ReplayHash));
-            return hashes;
+            await decodeSS.WaitAsync();
+            try
+            {
+                foreach (var replay in result)
+                {
+                    if (groupState.ReplayHashes.Contains(replay.Replay.ReplayHash))
+                    {
+                        continue;
+                    }
+                    groupState.ReplayHashes.Add(replay.Replay.ReplayHash);
+                    replays.Add(replay);
+                    groupReplays[guid].Add(replay);
+                }
+                await SetReplayStats(groupState, replays);
+            } 
+            finally
+            {
+                decodeSS.Release();
+            }
         }
-        return [];
+        return replays.Select(s => s.Replay.ReplayHash).ToList();
     }
 }
 

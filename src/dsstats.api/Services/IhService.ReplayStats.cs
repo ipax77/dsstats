@@ -1,15 +1,20 @@
-﻿using dsstats.shared;
+﻿using dsstats.db8;
+using dsstats.shared;
+using Microsoft.EntityFrameworkCore;
 
 namespace dsstats.api.Services;
 
 public partial class IhService
 {
-    private void SetStats(GroupState groupState, List<IhReplay> replays)
+    private async Task SetReplayStats(GroupState groupState, List<IhReplay> replays)
     {
-
+        foreach (var replay in replays)
+        {
+            await SetReplayStat(groupState, replay);
+        }
     }
 
-    private void SetReplayStat(GroupState groupState, IhReplay replay)
+    private async Task SetReplayStat(GroupState groupState, IhReplay replay)
     {
         foreach (var player in replay.Metadata.Players)
         {
@@ -21,6 +26,7 @@ public partial class IhService
                 {
                     PlayerId = player.PlayerId,
                     Name = player.Name,
+                    RatingStart = await GetRating(groupState, player.PlayerId)
                 };
                 groupState.PlayerStates.Add(groupPlayer);
             }
@@ -49,6 +55,7 @@ public partial class IhService
                 groupState.PlayerStates.Add(groupPlayer);
             }
             groupPlayer.Name = player.Name;
+            groupPlayer.Joined = false;
 
             foreach (var otherPlayer in replay.Replay.ReplayPlayers)
             {
@@ -68,5 +75,34 @@ public partial class IhService
                 }
             }
         }
+    }
+
+    private async Task<int> GetRating(GroupState groupState, PlayerId playerId)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        double rating = 0;
+        if (groupState.RatingCalcType == RatingCalcType.Dsstats)
+        {
+            rating = await context.PlayerRatings
+                .Where(x => x.Player.ToonId == playerId.ToonId
+                    && x.Player.RealmId == playerId.RealmId
+                    && x.Player.RegionId == playerId.RealmId
+                    && x.RatingType == groupState.RatingType)
+                .Select(s => s.Rating)
+                .FirstOrDefaultAsync();
+        }
+        else
+        {
+            rating = await context.ComboPlayerRatings
+                .Where(x => x.Player.ToonId == playerId.ToonId
+                    && x.Player.RealmId == playerId.RealmId
+                    && x.Player.RegionId == playerId.RealmId
+                    && x.RatingType == groupState.RatingType)
+                .Select(s => s.Rating)
+                .FirstOrDefaultAsync();
+        }
+        return Convert.ToInt32(rating);
     }
 }

@@ -3,6 +3,8 @@ namespace dsstats.shared;
 
 public record GroupState
 {
+    public RatingType RatingType { get; set; } = RatingType.StdTE;
+    public RatingCalcType RatingCalcType { get; set; } = RatingCalcType.Dsstats;
     public Guid GroupId { get; set; }
     public int Visitors { get; set; }
     public HashSet<string> ReplayHashes { get; set; } = [];
@@ -17,6 +19,8 @@ public record PlayerState
     public List<PlayerId> PlayedAgainst { get; set; } = [];
     public int Games { get; set; }
     public int Observer { get; set; }
-    public bool PlayedLastGame { get; set; }
-    public bool ObsLastGame { get; set; }
+    public bool InQueue {  get; set; }
+    public bool Joined { get; set; }
+    public int RatingStart { get; set; }
+    public int CurrentRating { get; set; }
 }
