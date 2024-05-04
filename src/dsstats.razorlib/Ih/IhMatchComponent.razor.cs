@@ -10,109 +10,38 @@ public partial class IhMatchComponent : ComponentBase
     [Inject]
     public ILogger<IhMatchComponent> Logger { get; set; } = default!;
 
-    IhMatch match = new();
+    [CascadingParameter]
+    public GroupState GroupState { get; set; } = default!;
 
-    List<PlayerState> playerStates = [
-        new() {
-            PlayerId = new(1, 1, 2),
-            Name = "Test1",
-            RatingStart = 1000
-        },
-        new() {
-            PlayerId = new(2, 1, 2),
-            Name = "Test2",
-            RatingStart = 1000
-        },
-        new() {
-            PlayerId = new(3, 1, 2),
-            Name = "Test3",
-            RatingStart = 1000
-        },
-        new() {
-            PlayerId = new(4, 1, 2),
-            Name = "Test4",
-            RatingStart = 1000
-        },
-        new() {
-            PlayerId = new(5, 1, 2),
-            Name = "Test5",
-            RatingStart = 1000
-        },
-        new() {
-            PlayerId = new(6, 1, 2),
-            Name = "Test6",
-            RatingStart = 1000
-        },
-        new() {
-            PlayerId = new(7, 1, 2),
-            Name = "Test7",
-            RatingStart = 1000
-        },
-        new() {
-            PlayerId = new(8, 1, 2),
-            Name = "Test8",
-            RatingStart = 1000
-        },
-        new() {
-            PlayerId = new(9, 1, 2),
-            Name = "Test9",
-            RatingStart = 1000
-        },
-        new() {
-            PlayerId = new(10, 1, 2),
-            Name = "Test10",
-            RatingStart = 1000
-        },
-    ];
+    private List<PlayerState> availablePlayers => GroupState.PlayerStates
+        .Where(x => !GroupState.IhMatch.Teams.Any(a => a.Slots.Any(a => a.PlayerId == x.PlayerId)))
+        .ToList();
 
-    List<PlayerState> availablePlayers = [];
-    PlayerId? dragPlayerId = null;
-    int dragStartTeam = -1;
-
-    protected override void OnInitialized()
-    {
-        availablePlayers = new(playerStates);
-        PlayerState[] players = playerStates.ToArray();
-        Random.Shared.Shuffle(players);
-
-        for (int i = 0; i < 6; i++)
-        {
-            var team = i < 3 ? match.Teams[0] : match.Teams[1];
-            var pos = i < 3 ? i : i - 3;
-            var player = players[i];
-            availablePlayers.Remove(player);
-            team.Slots[pos].PlayerId = player.PlayerId;
-            team.Slots[pos].Name = player.Name;
-            team.Slots[pos].Rating = player.RatingStart;
-        }
-        base.OnInitialized();
-    }
+    private DropContainer dropContainer = new();
 
     private void HandleListDrop(DragEventArgs e)
     {
-        if (dragStartTeam > 0 && dragPlayerId is not null)
+        if (dropContainer.PlayerId is null || dropContainer.Team == -1)
         {
-            var team = match.Teams[dragStartTeam];
-            var slot = team.Slots.FirstOrDefault(f => f.PlayerId == dragPlayerId);
-            if (slot is not null)
-            {
-                slot.PlayerId = new();
-                slot.Name = string.Empty;
-                slot.Rating = 0;
-                var player = availablePlayers.FirstOrDefault(f => f.PlayerId == dragPlayerId);
-                if (player is not null)
-                {
-                    availablePlayers.Add(player);
-                }
-                dragStartTeam = -1;
-                dragPlayerId = null;
-            }
+            dropContainer.Reset();
+            return;
         }
-        else
+
+        var ihteam = GroupState.IhMatch.Teams[dropContainer.Team];
+        var ihslot = ihteam.Slots.FirstOrDefault(f => f.PlayerId == dropContainer.PlayerId);
+
+        if (ihslot is null)
         {
-            dragStartTeam = -1;
-            dragPlayerId = null;
+            dropContainer.Reset();
+            return;
         }
+
+        ihslot.PlayerId = new();
+        ihslot.Name = "Empty";
+        ihslot.Rating = 0;
+
+        dropContainer.Reset();
+        GroupState.IhMatch.SetScores(GroupState);
         StateHasChanged();
     }
 
@@ -126,73 +55,56 @@ public partial class IhMatchComponent : ComponentBase
 
     private void HandleListDragStart(PlayerId playerId)
     {
-        dragPlayerId = playerId;
-        dragStartTeam = 0;
+        dropContainer.PlayerId = playerId;
+        dropContainer.Team = -1;
     }
 
     private void HandleTeamDrop(DragEventArgs e, int team, PlayerId playerId)
     {
-        if (team == dragStartTeam)
+        if (dropContainer.PlayerId is null || dropContainer.Team == team)
         {
-            dragStartTeam = -1;
-            dragPlayerId = null;
+            dropContainer.Reset();
             return;
         }
 
-        var mteam = match.Teams[team];
-        var slot = mteam.Slots.FirstOrDefault(f => f.PlayerId == playerId);
+        var ihteam = GroupState.IhMatch.Teams[team];
+        var ihslot = ihteam.Slots.FirstOrDefault(f => f.PlayerId ==  playerId);
 
-        if (slot is null)
+        var player = GroupState.PlayerStates.FirstOrDefault(f => f.PlayerId == dropContainer.PlayerId);
+
+        if (ihslot is null || player is null)
         {
-            dragStartTeam = -1;
-            dragPlayerId = null;
+            dropContainer.Reset();
             return;
         }
 
-        if (dragStartTeam == 0)
+        if (dropContainer.Team == -1)
         {
-            var availablePlayer = availablePlayers.FirstOrDefault(f => f.PlayerId == playerId);
-            if (availablePlayer is null)
-            {
-                dragStartTeam = -1;
-                dragPlayerId = null;
-                return;
-            }
-            availablePlayers.Remove(availablePlayer);
-            var slotPlayer = playerStates.FirstOrDefault(f => f.PlayerId == slot.PlayerId);
-
-            slot.PlayerId = availablePlayer.PlayerId;
-            slot.Name = availablePlayer.Name;
-            slot.Rating = availablePlayer.RatingStart;
-
-            if (slotPlayer is not null)
-            {
-                availablePlayers.Add(slotPlayer);
-            }
+            ihslot.PlayerId = player.PlayerId;
+            ihslot.Name = player.Name;
+            ihslot.Rating = player.RatingStart;
         }
         else
         {
-            var player = playerStates.FirstOrDefault(f => f.PlayerId == dragPlayerId);
-            var oldSlot = match.Teams[dragStartTeam].Slots.FirstOrDefault(f => f.PlayerId == dragPlayerId);
-            
-            if (player is null || oldSlot is null)
+            var oldslot = GroupState.IhMatch.Teams[dropContainer.Team].Slots
+                .FirstOrDefault(f => f.PlayerId == dropContainer.PlayerId);
+            var oldplayer = GroupState.PlayerStates.FirstOrDefault(f => f.PlayerId == dropContainer.PlayerId);
+
+            if (oldslot is null || oldplayer is null)
             {
-                dragStartTeam = -1;
-                dragPlayerId = null;
+                dropContainer.Reset();
                 return;
             }
+            oldslot.PlayerId = ihslot.PlayerId;
+            oldslot.Name = ihslot.Name;
+            oldslot.Rating = ihslot.Rating;
 
-            oldSlot.PlayerId = slot.PlayerId;
-            oldSlot.Name = slot.Name;
-            oldSlot.Rating = slot.Rating;
-
-            slot.PlayerId = player.PlayerId;
-            slot.Name = player.Name;
-            slot.Rating = player.RatingStart;
+            ihslot.PlayerId = oldplayer.PlayerId;
+            ihslot.Name = oldplayer.Name;
+            ihslot.Rating = oldplayer.RatingStart;
         }
-
-        dragStartTeam = -1;
-        dragPlayerId = null;
+        dropContainer.Reset();
+        GroupState.IhMatch.SetScores(GroupState);
         StateHasChanged();
     }
 
@@ -206,12 +118,23 @@ public partial class IhMatchComponent : ComponentBase
 
     private void HandleTeamDragStart(int team, PlayerId playerId)
     {
-        dragStartTeam = team;
-        dragPlayerId = playerId;
+        dropContainer.PlayerId = playerId;
+        dropContainer.Team = team;
     }
 
-    private string GetId(PlayerId playerId)
+    private static string GetId(PlayerId playerId)
     {
         return $"{playerId.ToonId}|{playerId.RealmId}|{playerId.RegionId}";
+    }
+
+    private record DropContainer
+    {
+        public PlayerId? PlayerId { get; set; }
+        public int Team { get; set; } = -2;
+        public void Reset()
+        {
+            PlayerId = null;
+            Team = -2;
+        }
     }
 }

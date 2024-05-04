@@ -2,27 +2,29 @@
 
 
 <div class="container">
+    <div>
+        <p>@dropContainer.PlayerId</p>
+        <p>Team @dropContainer.Team</p>
+    </div>
     <div class="row">
         <div class="col-auto">
             <div class="card bgchart" style="width: 12rem;">
                 <div class="card-header bgchart2">
-                    Available Players
+                    Available Players (Name Rating | Games)
                 </div>
                 <div class="card-body bgchart">
                     <ul class="list-group list-group-flush"
-                            ondragover="event.preventDefault()"
-                            ondragstart="event.dataTransfer.setData('text/plain', event.target.id)"
-                            @ondrop="HandleListDrop"
-                            @ondragenter="HandleListDragEnter"
-                            @ondragleave="HandleListDragLeave"
-                        >
+                        ondragover="event.preventDefault()"
+                        ondragstart="event.dataTransfer.setData('text/plain', event.target.id)"
+                        @ondrop="HandleListDrop"
+                        @ondragenter="HandleListDragEnter"
+                        @ondragleave="HandleListDragLeave">
                         @foreach (var player in availablePlayers)
                         {
                             <li id="@GetId(player.PlayerId)" class="list-group-item text-dark bg-light"
                                 draggable="true"
-                                @ondragstart="e => HandleListDragStart(player.PlayerId)"
-                            >
-                                @player.Name
+                                @ondragstart="e => HandleListDragStart(player.PlayerId)">
+                                @player.Name @player.RatingStart | @player.Games
                             </li>
                         }
                     </ul>
@@ -30,33 +32,39 @@
             </div>
         </div>
         <div class="col-auto">
-            @for (int i = 0; i < 2; i++)
-            {
-                var teamId = i;
-                var team = match.Teams[teamId];
-                <div class="card bgchart" style="width: 18rem;">
-                    <div class="card-header bgchart2">
-                        Team @(i + 1)
-                    </div>
-                    <div class="card-body bgchart">
-                        <ul class="list-group list-group-flush">
-                            @foreach (var slot in team.Slots)
-                            {
-                                <li id="@GetId(slot.PlayerId)" class="list-group-item text-dark bg-light"
-                                    draggable="true"
-                                    @ondragstart="e => HandleTeamDragStart(teamId, slot.PlayerId)"
-                                    ondragover="event.preventDefault()"
-                                    @ondrop="e => HandleTeamDrop(e, teamId, slot.PlayerId)"
-                                    @ondragenter="e => HandleTeamDragEnter(e, teamId, slot.PlayerId)"
-                                    @ondragleave="e => HandleTeamDragLeave(e, teamId, slot.PlayerId)"
-                                >
-                                    @slot.Name
-                                </li>
-                            }
-                        </ul>
-                    </div>
+            <div class="card bgchart" style="width: 20rem;">
+                <div class="card-header bgchart2">
+                    IH Match RatingGap: @GroupState.IhMatch.RatingGap AgainstScore: @GroupState.IhMatch.AgainstScore
                 </div>
-            }
+                <div class="card-body bgchart">
+                    @for (int i = 0; i < 2; i++)
+                    {
+                        var teamId = i;
+                        var team = GroupState.IhMatch.Teams[teamId];
+                        <div class="card bgchart" style="width: 18rem;">
+                            <div class="card-header bgchart2">
+                                Team @(i + 1) Rating: @team.Rating WithScore: @team.WithScore
+                            </div>
+                            <div class="card-body bgchart">
+                                <ul class="list-group list-group-flush">
+                                    @foreach (var slot in team.Slots)
+                                    {
+                                        <li id="@GetId(slot.PlayerId)" class="list-group-item text-dark bg-light"
+                                            draggable="true"
+                                            @ondragstart="e => HandleTeamDragStart(teamId, slot.PlayerId)"
+                                            ondragover="event.preventDefault()"
+                                            @ondrop="e => HandleTeamDrop(e, teamId, slot.PlayerId)"
+                                            @ondragenter="e => HandleTeamDragEnter(e, teamId, slot.PlayerId)"
+                                            @ondragleave="e => HandleTeamDragLeave(e, teamId, slot.PlayerId)">
+                                            @slot.Name @slot.Rating 
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 </div>

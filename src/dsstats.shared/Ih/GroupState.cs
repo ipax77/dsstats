@@ -9,6 +9,7 @@ public record GroupState
     public int Visitors { get; set; }
     public HashSet<string> ReplayHashes { get; set; } = [];
     public List<PlayerState> PlayerStates { get; set; } = [];
+    public IhMatch IhMatch { get; set; } = new();
 }
 
 public record PlayerState
