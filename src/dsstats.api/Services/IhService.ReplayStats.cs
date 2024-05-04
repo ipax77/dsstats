@@ -22,11 +22,13 @@ public partial class IhService
 
             if (groupPlayer is null)
             {
+                (var name, var rating) = await GetNameAndRating(groupState, player.PlayerId);
                 groupPlayer = new PlayerState()
                 {
                     PlayerId = player.PlayerId,
-                    Name = player.Name,
-                    RatingStart = await GetRating(groupState, player.PlayerId)
+                    Name = name,
+                    RatingStart = rating,
+                    InQueue = true
                 };
                 groupState.PlayerStates.Add(groupPlayer);
             }
@@ -77,32 +79,32 @@ public partial class IhService
         }
     }
 
-    private async Task<int> GetRating(GroupState groupState, PlayerId playerId)
+    private async Task<(string, int)> GetNameAndRating(GroupState groupState, PlayerId playerId)
     {
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        double rating = 0;
         if (groupState.RatingCalcType == RatingCalcType.Dsstats)
         {
-            rating = await context.PlayerRatings
+            var namerating = await context.PlayerRatings
                 .Where(x => x.Player.ToonId == playerId.ToonId
                     && x.Player.RealmId == playerId.RealmId
-                    && x.Player.RegionId == playerId.RealmId
+                    && x.Player.RegionId == playerId.RegionId
                     && x.RatingType == groupState.RatingType)
-                .Select(s => s.Rating)
+                .Select(s => new { s.Player.Name, s.Rating })
                 .FirstOrDefaultAsync();
+            return (namerating?.Name ?? "Unknown", Convert.ToInt32(namerating?.Rating ?? 1000));
         }
         else
         {
-            rating = await context.ComboPlayerRatings
+            var namerating = await context.ComboPlayerRatings
                 .Where(x => x.Player.ToonId == playerId.ToonId
                     && x.Player.RealmId == playerId.RealmId
-                    && x.Player.RegionId == playerId.RealmId
+                    && x.Player.RegionId == playerId.RegionId
                     && x.RatingType == groupState.RatingType)
-                .Select(s => s.Rating)
+                .Select(s => new { s.Player.Name, s.Rating })
                 .FirstOrDefaultAsync();
+            return (namerating?.Name ?? "Unknown", Convert.ToInt32(namerating?.Rating ?? 1000));
         }
-        return Convert.ToInt32(rating);
     }
 }

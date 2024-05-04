@@ -19,6 +19,12 @@ public partial class IhMatchComponent : ComponentBase
 
     private DropContainer dropContainer = new();
 
+    private void CreateIhMatch()
+    {
+        GroupState.CreateMatch();
+        StateHasChanged();
+    }
+
     private void HandleListDrop(DragEventArgs e)
     {
         if (dropContainer.PlayerId is null || dropContainer.Team == -1)

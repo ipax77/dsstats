@@ -61,7 +61,7 @@ public partial class IhService(IServiceScopeFactory scopeFactory)
         return decodeEvent?.IhReplays ?? [];
     }
 
-    public async Task<List<string>> GetDecodeResultAsync(Guid guid)
+    public async Task<GroupState?> GetDecodeResultAsync(Guid guid)
     {
         List<IhReplay> replays = [];
 
@@ -93,7 +93,7 @@ public partial class IhService(IServiceScopeFactory scopeFactory)
             if (completedTask == timeoutTask)
             {
                 decodeService.DecodeFinished -= decodeEventHandler;
-                throw new TimeoutException("Decoding operation timed out.");
+                return null;
             }
 
             var result = await completionSource.Task;
@@ -117,7 +117,7 @@ public partial class IhService(IServiceScopeFactory scopeFactory)
                 decodeSS.Release();
             }
         }
-        return replays.Select(s => s.Replay.ReplayHash).ToList();
+        return groupState;
     }
 }
 

@@ -46,8 +46,16 @@ public class IhHub(IhService ihService) : Hub
         {
             await Clients.OthersInGroup(guid.ToString()).SendAsync("DecodingStart");
 
-            var replayHashes = await ihService.GetDecodeResultAsync(guid);
-            await Clients.Group(guid.ToString()).SendAsync("NewReplays", replayHashes);
+            var groupState = await ihService.GetDecodeResultAsync(guid);
+
+            if (groupState is null)
+            {
+                await Clients.Group(guid.ToString()).SendAsync("DecodeError");
+            }
+            else
+            {
+                await Clients.Group(guid.ToString()).SendAsync("NewState", groupState);
+            }
         }
     }
 }
