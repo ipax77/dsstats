@@ -1,7 +1,13 @@
 ﻿
-using System.Text.RegularExpressions;
-
 namespace dsstats.shared;
+
+public record GroupStateDto
+{
+    public RatingType RatingType { get; set; }
+    public Guid GroupId { get; set; }
+    public int Visitors { get; set; }
+    public DateTime Created { get; set; }
+}
 
 public record GroupState
 {
@@ -12,6 +18,7 @@ public record GroupState
     public HashSet<string> ReplayHashes { get; set; } = [];
     public List<PlayerState> PlayerStates { get; set; } = [];
     public IhMatch IhMatch { get; set; } = new();
+    public DateTime Created { get; set; } = DateTime.UtcNow;
 }
 
 public record PlayerState

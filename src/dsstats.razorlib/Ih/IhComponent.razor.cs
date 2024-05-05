@@ -10,7 +10,10 @@ public partial class IhComponent() : ComponentBase, IDisposable
     [Inject]
     public HttpClient httpClient { get; set; } = default!;
 
-    private Guid guid = Guid.NewGuid();
+    [Parameter, EditorRequired]
+    public Guid Guid {  get; set; } = Guid.NewGuid();
+    
+    
     private HubConnection? hubConnection;
     private bool isConnected => hubConnection?.State == HubConnectionState.Connected;
     GroupState groupState = new();
@@ -21,7 +24,7 @@ public partial class IhComponent() : ComponentBase, IDisposable
 
     protected override async Task OnInitializedAsync()
     {
-        groupState.GroupId = guid;
+        groupState.GroupId = Guid;
         groupState.Visitors = 1;
 
         // DEBUG
@@ -132,7 +135,7 @@ public partial class IhComponent() : ComponentBase, IDisposable
         await hubConnection.StartAsync();
         if (isConnected)
         {
-            await hubConnection.SendAsync("JoinGroup", guid.ToString());
+            await hubConnection.SendAsync("JoinGroup", Guid.ToString());
         }
 
         await base.OnInitializedAsync();

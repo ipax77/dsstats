@@ -1,10 +1,10 @@
-﻿using dsstats.api.Services;
-using dsstats.shared;
+﻿using dsstats.shared;
+using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 
 namespace dsstats.api.Hubs;
 
-public class IhHub(IhService ihService) : Hub
+public class IhHub(IIhService ihService) : Hub
 {
 
     public async Task JoinGroup(Guid groupId)

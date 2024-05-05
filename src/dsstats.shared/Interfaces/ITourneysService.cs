@@ -8,4 +8,5 @@ public interface ITourneysService
     Task<TourneysStatsResponse> GetTourneyStats(TourneysStatsRequest statsRequest, CancellationToken token);
     Task<(string, string)?> DownloadReplay(string replayHash);
     Task SeedTourneys();
+    Task<List<GroupStateDto>> GetGroupStates();
 }

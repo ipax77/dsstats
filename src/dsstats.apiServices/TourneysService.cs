@@ -14,6 +14,20 @@ public class TourneysService(HttpClient httpClient, ILogger<TourneysService> log
         throw new NotImplementedException();
     }
 
+    public async Task<List<GroupStateDto>> GetGroupStates()
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<List<GroupStateDto>>($"{tourneysController}/groups") ?? [];
+
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting groupStates: {error}", ex.Message);
+        }
+        return [];
+    }
+
     public async Task<List<TourneysReplayListDto>> GetReplays(TourneysReplaysRequest request, CancellationToken token)
     {
         try

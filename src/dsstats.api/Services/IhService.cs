@@ -1,14 +1,30 @@
 ﻿
 using dsstats.shared;
+using dsstats.shared.Interfaces;
 using System.Collections.Concurrent;
 
 namespace dsstats.api.Services;
 
-public partial class IhService(IServiceScopeFactory scopeFactory)
+public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
 {
     private ConcurrentDictionary<Guid, GroupState> groups = [];
     private ConcurrentDictionary<Guid, List<IhReplay>> groupReplays = [];
     SemaphoreSlim decodeSS = new(1, 1);
+
+    public async Task<List<GroupStateDto>> GetOpenGroups()
+    {
+        var groupDtos = groups
+            .Select(s => new GroupStateDto()
+            {
+                GroupId = s.Value.GroupId,
+                RatingType = s.Value.RatingType,
+                Visitors = s.Value.Visitors,
+                Created = s.Value.Created,
+            })
+            .OrderByDescending(o => o.Created)
+            .ToList();
+        return await Task.FromResult(groupDtos);
+    }
 
     public GroupState? CreateOrVisitGroup(Guid groupId)
     {
@@ -23,7 +39,7 @@ public partial class IhService(IServiceScopeFactory scopeFactory)
                 (k, v) => v = v with { Visitors = 1 });
         }
 
-        if (!groupReplays.TryGetValue(groupId,out List<IhReplay>? replays)
+        if (!groupReplays.TryGetValue(groupId, out List<IhReplay>? replays)
             || replays is null)
         {
             groupReplays.AddOrUpdate(groupId, [], (k, v) => v = []);
@@ -111,7 +127,7 @@ public partial class IhService(IServiceScopeFactory scopeFactory)
                     groupReplays[guid].Add(replay);
                 }
                 await SetReplayStats(groupState, replays);
-            } 
+            }
             finally
             {
                 decodeSS.Release();
