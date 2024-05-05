@@ -1,4 +1,6 @@
 ﻿
+using System.Text.RegularExpressions;
+
 namespace dsstats.shared;
 
 public record GroupState
@@ -24,10 +26,56 @@ public record PlayerState
     public bool Joined { get; set; }
     public int RatingStart { get; set; }
     public int CurrentRating { get; set; }
+    public QueuePriority QueuePriority { get; set; } = QueuePriority.High;
 }
 
 public static class GroupStateExtensions
 {
+    public static void FillTeam(this GroupState groupState, int teamId)
+    {
+        var team = groupState.IhMatch.Teams[teamId];
+        var remainingPlayers = team.Slots.Count(x => x.PlayerId.ToonId == 0);
+
+        if (remainingPlayers <= 0)
+        {
+            return;
+        }
+
+        var players = groupState.PlayerStates.Where(x => x.InQueue).ToList();
+        int avgRating = Convert.ToInt32(players.Average(a => a.RatingStart));
+
+        var orderedPlayers = players
+            .OrderByDescending(o => o.QueuePriority)
+                .ThenByDescending(o => o.RatingStart)
+            .ToList();
+        var availablePlayers = new List<PlayerState>(orderedPlayers)
+            .Where(x => !groupState.IhMatch.Teams.Any(a => a.Slots.Any(b => b.PlayerId == x.PlayerId)))
+            .ToList();
+
+        if (availablePlayers.Count < remainingPlayers)
+        {
+            return;
+        }
+
+        for (int i = 0; i < team.Slots.Length; i++)
+        {
+            var slot = team.Slots[i];
+            if (slot.PlayerId.ToonId != 0)
+            {
+                continue;
+            }
+            
+            var closestPlayer = SetClosestPlayer(groupState.IhMatch,
+                                     teamId,
+                                     i,
+                                     avgRating,
+                                     availablePlayers,
+                                     groupState);
+
+            availablePlayers.Remove(closestPlayer);
+        }
+    }
+
     public static void CreateMatch(this GroupState groupState)
     {
         var players = groupState.PlayerStates.Where(x => x.InQueue).ToList();
@@ -38,7 +86,10 @@ public static class GroupStateExtensions
 
         int teamCount = 2;
         int avgRating = Convert.ToInt32(players.Average(a => a.RatingStart));
-        var orderedPlayers = players.OrderByDescending(o => o.RatingStart).ToList();
+        var orderedPlayers = players
+            .OrderByDescending(o => o.QueuePriority)
+                .ThenByDescending(o => o.RatingStart)
+            .ToList();
         var availablePlayers = new List<PlayerState>(orderedPlayers);
 
         IhMatch match = new();
@@ -86,12 +137,14 @@ public static class GroupStateExtensions
         var team = match.Teams[teamId];
         var slot = team.Slots[slotId];
         var closestPlayers = availablePlayers
-            .OrderBy(p => Math.Abs((team.Rating * 3 + p.RatingStart) / (3 - avgRating)))
+            .OrderByDescending(o => o.QueuePriority)
+                .ThenBy(p => Math.Abs((team.Rating * slotId + p.RatingStart) / (slotId - avgRating)))
+            .Take(3)
             .ToList();
 
         Dictionary<PlayerId, KeyValuePair<int, int>> playerScores = [];
 
-        for (int i = 0; i < Math.Min(3, closestPlayers.Count); i++)
+        for (int i = 0; i < closestPlayers.Count; i++)
         {
             var closestPlayer = closestPlayers[i];
             slot.PlayerId = closestPlayer.PlayerId;

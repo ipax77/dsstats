@@ -119,5 +119,33 @@ public partial class IhService(IServiceScopeFactory scopeFactory)
         }
         return groupState;
     }
+
+    public async Task<PlayerState?> AddPlayerToGroup(Guid groupId, RequestNames requestNames)
+    {
+
+        if (!groups.TryGetValue(groupId, out GroupState? groupState)
+            || groupState is null)
+        {
+            return null;
+        }
+
+        PlayerId playerId = new(requestNames.ToonId, requestNames.RealmId, requestNames.RegionId);
+        if (groupState.PlayerStates.Any(a => a.PlayerId == playerId))
+        {
+            return null;
+        }
+
+        (var name, var rating) = await GetNameAndRating(groupState, playerId);
+
+        PlayerState playerState = new()
+        {
+            PlayerId = playerId,
+            Name = requestNames.Name,
+            RatingStart = rating,
+            InQueue = true
+        };
+        groupState.PlayerStates.Add(playerState);
+        return playerState;
+    }
 }
 

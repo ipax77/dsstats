@@ -13,6 +13,9 @@ public partial class IhMatchComponent : ComponentBase
     [CascadingParameter]
     public GroupState GroupState { get; set; } = default!;
 
+    [Parameter]
+    public EventCallback OnAddPlayersRequest { get; set; } = default!;
+
     private List<PlayerState> availablePlayers => GroupState.PlayerStates
         .Where(x => !GroupState.IhMatch.Teams.Any(a => a.Slots.Any(a => a.PlayerId == x.PlayerId)))
         .ToList();

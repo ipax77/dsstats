@@ -24,5 +24,7 @@
 </div>
 
 <CascadingValue Value="groupState">
-    <IhMatchComponent />
+    <IhMatchComponent OnAddPlayersRequest="e => addPlayersModal?.Show(groupState.RatingType)" />
 </CascadingValue>
+
+<dsstats.razorlib.Builds.AddPlayersModal @ref="addPlayersModal" OnPlayersSelected="PlayersSelected" SinglePlayer="false" />

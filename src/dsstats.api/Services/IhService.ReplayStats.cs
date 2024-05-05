@@ -40,6 +40,7 @@ public partial class IhService
             else
             {
                 groupPlayer.Games++;
+                groupPlayer.QueuePriority = QueuePriority.Medium;
             }
         }
 

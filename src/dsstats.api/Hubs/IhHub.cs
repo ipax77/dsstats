@@ -1,4 +1,5 @@
 ﻿using dsstats.api.Services;
+using dsstats.shared;
 using Microsoft.AspNetCore.SignalR;
 
 namespace dsstats.api.Hubs;
@@ -55,6 +56,19 @@ public class IhHub(IhService ihService) : Hub
             else
             {
                 await Clients.Group(guid.ToString()).SendAsync("NewState", groupState);
+            }
+        }
+    }
+
+    public async Task AddPlayerToGroup(RequestNames requestNames)
+    {
+        if (Context.Items.TryGetValue("guid", out object? guidObject)
+            && Guid.TryParse(guidObject?.ToString(), out Guid guid))
+        {
+            var playerState = await ihService.AddPlayerToGroup(guid, requestNames);
+            if (playerState is not null)
+            {
+                await Clients.Group(guid.ToString()).SendAsync("NewPlayer", playerState);
             }
         }
     }

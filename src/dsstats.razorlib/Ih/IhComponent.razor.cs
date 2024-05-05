@@ -1,3 +1,4 @@
+using dsstats.razorlib.Builds;
 using dsstats.shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -15,6 +16,8 @@ public partial class IhComponent() : ComponentBase, IDisposable
     GroupState groupState = new();
 
     private bool decoding;
+
+    AddPlayersModal? addPlayersModal;
 
     protected override async Task OnInitializedAsync()
     {
@@ -120,6 +123,12 @@ public partial class IhComponent() : ComponentBase, IDisposable
             InvokeAsync(() => StateHasChanged());
         });
 
+        hubConnection.On<PlayerState>("NewPlayer", (player) =>
+        {
+            groupState.PlayerStates.Add(player);
+            InvokeAsync(() => StateHasChanged());
+        });
+
         await hubConnection.StartAsync();
         if (isConnected)
         {
@@ -134,6 +143,17 @@ public partial class IhComponent() : ComponentBase, IDisposable
         if (isConnected)
         {
             hubConnection?.SendAsync("DecodeRequest");
+        }
+    }
+
+    public async void PlayersSelected(List<RequestNames> requestNames)
+    {
+        if (isConnected && hubConnection is not null)
+        {
+            foreach (var requestName in requestNames)
+            {
+                await hubConnection.SendAsync("AddPlayerToGroup", requestName);
+            }
         }
     }
 

@@ -1,16 +1,20 @@
-﻿<h3>IhMatchComponent</h3>
+﻿@using dsstats.shared
+<h3>IhMatchComponent</h3>
 
 
-<div class="container">
+<div class="container-fluid">
     <div class="btn-group">
         <button type="button" class="btn btn-outline-light bgchart"
             @onclick="CreateIhMatch">
             Create Match
         </button>
+        <button type="button" class="btn btn-outline-light bgchart" @onclick="e => OnAddPlayersRequest.InvokeAsync()">
+            Add Player(s)
+        </button>
     </div>
     <div class="row">
         <div class="col-auto">
-            <div class="card bgchart" style="width: 12rem;">
+            <div class="card bgchart" style="width: 14rem;">
                 <div class="card-header bgchart2">
                     Available Players (Name Rating | Games)
                 </div>
@@ -45,7 +49,17 @@
                         var team = GroupState.IhMatch.Teams[teamId];
                         <div class="card bgchart" style="width: 18rem;">
                             <div class="card-header bgchart2">
-                                Team @(i + 1) Rating: @team.Rating WithScore: @team.WithScore
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        Team @(i + 1) Rating: @team.Rating WithScore: @team.WithScore
+                                    </div>
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-outline-light bgchart"
+                                            @onclick="e => GroupState.FillTeam(teamId)">
+                                            Fill
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             <div class="card-body bgchart">
                                 <ul class="list-group list-group-flush">

@@ -196,3 +196,11 @@ public enum FaqLevel
     Intermediate = 2,
     Advanced = 3
 }
+
+public enum QueuePriority
+{
+    None = 0,
+    Low = 1,
+    Medium = 2,
+    High = 3
+}

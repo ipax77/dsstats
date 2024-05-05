@@ -232,6 +232,11 @@
         JSRuntime.InvokeVoidAsync("openModalById", "addplayermodal");
         addPlayers.Clear();
         Request.Type = ratingType;
+        if (ratingType == RatingType.StdTE || ratingType == RatingType.CmdrTE)
+        {
+            Request.ComboRating = false;
+            Request.Uploaders = false;
+        }
         _ = Reload();
     }
 
