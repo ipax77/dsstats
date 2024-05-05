@@ -1,4 +1,5 @@
-﻿using dsstats.shared;
+﻿using dsstats.api.Services;
+using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 
@@ -71,5 +72,20 @@ public class IhHub(IIhService ihService) : Hub
                 await Clients.Group(guid.ToString()).SendAsync("NewPlayer", playerState);
             }
         }
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? e)
+    {
+        if (Context.Items.TryGetValue("guid", out object? guidObject)
+            && Guid.TryParse(guidObject?.ToString(), out Guid guid))
+        {
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, guid.ToString());
+            var groupState = ihService.LeaveGroup(guid);
+            if (groupState is not null)
+            {
+                await Clients.Group(guid.ToString()).SendAsync("VisitorLeft", groupState.Visitors);
+            }
+        }
+        await base.OnDisconnectedAsync(e);
     }
 }
