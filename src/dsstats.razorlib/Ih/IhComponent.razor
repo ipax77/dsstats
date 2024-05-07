@@ -1,26 +1,7 @@
 ﻿
-<h4>Ih Session @Guid</h4>
-
-<IhUploadComp Guid="Guid" OnDecodeRequested="DecodeRequested" />
-
+<h4>Ih Session</h4>
 <div>
-    <p>@groupState.GroupId</p>
-    <p>Connected: @isConnected</p>
-    <p>Visitors: @groupState.Visitors</p>
-</div>
-
-@if (decoding)
-{
-    <div class="spinner-border spinner-border-sm text-danger" role="status">
-        <span class="visually-hidden">Decoding...</span>
-    </div>
-}
-
-<div>
-    @foreach (var replay in groupState.ReplayHashes)
-    {
-        <p>@replay</p>
-    }
+    <IhUploadComp Guid="Guid" OnDecodeRequested="DecodeRequested" />
 </div>
 
 <div class="row">
@@ -40,7 +21,7 @@
                 </thead>
                 <tbody>
                     @foreach (var state in groupState.PlayerStates
-                        .OrderByDescending(o => o.Games == 0 ? 0 : o.Wins / (double)o.Games))
+                    .OrderByDescending(o => o.Games == 0 ? 0 : o.Wins / (double)o.Games))
                     {
                         <tr>
                             <td>@state.Name</td>
@@ -73,5 +54,13 @@
         </CascadingValue>
     </div>
 </div>
+
+<div class="bgchart p-2 rounded" style="max-width: 500px;">
+    <h4>IH Rules</h4>
+    <p>If it's your first time in In-House you have to play.</p>
+    <p>Invite your friends - all are welcome.</p>
+    <p>All banter is welcome as long as it comes from a good place - we are here to have fun.</p>
+</div>
+
 
 <dsstats.razorlib.Builds.AddPlayersModal @ref="addPlayersModal" OnPlayersSelected="PlayersSelected" SinglePlayer="false" />

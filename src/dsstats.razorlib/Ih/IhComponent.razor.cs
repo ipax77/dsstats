@@ -75,7 +75,7 @@ public partial class IhComponent() : ComponentBase, IDisposable
         hubConnection.On<PlayerState>("NewPlayer", (player) =>
         {
             groupState.PlayerStates.Add(player);
-            ihMatchComponent?.Update();
+            //ihMatchComponent?.Update();
             InvokeAsync(() => StateHasChanged());
         });
 
@@ -85,7 +85,7 @@ public partial class IhComponent() : ComponentBase, IDisposable
             if (playerState != null)
             {
                 groupState.PlayerStates.Remove(playerState);
-                ihMatchComponent?.Update();
+                //ihMatchComponent?.Update();
                 InvokeAsync(() => StateHasChanged());
             }
         });
@@ -96,7 +96,7 @@ public partial class IhComponent() : ComponentBase, IDisposable
             if (playerState != null)
             {
                 playerState.InQueue = true;
-                ihMatchComponent?.Update();
+                //ihMatchComponent?.Update();
                 InvokeAsync(() => StateHasChanged());
             }
         });
@@ -107,7 +107,7 @@ public partial class IhComponent() : ComponentBase, IDisposable
             if (playerState != null)
             {
                 playerState.InQueue = false;
-                ihMatchComponent?.Update();
+                //ihMatchComponent?.Update();
                 InvokeAsync(() => StateHasChanged());
             }
         });
