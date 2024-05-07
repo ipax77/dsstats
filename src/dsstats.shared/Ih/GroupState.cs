@@ -28,9 +28,9 @@ public record PlayerState
     public List<PlayerId> PlayedWith { get; set; } = [];
     public List<PlayerId> PlayedAgainst { get; set; } = [];
     public int Games { get; set; }
+    public int Wins { get; set; }
     public int Observer { get; set; }
-    public bool InQueue {  get; set; }
-    public bool Joined { get; set; }
+    public bool InQueue { get; set; }
     public int RatingStart { get; set; }
     public int CurrentRating { get; set; }
     public QueuePriority QueuePriority { get; set; } = QueuePriority.High;
@@ -71,7 +71,7 @@ public static class GroupStateExtensions
             {
                 continue;
             }
-            
+
             var closestPlayer = SetClosestPlayer(groupState.IhMatch,
                                      teamId,
                                      i,

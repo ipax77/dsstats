@@ -158,10 +158,69 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
             PlayerId = playerId,
             Name = requestNames.Name,
             RatingStart = rating,
-            InQueue = true
+            InQueue = true,
+            QueuePriority = QueuePriority.High
         };
         groupState.PlayerStates.Add(playerState);
         return playerState;
+    }
+
+    public async Task<PlayerState?> RemovePlayerFromGroup(Guid groupId, RequestNames requestNames)
+    {
+        if (!groups.TryGetValue(groupId, out GroupState? groupState)
+            || groupState is null)
+        {
+            return null;
+        }
+
+        PlayerId playerId = new(requestNames.ToonId, requestNames.RealmId, requestNames.RegionId);
+        var playerState = groupState.PlayerStates.FirstOrDefault(f => f.PlayerId == playerId);
+
+        if (playerState is null)
+        {
+            return null;
+        }
+                
+        groupState.PlayerStates.Remove(playerState);
+        return await Task.FromResult(playerState);
+    }
+
+    public async Task<bool> AddPlayerToQueue(Guid groupId, PlayerId playerId)
+    {
+        if (!groups.TryGetValue(groupId, out GroupState? groupState)
+            || groupState is null)
+        {
+            return false;
+        }
+
+        var playerState = groupState.PlayerStates.FirstOrDefault(f => f.PlayerId == playerId);
+
+        if (playerState is null)
+        {
+            return false;
+        }
+
+        playerState.InQueue = true;
+        return await Task.FromResult(true);
+    }
+
+    public async Task<bool> RemovePlayerFromQueue(Guid groupId, PlayerId playerId)
+    {
+        if (!groups.TryGetValue(groupId, out GroupState? groupState)
+            || groupState is null)
+        {
+            return false;
+        }
+
+        var playerState = groupState.PlayerStates.FirstOrDefault(f => f.PlayerId == playerId);
+
+        if (playerState is null)
+        {
+            return false;
+        }
+
+        playerState.InQueue = false;
+        return await Task.FromResult(true);
     }
 }
 

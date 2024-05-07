@@ -56,7 +56,7 @@ public class IhHub(IIhService ihService) : Hub
             }
             else
             {
-                await Clients.Group(guid.ToString()).SendAsync("NewState", groupState);
+                await Clients.Group(guid.ToString()).SendAsync("ConnectInfo", groupState);
             }
         }
     }
@@ -70,6 +70,43 @@ public class IhHub(IIhService ihService) : Hub
             if (playerState is not null)
             {
                 await Clients.Group(guid.ToString()).SendAsync("NewPlayer", playerState);
+            }
+        }
+    }
+
+    public async Task AddPlayerToQueue(PlayerId playerId)
+    {
+        if (Context.Items.TryGetValue("guid", out object? guidObject)
+            && Guid.TryParse(guidObject?.ToString(), out Guid guid))
+        {
+            if (await ihService.AddPlayerToQueue(guid, playerId))
+            {
+                await Clients.Group(guid.ToString()).SendAsync("AddedToQueue", playerId);
+            }
+        }
+    }
+
+    public async Task RemovePlayerFromQueue(PlayerId playerId)
+    {
+        if (Context.Items.TryGetValue("guid", out object? guidObject)
+            && Guid.TryParse(guidObject?.ToString(), out Guid guid))
+        {
+            if (await ihService.AddPlayerToQueue(guid, playerId))
+            {
+                await Clients.Group(guid.ToString()).SendAsync("RemovedFromQueue", playerId);
+            }
+        }
+    }
+
+    public async Task RemovePlayerFromGroup(RequestNames requestNames)
+    {
+        if (Context.Items.TryGetValue("guid", out object? guidObject)
+            && Guid.TryParse(guidObject?.ToString(), out Guid guid))
+        {
+            var playerState = await ihService.RemovePlayerFromGroup(guid, requestNames);
+            if (playerState is not null)
+            {
+                await Clients.Group(guid.ToString()).SendAsync("RemovePlayer", playerState);
             }
         }
     }

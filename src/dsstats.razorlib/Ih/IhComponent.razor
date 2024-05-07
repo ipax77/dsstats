@@ -23,8 +23,55 @@
     }
 </div>
 
-<CascadingValue Value="groupState">
-    <IhMatchComponent OnAddPlayersRequest="e => addPlayersModal?.Show(groupState.RatingType)" />
-</CascadingValue>
+<div class="row">
+    <div class="col-auto">
+        <div class="table-responsive tableFixHead" style="max-height: 70vw;">
+            <table class="tptable table w-auto">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Rating</th>
+                        <th>Games</th>
+                        <th>Wins</th>
+                        <th>Obs</th>
+                        <th>In Queue</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var state in groupState.PlayerStates
+                        .OrderByDescending(o => o.Games == 0 ? 0 : o.Wins / (double)o.Games))
+                    {
+                        <tr>
+                            <td>@state.Name</td>
+                            <td>@state.RatingStart</td>
+                            <td>@state.Games</td>
+                            <td>@state.Wins</td>
+                            <td>@state.Observer</td>
+                            <td @onclick="e => ChangeQueueState(state)">
+                                @if (state.InQueue)
+                                {
+                                    <span class="bi bi-eye text-success"></span>
+                                }
+                                else
+                                {
+                                    <span class="bi bi-eye-slash text-danger"></span>
+                                }
+                            </td>
+                            <td @onclick="e => RemovePlayer(state)">
+                                <span class="bi bi-x-lg text-danger"></span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-auto">
+        <CascadingValue Value="groupState">
+            <IhMatchComponent @ref="ihMatchComponent" OnAddPlayersRequest="e => addPlayersModal?.Show(groupState.RatingType)" />
+        </CascadingValue>
+    </div>
+</div>
 
 <dsstats.razorlib.Builds.AddPlayersModal @ref="addPlayersModal" OnPlayersSelected="PlayersSelected" SinglePlayer="false" />

@@ -18,6 +18,10 @@ public partial class IhService
     {
         foreach (var player in replay.Metadata.Players)
         {
+            if (player.PlayerId.ToonId == 0)
+            {
+                continue;
+            }
             var groupPlayer = groupState.PlayerStates.FirstOrDefault(f => f.PlayerId == player.PlayerId);
 
             if (groupPlayer is null)
@@ -32,14 +36,9 @@ public partial class IhService
                 };
                 groupState.PlayerStates.Add(groupPlayer);
             }
-
             if (player.Observer)
             {
                 groupPlayer.Observer++;
-            }
-            else
-            {
-                groupPlayer.Games++;
                 groupPlayer.QueuePriority = QueuePriority.Medium;
             }
         }
@@ -51,14 +50,23 @@ public partial class IhService
 
             if (groupPlayer is null)
             {
+                (var name, var rating) = await GetNameAndRating(groupState, playerId);
                 groupPlayer = new PlayerState()
                 {
-                    PlayerId = playerId
+                    PlayerId = playerId,
+                    Name = name,
+                    RatingStart = rating,
+                    InQueue = true
                 };
                 groupState.PlayerStates.Add(groupPlayer);
             }
             groupPlayer.Name = player.Name;
-            groupPlayer.Joined = false;
+            groupPlayer.QueuePriority = QueuePriority.Low;
+            groupPlayer.Games++;
+            if (player.PlayerResult == PlayerResult.Win)
+            {
+                groupPlayer.Wins++;
+            }
 
             foreach (var otherPlayer in replay.Replay.ReplayPlayers)
             {

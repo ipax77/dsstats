@@ -17,10 +17,16 @@ public partial class IhMatchComponent : ComponentBase
     public EventCallback OnAddPlayersRequest { get; set; } = default!;
 
     private List<PlayerState> availablePlayers => GroupState.PlayerStates
-        .Where(x => !GroupState.IhMatch.Teams.Any(a => a.Slots.Any(a => a.PlayerId == x.PlayerId)))
+        .Where(x => x.InQueue &&
+            !GroupState.IhMatch.Teams.Any(a => a.Slots.Any(a => a.PlayerId == x.PlayerId)))
         .ToList();
 
     private DropContainer dropContainer = new();
+
+    public void Update()
+    {
+        InvokeAsync(() => StateHasChanged());
+    }
 
     private void CreateIhMatch()
     {

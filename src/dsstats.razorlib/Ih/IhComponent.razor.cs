@@ -20,67 +20,13 @@ public partial class IhComponent() : ComponentBase, IDisposable
 
     private bool decoding;
 
+    IhMatchComponent? ihMatchComponent;
     AddPlayersModal? addPlayersModal;
 
     protected override async Task OnInitializedAsync()
     {
         groupState.GroupId = Guid;
         groupState.Visitors = 1;
-
-        // DEBUG
-        //groupState.PlayerStates = [
-        //    new() {
-        //        PlayerId = new(1, 1, 2),
-        //        Name = "Test1",
-        //        RatingStart = 1000
-        //    },
-        //    new() {
-        //        PlayerId = new(2, 1, 2),
-        //        Name = "Test2",
-        //        RatingStart = 1000
-        //    },
-        //    new() {
-        //        PlayerId = new(3, 1, 2),
-        //        Name = "Test3",
-        //        RatingStart = 1000
-        //    },
-        //    new() {
-        //        PlayerId = new(4, 1, 2),
-        //        Name = "Test4",
-        //        RatingStart = 1000
-        //    },
-        //    new() {
-        //        PlayerId = new(5, 1, 2),
-        //        Name = "Test5",
-        //        RatingStart = 1000
-        //    },
-        //    new() {
-        //        PlayerId = new(6, 1, 2),
-        //        Name = "Test6",
-        //        RatingStart = 1000
-        //    },
-        //    new() {
-        //        PlayerId = new(7, 1, 2),
-        //        Name = "Test7",
-        //        RatingStart = 1000
-        //    },
-        //    new() {
-        //        PlayerId = new(8, 1, 2),
-        //        Name = "Test8",
-        //        RatingStart = 1000
-        //    },
-        //    new() {
-        //        PlayerId = new(9, 1, 2),
-        //        Name = "Test9",
-        //        RatingStart = 1000
-        //    },
-        //    new() {
-        //        PlayerId = new(10, 1, 2),
-        //        Name = "Test10",
-        //        RatingStart = 1000
-        //    },
-        //];
-        //groupState.PlayerStates.ForEach(f => f.InQueue = true);
 
         var uri = httpClient.BaseAddress ?? new Uri("https://dsstats.pax77.org");
         uri = new Uri(uri, "/hubs/ih");
@@ -107,7 +53,7 @@ public partial class IhComponent() : ComponentBase, IDisposable
             InvokeAsync(() => StateHasChanged());
         });
 
-        hubConnection.On<GroupState>("NewState", (newgroupState) =>
+        hubConnection.On<GroupState>("ConnectInfo", (newgroupState) =>
         {
             groupState = newgroupState;
             decoding = false;
@@ -129,7 +75,41 @@ public partial class IhComponent() : ComponentBase, IDisposable
         hubConnection.On<PlayerState>("NewPlayer", (player) =>
         {
             groupState.PlayerStates.Add(player);
+            ihMatchComponent?.Update();
             InvokeAsync(() => StateHasChanged());
+        });
+
+        hubConnection.On<PlayerState>("RemovePlayer", (player) =>
+        {
+            var playerState = groupState.PlayerStates.FirstOrDefault(f => f.PlayerId == player.PlayerId);
+            if (playerState != null)
+            {
+                groupState.PlayerStates.Remove(playerState);
+                ihMatchComponent?.Update();
+                InvokeAsync(() => StateHasChanged());
+            }
+        });
+
+        hubConnection.On<PlayerId>("AddedToQueue", (player) =>
+        {
+            var playerState = groupState.PlayerStates.FirstOrDefault(f => f.PlayerId == player);
+            if (playerState != null)
+            {
+                playerState.InQueue = true;
+                ihMatchComponent?.Update();
+                InvokeAsync(() => StateHasChanged());
+            }
+        });
+
+        hubConnection.On<PlayerId>("RemovedFromQueue", (player) =>
+        {
+            var playerState = groupState.PlayerStates.FirstOrDefault(f => f.PlayerId == player);
+            if (playerState != null)
+            {
+                playerState.InQueue = false;
+                ihMatchComponent?.Update();
+                InvokeAsync(() => StateHasChanged());
+            }
         });
 
         await hubConnection.StartAsync();
@@ -157,6 +137,29 @@ public partial class IhComponent() : ComponentBase, IDisposable
             {
                 await hubConnection.SendAsync("AddPlayerToGroup", requestName);
             }
+        }
+    }
+
+    public async Task ChangeQueueState(PlayerState state)
+    {
+        if (isConnected && hubConnection is not null)
+        {
+            if (state.InQueue)
+            {
+                await hubConnection.SendAsync("RemovePlayerFromQueue", state.PlayerId);
+            }
+            else
+            {
+                await hubConnection.SendAsync("AddPlayerToQueue", state.PlayerId);
+            }
+        }
+    }
+
+    public async Task RemovePlayer(PlayerState playerState)
+    {
+        if (isConnected && hubConnection is not null)
+        {
+            await hubConnection.SendAsync("RemovePlayerFromGroup", playerState.PlayerId);
         }
     }
 
