@@ -22,6 +22,13 @@ public partial class TourneysService(ReplayContext context, IServiceScopeFactory
             }).ToListAsync();
     }
 
+    public async Task<List<GroupStateDto>> GetGroupStates()
+    {
+        using var scope = scopeFactory.CreateScope();
+        var ihService = scope.ServiceProvider.GetRequiredService<IIhService>();
+        return await ihService.GetOpenGroups();
+    }
+
     public async Task<int> GetReplaysCount(TourneysReplaysRequest request, CancellationToken token = default)
     {
         var replays = GetReplaysQueriable(request);

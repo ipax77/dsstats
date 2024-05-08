@@ -14,6 +14,13 @@ public class TourneysController(ITourneysService tourneysService) : Controller
         return await tourneysService.GetTourneys();
     }
 
+    [HttpGet]
+    [Route("groups")]
+    public async Task<ActionResult<List<GroupStateDto>>> GetOpenGroups()
+    {
+        return await tourneysService.GetGroupStates();
+    }
+
     [HttpPost]
     [Route("stats")]
     public async Task<ActionResult<TourneysStatsResponse>> GetTourneySats(TourneysStatsRequest request, CancellationToken token = default)

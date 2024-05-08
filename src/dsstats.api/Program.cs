@@ -109,7 +109,7 @@ builder.Services.AddSingleton<AuthenticationFilterAttributeV6>();
 builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 builder.Services.AddSingleton<DsUnitRepository>();
 builder.Services.AddSingleton<DecodeService>();
-builder.Services.AddSingleton<IhService>();
+builder.Services.AddSingleton<IIhService, IhService>();
 
 builder.Services.AddScoped<CrawlerService>();
 builder.Services.AddScoped<IWinrateService, WinrateService>();

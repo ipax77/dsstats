@@ -1,9 +1,94 @@
 ﻿@page "/tourneys/ih"
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject NavigationManager NavigationManager
+@inject ITourneysService tourneyService
 
 <PageTitle>dsstats IH session</PageTitle>
 
-<dsstats.razorlib.Ih.IhComponent />
+@if (Guid != Guid.Empty)
+{
+    <dsstats.razorlib.Ih.IhComponent Guid="Guid" />
+}
+else
+{
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-warning bgchart"
+            @onclick="CreateNewGroup">
+            Create New Group
+        </button>
+    </div>
+    <h3>Open Groups</h3>
+    <div class="tableFixhead table-responsive">
+        <table class="tptable table w-auto">
+            <thead>
+                <tr>
+                    <th>RatingType</th>
+                    <th>Created</th>
+                    <th>Visitors</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var groupState in groupStates)
+                {
+                    <tr class="pointer" @onclick="e => JoinGroup(groupState.GroupId)">
+                        <td>@groupState.RatingType</td>
+                        <td>@groupState.Created.ToString("yyyy-MM-dd")</td>
+                        <td>@groupState.Visitors</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-warning bgchart">Join</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
 
 @code {
+    [SupplyParameterFromQuery]
+    public Guid Guid { get; set; } = Guid.Empty;
 
+    List<GroupStateDto> groupStates = [];
+
+    protected override void OnInitialized()
+    {
+        if (Guid == Guid.Empty)
+        {
+            _ = LoadData();
+        }
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        groupStates = await tourneyService.GetGroupStates();
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void JoinGroup(Guid guid)
+    {
+        Guid = guid;
+        SetNavigationParameter();
+    }
+
+    private void CreateNewGroup()
+    {
+        Guid = Guid.NewGuid();
+        SetNavigationParameter();
+    }
+
+    private void SetNavigationParameter()
+    {
+        Dictionary<string, object?> queryDic = new();
+
+        queryDic.Add("Guid", Guid);
+
+        NavigationManager.NavigateTo(
+        NavigationManager.GetUriWithQueryParameters(
+        new Dictionary<string, object?>(queryDic)
+        )
+        );
+    }
 }

@@ -49,7 +49,6 @@ public class AutoMapperProfile : Profile
             .ForMember(x => x.FakeDiff, opt => opt.Ignore())
             .ForMember(x => x.MmrChange, opt => opt.Ignore());
 
-
         // Arcade
         CreateMap<ArcadePlayerRating, ArcadePlayerRatingDto>(MemberList.Destination);
         CreateMap<ArcadePlayer, ArcadePlayerRatingPlayerDto>(MemberList.Destination);
