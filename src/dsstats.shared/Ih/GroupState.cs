@@ -17,6 +17,7 @@ public record GroupState
     public int Visitors { get; set; }
     public HashSet<string> ReplayHashes { get; set; } = [];
     public List<PlayerState> PlayerStates { get; set; } = [];
+    public List<PlayerStats> PlayerStats { get; set; } = [];
     public IhMatch IhMatch { get; set; } = new();
     public DateTime Created { get; set; } = DateTime.UtcNow;
 }
@@ -28,12 +29,18 @@ public record PlayerState
     public List<PlayerId> PlayedWith { get; set; } = [];
     public List<PlayerId> PlayedAgainst { get; set; } = [];
     public int Games { get; set; }
-    public int Wins { get; set; }
     public int Observer { get; set; }
     public bool InQueue { get; set; }
     public int RatingStart { get; set; }
     public int CurrentRating { get; set; }
     public QueuePriority QueuePriority { get; set; } = QueuePriority.High;
+}
+
+public record PlayerStats
+{
+    public PlayerId PlayerId { set; get; } = new();
+    public int Wins { set; get; }
+    public double RatingChange { set; get; }
 }
 
 public static class GroupStateExtensions

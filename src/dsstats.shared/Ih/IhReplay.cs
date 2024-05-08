@@ -5,6 +5,7 @@ public record IhReplay
 {
     public ReplayDto Replay { get; set; } = null!;
     public ReplayMetadata Metadata { get; set; } = null!;
+    public ReplayRatingDto? ReplayRating { get; set; }
 }
 
 public record ReplayMetadata

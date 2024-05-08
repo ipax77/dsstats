@@ -1,4 +1,5 @@
 ﻿
+using AutoMapper;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
 using System.Collections.Concurrent;

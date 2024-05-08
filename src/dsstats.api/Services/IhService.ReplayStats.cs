@@ -12,6 +12,7 @@ public partial class IhService
         {
             await SetReplayStat(groupState, replay);
         }
+        await UpdatePlayerStats(groupState);
     }
 
     private async Task SetReplayStat(GroupState groupState, IhReplay replay)
@@ -63,10 +64,6 @@ public partial class IhService
             groupPlayer.Name = player.Name;
             groupPlayer.QueuePriority = QueuePriority.Low;
             groupPlayer.Games++;
-            if (player.PlayerResult == PlayerResult.Win)
-            {
-                groupPlayer.Wins++;
-            }
 
             foreach (var otherPlayer in replay.Replay.ReplayPlayers)
             {
