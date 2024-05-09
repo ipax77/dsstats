@@ -1,10 +1,11 @@
 ﻿using dsstats.db8;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace dsstats.db8services;
 
-public class IhRepository(ReplayContext context) : IIhRepository
+public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) : IIhRepository
 {
     public async Task<GroupState> GetOrCreateGroupState(Guid groupId, RatingType ratingType = RatingType.StdTE)
     {
@@ -60,6 +61,7 @@ public class IhRepository(ReplayContext context) : IIhRepository
     {
         return await context.IhSessions
             .Where(x => !x.Closed)
+            .OrderByDescending(o => o.Created)
             .Select(s => new GroupStateDto()
             {
                 RatingType = s.RatingType,
@@ -67,5 +69,17 @@ public class IhRepository(ReplayContext context) : IIhRepository
                 Visitors = s.Players,
                 Created = s.Created
             }).ToListAsync();
+    }
+
+    public async Task CloseGroup(Guid groupId)
+    {
+        try
+        {
+            await context.IhSessions.ExecuteUpdateAsync(u => u.SetProperty(p => p.Closed, true));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed setting group state to closed: {error}", ex.Message);
+        }
     }
 }

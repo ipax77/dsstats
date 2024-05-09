@@ -226,5 +226,26 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
         playerState.InQueue = false;
         return await Task.FromResult(true);
     }
+
+    public async Task Cleanup()
+    {
+        DateTime bp = DateTime.UtcNow.AddHours(-24);
+        var oldGroupIds = groups.Values.Where(x => x.Created < bp).Select(s => s.GroupId).ToList();
+
+        if (oldGroupIds.Count == 0)
+        {
+            return;
+        }
+
+        using var scope = scopeFactory.CreateScope();
+        var ihRepository = scope.ServiceProvider.GetRequiredService<IIhRepository>();
+        
+        foreach (var groupId in oldGroupIds)
+        {
+            groups.TryRemove(groupId, out _);
+            groupReplays.TryRemove(groupId, out _);
+            await ihRepository.CloseGroup(groupId);
+        }
+    }
 }
 

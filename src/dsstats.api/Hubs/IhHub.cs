@@ -1,5 +1,4 @@
-﻿using dsstats.api.Services;
-using dsstats.shared;
+﻿using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 
