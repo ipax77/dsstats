@@ -1,5 +1,4 @@
-﻿using dsstats.api.Services;
-using dsstats.shared;
+﻿using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 
@@ -18,7 +17,7 @@ public class IhHub(IIhService ihService) : Hub
 
         Context.Items.Add("guid", groupId);
         await Groups.AddToGroupAsync(Context.ConnectionId, groupId.ToString());
-        var groupState = ihService.CreateOrVisitGroup(groupId);
+        var groupState = await ihService.CreateOrVisitGroup(groupId);
         if (groupState != null)
         {
             await Clients.OthersInGroup(groupId.ToString()).SendAsync("VisitorJoined", groupState.Visitors);

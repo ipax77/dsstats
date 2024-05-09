@@ -152,6 +152,7 @@ public static class GroupStateExtensions
         var slot = team.Slots[slotId];
         var closestPlayers = availablePlayers
             .OrderByDescending(o => o.QueuePriority)
+                .ThenBy(o => o.Games)
                 .ThenBy(p => Math.Abs((team.Rating * slotId + p.RatingStart) / (slotId - avgRating)))
             .Take(3)
             .ToList();

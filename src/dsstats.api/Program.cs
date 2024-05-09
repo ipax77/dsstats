@@ -131,6 +131,7 @@ builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
 builder.Services.AddScoped<IFaqService, FaqService>();
+builder.Services.AddScoped<IIhRepository, IhRepository>();
 
 //builder.Services.AddScoped<EMailService>();
 

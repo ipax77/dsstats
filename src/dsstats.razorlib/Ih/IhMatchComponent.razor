@@ -26,6 +26,7 @@
                         @foreach (var player in availablePlayers)
                         {
                             <li id="@GetId(player.PlayerId)" class="list-group-item text-dark bg-light"
+                                style="cursor:grab"
                                 draggable="true"
                                 @ondragstart="e => HandleListDragStart(player.PlayerId)">
                                 @player.Name @player.RatingStart | @player.Games
@@ -36,7 +37,7 @@
             </div>
         </div>
         <div class="col-auto">
-            <div class="card bgchart" style="width: 20rem;">
+            <div class="card bgchart" style="width: 22rem;">
                 <div class="card-header bgchart2">
                     IH Match RatingGap: @GroupState.IhMatch.RatingGap AgainstScore: @GroupState.IhMatch.AgainstScore
                 </div>
@@ -64,6 +65,7 @@
                                     @foreach (var slot in team.Slots)
                                     {
                                         <li id="@GetId(slot.PlayerId)" class="list-group-item text-dark bg-light"
+                                            style="cursor:grab"
                                             draggable="true"
                                             @ondragstart="e => HandleTeamDragStart(teamId, slot.PlayerId)"
                                             ondragover="event.preventDefault()"

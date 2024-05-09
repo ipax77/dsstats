@@ -44,7 +44,7 @@
                                     </span>
                                 }
                             </td>
-                            <td @onclick="e => ChangeQueueState(state)">
+                            <td class="pointer" @onclick="e => ChangeQueueState(state)">
                                 @if (state.InQueue)
                                 {
                                     <span class="bi bi-eye text-success"></span>
@@ -54,7 +54,7 @@
                                     <span class="bi bi-eye-slash text-danger"></span>
                                 }
                             </td>
-                            <td @onclick="e => RemovePlayer(state)">
+                            <td class="pointer" @onclick="e => RemovePlayer(state)">
                                 <span class="bi bi-x-lg text-danger"></span>
                             </td>
                         </tr>

@@ -68,6 +68,9 @@ public class TimedHostedService : BackgroundService
                 await ratingService.ProduceRatings(shared.RatingCalcType.Arcade);
                 await replayRepository.FixArcadePlayerNames();
                 await ratingService.ProduceRatings(shared.RatingCalcType.Combo, true);
+
+                var ihService = scope.ServiceProvider.GetRequiredService<IhService>();
+                await ihService.Cleanup();
             }
             else
             {

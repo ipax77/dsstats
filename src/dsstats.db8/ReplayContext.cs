@@ -1,8 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using dsstats.shared;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace dsstats.db8;
 
@@ -51,6 +55,7 @@ public class ReplayContext : DbContext
     public virtual DbSet<ComboReplayPlayerRating> ComboReplayPlayerRatings { get; set; } = null!;
     public virtual DbSet<Faq> Faqs { get; set; } = null!;
     public virtual DbSet<FaqVote> FaqVotes { get; set; } = null!;
+    public virtual DbSet<IhSession> IhSessions { get; set; } = null!;
 
     public int Week(DateTime date) => throw new InvalidOperationException($"{nameof(Week)} cannot be called client side.");
     public int Strftime(string arg, DateTime date) => throw new InvalidOperationException($"{nameof(Strftime)} cannot be called client side.");
@@ -214,6 +219,14 @@ public class ReplayContext : DbContext
         modelBuilder.Entity<Faq>(entity =>
         {
             entity.HasIndex(i => i.Question);
+        });
+
+        modelBuilder.Entity<IhSession>(entity =>
+        {
+            entity.HasIndex(i => i.GroupId).IsUnique();
+            entity.Property(p => p.GroupState).HasConversion(
+                c => JsonSerializer.Serialize(c, (JsonSerializerOptions?)null),
+                c => JsonSerializer.Deserialize<GroupState>(c, (JsonSerializerOptions?)null));
         });
 
         MethodInfo weekMethodInfo = typeof(ReplayContext)
