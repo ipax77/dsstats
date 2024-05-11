@@ -9,7 +9,9 @@ using System.Text.RegularExpressions;
 
 namespace dsstats.decode;
 
-public partial class DecodeService(IOptions<DecodeSettings> decodeSettings, ILogger<DecodeService> logger)
+public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
+                                   IHttpClientFactory httpClientFactory,
+                                   ILogger<DecodeService> logger)
 {
 
     private readonly SemaphoreSlim ss = new(1, 1);
@@ -20,8 +22,18 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings, ILog
 
     public EventHandler<DecodeEventArgs>? DecodeFinished;
 
-    private void OnDecodeFinished(DecodeEventArgs e)
+    private async void OnDecodeFinished(DecodeEventArgs e)
     {
+        var httpClient = httpClientFactory.CreateClient("callback");
+        try
+        {
+            var result = await httpClient.PostAsJsonAsync($"/api8/v1/upload/decoderesult/{e.Guid}", e.IhReplays);
+            result.EnsureSuccessStatusCode();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed reporting decoderesult: {error}", ex.Message);
+        }
         DecodeFinished?.Invoke(this, e);
     }
 
@@ -46,7 +58,7 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings, ILog
                     File.Move(tmpFilePath, filePath);
                 }
             }
-            _ = Decode(guid);
+            _ = Decode();
 
             logger.LogWarning("replays saved ({size})", size);
             return queueCount;
@@ -58,11 +70,11 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings, ILog
         return -1;
     }
 
-    public async Task Decode(Guid guid)
+    public async Task Decode()
     {
         Interlocked.Increment(ref queueCount);
         await ss.WaitAsync();
-        List<IhReplay> replays = [];
+        ConcurrentDictionary<Guid, ConcurrentBag<IhReplay>> replays = [];
         string? error = null;
 
         try
@@ -91,7 +103,8 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings, ILog
 
             using var md5 = MD5.Create();
 
-            await foreach (var result in replayDecoder.DecodeParallelWithErrorReport(replayPaths, 2, options))
+            await foreach (var result in
+                replayDecoder.DecodeParallelWithErrorReport(replayPaths, decodeSettings.Value.Threads, options))
             {
                 if (result.Sc2Replay is null)
                 {
@@ -121,7 +134,9 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings, ILog
                 }
 
                 File.Move(result.ReplayPath, Path.Combine(decodeSettings.Value.ReplayFolders.Done, Path.GetFileName(result.ReplayPath)));
-                replays.Add(new IhReplay() { Replay = replayDto, Metadata = metaData });
+                var groupId = GetGroupIdFromFilename(result.ReplayPath);
+                var ihReplay = new IhReplay() { Replay = replayDto, Metadata = metaData };
+                replays.AddOrUpdate(groupId, [ihReplay], (k, v) => { v.Add(ihReplay); return v; });
             }
 
             if (replays.Count > 0)
@@ -140,12 +155,15 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings, ILog
         finally
         {
             ss.Release();
-            OnDecodeFinished(new()
+            foreach (var ent in replays)
             {
-                Guid = guid,
-                IhReplays = replays,
-                Error = error,
-            });
+                OnDecodeFinished(new()
+                {
+                    Guid = ent.Key,
+                    IhReplays = [.. ent.Value],
+                    Error = error,
+                });
+            }
             Interlocked.Decrement(ref queueCount);
         }
     }
@@ -212,6 +230,18 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings, ILog
         {
             Players = players
         };
+    }
+
+    private static Guid GetGroupIdFromFilename(string replayPath)
+    {
+        var fileName = Path.GetFileNameWithoutExtension(replayPath);
+        var guids = fileName.Split('_', StringSplitOptions.RemoveEmptyEntries);
+        if (guids.Length > 0 && Guid.TryParse(guids[1], out var groupId)
+            && groupId != Guid.Empty)
+        {
+            return groupId;
+        }
+        throw new Exception($"failed getting groupId from replayPath: {replayPath}");
     }
 
     private static Commander GetSelectedRace(string selectedRace)

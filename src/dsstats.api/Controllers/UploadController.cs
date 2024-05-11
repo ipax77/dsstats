@@ -8,7 +8,10 @@ namespace dsstats.api.Controllers;
 [ApiController]
 [Route("api8/v1/[controller]")]
 [ServiceFilter(typeof(AuthenticationFilterAttribute))]
-public class UploadController(UploadService uploadService, DecodeService decodeService) : Controller
+public class UploadController(UploadService uploadService,
+                              DecodeService decodeService,
+                              IHttpClientFactory httpClientFactory,
+                              ILogger<UploadController> logger) : Controller
 {
     private readonly UploadService uploadService = uploadService;
 
@@ -39,17 +42,40 @@ public class UploadController(UploadService uploadService, DecodeService decodeS
     [EnableRateLimiting("fixed")]
     public async Task<ActionResult<int>> UploadReplays(string guid, [FromForm] List<IFormFile> files)
     {
+        logger.LogWarning("indahouse1 {guid}",  guid);
         if (Guid.TryParse(guid, out var fileGuid))
         {
-            var queueCount = await decodeService.SaveReplays(fileGuid, files);
-            if (queueCount >= 0)
+            var httpClient = httpClientFactory.CreateClient("decode");
+            try
             {
-                return Ok(queueCount);
+                var formData = new MultipartFormDataContent();
+
+                foreach (var file in files)
+                {
+                    var fileContent = new StreamContent(file.OpenReadStream());
+                    formData.Add(fileContent, "files", file.FileName);
+                }
+
+                var result = await httpClient.PostAsync($"/api/v1/decode/upload/{fileGuid}", formData);
+                result.EnsureSuccessStatusCode();
+                return Ok(0);
             }
-            else
+            catch (Exception ex)
             {
-                return StatusCode(500);
+                logger.LogError("failed passing decode request: {error}", ex.Message);
             }
+        }
+        return BadRequest();
+    }
+
+    [HttpPost]
+    [Route("decoderesult/{guid}")]
+    public async Task<ActionResult> DecodeResult(string guid, [FromBody] List<IhReplay> replays)
+    {
+        logger.LogWarning("got decode result for {guid}", guid);
+        if (Guid.TryParse(guid, out var groupId))
+        {
+            return Ok();
         }
         return BadRequest();
     }

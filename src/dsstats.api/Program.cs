@@ -99,6 +99,12 @@ builder.Services.AddHttpClient("sc2arcardeClient")
     options.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
+builder.Services.AddHttpClient("decode")
+    .ConfigureHttpClient(options =>
+    {
+        options.BaseAddress = new Uri("http://localhost:5240");
+    });
+
 builder.Services.AddSingleton<IRatingService, RatingService>();
 builder.Services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
 builder.Services.AddSingleton<ImportService>();

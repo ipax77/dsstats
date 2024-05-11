@@ -5,6 +5,7 @@ public record DecodeSettings
 {
     public ReplayFolders ReplayFolders { get; set; } = new();
     public int Threads { get; set; }
+    public string CallbackUrl { get; set; } = string.Empty;
 }
 
 public record ReplayFolders
