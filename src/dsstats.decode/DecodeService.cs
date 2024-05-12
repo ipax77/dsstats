@@ -236,7 +236,7 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
     {
         var fileName = Path.GetFileNameWithoutExtension(replayPath);
         var guids = fileName.Split('_', StringSplitOptions.RemoveEmptyEntries);
-        if (guids.Length > 0 && Guid.TryParse(guids[1], out var groupId)
+        if (guids.Length > 0 && Guid.TryParse(guids[0], out var groupId)
             && groupId != Guid.Empty)
         {
             return groupId;

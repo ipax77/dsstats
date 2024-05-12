@@ -33,7 +33,8 @@ builder.Services.AddCors(options =>
                           policy.WithOrigins("https://dsstats.pax77.org",
                                              "https://dsstats-dev.pax77.org",
                                              "https://localhost:7257",
-                                             "https://localhost:7227")
+                                             "https://localhost:7227",
+                                             "http://localhost:5123")
                           .AllowAnyHeader()
                           .AllowAnyMethod();
                       });
@@ -102,7 +103,8 @@ builder.Services.AddHttpClient("sc2arcardeClient")
 builder.Services.AddHttpClient("decode")
     .ConfigureHttpClient(options =>
     {
-        options.BaseAddress = new Uri("http://localhost:5240");
+        // options.BaseAddress = new Uri("http://localhost:5240");
+        options.BaseAddress = new Uri(builder.Configuration["ServerConfig:DecodeUrl"] ?? "");
     });
 
 builder.Services.AddSingleton<IRatingService, RatingService>();

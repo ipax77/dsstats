@@ -1,7 +1,19 @@
 ﻿@using System.Globalization
 @using dsstats.razorlib.Services
 
-<h4>Ih Session</h4>
+<div class="d-flex">
+    <div>
+        <h4>IH Session - Visitors: @groupState.Visitors</h4>
+    </div>
+    @if (decoding)
+    {
+        <div class="ms-2">
+            <div class="spinner-border spinner-border-sm text-danger" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+</div>
 <div>
     <IhUploadComp Guid="Guid" OnDecodeRequested="DecodeRequested" />
     <small class="text-info bgchart p-1 rounded">Select or drag&drop replays here to get player stats</small>
@@ -10,6 +22,9 @@
 <div class="row mt-2">
     <div class="col-auto">
         <div class="table-responsive tableFixHead" style="max-height: 70vw;">
+            <div class="text-end">
+                <small class="bgchart p-1">Total Players: @groupState.PlayerStates.Count</small>
+            </div>
             <table class="tptable table w-auto">
                 <thead>
                     <tr>
@@ -34,7 +49,7 @@
                             <td>@state.Games</td>
                             <td>@state.Observer</td>
                             <td>
-                                <span class="text-info">@HelperService.GetPercentageString(playerStat?.Wins, state.Games)</span>
+                                <span class="text-warning">@HelperService.GetPercentageString(playerStat?.Wins, state.Games)</span>
                             </td>
                             <td>
                                 @if (playerStat != null)

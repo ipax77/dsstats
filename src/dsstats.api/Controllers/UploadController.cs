@@ -9,9 +9,7 @@ namespace dsstats.api.Controllers;
 [Route("api8/v1/[controller]")]
 [ServiceFilter(typeof(AuthenticationFilterAttribute))]
 public class UploadController(UploadService uploadService,
-                              DecodeService decodeService,
-                              IHttpClientFactory httpClientFactory,
-                              ILogger<UploadController> logger) : Controller
+                              DecodeService decodeService) : Controller
 {
     private readonly UploadService uploadService = uploadService;
 
@@ -42,28 +40,10 @@ public class UploadController(UploadService uploadService,
     [EnableRateLimiting("fixed")]
     public async Task<ActionResult<int>> UploadReplays(string guid, [FromForm] List<IFormFile> files)
     {
-        logger.LogWarning("indahouse1 {guid}",  guid);
         if (Guid.TryParse(guid, out var fileGuid))
         {
-            var httpClient = httpClientFactory.CreateClient("decode");
-            try
-            {
-                var formData = new MultipartFormDataContent();
-
-                foreach (var file in files)
-                {
-                    var fileContent = new StreamContent(file.OpenReadStream());
-                    formData.Add(fileContent, "files", file.FileName);
-                }
-
-                var result = await httpClient.PostAsync($"/api/v1/decode/upload/{fileGuid}", formData);
-                result.EnsureSuccessStatusCode();
-                return Ok(0);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError("failed passing decode request: {error}", ex.Message);
-            }
+            await decodeService.SaveReplays(fileGuid, files);
+            return Ok();
         }
         return BadRequest();
     }
@@ -72,9 +52,9 @@ public class UploadController(UploadService uploadService,
     [Route("decoderesult/{guid}")]
     public async Task<ActionResult> DecodeResult(string guid, [FromBody] List<IhReplay> replays)
     {
-        logger.LogWarning("got decode result for {guid}", guid);
         if (Guid.TryParse(guid, out var groupId))
         {
+            await decodeService.ConsumeDecodeResult(groupId, replays);
             return Ok();
         }
         return BadRequest();
