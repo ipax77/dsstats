@@ -8,5 +8,6 @@ namespace dsstats.db8services
         Task UpdateGroupState(GroupState groupState);
         Task<List<GroupStateDto>> GetOpenGroups();
         Task CloseGroup(Guid groupId);
+        Task<List<ReplayListDto>> GetReplays(Guid groupId);
     }
 }

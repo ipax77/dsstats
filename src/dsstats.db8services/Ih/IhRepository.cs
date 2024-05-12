@@ -82,4 +82,37 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
             logger.LogError("failed setting group state to closed: {error}", ex.Message);
         }
     }
+
+    public async Task<List<ReplayListDto>> GetReplays(Guid groupId)
+    {
+        var replayHashes = await context.IhSessions
+            .Where(x => x.GroupId == groupId
+                && x.GroupState != null)
+            .Select(s => s.GroupState!.ReplayHashes) 
+            .FirstOrDefaultAsync();
+
+        if (replayHashes is null || replayHashes.Count == 0)
+        {
+            return [];
+        }
+
+        return await context.Replays
+            .Where(x => replayHashes.Contains(x.ReplayHash))
+            .Select(s => new ReplayListDto()
+            {
+                GameTime = s.GameTime,
+                Duration = s.Duration,
+                WinnerTeam = s.WinnerTeam,
+                GameMode = s.GameMode,
+                TournamentEdition = s.TournamentEdition,
+                ReplayHash = s.ReplayHash,
+                DefaultFilter = s.DefaultFilter,
+                CommandersTeam1 = s.CommandersTeam1,
+                CommandersTeam2 = s.CommandersTeam2,
+                MaxLeaver = s.Maxleaver,
+                Exp2Win = s.ReplayRatingInfo == null ? 0 : s.ReplayRatingInfo.ExpectationToWin,
+            })
+            .OrderByDescending(o => o.GameTime)
+            .ToListAsync();
+    }
 }

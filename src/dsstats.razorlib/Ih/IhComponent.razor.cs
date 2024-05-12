@@ -1,19 +1,23 @@
 using dsstats.razorlib.Builds;
 using dsstats.shared;
+using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace dsstats.razorlib.Ih;
 
-public partial class IhComponent() : ComponentBase, IDisposable
+public partial class IhComponent : ComponentBase, IDisposable
 {
     [Inject]
     public HttpClient httpClient { get; set; } = default!;
 
+    [Inject]
+    public IReplaysService replaysService { get; set; } = default!;
+
     [Parameter, EditorRequired]
-    public Guid Guid {  get; set; } = Guid.NewGuid();
-    
-    
+    public Guid Guid { get; set; } = Guid.NewGuid();
+
+
     private HubConnection? hubConnection;
     private bool isConnected => hubConnection?.State == HubConnectionState.Connected;
     GroupState groupState = new();
@@ -22,6 +26,9 @@ public partial class IhComponent() : ComponentBase, IDisposable
 
     IhMatchComponent? ihMatchComponent;
     AddPlayersModal? addPlayersModal;
+
+    List<ReplayListDto> replays = [];
+    ReplayDto? interestReplay = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -112,6 +119,12 @@ public partial class IhComponent() : ComponentBase, IDisposable
             }
         });
 
+        hubConnection.On<List<ReplayListDto>>("Replays", (replaylist) =>
+        {
+            replays = replaylist;
+            InvokeAsync(() => StateHasChanged());
+        });
+
         await hubConnection.StartAsync();
         if (isConnected)
         {
@@ -162,6 +175,12 @@ public partial class IhComponent() : ComponentBase, IDisposable
         {
             await hubConnection.SendAsync("RemovePlayerFromGroup", playerState.PlayerId);
         }
+    }
+
+    private async Task LoadReplay(string replayHash)
+    {
+        interestReplay = await replaysService.GetReplay(replayHash);
+        await InvokeAsync(() => StateHasChanged());
     }
 
     public void Dispose()
