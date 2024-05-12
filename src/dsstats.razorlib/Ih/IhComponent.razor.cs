@@ -126,6 +126,7 @@ public partial class IhComponent() : ComponentBase, IDisposable
         if (isConnected)
         {
             hubConnection?.SendAsync("DecodeRequest");
+            decoding = true;
         }
     }
 
