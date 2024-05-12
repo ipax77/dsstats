@@ -1,6 +1,7 @@
 ﻿using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.SignalR;
+using System.Text.RegularExpressions;
 
 namespace dsstats.api.Hubs;
 
@@ -22,6 +23,12 @@ public class IhHub(IIhService ihService) : Hub
         {
             await Clients.OthersInGroup(groupId.ToString()).SendAsync("VisitorJoined", groupState.Visitors);
             await Clients.Client(Context.ConnectionId).SendAsync("ConnectInfo", groupState);
+
+            var replayList = await ihService.GetReplays(groupId);
+            if (replayList.Count > 0)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync("Replays", replayList);
+            }
         }
     }
 
@@ -56,6 +63,12 @@ public class IhHub(IIhService ihService) : Hub
             else
             {
                 await Clients.Group(guid.ToString()).SendAsync("ConnectInfo", groupState);
+
+                var replayList = await ihService.GetReplays(guid);
+                if (replayList.Count > 0)
+                {
+                    await Clients.Group(guid.ToString()).SendAsync("Replays", replayList);
+                }
             }
         }
     }

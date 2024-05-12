@@ -226,6 +226,13 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
         return await Task.FromResult(true);
     }
 
+    public async Task<List<ReplayListDto>> GetReplays(Guid groupId)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var ihRepository = scope.ServiceProvider.GetRequiredService<IIhRepository>();
+        return await ihRepository.GetReplays(groupId);
+    }
+
     public async Task Cleanup()
     {
         DateTime bp = DateTime.UtcNow.AddHours(-24);

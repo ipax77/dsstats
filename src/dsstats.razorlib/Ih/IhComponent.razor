@@ -1,4 +1,5 @@
 ﻿@using System.Globalization
+@using dsstats.razorlib.Replays
 @using dsstats.razorlib.Services
 
 <div class="d-flex">
@@ -91,6 +92,55 @@
 
     </div>
 </div>
+
+@if (replays.Count > 0)
+{
+    <h4>Replays</h4>
+    @if (interestReplay is not null)
+    {
+        <ReplayComponent Replay="interestReplay" IsCloseable="true" OnCloseRequested="e => interestReplay = null" />
+    }
+    <div class="mt-2 tableFixHead table-responsive @(interestReplay == null ? "" : "visually-hidden")" style="max-height: 50vh; min-height: 350px;">
+        <table class="tptable table w-auto">
+            <thead>
+                <tr>
+                    <th>GameTime</th>
+                    <th>Duration</th>
+                    <th>Team1</th>
+                    <th>Team2</th>
+                    <th>Exp2Win</th>
+                    <th>GameMode</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var replay in replays)
+                {
+                    <tr class="pointer" @onclick="e => LoadReplay(replay.ReplayHash)">
+                        <td>@replay.GameTime.ToString("yyyy-MM-dd")</td>
+                        <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+                        <td>
+                            <ReplayTeam Team="@replay.CommandersTeam1" WinnerTeam="replay.WinnerTeam == 1" />
+                        </td>
+                        <td>
+                            <ReplayTeam Team="@replay.CommandersTeam2" WinnerTeam="replay.WinnerTeam == 2" />
+                        </td>
+                        <td>
+                            @if (replay.Exp2Win is not null && replay.Exp2Win > 0)
+                            {
+                                <div>
+                                    <span class="@(replay.Exp2Win >= 0.5 ? "text-success" : "text-danger")">
+                                        @((replay.Exp2Win.Value * 100).ToString("N0", CultureInfo.InvariantCulture))%
+                                    </span>
+                                </div>
+                            }
+                        </td>
+                        <td>@HelperService.GetGameMode(replay)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
 
 <div class="bgchart p-2 rounded" style="max-width: 500px;">
     <h4>IH Rules</h4>

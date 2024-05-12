@@ -12,4 +12,6 @@ public interface IIhService
     Task<PlayerState?> RemovePlayerFromGroup(Guid groupId, RequestNames requestNames);
     Task<bool> AddPlayerToQueue(Guid groupId, PlayerId playerId);
     Task<bool> RemovePlayerFromQueue(Guid groupId, PlayerId playerId);
+    Task<List<ReplayListDto>> GetReplays(Guid groupId);
+    Task Cleanup();
 }
