@@ -100,8 +100,7 @@
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("DS8upload77");
                 var response = await httpClient.PostAsync($"/api8/v1/upload/uploadreplays/{Guid}", content);
                 response.EnsureSuccessStatusCode();
-                int queueCount = await response.Content.ReadFromJsonAsync<int>();
-                await OnDecodeRequested.InvokeAsync(queueCount);
+                await OnDecodeRequested.InvokeAsync(0);
             }
             catch (Exception ex)
             {

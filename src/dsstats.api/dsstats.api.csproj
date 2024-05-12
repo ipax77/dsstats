@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="IronPython.StdLib" Version="2.7.12" />
     <PackageReference Include="MailKit" Version="4.5.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -20,7 +19,6 @@
     <ProjectReference Include="..\dsstats.auth\dsstats.auth.csproj" />
     <ProjectReference Include="..\dsstats.db8services\dsstats.db8services.csproj" />
     <ProjectReference Include="..\dsstats.db8\dsstats.db8.csproj" />
-    <ProjectReference Include="..\dsstats.maui\pax.dsstats.parser\pax.dsstats.parser.csproj" />
     <ProjectReference Include="..\dsstats.ratings.lib\dsstats.ratings.lib.csproj" />
     <ProjectReference Include="..\dsstats.ratings\dsstats.ratings.csproj" />
     <ProjectReference Include="..\dsstats.shared\dsstats.shared.csproj" />

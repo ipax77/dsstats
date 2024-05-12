@@ -8,7 +8,8 @@ namespace dsstats.api.Controllers;
 [ApiController]
 [Route("api8/v1/[controller]")]
 [ServiceFilter(typeof(AuthenticationFilterAttribute))]
-public class UploadController(UploadService uploadService, DecodeService decodeService) : Controller
+public class UploadController(UploadService uploadService,
+                              DecodeService decodeService) : Controller
 {
     private readonly UploadService uploadService = uploadService;
 
@@ -41,15 +42,20 @@ public class UploadController(UploadService uploadService, DecodeService decodeS
     {
         if (Guid.TryParse(guid, out var fileGuid))
         {
-            var queueCount = await decodeService.SaveReplays(fileGuid, files);
-            if (queueCount >= 0)
-            {
-                return Ok(queueCount);
-            }
-            else
-            {
-                return StatusCode(500);
-            }
+            await decodeService.SaveReplays(fileGuid, files);
+            return Ok();
+        }
+        return BadRequest();
+    }
+
+    [HttpPost]
+    [Route("decoderesult/{guid}")]
+    public async Task<ActionResult> DecodeResult(string guid, [FromBody] List<IhReplay> replays)
+    {
+        if (Guid.TryParse(guid, out var groupId))
+        {
+            await decodeService.ConsumeDecodeResult(groupId, replays);
+            return Ok();
         }
         return BadRequest();
     }

@@ -78,7 +78,6 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
                     completionSource.SetResult(args.IhReplays);
                 }
             };
-
             decodeService.DecodeFinished += decodeEventHandler;
 
             var timeoutTask = Task.Delay(20000);
