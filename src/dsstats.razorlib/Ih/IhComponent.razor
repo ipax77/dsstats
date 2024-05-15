@@ -31,6 +31,7 @@
                     <tr>
                         <th>Name</th>
                         <th>Rating</th>
+                        <th>Performance</th>
                         <th>Games</th>
                         <th>Obs</th>
                         <th>Winrate</th>
@@ -47,6 +48,7 @@
                         <tr>
                             <td>@state.Name</td>
                             <td>@state.RatingStart</td>
+                            <td>@state.Performance.ToString("N2", CultureInfo.InvariantCulture)</td>
                             <td>@state.Games</td>
                             <td>@state.Observer</td>
                             <td>

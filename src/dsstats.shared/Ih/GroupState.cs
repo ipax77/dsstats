@@ -33,6 +33,7 @@ public record PlayerState
     public bool InQueue { get; set; }
     public int RatingStart { get; set; }
     public int CurrentRating { get; set; }
+    public double Performance {  get; set; }
     public QueuePriority QueuePriority { get; set; } = QueuePriority.High;
 }
 

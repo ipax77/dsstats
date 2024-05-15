@@ -106,6 +106,7 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
                 }
                 await SetReplayStats(groupState, replays);
                 var ihRepository = scope.ServiceProvider.GetRequiredService<IIhRepository>();
+                // await ihRepository.CalcultePerformance(groupState);
                 await ihRepository.UpdateGroupState(groupState);
             }
             finally
@@ -231,6 +232,15 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
         using var scope = scopeFactory.CreateScope();
         var ihRepository = scope.ServiceProvider.GetRequiredService<IIhRepository>();
         return await ihRepository.GetReplays(groupId);
+    }
+
+    public async Task<GroupState?> CalculatePerformance(Guid guid)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var ihRepository = scope.ServiceProvider.GetRequiredService<IIhRepository>();
+        var groupState = await ihRepository.GetOrCreateGroupState(guid);
+        await ihRepository.CalcultePerformance(groupState);
+        return groupState;
     }
 
     public async Task Cleanup()
