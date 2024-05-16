@@ -15,6 +15,9 @@
         </div>
     }
 </div>
+@* <div>
+    <button type="button" class="btn btn-primary" @onclick="CalculatePerformance">CalculatePerformance</button>
+</div> *@
 <div>
     <IhUploadComp Guid="Guid" OnDecodeRequested="DecodeRequested" />
     <small class="text-info bgchart p-1 rounded">Select or drag&drop replays here to get player stats</small>
@@ -30,7 +33,8 @@
                 <thead>
                     <tr>
                         <th>Name</th>
-                        <th>Rating</th>
+                        <th><span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Rating at session start">Rating</span></th>
+                        <th><span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Session performance based on opponent ratings">Performance</span></th>
                         <th>Games</th>
                         <th>Obs</th>
                         <th>Winrate</th>
@@ -47,6 +51,7 @@
                         <tr>
                             <td>@state.Name</td>
                             <td>@state.RatingStart</td>
+                            <td><span class="text-warning">@state.Performance</span></td>
                             <td>@state.Games</td>
                             <td>@state.Observer</td>
                             <td>

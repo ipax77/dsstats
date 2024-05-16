@@ -1,6 +1,7 @@
 ﻿using dsstats.db8;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Logging;
 
 namespace dsstats.db8services;
@@ -54,6 +55,10 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
         ihSession.Players = Math.Max(ihSession.Players, groupState.PlayerStats.Count);
         ihSession.Games = groupState.ReplayHashes.Count;
         ihSession.GroupState = groupState;
+
+        IProperty property = context.Entry(ihSession).Property(nameof(IhSession.GroupState)).Metadata;
+        context.Entry(ihSession).Property(property).IsModified = true;
+
         await context.SaveChangesAsync();
     }
 
@@ -75,7 +80,9 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
     {
         try
         {
-            await context.IhSessions.ExecuteUpdateAsync(u => u.SetProperty(p => p.Closed, true));
+            await context.IhSessions
+                .Where(x => x.GroupId == groupId)
+                .ExecuteUpdateAsync(u => u.SetProperty(p => p.Closed, true));
         }
         catch (Exception ex)
         {
@@ -115,4 +122,100 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
             .OrderByDescending(o => o.GameTime)
             .ToListAsync();
     }
+
+    public async Task CalculatePerformance(GroupState groupState)
+    {
+        var replayHashes = groupState.ReplayHashes;
+            
+        if (replayHashes is null || replayHashes.Count == 0)
+        {
+            return;
+        }
+
+        var replays = await context.Replays
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.ReplayPlayerRatingInfo)
+            .Include(i => i.ReplayPlayers)
+                .ThenInclude(i => i.Player)
+            .Where(x => replayHashes.Contains(x.ReplayHash))
+            .OrderBy(o => o.GameTime)
+            .ToListAsync();
+
+        Dictionary<PlayerId, PerformanceHelper> playerIds = [];
+
+        foreach (var replay in replays)
+        {
+            if (replay.ReplayPlayers.Any(a => a.ReplayPlayerRatingInfo is null))
+            {
+                continue;
+            }
+
+            double team1Rating = replay.ReplayPlayers.Where(x => x.GamePos <= 3).Sum(s => s.ReplayPlayerRatingInfo!.Rating) / 3.0;
+            double team2Rating = replay.ReplayPlayers.Where(x => x.GamePos > 3).Sum(s => s.ReplayPlayerRatingInfo!.Rating) / 3.0;
+
+            foreach (var replayPlayer in replay.ReplayPlayers)
+            {
+                var playerId = new PlayerId(replayPlayer.Player.ToonId, replayPlayer.Player.RealmId, replayPlayer.Player.RegionId);
+                var oppRating = replayPlayer.GamePos <= 3 ? team2Rating : team1Rating;
+                if (playerIds.TryGetValue(playerId, out var performanceHelper))
+                {
+                    performanceHelper.OppRatings.Add(oppRating);
+                }
+                else
+                {
+                    performanceHelper = playerIds[playerId] = new() { OppRatings = [oppRating] };
+                }
+                
+                if (replayPlayer.PlayerResult == PlayerResult.Win)
+                {
+                    performanceHelper.Wins++;
+                }
+            }
+        }
+
+        foreach (var ent in playerIds)
+        {
+            var playerState = groupState.PlayerStates.FirstOrDefault(f => f.PlayerId == ent.Key);
+            if (playerState is null)
+            {
+                continue;
+            }
+            playerState.Performance = Convert.ToInt32(PerformanceRating(ent.Value));
+        }
+    }
+
+    private static double ExpectedScore(List<double> oppRatings, double ownRating)
+    {
+        return oppRatings.Sum(s => 1 / (1 + Math.Pow(10, (s - ownRating) / 400)));
+    }
+
+    private static double PerformanceRating(PerformanceHelper performanceHelper)
+    {
+        if (performanceHelper.OppRatings.Count == 0 || performanceHelper.Wins == 0)
+        {
+            return 0;
+        }
+
+        (double low, double high) = (0.0, 4000.0);
+        double mid = 0.0;
+        while (high - low > 0.001)
+        {
+            mid = (low + high) / 2;
+            if (ExpectedScore(performanceHelper.OppRatings, mid) < performanceHelper.Wins)
+            {
+                low = mid;
+            }
+            else
+            {
+                high = mid;
+            }
+        }
+        return mid;
+    }
+
+    internal record PerformanceHelper
+    {
+        public List<double> OppRatings { get; set; } = new();
+        public int Wins { get; set; }
+    } 
 }

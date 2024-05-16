@@ -3,6 +3,7 @@ using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.JSInterop;
 
 namespace dsstats.razorlib.Ih;
 
@@ -13,6 +14,8 @@ public partial class IhComponent : ComponentBase, IDisposable
 
     [Inject]
     public IReplaysService replaysService { get; set; } = default!;
+    [Inject]
+    public IJSRuntime JSRuntime { get; set; } = default!;
 
     [Parameter, EditorRequired]
     public Guid Guid { get; set; } = Guid.NewGuid();
@@ -134,6 +137,15 @@ public partial class IhComponent : ComponentBase, IDisposable
         await base.OnInitializedAsync();
     }
 
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            JSRuntime.InvokeVoidAsync("enableTooltips");
+        }
+        base.OnAfterRender(firstRender);
+    }
+
     public void DecodeRequested()
     {
         if (isConnected)
@@ -181,6 +193,14 @@ public partial class IhComponent : ComponentBase, IDisposable
     {
         interestReplay = await replaysService.GetReplay(replayHash);
         await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task CalculatePerformance()
+    {
+        if (isConnected && hubConnection is not null)
+        {
+            await hubConnection.SendAsync("CalculatePerformance", groupState.GroupId);
+        }
     }
 
     public void Dispose()
