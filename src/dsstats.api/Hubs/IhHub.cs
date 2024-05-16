@@ -1,7 +1,6 @@
 ﻿using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.SignalR;
-using System.Text.RegularExpressions;
 
 namespace dsstats.api.Hubs;
 
@@ -121,6 +120,11 @@ public class IhHub(IIhService ihService) : Hub
                 await Clients.Group(guid.ToString()).SendAsync("RemovePlayer", playerState);
             }
         }
+    }
+
+    public async Task CalculatePerformance(Guid groupId)
+    {
+        await ihService.CalculatePerformance(groupId);
     }
 
     public override async Task OnDisconnectedAsync(Exception? e)

@@ -1,6 +1,7 @@
 ﻿using dsstats.db8;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Logging;
 
 namespace dsstats.db8services;
@@ -54,6 +55,10 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
         ihSession.Players = Math.Max(ihSession.Players, groupState.PlayerStats.Count);
         ihSession.Games = groupState.ReplayHashes.Count;
         ihSession.GroupState = groupState;
+
+        IProperty property = context.Entry(ihSession).Property(nameof(IhSession.GroupState)).Metadata;
+        context.Entry(ihSession).Property(property).IsModified = true;
+
         await context.SaveChangesAsync();
     }
 
@@ -75,7 +80,9 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
     {
         try
         {
-            await context.IhSessions.ExecuteUpdateAsync(u => u.SetProperty(p => p.Closed, true));
+            await context.IhSessions
+                .Where(x => x.GroupId == groupId)
+                .ExecuteUpdateAsync(u => u.SetProperty(p => p.Closed, true));
         }
         catch (Exception ex)
         {
@@ -116,7 +123,7 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
             .ToListAsync();
     }
 
-    public async Task CalcultePerformance(GroupState groupState)
+    public async Task CalculatePerformance(GroupState groupState)
     {
         var replayHashes = groupState.ReplayHashes;
             
@@ -143,8 +150,8 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
                 continue;
             }
 
-            var team1Rating = replay.ReplayPlayers.Where(x => x.GamePos <= 3).Sum(s => s.ReplayPlayerRatingInfo!.Rating);
-            var team2Rating = replay.ReplayPlayers.Where(x => x.GamePos > 3).Sum(s => s.ReplayPlayerRatingInfo!.Rating);
+            double team1Rating = replay.ReplayPlayers.Where(x => x.GamePos <= 3).Sum(s => s.ReplayPlayerRatingInfo!.Rating) / 3.0;
+            double team2Rating = replay.ReplayPlayers.Where(x => x.GamePos > 3).Sum(s => s.ReplayPlayerRatingInfo!.Rating) / 3.0;
 
             foreach (var replayPlayer in replay.ReplayPlayers)
             {
@@ -173,7 +180,7 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
             {
                 continue;
             }
-            playerState.Performance = PerformanceRating(ent.Value);
+            playerState.Performance = Convert.ToInt32(PerformanceRating(ent.Value));
         }
     }
 
@@ -203,7 +210,7 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
                 high = mid;
             }
         }
-        return Math.Round(mid, 2);
+        return mid;
     }
 
     internal record PerformanceHelper

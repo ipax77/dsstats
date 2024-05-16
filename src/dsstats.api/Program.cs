@@ -175,9 +175,8 @@ if (app.Environment.IsProduction())
     tourneyService.SeedTourneys().Wait();
 } else
 {
-    //var ihService = scope.ServiceProvider.GetRequiredService<IIhService>();
-    //var groupState = ihService.CalculatePerformance(new Guid("4b1de563-6309-4c5a-87b3-7d3dee32b3d9")).GetAwaiter().GetResult();
-    //Console.WriteLine("indahouse");
+    var ihService = scope.ServiceProvider.GetRequiredService<IIhService>();
+    ihService.Cleanup().Wait();
 }
 
 

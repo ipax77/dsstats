@@ -9,6 +9,6 @@ namespace dsstats.db8services
         Task<List<GroupStateDto>> GetOpenGroups();
         Task CloseGroup(Guid groupId);
         Task<List<ReplayListDto>> GetReplays(Guid groupId);
-        Task CalcultePerformance(GroupState groupState);
+        Task CalculatePerformance(GroupState groupState);
     }
 }
