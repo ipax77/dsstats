@@ -1,6 +1,7 @@
 using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 
 namespace dsstats.razorlib.Players.Profile;
@@ -18,6 +19,9 @@ public partial class ProfileComponent : ComponentBase
 
     [Inject]
     public IRemoteToggleService RemoteToggleService { get; set; } = default!;
+
+    [Inject]
+    public ILogger<ProfileComponent> Logger { get; set; } = default!;
 
     [Parameter, EditorRequired]
     public PlayerId PlayerId { get; set; } = default!;
@@ -62,22 +66,27 @@ public partial class ProfileComponent : ComponentBase
     {
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
-
-        summary = await PlayerService.GetPlayerPlayerIdSummary(PlayerId, RatingType, RatingCalcType);
-
-        if (summary.Ratings.Count > 0)
+        try
         {
-            interestRating = summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType);
-            isUploader = summary.Ratings[0].Player.IsUploader;
-            name = summary.Ratings[0].Player.Name;
-            if (interestRating != null)
+            summary = await PlayerService.GetPlayerPlayerIdSummary(PlayerId, RatingType, RatingCalcType);
+
+            if (summary.Ratings.Count > 0)
             {
-                playerRatingDetailChart?.Update(RatingType, RatingCalcType, RatingCalcType == RatingCalcType.Combo ? 0 : interestRating.Rating
-                    , forceDetailChartRefresh);
-                playerCmdrCounts?.Update(RatingType);
+                interestRating = summary.Ratings.FirstOrDefault(f => f.RatingType == RatingType);
+                isUploader = summary.Ratings[0].Player.IsUploader;
+                name = summary.Ratings[0].Player.Name;
+                if (interestRating != null)
+                {
+                    playerRatingDetailChart?.Update(RatingType, RatingCalcType, RatingCalcType == RatingCalcType.Combo ? 0 : interestRating.Rating
+                        , forceDetailChartRefresh);
+                    playerCmdrCounts?.Update(RatingType);
+                }
             }
+            ratingDetails = null;
+        } catch (Exception ex)
+        {
+            Logger.LogError("failed loading data: {error}", ex.Message);
         }
-        ratingDetails = null;
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
     }
