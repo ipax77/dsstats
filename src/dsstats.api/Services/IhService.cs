@@ -104,9 +104,9 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
                     replays.Add(replay);
                     groupReplays[guid].Add(replay);
                 }
-                await SetReplayStats(groupState, replays);
                 var ihRepository = scope.ServiceProvider.GetRequiredService<IIhRepository>();
                 await ihRepository.CalculatePerformance(groupState);
+                await SetReplayStats(groupState, replays);
                 await ihRepository.UpdateGroupState(groupState);
             }
             finally

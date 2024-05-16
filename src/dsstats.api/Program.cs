@@ -173,10 +173,11 @@ if (app.Environment.IsProduction())
 
     var tourneyService = scope.ServiceProvider.GetRequiredService<ITourneysService>();
     tourneyService.SeedTourneys().Wait();
-} else
+}
+else
 {
-    var ihService = scope.ServiceProvider.GetRequiredService<IIhService>();
-    ihService.Cleanup().Wait();
+    //var ihService = scope.ServiceProvider.GetRequiredService<IIhService>();
+    //ihService.CalculatePerformance(new Guid("98283e82-7eda-4d5d-9f5e-346179d2cac2")).Wait();
 }
 
 
