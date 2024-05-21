@@ -176,8 +176,8 @@ if (app.Environment.IsProduction())
 }
 else
 {
-    //var ihService = scope.ServiceProvider.GetRequiredService<IIhService>();
-    //ihService.CalculatePerformance(new Guid("98283e82-7eda-4d5d-9f5e-346179d2cac2")).Wait();
+    var ihRepository = scope.ServiceProvider.GetRequiredService<IIhRepository>();
+    ihRepository.ArchiveV1().Wait();
 }
 
 

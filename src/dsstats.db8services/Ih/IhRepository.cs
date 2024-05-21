@@ -1,4 +1,6 @@
-﻿using dsstats.db8;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using dsstats.db8;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -9,8 +11,28 @@ namespace dsstats.db8services;
 
 public partial class IhRepository(ReplayContext context,
                                   IServiceScopeFactory scopeFactory,
+                                  IMapper mapper,
                                   ILogger<IhRepository> logger) : IIhRepository
 {
+    public async Task<List<IhSessionListDto>> GetIhSessions(int skip, int take, CancellationToken token)
+    {
+        return await context.IhSessions
+            .Where(x => x.Closed)
+            .OrderByDescending(o => o.Created)
+            .Skip(skip)
+            .Take(take)
+            .ProjectTo<IhSessionListDto>(mapper.ConfigurationProvider)
+            .ToListAsync();
+    }
+
+    public async Task<IhSessionDto?> GetIhSession(Guid groupId)
+    {
+        return await context.IhSessions
+            .Where(x => x.GroupId == groupId && x.Closed)
+            .ProjectTo<IhSessionDto>(mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<GroupStateV2> GetOrCreateGroupState(Guid groupId, RatingType ratingType = RatingType.StdTE)
     {
         var ihSession = await context.IhSessions.FirstOrDefaultAsync(f => f.GroupId == groupId);
@@ -98,7 +120,7 @@ public partial class IhRepository(ReplayContext context,
         var replayHashes = await context.IhSessions
             .Where(x => x.GroupId == groupId
                 && x.GroupStateV2 != null)
-            .Select(s => s.GroupStateV2!.ReplayHashes) 
+            .Select(s => s.GroupStateV2!.ReplayHashes)
             .FirstOrDefaultAsync();
 
         if (replayHashes is null || replayHashes.Count == 0)
@@ -129,7 +151,7 @@ public partial class IhRepository(ReplayContext context,
     public async Task CalculatePerformance(GroupStateV2 groupState)
     {
         var replayHashes = groupState.ReplayHashes;
-            
+
         if (replayHashes is null || replayHashes.Count == 0)
         {
             return;
@@ -168,7 +190,7 @@ public partial class IhRepository(ReplayContext context,
                 {
                     performanceHelper = playerIds[playerId] = new() { OppRatings = [oppRating] };
                 }
-                
+
                 if (replayPlayer.PlayerResult == PlayerResult.Win)
                 {
                     performanceHelper.Wins++;
@@ -220,5 +242,5 @@ public partial class IhRepository(ReplayContext context,
     {
         public List<double> OppRatings { get; set; } = new();
         public int Wins { get; set; }
-    } 
+    }
 }

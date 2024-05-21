@@ -11,5 +11,8 @@ namespace dsstats.db8services
         Task<List<ReplayListDto>> GetReplays(Guid groupId);
         Task CalculatePerformance(GroupStateV2 groupState);
         Task ArchiveSession(Guid groupId);
+        Task ArchiveV1();
+        Task<List<IhSessionListDto>> GetIhSessions(int skip, int take, CancellationToken token);
+        Task<IhSessionDto?> GetIhSession(Guid groupId);
     }
 }

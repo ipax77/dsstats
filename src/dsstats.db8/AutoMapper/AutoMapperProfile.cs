@@ -97,5 +97,9 @@ public class AutoMapperProfile : Profile
         CreateMap<Faq, FaqDto>(MemberList.Destination);
         CreateMap<FaqDto, Faq>(MemberList.Source)
             .ForSourceMember(s => s.FaqId, opt => opt.DoNotValidate());
+
+        CreateMap<IhSession, IhSessionListDto>(MemberList.Destination);
+        CreateMap<IhSession, IhSessionDto>(MemberList.Destination);
+        CreateMap<IhSessionPlayer, IhSessionPlayerDto>(MemberList.Destination);
     }
 }
