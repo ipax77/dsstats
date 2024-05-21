@@ -24,7 +24,7 @@ public record IhSlot
 
 public static class IhMatchExtensions
 {
-    public static void SetScores(this IhMatch match, GroupState groupState)
+    public static void SetScores(this IhMatch match, GroupStateV2 groupState)
     {
         foreach (var team in match.Teams)
         {
@@ -48,7 +48,7 @@ public static class IhMatchExtensions
         match.RatingGap = Math.Abs(match.Teams[0].Rating - match.Teams[1].Rating);
     }
 
-    private static void SetWithScore(IhTeam team, GroupState groupState)
+    private static void SetWithScore(IhTeam team, GroupStateV2 groupState)
     {
         int withScore = 0;
 
@@ -72,7 +72,7 @@ public static class IhMatchExtensions
         team.WithScore = withScore;
     }
 
-    private static void SetAgainstScore(IhMatch match, GroupState groupState)
+    private static void SetAgainstScore(IhMatch match, GroupStateV2 groupState)
     {
         if (match.Teams.Length != 2)
         {

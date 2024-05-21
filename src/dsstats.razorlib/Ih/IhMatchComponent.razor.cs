@@ -11,14 +11,15 @@ public partial class IhMatchComponent : ComponentBase
     public ILogger<IhMatchComponent> Logger { get; set; } = default!;
 
     [CascadingParameter]
-    public GroupState GroupState { get; set; } = default!;
+    public GroupStateV2 GroupState { get; set; } = default!;
 
     [Parameter]
     public EventCallback OnAddPlayersRequest { get; set; } = default!;
 
-    private List<PlayerState> availablePlayers => GroupState.PlayerStates
-        .Where(x => x.InQueue &&
-            !GroupState.IhMatch.Teams.Any(a => a.Slots.Any(a => a.PlayerId == x.PlayerId)))
+    private List<PlayerStateV2> availablePlayers => GroupState.PlayerStates
+        .Where(x => x.InQueue 
+            && !x.Quit
+            && !GroupState.IhMatch.Teams.Any(a => a.Slots.Any(a => a.PlayerId == x.PlayerId)))
         .ToList();
 
     private DropContainer dropContainer = new();
@@ -140,6 +141,42 @@ public partial class IhMatchComponent : ComponentBase
     private static string GetId(PlayerId playerId)
     {
         return $"{playerId.ToonId}|{playerId.RealmId}|{playerId.RegionId}";
+    }
+
+    private string GetPlayerColor(IhSlot slot)
+    {
+        var playerState = GroupState.PlayerStates.FirstOrDefault(f => f.PlayerId == slot.PlayerId);
+
+        if (playerState is null)
+        {
+            return "";
+        }
+
+        return GetPlayerColor(playerState);
+    }
+
+    private static string GetPlayerColor(PlayerStateV2 playerState)
+    {
+        if (playerState.Quit)
+        {
+            return "bg-danger";
+        }
+        else if (playerState.PlayedLastGame)
+        {
+            return "bg-success";
+        }
+        else if (playerState.ObsLastGame)
+        {
+            return "bg-warning";
+        }
+        else if (playerState.NewPlayer)
+        {
+            return "bg-light";
+        }
+        else
+        {
+            return "";
+        }
     }
 
     private record DropContainer

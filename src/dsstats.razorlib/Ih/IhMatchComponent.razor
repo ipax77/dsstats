@@ -14,7 +14,7 @@
         <div class="col-auto">
             <div class="card bgchart" style="width: 14rem;">
                 <div class="card-header bgchart2">
-                    Available Players (Name Rating | Games)
+                    Available Players + Rating
                 </div>
                 <div class="card-body bgchart">
                     <ul class="list-group list-group-flush"
@@ -25,11 +25,11 @@
                         @ondragleave="HandleListDragLeave">
                         @foreach (var player in availablePlayers)
                         {
-                            <li id="@GetId(player.PlayerId)" class="list-group-item text-dark bg-light"
+                            <li id="@GetId(player.PlayerId)" class="list-group-item @GetPlayerColor(player)"
                                 style="cursor:grab"
                                 draggable="true"
                                 @ondragstart="e => HandleListDragStart(player.PlayerId)">
-                                @player.Name @player.RatingStart | @player.Games
+                                @player.Name @player.RatingStart
                             </li>
                         }
                     </ul>
@@ -64,7 +64,7 @@
                                 <ul class="list-group list-group-flush">
                                     @foreach (var slot in team.Slots)
                                     {
-                                        <li id="@GetId(slot.PlayerId)" class="list-group-item text-dark bg-light"
+                                        <li id="@GetId(slot.PlayerId)" class="list-group-item @GetPlayerColor(slot)"
                                             style="cursor:grab"
                                             draggable="true"
                                             @ondragstart="e => HandleTeamDragStart(teamId, slot.PlayerId)"

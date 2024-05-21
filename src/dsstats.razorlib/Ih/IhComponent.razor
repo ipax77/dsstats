@@ -45,25 +45,22 @@
                 </thead>
                 <tbody>
                     @foreach (var state in groupState.PlayerStates
-                    .OrderByDescending(o => o.Games))
+                        .Where(x => !x.Quit)
+                        .OrderByDescending(o => o.Games))
                     {
-                        var playerStat = groupState.PlayerStats.FirstOrDefault(f => f.PlayerId == state.PlayerId);
                         <tr>
-                            <td>@state.Name</td>
+                            <td class="@GetPlayerColor(state)">@state.Name</td>
                             <td>@state.RatingStart</td>
                             <td><span class="text-warning">@state.Performance</span></td>
                             <td>@state.Games</td>
                             <td>@state.Observer</td>
                             <td>
-                                <span class="text-warning">@HelperService.GetPercentageString(playerStat?.Wins, state.Games)</span>
+                                <span class="text-warning">@HelperService.GetPercentageString(state.Wins, state.Games)</span>
                             </td>
                             <td>
-                                @if (playerStat != null)
-                                {
-                                    <span class="@(playerStat.RatingChange >= 0 ? "text-success" : "text-danger")">
-                                        @playerStat.RatingChange.ToString("N2", CultureInfo.InvariantCulture)
-                                    </span>
-                                }
+                                <span class="@(state.RatingChange >= 0 ? "text-success" : "text-danger")">
+                                    @state.RatingChange
+                                </span>
                             </td>
                             <td class="pointer" @onclick="e => ChangeQueueState(state)">
                                 @if (state.InQueue)
@@ -82,6 +79,11 @@
                     }
                 </tbody>
             </table>
+        </div>
+        <div class="btn-group bgchart p-1 rounded">
+            <button type="button" disabled class="btn btn-sm btn-success">Played last game</button>
+            <button type="button" disabled class="btn btn-sm btn-warning">Obs last game</button>
+            <button type="button" disabled class="btn btn-sm btn-light">New player</button>
         </div>
     </div>
     <div class="col-auto">

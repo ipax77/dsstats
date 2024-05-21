@@ -8,7 +8,7 @@ namespace dsstats.api.Services;
 
 public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
 {
-    private ConcurrentDictionary<Guid, GroupState> groups = [];
+    private ConcurrentDictionary<Guid, GroupStateV2> groups = [];
     private ConcurrentDictionary<Guid, List<IhReplay>> groupReplays = [];
     SemaphoreSlim decodeSS = new(1, 1);
     SemaphoreSlim playerSS = new(1, 1);
@@ -20,9 +20,9 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
         return await ihRepository.GetOpenGroups();
     }
 
-    public async Task<GroupState> CreateOrVisitGroup(Guid groupId)
+    public async Task<GroupStateV2> CreateOrVisitGroup(Guid groupId)
     {
-        if (groups.TryGetValue(groupId, out GroupState? groupState)
+        if (groups.TryGetValue(groupId, out GroupStateV2? groupState)
             && groupState is not null)
         {
             groupState.Visitors++;
@@ -45,9 +45,9 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
         return groupState;
     }
 
-    public GroupState? LeaveGroup(Guid groupId)
+    public GroupStateV2? LeaveGroup(Guid groupId)
     {
-        if (groups.TryGetValue(groupId, out GroupState? groupState)
+        if (groups.TryGetValue(groupId, out GroupStateV2? groupState)
             && groupState is not null)
         {
             groupState.Visitors--;
@@ -56,11 +56,11 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
         return null;
     }
 
-    public async Task<GroupState?> GetDecodeResultAsync(Guid guid)
+    public async Task<GroupStateV2?> GetDecodeResultAsync(Guid guid)
     {
         List<IhReplay> replays = [];
 
-        if (groups.TryGetValue(guid, out GroupState? groupState)
+        if (groups.TryGetValue(guid, out GroupStateV2? groupState)
             && groupState is not null)
         {
             using var scope = scopeFactory.CreateScope();
@@ -117,38 +117,46 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
         return groupState;
     }
 
-    public async Task<PlayerState?> AddPlayerToGroup(Guid groupId, RequestNames requestNames)
+    public async Task<PlayerStateV2?> AddPlayerToGroup(Guid groupId, RequestNames requestNames, bool dry = false)
     {
         await playerSS.WaitAsync();
         try
         {
-            if (!groups.TryGetValue(groupId, out GroupState? groupState)
+            if (!groups.TryGetValue(groupId, out GroupStateV2? groupState)
                 || groupState is null)
             {
                 return null;
             }
 
             PlayerId playerId = new(requestNames.ToonId, requestNames.RealmId, requestNames.RegionId);
-            if (groupState.PlayerStates.Any(a => a.PlayerId == playerId))
+            var playerState = groupState.PlayerStates.FirstOrDefault(f => f.PlayerId == playerId);
+
+            if (playerState is null)
             {
-                return null;
+                (var name, var rating) = await GetNameAndRating(groupState, playerId);
+
+                playerState = new()
+                {
+                    PlayerId = playerId,
+                    Name = name,
+                    RatingStart = rating,
+                };
+                groupState.PlayerStates.Add(playerState);
             }
+            playerState.JoinedAtGame = groupState.ReplayHashes.Count;
 
-            (var name, var rating) = await GetNameAndRating(groupState, playerId);
-
-            PlayerState playerState = new()
+            if (!dry)
             {
-                PlayerId = playerId,
-                Name = requestNames.Name,
-                RatingStart = rating,
-                InQueue = true,
-                QueuePriority = QueuePriority.High
-            };
-            groupState.PlayerStates.Add(playerState);
+                playerState.InQueue = true;
+                playerState.NewPlayer = true;
+                playerState.PlayedLastGame = false;
+                playerState.ObsLastGame = false;
+                playerState.QueuePriority = QueuePriority.High;
 
-            using var scope = scopeFactory.CreateScope();
-            var ihRepository = scope.ServiceProvider.GetRequiredService<IIhRepository>();
-            await ihRepository.UpdateGroupState(groupState);
+                using var scope = scopeFactory.CreateScope();
+                var ihRepository = scope.ServiceProvider.GetRequiredService<IIhRepository>();
+                await ihRepository.UpdateGroupState(groupState);
+            }
             return playerState;
         }
         finally
@@ -157,12 +165,12 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
         }
     }
 
-    public async Task<PlayerState?> RemovePlayerFromGroup(Guid groupId, RequestNames requestNames)
+    public async Task<PlayerStateV2?> RemovePlayerFromGroup(Guid groupId, RequestNames requestNames)
     {
         await playerSS.WaitAsync();
         try
         {
-            if (!groups.TryGetValue(groupId, out GroupState? groupState)
+            if (!groups.TryGetValue(groupId, out GroupStateV2? groupState)
                 || groupState is null)
             {
                 return null;
@@ -176,12 +184,12 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
                 return null;
             }
 
-            groupState.PlayerStates.Remove(playerState);
-
+            playerState.Quit = true;
+            playerState.InQueue = false;
             using var scope = scopeFactory.CreateScope();
             var ihRepository = scope.ServiceProvider.GetRequiredService<IIhRepository>();
             await ihRepository.UpdateGroupState(groupState);
-            return await Task.FromResult(playerState);
+            return playerState;
         }
         finally
         {
@@ -191,7 +199,7 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
 
     public async Task<bool> AddPlayerToQueue(Guid groupId, PlayerId playerId)
     {
-        if (!groups.TryGetValue(groupId, out GroupState? groupState)
+        if (!groups.TryGetValue(groupId, out GroupStateV2? groupState)
             || groupState is null)
         {
             return false;
@@ -210,7 +218,7 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
 
     public async Task<bool> RemovePlayerFromQueue(Guid groupId, PlayerId playerId)
     {
-        if (!groups.TryGetValue(groupId, out GroupState? groupState)
+        if (!groups.TryGetValue(groupId, out GroupStateV2? groupState)
             || groupState is null)
         {
             return false;
@@ -234,7 +242,7 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
         return await ihRepository.GetReplays(groupId);
     }
 
-    public async Task<GroupState?> CalculatePerformance(Guid guid)
+    public async Task<GroupStateV2?> CalculatePerformance(Guid guid)
     {
         using var scope = scopeFactory.CreateScope();
         var ihRepository = scope.ServiceProvider.GetRequiredService<IIhRepository>();
@@ -256,12 +264,12 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
 
         using var scope = scopeFactory.CreateScope();
         var ihRepository = scope.ServiceProvider.GetRequiredService<IIhRepository>();
-        
+
         foreach (var groupId in oldGroupIds)
         {
             groups.TryRemove(groupId, out _);
             groupReplays.TryRemove(groupId, out _);
-            await ihRepository.CloseGroup(groupId);
+            await ihRepository.ArchiveSession(groupId);
         }
     }
 }

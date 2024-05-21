@@ -23,7 +23,7 @@ public partial class IhComponent : ComponentBase, IDisposable
 
     private HubConnection? hubConnection;
     private bool isConnected => hubConnection?.State == HubConnectionState.Connected;
-    GroupState groupState = new();
+    GroupStateV2 groupState = new();
 
     private bool decoding;
 
@@ -63,7 +63,7 @@ public partial class IhComponent : ComponentBase, IDisposable
             InvokeAsync(() => StateHasChanged());
         });
 
-        hubConnection.On<GroupState>("ConnectInfo", (newgroupState) =>
+        hubConnection.On<GroupStateV2>("ConnectInfo", (newgroupState) =>
         {
             groupState = newgroupState;
             decoding = false;
@@ -82,7 +82,7 @@ public partial class IhComponent : ComponentBase, IDisposable
             InvokeAsync(() => StateHasChanged());
         });
 
-        hubConnection.On<PlayerState>("NewPlayer", (player) =>
+        hubConnection.On<PlayerStateV2>("NewPlayer", (player) =>
         {
             groupState.PlayerStates.Add(player);
             //ihMatchComponent?.Update();
@@ -166,22 +166,22 @@ public partial class IhComponent : ComponentBase, IDisposable
         }
     }
 
-    public async Task ChangeQueueState(PlayerState state)
+    public async Task ChangeQueueState(PlayerStateV2 playerState)
     {
         if (isConnected && hubConnection is not null)
         {
-            if (state.InQueue)
+            if (playerState.InQueue)
             {
-                await hubConnection.SendAsync("RemovePlayerFromQueue", state.PlayerId);
+                await hubConnection.SendAsync("RemovePlayerFromQueue", playerState.PlayerId);
             }
             else
             {
-                await hubConnection.SendAsync("AddPlayerToQueue", state.PlayerId);
+                await hubConnection.SendAsync("AddPlayerToQueue", playerState.PlayerId);
             }
         }
     }
 
-    public async Task RemovePlayer(PlayerState playerState)
+    public async Task RemovePlayer(PlayerStateV2 playerState)
     {
         if (isConnected && hubConnection is not null)
         {
@@ -200,6 +200,30 @@ public partial class IhComponent : ComponentBase, IDisposable
         if (isConnected && hubConnection is not null)
         {
             await hubConnection.SendAsync("CalculatePerformance", groupState.GroupId);
+        }
+    }
+
+    private static string GetPlayerColor(PlayerStateV2 playerState)
+    {
+        if (playerState.Quit)
+        {
+            return "table-danger";
+        }
+        else if (playerState.PlayedLastGame)
+        {
+            return "table-success";
+        }
+        else if (playerState.ObsLastGame)
+        {
+            return "table-warning";
+        }
+        else if (playerState.NewPlayer)
+        {
+            return "table-light";
+        }
+        else
+        {
+            return "";
         }
     }
 

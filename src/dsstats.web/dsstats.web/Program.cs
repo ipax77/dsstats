@@ -1,7 +1,6 @@
 using Blazored.LocalStorage;
 using Blazored.Toast;
 using dsstats.apiServices;
-using dsstats.shared.Auth;
 using dsstats.shared.Interfaces;
 using dsstats.web.Client.Pages;
 using dsstats.web.Client.Services;
