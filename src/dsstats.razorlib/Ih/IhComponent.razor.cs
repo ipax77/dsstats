@@ -18,12 +18,12 @@ public partial class IhComponent : ComponentBase, IDisposable
     public IJSRuntime JSRuntime { get; set; } = default!;
 
     [Parameter, EditorRequired]
-    public Guid Guid { get; set; } = Guid.NewGuid();
+    public GroupStateV2 GroupState { get; set; } = default!;
 
 
     private HubConnection? hubConnection;
     private bool isConnected => hubConnection?.State == HubConnectionState.Connected;
-    GroupStateV2 groupState = new();
+    
 
     private bool decoding;
 
@@ -35,9 +35,6 @@ public partial class IhComponent : ComponentBase, IDisposable
 
     protected override async Task OnInitializedAsync()
     {
-        groupState.GroupId = Guid;
-        groupState.Visitors = 1;
-
         var uri = httpClient.BaseAddress ?? new Uri("https://dsstats.pax77.org");
         uri = new Uri(uri, "/hubs/ih");
 
@@ -47,25 +44,25 @@ public partial class IhComponent : ComponentBase, IDisposable
 
         hubConnection.On<int>("VisitorJoined", (count) =>
         {
-            groupState.Visitors = count;
+            GroupState.Visitors = count;
             InvokeAsync(() => StateHasChanged());
         });
 
         hubConnection.On<int>("VisitorLeft", (count) =>
         {
-            groupState.Visitors = count;
+            GroupState.Visitors = count;
             InvokeAsync(() => StateHasChanged());
         });
 
         hubConnection.On<List<string>>("NewReplays", (replayHashes) =>
         {
-            groupState.ReplayHashes.UnionWith(replayHashes);
+            GroupState.ReplayHashes.UnionWith(replayHashes);
             InvokeAsync(() => StateHasChanged());
         });
 
         hubConnection.On<GroupStateV2>("ConnectInfo", (newgroupState) =>
         {
-            groupState = newgroupState;
+            GroupState = newgroupState;
             decoding = false;
             InvokeAsync(() => StateHasChanged());
         });
@@ -84,17 +81,17 @@ public partial class IhComponent : ComponentBase, IDisposable
 
         hubConnection.On<PlayerStateV2>("NewPlayer", (player) =>
         {
-            groupState.PlayerStates.Add(player);
+            GroupState.PlayerStates.Add(player);
             //ihMatchComponent?.Update();
             InvokeAsync(() => StateHasChanged());
         });
 
         hubConnection.On<PlayerState>("RemovePlayer", (player) =>
         {
-            var playerState = groupState.PlayerStates.FirstOrDefault(f => f.PlayerId == player.PlayerId);
+            var playerState = GroupState.PlayerStates.FirstOrDefault(f => f.PlayerId == player.PlayerId);
             if (playerState != null)
             {
-                groupState.PlayerStates.Remove(playerState);
+                GroupState.PlayerStates.Remove(playerState);
                 //ihMatchComponent?.Update();
                 InvokeAsync(() => StateHasChanged());
             }
@@ -102,7 +99,7 @@ public partial class IhComponent : ComponentBase, IDisposable
 
         hubConnection.On<PlayerId>("AddedToQueue", (player) =>
         {
-            var playerState = groupState.PlayerStates.FirstOrDefault(f => f.PlayerId == player);
+            var playerState = GroupState.PlayerStates.FirstOrDefault(f => f.PlayerId == player);
             if (playerState != null)
             {
                 playerState.InQueue = true;
@@ -113,7 +110,7 @@ public partial class IhComponent : ComponentBase, IDisposable
 
         hubConnection.On<PlayerId>("RemovedFromQueue", (player) =>
         {
-            var playerState = groupState.PlayerStates.FirstOrDefault(f => f.PlayerId == player);
+            var playerState = GroupState.PlayerStates.FirstOrDefault(f => f.PlayerId == player);
             if (playerState != null)
             {
                 playerState.InQueue = false;
@@ -131,7 +128,7 @@ public partial class IhComponent : ComponentBase, IDisposable
         await hubConnection.StartAsync();
         if (isConnected)
         {
-            await hubConnection.SendAsync("JoinGroup", Guid.ToString());
+            await hubConnection.SendAsync("JoinGroup", GroupState.GroupId);
         }
 
         await base.OnInitializedAsync();
@@ -199,7 +196,7 @@ public partial class IhComponent : ComponentBase, IDisposable
     {
         if (isConnected && hubConnection is not null)
         {
-            await hubConnection.SendAsync("CalculatePerformance", groupState.GroupId);
+            await hubConnection.SendAsync("CalculatePerformance", GroupState.GroupId);
         }
     }
 

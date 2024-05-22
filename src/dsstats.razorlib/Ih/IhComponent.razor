@@ -4,7 +4,7 @@
 
 <div class="d-flex">
     <div>
-        <h4>IH Session - Visitors: @groupState.Visitors</h4>
+        <h4>IH Session - Visitors: @GroupState.Visitors</h4>
     </div>
     @if (decoding)
     {
@@ -19,7 +19,7 @@
     <button type="button" class="btn btn-primary" @onclick="CalculatePerformance">CalculatePerformance</button>
 </div> *@
 <div>
-    <IhUploadComp Guid="Guid" OnDecodeRequested="DecodeRequested" />
+    <IhUploadComp Guid="GroupState.GroupId" OnDecodeRequested="DecodeRequested" />
     <small class="text-info bgchart p-1 rounded">Select or drag&drop replays here to get player stats</small>
 </div>
 
@@ -27,7 +27,7 @@
     <div class="col-auto">
         <div class="table-responsive tableFixHead" style="max-height: 70vw;">
             <div class="text-end">
-                <small class="bgchart p-1">Total Players: @groupState.PlayerStates.Count</small>
+                <small class="bgchart p-1">Total Players: @GroupState.PlayerStates.Count</small>
             </div>
             <table class="tptable table w-auto">
                 <thead>
@@ -44,7 +44,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var state in groupState.PlayerStates
+                    @foreach (var state in GroupState.PlayerStates
                         .Where(x => !x.Quit)
                         .OrderByDescending(o => o.Games))
                     {
@@ -93,8 +93,8 @@
                 Drag and drop players for different matchups.
             </small>
         </div>
-        <CascadingValue Value="groupState">
-            <IhMatchComponent @ref="ihMatchComponent" OnAddPlayersRequest="e => addPlayersModal?.Show(groupState.RatingType)" />
+        <CascadingValue Value="GroupState">
+            <IhMatchComponent @ref="ihMatchComponent" OnAddPlayersRequest="e => addPlayersModal?.Show(GroupState.RatingType)" />
         </CascadingValue>
 
     </div>

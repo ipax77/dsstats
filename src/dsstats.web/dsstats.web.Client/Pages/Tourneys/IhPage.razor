@@ -6,9 +6,9 @@
 
 <PageTitle>dsstats IH session</PageTitle>
 
-@if (Guid != Guid.Empty)
+@if (groupState != null)
 {
-    <dsstats.razorlib.Ih.IhComponent Guid="Guid" />
+    <dsstats.razorlib.Ih.IhComponent GroupState="groupState" />
 }
 else
 {
@@ -44,24 +44,28 @@ else
             </tbody>
         </table>
     </div>
+    <div>
+        <h3>History</h3>
+        <dsstats.razorlib.Ih.IhSesssionsComponent GroupId="Guid" />
+    </div>
 }
-
-<div>
-    <h3>History</h3>
-    <dsstats.razorlib.Ih.IhSesssionsComponent />
-</div>
 
 @code {
     [SupplyParameterFromQuery]
     public Guid Guid { get; set; } = Guid.Empty;
 
     List<GroupStateDto> groupStates = [];
+    GroupStateV2? groupState = null;
 
     protected override void OnInitialized()
     {
         if (Guid == Guid.Empty)
         {
             _ = LoadData();
+        }
+        else
+        {
+            _ = LoadGroupState(Guid);
         }
         base.OnInitialized();
     }
@@ -72,15 +76,28 @@ else
         await InvokeAsync(() => StateHasChanged());
     }
 
+    private async Task LoadGroupState(Guid groupId)
+    {
+        groupState = await tourneyService.GetOpenGroupState(groupId);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
     private void JoinGroup(Guid guid)
     {
         Guid = guid;
         SetNavigationParameter();
+        _ = LoadGroupState(guid);
     }
 
     private void CreateNewGroup()
     {
         Guid = Guid.NewGuid();
+        groupState = new()
+            {
+                GroupId = Guid,
+                RatingCalcType = RatingCalcType.Dsstats,
+                Visitors = 1
+            };
         SetNavigationParameter();
     }
 

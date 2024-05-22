@@ -95,4 +95,11 @@ public class TourneysController(ITourneysService tourneysService) : Controller
     {
         return await tourneysService.GetReplays(groupId);
     }
+
+    [HttpGet]
+    [Route("opengroupstate/{groupId:guid}")]
+    public async Task<GroupStateV2?> GetOpenGroupState(Guid groupId)
+    {
+        return await tourneysService.GetOpenGroupState(groupId);
+    }
 }

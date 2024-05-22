@@ -69,6 +69,19 @@ public class TourneysService(HttpClient httpClient, ILogger<TourneysService> log
         return 0;
     }
 
+    public async Task<GroupStateV2?> GetOpenGroupState(Guid groupId)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<GroupStateV2>($"{tourneysController}/opengroupstate/{groupId}");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting groupstate: {error}", ex.Message);
+        }
+        return null;
+    }
+
     public async Task<List<TourneysReplayListDto>> GetReplays(TourneysReplaysRequest request, CancellationToken token)
     {
         try

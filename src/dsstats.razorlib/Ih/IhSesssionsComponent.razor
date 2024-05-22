@@ -54,6 +54,9 @@
 </div>
 
 @code {
+    [Parameter, EditorRequired]
+    public Guid GroupId { get; set; } = Guid.Empty;
+
     private int totalCount = 0;
     CancellationTokenSource cts = new();
     Virtualize<IhSessionListDto>? virtualizeComponent;
@@ -63,6 +66,10 @@
     protected override void OnInitialized()
     {
         _ = SetCount();
+        if (GroupId != Guid.Empty)
+        {
+            LoadSession(GroupId);
+        }
         base.OnInitialized();
     }
 

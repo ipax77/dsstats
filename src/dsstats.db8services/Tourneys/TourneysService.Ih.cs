@@ -40,4 +40,11 @@ public partial class TourneysService
         var ihRepository = scope.ServiceProvider.GetRequiredService<IIhRepository>();
         return await ihRepository.GetReplays(groupId);
     }
+
+    public async Task<GroupStateV2?> GetOpenGroupState(Guid groupId)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var ihRepository = scope.ServiceProvider.GetRequiredService<IIhRepository>();
+        return await ihRepository.GetOpenGroupState(groupId);
+    }
 }

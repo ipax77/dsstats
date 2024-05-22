@@ -15,5 +15,6 @@ namespace dsstats.db8services
         Task<int> GetIhSessionsCount(CancellationToken token = default);
         Task<List<IhSessionListDto>> GetIhSessions(int skip, int take, CancellationToken token);
         Task<IhSessionDto?> GetIhSession(Guid groupId);
+        Task<GroupStateV2?> GetOpenGroupState(Guid groupId);
     }
 }

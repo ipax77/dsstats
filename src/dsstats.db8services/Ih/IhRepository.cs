@@ -14,6 +14,14 @@ public partial class IhRepository(ReplayContext context,
                                   IMapper mapper,
                                   ILogger<IhRepository> logger) : IIhRepository
 {
+    public async Task<GroupStateV2?> GetOpenGroupState(Guid groupId)
+    {
+        return await context.IhSessions
+            .Where(x => !x.Closed && x.GroupId == groupId)
+            .Select(s => s.GroupStateV2)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<int> GetIhSessionsCount(CancellationToken token = default)
     {
         return await context.IhSessions

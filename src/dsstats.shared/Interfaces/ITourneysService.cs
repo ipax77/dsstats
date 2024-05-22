@@ -13,4 +13,5 @@ public interface ITourneysService
     Task<List<IhSessionListDto>> GetIhSessions(int skip, int take, CancellationToken token);
     Task<IhSessionDto?> GetIhSession(Guid groupId);
     Task<List<ReplayListDto>> GetReplays(Guid groupId);
+    Task<GroupStateV2?> GetOpenGroupState(Guid groupId);
 }
