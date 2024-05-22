@@ -6,7 +6,7 @@ namespace dsstats.api.Services;
 
 public partial class IhService
 {
-    private async Task SetReplayStats(GroupState groupState, List<IhReplay> replays)
+    private async Task SetReplayStats(GroupStateV2 groupState, List<IhReplay> replays)
     {
         foreach (var replay in replays)
         {
@@ -15,7 +15,7 @@ public partial class IhService
         await UpdatePlayerStats(groupState);
     }
 
-    private async Task SetReplayStat(GroupState groupState, IhReplay replay)
+    private async Task SetReplayStat(GroupStateV2 groupState, IhReplay replay)
     {
         foreach (var player in replay.Metadata.Players)
         {
@@ -27,19 +27,19 @@ public partial class IhService
 
             if (groupPlayer is null)
             {
-                (var name, var rating) = await GetNameAndRating(groupState, player.PlayerId);
-                groupPlayer = new PlayerState()
+                RequestNames requestNames = new(player.Name, player.PlayerId.ToonId, player.PlayerId.RegionId, player.PlayerId.RealmId);
+                groupPlayer = await AddPlayerToGroup(groupState.GroupId, requestNames, true);
+                if (groupPlayer is null)
                 {
-                    PlayerId = player.PlayerId,
-                    Name = name,
-                    RatingStart = rating,
-                    InQueue = true
-                };
-                groupState.PlayerStates.Add(groupPlayer);
+                    continue;
+                }
             }
             if (player.Observer)
             {
                 groupPlayer.Observer++;
+                groupPlayer.ObsLastGame = true;
+                groupPlayer.PlayedLastGame = false;
+                groupPlayer.NewPlayer = false;
                 groupPlayer.QueuePriority = QueuePriority.Medium;
             }
         }
@@ -51,19 +51,23 @@ public partial class IhService
 
             if (groupPlayer is null)
             {
-                (var name, var rating) = await GetNameAndRating(groupState, playerId);
-                groupPlayer = new PlayerState()
+                RequestNames requestNames = new(player.Name, playerId.ToonId, playerId.RegionId, playerId.RealmId);
+                groupPlayer = await AddPlayerToGroup(groupState.GroupId, requestNames, true);
+                if (groupPlayer is null)
                 {
-                    PlayerId = playerId,
-                    Name = name,
-                    RatingStart = rating,
-                    InQueue = true
-                };
-                groupState.PlayerStates.Add(groupPlayer);
+                    continue;
+                }
             }
+            groupPlayer.PlayedLastGame = true;
+            groupPlayer.ObsLastGame = false;
+            groupPlayer.NewPlayer = false;
             groupPlayer.Name = player.Name;
             groupPlayer.QueuePriority = QueuePriority.Low;
             groupPlayer.Games++;
+            if (player.PlayerResult == PlayerResult.Win)
+            {
+                groupPlayer.Wins++;
+            }
 
             foreach (var otherPlayer in replay.Replay.ReplayPlayers)
             {
@@ -85,7 +89,7 @@ public partial class IhService
         }
     }
 
-    private async Task<(string, int)> GetNameAndRating(GroupState groupState, PlayerId playerId)
+    private async Task<(string, int)> GetNameAndRating(GroupStateV2 groupState, PlayerId playerId)
     {
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();

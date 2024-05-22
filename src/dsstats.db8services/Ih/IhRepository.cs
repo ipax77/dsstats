@@ -1,14 +1,54 @@
-﻿using dsstats.db8;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using dsstats.db8;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace dsstats.db8services;
 
-public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) : IIhRepository
+public partial class IhRepository(ReplayContext context,
+                                  IServiceScopeFactory scopeFactory,
+                                  IMapper mapper,
+                                  ILogger<IhRepository> logger) : IIhRepository
 {
-    public async Task<GroupState> GetOrCreateGroupState(Guid groupId, RatingType ratingType = RatingType.StdTE)
+    public async Task<GroupStateV2?> GetOpenGroupState(Guid groupId)
+    {
+        return await context.IhSessions
+            .Where(x => !x.Closed && x.GroupId == groupId)
+            .Select(s => s.GroupStateV2)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<int> GetIhSessionsCount(CancellationToken token = default)
+    {
+        return await context.IhSessions
+            .Where(x => x.Closed)
+            .CountAsync(token);
+    }
+
+    public async Task<List<IhSessionListDto>> GetIhSessions(int skip, int take, CancellationToken token)
+    {
+        return await context.IhSessions
+            .Where(x => x.Closed)
+            .OrderByDescending(o => o.Created)
+            .Skip(skip)
+            .Take(take)
+            .ProjectTo<IhSessionListDto>(mapper.ConfigurationProvider)
+            .ToListAsync(token);
+    }
+
+    public async Task<IhSessionDto?> GetIhSession(Guid groupId)
+    {
+        return await context.IhSessions
+            .Where(x => x.GroupId == groupId && x.Closed)
+            .ProjectTo<IhSessionDto>(mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<GroupStateV2> GetOrCreateGroupState(Guid groupId, RatingType ratingType = RatingType.StdTE)
     {
         var ihSession = await context.IhSessions.FirstOrDefaultAsync(f => f.GroupId == groupId);
         DateTime created = DateTime.UtcNow;
@@ -20,7 +60,7 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
                 RatingType = ratingType,
                 GroupId = groupId,
                 Created = created,
-                GroupState = new()
+                GroupStateV2 = new()
                 {
                     RatingType = ratingType,
                     GroupId = groupId,
@@ -31,19 +71,19 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
             await context.SaveChangesAsync();
         }
 
-        if (ihSession.GroupState is null)
+        if (ihSession.GroupStateV2 is null)
         {
-            ihSession.GroupState = new()
+            ihSession.GroupStateV2 = new()
             {
                 RatingType = ratingType,
                 GroupId = groupId,
                 Created = created
             };
         }
-        return ihSession.GroupState;
+        return ihSession.GroupStateV2;
     }
 
-    public async Task UpdateGroupState(GroupState groupState)
+    public async Task UpdateGroupState(GroupStateV2 groupState)
     {
         var ihSession = await context.IhSessions.FirstOrDefaultAsync(f => f.GroupId == groupState.GroupId);
 
@@ -52,11 +92,11 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
             return;
         }
 
-        ihSession.Players = Math.Max(ihSession.Players, groupState.PlayerStats.Count);
+        ihSession.Players = Math.Max(ihSession.Players, groupState.PlayerStates.Count);
         ihSession.Games = groupState.ReplayHashes.Count;
-        ihSession.GroupState = groupState;
+        ihSession.GroupStateV2 = groupState;
 
-        IProperty property = context.Entry(ihSession).Property(nameof(IhSession.GroupState)).Metadata;
+        IProperty property = context.Entry(ihSession).Property(nameof(IhSession.GroupStateV2)).Metadata;
         context.Entry(ihSession).Property(property).IsModified = true;
 
         await context.SaveChangesAsync();
@@ -94,8 +134,8 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
     {
         var replayHashes = await context.IhSessions
             .Where(x => x.GroupId == groupId
-                && x.GroupState != null)
-            .Select(s => s.GroupState!.ReplayHashes) 
+                && x.GroupStateV2 != null)
+            .Select(s => s.GroupStateV2!.ReplayHashes)
             .FirstOrDefaultAsync();
 
         if (replayHashes is null || replayHashes.Count == 0)
@@ -123,10 +163,10 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
             .ToListAsync();
     }
 
-    public async Task CalculatePerformance(GroupState groupState)
+    public async Task CalculatePerformance(GroupStateV2 groupState)
     {
         var replayHashes = groupState.ReplayHashes;
-            
+
         if (replayHashes is null || replayHashes.Count == 0)
         {
             return;
@@ -165,7 +205,7 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
                 {
                     performanceHelper = playerIds[playerId] = new() { OppRatings = [oppRating] };
                 }
-                
+
                 if (replayPlayer.PlayerResult == PlayerResult.Win)
                 {
                     performanceHelper.Wins++;
@@ -217,5 +257,5 @@ public class IhRepository(ReplayContext context, ILogger<IhRepository> logger) :
     {
         public List<double> OppRatings { get; set; } = new();
         public int Wins { get; set; }
-    } 
+    }
 }

@@ -33,7 +33,7 @@ public record PlayerState
     public bool InQueue { get; set; }
     public int RatingStart { get; set; }
     public int CurrentRating { get; set; }
-    public int Performance {  get; set; }
+    public double Performance {  get; set; }
     public QueuePriority QueuePriority { get; set; } = QueuePriority.High;
 }
 
@@ -46,7 +46,7 @@ public record PlayerStats
 
 public static class GroupStateExtensions
 {
-    public static void FillTeam(this GroupState groupState, int teamId)
+    public static void FillTeam(this GroupStateV2 groupState, int teamId)
     {
         var team = groupState.IhMatch.Teams[teamId];
         var remainingPlayers = team.Slots.Count(x => x.PlayerId.ToonId == 0);
@@ -63,7 +63,7 @@ public static class GroupStateExtensions
             .OrderByDescending(o => o.QueuePriority)
                 .ThenByDescending(o => o.RatingStart)
             .ToList();
-        var availablePlayers = new List<PlayerState>(orderedPlayers)
+        var availablePlayers = new List<PlayerStateV2>(orderedPlayers)
             .Where(x => !groupState.IhMatch.Teams.Any(a => a.Slots.Any(b => b.PlayerId == x.PlayerId)))
             .ToList();
 
@@ -91,7 +91,7 @@ public static class GroupStateExtensions
         }
     }
 
-    public static void CreateMatch(this GroupState groupState)
+    public static void CreateMatch(this GroupStateV2 groupState)
     {
         var players = groupState.PlayerStates.Where(x => x.InQueue).ToList();
         if (players.Count < 6)
@@ -105,7 +105,7 @@ public static class GroupStateExtensions
             .OrderByDescending(o => o.QueuePriority)
                 .ThenByDescending(o => o.RatingStart)
             .ToList();
-        var availablePlayers = new List<PlayerState>(orderedPlayers);
+        var availablePlayers = new List<PlayerStateV2>(orderedPlayers);
 
         IhMatch match = new();
 
@@ -142,18 +142,18 @@ public static class GroupStateExtensions
         groupState.IhMatch = match;
     }
 
-    private static PlayerState SetClosestPlayer(IhMatch match,
+    private static PlayerStateV2 SetClosestPlayer(IhMatch match,
                                          int teamId,
                                          int slotId,
                                          int avgRating,
-                                         List<PlayerState> availablePlayers,
-                                         GroupState groupState)
+                                         List<PlayerStateV2> availablePlayers,
+                                         GroupStateV2 groupState)
     {
         var team = match.Teams[teamId];
         var slot = team.Slots[slotId];
         var closestPlayers = availablePlayers
             .OrderByDescending(o => o.QueuePriority)
-                .ThenBy(o => o.Games)
+                .ThenBy(o => o.Games - o.JoinedAtGame)
                 .ThenBy(p => Math.Abs((team.Rating * slotId + p.RatingStart) / (slotId - avgRating)))
             .Take(3)
             .ToList();
@@ -178,4 +178,37 @@ public static class GroupStateExtensions
         match.SetScores(groupState);
         return closestScorePlayer;
     }
+}
+
+public record GroupStateV2
+{
+    public RatingType RatingType { get; set; } = RatingType.StdTE;
+    public RatingCalcType RatingCalcType { get; set; } = RatingCalcType.Dsstats;
+    public Guid GroupId { get; set; }
+    public int Visitors { get; set; }
+    public HashSet<string> ReplayHashes { get; set; } = [];
+    public List<PlayerStateV2> PlayerStates { get; set; } = [];
+    public IhMatch IhMatch { get; set; } = new();
+    public DateTime Created { get; set; } = DateTime.UtcNow;
+}
+
+public record PlayerStateV2
+{
+    public PlayerId PlayerId { get; set; } = new();
+    public string Name { get; set; } = string.Empty;
+    public List<PlayerId> PlayedWith { get; set; } = [];
+    public List<PlayerId> PlayedAgainst { get; set; } = [];
+    public int Games { get; set; }
+    public int Wins{ get; set; }
+    public int JoinedAtGame { get; set; }
+    public int Observer { get; set; }
+    public bool InQueue { get; set; } = true;
+    public int RatingStart { get; set; }
+    public int RatingChange { get; set; }
+    public int Performance { get; set; }
+    public bool PlayedLastGame { get; set; }
+    public bool ObsLastGame { get; set; }
+    public bool NewPlayer { get; set; }
+    public bool Quit { get; set; }
+    public QueuePriority QueuePriority { get; set; } = QueuePriority.High;
 }
