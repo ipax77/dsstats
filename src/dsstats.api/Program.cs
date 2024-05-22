@@ -173,13 +173,14 @@ if (app.Environment.IsProduction())
 
     var tourneyService = scope.ServiceProvider.GetRequiredService<ITourneysService>();
     tourneyService.SeedTourneys().Wait();
-}
-else
-{
+
     var ihRepository = scope.ServiceProvider.GetRequiredService<IIhRepository>();
     ihRepository.ArchiveV1().Wait();
 }
+else
+{
 
+}
 
 app.UseRateLimiter();
 
