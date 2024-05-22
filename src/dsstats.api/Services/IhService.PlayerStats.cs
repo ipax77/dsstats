@@ -6,7 +6,7 @@ namespace dsstats.api.Services;
 
 public partial class IhService
 {
-    private async Task UpdatePlayerStats(GroupState groupState)
+    private async Task UpdatePlayerStats(GroupStateV2 groupState)
     {
         if (!groupReplays.TryGetValue(groupState.GroupId, out var replays)
             || replays is null)
@@ -17,7 +17,7 @@ public partial class IhService
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        List<PlayerStats> playerStats = [];
+        groupState.PlayerStates.ForEach(f => f.RatingChange = 0);
 
         foreach (var replay in replays)
         {
@@ -29,28 +29,26 @@ public partial class IhService
             foreach (var replayPlayer in replay.Replay.ReplayPlayers)
             {
                 PlayerId playerId = new(replayPlayer.Player.ToonId, replayPlayer.Player.RealmId, replayPlayer.Player.RegionId);
-                var playerStat = playerStats.FirstOrDefault(f => f.PlayerId ==  playerId);
-                if (playerStat is null)
+                var playerState = groupState.PlayerStates.FirstOrDefault(f => f.PlayerId == playerId);
+                if (playerState is null)
                 {
-                    playerStat = new PlayerStats()
+                    RequestNames requestNames = new RequestNames(replayPlayer.Name, replayPlayer.Player.ToonId, 
+                        replayPlayer.Player.RegionId, replayPlayer.Player.RealmId);
+
+                    playerState = await AddPlayerToGroup(groupState.GroupId, requestNames, true);
+                    if (playerState is null)
                     {
-                        PlayerId = playerId,
-                    };
-                    playerStats.Add(playerStat);
+                        continue;
+                    }
                 }
 
                 var rating = replay.ReplayRating?.RepPlayerRatings.FirstOrDefault(f => f.GamePos == replayPlayer.GamePos);
-                playerStat.RatingChange += rating?.RatingChange ?? 0;
-                if (replayPlayer.PlayerResult == PlayerResult.Win)
-                {
-                    playerStat.Wins++;
-                }
+                playerState.RatingChange += Convert.ToInt32(rating?.RatingChange ?? 0);
             }
         }
-        groupState.PlayerStats = playerStats;
     }
 
-    private async Task<ReplayRatingDto?> GetReplayRating(string replayHash, ReplayContext context)
+    private static async Task<ReplayRatingDto?> GetReplayRating(string replayHash, ReplayContext context)
     {
         return await context.ReplayRatings
             .Where(x => x.Replay.ReplayHash == replayHash)

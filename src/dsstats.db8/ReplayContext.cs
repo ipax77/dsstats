@@ -56,7 +56,7 @@ public class ReplayContext : DbContext
     public virtual DbSet<Faq> Faqs { get; set; } = null!;
     public virtual DbSet<FaqVote> FaqVotes { get; set; } = null!;
     public virtual DbSet<IhSession> IhSessions { get; set; } = null!;
-
+    public virtual DbSet<IhSessionPlayer> IhSessionPlayers { get; set; } = null!;
     public int Week(DateTime date) => throw new InvalidOperationException($"{nameof(Week)} cannot be called client side.");
     public int Strftime(string arg, DateTime date) => throw new InvalidOperationException($"{nameof(Strftime)} cannot be called client side.");
 
@@ -227,6 +227,9 @@ public class ReplayContext : DbContext
             entity.Property(p => p.GroupState).HasConversion(
                 c => JsonSerializer.Serialize(c, (JsonSerializerOptions?)null),
                 c => JsonSerializer.Deserialize<GroupState>(c, (JsonSerializerOptions?)null));
+            entity.Property(p => p.GroupStateV2).HasConversion(
+                c => JsonSerializer.Serialize(c, (JsonSerializerOptions?)null),
+                c => JsonSerializer.Deserialize<GroupStateV2>(c, (JsonSerializerOptions?)null));
         });
 
         MethodInfo weekMethodInfo = typeof(ReplayContext)
