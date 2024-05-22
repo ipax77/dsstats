@@ -28,6 +28,47 @@ public class TourneysService(HttpClient httpClient, ILogger<TourneysService> log
         return [];
     }
 
+    public async Task<IhSessionDto?> GetIhSession(Guid groupId)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<IhSessionDto>($"{tourneysController}/ihsession/{groupId}");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting ihsession {groupId}: {error}", groupId, ex.Message);
+        }
+        return null;
+    }
+
+    public async Task<List<IhSessionListDto>> GetIhSessions(int skip, int take, CancellationToken token)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<List<IhSessionListDto>>($"{tourneysController}/ihsessions/{skip}/{take}", token) ?? [];
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting ihsessions: {error}", ex.Message);
+        }
+        return [];
+    }
+
+    public async Task<int> GetIhSessionsCount(CancellationToken token)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<int>($"{tourneysController}/ihsessionscount");
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting ihsessions count: {error}", ex.Message);
+        }
+        return 0;
+    }
+
     public async Task<List<TourneysReplayListDto>> GetReplays(TourneysReplaysRequest request, CancellationToken token)
     {
         try
@@ -42,6 +83,19 @@ public class TourneysService(HttpClient httpClient, ILogger<TourneysService> log
             logger.LogError("failed getting replays: {error}", ex.Message);
         }
         return new();
+    }
+
+    public async Task<List<ReplayListDto>> GetReplays(Guid groupId)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<List<ReplayListDto>>($"{tourneysController}/ihsessionreplays/{groupId}") ?? [];
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting ihsession replays: {error}", ex.Message);
+        }
+        return [];
     }
 
     public async Task<int> GetReplaysCount(TourneysReplaysRequest request, CancellationToken token = default)

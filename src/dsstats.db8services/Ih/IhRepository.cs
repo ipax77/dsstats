@@ -14,6 +14,13 @@ public partial class IhRepository(ReplayContext context,
                                   IMapper mapper,
                                   ILogger<IhRepository> logger) : IIhRepository
 {
+    public async Task<int> GetIhSessionsCount(CancellationToken token = default)
+    {
+        return await context.IhSessions
+            .Where(x => x.Closed)
+            .CountAsync(token);
+    }
+
     public async Task<List<IhSessionListDto>> GetIhSessions(int skip, int take, CancellationToken token)
     {
         return await context.IhSessions
@@ -22,7 +29,7 @@ public partial class IhRepository(ReplayContext context,
             .Skip(skip)
             .Take(take)
             .ProjectTo<IhSessionListDto>(mapper.ConfigurationProvider)
-            .ToListAsync();
+            .ToListAsync(token);
     }
 
     public async Task<IhSessionDto?> GetIhSession(Guid groupId)

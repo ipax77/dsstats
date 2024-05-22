@@ -2,6 +2,7 @@
 using dsstats.db8services.Import;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace dsstats.db8services;
@@ -40,6 +41,10 @@ public partial class IhRepository
         session.Players = session.IhSessionPlayers.Count;
         session.Games = session.GroupStateV2.ReplayHashes.Count;
         session.Closed = true;
+
+        IProperty property = context.Entry(session).Property(nameof(IhSession.GroupStateV2)).Metadata;
+        context.Entry(session).Property(property).IsModified = true;
+        
         await context.SaveChangesAsync();
     }
 

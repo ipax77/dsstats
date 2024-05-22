@@ -67,4 +67,32 @@ public class TourneysController(ITourneysService tourneysService) : Controller
             throw;
         }
     }
+
+    [HttpGet]
+    [Route("ihsessionscount")]
+    public async Task<int> GetIhSessionsCount(CancellationToken token = default)
+    {
+        return await tourneysService.GetIhSessionsCount(token);
+    }
+
+    [HttpGet]
+    [Route("ihsessions/{skip:int}/{take:int}")]
+    public async Task<List<IhSessionListDto>> GetIhSessions(int skip, int take, CancellationToken token)
+    {
+        return await tourneysService.GetIhSessions(skip, take, token);
+    }
+
+    [HttpGet]
+    [Route("ihsession/{groupId:guid}")]
+    public async Task<IhSessionDto?> GetIhSession(Guid groupId)
+    {
+        return await tourneysService.GetIhSession(groupId);
+    }
+
+    [HttpGet]
+    [Route("ihsessionreplays/{groupId:guid}")]
+    public async Task<List<ReplayListDto>> GetReplays(Guid groupId)
+    {
+        return await tourneysService.GetReplays(groupId);
+    }
 }

@@ -12,6 +12,7 @@ namespace dsstats.db8services
         Task CalculatePerformance(GroupStateV2 groupState);
         Task ArchiveSession(Guid groupId);
         Task ArchiveV1();
+        Task<int> GetIhSessionsCount(CancellationToken token = default);
         Task<List<IhSessionListDto>> GetIhSessions(int skip, int take, CancellationToken token);
         Task<IhSessionDto?> GetIhSession(Guid groupId);
     }
