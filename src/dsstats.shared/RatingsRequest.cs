@@ -13,6 +13,8 @@ public record RatingsRequest
     public bool Uploaders { get; set; } = true;
     public bool ComboRating { get; set; }
     public bool Arcade { get; set; }
+    public bool Active { get; set; }
+    public int Region { get; set; }
     [JsonIgnore]
     public PlayerId? PlayerId { get; set; }
     [JsonIgnore]
@@ -45,4 +47,5 @@ public record ComboPlayerRatingDto
     public PlayerRatingDto PlayerRating { get; set; } = new();
     public PlayerRatingPlayerDto Player { get; init; } = null!;
     public PlayerRatingChangeDto? PlayerRatingChange { get; init; }
+    public bool IsActive { get; init; }
 }
