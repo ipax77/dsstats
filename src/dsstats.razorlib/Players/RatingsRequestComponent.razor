@@ -17,7 +17,7 @@
                 <label class="form-label">
                     Rating Type
                     <span class="bi bi-info-circle pointer ms-2"
-                        onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/Mmr-calculation#rating-types'"></span>
+                          onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/Mmr-calculation#rating-types'"></span>
                     <InputSelect class="form-select text-light bgchart" @bind-Value="Request.Type">
                         @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
                         {
@@ -67,7 +67,7 @@
                     </div>
                     <div class="ms-2">
                         <span class="bi bi-info-circle pointer"
-                            onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/ComboRatings'">
+                              onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/ComboRatings'">
                         </span>
                     </div>
                 </div>
@@ -90,24 +90,48 @@
                 <span class="bi bi-x-lg text-danger pointer" @onclick="ResetSearch"></span>
             </div>
             <div class="col-auto ms-3 align-self-center">
-                <a href="https://github.com/ipax77/dsstats/wiki/Mmr-calculation"><span
-                        class="bi bi-info-circle me-1"></span>Calculation</a>
+                <a href="https://github.com/ipax77/dsstats/wiki/Mmr-calculation">
+                    <span class="bi bi-info-circle me-1"></span>Calculation
+                </a>
             </div>
         </div>
-        <div class="btn-group mt-1 bgchart">
-            <InputRadioGroup @bind-Value="Request.Type">
-                @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
-                {
-                    @if (ratingType == RatingType.None)
+        <div class="row mt-1 bgchart p-1 rounded">
+            <div class="col-auto btn-group">
+                <InputRadioGroup @bind-Value="Request.Type">
+                    @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
                     {
-                        continue;
+                        @if (ratingType == RatingType.None)
+                        {
+                            continue;
+                        }
+                        <div>
+                            <InputRadio class="btn-check" autocomplete="off" id="@($"radio{ratingType}")" Value="@ratingType" />
+                            <label class="btn btn-outline-light" for="@($"radio{ratingType}")">@Data.GetRatingTypeLongName(ratingType)</label>
+                        </div>
                     }
-                    <div>
-                        <InputRadio class="btn-check" autocomplete="off" id="@($"radio{ratingType}")" Value="@ratingType" />
-                        <label class="btn btn-outline-light" for="@($"radio{ratingType}")">@Data.GetRatingTypeLongName(ratingType)</label>
+                </InputRadioGroup>
+            </div>
+            <div class="col-auto">
+                <div class="d-flex">
+                    <div class="form-check form-switch">
+                        <label class="form-check-label">
+                            Active
+                            <InputCheckbox class="form-check-input" @bind-Value="Request.Active" />
+                        </label>
                     </div>
-                }
-            </InputRadioGroup>
+                </div>
+                <div class="row">
+                    <label for="region" class="col-sm-4 col-form-label">Region</label>
+                    <div class="col-sm-8">
+                        <InputSelect class="form-select text-light bgchart" @bind-Value="Request.Region">
+                            <option value="0">All</option>
+                            <option value="1">Am</option>
+                            <option value="2">Eu</option>
+                            <option value="3">As</option>
+                        </InputSelect>
+                    </div>
+                </div>
+            </div>
         </div>
     </EditForm>
 </div>

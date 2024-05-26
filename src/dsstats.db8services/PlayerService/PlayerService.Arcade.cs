@@ -66,7 +66,8 @@ public partial class PlayerService
                                 Change10d = cpr.ArcadePlayerRatingChange.Change10d,
                                 Change30d = cpr.ArcadePlayerRatingChange.Change30d
                             }
-                        }
+                        },
+                        IsActive = cpr.ArcadePlayerRatingChange != null,
                     };
         return query;
     }

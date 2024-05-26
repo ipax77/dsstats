@@ -65,7 +65,8 @@ public partial class PlayerService
                                 Change10d = pr.PlayerRatingChange.Change10d,
                                 Change30d = pr.PlayerRatingChange.Change30d
                             }
-                        }
+                        },
+                        IsActive = pr.PlayerRatingChange != null
                     };
         return query;
     }
