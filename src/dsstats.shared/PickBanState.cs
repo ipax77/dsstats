@@ -87,5 +87,7 @@ public enum PickBanMode
     Standard = 1,
     Commanders = 2,
     Name = 3,
-    StdRandom = 4
+    StdRandom = 4,
+    Std1v1 = 5,
+    CmdrBanOnly = 6
 }
