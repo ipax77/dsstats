@@ -204,3 +204,14 @@ public enum QueuePriority
     Medium = 2,
     High = 3
 }
+
+public enum PickBanMode
+{
+    None = 0,
+    Standard = 1,
+    Commanders = 2,
+    Name = 3,
+    StdRandom = 4,
+    Std1v1 = 5,
+    CmdrBanOnly = 6
+}

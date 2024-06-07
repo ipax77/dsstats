@@ -1,0 +1,169 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.SignalR.Client
+@using dsstats.shared
+@inject HttpClient httpClient
+@implements IDisposable
+
+<div class="container">
+    @if (editContext == null || clientPbState == null)
+    {
+        <div class="spinner-border spinner-border-sm text-danger" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
+    else
+    {
+        <div>
+
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public Guid Guid { get; set; }
+
+    [Parameter, EditorRequired]
+    public PickBanMode PickBanMode { get; set; }
+
+    private HubConnection? hubConnection;
+    private bool isConnected => hubConnection?.State == HubConnectionState.Connected;
+
+    PickBanStateDto pbState = new();
+    PickBanStateDto? clientPbState = null;
+    EditContext? editContext = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        pbState.PickBanMode = PickBanMode;
+        var uri = httpClient.BaseAddress ?? new Uri("https://dsstats.pax77.org");
+        uri = new Uri(uri, "/hubs/pickban2");
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(uri)
+            .Build();
+
+        hubConnection.On<int>("Visitors", (count) =>
+        {
+            pbState.Visitors = count;
+            InvokeAsync(() => StateHasChanged());
+        });
+
+        hubConnection.On<PickBanStateDto>("State", (state) =>
+        {
+            pbState = state;
+            if (clientPbState == null)
+            {
+                clientPbState = new();
+                for (int i = 0; i < pbState.TotalBans; i++)
+                {
+                    clientPbState.Bans.Add(new() { Slot = i });
+                }
+                for (int i = 0; i < pbState.TotalPicks; i++)
+                {
+                    clientPbState.Picks.Add(new() { Slot = i });
+                }
+                editContext = new(clientPbState);
+            }
+            InvokeAsync(() => StateHasChanged());
+        });
+
+        hubConnection.On<List<PickBan>>("Bans", (bans) =>
+        {
+            pbState.Bans = bans;
+            UpdateBans(bans);
+            InvokeAsync(() => StateHasChanged());
+        });
+
+        hubConnection.On<List<PickBan>>("Picks", (picks) =>
+        {
+            pbState.Picks = picks;
+            UpdatePicks(picks);
+            InvokeAsync(() => StateHasChanged());
+        });
+
+        await hubConnection.StartAsync();
+        if (isConnected)
+        {
+            if (PickBanMode == PickBanMode.None)
+            {
+                await hubConnection.SendAsync("JoinPickBan", Guid);
+            }
+            else
+            {
+                await hubConnection.SendAsync("CreatePickBan", Guid, PickBanMode);
+            }
+        }
+        await base.OnInitializedAsync();
+    }
+
+    private async Task Ban(PickBan pickBan)
+    {
+        if (hubConnection != null && isConnected)
+        {
+            await hubConnection.SendAsync("SetBan", pickBan);
+        }
+    }
+
+    private async Task Pick(PickBan pickBan)
+    {
+        if (hubConnection != null && isConnected)
+        {
+            await hubConnection.SendAsync("SetPick", pickBan);
+        }
+    }
+
+    private void UpdateBans(List<PickBan> bans)
+    {
+        if (clientPbState == null)
+        {
+            return;
+        }
+        foreach (var ban in bans)
+        {
+            var clientBan = clientPbState.Bans.FirstOrDefault(f => f.Slot == ban.Slot);
+            if (clientBan == null)
+            {
+                continue;
+            }
+            clientBan.Locked = true;
+            if (clientBan.Commander == Commander.None)
+            {
+                clientBan.Commander = ban.Commander;
+            }
+            if (string.IsNullOrEmpty(clientBan.Name))
+            {
+                clientBan.Name = ban.Name;
+            }
+        }
+    }
+
+    private void UpdatePicks(List<PickBan> picks)
+    {
+        if (clientPbState == null)
+        {
+            return;
+        }
+        foreach (var pick in picks)
+        {
+            var clientPick = clientPbState.Picks.FirstOrDefault(f => f.Slot == pick.Slot);
+            if (clientPick == null)
+            {
+                continue;
+            }
+            clientPick.Locked = true;
+            if (clientPick.Commander == Commander.None)
+            {
+                clientPick.Commander = pick.Commander;
+            }
+            if (string.IsNullOrEmpty(clientPick.Name))
+            {
+                clientPick.Name = pick.Name;
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        hubConnection?.DisposeAsync();
+    }
+}

@@ -6,7 +6,11 @@
 
 <PageTitle>dsstats - pickban</PageTitle>
 
-@if (pickBanSetting is null)
+@if (Id != null && Id != Guid.Empty)
+{
+    <dsstats.razorlib.PickBan.PickBanComponent Guid="Id.Value" PickBanMode="PickBanMode" />
+}
+else
 {
     <div class="bgchart2 rounded p-2">
         <h3>Pick-Ban-Helper</h3>
@@ -16,51 +20,26 @@
         <button type="button" class="btn btn-outline-light" @onclick="@(() => ChangeMode(PickBanMode.Commanders))">Commanders</button>
         <button type="button" class="btn btn-outline-light" @onclick="@(() => ChangeMode(PickBanMode.Name))">Name</button>
         <button type="button" class="btn btn-outline-light" @onclick="@(() => ChangeMode(PickBanMode.StdRandom))">Standard with Random</button>
+        <button type="button" class="btn btn-outline-light" @onclick="@(() => ChangeMode(PickBanMode.CmdrBanOnly))">Cmdr Ban Only</button>
+        <button type="button" class="btn btn-outline-light" @onclick="@(() => ChangeMode(PickBanMode.Std1v1))">Standard 1v1</button>
     </div>
-}
-else
-{
-    <PickBanComponent PickBanSetting="pickBanSetting" />
 }
 
 @code {
     [SupplyParameterFromQuery]
     public Guid? Id { get; set; }
 
-    [SupplyParameterFromQuery]
-    public string? Mode { get; set; }
-
-    PickBanSetting? pickBanSetting = null;
-
-    protected override void OnInitialized()
-    {
-        if (Id is not null && Id != Guid.Empty
-            && Enum.TryParse(typeof(PickBanMode), Mode, out var pickBanModeObj)
-            && pickBanModeObj is PickBanMode pickBanMode
-        )
-        {
-            pickBanSetting = new()
-                {
-                    Id = Id.Value,
-                    PickBanMode = pickBanMode
-                };
-        }
-        base.OnInitialized();
-    }
+    private PickBanMode PickBanMode = PickBanMode.None;
 
     private void ChangeMode(PickBanMode pickBanMode)
     {
-        pickBanSetting = new()
-        {
-            Id = Guid.NewGuid(),
-            PickBanMode = pickBanMode
-        };
+        Id = Guid.NewGuid();
+        PickBanMode = pickBanMode;
         StateHasChanged();
 
         IReadOnlyDictionary<string, object?> qParams = new Dictionary<string, object?>
             {
-                ["Mode"] = pickBanMode.ToString(),
-                ["Id"] = pickBanSetting.Id
+                ["Id"] = Id
             };
         NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters(qParams));
     }
