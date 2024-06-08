@@ -22,15 +22,8 @@ public class PickBanRepository
 
     public PickBanStateDto CreatePickBanState(Guid guid, PickBanMode mode)
     {
-        (GameMode gameMode, int totalBans, int totalPicks) = mode switch
-        {
-            PickBanMode.Standard => (GameMode.Standard, 0, 6),
-            PickBanMode.Commanders => (GameMode.Commanders, 2, 6),
-            PickBanMode.StdRandom => (GameMode.Standard, 0, 6),
-            PickBanMode.Std1v1 => (GameMode.Standard, 0, 2),
-            PickBanMode.CmdrBanOnly => (GameMode.Commanders, 2, 0),
-            _ => (GameMode.Standard, 0, 6)
-        };
+        (GameMode gameMode, int totalBans, int totalPicks) = Data.GetPickBanModeSettings(mode);
+
         if (!pickbanStates.TryGetValue(guid, out var pickBanState)
             || pickBanState == null)
         {

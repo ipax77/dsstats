@@ -53,7 +53,8 @@ public class PickBanHub(PickBanRepository pickBanRepository) : Hub
             {
                 return;
             }
-            await Clients.OthersInGroup(guid.ToString()).SendAsync("Bans", resultDto.Bans);
+            await Clients.Group(guid.ToString()).SendAsync("Bans", resultDto.Bans);
+
         }
     }
 
@@ -67,7 +68,7 @@ public class PickBanHub(PickBanRepository pickBanRepository) : Hub
             {
                 return;
             }
-            await Clients.OthersInGroup(guid.ToString()).SendAsync("Picks", resultDto.Picks);
+            await Clients.Group(guid.ToString()).SendAsync("Picks", resultDto.Picks);
         }
     }
 
@@ -83,7 +84,13 @@ public class PickBanHub(PickBanRepository pickBanRepository) : Hub
 
     public override async Task OnDisconnectedAsync(Exception? e)
     {
-        await LeavePickBan();
+        if (Context.Items.TryGetValue("guid", out var guidObj)
+            && guidObj is Guid guid)
+        {
+            int visitors = pickBanRepository.SetVisitor(guid, false);
+            await Clients.OthersInGroup(guid.ToString()).SendAsync("Visitors", visitors);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, guid.ToString());
+        }
         await base.OnDisconnectedAsync(e);
     }
 }

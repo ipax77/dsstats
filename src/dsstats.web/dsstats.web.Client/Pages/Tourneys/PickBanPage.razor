@@ -35,12 +35,14 @@ else
     {
         Id = Guid.NewGuid();
         PickBanMode = pickBanMode;
+
         StateHasChanged();
 
-        IReadOnlyDictionary<string, object?> qParams = new Dictionary<string, object?>
-            {
-                ["Id"] = Id
-            };
-        NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters(qParams));
+        Dictionary<string, object?> queryDic = new();
+
+        queryDic.Add("Id", Id);
+        var uri = NavigationManager
+            .GetUriWithQueryParameters(new Dictionary<string, object?>(queryDic));
+        NavigationManager.NavigateTo(uri);
     }
 }

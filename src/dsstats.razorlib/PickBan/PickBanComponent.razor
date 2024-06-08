@@ -1,21 +1,146 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.JSInterop
 @using dsstats.shared
 @inject HttpClient httpClient
-@implements IDisposable
+@inject NavigationManager NavigationManager
+@implements IAsyncDisposable
 
 <div class="container">
-    @if (editContext == null || clientPbState == null)
+    <div class="bgchart2 text-warning p-2 rounded d-inline-block">
+        <h3>Pick Ban Helper @pbSetting?.ServerState.PickBanMode</h3>
+    </div>
+    <div class="card" style="width: 42rem;">
+        <div class="card-header bgchart2">
+            <h4 class="text-warning">
+                Copy the Url and send it to the opposing team captain
+            </h4>
+        </div>
+        <div class="card-body bgchart">
+            <div class="d-flex">
+                <input class="form-text" id="input" type="text" value="@NavigationManager.Uri" style="min-width: 600px;" />
+            </div>
+        </div>
+        <div class="card-footer bgchart2">
+            <div class="d-flex">
+                <small class="text-white-50">This Page will be available until the next Server reboot.</small>
+                <small class="ms-auto">Visitors: @pbSetting?.ServerState.Visitors</small>
+            </div>
+        </div>
+    </div>
+
+    @if (editContext == null || pbSetting == null || !isConnected
+    || ((!pbSetting.PicksReady || !pbSetting.BansReady) && pbSetting.ServerState.Visitors <= 1))
     {
-        <div class="spinner-border spinner-border-sm text-danger" role="status">
-            <span class="visually-hidden">Loading...</span>
+
+        <div class="bgchart2 p-2 text-warning d-inline-block rounded">
+            <div class="spinner-border spinner-border-sm text-danger" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            @if (isConnected)
+            {
+                <p>Waiting for others to join ...</p>
+            }
+            else
+            {
+                <p>Disconnected</p>
+                <button type="button" class="btn btn-sm btn-outline-warning" @onclick="TryReconnect">Reconnect</button>
+            }
         </div>
     }
     else
     {
-        <div>
-
+        <div id="pbresult" class="bgchart p-3 border rounded mt-2" style="width: 600px;">
+            <EditForm EditContext="editContext" FormName="pickbanform">
+                <CascadingValue Value="editContext">
+                    <CascadingValue Value="pbSetting">
+                        @if (pbSetting.ClientState.Bans.Count > 0)
+                        {
+                            <h4>Bans</h4>
+                            <div class="d-flex justify-content-evenly">
+                                <div class="col-sm-4 mt-2">
+                                    <h5>Team1</h5>
+                                    @for (int i = 0; i < pbSetting.ClientState.Bans.Count / 2; i++)
+                                    {
+                                        var clientBan = pbSetting.ClientState.Bans[i];
+                                        <div class="mt-2">
+                                            <BanComponent ClientBan="clientBan" OnLocked="Ban" />
+                                        </div>
+                                    }
+                                </div>
+                                <div style="border-left: 6px solid darkred;">
+                                </div>
+                                <div class="col-sm-4">
+                                    <h5>Team2</h5>
+                                    @for (int i = pbSetting.ClientState.Bans.Count / 2; i < pbSetting.ClientState.Bans.Count; i++)
+                                    {
+                                        var clientBan = pbSetting.ClientState.Bans[i];
+                                        <div class="mt-2">
+                                            <BanComponent ClientBan="clientBan" OnLocked="Ban" />
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        @if (pbSetting.ClientState.Picks.Count > 0
+                    && pbSetting.ClientState.Bans.Count == pbSetting.ClientState.TotalBans)
+                        {
+                            <h4 class="mt-2">Picks</h4>
+                            <div class="d-flex justify-content-evenly">
+                                <div class="col-sm-4">
+                                    <h5>Team1</h5>
+                                    @for (int i = 0; i < pbSetting.ClientState.Picks.Count / 2; i++)
+                                    {
+                                        var clientPick = pbSetting.ClientState.Picks[i];
+                                        <div class="d-flex mt-1">
+                                            <div class="col-sm-1">
+                                                @GetPickTeamPos(clientPick)
+                                            </div>
+                                            @if (pbSetting.ServerState.PickBanMode == PickBanMode.Name)
+                                            {
+                                                <PickNameComponent ClientPick="clientPick" OnLocked="Pick" />
+                                            }
+                                            else
+                                            {
+                                                <PickComponent ClientPick="clientPick" OnLocked="Pick" />
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                                <div style="border-left: 6px solid darkred;">
+                                </div>
+                                <div class="col-sm-4">
+                                    <h5>Team2</h5>
+                                    @for (int i = pbSetting.ClientState.Picks.Count / 2; i < pbSetting.ClientState.Picks.Count; i++)
+                                    {
+                                        var clientPick = pbSetting.ClientState.Picks[i];
+                                        <div class="d-flex mt-1">
+                                            <div class="col-sm-1">
+                                                @GetPickTeamPos(clientPick)
+                                            </div>
+                                            @if (pbSetting.ServerState.PickBanMode == PickBanMode.Name)
+                                            {
+                                                <PickNameComponent ClientPick="clientPick" OnLocked="Pick" />
+                                            }
+                                            else
+                                            {
+                                                <PickComponent ClientPick="clientPick" OnLocked="Pick" />
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </CascadingValue>
+                </CascadingValue>
+            </EditForm>
         </div>
+        @if (pbSetting.PicksReady && pbSetting.BansReady)
+        {
+            <div class="ms-1">
+                <p class="text-warning">PickBan successfully completed.</p>
+            </div>
+        }
     }
 </div>
 
@@ -28,14 +153,15 @@
 
     private HubConnection? hubConnection;
     private bool isConnected => hubConnection?.State == HubConnectionState.Connected;
+    private object lockobject = new();
 
-    PickBanStateDto pbState = new();
-    PickBanStateDto? clientPbState = null;
+    PickBanSetting? pbSetting = null;
     EditContext? editContext = null;
+
+    private Lazy<Task<IJSObjectReference>>? moduleTask;
 
     protected override async Task OnInitializedAsync()
     {
-        pbState.PickBanMode = PickBanMode;
         var uri = httpClient.BaseAddress ?? new Uri("https://dsstats.pax77.org");
         uri = new Uri(uri, "/hubs/pickban2");
         hubConnection = new HubConnectionBuilder()
@@ -44,40 +170,37 @@
 
         hubConnection.On<int>("Visitors", (count) =>
         {
-            pbState.Visitors = count;
-            InvokeAsync(() => StateHasChanged());
+            if (pbSetting?.ServerState != null)
+            {
+                pbSetting.ServerState.Visitors = count;
+                InvokeAsync(() => StateHasChanged());
+            }
         });
 
         hubConnection.On<PickBanStateDto>("State", (state) =>
         {
-            pbState = state;
-            if (clientPbState == null)
+            if (pbSetting == null)
             {
-                clientPbState = new();
-                for (int i = 0; i < pbState.TotalBans; i++)
-                {
-                    clientPbState.Bans.Add(new() { Slot = i });
-                }
-                for (int i = 0; i < pbState.TotalPicks; i++)
-                {
-                    clientPbState.Picks.Add(new() { Slot = i });
-                }
-                editContext = new(clientPbState);
+                pbSetting = new PickBanSetting(Guid, state.PickBanMode, state);
+                editContext = new(pbSetting.ClientState);
+                editContext.OnFieldChanged += FieldChanged;
+            }
+            else
+            {
+                pbSetting.ServerState = state;
             }
             InvokeAsync(() => StateHasChanged());
         });
 
         hubConnection.On<List<PickBan>>("Bans", (bans) =>
         {
-            pbState.Bans = bans;
-            UpdateBans(bans);
+            pbSetting?.ServerBans(bans);
             InvokeAsync(() => StateHasChanged());
         });
 
         hubConnection.On<List<PickBan>>("Picks", (picks) =>
         {
-            pbState.Picks = picks;
-            UpdatePicks(picks);
+            pbSetting?.ServerPicks(picks);
             InvokeAsync(() => StateHasChanged());
         });
 
@@ -96,6 +219,14 @@
         await base.OnInitializedAsync();
     }
 
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        if (true)
+        {
+
+        }
+    }
+
     private async Task Ban(PickBan pickBan)
     {
         if (hubConnection != null && isConnected)
@@ -112,58 +243,44 @@
         }
     }
 
-    private void UpdateBans(List<PickBan> bans)
+    private async Task TryReconnect()
     {
-        if (clientPbState == null)
+        if (hubConnection == null)
         {
-            return;
+            var uri = httpClient.BaseAddress ?? new Uri("https://dsstats.pax77.org");
+            uri = new Uri(uri, "/hubs/pickban2");
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl(uri)
+                .Build();
         }
-        foreach (var ban in bans)
+
+        if (!isConnected)
         {
-            var clientBan = clientPbState.Bans.FirstOrDefault(f => f.Slot == ban.Slot);
-            if (clientBan == null)
-            {
-                continue;
-            }
-            clientBan.Locked = true;
-            if (clientBan.Commander == Commander.None)
-            {
-                clientBan.Commander = ban.Commander;
-            }
-            if (string.IsNullOrEmpty(clientBan.Name))
-            {
-                clientBan.Name = ban.Name;
-            }
+            await hubConnection.StartAsync();
         }
     }
 
-    private void UpdatePicks(List<PickBan> picks)
+    private int GetPickTeamPos(PickBan pickBan)
     {
-        if (clientPbState == null)
-        {
-            return;
-        }
-        foreach (var pick in picks)
-        {
-            var clientPick = clientPbState.Picks.FirstOrDefault(f => f.Slot == pick.Slot);
-            if (clientPick == null)
-            {
-                continue;
-            }
-            clientPick.Locked = true;
-            if (clientPick.Commander == Commander.None)
-            {
-                clientPick.Commander = pick.Commander;
-            }
-            if (string.IsNullOrEmpty(clientPick.Name))
-            {
-                clientPick.Name = pick.Name;
-            }
-        }
+        return pickBan.Slot + 1;
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        hubConnection?.DisposeAsync();
+        await DisposeAsyncCore();
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual async ValueTask DisposeAsyncCore()
+    {
+        if (hubConnection != null)
+        {
+            await hubConnection.StopAsync();
+            await hubConnection.DisposeAsync();
+        }
+        if (editContext != null)
+        {
+            editContext.OnFieldChanged -= FieldChanged;
+        }
     }
 }

@@ -73,6 +73,7 @@ public class PickBanState
         return new()
         {
             PickBanMode = PickBanMode,
+            GameMode = GameMode,
             Visitors = Visitors,
             TotalBans = TotalBans,
             TotalPicks = TotalPicks,
