@@ -54,7 +54,10 @@ public class PickBanHub(PickBanRepository pickBanRepository) : Hub
                 return;
             }
             await Clients.Group(guid.ToString()).SendAsync("Bans", resultDto.Bans);
-
+            if (resultDto.TotalPicks == 0 && resultDto.Bans.Count == resultDto.TotalBans)
+            {
+                await pickBanRepository.SavePickBan(resultDto);
+            }
         }
     }
 
@@ -69,6 +72,10 @@ public class PickBanHub(PickBanRepository pickBanRepository) : Hub
                 return;
             }
             await Clients.Group(guid.ToString()).SendAsync("Picks", resultDto.Picks);
+            if (resultDto.Picks.Count == resultDto.TotalPicks)
+            {
+                await pickBanRepository.SavePickBan(resultDto);
+            }
         }
     }
 
