@@ -8,13 +8,13 @@ using dsstats.db8.AutoMapper;
 using dsstats.db8services;
 using dsstats.db8services.DsData;
 using dsstats.db8services.Import;
+using dsstats.pickban;
 using dsstats.ratings;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
-using pax.dsstats.web.Server.Hubs;
 using pax.dsstats.web.Server.Services.Arcade;
 using System.Threading.RateLimiting;
 
@@ -111,7 +111,7 @@ builder.Services.AddSingleton<IRatingService, RatingService>();
 builder.Services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
 builder.Services.AddSingleton<ImportService>();
 builder.Services.AddSingleton<UploadService>();
-builder.Services.AddSingleton<PickBanService>();
+builder.Services.AddSingleton<PickBanRepository>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddSingleton<AuthenticationFilterAttributeV6>();
 builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
@@ -196,7 +196,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHub<PickBanHub>("/hubs/pickban");
+app.MapHub<PickBanHub>("/hubs/pickban2");
 app.MapHub<IhHub>("/hubs/ih");
 app.MapHub<UploadHub>("/hubs/upload");
 
