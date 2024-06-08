@@ -144,6 +144,7 @@ public partial class IhService(IServiceScopeFactory scopeFactory) : IIhService
                 groupState.PlayerStates.Add(playerState);
             }
             playerState.JoinedAtGame = groupState.ReplayHashes.Count;
+            playerState.Quit = false;
 
             if (!dry)
             {

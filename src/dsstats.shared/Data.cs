@@ -270,6 +270,19 @@ public static class Data
         };
     }
 
+    public static (GameMode gameMode, int totalBans, int totalPicks) GetPickBanModeSettings(PickBanMode pickBanMode)
+    {
+        return pickBanMode switch
+        {
+            PickBanMode.Standard => (GameMode.Standard, 0, 6),
+            PickBanMode.Commanders => (GameMode.Commanders, 2, 6),
+            PickBanMode.StdRandom => (GameMode.Standard, 0, 6),
+            PickBanMode.Std1v1 => (GameMode.Standard, 0, 2),
+            PickBanMode.CmdrBanOnly => (GameMode.Commanders, 2, 0),
+            _ => (GameMode.Standard, 0, 6)
+        };
+    }
+
     public static readonly int MinBuildRating = 500;
     public static readonly int MaxBuildRating = 2500;
 
