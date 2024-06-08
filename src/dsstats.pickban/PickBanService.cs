@@ -1,8 +1,10 @@
-﻿using dsstats.shared;
+﻿using dsstats.db8;
+using dsstats.shared;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace dsstats.pickban;
 
-public class PickBanRepository
+public class PickBanRepository(IServiceScopeFactory scopeFactory)
 {
     private Dictionary<Guid, PickBanState> pickbanStates = [];
 
@@ -62,5 +64,21 @@ public class PickBanRepository
             return state.SetPick(pickBan);
         }
         return null;
+    }
+
+    public async Task SavePickBan(PickBanStateDto pickBan)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        DsPickBan dsPickBan = new()
+        {
+            PickBanMode = pickBan.PickBanMode,
+            Time = DateTime.UtcNow,
+            Bans = pickBan.Bans.Select(s => s.Commander).ToList(),
+            Picks = pickBan.Picks.Select(s => s.Commander).ToList()
+        };
+        context.DsPickBans.Add(dsPickBan);
+        await context.SaveChangesAsync();
     }
 }
