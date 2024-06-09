@@ -1,6 +1,5 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.SignalR.Client
-@using Microsoft.JSInterop
 @using dsstats.shared
 @inject HttpClient httpClient
 @inject NavigationManager NavigationManager
@@ -157,8 +156,6 @@
 
     PickBanSetting? pbSetting = null;
     EditContext? editContext = null;
-
-    private Lazy<Task<IJSObjectReference>>? moduleTask;
 
     protected override async Task OnInitializedAsync()
     {
