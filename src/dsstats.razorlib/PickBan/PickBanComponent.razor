@@ -83,7 +83,7 @@
                             </div>
                         }
                         @if (pbSetting.ClientState.Picks.Count > 0
-                    && pbSetting.ClientState.Bans.Count == pbSetting.ClientState.TotalBans)
+                            && pbSetting.BansReady)
                         {
                             <h4 class="mt-2">Picks</h4>
                             <div class="d-flex justify-content-evenly">

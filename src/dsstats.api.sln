@@ -29,7 +29,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.authshared", "dssta
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pax.dsstats.parser", "dsstats.maui\pax.dsstats.parser\pax.dsstats.parser.csproj", "{8E62721C-E4E9-4AA9-9EEF-9D4B3562607F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.pickban", "dsstats.pickban\dsstats.pickban.csproj", "{F72AB22C-9A9C-402F-AA56-B5C712C35427}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.pickban", "dsstats.pickban\dsstats.pickban.csproj", "{F72AB22C-9A9C-402F-AA56-B5C712C35427}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.pickban.tests", "tests\dsstats.pickban.tests\dsstats.pickban.tests.csproj", "{2428AFF9-03C3-463B-9F41-4B93460EDB63}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -93,6 +95,10 @@ Global
 		{F72AB22C-9A9C-402F-AA56-B5C712C35427}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F72AB22C-9A9C-402F-AA56-B5C712C35427}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F72AB22C-9A9C-402F-AA56-B5C712C35427}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2428AFF9-03C3-463B-9F41-4B93460EDB63}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2428AFF9-03C3-463B-9F41-4B93460EDB63}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2428AFF9-03C3-463B-9F41-4B93460EDB63}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2428AFF9-03C3-463B-9F41-4B93460EDB63}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
