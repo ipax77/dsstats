@@ -87,6 +87,10 @@ public class PickBanSetting
 
     public void ClientPick(PickBan pickBan)
     {
+        if (!BansReady || PicksReady)
+        {
+            return;
+        }
         lock (lockobject)
         {
             pickBan.Locked = true;
@@ -98,6 +102,10 @@ public class PickBanSetting
     }
     public void ClientBan(PickBan pickBan)
     {
+        if (BansReady)
+        {
+            return;
+        }
         lock (lockobject)
         {
             pickBan.Locked = true;

@@ -27,11 +27,16 @@ public class PickBanState
 
     public PickBanStateDto? SetPick(PickBan pick)
     {
+        if (!BansPublic || PicksPublic)
+        {
+            return null;
+        }
         lock (lockobject)
         {
             var statePick = Picks.FirstOrDefault(f => f.Slot == pick.Slot);
             if (statePick == null)
             {
+                pick.Locked = true;
                 Picks.Add(pick);
                 return GetDto();
             }
@@ -41,11 +46,16 @@ public class PickBanState
 
     public PickBanStateDto? SetBan(PickBan ban)
     {
+        if (BansPublic)
+        {
+            return null;
+        }
         lock (lockobject)
         {
             var stateBan = Bans.FirstOrDefault(f => f.Slot == ban.Slot);
             if (stateBan == null)
             {
+                ban.Locked = true;
                 Bans.Add(ban);
                 return GetDto();
             }
