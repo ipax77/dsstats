@@ -1,5 +1,6 @@
 ﻿using dsstats.shared;
 using dsstats.shared.Interfaces;
+using dsstats.shared.Stats;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 
@@ -12,6 +13,22 @@ public class TourneysService(HttpClient httpClient, ILogger<TourneysService> log
     public Task<(string, string)?> DownloadReplay(string replayHash)
     {
         throw new NotImplementedException();
+    }
+
+    public async Task<MatchupResponse> GetBestTeammate(MatchupRequest request, CancellationToken token)
+    {
+        try
+        {
+            return await httpClient
+                .GetFromJsonAsync<MatchupResponse>($"{tourneysController}/bestmm/{(int)request.Commander1}/{(int)request.Commander2}")
+                ?? new MatchupResponse() { Request = request };
+
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting groupStates: {error}", ex.Message);
+        }
+        return new() { Request = request };
     }
 
     public async Task<List<GroupStateDto>> GetGroupStates()

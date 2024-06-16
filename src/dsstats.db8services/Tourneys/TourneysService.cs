@@ -2,6 +2,7 @@
 using dsstats.shared;
 using dsstats.shared.Extensions;
 using dsstats.shared.Interfaces;
+using dsstats.shared.Stats;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -225,5 +226,12 @@ public partial class TourneysService(ReplayContext context, IServiceScopeFactory
         var fileName = $"{replay.ReplayEvent?.WinnerTeam?.Replace(" ", "_") ?? "Team1"}_vs_{replay.ReplayEvent?.RunnerTeam?.Replace(" ", "_") ?? "Team2"}.SC2Replay";
 
         return (replay.FileName, fileName);
+    }
+
+    public async Task<MatchupResponse> GetBestTeammate(MatchupRequest request, CancellationToken token)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var bestMatchupService = scope.ServiceProvider.GetRequiredService<BestMatchupService>();
+        return await bestMatchupService.GetBestTeammateResult(request, token);
     }
 }

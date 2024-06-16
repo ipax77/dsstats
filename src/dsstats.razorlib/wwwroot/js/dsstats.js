@@ -1,4 +1,4 @@
-//v1.11
+//v1.12
 
 const cmdrIconsMap = new Map();
 let dsmodal = null;
@@ -362,7 +362,6 @@ function openModalById(id) {
     dsmodal.show();
 }
 
-
 function closeModalById(id) {
     if (dsmodal !== undefined && dsmodal !== null) {
         dsmodal.hide();
@@ -379,8 +378,6 @@ function closeModalById(id) {
     }
 }
 
-
-
 function toggleButton(buttonId, elementId) {
     var button = document.getElementById(buttonId);
     var bsButton = new bootstrap.Button(button);
@@ -394,6 +391,16 @@ function toggleButton(buttonId, elementId) {
             targetElement.classList.remove('show');
         } else {
             targetElement.classList.add('show');
+        }
+    }
+}
+
+function closeDropdown(dropdownId) {
+    var dropdown = document.getElementById(dropdownId);
+    if (dropdown) {
+        var dropdownInstance = bootstrap.Dropdown.getInstance(dropdown);
+        if (dropdownInstance) {
+            dropdownInstance.hide();
         }
     }
 }
