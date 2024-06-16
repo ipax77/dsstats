@@ -1,5 +1,6 @@
 ﻿using dsstats.shared;
 using dsstats.shared.Interfaces;
+using dsstats.shared.Stats;
 using Microsoft.AspNetCore.Mvc;
 
 namespace dsstats.api.Controllers;
@@ -101,5 +102,18 @@ public class TourneysController(ITourneysService tourneysService) : Controller
     public async Task<GroupStateV2?> GetOpenGroupState(Guid groupId)
     {
         return await tourneysService.GetOpenGroupState(groupId);
+    }
+
+    [HttpGet]
+    [Route("bestmm/{cmdr1:int}/{cmdr2:int}")]
+    public async Task<MatchupResponse> GetBestTeammate(int cmdr1, int cmdr2, CancellationToken token)
+    {
+        MatchupRequest request = new()
+        {
+            TimePeriod = TimePeriod.Last2Years,
+            Commander1 = (Commander)cmdr1,
+            Commander2 = (Commander)cmdr2
+        };
+        return await tourneysService.GetBestTeammate(request, token);
     }
 }
