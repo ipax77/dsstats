@@ -7,12 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.1.0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\dsstats.db8\dsstats.db8.csproj" />
     <ProjectReference Include="..\dsstats.shared\dsstats.shared.csproj" />
   </ItemGroup>
-
 </Project>
