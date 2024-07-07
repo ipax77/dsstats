@@ -13,8 +13,8 @@ namespace MysqlMigrations.Migrations
             var sql1 = @"UPDATE DsUnits SET Cost = 80 WHERE Commander = 10 and Name = 'Vile Roach';
 UPDATE DsUnits SET Cost = 425 WHERE Commander = 20 and Name = 'Vanguard';
 UPDATE DsUnits SET Cost = 300 WHERE Commander = 20 and Name = 'Ascendant';
-UPDATE DsUnits SET Cost = 1250 WHERE Commander = 80 and Name = 'Tal\'darim Mothership';
-UPDATE DsUnits SET Cost = 295 WHERE Commander = 20 and Name = 'Lurker';
+UPDATE DsUnits SET Cost = 1250 WHERE Commander = 20 and Name = 'Tal\'darim Mothership';
+UPDATE DsUnits SET Cost = 295 WHERE Commander = 80 and Name = 'Lurker';
 UPDATE DsUnits SET Cost = 320 WHERE Commander = 80 and Name = 'Brood Lord';
 UPDATE DsUnits SET Cost = 350 WHERE Commander = 160 and Name = 'Dark Archon';
 UPDATE DsUpgrades SET Cost = 75 WHERE Commander = 80 and Upgrade = 'Seismic Spines';
