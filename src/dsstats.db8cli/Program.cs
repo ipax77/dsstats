@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Text.Json;
+using AutoMapper.Configuration;
 
 namespace dsstats.db8cli;
 
