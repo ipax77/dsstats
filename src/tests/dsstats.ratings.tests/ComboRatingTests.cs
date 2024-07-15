@@ -58,7 +58,7 @@ public class ComboRatingsTests
         services.AddLogging();
         services.AddMemoryCache();
         services.AddAutoMapper(typeof(AutoMapperProfile));
-
+        services.AddScoped<ComboRatings>();
         services.AddSingleton<IRatingService, RatingService>();
         services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
         services.AddSingleton<ImportService>();

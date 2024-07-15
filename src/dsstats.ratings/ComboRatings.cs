@@ -41,7 +41,8 @@ public partial class ComboRatings(ReplayContext context, ILogger<ComboRatings> l
         };
         HashSet<int> matchedArcadeIds = [];
         matchesInfo = await GetProcessedReplayIds();
-        dsstatsRequest.Imported = matchesInfo.LatestUpdate.AddDays(-0.5);
+        dsstatsRequest.Imported = dsstatsRequest.Imported == DateTime.MinValue ? DateTime.MinValue
+            : matchesInfo.LatestUpdate.AddDays(-0.5);
         int matches = 0;
         var dsstatsReplays = await GetComboDsstatsCalcDtos(dsstatsRequest, context);
 
