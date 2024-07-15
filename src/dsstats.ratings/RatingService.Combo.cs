@@ -23,6 +23,8 @@ public partial class RatingService
         using var scope = scopeFactory.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var ratingSaveService = scope.ServiceProvider.GetRequiredService<IRatingsSaveService>();
+        var comboRatings = scope.ServiceProvider.GetRequiredService<ComboRatings>();
+        await comboRatings.CombineDsstatsSc2ArcadeReplays();
 
         await CleanupComboPreRatings(context);
 
@@ -48,8 +50,7 @@ public partial class RatingService
         };
 
 
-        HashSet<int> processedReplayIds = new();
-        var comboCalcDtos = await GetComboCalcDtos(dsstatsRequest, processedReplayIds, context);
+        var comboCalcDtos = await GetComboCalcDtos(dsstatsRequest, context);
 
         List<shared.Calc.ReplayRatingDto> replayRatings = new();
 
@@ -75,140 +76,31 @@ public partial class RatingService
                                                    ratingRequest.ReplayPlayerRatingAppendId);
             replayRatings = new();
             dsstatsRequest.Skip += dsstatsRequest.Take;
-            comboCalcDtos = await GetComboCalcDtos(dsstatsRequest, processedReplayIds, context);
+            comboCalcDtos = await GetComboCalcDtos(dsstatsRequest, context);
         }
 
         await ratingSaveService.SaveComboPlayerRatings(ratingRequest.MmrIdRatings, ratingRequest.SoftBannedPlayers);
     }
 
     private async Task<List<CalcDto>> GetComboCalcDtos(DsstatsCalcRequest request,
-                                                       HashSet<int> processedReplayIds,
                                                        ReplayContext context)
     {
         var dsstatsCalcDtos = await GetComboDsstatsCalcDtos(request, context);
-        var arcadeCalcDtos = await GetComboArcadeCalcDtos(dsstatsCalcDtos, processedReplayIds, context);
-        return CombineCalcDtos(dsstatsCalcDtos, arcadeCalcDtos, processedReplayIds);
+        var arcadeCalcDtos = await GetComboArcadeCalcDtos(dsstatsCalcDtos, context);
+        return CombineCalcDtos(dsstatsCalcDtos, arcadeCalcDtos);
     }
 
     private List<CalcDto> CombineCalcDtos(List<CalcDto> dsstatsCalcDtos,
-                                            List<CalcDto> sc2ArcadeCalcDtos,
-                                            HashSet<int> processedReplayIds)
+                                            List<CalcDto> sc2ArcadeCalcDtos)
     {
-        List<CalcDto> combinedCalcDtos = new();
-
-        var dsstatsDic = GenerateHashDic(dsstatsCalcDtos);
-        var sc2arcadeDic = GenerateHashDic(sc2ArcadeCalcDtos);
-
-        foreach (var ent in dsstatsDic)
-        {
-            foreach (var calcDto in ent.Value)
-            {
-                if (sc2arcadeDic.TryGetValue(ent.Key, out var calcDtos))
-                {
-                    foreach (var sc2ArcadeCalcDto in calcDtos.ToArray())
-                    {
-                        if (IsMatchReasonable(calcDto, sc2ArcadeCalcDto))
-                        {
-                            calcDtos.Remove(sc2ArcadeCalcDto);
-                            break;
-                        }
-                    }
-                }
-                combinedCalcDtos.Add(calcDto);
-            }
-        }
-
-        combinedCalcDtos.AddRange(sc2arcadeDic.SelectMany(s => s.Value));
-        processedReplayIds.UnionWith(sc2ArcadeCalcDtos.Select(s => s.ReplayId));
-
-        return combinedCalcDtos
+        return dsstatsCalcDtos
+            .Concat(sc2ArcadeCalcDtos)
             .OrderBy(o => o.GameTime)
-            .ThenBy(o => o.ReplayId)
+                .ThenBy(o => o.ReplayId)
             .ToList();
     }
 
-    private static bool IsMatchReasonable(CalcDto dsstatsCalcDto, CalcDto sc2arcadeCalcDto)
-    {
-        var gameTimeDiff = Math.Abs((dsstatsCalcDto.GameTime - sc2arcadeCalcDto.GameTime).TotalSeconds);
-        //var durationDiff = Math.Abs(dsstatsCalcDto.Duration - sc2arcadeCalcDto.Duration);
-
-        //var durationPerDiff = durationDiff / (double)Math.Max(dsstatsCalcDto.Duration, sc2arcadeCalcDto.Duration);
-
-        // if (gameTimeDiff < 86400 && durationPerDiff < 0.2)
-        if (gameTimeDiff < 86400)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    private static Dictionary<string, List<CalcDto>> GenerateHashDic(List<CalcDto> calcDtos)
-    {
-        Dictionary<string, List<CalcDto>> hashDic = new();
-
-        for (int i = 0; i < calcDtos.Count; i++)
-        {
-            var calcDto = calcDtos[i];
-
-            var key = string.Join('|', calcDto.Players
-                .OrderBy(o => o.Team)
-                .ThenBy(o => o.PlayerId.ToonId)
-                .Select(s => s.PlayerId.ToonId.ToString()));
-            // .Select(s => $"{s.ProfileId},{s.RegionId},{s.RealmId}"));
-
-            var gameMode = calcDto.GameMode switch
-            {
-                3 => "Cmdr",
-                4 => "Cmdr",
-                7 => "Std",
-                _ => ""
-            };
-
-            key = gameMode + key;
-
-            if (!hashDic.TryGetValue(key, out var dtos))
-            {
-                hashDic[key] = new();
-            }
-            hashDic[key].Add(calcDto);
-        }
-        return hashDic;
-    }
-
-    private static void AddHashDic(Dictionary<string, List<CalcDto>> hashDic, List<CalcDto> calcDtos)
-    {
-        for (int i = 0; i < calcDtos.Count; i++)
-        {
-            var calcDto = calcDtos[i];
-
-            var key = string.Join('|', calcDto.Players
-                .OrderBy(o => o.Team)
-                .ThenBy(o => o.PlayerId.ToonId)
-                .Select(s => s.PlayerId.ToonId.ToString()));
-            // .Select(s => $"{s.ProfileId},{s.RegionId},{s.RealmId}"));
-
-            var gameMode = calcDto.GameMode switch
-            {
-                3 => "Cmdr",
-                4 => "Cmdr",
-                7 => "Std",
-                _ => ""
-            };
-
-            key = gameMode + key;
-
-            if (!hashDic.TryGetValue(key, out var dtos))
-            {
-                hashDic[key] = new();
-            }
-            hashDic[key].Add(calcDto);
-        }
-    }
-
-    private async Task<List<CalcDto>> GetComboArcadeCalcDtos(List<CalcDto> dsstatsCalcDtos, HashSet<int> processedReplayIds, ReplayContext context)
+    private async Task<List<CalcDto>> GetComboArcadeCalcDtos(List<CalcDto> dsstatsCalcDtos, ReplayContext context)
     {
         if (dsstatsCalcDtos.Count == 0)
         {
@@ -237,22 +129,22 @@ public partial class RatingService
         }
 
         var query = from r in context.MaterializedArcadeReplays
+                    join m in context.ReplayArcadeMatches on r.ArcadeReplayId equals m.ArcadeReplayId into grouping
+                    from m in grouping.DefaultIfEmpty()
                     orderby r.MaterializedArcadeReplayId
                     where r.MaterializedArcadeReplayId >= startId
                         && r.MaterializedArcadeReplayId <= endId
-                    select new
+                        && m == null
+                    select new CalcDto()
                     {
-                        r.ArcadeReplayId,
-                        CalcDto = new CalcDto()
-                        {
-                            ReplayId = r.ArcadeReplayId,
-                            GameTime = r.CreatedAt,
-                            Duration = r.Duration,
-                            GameMode = (int)r.GameMode,
-                            WinnerTeam = r.WinnerTeam,
-                            TournamentEdition = false,
-                            IsArcade = true,
-                            Players = context.ArcadeReplayPlayers
+                        ReplayId = r.ArcadeReplayId,
+                        GameTime = r.CreatedAt,
+                        Duration = r.Duration,
+                        GameMode = (int)r.GameMode,
+                        WinnerTeam = r.WinnerTeam,
+                        TournamentEdition = false,
+                        IsArcade = true,
+                        Players = context.ArcadeReplayPlayers
                                 .Where(x => x.ArcadeReplayId == r.ArcadeReplayId)
                                 .Select(t => new PlayerCalcDto()
                                 {
@@ -262,16 +154,11 @@ public partial class RatingService
                                     Team = t.Team,
                                     PlayerId = new(t.ArcadePlayer.ProfileId, t.ArcadePlayer.RealmId, t.ArcadePlayer.RegionId)
                                 }).ToList()
-                        }
                     };
 
-        var data = await query
+        return await query
             .AsSplitQuery()
             .ToListAsync();
-
-        return data.Where(x => !processedReplayIds.Contains(x.ArcadeReplayId))
-            .Select(s => s.CalcDto)
-            .ToList();
     }
 
     private async Task<List<CalcDto>> GetComboDsstatsCalcDtos(DsstatsCalcRequest request, ReplayContext context)

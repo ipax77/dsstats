@@ -179,8 +179,8 @@ if (app.Environment.IsProduction())
 }
 else
 {
-    var comboRatings = scope.ServiceProvider.GetRequiredService<ComboRatings>();
-    comboRatings.CombineDsstatsSc2ArcadeReplays().Wait();
+    //var comboRatings = scope.ServiceProvider.GetRequiredService<ComboRatings>();
+    //comboRatings.CombineDsstatsSc2ArcadeReplays().Wait();
 }
 
 app.UseRateLimiter();

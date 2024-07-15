@@ -49,6 +49,7 @@ class Program
         });
 
         services.AddAutoMapper(typeof(AutoMapperProfile));
+        services.AddScoped<ComboRatings>();
         services.AddSingleton<IRatingService, RatingService>();
         services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
 
@@ -87,11 +88,6 @@ class Program
             {
                 logger.LogInformation("producing combo ratings.");
                 ratingService.ProduceRatings(RatingCalcType.Combo, false).Wait();
-            }
-            else if (args[0] == "combo2")
-            {
-                logger.LogInformation("producing combo2 ratings.");
-                ratingService.CombineTest().Wait();
             }
             else if (args[0] == "lsdups")
             {

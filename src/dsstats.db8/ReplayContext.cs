@@ -241,6 +241,11 @@ public class ReplayContext : DbContext
             entity.HasIndex(i => i.MatchTime);
         });
 
+        modelBuilder.Entity<MaterializedArcadeReplay>(entity =>
+        {
+            entity.HasIndex(i => i.CreatedAt);
+        });
+
         MethodInfo weekMethodInfo = typeof(ReplayContext)
             .GetRuntimeMethod(nameof(ReplayContext.Week), new[] { typeof(DateTime) }) ?? throw new ArgumentNullException();
 

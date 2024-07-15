@@ -7,10 +7,11 @@ using System.Text.Json;
 
 namespace dsstats.ratings;
 
-public class ComboRatings(ReplayContext context, ILogger<ComboRatings> logger)
+public partial class ComboRatings(ReplayContext context, ILogger<ComboRatings> logger)
 {
     private Dictionary<ReplayKey, int> RegionDict = [];
     private Dictionary<ReplayKey, List<int>> ToonIdsDict = [];
+    private ReplayMatchInfo matchesInfo = new();
 
     public async Task InitDb()
     {
@@ -39,8 +40,8 @@ public class ComboRatings(ReplayContext context, ILogger<ComboRatings> logger)
             Take = 1000
         };
         HashSet<int> matchedArcadeIds = [];
-        var matchesInfo = await GetProcessedReplayIds();
-        dsstatsRequest.Imported = matchesInfo.LatestUpdate;
+        matchesInfo = await GetProcessedReplayIds();
+        dsstatsRequest.Imported = matchesInfo.LatestUpdate.AddDays(-0.5);
         int matches = 0;
         var dsstatsReplays = await GetComboDsstatsCalcDtos(dsstatsRequest, context);
 
@@ -48,18 +49,17 @@ public class ComboRatings(ReplayContext context, ILogger<ComboRatings> logger)
         {
             dsstatsReplays = dsstatsReplays.Where(x => !matchesInfo.ReplayDict.ContainsKey(x.ReplayId))
                 .ToList();
+            await InitArcadeRep(dsstatsReplays);
 
-            var arcadeReplays = await GetComboArcadeCalcDtos(dsstatsReplays, matchedArcadeIds, context);
-            arcadeReplays = arcadeReplays.Where(x => !matchesInfo.ArcadeDict.ContainsKey(x.ReplayId)).ToList();
 
             List<ReplayArcadeMatch> replayMatches = [];
 
             foreach (var dsstatsReplay in dsstatsReplays)
             {
-                var arcadeReplay = await FindSc2ArcadeReplay(dsstatsReplay, arcadeReplays);
+                var arcadeReplay = await FindSc2ArcadeReplay(dsstatsReplay, matchedArcadeIds);
                 if (arcadeReplay is not null)
                 {
-                    arcadeReplays.Remove(arcadeReplay);
+                    currentArcadeCalcDtos.Remove(arcadeReplay);
                     matchedArcadeIds.Add(arcadeReplay.ReplayId);
                     replayMatches.Add(new()
                     {
@@ -75,29 +75,12 @@ public class ComboRatings(ReplayContext context, ILogger<ComboRatings> logger)
             dsstatsReplays = await GetComboDsstatsCalcDtos(dsstatsRequest, context);
             RegionDict.Clear();
             ToonIdsDict.Clear();
-            logger.LogInformation("skip: {skip}", dsstatsRequest.Skip);
         }
         sw.Stop();
-        logger.LogInformation("Matches: {matches} in {elapsed}sec", matches, Math.Round(sw.Elapsed.TotalSeconds, 2));
+        logger.LogWarning("Matches: {matches} in {elapsed}sec", matches, Math.Round(sw.Elapsed.TotalSeconds, 2));
     }
 
-    private async Task<List<CalcDto>> GetReasonableReplays(CalcDto dsstatsReplay, List<CalcDto> arcadeReplays)
-    {
-        if (arcadeReplays.Count > 0)
-        {
-            return arcadeReplays
-                .Where(x => x.GameTime > dsstatsReplay.GameTime.AddDays(-0.5)
-                    && x.GameTime < dsstatsReplay.GameTime.AddDays(0.5)
-                    && x.GameMode == dsstatsReplay.GameMode
-                    && GetReplayRegionId(x) == GetReplayRegionId(dsstatsReplay)
-                ).ToList();
-        }
-        else
-        {
 
-        }
-        return [];
-    }
 
     private async Task StoreReplayMatches(List<ReplayArcadeMatch> replayMatches)
     {
@@ -110,7 +93,7 @@ public class ComboRatings(ReplayContext context, ILogger<ComboRatings> logger)
         await context.SaveChangesAsync();
     }
 
-    private async Task<ReplayMathInfo> GetProcessedReplayIds()
+    private async Task<ReplayMatchInfo> GetProcessedReplayIds()
     {
         var matches = await context.ReplayArcadeMatches
             .ToListAsync();
@@ -123,9 +106,9 @@ public class ComboRatings(ReplayContext context, ILogger<ComboRatings> logger)
         };
     }
 
-    private async Task<CalcDto?> FindSc2ArcadeReplay(CalcDto dsstatsReplay, List<CalcDto> arcadeReplays)
+    private async Task<CalcDto?> FindSc2ArcadeReplay(CalcDto dsstatsReplay, HashSet<int> matchedArcadeIds)
     {
-        var reasonableReplays = await GetReasonableReplays(dsstatsReplay, arcadeReplays);
+        var reasonableReplays = await GetReasonableReplays(dsstatsReplay, matchedArcadeIds);
 
         if (reasonableReplays.Count == 0)
         {
@@ -221,7 +204,7 @@ public class ComboRatings(ReplayContext context, ILogger<ComboRatings> logger)
                         && r.TournamentEdition == false
                         && r.GameTime >= request.FromDate
                         && (request.Continue ? r.ReplayRatingInfo == null : true)
-                    // && (r.Imported == DateTime.MinValue || r.Imported > request.Imported)
+                        && (r.Imported == DateTime.MinValue || r.Imported > request.Imported)
                     orderby r.GameTime, r.ReplayId
                     select new RawCalcDto
                     {
@@ -253,71 +236,6 @@ public class ComboRatings(ReplayContext context, ILogger<ComboRatings> logger)
 
         return rawDtos.Select(s => s.GetCalcDto()).ToList();
     }
-
-    private static async Task<List<CalcDto>> GetComboArcadeCalcDtos(List<CalcDto> dsstatsCalcDtos, HashSet<int> processedReplayIds, ReplayContext context)
-    {
-        if (dsstatsCalcDtos.Count == 0)
-        {
-            return [];
-        }
-
-        var oldestReplayDate = dsstatsCalcDtos.First().GameTime.AddDays(-1);
-        var latestReplayDate = dsstatsCalcDtos.Last().GameTime.AddDays(1);
-
-        var startId = await context.MaterializedArcadeReplays
-            .Where(x => x.CreatedAt > oldestReplayDate)
-            .OrderBy(o => o.MaterializedArcadeReplayId)
-            .Select(s => s.MaterializedArcadeReplayId)
-            .FirstOrDefaultAsync();
-
-        var endId = await context.MaterializedArcadeReplays
-            .Where(x => x.CreatedAt < latestReplayDate)
-            .OrderBy(o => o.MaterializedArcadeReplayId)
-            .Select(s => s.MaterializedArcadeReplayId)
-            .LastOrDefaultAsync();
-
-        if (startId == endId || startId > endId || endId - startId > 250000)
-        {
-            return [];
-        }
-
-        var query = from r in context.MaterializedArcadeReplays
-                    orderby r.MaterializedArcadeReplayId
-                    where r.MaterializedArcadeReplayId >= startId
-                        && r.MaterializedArcadeReplayId <= endId
-                    select new
-                    {
-                        r.ArcadeReplayId,
-                        CalcDto = new CalcDto()
-                        {
-                            ReplayId = r.ArcadeReplayId,
-                            GameTime = r.CreatedAt,
-                            Duration = r.Duration,
-                            GameMode = (int)r.GameMode,
-                            WinnerTeam = r.WinnerTeam,
-                            TournamentEdition = false,
-                            IsArcade = true,
-                            Players = context.ArcadeReplayPlayers
-                                .Where(x => x.ArcadeReplayId == r.ArcadeReplayId)
-                                .Select(t => new PlayerCalcDto()
-                                {
-                                    ReplayPlayerId = t.ArcadeReplayPlayerId,
-                                    GamePos = t.SlotNumber,
-                                    PlayerResult = (int)t.PlayerResult,
-                                    Team = t.Team,
-                                    PlayerId = new(t.ArcadePlayer.ProfileId, t.ArcadePlayer.RealmId, t.ArcadePlayer.RegionId)
-                                }).ToList()
-                        }
-                    };
-
-        var data = await query
-            .AsSplitQuery()
-            .ToListAsync();
-
-        return data.Where(x => !processedReplayIds.Contains(x.ArcadeReplayId))
-            .Select(s => s.CalcDto)
-            .ToList();
-    }
 }
 
 internal record ReplayKey
@@ -342,7 +260,7 @@ internal record ReplayPartKey
     public int RegionId { get; set; }
 }
 
-internal record ReplayMathInfo
+internal record ReplayMatchInfo
 {
     public Dictionary<int, bool> ReplayDict { get; set; } = [];
     public Dictionary<int, bool> ArcadeDict { get; set; } = [];
