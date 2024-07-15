@@ -169,6 +169,7 @@ context.Database.Migrate();
 var authContext = scope.ServiceProvider.GetRequiredService<DsAuthContext>();
 authContext.Database.Migrate();
 
+
 if (app.Environment.IsProduction())
 {
     var uploadSerivce = scope.ServiceProvider.GetRequiredService<UploadService>();
