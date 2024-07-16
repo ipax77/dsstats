@@ -142,6 +142,8 @@ builder.Services.AddScoped<IFaqService, FaqService>();
 builder.Services.AddScoped<IIhRepository, IhRepository>();
 builder.Services.AddScoped<BestMatchupService>();
 
+builder.Services.AddScoped<ComboRatings>();
+
 //builder.Services.AddScoped<EMailService>();
 
 if (builder.Environment.IsProduction())
@@ -167,6 +169,7 @@ context.Database.Migrate();
 var authContext = scope.ServiceProvider.GetRequiredService<DsAuthContext>();
 authContext.Database.Migrate();
 
+
 if (app.Environment.IsProduction())
 {
     var uploadSerivce = scope.ServiceProvider.GetRequiredService<UploadService>();
@@ -177,10 +180,8 @@ if (app.Environment.IsProduction())
 }
 else
 {
-    //var bestMatchupService = scope.ServiceProvider.GetRequiredService<BestMatchupService>();
-    //var request = new MatchupRequest() { TimePeriod = TimePeriod.Last2Years, Commander1 = Commander.Kerrigan, Commander2 = Commander.Nova };
-    //var result = bestMatchupService.GetBestTeammateResult(request).GetAwaiter().GetResult();
-    //Console.WriteLine("indahouse");
+    //var comboRatings = scope.ServiceProvider.GetRequiredService<ComboRatings>();
+    //comboRatings.CombineDsstatsSc2ArcadeReplays().Wait();
 }
 
 app.UseRateLimiter();

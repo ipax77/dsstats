@@ -63,14 +63,14 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Localization" Version="8.0.5" />
-        <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.40" />
-        <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.40" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="8.0.40" />
+        <PackageReference Include="Microsoft.Extensions.Localization" Version="8.0.7" />
+        <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.70" />
+        <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.70" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="8.0.70" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
 		<PackageReference Include="IronPython.StdLib" Version="2.7.12" />
 		<PackageReference Include="Blazored.Toast" Version="4.2.1" />
-        <PackageReference Include="CommunityToolkit.Maui" Version="9.0.0" />
+        <PackageReference Include="CommunityToolkit.Maui" Version="9.0.2" />
     </ItemGroup>
 
     <ItemGroup>

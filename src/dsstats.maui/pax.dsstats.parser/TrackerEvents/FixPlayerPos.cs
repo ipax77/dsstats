@@ -36,6 +36,16 @@ public static partial class Parse
                 replay.Players.ForEach(f => f.Pos = f.WorkingsetSlot == 0 ? 1 : f.WorkingsetSlot);
                 return;
             }
+
+            // 2 player by order
+            if (playerIds.Count == 2 && playerPos.Count == 2)
+            {
+                for (int i = 0; i < setupEvents.Count; i++)
+                {
+                    replay.Players[i].Pos = setupEvents.ElementAt(i).PlayerId;
+                }
+                return;
+            }
             
             throw new ArgumentNullException(nameof(setupEvents));
         }
