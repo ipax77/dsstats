@@ -20,6 +20,19 @@ public partial class ReplaysService : IReplaysService
         this.mapper = mapper;
     }
 
+    public async Task<ArcadeReplayDto?> GetDssstatsArcadeReplay(string replayHash, CancellationToken token = default)
+    {
+        var arcadeReplayDto = await (from r in context.Replays
+                                     join ram in context.ReplayArcadeMatches on r.ReplayId equals ram.ReplayId
+                                     join ar in context.ArcadeReplays on ram.ArcadeReplayId equals ar.ArcadeReplayId
+                                     where r.ReplayHash == replayHash
+                                     select ar)
+                                    .ProjectTo<ArcadeReplayDto>(mapper.ConfigurationProvider)
+                                    .FirstOrDefaultAsync(token);
+
+        return arcadeReplayDto;
+    }
+
     public async Task<ReplayRatingDto?> GetReplayRating(string replayHash, bool comboRating)
     {
         if (comboRating)

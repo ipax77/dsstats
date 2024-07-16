@@ -45,14 +45,19 @@ public record ArcadeReplayListDto
 
 public record ArcadeReplayDto
 {
-    public string ReplayHash { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public GameMode GameMode { get; set; }
     public int RegionId { get; set; }
+    public long BnetBucketId { get; set; }
+    public long BnetRecordId { get; set; }
     public int WinnerTeam { get; set; }
     public int Duration { get; set; }
     public ArcadeReplayRatingDto? ArcadeReplayRating { get; set; }
     public List<ArcadeReplayPlayerDto> ArcadeReplayPlayers { get; set; } = new();
+    public string GetBnetHash()
+    {
+        return $"{RegionId}|{BnetBucketId}|{BnetRecordId}";
+    }
 }
 
 public record ArcadeReplayPlayerDto

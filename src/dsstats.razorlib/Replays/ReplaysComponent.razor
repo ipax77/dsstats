@@ -48,7 +48,8 @@
 {
     <ReplayComponent Replay="interestReplay" IsCloseable="true" IsScrollable="true" OnCloseRequested="CloseReplay"
                      OnScrollRequest="LoadNextReplay"
-                     OnPlayerReplaysRequested="PlayerReplaysRequest" />
+                     OnPlayerReplaysRequested="PlayerReplaysRequest"
+                     CanLoadArcadeReplay="true"/>
 }
 
 @if (interestArcadeReplay is not null)
@@ -413,7 +414,7 @@
     {
         if (Request.Arcade)
         {
-            lastestInterestReplayHash = interestArcadeReplay?.ReplayHash;
+            lastestInterestReplayHash = interestArcadeReplay?.GetBnetHash();
         }
         else
         {

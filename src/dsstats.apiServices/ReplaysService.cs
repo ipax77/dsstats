@@ -31,6 +31,20 @@ public class ReplaysService : IReplaysService
         return null;
     }
 
+    public async Task<ArcadeReplayDto?> GetDssstatsArcadeReplay(string replayHash, CancellationToken token = default)
+    {
+        try
+        {
+            return await httpClient
+                .GetFromJsonAsync<ArcadeReplayDto>($"{replaysController}/dsstatsarcadereplay/{replayHash}", token);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting arcadereplay {hash}: {error}", replayHash, ex.Message);
+        }
+        return null;
+    }
+
     public async Task<ReplayDto?> GetReplay(string replayHash, bool dry = false, CancellationToken token = default)
     {
         try
