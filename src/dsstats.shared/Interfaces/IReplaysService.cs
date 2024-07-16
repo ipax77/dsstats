@@ -8,4 +8,5 @@ public interface IReplaysService
     Task<ReplayDto?> GetReplay(string replayHash, bool dry = false, CancellationToken token = default);
     Task<ReplayRatingDto?> GetReplayRating(string replayHash, bool comboRating);
     Task<ArcadeReplayDto?> GetArcadeReplay(string hash, CancellationToken token = default);
+    Task<ArcadeReplayDto?> GetDssstatsArcadeReplay(string replayHash, CancellationToken token = default);
 }

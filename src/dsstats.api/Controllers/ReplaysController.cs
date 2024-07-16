@@ -66,4 +66,16 @@ public class ReplaysController : Controller
         }
         return replay;
     }
+
+    [HttpGet]
+    [Route("dsstatsarcadereplay/{hash}")]
+    public async Task<ActionResult<ArcadeReplayDto?>> GetDsstatsArcadeReplay(string hash, CancellationToken token = default)
+    {
+        var replay = await replaysService.GetDssstatsArcadeReplay(hash, token);
+        if (replay is null)
+        {
+            return NotFound();
+        }
+        return replay;
+    }
 }

@@ -49,6 +49,7 @@ public class ReplayContext : DbContext
     public virtual DbSet<BonusDamage> BonusDamages { get; set; } = null!;
     public virtual DbSet<DsAbility> DsAbilities { get; set; } = null!;
     public virtual DbSet<DsUpgrade> DsUpgrades { get; set; } = null!;
+    public virtual DbSet<ReplayArcadeMatch> ReplayArcadeMatches { get; set; } = null!;
 
     public virtual DbSet<ComboPlayerRating> ComboPlayerRatings { get; set; } = null!;
     public virtual DbSet<ComboReplayRating> ComboReplayRatings { get; set; } = null!;
@@ -231,6 +232,18 @@ public class ReplayContext : DbContext
             entity.Property(p => p.GroupStateV2).HasConversion(
                 c => JsonSerializer.Serialize(c, (JsonSerializerOptions?)null),
                 c => JsonSerializer.Deserialize<GroupStateV2>(c, (JsonSerializerOptions?)null));
+        });
+
+        modelBuilder.Entity<ReplayArcadeMatch>(entity =>
+        {
+            entity.HasIndex(i => i.ReplayId).IsUnique();
+            entity.HasIndex(i => i.ArcadeReplayId).IsUnique();
+            entity.HasIndex(i => i.MatchTime);
+        });
+
+        modelBuilder.Entity<MaterializedArcadeReplay>(entity =>
+        {
+            entity.HasIndex(i => i.CreatedAt);
         });
 
         MethodInfo weekMethodInfo = typeof(ReplayContext)

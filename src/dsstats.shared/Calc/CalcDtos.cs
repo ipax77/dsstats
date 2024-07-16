@@ -42,6 +42,7 @@ public record DsstatsCalcRequest
     public bool Continue { get; set; }
     public int Skip { get; set; }
     public int Take { get; set; }
+    public DateTime Imported { get; set; }
 }
 
 public record Sc2ArcadeRequest

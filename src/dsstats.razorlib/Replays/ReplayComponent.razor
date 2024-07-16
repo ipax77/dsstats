@@ -220,6 +220,13 @@
                         <span>Downloads @Replay.Downloads</span>
                     </div>
                 }
+                @if (LoadArcadeReplayEnabled())
+                {
+                    <div class="col-2">
+                        <button type="button" class="btn btn-sm btn-outline-light" @onclick="LoadArcadeReplay">SC2Arcade</button>
+                    </div>
+                }
+
                 @if (!string.IsNullOrEmpty(Replay.FileName))
                 {
                     <div class="col-2">
@@ -253,6 +260,20 @@
                                                        OnCloseRequested="ClosePlayerDetails"
                                                        OnPlayerReplaysRequested="OnPlayerReplaysRequested" />
 }
+@if (arcadeReplay is not null)
+{
+    <div class="mt-2">
+        <ArcadeReplayComponent Replay="arcadeReplay"
+                               OnCloseRequested="e => arcadeReplay = null"
+                               OnPlayerReplaysRequested="OnPlayerReplaysRequested" />
+    </div>
+}
+else if (noArcadeReplayFound)
+{
+    <div>
+        No Arcade Replay found.
+    </div>
+}
 
 @code {
     [Parameter, EditorRequired]
@@ -266,8 +287,12 @@
 
     [Parameter]
     public bool IsScrollable { get; set; }
+
     [Parameter]
     public EventCallback<bool> OnScrollRequest { get; set; }
+
+    [Parameter]
+    public bool CanLoadArcadeReplay { get; set; }
 
     [Parameter]
     public EventCallback<PlayerReplaysRequest> OnPlayerReplaysRequested { get; set; }
@@ -290,6 +315,9 @@
     bool showLog = false;
     PlayerId? interestPlayer = null;
     RatingType ratingType = RatingType.Cmdr;
+
+    ArcadeReplayDto? arcadeReplay = null;
+    bool noArcadeReplayFound;
 
     Dictionary<int, List<Breakpoint>> AvailableBreakpoints = new()
     {
@@ -339,6 +367,8 @@
         {
             comboRating = true;
         }
+        arcadeReplay = null;
+        noArcadeReplayFound = false;
         interestPlayer = null;
         showRating = false;
         showReplayPath = false;
@@ -455,5 +485,24 @@
         Breakpoint = breakpoint;
         replayPlayersDetailContainer?.SetBreakpoint(breakpoint);
 
+    }
+
+    private async Task LoadArcadeReplay()
+    {
+        arcadeReplay = await replaysService.GetDssstatsArcadeReplay(Replay.ReplayHash);
+        if (arcadeReplay is null)
+        {
+            noArcadeReplayFound = true;
+        }
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private bool LoadArcadeReplayEnabled()
+    {
+        return CanLoadArcadeReplay && Replay.ReplayPlayers.Count == 6
+            && Replay.TournamentEdition == false
+            && (Replay.GameMode == GameMode.Commanders
+                || Replay.GameMode == GameMode.Standard
+                || Replay.GameMode == GameMode.CommandersHeroic);
     }
 }
