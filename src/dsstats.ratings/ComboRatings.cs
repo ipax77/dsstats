@@ -49,16 +49,14 @@ public partial class ComboRatings(ReplayContext context, IOptions<DbImportOption
         int matches = 0;
         var dsstatsReplays = await GetComboDsstatsCalcDtos(dsstatsRequest, context);
         int dsstatsReplaysCount = dsstatsReplays.Count;
-        int i = 0;
+        List<ReplayArcadeMatch> replayMatches = [];
         while (dsstatsReplays.Count > 0)
         {
-            i++;
             dsstatsReplays = dsstatsReplays.Where(x => !matchesInfo.ReplayDict.ContainsKey(x.ReplayId))
                 .ToList();
             await InitArcadeRep(dsstatsReplays);
 
 
-            List<ReplayArcadeMatch> replayMatches = [];
 
             foreach (var dsstatsReplay in dsstatsReplays)
             {
@@ -76,11 +74,6 @@ public partial class ComboRatings(ReplayContext context, IOptions<DbImportOption
                     matches++;
                 }
             }
-            await StoreReplayMatches(replayMatches);
-            // if (i > 19)
-            // {
-            //     break;
-            // }
             logger.LogInformation("Matches: {matches}/{total} ({percentage}%)", matches,
                 dsstatsReplaysCount, dsstatsReplaysCount > 0 ? Math.Round(matches * 100.0 / (double)dsstatsReplaysCount, 2) : 0);
 
@@ -90,6 +83,7 @@ public partial class ComboRatings(ReplayContext context, IOptions<DbImportOption
             RegionDict.Clear();
             ToonIdsDict.Clear();
         }
+        await StoreReplayMatches(replayMatches);
         sw.Stop();
         logger.LogWarning("Matches: {matches}/{total} ({percentage}%) in {elapsed}sec", matches,
             dsstatsReplaysCount, dsstatsReplaysCount > 0 ? Math.Round(matches * 100.0 / (double)dsstatsReplaysCount, 2) : 0,
