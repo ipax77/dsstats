@@ -1,13 +1,16 @@
 ﻿using dsstats.db8;
+using dsstats.shared;
 using dsstats.shared.Calc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using MySqlConnector;
 using System.Diagnostics;
 using System.Text.Json;
 
 namespace dsstats.ratings;
 
-public partial class ComboRatings(ReplayContext context, ILogger<ComboRatings> logger)
+public partial class ComboRatings(ReplayContext context, IOptions<DbImportOptions> dbOptions, ILogger<ComboRatings> logger)
 {
     private Dictionary<ReplayKey, int> RegionDict = [];
     private Dictionary<ReplayKey, List<int>> ToonIdsDict = [];
@@ -37,7 +40,7 @@ public partial class ComboRatings(ReplayContext context, ILogger<ComboRatings> l
             FromDate = new DateTime(2021, 2, 1),
             GameModes = new List<int>() { 3, 4, 7 },
             Skip = 0,
-            Take = 1000
+            Take = 5000
         };
         HashSet<int> matchedArcadeIds = [];
         matchesInfo = await GetProcessedReplayIds();
@@ -45,9 +48,11 @@ public partial class ComboRatings(ReplayContext context, ILogger<ComboRatings> l
             : matchesInfo.LatestUpdate.AddDays(-0.5);
         int matches = 0;
         var dsstatsReplays = await GetComboDsstatsCalcDtos(dsstatsRequest, context);
-
+        int dsstatsReplaysCount = dsstatsReplays.Count;
+        int i = 0;
         while (dsstatsReplays.Count > 0)
         {
+            i++;
             dsstatsReplays = dsstatsReplays.Where(x => !matchesInfo.ReplayDict.ContainsKey(x.ReplayId))
                 .ToList();
             await InitArcadeRep(dsstatsReplays);
@@ -72,13 +77,23 @@ public partial class ComboRatings(ReplayContext context, ILogger<ComboRatings> l
                 }
             }
             await StoreReplayMatches(replayMatches);
+            // if (i > 19)
+            // {
+            //     break;
+            // }
+            logger.LogInformation("Matches: {matches}/{total} ({percentage}%)", matches,
+                dsstatsReplaysCount, dsstatsReplaysCount > 0 ? Math.Round(matches * 100.0 / (double)dsstatsReplaysCount, 2) : 0);
+
             dsstatsRequest.Skip += dsstatsRequest.Take;
             dsstatsReplays = await GetComboDsstatsCalcDtos(dsstatsRequest, context);
+            dsstatsReplaysCount += dsstatsReplays.Count;
             RegionDict.Clear();
             ToonIdsDict.Clear();
         }
         sw.Stop();
-        logger.LogWarning("Matches: {matches} in {elapsed}sec", matches, Math.Round(sw.Elapsed.TotalSeconds, 2));
+        logger.LogWarning("Matches: {matches}/{total} ({percentage}%) in {elapsed}sec", matches,
+            dsstatsReplaysCount, dsstatsReplaysCount > 0 ? Math.Round(matches * 100.0 / (double)dsstatsReplaysCount, 2) : 0,
+             Math.Round(sw.Elapsed.TotalSeconds, 2));
     }
 
 
@@ -194,6 +209,7 @@ public partial class ComboRatings(ReplayContext context, ILogger<ComboRatings> l
 
     private static async Task<List<CalcDto>> GetComboDsstatsCalcDtos(DsstatsCalcRequest request, ReplayContext context)
     {
+        var noImportedDate = request.Imported == DateTime.MinValue;
         var query = from r in context.Replays
                     join m in context.ReplayArcadeMatches on r.ReplayId equals m.ReplayId into grouping
                     from m in grouping.DefaultIfEmpty()
@@ -204,8 +220,7 @@ public partial class ComboRatings(ReplayContext context, ILogger<ComboRatings> l
                         && request.GameModes.Contains((int)r.GameMode)
                         && r.TournamentEdition == false
                         && r.GameTime >= request.FromDate
-                        && (request.Continue ? r.ReplayRatingInfo == null : true)
-                        && (r.Imported == DateTime.MinValue || r.Imported > request.Imported)
+                        && (noImportedDate || r.Imported > request.Imported)
                     orderby r.GameTime, r.ReplayId
                     select new RawCalcDto
                     {
@@ -236,6 +251,26 @@ public partial class ComboRatings(ReplayContext context, ILogger<ComboRatings> l
             .ToListAsync();
 
         return rawDtos.Select(s => s.GetCalcDto()).ToList();
+    }
+
+    private async Task CreateMaterializedReplays()
+    {
+        try
+        {
+
+            using var connection = new MySqlConnection(dbOptions.Value.ImportConnectionString);
+            await connection.OpenAsync();
+
+            var command = connection.CreateCommand();
+            command.CommandTimeout = 120;
+            command.CommandText = "CALL CreateMaterializedArcadeReplays();";
+
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed creating materialized arcade replays: {error}", ex.Message);
+        }
     }
 }
 

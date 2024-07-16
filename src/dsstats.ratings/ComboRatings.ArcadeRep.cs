@@ -1,5 +1,6 @@
 ﻿using dsstats.shared.Calc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace dsstats.ratings;
 
@@ -12,6 +13,8 @@ public partial class ComboRatings
 
     private async Task InitArcadeRep(List<CalcDto> dsstatsReplays)
     {
+        // await CreateMaterializedReplays();
+
         var oldestReplayDate = dsstatsReplays.First().GameTime.AddDays(-dateOverflow);
         var latestReplayDate = dsstatsReplays.Last().GameTime.AddDays(dateOverflow);
 
@@ -49,7 +52,7 @@ public partial class ComboRatings
                 StartTime = stepDate,
                 StartId = stepStartId
             };
-            stepDate = stepDate.AddDays(10);
+            stepDate = stepDate.AddDays(15);
             int stepEndId;
             if (stepDate > latestReplayDate)
             {
@@ -65,6 +68,7 @@ public partial class ComboRatings
             chunkInfos.Add(stepChunkInfo);
             stepStartId = stepEndId + 1;
         }
+        logger.LogInformation("Got {count} chunks", chunkInfos.Count);
     }
 
     private async Task<int> GetStartIdAsync(DateTime date)
@@ -101,11 +105,13 @@ public partial class ComboRatings
                 preserveCalcDtos = currentArcadeCalcDtos.Skip(skip).ToList();
             }
         }
-
         currentArcadeCalcDtos = await GetComboArcadeCalcDtos(chunkInfos[currentChunkInfoIndex]);
         currentArcadeCalcDtos = currentArcadeCalcDtos
             .Where(x => !matchesInfo.ArcadeDict.ContainsKey(x.ReplayId))
             .ToList();
+        logger.LogInformation("Loaded chunk {index}/{count}", currentChunkInfoIndex, currentArcadeCalcDtos.Count);
+        logger.LogInformation(chunkInfos[currentChunkInfoIndex].ToString());
+
         if (preserveCalcDtos.Count > 0)
         {
             currentArcadeCalcDtos = preserveCalcDtos.Concat(currentArcadeCalcDtos).ToList();
@@ -122,6 +128,10 @@ public partial class ComboRatings
                 currentChunkInfoIndex++;
                 currentChunkInfo = chunkInfos[currentChunkInfoIndex];
                 await LoadCurrentChunkInfoArcadeReplays();
+            }
+            else
+            {
+                logger.LogWarning("currentChunkInfoIndex out of bounds: {current}/{count}", currentChunkInfoIndex, chunkInfos.Count);
             }
         }
     }
