@@ -95,6 +95,12 @@ class Program
                 SetLastSpawnHashes(serviceProvider);
                 CheckLastSpawnHashDuplicates(serviceProvider);
             }
+            else if (args[0] == "prep")
+            {
+                logger.LogInformation("CombineDsstatsSc2ArcadeReplays");
+                var comboRatings = scope.ServiceProvider.GetRequiredService<ComboRatings>();
+                comboRatings.CombineDsstatsSc2ArcadeReplays().Wait();
+            }
             else
             {
                 logger.LogError("allowed parameters: dsstats|sc2arcade|combo");
