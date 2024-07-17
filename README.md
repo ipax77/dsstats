@@ -30,7 +30,17 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v2.0.4</summary>
+<details open="open"><summary>v2.0.5</summary>
+
+>- s2protocol v5.0.13.92440.0 (s2protocol.NET v0.8.3)
+>- dotnet v8.0.7 (8.0.303)
+>- Maui builds fixed
+>- Maui hanging loading indicator fixed
+>- Combo ratings replay mapping improved (~90% hit rate)
+
+</details>
+
+<details><summary>v2.0.4</summary>
 
 >- Fixed Maui Replay duplicates import loop - thank you @Jurzal for reporting and helping to fix it!
 >- Unit Names and Colors for Replay-Unit-Map

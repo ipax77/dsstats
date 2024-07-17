@@ -35,7 +35,7 @@ class Program
         services.AddLogging(options =>
         {
             options.SetMinimumLevel(LogLevel.Information);
-            options.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Information);
+            options.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
             options.AddConsole();
         });
 
