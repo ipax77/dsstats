@@ -75,4 +75,9 @@ public class ReplaysService : IReplaysService
     {
         return await remoteReplaysService.GetArcadeReplay(hash, token);
     }
+
+    public Task<ArcadeReplayDto?> GetDssstatsArcadeReplay(string replayHash, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
 }

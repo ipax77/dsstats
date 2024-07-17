@@ -14,24 +14,42 @@ public partial class BuildService
         bool noEnd = end >= DateTime.Today.AddDays(-2);
         var ratingTypes = GetRatingTypes(request);
 
-        var query = from r in context.Replays
-                    from rp in r.ReplayPlayers
-                    from sp in rp.Spawns
-                    from su in sp.Units
-                    join rr in context.ReplayRatings on r.ReplayId equals rr.ReplayId
-                    join rpr in context.ComboReplayPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
-                    where r.GameTime >= start
-                     && (noEnd || r.GameTime < end)
-                     && rp.Race == request.Interest
-                     && (request.Versus == Commander.None || rp.OppRace == request.Versus)
-                     && rr.LeaverType == LeaverType.None
-                     && ratingTypes.Contains(rr.RatingType)
-                     && sp.Breakpoint == request.Breakpoint
-                    select new PlayerUnitGroup()
-                    {
-                        p = rp.Player,
-                        su = su
-                    };
+        var query = IsSqlite ?
+            from r in context.Replays
+            from rp in r.ReplayPlayers
+            from sp in rp.Spawns
+            from su in sp.Units
+            join rr in context.ReplayRatings on r.ReplayId equals rr.ReplayId
+            where r.GameTime >= start
+             && (noEnd || r.GameTime < end)
+             && rp.Race == request.Interest
+             && (request.Versus == Commander.None || rp.OppRace == request.Versus)
+             && rr.LeaverType == LeaverType.None
+             && ratingTypes.Contains(rr.RatingType)
+             && sp.Breakpoint == request.Breakpoint
+            select new PlayerUnitGroup()
+            {
+                p = rp.Player,
+                su = su
+            }
+            : from r in context.Replays
+              from rp in r.ReplayPlayers
+              from sp in rp.Spawns
+              from su in sp.Units
+              join rr in context.ReplayRatings on r.ReplayId equals rr.ReplayId
+              join rpr in context.ComboReplayPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
+              where r.GameTime >= start
+              && (noEnd || r.GameTime < end)
+              && rp.Race == request.Interest
+              && (request.Versus == Commander.None || rp.OppRace == request.Versus)
+              && rr.LeaverType == LeaverType.None
+              && ratingTypes.Contains(rr.RatingType)
+              && sp.Breakpoint == request.Breakpoint
+              select new PlayerUnitGroup()
+              {
+                  p = rp.Player,
+                  su = su
+              };
 
         var predicate = PredicateBuilder.New<PlayerUnitGroup>();
 
