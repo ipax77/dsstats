@@ -284,7 +284,7 @@ internal record ComboReplayRatingCsv
     public int ComboReplayRatingId { get; init; }
     public int RatingType { get; init; }
     public int LeaverType { get; init; }
-    public double ExpectationToWin { get; init; }
+    public float ExpectationToWin { get; init; }
     public int ReplayId { get; init; }
     public int IsPreRating { get; init; }
     public int AvgRating { get; init; }
@@ -295,7 +295,7 @@ internal record ComboReplayPlayerRatingCsv
     public int ComboReplayPlayerRatingId { get; init; }
     public int GamePos { get; init; }
     public int Rating { get; init; }
-    public double Change { get; init; }
+    public float Change { get; init; }
     public int Games { get; init; }
     public double Consistency { get; init; }
     public double Confidence { get; init; }
