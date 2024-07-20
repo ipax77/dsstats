@@ -111,13 +111,13 @@ public partial class RatingService
                 Duration = s.Duration,
                 GameMode = (int)s.GameMode,
                 TournamentEdition = s.TournamentEdition,
-                Players = s.ArcadeReplayPlayers.Select(t => new PlayerCalcDto()
+                Players = s.ArcadeReplayDsPlayers.Select(t => new PlayerCalcDto()
                 {
-                    ReplayPlayerId = t.ArcadeReplayPlayerId,
+                    ReplayPlayerId = t.PlayerId,
                     GamePos = t.SlotNumber,
                     PlayerResult = (int)t.PlayerResult,
                     Team = t.Team,
-                    PlayerId = new(t.ArcadePlayer.ProfileId, t.ArcadePlayer.RealmId, t.ArcadePlayer.RegionId)
+                    PlayerId = new(t.Player!.ToonId, t.Player.RealmId, t.Player.RegionId)
                 }).ToList()
             })
             .Skip(request.Skip)
@@ -137,15 +137,15 @@ public partial class RatingService
                         Duration = r.Duration,
                         GameMode = (int)r.GameMode,
                         WinnerTeam = r.WinnerTeam,
-                        Players = context.ArcadeReplayPlayers
+                        Players = context.ArcadeReplayDsPlayers
                             .Where(x => x.ArcadeReplayId == r.ArcadeReplayId)
                             .Select(t => new PlayerCalcDto()
                             {
-                                ReplayPlayerId = t.ArcadeReplayPlayerId,
+                                ReplayPlayerId = t.PlayerId,
                                 GamePos = t.SlotNumber,
                                 PlayerResult = (int)t.PlayerResult,
                                 Team = t.Team,
-                                PlayerId = new(t.ArcadePlayer.ProfileId, t.ArcadePlayer.RealmId, t.ArcadePlayer.RegionId)
+                                PlayerId = new(t.Player!.ToonId, t.Player.RealmId, t.Player.RegionId)
                             }).ToList()
                     };
         return await query

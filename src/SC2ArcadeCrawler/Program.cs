@@ -1,5 +1,7 @@
 ﻿using dsstats.db8;
+using dsstats.db8services.Import;
 using dsstats.shared;
+using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -54,6 +56,7 @@ class Program
         options.DefaultRequestHeaders.Add("Accept", "application/json");
     });
 
+        services.AddSingleton<IImportService, ImportService>();
         services.AddSingleton<CrawlerService>();
 
         var serviceProvider = services.BuildServiceProvider();

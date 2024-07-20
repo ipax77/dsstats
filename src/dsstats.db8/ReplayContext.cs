@@ -38,10 +38,11 @@ public class ReplayContext : DbContext
     public virtual DbSet<ArcadeReplay> ArcadeReplays { get; set; } = null!;
     public virtual DbSet<MaterializedArcadeReplay> MaterializedArcadeReplays { get; set; } = null!;
     public virtual DbSet<ArcadeReplayPlayer> ArcadeReplayPlayers { get; set; } = null!;
+    public virtual DbSet<ArcadeReplayDsPlayer> ArcadeReplayDsPlayers { get; set; } = null!;
     public virtual DbSet<ArcadePlayer> ArcadePlayers { get; set; } = null!;
     public virtual DbSet<ArcadeReplayRating> ArcadeReplayRatings { get; set; } = null!;
     public virtual DbSet<ArcadePlayerRating> ArcadePlayerRatings { get; set; } = null!;
-    public virtual DbSet<ArcadeReplayPlayerRating> ArcadeReplayPlayerRatings { get; set; } = null!;
+    public virtual DbSet<ArcadeReplayDsPlayerRating> ArcadeReplayDsPlayerRatings { get; set; } = null!;
     public virtual DbSet<ArcadePlayerRatingChange> ArcadePlayerRatingChanges { get; set; } = null!;
     public virtual DbSet<DsUpdate> DsUpdates { get; set; } = null!;
     public virtual DbSet<DsUnit> DsUnits { get; set; } = null!;

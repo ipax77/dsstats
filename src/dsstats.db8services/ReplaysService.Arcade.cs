@@ -58,7 +58,7 @@ public partial class ReplaysService
                     GameTime = s.CreatedAt,
                     Duration = s.Duration,
                     WinnerTeam = s.WinnerTeam,
-                    GameMode = (GameMode)s.GameMode,
+                    GameMode = s.GameMode,
                     TournamentEdition = s.TournamentEdition,
                     ReplayHash = $"{s.RegionId}|{s.BnetBucketId}|{s.BnetRecordId}",
                     DefaultFilter = false,
@@ -99,7 +99,7 @@ public partial class ReplaysService
                 CommandersTeam1 = "",
                 CommandersTeam2 = "",
                 MaxLeaver = 0,
-                ReplayPlayers = s.ArcadeReplayPlayers.Select(t => new ReplayPlayerListDto()
+                ReplayPlayers = s.ArcadeReplayDsPlayers.Select(t => new ReplayPlayerListDto()
                 {
                     Name = t.Name,
                     GamePos = t.SlotNumber,
@@ -110,9 +110,9 @@ public partial class ReplaysService
                     },
                     Player = new PlayerId()
                     {
-                        ToonId = t.ArcadePlayer!.ProfileId,
-                        RealmId = t.ArcadePlayer.RealmId,
-                        RegionId = t.ArcadePlayer.RegionId
+                        ToonId = t.Player!.ToonId,
+                        RealmId = t.Player.RealmId,
+                        RegionId = t.Player.RegionId
                     }
                 }).ToList()
             })
@@ -201,38 +201,38 @@ public partial class ReplaysService
             if (request.PlayerIdVs is not null)
             {
                 replays = from r in replays
-                          from rp in r.ArcadeReplayPlayers
-                          from rp1 in r.ArcadeReplayPlayers
-                          where rp.ArcadePlayer.ProfileId == request.PlayerId.ToonId
-                            && rp.ArcadePlayer.RealmId == request.PlayerId.RealmId
-                            && rp.ArcadePlayer.RegionId == request.PlayerId.RegionId
-                            && rp1.ArcadePlayer.ProfileId == request.PlayerIdVs.ToonId
-                            && rp1.ArcadePlayer.RealmId == request.PlayerIdVs.RealmId
-                            && rp1.ArcadePlayer.RegionId == request.PlayerIdVs.RegionId
+                          from rp in r.ArcadeReplayDsPlayers
+                          from rp1 in r.ArcadeReplayDsPlayers
+                          where rp.Player!.ToonId == request.PlayerId.ToonId
+                            && rp.Player.RealmId == request.PlayerId.RealmId
+                            && rp.Player.RegionId == request.PlayerId.RegionId
+                            && rp1.Player!.ToonId == request.PlayerIdVs.ToonId
+                            && rp1.Player.RealmId == request.PlayerIdVs.RealmId
+                            && rp1.Player.RegionId == request.PlayerIdVs.RegionId
                             && rp1.Team != rp.Team
                           select r;
             }
             else if (request.PlayerIdWith is not null)
             {
                 replays = from r in replays
-                          from rp in r.ArcadeReplayPlayers
-                          from rp1 in r.ArcadeReplayPlayers
-                          where rp.ArcadePlayer.ProfileId == request.PlayerId.ToonId
-                            && rp.ArcadePlayer.RealmId == request.PlayerId.RealmId
-                            && rp.ArcadePlayer.RegionId == request.PlayerId.RegionId
-                            && rp1.ArcadePlayer.ProfileId == request.PlayerIdWith.ToonId
-                            && rp1.ArcadePlayer.RealmId == request.PlayerIdWith.RealmId
-                            && rp1.ArcadePlayer.RegionId == request.PlayerIdWith.RegionId
+                          from rp in r.ArcadeReplayDsPlayers
+                          from rp1 in r.ArcadeReplayDsPlayers
+                          where rp.Player!.ToonId == request.PlayerId.ToonId
+                            && rp.Player.RealmId == request.PlayerId.RealmId
+                            && rp.Player.RegionId == request.PlayerId.RegionId
+                            && rp1.Player!.ToonId == request.PlayerIdWith.ToonId
+                            && rp1.Player.RealmId == request.PlayerIdWith.RealmId
+                            && rp1.Player.RegionId == request.PlayerIdWith.RegionId
                             && rp1.Team == rp.Team
                           select r;
             }
             else
             {
                 replays = from r in replays
-                          from rp in r.ArcadeReplayPlayers
-                          where rp.ArcadePlayer.ProfileId == request.PlayerId.ToonId
-                            && rp.ArcadePlayer.RealmId == request.PlayerId.RealmId
-                            && rp.ArcadePlayer.RegionId == request.PlayerId.RegionId
+                          from rp in r.ArcadeReplayDsPlayers
+                          where rp.Player!.ToonId == request.PlayerId.ToonId
+                            && rp.Player.RealmId == request.PlayerId.RealmId
+                            && rp.Player.RegionId == request.PlayerId.RegionId
                           select r;
             }
         }
@@ -260,8 +260,8 @@ public partial class ReplaysService
         {
             var name = names[i];
             replays = from r in replays
-                      from rp in r.ArcadeReplayPlayers
-                      where rp.ArcadePlayer.Name == name
+                      from rp in r.ArcadeReplayDsPlayers
+                      where rp.Player!.Name == name
                       select r;
         }
 

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using dsstats.db8;
 
@@ -11,9 +12,11 @@ using dsstats.db8;
 namespace MysqlMigrations.Migrations
 {
     [DbContext(typeof(ReplayContext))]
-    partial class ReplayContextModelSnapshot : ModelSnapshot
+    [Migration("20240720130834_ArcadeReplayDsPlayers")]
+    partial class ArcadeReplayDsPlayers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -92,7 +95,7 @@ namespace MysqlMigrations.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ArcadePlayerRatingId"));
 
-                    b.Property<int?>("ArcadePlayerId")
+                    b.Property<int>("ArcadePlayerId")
                         .HasColumnType("int");
 
                     b.Property<double>("Confidence")
@@ -116,9 +119,6 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("Mvp")
                         .HasColumnType("int");
 
-                    b.Property<int>("PlayerId")
-                        .HasColumnType("int");
-
                     b.Property<int>("Pos")
                         .HasColumnType("int");
 
@@ -137,8 +137,6 @@ namespace MysqlMigrations.Migrations
                     b.HasKey("ArcadePlayerRatingId");
 
                     b.HasIndex("ArcadePlayerId");
-
-                    b.HasIndex("PlayerId");
 
                     b.HasIndex("RatingType");
 
@@ -243,6 +241,9 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("ArcadeReplayId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("ArcadeReplayPlayerRatingId")
+                        .HasColumnType("int");
+
                     b.Property<int>("Discriminator")
                         .HasColumnType("int");
 
@@ -251,7 +252,7 @@ namespace MysqlMigrations.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
-                    b.Property<int>("PlayerId")
+                    b.Property<int?>("PlayerId")
                         .HasColumnType("int");
 
                     b.Property<int>("PlayerResult")
@@ -267,51 +268,11 @@ namespace MysqlMigrations.Migrations
 
                     b.HasIndex("ArcadeReplayId");
 
+                    b.HasIndex("ArcadeReplayPlayerRatingId");
+
                     b.HasIndex("PlayerId");
 
                     b.ToTable("ArcadeReplayDsPlayers");
-                });
-
-            modelBuilder.Entity("dsstats.db8.ArcadeReplayDsPlayerRating", b =>
-                {
-                    b.Property<int>("ArcadeReplayDsPlayerRatingId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ArcadeReplayDsPlayerRatingId"));
-
-                    b.Property<int>("ArcadeReplayDsPlayerId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ArcadeReplayRatingId")
-                        .HasColumnType("int");
-
-                    b.Property<float>("Confidence")
-                        .HasColumnType("float");
-
-                    b.Property<float>("Consistency")
-                        .HasColumnType("float");
-
-                    b.Property<int>("GamePos")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Games")
-                        .HasColumnType("int");
-
-                    b.Property<float>("Rating")
-                        .HasColumnType("float");
-
-                    b.Property<float>("RatingChange")
-                        .HasColumnType("float");
-
-                    b.HasKey("ArcadeReplayDsPlayerRatingId");
-
-                    b.HasIndex("ArcadeReplayDsPlayerId")
-                        .IsUnique();
-
-                    b.HasIndex("ArcadeReplayRatingId");
-
-                    b.ToTable("ArcadeReplayDsPlayerRatings");
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadeReplayPlayer", b =>
@@ -352,6 +313,48 @@ namespace MysqlMigrations.Migrations
                     b.HasIndex("ArcadeReplayId");
 
                     b.ToTable("ArcadeReplayPlayers");
+                });
+
+            modelBuilder.Entity("dsstats.db8.ArcadeReplayPlayerRating", b =>
+                {
+                    b.Property<int>("ArcadeReplayPlayerRatingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ArcadeReplayPlayerRatingId"));
+
+                    b.Property<int>("ArcadeReplayPlayerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ArcadeReplayRatingId")
+                        .HasColumnType("int");
+
+                    b.Property<float>("Confidence")
+                        .HasColumnType("float");
+
+                    b.Property<float>("Consistency")
+                        .HasColumnType("float");
+
+                    b.Property<int>("GamePos")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Games")
+                        .HasColumnType("int");
+
+                    b.Property<float>("Rating")
+                        .HasColumnType("float");
+
+                    b.Property<float>("RatingChange")
+                        .HasColumnType("float");
+
+                    b.HasKey("ArcadeReplayPlayerRatingId");
+
+                    b.HasIndex("ArcadeReplayPlayerId")
+                        .IsUnique();
+
+                    b.HasIndex("ArcadeReplayRatingId");
+
+                    b.ToTable("ArcadeReplayPlayerRatings");
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadeReplayRating", b =>
@@ -2004,17 +2007,13 @@ namespace MysqlMigrations.Migrations
 
             modelBuilder.Entity("dsstats.db8.ArcadePlayerRating", b =>
                 {
-                    b.HasOne("dsstats.db8.ArcadePlayer", null)
+                    b.HasOne("dsstats.db8.ArcadePlayer", "ArcadePlayer")
                         .WithMany("ArcadePlayerRatings")
-                        .HasForeignKey("ArcadePlayerId");
-
-                    b.HasOne("dsstats.db8.Player", "Player")
-                        .WithMany("ArcadePlayerRatings")
-                        .HasForeignKey("PlayerId")
+                        .HasForeignKey("ArcadePlayerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Player");
+                    b.Navigation("ArcadePlayer");
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadePlayerRatingChange", b =>
@@ -2036,34 +2035,19 @@ namespace MysqlMigrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("dsstats.db8.ArcadeReplayPlayerRating", "ArcadeReplayPlayerRating")
+                        .WithMany()
+                        .HasForeignKey("ArcadeReplayPlayerRatingId");
+
                     b.HasOne("dsstats.db8.Player", "Player")
                         .WithMany()
-                        .HasForeignKey("PlayerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("PlayerId");
 
                     b.Navigation("ArcadeReplay");
 
+                    b.Navigation("ArcadeReplayPlayerRating");
+
                     b.Navigation("Player");
-                });
-
-            modelBuilder.Entity("dsstats.db8.ArcadeReplayDsPlayerRating", b =>
-                {
-                    b.HasOne("dsstats.db8.ArcadeReplayDsPlayer", "ReplayDsPlayer")
-                        .WithOne("ArcadeReplayPlayerRating")
-                        .HasForeignKey("dsstats.db8.ArcadeReplayDsPlayerRating", "ArcadeReplayDsPlayerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("dsstats.db8.ArcadeReplayRating", "ArcadeReplayRating")
-                        .WithMany("ArcadeReplayDsPlayerRatings")
-                        .HasForeignKey("ArcadeReplayRatingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ArcadeReplayRating");
-
-                    b.Navigation("ReplayDsPlayer");
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadeReplayPlayer", b =>
@@ -2083,6 +2067,25 @@ namespace MysqlMigrations.Migrations
                     b.Navigation("ArcadePlayer");
 
                     b.Navigation("ArcadeReplay");
+                });
+
+            modelBuilder.Entity("dsstats.db8.ArcadeReplayPlayerRating", b =>
+                {
+                    b.HasOne("dsstats.db8.ArcadeReplayPlayer", "ReplayPlayer")
+                        .WithOne("ArcadeReplayPlayerRating")
+                        .HasForeignKey("dsstats.db8.ArcadeReplayPlayerRating", "ArcadeReplayPlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("dsstats.db8.ArcadeReplayRating", "ArcadeReplayRating")
+                        .WithMany("ArcadeReplayPlayerRatings")
+                        .HasForeignKey("ArcadeReplayRatingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ArcadeReplayRating");
+
+                    b.Navigation("ReplayPlayer");
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadeReplayRating", b =>
@@ -2373,14 +2376,14 @@ namespace MysqlMigrations.Migrations
                     b.Navigation("ArcadeReplayRating");
                 });
 
-            modelBuilder.Entity("dsstats.db8.ArcadeReplayDsPlayer", b =>
+            modelBuilder.Entity("dsstats.db8.ArcadeReplayPlayer", b =>
                 {
                     b.Navigation("ArcadeReplayPlayerRating");
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadeReplayRating", b =>
                 {
-                    b.Navigation("ArcadeReplayDsPlayerRatings");
+                    b.Navigation("ArcadeReplayPlayerRatings");
                 });
 
             modelBuilder.Entity("dsstats.db8.DsUnit", b =>
@@ -2407,8 +2410,6 @@ namespace MysqlMigrations.Migrations
 
             modelBuilder.Entity("dsstats.db8.Player", b =>
                 {
-                    b.Navigation("ArcadePlayerRatings");
-
                     b.Navigation("PlayerRatings");
 
                     b.Navigation("ReplayPlayers");

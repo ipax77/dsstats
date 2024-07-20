@@ -1,6 +1,7 @@
 ﻿using dsstats.db8;
 using dsstats.db8services.Import;
 using dsstats.shared;
+using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
@@ -138,7 +139,7 @@ public partial class TourneysService
     private async Task ImportReplays(List<ReplayDto> replays)
     {
         using var scope = scopeFactory.CreateScope();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
 
         var result = await importService.Import(replays);
         Console.WriteLine($"{result.Imported} tourney replays imported.");

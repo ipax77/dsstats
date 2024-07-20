@@ -61,7 +61,7 @@ public class ComboRatingsTests
         services.AddScoped<ComboRatings>();
         services.AddSingleton<IRatingService, RatingService>();
         services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
-        services.AddSingleton<ImportService>();
+        services.AddSingleton<IImportService, ImportService>();
         services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
         services.AddScoped<IReplayRepository, ReplayRepository>();
 
@@ -211,7 +211,7 @@ public class ComboRatingsTests
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
         var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 
         DateTime startTime = DateTime.UtcNow;

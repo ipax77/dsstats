@@ -11,7 +11,7 @@ public record ArcadePlayerRatingDto
     public int Pos { get; init; }
     public int Games { get; init; }
     public int Wins { get; init; }
-    public ArcadePlayerRatingPlayerDto ArcadePlayer { get; init; } = null!;
+    public PlayerDto Player { get; init; } = null!;
     public ArcadePlayerRatingChangeDto? ArcadePlayerRatingChange { get; init; }
 }
 
@@ -53,7 +53,7 @@ public record ArcadeReplayDto
     public int WinnerTeam { get; set; }
     public int Duration { get; set; }
     public ArcadeReplayRatingDto? ArcadeReplayRating { get; set; }
-    public List<ArcadeReplayPlayerDto> ArcadeReplayPlayers { get; set; } = new();
+    public List<ArcadeReplayDsPlayerDto> ArcadeReplayDsPlayers { get; set; } = new();
     public string GetBnetHash()
     {
         return $"{RegionId}|{BnetBucketId}|{BnetRecordId}";
@@ -70,6 +70,16 @@ public record ArcadeReplayPlayerDto
     public ArcadePlayerReplayDto ArcadePlayer { get; set; } = new();
 }
 
+public record ArcadeReplayDsPlayerDto
+{
+    public string Name { get; set; } = string.Empty;
+    public int SlotNumber { get; set; }
+    public int Team { get; set; }
+    public int Discriminator { get; set; }
+    public PlayerResult PlayerResult { get; set; }
+    public PlayerDto Player { get; set; } = new();
+}
+
 public record ArcadePlayerReplayDto
 {
     public int ProfileId { get; set; }
@@ -81,7 +91,7 @@ public record ArcadeReplayRatingDto
 {
     public RatingType RatingType { get; set; }
     public float ExpectationToWin { get; set; }
-    public List<ArcadeReplayPlayerRatingDto> ArcadeReplayPlayerRatings { get; set; } = new();
+    public List<ArcadeReplayPlayerRatingDto> ArcadeReplayDsPlayerRatings { get; set; } = new();
 }
 
 public record ArcadeReplayPlayerRatingDto
@@ -119,14 +129,14 @@ public record ArcadePlayerRatingDetailDto
 public record ArcadeReplayListRatingDto : ArcadeReplayListDto
 {
     public ArcadeReplayRatingListDto? ArcadeReplayRating { get; set; }
-    public List<ArcadeReplayPlayerListDto> ArcadeReplayPlayers { get; set; } = new();
+    public List<ArcadeReplayPlayerListDto> ArcadeReplayDsPlayers { get; set; } = new();
 }
 
 public record ArcadeReplayPlayerListDto
 {
     public string Name { get; set; } = string.Empty;
     public int SlotNumber { get; set; }
-    public ArcadePlayerListDto ArcadePlayer { get; set; } = null!;
+    public PlayerDto Player { get; set; } = null!;
 }
 
 public record ArcadePlayerListDto
@@ -136,7 +146,7 @@ public record ArcadePlayerListDto
 
 public record ArcadeReplayRatingListDto
 {
-    public List<ArcadeReplayPlayerRatingListDto> ArcadeReplayPlayerRatings { get; set; } = new();
+    public List<ArcadeReplayPlayerRatingListDto> ArcadeReplayDsPlayerRatings { get; set; } = new();
 }
 
 public record ArcadeReplayPlayerRatingListDto

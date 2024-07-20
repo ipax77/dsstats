@@ -6,7 +6,7 @@ namespace dsstats.db8services.Import;
 
 public partial class ImportService
 {
-    public async Task<int> HandleDuplicates(List<Replay> replays, ReplayContext context)
+    private async Task<int> HandleDuplicates(List<Replay> replays, ReplayContext context)
     {
         var replayHashes = replays.Select(s => s.ReplayHash).ToList();
         var dupReplays = await context.Replays

@@ -56,7 +56,7 @@ public partial class RatingsSaveService
         }
 
         var replayRatingCsv = GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayRatings));
-        var replayPlayerRatingCsv = GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayPlayerRatings));
+        var replayPlayerRatingCsv = GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayDsPlayerRatings));
         FileMode fileMode = append ? FileMode.Append : FileMode.Create;
 
         using var stream1 = File.Open(replayRatingCsv, fileMode);
@@ -98,8 +98,8 @@ public partial class RatingsSaveService
         await FixArcadeForeignKey(connectionString);
         await Csv2Mysql(GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayRatings)),
                 nameof(ReplayContext.ArcadeReplayRatings), connectionString);
-        await Csv2Mysql(GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayPlayerRatings)),
-                nameof(ReplayContext.ArcadeReplayPlayerRatings), connectionString);
+        await Csv2Mysql(GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayDsPlayerRatings)),
+                nameof(ReplayContext.ArcadeReplayDsPlayerRatings), connectionString);
 
         await SetArcadePlayerRatingsPos(connectionString);
         await SetArcadeRatingChange(context, connectionString);

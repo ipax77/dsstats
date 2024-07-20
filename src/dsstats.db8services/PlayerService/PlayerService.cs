@@ -187,7 +187,7 @@ public partial class PlayerService : IPlayerService
                     from rp in p.ArcadeReplayPlayers
                     join r in context.ArcadeReplays on rp.ArcadeReplayId equals r.ArcadeReplayId
                     join rr in context.ArcadeReplayRatings on r.ArcadeReplayId equals rr.ArcadeReplayId
-                    join rpr in context.ArcadeReplayPlayerRatings on rp.ArcadeReplayPlayerId equals rpr.ArcadeReplayPlayerId
+                    join rpr in context.ArcadeReplayDsPlayerRatings on rp.ArcadeReplayPlayerId equals rpr.ArcadeReplayDsPlayerId
                     where p.ProfileId == playerId.ToonId
                      && p.RealmId == playerId.RealmId
                      && p.RegionId == playerId.RegionId
