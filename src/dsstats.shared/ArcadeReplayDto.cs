@@ -111,7 +111,6 @@ public record ArcadePlayerDto
     public int RegionId { get; set; }
     public int RealmId { get; set; }
     public int ProfileId { get; set; }
-    public List<ArcadePlayerRatingDetailDto> ArcadePlayerRatings { get; set; } = new();
 }
 
 public record ArcadePlayerRatingDetailDto

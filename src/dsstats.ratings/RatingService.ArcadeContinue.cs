@@ -17,12 +17,14 @@ public partial class RatingService
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var ratingSaveService = scope.ServiceProvider.GetRequiredService<IRatingsSaveService>();
 
+        // await DebugDeleteArcadeRatings();
+
         DsstatsCalcRequest dsstatsRequest = new()
         {
             FromDate = DateTime.UtcNow.AddDays(-6),
             GameModes = new List<int>() { 3, 4, 7 },
             Skip = 0,
-            Take = 1000
+            Take = 2 * 3000 * 6
         };
 
         await CreateMaterializedReplays();
@@ -76,7 +78,7 @@ public partial class RatingService
             }
         }
 
-        await ratingSaveService.SaveComboStepResult(replayRatings,
+        await ratingSaveService.SaveArcadeStepResult(replayRatings,
                                                     ratingRequest.ReplayRatingAppendId,
                                                     ratingRequest.ReplayPlayerRatingAppendId);
 
@@ -179,5 +181,42 @@ public partial class RatingService
             .Skip(request.Skip)
             .Take(request.Take)
             .ToListAsync();
+    }
+
+    private async Task DebugDeleteArcadeRatings()
+    {
+        using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        var query = from r in context.ArcadeReplays
+                    join rr in context.ArcadeReplayRatings on r.ArcadeReplayId equals rr.ArcadeReplayId
+                    orderby r.CreatedAt descending
+                    select rr;
+
+        var ratings = await query
+           .Take(15000)
+           .ToListAsync();
+
+        if (ratings.Count == 0)
+        {
+            return;
+        }
+
+        var replayIds = ratings.Select(s => s.ArcadeReplayId).ToList();
+
+        var replayPlayerIds = await context.ArcadeReplays
+            .Where(x => replayIds.Contains(x.ArcadeReplayId))
+            .SelectMany(s => s.ArcadeReplayDsPlayers)
+            .Select(s => s.ArcadeReplayDsPlayerId)
+            .ToListAsync();
+
+        var replayPlayerRatings = await context.ArcadeReplayDsPlayerRatings
+            .Where(x => replayPlayerIds.Contains(x.ArcadeReplayDsPlayerId))
+            .ToListAsync();
+
+        context.ArcadeReplayRatings.RemoveRange(ratings);
+        context.ArcadeReplayDsPlayerRatings.RemoveRange(replayPlayerRatings);
+
+        await context.SaveChangesAsync();
     }
 }

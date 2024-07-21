@@ -197,11 +197,11 @@ public partial class RatingsSaveService
             .ToDictionary(k => new PlayerId(k.ToonId, k.RealmId, k.RegionId), v => v.PlayerId);
 
         await ContinueArcadePlayerRatings(mmrIdRatings, playerIds);
-        await ContinueCsv2Mysql(GetFileName(RatingCalcType.Combo, nameof(ReplayContext.ComboReplayRatings)),
-                                nameof(ReplayContext.ComboReplayRatings),
+        await ContinueCsv2Mysql(GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayRatings)),
+                                nameof(ReplayContext.ArcadeReplayRatings),
                                 connectionString);
-        await ContinueCsv2Mysql(GetFileName(RatingCalcType.Combo, nameof(ReplayContext.ComboReplayPlayerRatings)),
-                                            nameof(ReplayContext.ComboReplayPlayerRatings),
+        await ContinueCsv2Mysql(GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayDsPlayerRatings)),
+                                            nameof(ReplayContext.ArcadeReplayDsPlayerRatings),
                                             connectionString);
         await SetArcadePlayerRatingsPos(connectionString);
     }
@@ -230,25 +230,28 @@ $@"INSERT INTO {nameof(ReplayContext.ArcadePlayerRatings)}
     {nameof(ArcadePlayerRating.Pos)},
     {nameof(ArcadePlayerRating.Games)},
     {nameof(ArcadePlayerRating.Wins)},
+    {nameof(ArcadePlayerRating.Mvp)},
+    {nameof(ArcadePlayerRating.TeamGames)},
+    {nameof(ArcadePlayerRating.MainCount)},
+    {nameof(ArcadePlayerRating.Main)},
     {nameof(ArcadePlayerRating.Consistency)},
     {nameof(ArcadePlayerRating.Confidence)},
-    ArcadePlayerId,
+    {nameof(ArcadePlayerRating.IsUploader)},
     {nameof(ArcadePlayerRating.PlayerId)})
 VALUES ((SELECT t.{nameof(ArcadePlayerRating.ArcadePlayerRatingId)} 
     FROM (SELECT * from {nameof(ReplayContext.ArcadePlayerRatings)} WHERE {nameof(ArcadePlayerRating.RatingType)} = @value1 
-        AND {nameof(ArcadePlayerRating.PlayerId)} = @value8) as t),
-    @value1,@value2,@value3,@value4,@value5,@value6,@value7,1,@value8)
+        AND {nameof(ArcadePlayerRating.PlayerId)} = @value13) as t),
+    @value1,@value2,@value3,@value4,@value5,@value6,@value7,@value8,@value9,@value10,@value11,@value12,@value13)
 ON DUPLICATE KEY UPDATE {nameof(ArcadePlayerRating.Rating)}=@value2,
                         {nameof(ArcadePlayerRating.Games)}=@value4,
                         {nameof(ArcadePlayerRating.Wins)}=@value5,
-                        {nameof(ArcadePlayerRating.Consistency)}=@value6,
-                        {nameof(ArcadePlayerRating.Confidence)}=@value7,
-                        ArcadePlayerId = 1
-            ";
+                        {nameof(ArcadePlayerRating.Consistency)}=@value10,
+                        {nameof(ArcadePlayerRating.Confidence)}=@value11
+;";
             command.Transaction = transaction;
 
             List<MySqlParameter> parameters = new List<MySqlParameter>();
-            for (int i = 1; i <= 8; i++)
+            for (int i = 1; i <= 13; i++)
             {
                 var parameter = command.CreateParameter();
                 parameter.ParameterName = $"@value{i}";
@@ -258,21 +261,44 @@ ON DUPLICATE KEY UPDATE {nameof(ArcadePlayerRating.Rating)}=@value2,
 
             foreach (var ent in mmrIdRatings)
             {
+
                 foreach (var calcEnt in ent.Value.Values)
                 {
                     if (!playerIdDic.TryGetValue(calcEnt.PlayerId, out var playerId))
                     {
                         continue;
                     }
+                    var rating = new ArcadePlayerRatingCsv()
+                    {
+                        RatingType = ent.Key,
+                        Rating = calcEnt.Mmr,
+                        Pos = 0,
+                        Games = calcEnt.Games,
+                        Wins = calcEnt.Wins,
+                        Mvp = 0,
+                        TeamGames = 0,
+                        MainCount = 0,
+                        Main = 0,
+                        Consistency = calcEnt.Consistency,
+                        Confidence = calcEnt.Confidence,
+                        IsUploader = 0,
+                        PlayerId = playerId
+                    };
 
-                    parameters[0].Value = ent.Key;
-                    parameters[1].Value = calcEnt.Mmr;
-                    parameters[2].Value = 0;
-                    parameters[3].Value = calcEnt.Games;
-                    parameters[4].Value = calcEnt.Wins;
-                    parameters[5].Value = calcEnt.Consistency;
-                    parameters[6].Value = calcEnt.Confidence;
-                    parameters[7].Value = playerId;
+                    parameters[0].Value = rating.RatingType;
+                    parameters[1].Value = rating.Rating;
+                    parameters[2].Value = rating.Pos;
+                    parameters[3].Value = rating.Games;
+                    parameters[4].Value = rating.Wins;
+                    parameters[5].Value = rating.Mvp;
+                    parameters[6].Value = rating.TeamGames;
+                    parameters[7].Value = rating.MainCount;
+                    parameters[8].Value = rating.Main;
+                    parameters[9].Value = rating.Consistency;
+                    parameters[10].Value = rating.Confidence;
+                    parameters[11].Value = rating.IsUploader;
+                    parameters[12].Value = rating.PlayerId;
+
                     command.CommandTimeout = 240;
                     await command.ExecuteNonQueryAsync();
                 }
@@ -301,7 +327,6 @@ internal record ArcadePlayerRatingCsv
     public double Consistency { get; set; }
     public double Confidence { get; set; }
     public int IsUploader { get; set; }
-    public int ArcadePlayerId { get; set; } = 1;
     public int PlayerId { get; set; }
 }
 

@@ -180,8 +180,8 @@ if (app.Environment.IsProduction())
 }
 else
 {
-    var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
-    crawlerService.MapArcadePlayersToPlayers().Wait();
+    //var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
+    //crawlerService.MapArcadePlayersToPlayers().Wait();
 }
 
 app.UseRateLimiter();
