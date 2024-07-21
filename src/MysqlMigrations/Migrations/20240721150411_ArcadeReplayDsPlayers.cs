@@ -6,58 +6,60 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace MysqlMigrations.Migrations
 {
     /// <inheritdoc />
-    public partial class ArcadeDsPlayerratings : Migration
+    public partial class ArcadeReplayDsPlayers : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_ArcadePlayerRatings_ArcadePlayers_ArcadePlayerId",
-                table: "ArcadePlayerRatings");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_ArcadeReplayDsPlayers_ArcadeReplayPlayerRatings_ArcadeReplay~",
-                table: "ArcadeReplayDsPlayers");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_ArcadeReplayDsPlayers_Players_PlayerId",
-                table: "ArcadeReplayDsPlayers");
+            //migrationBuilder.DropForeignKey(
+            //    name: "FK_ArcadePlayerRatings_ArcadePlayers_ArcadePlayerId",
+            //    table: "ArcadePlayerRatings");
 
             migrationBuilder.DropTable(
                 name: "ArcadeReplayPlayerRatings");
 
-            migrationBuilder.DropIndex(
-                name: "IX_ArcadeReplayDsPlayers_ArcadeReplayPlayerRatingId",
-                table: "ArcadeReplayDsPlayers");
-
-            migrationBuilder.DropColumn(
-                name: "ArcadeReplayPlayerRatingId",
-                table: "ArcadeReplayDsPlayers");
-
-            migrationBuilder.AlterColumn<int>(
-                name: "PlayerId",
-                table: "ArcadeReplayDsPlayers",
-                type: "int",
-                nullable: false,
-                defaultValue: 0,
-                oldClrType: typeof(int),
-                oldType: "int",
-                oldNullable: true);
-
-            migrationBuilder.AlterColumn<int>(
+            migrationBuilder.RenameColumn(
                 name: "ArcadePlayerId",
                 table: "ArcadePlayerRatings",
-                type: "int",
-                nullable: true,
-                oldClrType: typeof(int),
-                oldType: "int");
+                newName: "PlayerId");
 
-            migrationBuilder.AddColumn<int>(
-                name: "PlayerId",
+            migrationBuilder.RenameIndex(
+                name: "IX_ArcadePlayerRatings_ArcadePlayerId",
                 table: "ArcadePlayerRatings",
-                type: "int",
-                nullable: false,
-                defaultValue: 0);
+                newName: "IX_ArcadePlayerRatings_PlayerId");
+
+            migrationBuilder.CreateTable(
+                name: "ArcadeReplayDsPlayers",
+                columns: table => new
+                {
+                    ArcadeReplayDsPlayerId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    Name = table.Column<string>(type: "varchar(50)", maxLength: 50, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    SlotNumber = table.Column<int>(type: "int", nullable: false),
+                    Team = table.Column<int>(type: "int", nullable: false),
+                    Discriminator = table.Column<int>(type: "int", nullable: false),
+                    PlayerResult = table.Column<int>(type: "int", nullable: false),
+                    ArcadeReplayId = table.Column<int>(type: "int", nullable: false),
+                    PlayerId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ArcadeReplayDsPlayers", x => x.ArcadeReplayDsPlayerId);
+                    table.ForeignKey(
+                        name: "FK_ArcadeReplayDsPlayers_ArcadeReplays_ArcadeReplayId",
+                        column: x => x.ArcadeReplayId,
+                        principalTable: "ArcadeReplays",
+                        principalColumn: "ArcadeReplayId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ArcadeReplayDsPlayers_Players_PlayerId",
+                        column: x => x.PlayerId,
+                        principalTable: "Players",
+                        principalColumn: "PlayerId",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
                 name: "ArcadeReplayDsPlayerRatings",
@@ -93,11 +95,6 @@ namespace MysqlMigrations.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ArcadePlayerRatings_PlayerId",
-                table: "ArcadePlayerRatings",
-                column: "PlayerId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ArcadeReplayDsPlayerRatings_ArcadeReplayDsPlayerId",
                 table: "ArcadeReplayDsPlayerRatings",
                 column: "ArcadeReplayDsPlayerId",
@@ -108,12 +105,15 @@ namespace MysqlMigrations.Migrations
                 table: "ArcadeReplayDsPlayerRatings",
                 column: "ArcadeReplayRatingId");
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_ArcadePlayerRatings_ArcadePlayers_ArcadePlayerId",
-                table: "ArcadePlayerRatings",
-                column: "ArcadePlayerId",
-                principalTable: "ArcadePlayers",
-                principalColumn: "ArcadePlayerId");
+            migrationBuilder.CreateIndex(
+                name: "IX_ArcadeReplayDsPlayers_ArcadeReplayId",
+                table: "ArcadeReplayDsPlayers",
+                column: "ArcadeReplayId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArcadeReplayDsPlayers_PlayerId",
+                table: "ArcadeReplayDsPlayers",
+                column: "PlayerId");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_ArcadePlayerRatings_Players_PlayerId",
@@ -123,64 +123,60 @@ namespace MysqlMigrations.Migrations
                 principalColumn: "PlayerId",
                 onDelete: ReferentialAction.Cascade);
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_ArcadeReplayDsPlayers_Players_PlayerId",
-                table: "ArcadeReplayDsPlayers",
-                column: "PlayerId",
-                principalTable: "Players",
-                principalColumn: "PlayerId",
-                onDelete: ReferentialAction.Cascade);
+            var cleanup = "DROP PROCEDURE IF EXISTS `SetArcadePlayerRatingPos`;";
+            migrationBuilder.Sql(cleanup);
+            var SetArcadePlayerRatingPos = @"CREATE PROCEDURE `SetArcadePlayerRatingPos`()
+BEGIN
+	SET @pos = 0;
+    UPDATE ArcadePlayerRatings
+    SET Pos = (@pos:=@pos+1)
+    WHERE RatingType = 1
+    ORDER BY Rating DESC, PlayerId;
+    
+    SET @pos = 0;
+    UPDATE ArcadePlayerRatings
+    SET Pos = (@pos:=@pos+1)
+    WHERE RatingType = 2
+    ORDER BY Rating DESC, PlayerId;
+
+    SET @pos = 0;
+    UPDATE ArcadePlayerRatings
+    SET Pos = (@pos:=@pos+1)
+    WHERE RatingType = 3
+    ORDER BY Rating DESC, PlayerId;
+
+    SET @pos = 0;
+    UPDATE ArcadePlayerRatings
+    SET Pos = (@pos:=@pos+1)
+    WHERE RatingType = 4
+    ORDER BY Rating DESC, PlayerId;
+END
+";
+            migrationBuilder.Sql(SetArcadePlayerRatingPos);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(
-                name: "FK_ArcadePlayerRatings_ArcadePlayers_ArcadePlayerId",
-                table: "ArcadePlayerRatings");
-
-            migrationBuilder.DropForeignKey(
                 name: "FK_ArcadePlayerRatings_Players_PlayerId",
                 table: "ArcadePlayerRatings");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_ArcadeReplayDsPlayers_Players_PlayerId",
-                table: "ArcadeReplayDsPlayers");
 
             migrationBuilder.DropTable(
                 name: "ArcadeReplayDsPlayerRatings");
 
-            migrationBuilder.DropIndex(
-                name: "IX_ArcadePlayerRatings_PlayerId",
-                table: "ArcadePlayerRatings");
+            migrationBuilder.DropTable(
+                name: "ArcadeReplayDsPlayers");
 
-            migrationBuilder.DropColumn(
+            migrationBuilder.RenameColumn(
                 name: "PlayerId",
-                table: "ArcadePlayerRatings");
-
-            migrationBuilder.AlterColumn<int>(
-                name: "PlayerId",
-                table: "ArcadeReplayDsPlayers",
-                type: "int",
-                nullable: true,
-                oldClrType: typeof(int),
-                oldType: "int");
-
-            migrationBuilder.AddColumn<int>(
-                name: "ArcadeReplayPlayerRatingId",
-                table: "ArcadeReplayDsPlayers",
-                type: "int",
-                nullable: true);
-
-            migrationBuilder.AlterColumn<int>(
-                name: "ArcadePlayerId",
                 table: "ArcadePlayerRatings",
-                type: "int",
-                nullable: false,
-                defaultValue: 0,
-                oldClrType: typeof(int),
-                oldType: "int",
-                oldNullable: true);
+                newName: "ArcadePlayerId");
+
+            migrationBuilder.RenameIndex(
+                name: "IX_ArcadePlayerRatings_PlayerId",
+                table: "ArcadePlayerRatings",
+                newName: "IX_ArcadePlayerRatings_ArcadePlayerId");
 
             migrationBuilder.CreateTable(
                 name: "ArcadeReplayPlayerRatings",
@@ -216,11 +212,6 @@ namespace MysqlMigrations.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ArcadeReplayDsPlayers_ArcadeReplayPlayerRatingId",
-                table: "ArcadeReplayDsPlayers",
-                column: "ArcadeReplayPlayerRatingId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ArcadeReplayPlayerRatings_ArcadeReplayPlayerId",
                 table: "ArcadeReplayPlayerRatings",
                 column: "ArcadeReplayPlayerId",
@@ -238,20 +229,6 @@ namespace MysqlMigrations.Migrations
                 principalTable: "ArcadePlayers",
                 principalColumn: "ArcadePlayerId",
                 onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_ArcadeReplayDsPlayers_ArcadeReplayPlayerRatings_ArcadeReplay~",
-                table: "ArcadeReplayDsPlayers",
-                column: "ArcadeReplayPlayerRatingId",
-                principalTable: "ArcadeReplayPlayerRatings",
-                principalColumn: "ArcadeReplayPlayerRatingId");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_ArcadeReplayDsPlayers_Players_PlayerId",
-                table: "ArcadeReplayDsPlayers",
-                column: "PlayerId",
-                principalTable: "Players",
-                principalColumn: "PlayerId");
         }
     }
 }

@@ -12,8 +12,8 @@ using dsstats.db8;
 namespace MysqlMigrations.Migrations
 {
     [DbContext(typeof(ReplayContext))]
-    [Migration("20240721054350_ArcadePlayerRatingCu")]
-    partial class ArcadePlayerRatingCu
+    [Migration("20240721150411_ArcadeReplayDsPlayers")]
+    partial class ArcadeReplayDsPlayers
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -65,13 +65,17 @@ class Program
         var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        var count = context.ArcadeReplays.Count();
-        Console.WriteLine($"Count: {count}");
-
         var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
 
-        crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-2), default).Wait();
-        // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1), default).Wait();
+        if (args.Length > 0 && args[0] == "maparcadeplayers")
+        {
+            crawlerService.MapArcadePlayersToPlayers().Wait();
+        }
+        else
+        {
+            crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-2), default).Wait();
+            // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1), default).Wait();
+        }
 
         Console.WriteLine("done.");
         Console.ReadLine();
