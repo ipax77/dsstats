@@ -15,6 +15,11 @@ public partial class RatingService
 {
     private async Task ProduceArcadeRatings(bool recalc)
     {
+        if (!recalc)
+        {
+            await ContinueArcadeRatings();
+            return;
+        }
         using var scope = scopeFactory.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var ratingSaveService = scope.ServiceProvider.GetRequiredService<IRatingsSaveService>();
@@ -141,7 +146,7 @@ public partial class RatingService
                             .Where(x => x.ArcadeReplayId == r.ArcadeReplayId)
                             .Select(t => new PlayerCalcDto()
                             {
-                                ReplayPlayerId = t.PlayerId,
+                                ReplayPlayerId = t.ArcadeReplayDsPlayerId,
                                 GamePos = t.SlotNumber,
                                 PlayerResult = (int)t.PlayerResult,
                                 Team = t.Team,

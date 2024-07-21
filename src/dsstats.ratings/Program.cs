@@ -66,28 +66,29 @@ class Program
         }
 
         Stopwatch sw = Stopwatch.StartNew();
-        if (args.Length == 1)
+        if (args.Length > 0)
         {
+            bool recalc = true;
+            if (args.Length > 1 && args[1] == "continue")
+            {
+                recalc = false;
+            }
+
             var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
             if (args[0] == "dsstats")
             {
                 logger.LogInformation("producing dsstats ratings.");
-                ratingService.ProduceRatings(RatingCalcType.Dsstats, true).Wait();
+                ratingService.ProduceRatings(RatingCalcType.Dsstats, recalc).Wait();
             }
-            else if (args[0] == "sc2arcade")
+            else if (args[0] == "arcade")
             {
                 logger.LogInformation("producing sc2arcade ratings.");
-                ratingService.ProduceRatings(RatingCalcType.Arcade, true).Wait();
+                ratingService.ProduceRatings(RatingCalcType.Arcade, recalc).Wait();
             }
             else if (args[0] == "combo")
             {
                 logger.LogInformation("producing combo ratings.");
-                ratingService.ProduceRatings(RatingCalcType.Combo, true).Wait();
-            }
-            else if (args[0] == "combocontinue")
-            {
-                logger.LogInformation("producing combo ratings.");
-                ratingService.ProduceRatings(RatingCalcType.Combo, false).Wait();
+                ratingService.ProduceRatings(RatingCalcType.Combo, recalc).Wait();
             }
             else if (args[0] == "lsdups")
             {
