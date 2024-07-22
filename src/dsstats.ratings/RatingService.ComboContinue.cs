@@ -50,8 +50,6 @@ public partial class RatingService
             BannedPlayers = new Dictionary<PlayerId, bool>().ToFrozenDictionary()
         };
 
-        await CleanupComboPreRatings(context);
-
         ratingRequest.ReplayPlayerRatingAppendId = await context.ComboReplayPlayerRatings
             .OrderByDescending(o => o.ComboReplayPlayerRatingId)
             .Select(s => s.ComboReplayPlayerRatingId)

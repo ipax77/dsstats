@@ -54,8 +54,10 @@ public class PreRatingTests
         services.AddSingleton<IImportService, ImportService>();
         services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 
+        services.AddScoped<ComboRatings>();
         services.AddScoped<IReplayRepository, ReplayRepository>();
         services.AddScoped<IReplaysService, ReplaysService>();
+
 
         serviceProvider = services.BuildServiceProvider();
     }
