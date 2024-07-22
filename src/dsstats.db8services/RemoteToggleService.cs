@@ -1,6 +1,6 @@
 ﻿using dsstats.shared.Interfaces;
 
-namespace dsstats.api.Services;
+namespace dsstats.db8services;
 
 public class RemoteToggleService : IRemoteToggleService
 {

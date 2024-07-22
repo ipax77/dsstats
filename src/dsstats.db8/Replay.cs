@@ -69,6 +69,7 @@ public class Player
     {
         ReplayPlayers = new HashSet<ReplayPlayer>();
         PlayerRatings = new HashSet<PlayerRating>();
+        ArcadePlayerRatings = new HashSet<ArcadePlayerRating>();
     }
     public int PlayerId { get; set; }
     [MaxLength(50)]
@@ -84,6 +85,7 @@ public class Player
     public virtual Uploader? Uploader { get; set; }
     public virtual ICollection<ReplayPlayer> ReplayPlayers { get; set; }
     public virtual ICollection<PlayerRating> PlayerRatings { get; set; }
+    public virtual ICollection<ArcadePlayerRating> ArcadePlayerRatings { get; set; }
 }
 
 public class PlayerRating

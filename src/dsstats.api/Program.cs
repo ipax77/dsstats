@@ -109,7 +109,7 @@ builder.Services.AddHttpClient("decode")
 
 builder.Services.AddSingleton<IRatingService, RatingService>();
 builder.Services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
-builder.Services.AddSingleton<ImportService>();
+builder.Services.AddSingleton<IImportService, ImportService>();
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<PickBanRepository>();
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
@@ -180,8 +180,8 @@ if (app.Environment.IsProduction())
 }
 else
 {
-    //var comboRatings = scope.ServiceProvider.GetRequiredService<ComboRatings>();
-    //comboRatings.CombineDsstatsSc2ArcadeReplays().Wait();
+    //var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
+    //crawlerService.MapArcadePlayersToPlayers().Wait();
 }
 
 app.UseRateLimiter();

@@ -1,6 +1,7 @@
 ﻿using dsstats.db8;
 using dsstats.db8services.Import;
 using dsstats.shared;
+using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,7 +29,7 @@ public partial class IhRepository
         session.IhSessionPlayers.Clear();
 
         using var scope = scopeFactory.CreateScope();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
 
         foreach (var playerState in session.GroupStateV2.PlayerStates)
         {
@@ -70,7 +71,7 @@ public partial class IhRepository
             .ToListAsync();
 
         using var scope = scopeFactory.CreateScope();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
 
         foreach (var session in v1Sessions)
         {
@@ -88,7 +89,7 @@ public partial class IhRepository
         }
     }
 
-    private async Task<List<IhSessionPlayer>> GetSessionPlayers(GroupStateV2 groupState, ImportService importService)
+    private async Task<List<IhSessionPlayer>> GetSessionPlayers(GroupStateV2 groupState, IImportService importService)
     {
         List<IhSessionPlayer> players = [];
 

@@ -73,7 +73,7 @@ public class ImportTests
 
         services.AddSingleton<IRatingService, RatingService>();
         services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
-        services.AddSingleton<ImportService>();
+        services.AddSingleton<IImportService, ImportService>();
         services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 
         services.AddScoped<IReplayRepository, ReplayRepository>();
@@ -87,7 +87,7 @@ public class ImportTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
 
         context.Database.EnsureDeleted();
         context.Database.Migrate();
@@ -127,7 +127,7 @@ public class ImportTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
 
         using var md5 = MD5.Create();
 
@@ -166,7 +166,7 @@ public class ImportTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
 
         context.Database.EnsureDeleted();
         context.Database.Migrate();
@@ -195,7 +195,7 @@ public class ImportTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
 
         using var md5 = MD5.Create();
 
@@ -248,7 +248,7 @@ public class ImportTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
 
         using var md5 = MD5.Create();
 
@@ -274,7 +274,7 @@ public class ImportTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
 
         using var md5 = MD5.Create();
 

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace dsstats.db8services.Import;
 
-public partial class ImportService
+public partial class ImportService : IImportService
 {
     private readonly IServiceProvider serviceProvider;
     private readonly ILogger<ImportService> logger;
@@ -263,5 +263,57 @@ public partial class ImportService
             }
         }
         return upgradeId;
+    }
+
+    public async Task<Dictionary<int, int>> MapArcadePlayers()
+    {
+        await playersSs.WaitAsync();
+        Dictionary<int, int> arcadePlayerIdMap = [];
+        try
+        {
+            if (!IsInit)
+            {
+                await Init();
+            }
+            List<Player> newPlayers = [];
+
+            using var scope = serviceProvider.CreateAsyncScope();
+            var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+            var arcadePlayersDict = (await context.ArcadePlayers
+                .ToListAsync()).ToDictionary(k => new PlayerId(k.ProfileId, k.RealmId, k.RegionId), v => v);
+
+            foreach (var arcadePlayer in arcadePlayersDict.Values)
+            {
+                var playerId = new PlayerId(arcadePlayer.ProfileId, arcadePlayer.RealmId, arcadePlayer.RegionId);
+                if (PlayerIds.TryGetValue(playerId, out var dsPlayerId))
+                {
+                    arcadePlayerIdMap[arcadePlayer.ArcadePlayerId] = dsPlayerId;
+                }
+                else
+                {
+                    newPlayers.Add(new()
+                    {
+                        Name = arcadePlayer.Name,
+                        ToonId = arcadePlayer.ProfileId,
+                        RealmId = arcadePlayer.RealmId,
+                        RegionId = arcadePlayer.RegionId,
+                    });
+                }
+            }
+            context.Players.AddRange(newPlayers);
+            await context.SaveChangesAsync();
+            foreach (var player in newPlayers)
+            {
+                var playerId = new PlayerId(player.ToonId, player.RealmId, player.RegionId);
+                PlayerIds[playerId] = player.PlayerId;
+                arcadePlayerIdMap[arcadePlayersDict[playerId].ArcadePlayerId] = player.PlayerId;
+            }
+        }
+        finally
+        {
+            playersSs.Release();
+        }
+        return arcadePlayerIdMap;
     }
 }

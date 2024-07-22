@@ -1,5 +1,4 @@
-﻿using dsstats.api.Services;
-using dsstats.db8;
+﻿using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
 using dsstats.db8services.Import;
@@ -61,7 +60,7 @@ public class ComboRatingsTests
         services.AddScoped<ComboRatings>();
         services.AddSingleton<IRatingService, RatingService>();
         services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
-        services.AddSingleton<ImportService>();
+        services.AddSingleton<IImportService, ImportService>();
         services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
         services.AddScoped<IReplayRepository, ReplayRepository>();
 
@@ -211,7 +210,7 @@ public class ComboRatingsTests
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
         var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 
         DateTime startTime = DateTime.UtcNow;
@@ -291,21 +290,21 @@ public class ComboRatingsTests
             RegionId = 1,
             WinnerTeam = winnerTeam,
             Duration = 500,
-            ArcadeReplayPlayers = GetBasicArcadeReplayPlayerDtos(winnerTeam)
+            ArcadeReplayDsPlayers = GetBasicArcadeReplayPlayerDtos(winnerTeam)
         };
     }
 
-    public List<ArcadeReplayPlayerDto> GetBasicArcadeReplayPlayerDtos(int winnerTeam)
+    public List<ArcadeReplayDsPlayerDto> GetBasicArcadeReplayPlayerDtos(int winnerTeam)
     {
         var players = GetDefaultArcadePlayers();
-        return players.Select((s, i) => new ArcadeReplayPlayerDto()
+        return players.Select((s, i) => new ArcadeReplayDsPlayerDto()
         {
             Name = "Test",
             SlotNumber = i + 1,
             Team = i + 1 <= 3 ? 1 : 2,
             PlayerResult = winnerTeam == 1 ? i + 1 <= 3 ? PlayerResult.Win : PlayerResult.Los : i + 1 <= 3
                 ? PlayerResult.Los : PlayerResult.Win,
-            ArcadePlayer = s,
+            Player = s,
         }).ToList();
     }
 
@@ -371,15 +370,15 @@ public class ComboRatingsTests
             .ToArray();
     }
 
-    public ArcadePlayerReplayDto[] GetDefaultArcadePlayers()
+    public PlayerDto[] GetDefaultArcadePlayers()
     {
         var playerPool = this.playerPool.ToArray();
         Random.Shared.Shuffle(playerPool);
 
         return playerPool.Take(6)
-            .Select(s => new ArcadePlayerReplayDto()
+            .Select(s => new PlayerDto()
             {
-                ProfileId = s.ToonId,
+                ToonId = s.ToonId,
                 RealmId = s.RealmId,
                 RegionId = s.RegionId,
             })

@@ -73,7 +73,7 @@ public class UploadTests
 
         services.AddSingleton<IRatingService, RatingService>();
         services.AddSingleton<RatingsSaveService>();
-        services.AddSingleton<ImportService>();
+        services.AddSingleton<IImportService, ImportService>();
         services.AddSingleton<UploadService>();
         services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 
