@@ -51,14 +51,11 @@ public class AutoMapperProfile : Profile
 
         // Arcade
         CreateMap<ArcadePlayerRating, ArcadePlayerRatingDto>(MemberList.Destination);
-        CreateMap<ArcadePlayer, ArcadePlayerRatingPlayerDto>(MemberList.Destination);
         CreateMap<ArcadePlayerRatingChange, ArcadePlayerRatingChangeDto>(MemberList.Destination);
 
         CreateMap<ArcadePlayerRating, ArcadePlayerRatingDetailDto>(MemberList.Destination);
-        CreateMap<ArcadePlayer, ArcadePlayerDto>(MemberList.Destination);
         CreateMap<ArcadeReplayDsPlayerRating, ArcadeReplayPlayerRatingDto>(MemberList.Destination);
         CreateMap<ArcadeReplayRating, ArcadeReplayRatingDto>(MemberList.Destination);
-        CreateMap<ArcadeReplayPlayer, ArcadeReplayPlayerDto>(MemberList.Destination);
         CreateMap<ArcadeReplay, ArcadeReplayDto>(MemberList.Destination);
         CreateMap<ArcadeReplay, ArcadeReplayListDto>(MemberList.Destination)
             .ForMember(x => x.MmrChange, opt => opt.Ignore());
@@ -66,19 +63,14 @@ public class AutoMapperProfile : Profile
         CreateMap<ArcadeReplay, ArcadeReplayListRatingDto>(MemberList.Destination)
             .ForMember(x => x.MmrChange, opt => opt.Ignore());
         CreateMap<ArcadeReplayDsPlayer, ArcadeReplayPlayerListDto>(MemberList.Destination);
-        CreateMap<ArcadePlayer, ArcadePlayerListDto>(MemberList.Destination);
         CreateMap<ArcadeReplayRating, ArcadeReplayRatingListDto>(MemberList.Destination);
         CreateMap<ArcadeReplayDsPlayerRating, ArcadeReplayPlayerRatingListDto>(MemberList.Destination);
 
         CreateMap<ArcadePlayerRating, PlayerRatingDto>(MemberList.Destination)
             .ForMember(x => x.Player, opt => opt.MapFrom(m => m.Player))
             .ForMember(x => x.PlayerRatingChange, opt => opt.MapFrom(m => m.ArcadePlayerRatingChange));
-        CreateMap<ArcadePlayer, PlayerRatingPlayerDto>(MemberList.Destination)
-            .ForMember(x => x.ToonId, opt => opt.MapFrom(m => m.ProfileId))
-            .ForMember(x => x.ArcadeDefeatsSinceLastUpload, opt => opt.Ignore())
-            .ForMember(x => x.IsUploader, opt => opt.Ignore());
+
         CreateMap<ArcadePlayerRatingChange, PlayerRatingChangeDto>();
-        CreateMap<ArcadePlayer, ArcadePlayerReplayDto>(MemberList.Destination);
         CreateMap<ArcadeReplayDsPlayer, ArcadeReplayDsPlayerDto>(MemberList.Destination);
         CreateMap<ArcadeReplayDsPlayerDto, ArcadeReplayDsPlayer>(MemberList.Source);
 

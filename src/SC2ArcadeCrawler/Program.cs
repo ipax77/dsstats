@@ -67,15 +67,8 @@ class Program
 
         var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
 
-        if (args.Length > 0 && args[0] == "maparcadeplayers")
-        {
-            crawlerService.MapArcadePlayersToPlayers().Wait();
-        }
-        else
-        {
-            crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-2), default).Wait();
-            // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1), default).Wait();
-        }
+        crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-2), default).Wait();
+        // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1), default).Wait();
 
         Console.WriteLine("done.");
         Console.ReadLine();
