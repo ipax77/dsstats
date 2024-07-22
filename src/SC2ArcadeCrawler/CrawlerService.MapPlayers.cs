@@ -31,7 +31,7 @@ public partial class CrawlerService
         }
     }
 
-    public async Task MapArcadePlayersToPlayers()
+    public async Task MapArcadePlayersToPlayers(CancellationToken token = default)
     {
         using var scope = serviceProvider.CreateScope();
         var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
@@ -39,13 +39,14 @@ public partial class CrawlerService
 
         Dictionary<int, int> ArcadePlayerIdDict = await importService.MapArcadePlayers();
 
-        int skip = 0;
+        int skip = await context.ArcadeReplayDsPlayers.CountAsync();
         int take = 100_000;
 
         var arcadeReplayPlayers = await context.ArcadeReplayPlayers
             .OrderBy(o => o.ArcadeReplayPlayerId)
             .Skip(skip)
             .Take(take)
+            .AsNoTracking()
             .ToListAsync();
 
         while (arcadeReplayPlayers.Count > 0)
@@ -66,12 +67,13 @@ public partial class CrawlerService
                 arcadeReplayDsPlayers.Add(replayDsPlayer);
             }
             context.ArcadeReplayDsPlayers.AddRange(arcadeReplayDsPlayers);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(token);
             skip += take;
             arcadeReplayPlayers = await context.ArcadeReplayPlayers
             .OrderBy(o => o.ArcadeReplayPlayerId)
             .Skip(skip)
             .Take(take)
+            .AsNoTracking()
             .ToListAsync();
             logger.LogInformation("skip: {skip}", skip);
         }
