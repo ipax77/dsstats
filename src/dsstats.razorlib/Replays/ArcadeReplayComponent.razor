@@ -73,10 +73,10 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var player in Replay.ArcadeReplayPlayers.Where(x => x.Team == i).OrderBy(o => o.SlotNumber))
+                                @foreach (var player in Replay.ArcadeReplayDsPlayers.Where(x => x.Team == i).OrderBy(o => o.SlotNumber))
                                 {
-                                    var plRating = Replay.ArcadeReplayRating?.ArcadeReplayPlayerRatings.FirstOrDefault(f => f.GamePos == player.SlotNumber);
-                                    <tr class="pointer" @onclick="@(() => interestPlayer = new(player.ArcadePlayer.ProfileId, player.ArcadePlayer.RealmId, player.ArcadePlayer.RegionId))">
+                                    var plRating = Replay.ArcadeReplayRating?.ArcadeReplayDsPlayerRatings.FirstOrDefault(f => f.GamePos == player.SlotNumber);
+                                    <tr class="pointer" @onclick="@(() => interestPlayer = new(player.Player.ToonId, player.Player.RealmId, player.Player.RegionId))">
                                         <td>@player.SlotNumber</td>
                                         <td>
                                             @if (plRating != null)

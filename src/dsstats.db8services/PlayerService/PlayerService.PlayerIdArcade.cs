@@ -31,9 +31,9 @@ public partial class PlayerService
     {
         return await context.ArcadePlayerRatings
                 .Include(i => i.ArcadePlayerRatingChange)
-                .Where(x => x.ArcadePlayer!.ProfileId == playerId.ToonId
-                    && x.ArcadePlayer.RealmId == playerId.RealmId
-                    && x.ArcadePlayer.RegionId == playerId.RegionId)
+                .Where(x => x.Player!.ToonId == playerId.ToonId
+                    && x.Player.RealmId == playerId.RealmId
+                    && x.Player.RegionId == playerId.RegionId)
                 .Select(s => new PlayerRatingDetailDto()
                 {
                     RatingType = (RatingType)s.RatingType,
@@ -45,10 +45,10 @@ public partial class PlayerService
                     Confidence = Math.Round(s.Confidence, 2),
                     Player = new PlayerRatingPlayerDto()
                     {
-                        Name = s.ArcadePlayer!.Name,
-                        ToonId = s.ArcadePlayer.ProfileId,
-                        RegionId = s.ArcadePlayer.RegionId,
-                        RealmId = s.ArcadePlayer.RealmId,
+                        Name = s.Player!.Name,
+                        ToonId = s.Player.ToonId,
+                        RegionId = s.Player.RegionId,
+                        RealmId = s.Player.RealmId,
                     },
                     PlayerRatingChange = s.ArcadePlayerRatingChange == null ? null : new PlayerRatingChangeDto()
                     {
@@ -92,17 +92,16 @@ public partial class PlayerService
 
     private async Task<double> GetPlayerIdArcadeTeamRating(ReplayContext context, PlayerId playerId, RatingType ratingType, bool inTeam, CancellationToken token)
     {
-        var teamRatings = from p in context.ArcadePlayers
-                          from rp in p.ArcadeReplayPlayers
-                          from t in rp.ArcadeReplay!.ArcadeReplayPlayers
-                          where p.ProfileId == playerId.ToonId
-                              && p.RealmId == playerId.RealmId
-                              && p.RegionId == playerId.RegionId
+        var teamRatings = from rp in context.ArcadeReplayDsPlayers
+                          from t in rp.ArcadeReplay!.ArcadeReplayDsPlayers
+                          where rp.Player!.ToonId == playerId.ToonId
+                              && rp.Player.RealmId == playerId.RealmId
+                              && rp.Player.RegionId == playerId.RegionId
                               && rp.ArcadeReplay!.ArcadeReplayRating != null
                               && rp.ArcadeReplay.ArcadeReplayRating.RatingType == ratingType
                               && (!inTeam || t != rp)
                               && (inTeam ? t.Team == rp.Team : t.Team != rp.Team)
-                              && t.ArcadePlayer!.ProfileId > 0
+                              && t.Player!.ToonId > 0
                           select t.ArcadeReplayPlayerRating;
 
         var avgRating = await teamRatings
@@ -120,7 +119,7 @@ public partial class PlayerService
                             from t in r.ArcadeReplayPlayers
                             join p in context.ArcadePlayers on rp.ArcadePlayerId equals p.ArcadePlayerId
                             join tp in context.ArcadePlayers on t.ArcadePlayerId equals tp.ArcadePlayerId
-                            join rpr in context.ArcadeReplayPlayerRatings on rp.ArcadeReplayPlayerId equals rpr.ArcadeReplayPlayerId
+                            join rpr in context.ArcadeReplayDsPlayerRatings on rp.ArcadeReplayPlayerId equals rpr.ArcadeReplayDsPlayerId
                             where p.ProfileId == playerId.ToonId
                                 && p.RegionId == playerId.RegionId
                                 && p.RealmId == playerId.RealmId
@@ -161,7 +160,7 @@ public partial class PlayerService
                             from o in r.ArcadeReplayPlayers
                             join p in context.ArcadePlayers on rp.ArcadePlayerId equals p.ArcadePlayerId
                             join op in context.ArcadePlayers on o.ArcadePlayerId equals op.ArcadePlayerId
-                            join rpr in context.ArcadeReplayPlayerRatings on o.ArcadeReplayPlayerId equals rpr.ArcadeReplayPlayerId
+                            join rpr in context.ArcadeReplayDsPlayerRatings on o.ArcadeReplayPlayerId equals rpr.ArcadeReplayDsPlayerId
                             where p.ProfileId == playerId.ToonId
                               && p.RegionId == playerId.RegionId
                               && p.RealmId == playerId.RealmId

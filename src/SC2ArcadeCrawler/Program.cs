@@ -1,5 +1,8 @@
 ﻿using dsstats.db8;
+using dsstats.db8services;
+using dsstats.db8services.Import;
 using dsstats.shared;
+using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -48,12 +51,13 @@ class Program
         });
 
         services.AddHttpClient("sc2arcardeClient")
-    .ConfigureHttpClient(options =>
-    {
-        options.BaseAddress = new Uri("https://api.sc2arcade.com");
-        options.DefaultRequestHeaders.Add("Accept", "application/json");
-    });
-
+            .ConfigureHttpClient(options =>
+            {
+                options.BaseAddress = new Uri("https://api.sc2arcade.com");
+                options.DefaultRequestHeaders.Add("Accept", "application/json");
+            });
+        services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
+        services.AddSingleton<IImportService, ImportService>();
         services.AddSingleton<CrawlerService>();
 
         var serviceProvider = services.BuildServiceProvider();
@@ -61,13 +65,17 @@ class Program
         var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        var count = context.ArcadeReplays.Count();
-        Console.WriteLine($"Count: {count}");
-
         var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
 
-        crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-6), default).Wait();
-        // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1), default).Wait();
+        if (args.Length > 0 && args[0] == "maparcadeplayers")
+        {
+            crawlerService.MapArcadePlayersToPlayers().Wait();
+        }
+        else
+        {
+            crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-2), default).Wait();
+            // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1), default).Wait();
+        }
 
         Console.WriteLine("done.");
         Console.ReadLine();

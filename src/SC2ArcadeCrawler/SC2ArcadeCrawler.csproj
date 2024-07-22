@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\dsstats.db8services\dsstats.db8services.csproj" />
     <ProjectReference Include="..\dsstats.shared\dsstats.shared.csproj" />
     <ProjectReference Include="..\dsstats.db8\dsstats.db8.csproj" />
   </ItemGroup>

@@ -1,5 +1,6 @@
 ﻿using dsstats.db8services.Import;
 using dsstats.shared;
+using dsstats.shared.Interfaces;
 
 namespace dsstats.api.Services;
 
@@ -43,7 +44,7 @@ public class DecodeService(ILogger<DecodeService> logger,
             if (replays.Count > 0)
             {
                 using var scope = scopeFactory.CreateScope();
-                var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+                var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
                 replays.ForEach(f => f.Replay.FileName = string.Empty);
                 await importService.Import(replays.Select(s => s.Replay).ToList());
             }

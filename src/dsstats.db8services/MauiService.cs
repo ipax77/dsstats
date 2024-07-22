@@ -94,12 +94,12 @@ public class MauiService(ReplayContext context)
         {
             MauiRatingInfo? info = await context.ArcadePlayerRatings
                 .Where(x => x.RatingType == request.RatingType
-                    && x.ArcadePlayer.ProfileId == playerId.ToonId
-                    && x.ArcadePlayer.RealmId == playerId.RealmId
-                    && x.ArcadePlayer.RegionId == playerId.RegionId)
+                    && x.Player!.ToonId == playerId.ToonId
+                    && x.Player.RealmId == playerId.RealmId
+                    && x.Player.RegionId == playerId.RegionId)
                 .Select(s => new MauiRatingInfo()
                 {
-                    RequestNames = new(s.ArcadePlayer.Name, s.ArcadePlayer.ProfileId, s.ArcadePlayer.RegionId, s.ArcadePlayer.RealmId),
+                    RequestNames = new(s.Player!.Name, s.Player.ToonId, s.Player.RegionId, s.Player.RealmId),
                     Rating = Convert.ToInt32(s.Rating),
                     Pos = s.Pos
                 })

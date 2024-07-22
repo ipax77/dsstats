@@ -76,7 +76,7 @@ public partial class CrawlerService
         while (endDate < DateTime.Today.AddDays(2))
         {
             var replays = context.ArcadeReplays
-                .Include(i => i.ArcadeReplayPlayers)
+                .Include(i => i.ArcadeReplayDsPlayers)
                 .OrderBy(o => o.CreatedAt)
                     .ThenBy(o => o.ArcadeReplayId)
                 .Where(x => x.CreatedAt >= startDate && x.CreatedAt < endDate)
@@ -84,7 +84,7 @@ public partial class CrawlerService
 
             foreach (var replay in replays)
             {
-                foreach (var rp in replay.ArcadeReplayPlayers.Where(x => x.Team != replay.WinnerTeam))
+                foreach (var rp in replay.ArcadeReplayDsPlayers.Where(x => x.Team != replay.WinnerTeam))
                 {
                     rp.PlayerResult = PlayerResult.Los;
                 }

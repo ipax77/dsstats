@@ -20,6 +20,7 @@ public class ReplayContextFactory : IDesignTimeDbContextFactory<ReplayContext>
         {
             x.EnableRetryOnFailure();
             x.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
+            x.CommandTimeout(800);
             x.MigrationsAssembly("MysqlMigrations");
         });
 

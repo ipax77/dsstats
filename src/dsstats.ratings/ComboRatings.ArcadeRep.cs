@@ -164,15 +164,15 @@ public partial class ComboRatings
                         WinnerTeam = r.WinnerTeam,
                         TournamentEdition = false,
                         IsArcade = true,
-                        Players = context.ArcadeReplayPlayers
+                        Players = context.ArcadeReplayDsPlayers
                                 .Where(x => x.ArcadeReplayId == r.ArcadeReplayId)
                                 .Select(t => new PlayerCalcDto()
                                 {
-                                    ReplayPlayerId = t.ArcadeReplayPlayerId,
+                                    ReplayPlayerId = t.PlayerId,
                                     GamePos = t.SlotNumber,
                                     PlayerResult = (int)t.PlayerResult,
                                     Team = t.Team,
-                                    PlayerId = new(t.ArcadePlayer.ProfileId, t.ArcadePlayer.RealmId, t.ArcadePlayer.RegionId)
+                                    PlayerId = new(t.Player!.ToonId, t.Player.RealmId, t.Player.RegionId)
                                 }).ToList()
                     };
 
