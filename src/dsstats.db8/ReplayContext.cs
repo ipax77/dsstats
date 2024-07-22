@@ -37,9 +37,7 @@ public class ReplayContext : DbContext
     public virtual DbSet<FunStatsMemory> FunStatMemories { get; set; } = null!;
     public virtual DbSet<ArcadeReplay> ArcadeReplays { get; set; } = null!;
     public virtual DbSet<MaterializedArcadeReplay> MaterializedArcadeReplays { get; set; } = null!;
-    public virtual DbSet<ArcadeReplayPlayer> ArcadeReplayPlayers { get; set; } = null!;
     public virtual DbSet<ArcadeReplayDsPlayer> ArcadeReplayDsPlayers { get; set; } = null!;
-    public virtual DbSet<ArcadePlayer> ArcadePlayers { get; set; } = null!;
     public virtual DbSet<ArcadeReplayRating> ArcadeReplayRatings { get; set; } = null!;
     public virtual DbSet<ArcadePlayerRating> ArcadePlayerRatings { get; set; } = null!;
     public virtual DbSet<ArcadeReplayDsPlayerRating> ArcadeReplayDsPlayerRatings { get; set; } = null!;
@@ -174,12 +172,6 @@ public class ReplayContext : DbContext
             entity.HasIndex(i => new { i.RegionId, i.GameMode, i.CreatedAt });
             entity.HasIndex(i => new { i.RegionId, i.BnetBucketId, i.BnetRecordId }).IsUnique();
             entity.HasIndex(i => i.ReplayHash);
-        });
-
-        modelBuilder.Entity<ArcadePlayer>(entity =>
-        {
-            entity.HasIndex(i => i.Name);
-            entity.HasIndex(i => new { i.RegionId, i.RealmId, i.ProfileId }).IsUnique();
         });
 
         modelBuilder.Entity<ArcadePlayerRating>(entity =>

@@ -14,19 +14,21 @@ public partial class RatingService
 {
     private async Task ProduceComboRatings(bool recalc)
     {
+        
+        using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var ratingSaveService = scope.ServiceProvider.GetRequiredService<IRatingsSaveService>();
+        var comboRatings = scope.ServiceProvider.GetRequiredService<ComboRatings>();
+        
+        await CleanupComboPreRatings(context);
+
         if (!recalc)
         {
             await ContinueComboRatings();
             return;
         }
-
-        using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-        var ratingSaveService = scope.ServiceProvider.GetRequiredService<IRatingsSaveService>();
-        var comboRatings = scope.ServiceProvider.GetRequiredService<ComboRatings>();
+        
         await comboRatings.CombineDsstatsSc2ArcadeReplays();
-
-        await CleanupComboPreRatings(context);
 
         DsstatsCalcRequest dsstatsRequest = new()
         {

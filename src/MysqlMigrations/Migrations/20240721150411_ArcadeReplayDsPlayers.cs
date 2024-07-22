@@ -11,9 +11,9 @@ namespace MysqlMigrations.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            //migrationBuilder.DropForeignKey(
-            //    name: "FK_ArcadePlayerRatings_ArcadePlayers_ArcadePlayerId",
-            //    table: "ArcadePlayerRatings");
+            migrationBuilder.DropForeignKey(
+                name: "FK_ArcadePlayerRatings_ArcadePlayers_ArcadePlayerId",
+                table: "ArcadePlayerRatings");
 
             migrationBuilder.DropTable(
                 name: "ArcadeReplayPlayerRatings");

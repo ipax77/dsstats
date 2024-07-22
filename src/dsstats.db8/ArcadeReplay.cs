@@ -20,7 +20,6 @@ public class ArcadeReplay
 {
     public ArcadeReplay()
     {
-        ArcadeReplayPlayers = new HashSet<ArcadeReplayPlayer>();
         ArcadeReplayDsPlayers = new HashSet<ArcadeReplayDsPlayer>();
     }
 
@@ -41,24 +40,7 @@ public class ArcadeReplay
     [StringLength(64)]
     public string ReplayHash { get; set; } = string.Empty;
     public ArcadeReplayRating? ArcadeReplayRating { get; set; }
-    public ICollection<ArcadeReplayPlayer> ArcadeReplayPlayers { get; set; }
     public ICollection<ArcadeReplayDsPlayer> ArcadeReplayDsPlayers { get; set; }
-}
-
-public class ArcadeReplayPlayer
-{
-    [Key]
-    public int ArcadeReplayPlayerId { get; set; }
-    [MaxLength(50)]
-    public string Name { get; set; } = string.Empty;
-    public int SlotNumber { get; set; }
-    public int Team { get; set; }
-    public int Discriminator { get; set; }
-    public PlayerResult PlayerResult { get; set; }
-    public int ArcadePlayerId { get; set; }
-    public ArcadePlayer? ArcadePlayer { get; set; }
-    public int ArcadeReplayId { get; set; }
-    public ArcadeReplay? ArcadeReplay { get; set; }
 }
 
 public class ArcadeReplayDsPlayer
@@ -76,23 +58,6 @@ public class ArcadeReplayDsPlayer
     public ArcadeReplay? ArcadeReplay { get; set; }
     public int PlayerId { get; set; }
     public Player? Player { get; set; }
-}
-
-public class ArcadePlayer
-{
-    public ArcadePlayer()
-    {
-        ArcadeReplayPlayers = new HashSet<ArcadeReplayPlayer>();
-    }
-
-    [Key]
-    public int ArcadePlayerId { get; set; }
-    [MaxLength(50)]
-    public string Name { get; set; } = string.Empty;
-    public int RegionId { get; set; }
-    public int RealmId { get; set; }
-    public int ProfileId { get; set; }
-    public ICollection<ArcadeReplayPlayer> ArcadeReplayPlayers { get; set; }
 }
 
 public class ArcadePlayerRating
