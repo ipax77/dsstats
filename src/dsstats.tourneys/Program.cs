@@ -145,6 +145,7 @@ class Program
                 Event = tourney
             };
             replay.ReplayEvent = replayEvent;
+            replay.FileName = replayInfo.TourneyPath;
             var fakeJson = JsonSerializer.Serialize(mapper.Map<ReplayDto>(replay));
             File.WriteAllText(Path.ChangeExtension(replayInfo.TourneyPath, "json"), fakeJson);
         }
