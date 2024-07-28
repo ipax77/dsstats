@@ -132,8 +132,12 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
                     error = "failed decoding replays.";
                     continue;
                 }
-
-                File.Move(result.ReplayPath, Path.Combine(decodeSettings.Value.ReplayFolders.Done, Path.GetFileName(result.ReplayPath)));
+                var destination = Path.Combine(decodeSettings.Value.ReplayFolders.Done,
+                    Path.GetFileNameWithoutExtension(result.ReplayPath)[..36] +
+                    "_" +
+                    replayDto.ReplayHash +
+                    Path.GetExtension(result.ReplayPath));
+                File.Move(result.ReplayPath, destination);
                 var groupId = GetGroupIdFromFilename(result.ReplayPath);
                 var ihReplay = new IhReplay() { Replay = replayDto, Metadata = metaData };
                 replays.AddOrUpdate(groupId, [ihReplay], (k, v) => { v.Add(ihReplay); return v; });
