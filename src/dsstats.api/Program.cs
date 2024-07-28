@@ -182,6 +182,8 @@ else
 {
     //var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
     //crawlerService.MapArcadePlayersToPlayers().Wait();
+    var tourneyService = scope.ServiceProvider.GetRequiredService<ITourneysService>();
+    tourneyService.SeedTourneys().Wait();
 }
 
 app.UseRateLimiter();

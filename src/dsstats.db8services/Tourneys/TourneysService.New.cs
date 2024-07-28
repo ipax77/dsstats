@@ -72,7 +72,7 @@ public partial class TourneysService
         foreach (var jsonReplay in jsonReplays)
         {
             var replay = JsonSerializer.Deserialize<ReplayDto>(File.ReadAllText(jsonReplay));
-            if (replay is null)
+            if (replay is null || replays.Any(a => a.ReplayHash == replay.ReplayHash))
             {
                 continue;
             }
@@ -80,10 +80,20 @@ public partial class TourneysService
         }
         await ImportReplays(replays);
 
-        var groups = replays.GroupBy(g => Path.GetDirectoryName(g.FileName));
-        foreach (var group in groups)
+        if (replays.All(a => a.Playercount == 2))
         {
-            await CreateReplayEvent([.. group], eventId);
+            foreach (var replay in replays)
+            {
+                await Create1v1Event(replay, eventId);
+            }
+        }
+        else
+        {
+            var groups = replays.GroupBy(g => Path.GetDirectoryName(g.FileName));
+            foreach (var group in groups)
+            {
+                await CreateReplayEvent([.. group], eventId);
+            }
         }
     }
 
@@ -118,6 +128,27 @@ public partial class TourneysService
             replay.FileName = replayDto?.FileName ?? string.Empty;
         }
         await context.SaveChangesAsync();
+    }
+
+    private async Task Create1v1Event(ReplayDto replay, int eventId)
+    {
+        string winnerTeam = replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam).FirstOrDefault()?.Name ?? "";
+        string runnerTeam = replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam).FirstOrDefault()?.Name ?? "";
+        ReplayEvent replayEvent = new()
+        {
+            WinnerTeam = winnerTeam,
+            RunnerTeam = runnerTeam,
+            Round = "tbd",
+            EventId = eventId
+        };
+        var dbReplay = await context.Replays.FirstOrDefaultAsync(f => f.ReplayHash == replay.ReplayHash);
+        if (dbReplay is not null)
+        {
+            dbReplay.ReplayEvent = replayEvent;
+            dbReplay.FileName = replay.FileName ?? string.Empty;
+            context.ReplayEvents.Add(replayEvent);
+            await context.SaveChangesAsync();
+        }
     }
 
     private (string, string) GetTeamNames(string path)
