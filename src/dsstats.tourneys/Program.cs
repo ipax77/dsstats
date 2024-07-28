@@ -123,7 +123,9 @@ class Program
                 continue;
             }
 
-            var replay = await context.Replays.FirstOrDefaultAsync(f => f.ReplayHash == replayInfo.ReplayHash);
+            var replay = await context.Replays
+                .Include(i => i.ReplayPlayers)
+                .FirstOrDefaultAsync(f => f.ReplayHash == replayInfo.ReplayHash);
 
             if (replay is null)
             {
@@ -134,7 +136,7 @@ class Program
             // 1v1
             string winnerTeam = replay.ReplayPlayers.Where(x => x.Team == replay.WinnerTeam).FirstOrDefault()?.Name ?? "";
             string runnerTeam = replay.ReplayPlayers.Where(x => x.Team != replay.WinnerTeam).FirstOrDefault()?.Name ?? "";
-            var groupName = Path.GetFileName(Path.GetDirectoryName(replayInfo.DecodePath));
+            var groupName = Path.GetFileName(Path.GetDirectoryName(replayInfo.TourneyPath));
             ReplayEvent replayEvent = new()
             {
                 WinnerTeam = winnerTeam,
