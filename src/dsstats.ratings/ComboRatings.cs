@@ -32,7 +32,7 @@ public partial class ComboRatings(ReplayContext context, IOptions<DbImportOption
         await context.SaveChangesAsync();
     }
 
-    public async Task CombineDsstatsSc2ArcadeReplays()
+    public async Task CombineDsstatsSc2ArcadeReplays(bool add = true)
     {
         Stopwatch sw = Stopwatch.StartNew();
         DsstatsCalcRequest dsstatsRequest = new()
@@ -44,8 +44,8 @@ public partial class ComboRatings(ReplayContext context, IOptions<DbImportOption
         };
         HashSet<int> matchedArcadeIds = [];
         matchesInfo = await GetProcessedReplayIds();
-        dsstatsRequest.Imported = matchesInfo.LatestUpdate == DateTime.MinValue ? DateTime.MinValue
-            : matchesInfo.LatestUpdate.AddDays(-0.5);
+        dsstatsRequest.Imported = matchesInfo.LatestUpdate == DateTime.MinValue || add == false ? DateTime.MinValue
+            : matchesInfo.LatestUpdate.AddDays(-2);
         int matches = 0;
         var dsstatsReplays = await GetComboDsstatsCalcDtos(dsstatsRequest, context);
         int dsstatsReplaysCount = dsstatsReplays.Count;
