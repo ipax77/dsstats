@@ -100,7 +100,7 @@ class Program
             {
                 logger.LogInformation("CombineDsstatsSc2ArcadeReplays");
                 var comboRatings = scope.ServiceProvider.GetRequiredService<ComboRatings>();
-                comboRatings.CombineDsstatsSc2ArcadeReplays().Wait();
+                comboRatings.CombineDsstatsSc2ArcadeReplays(add: false).Wait();
             }
             else
             {
