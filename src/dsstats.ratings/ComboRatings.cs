@@ -60,6 +60,10 @@ public partial class ComboRatings(ReplayContext context, IOptions<DbImportOption
 
             foreach (var dsstatsReplay in dsstatsReplays)
             {
+                if (dsstatsReplay.ReplayId == 625546)
+                {
+                    logger.LogWarning("indahouse");
+                }
                 var arcadeReplay = await FindSc2ArcadeReplay(dsstatsReplay, matchedArcadeIds);
                 if (arcadeReplay is not null)
                 {

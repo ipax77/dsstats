@@ -220,25 +220,6 @@ public record PlayerSuccess
     public double Winrate => Games == 0 ? 0 : Math.Round(Wins * 100.0 / (double)Games, 2);
 }
 
-public record PlayerId
-{
-    public PlayerId()
-    {
-
-    }
-
-    public PlayerId(int regionId, int realmId, int profileId)
-    {
-        RegionId = regionId;
-        RealmId = realmId;
-        ProfileId = profileId;
-    }
-
-    public int RegionId { get; set; }
-    public int RealmId { get; set; }
-    public int ProfileId { get; set; }
-}
-
 public record LobbyHistoryResponse
 {
     public ResponsePage Page { get; set; } = new();

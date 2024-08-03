@@ -9,4 +9,5 @@ public interface IImportService
     Task<ImportResult> Import(List<ReplayDto> replayDtos, List<PlayerId>? uploaderPlayerIds = null);
     Task Init();
     Task SetPreRatings();
+    Task FixArcadePlayers();
 }
