@@ -264,4 +264,105 @@ public partial class ImportService : IImportService
         }
         return upgradeId;
     }
+
+    public async Task FixArcadePlayers()
+    {
+        if (!IsInit)
+        {
+            await Init();
+        }
+        await importSs.WaitAsync();
+
+        try
+        {
+            using var scope = serviceProvider.CreateAsyncScope();
+            var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+            DateTime fromDate = new DateTime(2024, 07, 21);
+            var arcadeReplayPlayers = await context.ArcadeReplayDsPlayers
+                .Include(i => i.Player)
+                .Where(x => x.ArcadeReplay!.CreatedAt > fromDate)
+                .ToListAsync();
+
+            HashSet<int> deletePlayerIds = [];
+            Dictionary<PlayerId, KeyValuePair<string, int>> toCreatePlayers = [];
+            Dictionary<int, int> wrongCorrectedPlayerIdsMap = [];
+
+            var players = arcadeReplayPlayers.Select(s => s.Player!).Distinct().ToList();
+
+            foreach (var player in players)
+            {
+                if (player.ToonId > 3 && player.RegionId < 5)
+                {
+                    continue;
+                }
+                deletePlayerIds.Add(player.PlayerId);
+                PlayerId correctedPlayerId = new(player.RegionId, player.RealmId, player.ToonId);
+                if (PlayerIds.TryGetValue(correctedPlayerId, out int dsPlayerId))
+                {
+                    wrongCorrectedPlayerIdsMap[player.PlayerId] = dsPlayerId;
+                }
+                else
+                {
+                    toCreatePlayers.Add(correctedPlayerId, new(player.Name, player.PlayerId));
+                }
+            }
+            await CreatePlayersAndUpdateMap(toCreatePlayers, wrongCorrectedPlayerIdsMap, context);
+
+            foreach (var arcadeReplayPlayer in arcadeReplayPlayers)
+            {
+                if (wrongCorrectedPlayerIdsMap.TryGetValue(arcadeReplayPlayer.Player!.PlayerId, out int correctedPlayerId))
+                {
+                    arcadeReplayPlayer.Player = null;
+                    arcadeReplayPlayer.PlayerId = correctedPlayerId;
+                }
+            }
+            await context.SaveChangesAsync();
+
+            await DeletePlayers(deletePlayerIds);
+
+        }
+        finally
+        {
+            importSs.Release();
+        }
+    }
+
+    private async Task DeletePlayers(ICollection<int> playerIds)
+    {
+        logger.LogWarning("deleting wrong players {count}", playerIds.Count);
+        using var scope = serviceProvider.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+
+        await context.Players
+            .Where(x => playerIds.Contains(x.PlayerId))
+            .ExecuteDeleteAsync();
+    }
+
+    private async Task CreatePlayersAndUpdateMap(Dictionary<PlayerId, KeyValuePair<string, int>> toCreatePlayers,
+                                     Dictionary<int, int> wrongCorrectedPlayerIdsMap,
+                                     ReplayContext context)
+    {
+        logger.LogWarning("creating corrected players {count}", toCreatePlayers.Count);
+        List<Player> players = [];
+        foreach (var ent in toCreatePlayers)
+        {
+            players.Add(new()
+            {
+                ToonId = ent.Key.ToonId,
+                RegionId = ent.Key.RegionId,
+                RealmId = ent.Key.RealmId,
+                Name = ent.Value.Key
+            });
+        }
+        context.Players.AddRange(players);
+        await context.SaveChangesAsync();
+        foreach (var player in players)
+        {
+            var playerId = new PlayerId(player.ToonId, player.RealmId, player.RegionId);
+            PlayerIds[playerId] = player.PlayerId;
+            int wrongId = toCreatePlayers[playerId].Value;
+            wrongCorrectedPlayerIdsMap[wrongId] = player.PlayerId;
+        }
+    }
 }

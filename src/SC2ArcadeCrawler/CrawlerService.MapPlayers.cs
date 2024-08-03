@@ -1,8 +1,7 @@
 ﻿using dsstats.db8;
 using dsstats.shared.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using dsstats.shared;
 
 namespace pax.dsstats.web.Server.Services.Arcade;
 
@@ -21,9 +20,8 @@ public partial class CrawlerService
                 {
                     continue;
                 }
-                int playerId = await importService.GetPlayerIdAsync(new(replayDsPlayer.Player.RegionId,
-                    replayDsPlayer.Player.RealmId,
-                    replayDsPlayer.Player.ToonId),
+                PlayerId dsplayerId = new(replayDsPlayer.Player.ToonId, replayDsPlayer.Player.RealmId, replayDsPlayer.Player.RegionId);
+                int playerId = await importService.GetPlayerIdAsync(dsplayerId,
                 replayDsPlayer.Name);
                 replayDsPlayer.Player = null;
                 replayDsPlayer.PlayerId = playerId;
