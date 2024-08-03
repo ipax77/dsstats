@@ -172,9 +172,6 @@ authContext.Database.Migrate();
 
 if (app.Environment.IsProduction())
 {
-    var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
-    importService.FixArcadePlayers().Wait();
-
     var uploadSerivce = scope.ServiceProvider.GetRequiredService<UploadService>();
     uploadSerivce.ImportInit();
 
@@ -183,10 +180,8 @@ if (app.Environment.IsProduction())
 }
 else
 {
-    // var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
-    // importService.FixArcadePlayers().Wait();
-    var comboRatings = scope.ServiceProvider.GetRequiredService<ComboRatings>();
-    comboRatings.CombineDsstatsSc2ArcadeReplays(add: false).Wait();
+    //var comboRatings = scope.ServiceProvider.GetRequiredService<ComboRatings>();
+    //comboRatings.CombineDsstatsSc2ArcadeReplays(add: false).Wait();
 }
 
 app.UseRateLimiter();
