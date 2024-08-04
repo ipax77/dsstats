@@ -19,7 +19,8 @@ public partial class TourneysService(ReplayContext context, IServiceScopeFactory
                 EventGuid = s.EventGuid,
                 EventStart = s.EventStart,
                 GameMode = s.GameMode,
-                WinnerTeam = s.WinnerTeam
+                WinnerTeam = s.WinnerTeam,
+                ExternalLink = s.ExternalLink,
             }).ToListAsync();
     }
 

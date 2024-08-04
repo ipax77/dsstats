@@ -133,6 +133,8 @@ public class Event
     public DateTime EventStart { get; set; }
     public string? WinnerTeam { get; set; }
     public GameMode GameMode { get; set; }
+    [MaxLength(200)]
+    public string ExternalLink { get; set; } = string.Empty;
     public virtual ICollection<ReplayEvent> ReplayEvents { get; set; }
 }
 

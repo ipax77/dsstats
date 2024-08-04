@@ -5,7 +5,7 @@
 @inject ITourneysService tourneysService
 
 <CascadingValue Value="statsRequest">
-    <TourneyStatsRequestComponent OnFieldChanged="LoadStats"></TourneyStatsRequestComponent>
+    <TourneyStatsRequestComponent OnFieldChanged="e => LoadStats(e)"></TourneyStatsRequestComponent>
 </CascadingValue>
 
 @if (statsResponse == null)
@@ -102,15 +102,18 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadStats(statsRequest);
+        await LoadStats(statsRequest, true);
         await base.OnInitializedAsync();
     }
 
 
-    private async Task LoadStats(TourneysStatsRequest request)
+    private async Task LoadStats(TourneysStatsRequest request, bool isInit = false)
     {
         statsResponse = await tourneysService.GetTourneyStats(request, default);
-        await OnRequestChanged.InvokeAsync(request);
+        if (!isInit)
+        {
+            await OnRequestChanged.InvokeAsync(request);
+        }
         await InvokeAsync(() => StateHasChanged());
     }
 
