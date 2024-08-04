@@ -67,7 +67,7 @@ class Program
 
         var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
 
-        crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-2), default).Wait();
+        crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-1), default).Wait();
         // crawlerService.GetLobbyHistory(new DateTime(2021, 2, 1), default).Wait();
 
         Console.WriteLine("done.");
