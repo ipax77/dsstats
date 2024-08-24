@@ -32,7 +32,7 @@ builder.Services.AddOptions();
 
 builder.Services.AddChartJs(options =>
 {
-    options.ChartJsLocation = "/_content/dsstats.razorlib/js/chart.js";
+    options.ChartJsLocation = "/_content/dsstats.razorlib/js/chart.umd.js";
     options.ChartJsPluginDatalabelsLocation = "/_content/dsstats.razorlib/js/chartjs-plugin-datalabels.js";
 });
 builder.Services.AddBlazoredLocalStorage();
