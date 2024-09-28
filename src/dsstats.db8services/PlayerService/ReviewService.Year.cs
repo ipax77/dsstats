@@ -8,21 +8,21 @@ public partial class ReviewService
 {
     public async Task<ReviewYearResponse> GetYearReview(RatingType ratingType, int year, CancellationToken token = default)
     {
-        var memKey = $"review2023{ratingType}{year}";
+        var memKey = $"review{ratingType}{year}";
 
         if (!memoryCache.TryGetValue(memKey, out ReviewYearResponse? response)
             || response is null)
         {
-            (var longestReplay, var mostCompetitiveReplay) = await GetLongestAndMostCompetitiveYearReplayHash(year, token);
+            (var longestReplay, var mostCompetitiveReplay) = await GetLongestAndMostCompetitiveYearReplayHash(ratingType, year, token);
 
             response = new()
             {
                 RatingType = ratingType,
-                TotalGames = await GetYearTotalGames(year, token),
+                TotalGames = await GetYearTotalGames(ratingType, year, token),
                 CommanderInfos = await GetYearCommandersPlayed(ratingType, year, token),
                 LongestReplay = longestReplay,
                 MostCompetitiveReplay = mostCompetitiveReplay,
-                GreatestComebackReplay = await GetGreatestComebackYearReplayHash(year, token),
+                GreatestComebackReplay = await GetGreatestComebackYearReplayHash(ratingType, year, token),
             };
 
             memoryCache.Set(memKey, response, TimeSpan.FromHours(24));
@@ -32,28 +32,18 @@ public partial class ReviewService
 
     public async Task<ReviewYearResponse> GetYearRatingTypeReview(RatingType ratingType, int year, CancellationToken token = default)
     {
-        var memkey = $"reviewRatingType2023{ratingType}{year}";
-
-        if (!memoryCache.TryGetValue(memkey, out ReviewYearResponse? response)
-            || response is null)
-        {
-            response = new()
-            {
-                RatingType = ratingType,
-                CommanderInfos = await GetYearCommandersPlayed(ratingType, year, token),
-            };
-
-            memoryCache.Set(memkey, response, TimeSpan.FromHours(24));
-        }
-        return response;
+        return await GetYearReview(ratingType, year, token);
     }
 
-    private async Task<int> GetYearTotalGames(int year, CancellationToken token)
+    private async Task<int> GetYearTotalGames(RatingType ratingType, int year, CancellationToken token)
     {
         (var fromDate, var toDate) = GetFromTo(year);
+        bool withoutRating = ratingType == RatingType.None;
 
         return await context.Replays
-            .Where(x => x.GameTime >= fromDate && x.GameTime < toDate)
+            .Where(x => x.GameTime >= fromDate
+                && x.GameTime < toDate
+                && (withoutRating || (x.ReplayRatingInfo != null && x.ReplayRatingInfo.RatingType == ratingType)))
             .CountAsync(token);
     }
 
@@ -107,15 +97,22 @@ public partial class ReviewService
         return data;
     }
 
-    private async Task<(string?, string?)> GetLongestAndMostCompetitiveYearReplayHash(int year, CancellationToken token)
+    private async Task<(string?, string?)> GetLongestAndMostCompetitiveYearReplayHash(RatingType ratingType, int year, CancellationToken token)
     {
         (var fromDate, var toDate) = GetFromTo(year);
 
-        var query = from r in context.Replays
-                    from rp in r.ReplayPlayers
-                    where r.GameTime >= fromDate && r.GameTime < toDate
-                     && r.DefaultFilter
-                    select r;
+        var query = ratingType == RatingType.None ?
+            from r in context.Replays
+            from rp in r.ReplayPlayers
+            where r.GameTime >= fromDate && r.GameTime < toDate
+             && r.DefaultFilter
+            select r
+            : from r in context.Replays
+              from rp in r.ReplayPlayers
+              where r.GameTime >= fromDate && r.GameTime < toDate
+               && r.DefaultFilter
+               && (r.ReplayRatingInfo != null && r.ReplayRatingInfo.RatingType == ratingType)
+              select r;
 
         var longestReplay = await query.OrderByDescending(o => o.Duration)
             .Select(s => s.ReplayHash)
@@ -128,15 +125,22 @@ public partial class ReviewService
         return (longestReplay, mostCompetitiveReplay);
     }
 
-    private async Task<string?> GetGreatestComebackYearReplayHash(int year, CancellationToken token)
+    private async Task<string?> GetGreatestComebackYearReplayHash(RatingType ratingType, int year, CancellationToken token)
     {
         (var fromDate, var toDate) = GetFromTo(year);
 
-        var query = from r in context.Replays
-                    from rp in r.ReplayPlayers
-                    where r.GameTime >= fromDate && r.GameTime < toDate
-                     && r.DefaultFilter
-                    select rp;
+        var query = ratingType == RatingType.None ?
+            from r in context.Replays
+            from rp in r.ReplayPlayers
+            where r.GameTime >= fromDate && r.GameTime < toDate
+             && r.DefaultFilter
+            select rp
+            : from r in context.Replays
+              from rp in r.ReplayPlayers
+              where r.GameTime >= fromDate && r.GameTime < toDate
+                  && r.DefaultFilter
+                  && (r.ReplayRatingInfo != null && r.ReplayRatingInfo.RatingType == ratingType)
+              select rp;
 
         var infos = from rp in query
                     where rp.PlayerResult == PlayerResult.Win

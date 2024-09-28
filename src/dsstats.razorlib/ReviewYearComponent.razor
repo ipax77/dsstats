@@ -124,29 +124,20 @@
     {
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
-        if (review is null)
-        {
-            review = await reviewService.GetYearReview(ratingType, Year);
-        }
-        else
-        {
-            var reviewInfo = await reviewService.GetYearRatingTypeReview(ratingType, Year);
-            review.RatingType = ratingType;
-            review.CommanderInfos = reviewInfo.CommanderInfos;
-        }
+        review = await reviewService.GetYearReview(ratingType, Year);
         countChart?.ResetChart(GetCountResponse());
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
 
-        if (longestReplay is null && review.LongestReplay is not null)
+        if (review.LongestReplay != null && longestReplay?.ReplayHash != review.LongestReplay)
         {
             longestReplay = await replaysService.GetReplay(review.LongestReplay);
         }
-        if (mostCompetivieReplay is null && review.MostCompetitiveReplay is not null)
+        if (review.MostCompetitiveReplay != null && mostCompetivieReplay?.ReplayHash != review.MostCompetitiveReplay)
         {
             mostCompetivieReplay = await replaysService.GetReplay(review.MostCompetitiveReplay);
         }
-        if (greatestComebackReplay is null && review.GreatestComebackReplay is not null)
+        if (review.GreatestComebackReplay != null && greatestComebackReplay?.ReplayHash != review.GreatestComebackReplay)
         {
             greatestComebackReplay = await replaysService.GetReplay(review.GreatestComebackReplay);
         }

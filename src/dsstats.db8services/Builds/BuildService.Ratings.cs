@@ -21,13 +21,13 @@ public partial class BuildService
                          from su in sp.Units
                          where rp.Race == request.Interest
                           && rp.Replay.GameTime >= start
-                          && (noEnd ? true : rp.Replay.GameTime < end)
+                          && (noEnd || rp.Replay.GameTime < end)
                           && rr.LeaverType == LeaverType.None
                           && ratingTypes.Contains(rr.RatingType)
                           && sp.Breakpoint == request.Breakpoint
-                          && (request.Versus == Commander.None ? true : rp.OppRace == request.Versus)
-                          && (request.FromRating <= Data.MinBuildRating ? true : cpr.Rating > request.FromRating)
-                          && (request.ToRating >= Data.MaxBuildRating ? true : cpr.Rating < request.ToRating)
+                          && (request.Versus == Commander.None || rp.OppRace == request.Versus)
+                          && (request.FromRating <= Data.MinBuildRating || cpr.Rating > request.FromRating)
+                          && (request.ToRating >= Data.MaxBuildRating || cpr.Rating < request.ToRating)
                          group su by new { su.UnitId, su.Unit.Name } into g
                          select new
                          {
