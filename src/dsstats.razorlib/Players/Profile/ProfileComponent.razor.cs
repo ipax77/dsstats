@@ -227,7 +227,7 @@ public partial class ProfileComponent : ComponentBase
 
     private void ShowReview()
     {
-        NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters("review/2023",
+        NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters("review/2024",
         new Dictionary<string, object?>()
             {
                             {"PlayerId", Data.GetPlayerIdString(PlayerId) },

@@ -1,19 +1,46 @@
 ﻿@using dsstats.shared
 @using dsstats.razorlib.Builds
-@page "/review/2023"
+@using dsstats.razorlib.Stats
+@page "/review/{year}"
+@layout StatsLayout
+@inject NavigationManager NavigationManager
 
-<PageTitle>dsstats - review 2023 @(RequestName is null ? "" : RequestName.Name)</PageTitle>
+<PageTitle>dsstats - review @year @(RequestName is null ? "" : RequestName.Name)</PageTitle>
 
-<div class="">
-    <button type="button" class="btn btn-outline-warning" @onclick="e => addPlayersModal?.Show(shared.RatingType.Cmdr)">Select Player Review</button>
+<div class="row">
+    <div class="col-auto">
+        <button type="button" class="btn btn-outline-warning" @onclick="e => addPlayersModal?.Show(shared.RatingType.Cmdr)">Select Player Review</button>
+    </div>
+    <div class="col-auto">
+        <form @formname="reviewyearselect">
+            <fieldset>
+                <div>
+                    <select class="form-select" id="yearSelect" @onchange="YearChanged">
+                        @foreach (var selectYear in selectYears)
+                        {
+                            @if (selectYear == year)
+                            {
+                                <option value="@selectYear" selected>@selectYear</option>
+                            }
+                            else
+                            {
+                                <option value="@selectYear">@selectYear</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </fieldset>
+        </form>
+    </div>
 </div>
+
 @if (RequestName is null)
 {
-    <dsstats.razorlib.ReviewYearComponent Year="2023" />
+    <dsstats.razorlib.ReviewYearComponent Year="@year" />
 }
 else
 {
-    <dsstats.razorlib.Players.Profile.ReviewComponent @ref="reviewComponent" RequestName="RequestName" Year="2023" OnCloseRequested="Close" />
+    <dsstats.razorlib.Players.Profile.ReviewComponent @ref="reviewComponent" RequestName="RequestName" Year="@year" OnCloseRequested="Close" />
 }
 
 <AddPlayersModal @ref="addPlayersModal" OnPlayersSelected="AddPlayers" SinglePlayer="true" />
@@ -31,12 +58,24 @@ else
     [SupplyParameterFromQuery]
     public string? RatingType { get; set; }
 
+    [Parameter]
+    public string? Year { get; set; }
+
     private RequestNames? RequestName;
     AddPlayersModal? addPlayersModal;
     dsstats.razorlib.Players.Profile.ReviewComponent? reviewComponent;
+    private int year = 2024;
+    List<int> selectYears = [];
 
     protected override void OnInitialized()
     {
+        int currentYear = DateTime.Today.Year;
+        int startYear = 2022;
+        for (int i = currentYear; i >= startYear; i--)
+        {
+            selectYears.Add(i);
+        }
+
         SetRequest();
         base.OnInitialized();
     }
@@ -51,6 +90,15 @@ else
                 RequestName = new(Name ?? "", playerId.ToonId, playerId.RegionId, playerId.RealmId);
             }
         }
+        if (int.TryParse(Year, out var yearparam))
+        {
+            year = yearparam;
+        }
+        else
+        {
+            year = DateTime.Today.Year;
+        }
+
     }
 
     private void AddPlayers(List<RequestNames> players)
@@ -60,6 +108,28 @@ else
             RequestName = players.First();
             reviewComponent?.Update(RequestName);
             InvokeAsync(() => StateHasChanged());
+        }
+    }
+
+    private void YearChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var selectYear))
+        {
+            if (RequestName is null)
+            {
+                NavigationManager.NavigateTo($"review/{selectYear}", true);
+            }
+            else
+            {
+                PlayerId playerId = new(RequestName.ToonId, RequestName.RealmId, RequestName.RegionId);
+                NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters($"review/{selectYear}",
+                    new Dictionary<string, object?>()
+                                            {
+                                            {"PlayerId", Data.GetPlayerIdString(playerId) },
+                                            {"Name", RequestName.Name }
+                                            }
+                    ), true);
+            }
         }
     }
 

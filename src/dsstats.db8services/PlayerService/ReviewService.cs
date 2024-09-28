@@ -11,45 +11,32 @@ public partial class ReviewService(ReplayContext context, IMemoryCache memoryCac
 {
     public async Task<ReviewResponse> GetReview(ReviewRequest request, CancellationToken token = default)
     {
-        PlayerId playerId = new(request.RequestName.ToonId, request.RequestName.RealmId, request.RequestName.RegionId);
-        int year = 2023;
-        RatingType ratingType = request.RatingType;
+        var memKey = $"reviewpl{request.Year}{request.RatingType}{request.RequestName.Name}{request.RequestName.ToonId}|{request.RequestName.RealmId}|{request.RequestName.RegionId}";
 
-        var isUploader = await IsUploader(playerId);
-
-        if (!isUploader)
+        if (!memoryCache.TryGetValue(memKey, out ReviewResponse? response)
+            || response is null)
         {
-            return new()
-            {
-                IsUploader = false
-            };
+            response = await ProduceReview(request, token);
+            memoryCache.Set(memKey, response, TimeSpan.FromHours(24));
         }
-
-        (var winStreak, var losStreak) = await GetLongestStreak(playerId, token);
-        var cmdrsPlayed = await GetPlayerIdCommandersPlayed(playerId, ratingType, year, token);
-        var ratingInfos = await GetPlayerRatingChartData(playerId, ratingType, year, token);
-        (var longestReplay, var mostCompetitiveReplay) = await GetLongestAndMostCompetitiveReplayHash(playerId, year, token);
-
-        return new()
-        {
-            RatingType = request.RatingType,
-            TotalGames = await GetTotalGames(playerId, year, token),
-            LongestWinStreak = winStreak,
-            LongestLosStreak = losStreak,
-            CommanderInfos = cmdrsPlayed,
-            RatingInfos = ratingInfos,
-            LongestReplay = longestReplay,
-            MostCompetitiveReplay = mostCompetitiveReplay,
-            GreatestComebackReplay = await GetGreatestComebackReplayHash(playerId, year, token),
-            IsUploader = true
-        };
+        return response;
     }
 
     public async Task<ReviewResponse> GetReviewRatingTypeInfo(ReviewRequest request, CancellationToken token = default)
     {
-        PlayerId playerId = new(request.RequestName.ToonId, request.RequestName.RealmId, request.RequestName.RegionId);
-        int year = 2023;
+        return await GetReview(request, token);
+    }
+
+    private async Task<ReviewResponse> ProduceReview(ReviewRequest request, CancellationToken token = default)
+    {
         RatingType ratingType = request.RatingType;
+
+        var playerId = await context.Players
+            .Where(x => x.ToonId == request.RequestName.ToonId
+                && x.RealmId == request.RequestName.RealmId
+                && x.RegionId == request.RequestName.RegionId)
+            .Select(s => s.PlayerId)
+            .FirstOrDefaultAsync(token);
 
         var isUploader = await IsUploader(playerId);
 
@@ -61,109 +48,36 @@ public partial class ReviewService(ReplayContext context, IMemoryCache memoryCac
             };
         }
 
-        var cmdrsPlayed = await GetPlayerIdCommandersPlayed(playerId, ratingType, year, token);
-        var ratingInfos = await GetPlayerRatingChartData(playerId, ratingType, year, token);
-        return new()
+        var ratingInfos = await GetPlayerRatingChartData(playerId, ratingType, request.Year, token);
+        (var longestReplay, var mostCompetitiveReplay) = await GetLongestAndMostCompetitiveReplayHash(playerId, ratingType, request.Year, token);
+
+        ReviewResponse response = new()
         {
             RatingType = request.RatingType,
-            CommanderInfos = cmdrsPlayed,
             RatingInfos = ratingInfos,
+            LongestReplay = longestReplay,
+            MostCompetitiveReplay = mostCompetitiveReplay,
+            GreatestComebackReplay = await GetGreatestComebackReplayHash(playerId, ratingType, request.Year, token),
             IsUploader = true
         };
+        await SetLongestStreaks(playerId, ratingType, request.Year, response, token);
+        return response;
     }
 
-    private async Task<bool> IsUploader(PlayerId playerId)
+    private async Task<bool> IsUploader(int playerId)
     {
+        if (playerId == 0)
+        {
+            return false;
+        }
         var uploaderId = await context.Players
-            .Where(x => x.ToonId == playerId.ToonId
-                && x.RealmId == playerId.RealmId
-                && x.RegionId == playerId.RegionId)
+            .Where(x => x.PlayerId == playerId)
             .Select(s => s.UploaderId)
             .FirstOrDefaultAsync();
-
         return uploaderId > 0;
     }
 
-    private async Task<int> GetTotalGames(PlayerId playerId, int year, CancellationToken token)
-    {
-        (var fromDate, var toDate) = GetFromTo(year);
-
-        var query = from p in context.Players
-                    from rp in p.ReplayPlayers
-                    join r in context.Replays on rp.ReplayId equals r.ReplayId
-                    where r.GameTime >= fromDate && r.GameTime < toDate
-                     && p.ToonId == playerId.ToonId
-                     && p.RealmId == playerId.RealmId
-                     && p.RegionId == playerId.RegionId
-                    select r;
-        return await query.CountAsync(token);
-    }
-
-    private async Task<int> GetWinStreak(PlayerId playerId, int year, CancellationToken token)
-    {
-        (var fromDate, var toDate) = GetFromTo(year);
-
-        var query = from p in context.Players
-                    from rp in p.ReplayPlayers
-                    join r in context.Replays on rp.ReplayId equals r.ReplayId
-                    where r.GameTime >= fromDate && r.GameTime < toDate
-                     && p.ToonId == playerId.ToonId
-                     && p.RealmId == playerId.RealmId
-                     && p.RegionId == playerId.RegionId
-                    select r;
-        return await query.CountAsync(token);
-    }
-
-    private async Task<List<CommanderReviewInfo>> GetPlayerIdCommandersPlayed(PlayerId playerId,
-                                                                              RatingType ratingType,
-                                                                              int year,
-                                                                              CancellationToken token)
-    {
-        (var fromDate, var toDate) = GetFromTo(year);
-
-        IQueryable<CommanderReviewInfo> query;
-
-        if (ratingType == RatingType.None)
-        {
-            query = from p in context.Players
-                    from rp in p.ReplayPlayers
-                    join r in context.Replays on rp.ReplayId equals r.ReplayId
-                    where r.GameTime >= fromDate && r.GameTime < toDate
-                     && r.ReplayRatingInfo == null
-                     && p.ToonId == playerId.ToonId
-                     && p.RealmId == playerId.RealmId
-                     && p.RegionId == playerId.RegionId
-                    group new { rp } by new { rp.Race } into g
-                    orderby g.Count() descending
-                    select new CommanderReviewInfo()
-                    {
-                        Cmdr = g.Key.Race,
-                        Count = g.Count(),
-                    };
-        }
-        else
-        {
-            query = from p in context.Players
-                    from rp in p.ReplayPlayers
-                    join r in context.Replays on rp.ReplayId equals r.ReplayId
-                    join rr in context.ReplayRatings on rp.ReplayId equals rr.ReplayId
-                    where r.GameTime >= fromDate && r.GameTime < toDate
-                     && rr.RatingType == ratingType
-                     && p.ToonId == playerId.ToonId
-                     && p.RealmId == playerId.RealmId
-                     && p.RegionId == playerId.RegionId
-                    group new { rp } by new { rp.Race } into g
-                    orderby g.Count() descending
-                    select new CommanderReviewInfo()
-                    {
-                        Cmdr = g.Key.Race,
-                        Count = g.Count(),
-                    };
-        }
-        return await query.ToListAsync(token);
-    }
-
-    private async Task<List<ReplayPlayerReviewDto>> GetPlayerRatingChartData(PlayerId playerId,
+    private async Task<List<ReplayPlayerReviewDto>> GetPlayerRatingChartData(int playerId,
                                                                              RatingType ratingType,
                                                                              int year,
                                                                              CancellationToken token)
@@ -179,17 +93,14 @@ public partial class ReviewService(ReplayContext context, IMemoryCache memoryCac
 
         if ((int)ratingType >= 3)
         {
-            query = from p in context.Players
-                    from rp in p.ReplayPlayers
+            query = from rp in context.ReplayPlayers
                     join r in context.Replays on rp.ReplayId equals r.ReplayId
                     join rr in context.ReplayRatings on r.ReplayId equals rr.ReplayId
                     join rpr in context.RepPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
                     where r.GameTime >= fromDate
                      && r.GameTime < toDate
                      && rr.RatingType == ratingType
-                     && p.ToonId == playerId.ToonId
-                     && p.RealmId == playerId.RealmId
-                     && p.RegionId == playerId.RegionId
+                     && rp.PlayerId == playerId
                     group new { r, rpr } by new { r.GameTime.Year, r.GameTime.Month, r.GameTime.Day } into g
                     select new ReplayPlayerReviewDto()
                     {
@@ -203,17 +114,14 @@ public partial class ReviewService(ReplayContext context, IMemoryCache memoryCac
         }
         else
         {
-            query = from p in context.Players
-                    from rp in p.ReplayPlayers
+            query = from rp in context.ReplayPlayers
                     join r in context.Replays on rp.ReplayId equals r.ReplayId
                     join rr in context.ComboReplayRatings on r.ReplayId equals rr.ReplayId
                     join rpr in context.ComboReplayPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
                     where r.GameTime >= fromDate
                      && r.GameTime < toDate
                      && rr.RatingType == ratingType
-                     && p.ToonId == playerId.ToonId
-                     && p.RealmId == playerId.RealmId
-                     && p.RegionId == playerId.RegionId
+                     && rp.PlayerId == playerId
                     group new { r, rr, rpr } by new { r.GameTime.Year, r.GameTime.Month, r.GameTime.Day } into g
                     select new ReplayPlayerReviewDto()
                     {
@@ -228,49 +136,119 @@ public partial class ReviewService(ReplayContext context, IMemoryCache memoryCac
         return await query.ToListAsync(token);
     }
 
-    private async Task<(int, int)> GetLongestStreak(PlayerId playerId, CancellationToken token)
+    private async Task SetLongestStreaks(int playerId,
+                                         RatingType ratingType,
+                                         int year,
+                                         ReviewResponse response,
+                                         CancellationToken token)
     {
+        (var fromDate, var toDate) = GetFromTo(year);
         try
         {
-            var id = await context.Players
-                .Where(x => x.ToonId == playerId.ToonId
-                    && x.RealmId == playerId.RealmId
-                    && x.RegionId == playerId.RegionId)
-                .Select(s => s.PlayerId)
-                .FirstOrDefaultAsync();
+            var replayInfos = ratingType == RatingType.None
+                ? from r in context.Replays
+                  from rp in r.ReplayPlayers
+                  where rp.PlayerId == playerId
+                    && r.GameTime >= fromDate
+                    && r.GameTime < toDate
+                  orderby r.GameTime
+                  select new { rp.PlayerResult, rp.Race, r.Duration }
+                : from r in context.Replays
+                  from rp in r.ReplayPlayers
+                  where rp.PlayerId == playerId
+                      && r.GameTime >= fromDate
+                      && r.GameTime < toDate
+                      && (r.ComboReplayRating != null && r.ComboReplayRating.RatingType == ratingType)
+                  orderby r.GameTime
+                  select new { rp.PlayerResult, rp.Race, r.Duration };
 
-            if (id == 0)
+
+            var results = await replayInfos.ToListAsync(token);
+
+            int winStreak = 0;
+            int loseStreak = 0;
+            int currentStreak = 0;
+            long duration = 0;
+            Dictionary<Commander, int> cmdrCounts = [];
+
+            for (int i = 0; i < results.Count; i++)
             {
-                return (0, 0);
-            }
-            var streaks = await context.StreakInfos
-                .FromSql($"CALL GetLongest2023Streak({id});")
-                .ToListAsync(token);
+                var result = results[i];
 
-            (var wins, var loss) = (streaks.FirstOrDefault(f => f.PlayerResult == 1)?.LongestStreak ?? 0,
-                    streaks.FirstOrDefault(f => f.PlayerResult == 2)?.LongestStreak ?? 0);
-            return ((int)wins, (int)loss);
+                duration += result.Duration;
+                if (!cmdrCounts.ContainsKey(result.Race))
+                {
+                    cmdrCounts[result.Race] = 1;
+                }
+                else
+                {
+                    cmdrCounts[result.Race]++;
+                }
+
+                if (result.PlayerResult == PlayerResult.Win)
+                {
+                    if (currentStreak > 0)
+                    {
+                        currentStreak++;
+                        if (currentStreak > winStreak)
+                        {
+                            winStreak = currentStreak;
+                        }
+                    }
+                    else
+                    {
+                        currentStreak = 1;
+                    }
+                }
+                else
+                {
+                    if (currentStreak < 0)
+                    {
+                        currentStreak--;
+                        if (Math.Abs(currentStreak) > loseStreak)
+                        {
+                            loseStreak = Math.Abs(currentStreak);
+                        }
+                    }
+                    else
+                    {
+                        currentStreak = -1;
+                    }
+                }
+            }
+            response.LongestWinStreak = winStreak;
+            response.LongestLosStreak = loseStreak;
+            response.CurrentStreak = currentStreak;
+            response.CommanderInfos = cmdrCounts
+                .Select(s => new CommanderReviewInfo() { Cmdr = s.Key, Count = s.Value, RatingType = ratingType })
+                .ToList();
+            response.Duration = Convert.ToInt32(TimeSpan.FromSeconds(duration).TotalMinutes);
+            response.TotalGames = results.Count;
         }
         catch (Exception ex)
         {
-            logger.LogError("failed setting player rating pos: {error}", ex.Message);
+            logger.LogError("failed getting player streaks: {error}", ex.Message);
         }
-        return (0, 0);
     }
 
-    private async Task<(string?, string?)> GetLongestAndMostCompetitiveReplayHash(PlayerId playerId, int year, CancellationToken token)
+    private async Task<(string?, string?)> GetLongestAndMostCompetitiveReplayHash(int playerId, RatingType ratingType, int year, CancellationToken token)
     {
         (var fromDate, var toDate) = GetFromTo(year);
 
-        var query = from p in context.Players
-                    from rp in p.ReplayPlayers
-                    join r in context.Replays on rp.ReplayId equals r.ReplayId
-                    where r.GameTime >= fromDate && r.GameTime < toDate
-                     && p.ToonId == playerId.ToonId
-                     && p.RealmId == playerId.RealmId
-                     && p.RegionId == playerId.RegionId
-                     && r.DefaultFilter
-                    select r;
+        var query = ratingType == RatingType.None ?
+            from rp in context.ReplayPlayers
+            join r in context.Replays on rp.ReplayId equals r.ReplayId
+            where r.GameTime >= fromDate && r.GameTime < toDate
+             && rp.PlayerId == playerId
+             && r.DefaultFilter
+            select r
+            : from rp in context.ReplayPlayers
+              join r in context.Replays on rp.ReplayId equals r.ReplayId
+              where r.GameTime >= fromDate && r.GameTime < toDate
+               && rp.PlayerId == playerId
+               && r.DefaultFilter
+               && (r.ReplayRatingInfo != null && r.ReplayRatingInfo.RatingType == ratingType)
+              select r;
 
         var longestReplay = await query.OrderByDescending(o => o.Duration)
             .Select(s => s.ReplayHash)
@@ -283,19 +261,24 @@ public partial class ReviewService(ReplayContext context, IMemoryCache memoryCac
         return (longestReplay, mostCompetitiveReplay);
     }
 
-    private async Task<string?> GetGreatestComebackReplayHash(PlayerId playerId, int year, CancellationToken token)
+    private async Task<string?> GetGreatestComebackReplayHash(int playerId, RatingType ratingType, int year, CancellationToken token)
     {
         (var fromDate, var toDate) = GetFromTo(year);
 
-        var query = from p in context.Players
-                    from rp in p.ReplayPlayers
-                    join r in context.Replays on rp.ReplayId equals r.ReplayId
-                    where r.GameTime >= fromDate && r.GameTime < toDate
-                     && p.ToonId == playerId.ToonId
-                     && p.RealmId == playerId.RealmId
-                     && p.RegionId == playerId.RegionId
-                     && r.DefaultFilter
-                    select rp;
+        var query = ratingType == RatingType.None ?
+            from rp in context.ReplayPlayers
+            join r in context.Replays on rp.ReplayId equals r.ReplayId
+            where r.GameTime >= fromDate && r.GameTime < toDate
+             && rp.PlayerId == playerId
+             && r.DefaultFilter
+            select rp
+            : from rp in context.ReplayPlayers
+              join r in context.Replays on rp.ReplayId equals r.ReplayId
+              where r.GameTime >= fromDate && r.GameTime < toDate
+              && rp.PlayerId == playerId
+              && r.DefaultFilter
+              && (r.ReplayRatingInfo != null && r.ReplayRatingInfo.RatingType == ratingType)
+              select rp;
 
         var infos = from rp in query
                     where rp.Replay.DefaultFilter
