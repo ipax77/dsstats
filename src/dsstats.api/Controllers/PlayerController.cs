@@ -164,16 +164,16 @@ public class PlayerController : Controller
     }
 
     [HttpGet]
-    [Route("reviewyear/{ratingType:int}")]
-    public async Task<ActionResult<ReviewYearResponse>> GetYearReview(int ratingType, CancellationToken token)
+    [Route("reviewyear/{ratingType:int}/{year:int}")]
+    public async Task<ActionResult<ReviewYearResponse>> GetYearReview(int ratingType, int year, CancellationToken token)
     {
-        return await reviewService.GetYearReview((RatingType)ratingType, 2023, token);
+        return await reviewService.GetYearReview((RatingType)ratingType, year, token);
     }
 
     [HttpGet]
-    [Route("reviewyearratingtypeinfo/{ratingType:int}")]
-    public async Task<ActionResult<ReviewYearResponse>> GetYearReviewratingtypeinfo(int ratingType, CancellationToken token)
+    [Route("reviewyearratingtypeinfo/{ratingType:int}/{year:int}")]
+    public async Task<ActionResult<ReviewYearResponse>> GetYearReviewratingtypeinfo(int ratingType, int year, CancellationToken token)
     {
-        return await reviewService.GetYearRatingTypeReview((RatingType)ratingType, 2023, token);
+        return await reviewService.GetYearRatingTypeReview((RatingType)ratingType, year, token);
     }
 }

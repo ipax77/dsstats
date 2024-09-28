@@ -45,7 +45,7 @@ public class ReviewService(HttpClient httpClient, ILogger<ReviewService> logger)
     {
         try
         {
-            var response = await httpClient.GetFromJsonAsync<ReviewYearResponse>($"{playerController}/reviewyearratingtypeinfo/{(int)ratingType}");
+            var response = await httpClient.GetFromJsonAsync<ReviewYearResponse>($"{playerController}/reviewyearratingtypeinfo/{(int)ratingType}/{year}");
             return response ?? new();
         }
         catch (Exception ex)
@@ -59,7 +59,7 @@ public class ReviewService(HttpClient httpClient, ILogger<ReviewService> logger)
     {
         try
         {
-            var response = await httpClient.GetFromJsonAsync<ReviewYearResponse>($"{playerController}/reviewyear/{(int)ratingType}");
+            var response = await httpClient.GetFromJsonAsync<ReviewYearResponse>($"{playerController}/reviewyear/{(int)ratingType}/{year}");
             return response ?? new();
         }
         catch (Exception ex)
