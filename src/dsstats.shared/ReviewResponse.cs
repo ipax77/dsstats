@@ -4,14 +4,17 @@ public record ReviewRequest
 {
     public RequestNames RequestName { get; set; } = null!;
     public RatingType RatingType { get; set; }
+    public int Year { get; set; }
 }
 
 public record ReviewResponse
 {
     public RatingType RatingType { get; set; }
     public int TotalGames { get; set; }
+    public int Duration { get; set; }
     public int LongestWinStreak { get; set; }
     public int LongestLosStreak { get; set; }
+    public int CurrentStreak { get; set; }
     public List<CommanderReviewInfo> CommanderInfos { get; set; } = new();
     public List<ReplayPlayerReviewDto> RatingInfos { get; set; } = new();
     public string? LongestReplay { get; set; }

@@ -1,19 +1,21 @@
 ﻿@using dsstats.shared
 @using dsstats.razorlib.Builds
-@page "/review/2023"
+@using dsstats.razorlib.Stats;
+@page "/review/{year}"
+@layout StatsLayout
 
-<PageTitle>dsstats - review 2023 @(RequestName is null ? "" : RequestName.Name)</PageTitle>
+<PageTitle>dsstats - review @year @(RequestName is null ? "" : RequestName.Name)</PageTitle>
 
 <div class="">
     <button type="button" class="btn btn-outline-warning" @onclick="e => addPlayersModal?.Show(shared.RatingType.Cmdr)">Select Player Review</button>
 </div>
 @if (RequestName is null)
 {
-    <dsstats.razorlib.ReviewYearComponent Year="2023" />
+    <dsstats.razorlib.ReviewYearComponent Year="@year" />
 }
 else
 {
-    <dsstats.razorlib.Players.Profile.ReviewComponent @ref="reviewComponent" RequestName="RequestName" Year="2023" OnCloseRequested="Close" />
+    <dsstats.razorlib.Players.Profile.ReviewComponent @ref="reviewComponent" RequestName="RequestName" Year="@year" OnCloseRequested="Close" />
 }
 
 <AddPlayersModal @ref="addPlayersModal" OnPlayersSelected="AddPlayers" SinglePlayer="true" />
@@ -31,9 +33,13 @@ else
     [SupplyParameterFromQuery]
     public string? RatingType { get; set; }
 
+    [Parameter]
+    public string? Year { get; set; }
+
     private RequestNames? RequestName;
     AddPlayersModal? addPlayersModal;
     dsstats.razorlib.Players.Profile.ReviewComponent? reviewComponent;
+    private int year = 2024;
 
     protected override void OnInitialized()
     {
@@ -51,6 +57,15 @@ else
                 RequestName = new(Name ?? "", playerId.ToonId, playerId.RegionId, playerId.RealmId);
             }
         }
+        if (int.TryParse(Year, out var yearparam))
+        {
+            year = yearparam;
+        }
+        else
+        {
+            year = DateTime.Today.Year;
+        }
+
     }
 
     private void AddPlayers(List<RequestNames> players)

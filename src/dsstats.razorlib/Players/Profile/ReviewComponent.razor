@@ -42,9 +42,53 @@
         else
         {
             <div class="mt-2">
-                <h3>@review.TotalGames Games Played</h3>
-                <h4>Longest Win Streak: @review.LongestWinStreak</h4>
-                <h4>Longest Loss Streak: @review.LongestLosStreak</h4>
+                <div class="row">
+                    <div class="col-auto card bg-transparent">
+                        <div class="card-header bgchart2">
+                            Games Played
+                        </div>
+                        <div class="card-body bgchart">
+                            <span class="text-warning">@review.TotalGames.ToString("N0", CultureInfo.InvariantCulture)</span>
+                        </div>
+                    </div>
+                    <div class="col-auto card bg-transparent">
+                        <div class="card-header bgchart2">
+                            Time Played
+                        </div>
+                        <div class="card-body bgchart">
+                            <span class="text-warning">@TimeSpan.FromMinutes(review.Duration).ToString(@"d\.hh\.mm\.ss")</span>
+                        </div>
+                    </div>
+                    <div class="col-auto card bg-transparent">
+                        <div class="card-header bgchart2">
+                            Longest Win Streak
+                        </div>
+                        <div class="card-body bgchart">
+                            <span class="text-warning">@review.LongestWinStreak</span>
+                        </div>
+                    </div>
+                    <div class="col-auto card bg-transparent">
+                        <div class="card-header bgchart2">
+                            Longest Lose Streak
+                        </div>
+                        <div class="card-body bgchart">
+                            <span class="text-warning">@review.LongestLosStreak</span>
+                        </div>
+                    </div>
+                    @if (Year == DateTime.Today.Year && review.CurrentStreak != 0)
+                    {
+                        var textClass = review.CurrentStreak > 0 ? "text-success" : "text-danger";
+                        <div class="col-auto card bg-transparent">
+                            <div class="card-header bgchart2">
+                                Current Streak
+                            </div>
+                            <div class="card-body bgchart">
+
+                                <span class="@textClass">@review.CurrentStreak</span>
+                            </div>
+                        </div>
+                    }
+                </div>
 
                 <div class="mt-1">
                     <form @formname="reviewRatingTypeToggle">
@@ -82,35 +126,38 @@
                     @if (review.RatingInfos.Count > 0)
                     {
                         var typeRatings = GetRatings();
-                        <div class="col-auto mt-1">
-                            <div>
-                                <table class="tptable table table-sm">
-                                    <tbody>
-                                        <tr>
-                                            <td>Top Rating</td>
-                                            <td>@typeRatings.Max(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N0", CultureInfo.InvariantCulture)</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Avg Rating</td>
-                                            <td>@typeRatings.Average(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N0", CultureInfo.InvariantCulture)</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Min Rating</td>
-                                            <td>@typeRatings.Min(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N0", CultureInfo.InvariantCulture)</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                        @if (typeRatings.Count > 0)
+                        {
+                            <div class="col-auto mt-1">
+                                <div>
+                                    <table class="tptable table table-sm">
+                                        <tbody>
+                                            <tr>
+                                                <td>Top Rating</td>
+                                                <td>@typeRatings.Max(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N0", CultureInfo.InvariantCulture)</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Avg Rating</td>
+                                                <td>@typeRatings.Average(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N0", CultureInfo.InvariantCulture)</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Min Rating</td>
+                                                <td>@typeRatings.Min(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N0", CultureInfo.InvariantCulture)</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="bgchart p-1 border border-secondary rounded"
+                                     style="position: relative; width: 30vw; min-width: 600px; max-width: 1200px; height: calc(30vw * 0.5); min-height: 300px; max-height: 600px;">
+                                    <PlayerRatingDetailChart @ref="playerRatingDetailChart" PlayerId="PlayerId"
+                                                             RatingType="review.RatingType"
+                                                             RatingCalcType="RatingCalcType.Dsstats"
+                                                             CurrentRating="0"
+                                                             ChartDtos="typeRatings"
+                                                             WithoutTitle="true" />
+                                </div>
                             </div>
-                            <div class="bgchart p-1 border border-secondary rounded"
-                                 style="position: relative; width: 30vw; min-width: 600px; max-width: 1200px; height: calc(30vw * 0.5); min-height: 300px; max-height: 600px;">
-                                <PlayerRatingDetailChart @ref="playerRatingDetailChart" PlayerId="PlayerId"
-                                                         RatingType="review.RatingType"
-                                                         RatingCalcType="RatingCalcType.Dsstats"
-                                                         CurrentRating="0"
-                                                         ChartDtos="typeRatings"
-                                                         WithoutTitle="true" />
-                            </div>
-                        </div>
+                        }
                     }
                 </div>
             </div>
@@ -184,26 +231,12 @@
     {
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
-        if (review is null)
-        {
-            review = await reviewService.GetReview(new()
-                {
-                    RequestName = RequestName,
-                    RatingType = ratingType
-                });
-        }
-        else
-        {
-            var reviewInfo = await reviewService.GetReviewRatingTypeInfo(new()
-                {
-                    RequestName = RequestName,
-                    RatingType = ratingType
-                });
-            review.RatingType = ratingType;
-            review.CommanderInfos = reviewInfo.CommanderInfos;
-            review.RatingInfos = reviewInfo.RatingInfos;
-            review.IsUploader = reviewInfo.IsUploader;
-        }
+        review = await reviewService.GetReview(new()
+            {
+                RequestName = RequestName,
+                RatingType = ratingType,
+                Year = Year,
+            });
         countChart?.ResetChart(GetCountResponse());
         if (review.RatingInfos.Count > 0)
         {
@@ -212,15 +245,15 @@
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
 
-        if (longestReplay is null && review.LongestReplay is not null)
+        if (review.LongestReplay != null && longestReplay?.ReplayHash != review.LongestReplay)
         {
             longestReplay = await replaysService.GetReplay(review.LongestReplay);
         }
-        if (mostCompetivieReplay is null && review.MostCompetitiveReplay is not null)
+        if (review.MostCompetitiveReplay != null && mostCompetivieReplay?.ReplayHash != review.MostCompetitiveReplay)
         {
             mostCompetivieReplay = await replaysService.GetReplay(review.MostCompetitiveReplay);
         }
-        if (greatestComebackReplay is null && review.GreatestComebackReplay is not null)
+        if (review.GreatestComebackReplay != null && greatestComebackReplay?.ReplayHash != review.GreatestComebackReplay)
         {
             greatestComebackReplay = await replaysService.GetReplay(review.GreatestComebackReplay);
         }
