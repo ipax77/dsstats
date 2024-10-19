@@ -11,11 +11,9 @@ public class DecodeController(DecodeService decodeService, ILogger<DecodeControl
     [Route("upload/{guid}")]
     public async Task<ActionResult<int>> UploadReplays(string guid, [FromForm] List<IFormFile> files)
     {
-        logger.LogInformation("indahouse1 {guid}", guid);
         if (Guid.TryParse(guid, out var fileGuid))
         {
             var queueCount = await decodeService.SaveReplays(fileGuid, files);
-            logger.LogInformation("indahouse2, {count}", queueCount);
             if (queueCount >= 0)
             {
                 return Ok(queueCount);
