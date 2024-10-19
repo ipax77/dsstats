@@ -15,6 +15,7 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
 {
 
     private readonly SemaphoreSlim ss = new(1, 1);
+    private readonly SemaphoreSlim fileSemaphore = new SemaphoreSlim(1, 1);
     private ReplayDecoder? replayDecoder;
     public static readonly string assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
     private int queueCount = 0;
@@ -137,18 +138,21 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
                     "_" +
                     replayDto.ReplayHash +
                     Path.GetExtension(result.ReplayPath));
-                File.Move(result.ReplayPath, destination);
-                var groupId = GetGroupIdFromFilename(result.ReplayPath);
-                var ihReplay = new IhReplay() { Replay = replayDto, Metadata = metaData };
-                replays.AddOrUpdate(groupId, [ihReplay], (k, v) => { v.Add(ihReplay); return v; });
-            }
-
-            if (replays.Count > 0)
-            {
-                // using var scope = scopeFactory.CreateScope();
-                // var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-                // replays.ForEach(f => f.Replay.FileName = string.Empty);
-                // await importService.Import(replays.Select(s => s.Replay).ToList());
+                await fileSemaphore.WaitAsync();
+                try
+                {
+                    if (!File.Exists(destination))
+                    {
+                        File.Move(result.ReplayPath, destination);
+                        var groupId = GetGroupIdFromFilename(result.ReplayPath);
+                        var ihReplay = new IhReplay() { Replay = replayDto, Metadata = metaData };
+                        replays.AddOrUpdate(groupId, [ihReplay], (k, v) => { v.Add(ihReplay); return v; });
+                    }
+                }
+                finally
+                {
+                    fileSemaphore.Release();
+                }
             }
         }
         catch (Exception ex)
