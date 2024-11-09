@@ -20,7 +20,7 @@ namespace MysqlMigrations.Migrations
             // 2. Delete related BonusDamages for those records
             var deleteBonusDamagesSql = @"
                 DELETE bd
-                FROM dsstats.BonusDamages AS bd
+                FROM BonusDamages AS bd
                 INNER JOIN DsWeapons AS dw ON bd.DsWeaponId = dw.DsWeaponId
                 WHERE dw.`Name` = 'Acid Spines' AND dw.`Range` = 7;
             ";
