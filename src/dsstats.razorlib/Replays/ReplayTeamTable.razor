@@ -85,7 +85,7 @@
                         <td>
                             @if (playerRating is not null)
                             {
-                                <span class="bi @(playerRating.RatingChange < 0 ? "bi-arrow-down text-danger"
+                                <span class="p-1 bgchart2 rounded-1 bi @(playerRating.RatingChange < 0 ? "bi-arrow-down text-danger"
                                 : "bi-arrow-up text-success")">
                                     @playerRating.RatingChange.ToString("N1", CultureInfo.InvariantCulture)
                                 </span>
@@ -155,8 +155,10 @@
             <tbody>
                 @foreach (var player in players.OrderBy(o => o.GamePos))
                 {
-                    var trClass = GetPlayerTableRowCss(player);
-                    <tr class="pointer" @onclick="e => RequestBuild(player)">
+                    // var trClass = GetPlayerTableRowCss(player);
+                    var trClass = "";
+                    var trStyle = GetPlayerTableRowStyle(player);
+                    <tr class="pointer" @onclick="e => RequestBuild(player)" style="@trStyle">
                         <td>@player.GamePos</td>
                         <td>
                             @if (ReplayRating is not null)
@@ -166,7 +168,7 @@
 
                                 @if (playerRating is not null)
                                 {
-                                    <span class="bi @(playerRating.RatingChange < 0 ? "bi-arrow-down text-danger"
+                                    <span class="p-1 bgchart2 rounded-1 bi @(playerRating.RatingChange < 0 ? "bi-arrow-down text-danger"
                                  : "bi-arrow-up text-success")">
                                         @playerRating.RatingChange.ToString("N1", CultureInfo.InvariantCulture)
                                     </span>
@@ -190,7 +192,7 @@
                             </div>
                         </td>
                         <td class="@trClass">
-                            <input id="@($"show{Team}build{player.GamePos}")" name="@($"showbuild{player.GamePos}")"
+                            <input id="@($"{guid}show{Team}build{player.GamePos}")" name="@($"showbuild{player.GamePos}")"
                                 type="checkbox" class="form-check-input" @onclick:stopPropagation
                                 @onclick="e => OnBuildRequest.InvokeAsync(player)" />
                         </td>
@@ -234,15 +236,17 @@
     List<ReplayPlayerDto> players => Replay.ReplayPlayers.Where(x => x.Team == Team).ToList();
     int income => Team == 1 ? MiddleInfo.Team1Income : MiddleInfo.Team2Income;
 
+    Guid guid = Guid.NewGuid();
+
     private void RequestBuild(ReplayPlayerDto player)
     {
         OnBuildRequest.InvokeAsync(player);
-        JSRuntime.InvokeVoidAsync("toggleCheckbox", $"show{Team}build{player.GamePos}");
+        JSRuntime.InvokeVoidAsync("toggleCheckbox", $"{guid}show{Team}build{player.GamePos}");
     }
 
     public void Uncheck()
     {
-        JSRuntime.InvokeVoidAsync("uncheckCheckboxes", $"show{Team}build");
+        JSRuntime.InvokeVoidAsync("uncheckCheckboxes", $"{guid}show{Team}build");
     }
 
     private string GetPlayerTableRowCss(ReplayPlayerDto replayPlayerDto)
@@ -260,6 +264,27 @@
         else if (replayPlayerDto.IsUploader)
         {
             return "table-primary";
+        }
+
+        return "";
+    }
+
+    private string GetPlayerTableRowStyle(ReplayPlayerDto replayPlayerDto)
+    {
+        if (replayPlayerDto.Kills == Replay.Maxkillsum)
+        {
+            return "background-color: #00bc8c;";
+        }
+        else if (replayPlayerDto.Duration < Replay.Duration - 89)
+        {
+            var percentagePlayed = Math.Round((double)replayPlayerDto.Duration / Replay.Duration * 100, 2)
+                .ToString(CultureInfo.InvariantCulture);
+
+            return $"background: linear-gradient(to right, #e74c3c {percentagePlayed}%, #e74c3cbf {percentagePlayed}%);";
+        }
+        else if (replayPlayerDto.IsUploader)
+        {
+            return "background-color: #375a7f;";
         }
 
         return "";
