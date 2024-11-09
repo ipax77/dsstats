@@ -138,6 +138,17 @@ public partial class Home : ComponentBase, IDisposable
         await InvokeAsync(() => StateHasChanged());
     }
 
+    private async Task LoadSessionReplay(string replayHash)
+    {
+        var sessionReplay = await replayRepository.GetReplay(replayHash);
+        if (sessionReplay is null)
+        {
+            return;
+        }
+        currentReplay = sessionReplay;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
     private void Upload()
     {
         if (!configService.AppOptions.UploadCredential)

@@ -429,4 +429,9 @@ internal class RatingsSaveService : IRatingsSaveService
     {
         throw new NotImplementedException();
     }
+
+    public Task SaveContinueArcadeRatings(Dictionary<int, Dictionary<PlayerId, CalcRating>> mmrIdRatings, List<shared.Calc.ReplayRatingDto> replayRatings)
+    {
+        throw new NotImplementedException();
+    }
 }

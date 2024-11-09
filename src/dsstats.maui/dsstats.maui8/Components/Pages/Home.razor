@@ -27,7 +27,7 @@
     <button type="button" class="btn btn-outline-success" @onclick="e => dsstatsService.ScanForNewReplays()">@Loc["Scan"]</button>
     <button type="button" class="btn btn-outline-info" @onclick="Upload">@Loc["Upload"]</button>
 </div>
-<div class="row">
+<div class="row justify-content-between">
     <div class="col-auto">
         @if (currentReplay is not null)
         {
@@ -67,7 +67,7 @@
         <div class="collapse show" id="SessionComponent">
             @if (showSessionProgress)
             {
-                <SessionComponent @ref="sessionComponent" />
+                <SessionComponent @ref="sessionComponent" RequestReplay="e => LoadSessionReplay(e)" />
             }
         </div>
     </div>

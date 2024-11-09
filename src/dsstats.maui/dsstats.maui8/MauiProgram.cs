@@ -63,7 +63,7 @@ namespace dsstats.maui8
             builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
             builder.Services.AddChartJs(options =>
             {
-                options.ChartJsLocation = "/_content/dsstats.razorlib/js/chart.js";
+                options.ChartJsLocation = "/_content/dsstats.razorlib/js/chart.umd.js";
                 options.ChartJsPluginDatalabelsLocation = "/_content/dsstats.razorlib/js/chartjs-plugin-datalabels.js";
             });
             builder.Services.AddBlazoredToast();
@@ -71,7 +71,7 @@ namespace dsstats.maui8
             builder.Services.AddSingleton<IFolderPicker>(FolderPicker.Default);
             builder.Services.AddSingleton<IFilePicker>(FilePicker.Default);
 
-            builder.Services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
+            builder.Services.AddSingleton<IRemoteToggleService, maui8.Services.RemoteToggleService>();
             builder.Services.AddSingleton<ConfigService>();
             builder.Services.AddSingleton<DsstatsService>();
             builder.Services.AddSingleton<ImportService>();

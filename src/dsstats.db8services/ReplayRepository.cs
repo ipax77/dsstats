@@ -7,6 +7,7 @@ using dsstats.shared.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System;
 using System.Diagnostics;
 
 namespace dsstats.db8services;
@@ -188,6 +189,16 @@ public class ReplayRepository : IReplayRepository
             .AsSplitQuery()
             .OrderBy(o => o.GameTime)
             .Where(x => x.GameTime > gameTime)
+            .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<ReplayDto?> GetReplay(string replayHash)
+    {
+        return await context.Replays
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Where(x => x.ReplayHash == replayHash)
             .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
             .FirstOrDefaultAsync();
     }
