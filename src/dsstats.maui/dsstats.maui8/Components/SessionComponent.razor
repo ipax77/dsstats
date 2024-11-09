@@ -127,6 +127,8 @@
 
     private async Task Reload()
     {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
         await dsstatsService.ReloadSessionReplayInfos(remote);
         await LoadData();
     }

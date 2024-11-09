@@ -24,6 +24,7 @@ public partial class BuildService
             .OrderByDescending(o => o.GameTime)
             .Where(x => skipMinDuration || x.Duration >= minDuration)
             .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
+            .AsSplitQuery()
             .FirstOrDefaultAsync();
 
         if (replay is null)
