@@ -2,6 +2,7 @@ using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace dsstats.apiServices;
 
@@ -104,5 +105,21 @@ public class BuildService : IBuildService
             logger.LogError("failed getting build map: {error}", ex.Message);
         }
         return new();
+    }
+
+    public async Task<Dictionary<BuildType, Dictionary<BuildType, WinLos>>> BuildDetailsTest()
+    {
+        try
+        {
+            var Http = new HttpClient();
+            var json = await Http.GetStringAsync("http://localhost:5123/data/winrate_stats.json");
+            var data = JsonSerializer.Deserialize<Dictionary<BuildType, Dictionary<BuildType, WinLos>>>(json);
+            return data ?? [];
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting build details: {error}", ex.Message);
+        }
+        return [];
     }
 }

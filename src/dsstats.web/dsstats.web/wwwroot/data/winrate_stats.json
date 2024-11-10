@@ -1,0 +1,1264 @@
+{
+  "Protoss_Stalker": {
+    "Protoss_Stalker": {
+      "Wins": 410,
+      "Losses": 410
+    },
+    "Zerg_Zerglings": {
+      "Wins": 159,
+      "Losses": 185
+    },
+    "Zerg_Hydras": {
+      "Wins": 326,
+      "Losses": 256
+    },
+    "Terran_Bio": {
+      "Wins": 65,
+      "Losses": 55
+    },
+    "Terran_Marines": {
+      "Wins": 250,
+      "Losses": 272
+    },
+    "None": {
+      "Wins": 59,
+      "Losses": 42
+    },
+    "Terran_Banshees": {
+      "Wins": 71,
+      "Losses": 107
+    },
+    "Terran_Liberators": {
+      "Wins": 63,
+      "Losses": 58
+    },
+    "Zerg_LingRoach": {
+      "Wins": 2,
+      "Losses": 1
+    },
+    "Protoss_Zealots": {
+      "Wins": 38,
+      "Losses": 44
+    },
+    "Zerg_QueenLurker": {
+      "Wins": 31,
+      "Losses": 16
+    },
+    "Terran_MarauderReaper": {
+      "Wins": 19,
+      "Losses": 23
+    },
+    "Protoss_ZealotStalker": {
+      "Wins": 2,
+      "Losses": 2
+    },
+    "Terran_Battlecruiser": {
+      "Wins": 9,
+      "Losses": 3
+    },
+    "Zerg_Mutalisk": {
+      "Wins": 7,
+      "Losses": 3
+    },
+    "Terran_Ravens": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Protoss_Tier2": {
+      "Wins": 9,
+      "Losses": 1
+    },
+    "Zerg_Swarmhosts": {
+      "Wins": 2,
+      "Losses": 0
+    },
+    "Zerg_LingBanes": {
+      "Wins": 5,
+      "Losses": 3
+    }
+  },
+  "Terran_Bio": {
+    "Zerg_Zerglings": {
+      "Wins": 6,
+      "Losses": 20
+    },
+    "Protoss_Stalker": {
+      "Wins": 55,
+      "Losses": 65
+    },
+    "Terran_Marines": {
+      "Wins": 69,
+      "Losses": 110
+    },
+    "Zerg_LingBanes": {
+      "Wins": 12,
+      "Losses": 16
+    },
+    "Protoss_Carriers": {
+      "Wins": 1,
+      "Losses": 2
+    },
+    "Terran_MarauderReaper": {
+      "Wins": 12,
+      "Losses": 14
+    },
+    "Zerg_Hydras": {
+      "Wins": 58,
+      "Losses": 105
+    },
+    "Zerg_Ravagers": {
+      "Wins": 53,
+      "Losses": 49
+    },
+    "None": {
+      "Wins": 22,
+      "Losses": 16
+    },
+    "Terran_Battlecruiser": {
+      "Wins": 4,
+      "Losses": 6
+    },
+    "Protoss_AdeptStalker": {
+      "Wins": 17,
+      "Losses": 24
+    },
+    "Terran_Liberators": {
+      "Wins": 6,
+      "Losses": 9
+    },
+    "Terran_Bio": {
+      "Wins": 30,
+      "Losses": 30
+    },
+    "Protoss_Zealots": {
+      "Wins": 4,
+      "Losses": 1
+    },
+    "Zerg_Mutalisk": {
+      "Wins": 15,
+      "Losses": 14
+    },
+    "Zerg_LingRoach": {
+      "Wins": 2,
+      "Losses": 1
+    },
+    "Zerg_RoachQueen": {
+      "Wins": 0,
+      "Losses": 2
+    },
+    "Protoss_ZealotStalker": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Protoss_Tier2": {
+      "Wins": 1,
+      "Losses": 3
+    },
+    "Terran_Ravens": {
+      "Wins": 1,
+      "Losses": 4
+    }
+  },
+  "Zerg_Zerglings": {
+    "Terran_Bio": {
+      "Wins": 20,
+      "Losses": 6
+    },
+    "Protoss_Stalker": {
+      "Wins": 185,
+      "Losses": 159
+    },
+    "Protoss_AdeptStalker": {
+      "Wins": 7,
+      "Losses": 10
+    },
+    "Terran_Marines": {
+      "Wins": 146,
+      "Losses": 124
+    },
+    "Protoss_Zealots": {
+      "Wins": 21,
+      "Losses": 11
+    },
+    "None": {
+      "Wins": 5,
+      "Losses": 3
+    },
+    "Terran_Ravens": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Terran_Battlecruiser": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Protoss_Tier2": {
+      "Wins": 5,
+      "Losses": 2
+    },
+    "Terran_Liberators": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Terran_Mech": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Protoss_ZealotStalker": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Zerg_QueenLurker": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Terran_MarauderReaper": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Zerg_Hydras": {
+      "Wins": 0,
+      "Losses": 1
+    }
+  },
+  "Zerg_Hydras": {
+    "Protoss_Stalker": {
+      "Wins": 256,
+      "Losses": 326
+    },
+    "Zerg_Hydras": {
+      "Wins": 136,
+      "Losses": 136
+    },
+    "Terran_Marines": {
+      "Wins": 231,
+      "Losses": 195
+    },
+    "Terran_Battlecruiser": {
+      "Wins": 45,
+      "Losses": 46
+    },
+    "None": {
+      "Wins": 21,
+      "Losses": 22
+    },
+    "Terran_Liberators": {
+      "Wins": 44,
+      "Losses": 33
+    },
+    "Zerg_LingRoach": {
+      "Wins": 6,
+      "Losses": 5
+    },
+    "Terran_Bio": {
+      "Wins": 105,
+      "Losses": 58
+    },
+    "Zerg_Ultras": {
+      "Wins": 2,
+      "Losses": 6
+    },
+    "Terran_Mech": {
+      "Wins": 2,
+      "Losses": 0
+    },
+    "Protoss_Zealots": {
+      "Wins": 17,
+      "Losses": 11
+    },
+    "Zerg_RoachQueen": {
+      "Wins": 45,
+      "Losses": 48
+    },
+    "Protoss_AdeptStalker": {
+      "Wins": 8,
+      "Losses": 1
+    },
+    "Zerg_Ravagers": {
+      "Wins": 4,
+      "Losses": 7
+    },
+    "Zerg_Mutalisk": {
+      "Wins": 42,
+      "Losses": 27
+    },
+    "Protoss_Tier2": {
+      "Wins": 6,
+      "Losses": 3
+    },
+    "Terran_MarauderReaper": {
+      "Wins": 1,
+      "Losses": 4
+    },
+    "Protoss_ZealotStalker": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Protoss_Carriers": {
+      "Wins": 2,
+      "Losses": 0
+    },
+    "Zerg_QueenLurker": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Zerg_Zerglings": {
+      "Wins": 1,
+      "Losses": 0
+    }
+  },
+  "Terran_Marines": {
+    "Protoss_AdeptStalker": {
+      "Wins": 276,
+      "Losses": 202
+    },
+    "Protoss_Stalker": {
+      "Wins": 272,
+      "Losses": 250
+    },
+    "Terran_Bio": {
+      "Wins": 110,
+      "Losses": 69
+    },
+    "Zerg_Ravagers": {
+      "Wins": 181,
+      "Losses": 186
+    },
+    "Zerg_Hydras": {
+      "Wins": 195,
+      "Losses": 231
+    },
+    "Terran_Marines": {
+      "Wins": 395,
+      "Losses": 395
+    },
+    "Terran_Battlecruiser": {
+      "Wins": 92,
+      "Losses": 89
+    },
+    "Protoss_Tier2": {
+      "Wins": 9,
+      "Losses": 7
+    },
+    "None": {
+      "Wins": 38,
+      "Losses": 21
+    },
+    "Zerg_Zerglings": {
+      "Wins": 124,
+      "Losses": 146
+    },
+    "Terran_Liberators": {
+      "Wins": 125,
+      "Losses": 109
+    },
+    "Zerg_LingBanes": {
+      "Wins": 25,
+      "Losses": 30
+    },
+    "Protoss_Carriers": {
+      "Wins": 6,
+      "Losses": 4
+    },
+    "Protoss_Zealots": {
+      "Wins": 21,
+      "Losses": 16
+    },
+    "Zerg_Mutalisk": {
+      "Wins": 11,
+      "Losses": 15
+    },
+    "Terran_MarauderReaper": {
+      "Wins": 43,
+      "Losses": 32
+    },
+    "Protoss_ZealotStalker": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Zerg_RoachQueen": {
+      "Wins": 5,
+      "Losses": 3
+    },
+    "Zerg_QueenLurker": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Zerg_LingRoach": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Terran_Banshees": {
+      "Wins": 1,
+      "Losses": 3
+    },
+    "Terran_Mech": {
+      "Wins": 1,
+      "Losses": 0
+    }
+  },
+  "Protoss_AdeptStalker": {
+    "Terran_Marines": {
+      "Wins": 202,
+      "Losses": 276
+    },
+    "Zerg_Zerglings": {
+      "Wins": 10,
+      "Losses": 7
+    },
+    "Protoss_Zealots": {
+      "Wins": 7,
+      "Losses": 7
+    },
+    "Terran_Bio": {
+      "Wins": 24,
+      "Losses": 17
+    },
+    "Zerg_Hydras": {
+      "Wins": 1,
+      "Losses": 8
+    },
+    "None": {
+      "Wins": 2,
+      "Losses": 3
+    },
+    "Terran_Banshees": {
+      "Wins": 3,
+      "Losses": 3
+    },
+    "Zerg_LingBanes": {
+      "Wins": 0,
+      "Losses": 3
+    },
+    "Terran_MarauderReaper": {
+      "Wins": 7,
+      "Losses": 3
+    },
+    "Zerg_Mutalisk": {
+      "Wins": 2,
+      "Losses": 0
+    },
+    "Zerg_Swarmhosts": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Terran_Liberators": {
+      "Wins": 1,
+      "Losses": 1
+    }
+  },
+  "None": {
+    "Protoss_Stalker": {
+      "Wins": 42,
+      "Losses": 59
+    },
+    "Protoss_Zealots": {
+      "Wins": 7,
+      "Losses": 10
+    },
+    "Zerg_LingRoach": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Terran_Marines": {
+      "Wins": 21,
+      "Losses": 38
+    },
+    "Zerg_Hydras": {
+      "Wins": 22,
+      "Losses": 21
+    },
+    "None": {
+      "Wins": 434,
+      "Losses": 434
+    },
+    "Zerg_RoachQueen": {
+      "Wins": 14,
+      "Losses": 13
+    },
+    "Zerg_Zerglings": {
+      "Wins": 3,
+      "Losses": 5
+    },
+    "Terran_Bio": {
+      "Wins": 16,
+      "Losses": 22
+    },
+    "Terran_Banshees": {
+      "Wins": 3,
+      "Losses": 3
+    },
+    "Zerg_LingBanes": {
+      "Wins": 2,
+      "Losses": 2
+    },
+    "Terran_Battlecruiser": {
+      "Wins": 4,
+      "Losses": 11
+    },
+    "Zerg_Mutalisk": {
+      "Wins": 16,
+      "Losses": 12
+    },
+    "Protoss_AdeptStalker": {
+      "Wins": 3,
+      "Losses": 2
+    },
+    "Terran_Liberators": {
+      "Wins": 5,
+      "Losses": 2
+    },
+    "Terran_MarauderReaper": {
+      "Wins": 2,
+      "Losses": 0
+    },
+    "Protoss_Tier2": {
+      "Wins": 3,
+      "Losses": 0
+    },
+    "Zerg_Ultras": {
+      "Wins": 0,
+      "Losses": 2
+    },
+    "Terran_Mech": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Zerg_Ravagers": {
+      "Wins": 3,
+      "Losses": 1
+    },
+    "Protoss_ZealotStalker": {
+      "Wins": 1,
+      "Losses": 1
+    }
+  },
+  "Zerg_Ravagers": {
+    "Terran_Marines": {
+      "Wins": 186,
+      "Losses": 181
+    },
+    "Terran_Liberators": {
+      "Wins": 2,
+      "Losses": 0
+    },
+    "Terran_Bio": {
+      "Wins": 49,
+      "Losses": 53
+    },
+    "Zerg_RoachQueen": {
+      "Wins": 8,
+      "Losses": 9
+    },
+    "Zerg_Ultras": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Zerg_LingRoach": {
+      "Wins": 0,
+      "Losses": 2
+    },
+    "Zerg_Hydras": {
+      "Wins": 7,
+      "Losses": 4
+    },
+    "Terran_MarauderReaper": {
+      "Wins": 3,
+      "Losses": 2
+    },
+    "Terran_Banshees": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "None": {
+      "Wins": 1,
+      "Losses": 3
+    },
+    "Zerg_Ravagers": {
+      "Wins": 1,
+      "Losses": 1
+    }
+  },
+  "Protoss_Zealots": {
+    "None": {
+      "Wins": 10,
+      "Losses": 7
+    },
+    "Zerg_RoachQueen": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Protoss_AdeptStalker": {
+      "Wins": 7,
+      "Losses": 7
+    },
+    "Zerg_Zerglings": {
+      "Wins": 11,
+      "Losses": 21
+    },
+    "Protoss_Stalker": {
+      "Wins": 44,
+      "Losses": 38
+    },
+    "Zerg_Swarmhosts": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Zerg_Hydras": {
+      "Wins": 11,
+      "Losses": 17
+    },
+    "Terran_Marines": {
+      "Wins": 16,
+      "Losses": 21
+    },
+    "Terran_Liberators": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Terran_Bio": {
+      "Wins": 1,
+      "Losses": 4
+    },
+    "Protoss_Tier2": {
+      "Wins": 5,
+      "Losses": 3
+    },
+    "Protoss_Zealots": {
+      "Wins": 30,
+      "Losses": 30
+    },
+    "Zerg_Mutalisk": {
+      "Wins": 0,
+      "Losses": 5
+    },
+    "Zerg_QueenLurker": {
+      "Wins": 1,
+      "Losses": 2
+    },
+    "Terran_MarauderReaper": {
+      "Wins": 0,
+      "Losses": 2
+    },
+    "Terran_Banshees": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Protoss_ZealotStalker": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Zerg_LingBanes": {
+      "Wins": 0,
+      "Losses": 1
+    }
+  },
+  "Zerg_Ultras": {
+    "Zerg_RoachQueen": {
+      "Wins": 5,
+      "Losses": 5
+    },
+    "Zerg_Hydras": {
+      "Wins": 6,
+      "Losses": 2
+    },
+    "Zerg_Ravagers": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Zerg_Ultras": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Zerg_Mutalisk": {
+      "Wins": 3,
+      "Losses": 0
+    },
+    "None": {
+      "Wins": 2,
+      "Losses": 0
+    }
+  },
+  "Zerg_RoachQueen": {
+    "Zerg_Ultras": {
+      "Wins": 5,
+      "Losses": 5
+    },
+    "Protoss_Zealots": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "None": {
+      "Wins": 13,
+      "Losses": 14
+    },
+    "Zerg_RoachQueen": {
+      "Wins": 41,
+      "Losses": 41
+    },
+    "Zerg_LingRoach": {
+      "Wins": 3,
+      "Losses": 1
+    },
+    "Zerg_Hydras": {
+      "Wins": 48,
+      "Losses": 45
+    },
+    "Zerg_Ravagers": {
+      "Wins": 9,
+      "Losses": 8
+    },
+    "Zerg_Mutalisk": {
+      "Wins": 13,
+      "Losses": 8
+    },
+    "Terran_MarauderReaper": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Terran_Marines": {
+      "Wins": 3,
+      "Losses": 5
+    },
+    "Terran_Bio": {
+      "Wins": 2,
+      "Losses": 0
+    }
+  },
+  "Terran_Battlecruiser": {
+    "Terran_Marines": {
+      "Wins": 89,
+      "Losses": 92
+    },
+    "Zerg_Hydras": {
+      "Wins": 46,
+      "Losses": 45
+    },
+    "Terran_Liberators": {
+      "Wins": 4,
+      "Losses": 5
+    },
+    "Terran_Battlecruiser": {
+      "Wins": 12,
+      "Losses": 12
+    },
+    "Terran_Bio": {
+      "Wins": 6,
+      "Losses": 4
+    },
+    "Protoss_Stalker": {
+      "Wins": 3,
+      "Losses": 9
+    },
+    "None": {
+      "Wins": 11,
+      "Losses": 4
+    },
+    "Zerg_Mutalisk": {
+      "Wins": 2,
+      "Losses": 4
+    },
+    "Zerg_Zerglings": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Zerg_LingRoach": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Zerg_LingBanes": {
+      "Wins": 2,
+      "Losses": 2
+    },
+    "Terran_Ravens": {
+      "Wins": 0,
+      "Losses": 1
+    }
+  },
+  "Zerg_LingRoach": {
+    "None": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Zerg_Hydras": {
+      "Wins": 5,
+      "Losses": 6
+    },
+    "Protoss_Stalker": {
+      "Wins": 1,
+      "Losses": 2
+    },
+    "Zerg_RoachQueen": {
+      "Wins": 1,
+      "Losses": 3
+    },
+    "Zerg_Ravagers": {
+      "Wins": 2,
+      "Losses": 0
+    },
+    "Terran_Bio": {
+      "Wins": 1,
+      "Losses": 2
+    },
+    "Zerg_Mutalisk": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Terran_Battlecruiser": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Terran_Marines": {
+      "Wins": 0,
+      "Losses": 1
+    }
+  },
+  "Protoss_Tier2": {
+    "Terran_Marines": {
+      "Wins": 7,
+      "Losses": 9
+    },
+    "Protoss_Zealots": {
+      "Wins": 3,
+      "Losses": 5
+    },
+    "Protoss_Stalker": {
+      "Wins": 1,
+      "Losses": 9
+    },
+    "Zerg_Hydras": {
+      "Wins": 3,
+      "Losses": 6
+    },
+    "None": {
+      "Wins": 0,
+      "Losses": 3
+    },
+    "Zerg_Zerglings": {
+      "Wins": 2,
+      "Losses": 5
+    },
+    "Terran_Bio": {
+      "Wins": 3,
+      "Losses": 1
+    },
+    "Zerg_Mutalisk": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Terran_MarauderReaper": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Zerg_LingBanes": {
+      "Wins": 0,
+      "Losses": 2
+    }
+  },
+  "Terran_Liberators": {
+    "Zerg_Ravagers": {
+      "Wins": 0,
+      "Losses": 2
+    },
+    "Terran_Marines": {
+      "Wins": 109,
+      "Losses": 125
+    },
+    "Terran_Battlecruiser": {
+      "Wins": 5,
+      "Losses": 4
+    },
+    "Protoss_Stalker": {
+      "Wins": 58,
+      "Losses": 63
+    },
+    "Zerg_Hydras": {
+      "Wins": 33,
+      "Losses": 44
+    },
+    "Protoss_Carriers": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Zerg_Mutalisk": {
+      "Wins": 2,
+      "Losses": 9
+    },
+    "Protoss_Zealots": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Terran_Bio": {
+      "Wins": 9,
+      "Losses": 6
+    },
+    "Zerg_LingBanes": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "None": {
+      "Wins": 2,
+      "Losses": 5
+    },
+    "Terran_Ravens": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Zerg_Zerglings": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Protoss_AdeptStalker": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Terran_Liberators": {
+      "Wins": 1,
+      "Losses": 1
+    }
+  },
+  "Terran_Banshees": {
+    "Protoss_Stalker": {
+      "Wins": 107,
+      "Losses": 71
+    },
+    "None": {
+      "Wins": 3,
+      "Losses": 3
+    },
+    "Protoss_ZealotStalker": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Protoss_AdeptStalker": {
+      "Wins": 3,
+      "Losses": 3
+    },
+    "Protoss_Zealots": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Zerg_Ravagers": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Terran_Marines": {
+      "Wins": 3,
+      "Losses": 1
+    }
+  },
+  "Zerg_LingBanes": {
+    "Terran_Marines": {
+      "Wins": 30,
+      "Losses": 25
+    },
+    "Terran_Bio": {
+      "Wins": 16,
+      "Losses": 12
+    },
+    "None": {
+      "Wins": 2,
+      "Losses": 2
+    },
+    "Terran_Liberators": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Protoss_Stalker": {
+      "Wins": 3,
+      "Losses": 5
+    },
+    "Protoss_AdeptStalker": {
+      "Wins": 3,
+      "Losses": 0
+    },
+    "Terran_Mech": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Terran_Battlecruiser": {
+      "Wins": 2,
+      "Losses": 2
+    },
+    "Protoss_Tier2": {
+      "Wins": 2,
+      "Losses": 0
+    },
+    "Protoss_Zealots": {
+      "Wins": 1,
+      "Losses": 0
+    }
+  },
+  "Protoss_Carriers": {
+    "Terran_Liberators": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Terran_Bio": {
+      "Wins": 2,
+      "Losses": 1
+    },
+    "Terran_Marines": {
+      "Wins": 4,
+      "Losses": 6
+    },
+    "Terran_Ravens": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Zerg_Hydras": {
+      "Wins": 0,
+      "Losses": 2
+    },
+    "Terran_Mech": {
+      "Wins": 1,
+      "Losses": 0
+    }
+  },
+  "Terran_MarauderReaper": {
+    "Terran_Bio": {
+      "Wins": 14,
+      "Losses": 12
+    },
+    "Protoss_Stalker": {
+      "Wins": 23,
+      "Losses": 19
+    },
+    "Terran_Marines": {
+      "Wins": 32,
+      "Losses": 43
+    },
+    "Zerg_RoachQueen": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Terran_MarauderReaper": {
+      "Wins": 11,
+      "Losses": 11
+    },
+    "Zerg_Hydras": {
+      "Wins": 4,
+      "Losses": 1
+    },
+    "Zerg_Ravagers": {
+      "Wins": 2,
+      "Losses": 3
+    },
+    "None": {
+      "Wins": 0,
+      "Losses": 2
+    },
+    "Protoss_AdeptStalker": {
+      "Wins": 3,
+      "Losses": 7
+    },
+    "Protoss_Zealots": {
+      "Wins": 2,
+      "Losses": 0
+    },
+    "Protoss_Tier2": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Zerg_Zerglings": {
+      "Wins": 0,
+      "Losses": 1
+    }
+  },
+  "Zerg_QueenLurker": {
+    "Protoss_Stalker": {
+      "Wins": 16,
+      "Losses": 31
+    },
+    "Protoss_Zealots": {
+      "Wins": 2,
+      "Losses": 1
+    },
+    "Protoss_ZealotStalker": {
+      "Wins": 0,
+      "Losses": 2
+    },
+    "Terran_Marines": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Zerg_Zerglings": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Zerg_Hydras": {
+      "Wins": 0,
+      "Losses": 1
+    }
+  },
+  "Zerg_Swarmhosts": {
+    "Protoss_Zealots": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Protoss_Stalker": {
+      "Wins": 0,
+      "Losses": 2
+    },
+    "Protoss_AdeptStalker": {
+      "Wins": 0,
+      "Losses": 1
+    }
+  },
+  "Terran_Mech": {
+    "Zerg_Hydras": {
+      "Wins": 0,
+      "Losses": 2
+    },
+    "Zerg_LingBanes": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Protoss_Carriers": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "None": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Zerg_Zerglings": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Terran_Marines": {
+      "Wins": 0,
+      "Losses": 1
+    }
+  },
+  "Protoss_ZealotStalker": {
+    "Protoss_Stalker": {
+      "Wins": 2,
+      "Losses": 2
+    },
+    "Terran_Banshees": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Terran_Marines": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Zerg_Hydras": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Zerg_QueenLurker": {
+      "Wins": 2,
+      "Losses": 0
+    },
+    "Terran_Bio": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "None": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Protoss_Zealots": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Zerg_Zerglings": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Protoss_ZealotStalker": {
+      "Wins": 1,
+      "Losses": 1
+    }
+  },
+  "Zerg_Mutalisk": {
+    "Terran_Marines": {
+      "Wins": 15,
+      "Losses": 11
+    },
+    "Zerg_RoachQueen": {
+      "Wins": 8,
+      "Losses": 13
+    },
+    "Terran_Liberators": {
+      "Wins": 9,
+      "Losses": 2
+    },
+    "None": {
+      "Wins": 12,
+      "Losses": 16
+    },
+    "Protoss_Stalker": {
+      "Wins": 3,
+      "Losses": 7
+    },
+    "Zerg_Hydras": {
+      "Wins": 27,
+      "Losses": 42
+    },
+    "Protoss_Zealots": {
+      "Wins": 5,
+      "Losses": 0
+    },
+    "Terran_Bio": {
+      "Wins": 14,
+      "Losses": 15
+    },
+    "Zerg_LingRoach": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Zerg_Mutalisk": {
+      "Wins": 21,
+      "Losses": 21
+    },
+    "Terran_Battlecruiser": {
+      "Wins": 4,
+      "Losses": 2
+    },
+    "Protoss_AdeptStalker": {
+      "Wins": 0,
+      "Losses": 2
+    },
+    "Zerg_Ultras": {
+      "Wins": 0,
+      "Losses": 3
+    },
+    "Protoss_Tier2": {
+      "Wins": 1,
+      "Losses": 0
+    }
+  },
+  "Terran_Ravens": {
+    "Protoss_Stalker": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Zerg_Zerglings": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Protoss_Carriers": {
+      "Wins": 0,
+      "Losses": 1
+    },
+    "Terran_Liberators": {
+      "Wins": 1,
+      "Losses": 1
+    },
+    "Terran_Bio": {
+      "Wins": 4,
+      "Losses": 1
+    },
+    "Terran_Battlecruiser": {
+      "Wins": 1,
+      "Losses": 0
+    },
+    "Terran_Ravens": {
+      "Wins": 1,
+      "Losses": 1
+    }
+  }
+}

@@ -215,3 +215,38 @@ public enum PickBanMode
     Std1v1 = 5,
     CmdrBanOnly = 6
 }
+
+public enum BuildType
+{
+    None = 0,
+
+    // Terran Builds
+    Terran_Marines = 1,
+    Terran_MarauderReaper = 2,
+    Terran_Bio = 3,
+    Terran_Banshees = 4,
+    Terran_Liberators = 5,
+    Terran_Ravens = 6,
+    Terran_Mech = 7,
+    Terran_Battlecruiser = 8,
+
+    // Protoss Builds
+    Protoss_Stalker = 101,
+    Protoss_Zealots = 102,
+    Protoss_AdeptStalker = 103,
+    Protoss_ZealotStalker = 104,
+    Protoss_Tier2 = 105,
+    Protoss_Carriers = 106,
+
+    // Zerg Builds
+    Zerg_Zerglings = 201,
+    Zerg_LingBanes = 202,
+    Zerg_RoachQueen = 203,
+    Zerg_LingRoach = 204,
+    Zerg_Ravagers = 205,
+    Zerg_Hydras = 206,
+    Zerg_QueenLurker = 207,
+    Zerg_Swarmhosts = 208,
+    Zerg_Mutalisk = 209,
+    Zerg_Ultras = 210
+}

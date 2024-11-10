@@ -74,3 +74,5 @@ public static class BuildRequestExtension
         return sb.ToString();
     }
 }
+
+public record WinLos(int Wins, int Losses);

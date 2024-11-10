@@ -9,5 +9,5 @@ public interface IBuildService
     Task<int> GetReplaysCount(BuildRequest request, CancellationToken token = default);
     Task<List<ReplayListDto>> GetReplays(BuildRequest request, int skip, int take, CancellationToken token);
     Task<BuildMapResponse> GetReplayBuildMap(BuildRequest request, CancellationToken token = default);
-    Task BuildDetailsTest();
+    Task<Dictionary<BuildType, Dictionary<BuildType, WinLos>>> BuildDetailsTest();
 }

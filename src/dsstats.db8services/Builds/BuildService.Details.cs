@@ -7,9 +7,117 @@ namespace dsstats.db8services;
 
 public partial class BuildService
 {
-    public async Task BuildDetailsTest()
+    public async Task<Dictionary<BuildType, Dictionary<BuildType, WinLos>>> BuildDetailsTest()
     {
-        var replays = await context.Replays
+        int skip = 0;
+        int take = 1000;
+
+        var winLossStats = new Dictionary<BuildType, Dictionary<BuildType, WinLos>>();
+        var replays = await GetReplays(skip, take);
+
+        while (replays.Count > 0)
+        {
+            CalculateBuildTypeStats(replays, winLossStats);
+            skip += take;
+            replays = await GetReplays(skip, take);
+        }
+
+        // Calculate win rate for each BuildType against each other BuildType
+        var winRateStats = winLossStats.ToDictionary(
+            kvp => kvp.Key,
+            kvp => kvp.Value.ToDictionary(
+                innerKvp => innerKvp.Key,
+                innerKvp => new
+                {
+                    Wins = innerKvp.Value.Wins,
+                    Losses = innerKvp.Value.Losses,
+                    WinRate = innerKvp.Value.Wins + innerKvp.Value.Losses > 0 ?
+                        (double)innerKvp.Value.Wins / (innerKvp.Value.Wins + innerKvp.Value.Losses) * 100 : 0
+                }
+            )
+        );
+
+        var jsonWinRateStats = JsonSerializer.Serialize(winLossStats, new JsonSerializerOptions() { WriteIndented = true });
+        File.WriteAllText("/data/ds/winrate_stats.json", jsonWinRateStats);
+
+        return winLossStats;
+    }
+
+    private void CalculateBuildTypeStats(List<Replay> replays, Dictionary<BuildType, Dictionary<BuildType, WinLos>> winLossStats)
+    {
+        foreach (var replay in replays)
+        {
+            foreach (var replayPlayer in replay.ReplayPlayers.Where(x => x.GamePos <= 3).OrderBy(o => o.GamePos))
+            {
+                var oppPlayer = replayPlayer.GamePos switch
+                {
+                    1 => replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == 4),
+                    2 => replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == 5),
+                    3 => replay.ReplayPlayers.FirstOrDefault(f => f.GamePos == 6),
+                    _ => null
+                };
+                if (oppPlayer == null)
+                {
+                    continue;
+                }
+
+                var build = IdentifyBuild(replayPlayer);
+                var oppBuild = IdentifyBuild(oppPlayer);
+
+                // Initialize nested dictionaries if not already initialized
+                if (!winLossStats.ContainsKey(build.BuildType))
+                {
+                    winLossStats[build.BuildType] = new Dictionary<BuildType, WinLos>();
+                }
+                if (!winLossStats[build.BuildType].ContainsKey(oppBuild.BuildType))
+                {
+                    winLossStats[build.BuildType][oppBuild.BuildType] = new(0, 0);
+                }
+                if (!winLossStats.ContainsKey(oppBuild.BuildType))
+                {
+                    winLossStats[oppBuild.BuildType] = new Dictionary<BuildType, WinLos>();
+                }
+                if (!winLossStats[oppBuild.BuildType].ContainsKey(build.BuildType))
+                {
+                    winLossStats[oppBuild.BuildType][build.BuildType] = new(0, 0);
+                }
+
+                // Update win/loss stats based on match result
+                if (replayPlayer.PlayerResult == PlayerResult.Win)
+                {
+                    // replayPlayer's BuildType won against oppPlayer's BuildType
+                    winLossStats[build.BuildType][oppBuild.BuildType] = new(
+                        winLossStats[build.BuildType][oppBuild.BuildType].Wins + 1,
+                        winLossStats[build.BuildType][oppBuild.BuildType].Losses
+                    );
+
+                    // oppPlayer's BuildType lost to replayPlayer's BuildType
+                    winLossStats[oppBuild.BuildType][build.BuildType] = new(
+                        winLossStats[oppBuild.BuildType][build.BuildType].Wins,
+                        winLossStats[oppBuild.BuildType][build.BuildType].Losses + 1
+                    );
+                }
+                else
+                {
+                    // oppPlayer's BuildType won against replayPlayer's BuildType
+                    winLossStats[oppBuild.BuildType][build.BuildType] = new(
+                        winLossStats[oppBuild.BuildType][build.BuildType].Wins + 1,
+                        winLossStats[oppBuild.BuildType][build.BuildType].Losses
+                    );
+
+                    // replayPlayer's BuildType lost to oppPlayer's BuildType
+                    winLossStats[build.BuildType][oppBuild.BuildType] = new(
+                        winLossStats[build.BuildType][oppBuild.BuildType].Wins,
+                        winLossStats[build.BuildType][oppBuild.BuildType].Losses + 1
+                    );
+                }
+            }
+        }
+    }
+
+    private async Task<List<Replay>> GetReplays(int skip, int take)
+    {
+        return await context.Replays
             .Include(i => i.ReplayPlayers)
                 .ThenInclude(i => i.Spawns)
                     .ThenInclude(i => i.Units)
@@ -18,22 +126,14 @@ public partial class BuildService
             .Where(x => x.GameMode == GameMode.Standard
                 && x.TournamentEdition
                 && x.Duration > 300
-                && x.Maxleaver < 90)
-            .Take(100)
+                && x.Maxleaver < 90
+                && x.Playercount == 6
+                && x.GameTime > new DateTime(2024, 1, 1))
+            .Skip(skip)
+            .Take(take)
             .ToListAsync();
-
-        List<BuildDetails> buildDetails = [];
-        foreach (var replay in replays)
-        {
-            foreach (var replayPlayer in replay.ReplayPlayers.OrderBy(o => o.GamePos))
-            {
-                var build = IdentifyBuild(replayPlayer);
-                buildDetails.Add(build);
-            }
-        }
-        var json = JsonSerializer.Serialize(buildDetails, new JsonSerializerOptions() { WriteIndented = true });
-        File.WriteAllText("/data/ds/builddetails.json", json);
     }
+
 
     public static BuildDetails IdentifyBuild(ReplayPlayer replayPlayer)
     {
@@ -47,10 +147,10 @@ public partial class BuildService
             Commander.Zerg => IdentifyZergOpener(orderedUnits),
             _ => BuildType.None
         };
-        if (orderedUnits.Count > 0 && buildType == BuildType.None)
-        {
-            Console.WriteLine("indahouse");
-        }
+        //if (orderedUnits.Count > 0 && buildType == BuildType.None)
+        //{
+        //    Console.WriteLine("indahouse");
+        //}
         return new(tierTiming, gasTiming, buildType);
     }
 
@@ -326,40 +426,7 @@ public enum GasTiming
     TwoGasFirst = 2,
 }
 
-public enum BuildType
-{
-    None = 0,
 
-    // Terran Builds
-    Terran_Marines = 1,
-    Terran_MarauderReaper = 2,
-    Terran_Bio = 3,
-    Terran_Banshees = 4,
-    Terran_Liberators = 5,
-    Terran_Ravens = 6,
-    Terran_Mech = 7,
-    Terran_Battlecruiser = 8,
-
-    // Protoss Builds
-    Protoss_Stalker = 101,
-    Protoss_Zealots = 102,
-    Protoss_AdeptStalker = 103,
-    Protoss_ZealotStalker = 104,
-    Protoss_Tier2 = 105,
-    Protoss_Carriers = 106,
-
-    // Zerg Builds
-    Zerg_Zerglings = 201,
-    Zerg_LingBanes = 202,
-    Zerg_RoachQueen = 203,
-    Zerg_LingRoach = 204,
-    Zerg_Ravagers = 205,
-    Zerg_Hydras = 206,
-    Zerg_QueenLurker = 207,
-    Zerg_Swarmhosts = 208,
-    Zerg_Mutalisk = 209,
-    Zerg_Ultras = 210
-}
 
 public sealed record RaceBuild<TBuild>(TBuild BuildType)
     where TBuild : Enum;

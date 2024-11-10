@@ -1,0 +1,142 @@
+﻿@using System.Globalization
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IBuildService buildService
+
+<div class="text-warning p-1 bgchart rounded d-inline-block">
+    <h3>Standard start builds Winrate</h3>
+    <small>based on the unit composition at the 5 min mark.</small>
+</div>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="mb-3" style="width: 400px;">
+        <label for="buildTypeSelect" class="form-label mt-4">Select Build Type:</label>
+        <select class="form-select" id="buildTypeSelect" @onchange="OnBuildTypeChanged">
+            <option value="">--Select Build Type--</option>
+            @foreach (var buildType in Enum.GetValues(typeof(BuildType)).Cast<BuildType>())
+            {
+                <option value="@buildType" selected="@(buildType == selectedBuildType)">@buildType</option>
+            }
+        </select>
+    </div>
+
+    @if (selectedBuildType != null && buildDetails.ContainsKey(selectedBuildType.Value))
+    {
+        <div class="summary-section bgchart p-2 rounded mb-3" style="width: 400px;">
+            <p><strong>Total Games:</strong> @GetTotalGames(selectedBuildType.Value)</p>
+            <p><strong>Overall Win Rate:</strong> @GetTotalWinRate(selectedBuildType.Value)%</p>
+        </div>
+        <h4 class="text-warning bgchart p-1 d-inline-block rounded">Win Rates for @selectedBuildType against other Build Types</h4>
+        <div class="tableFixHead table-responsive">
+            <table class="tptable table w-auto">
+                <thead>
+                    <tr>
+                        <th>Race</th>
+                        <th>Opponent Build Type</th>
+                        <th>Wins</th>
+                        <th>Losses</th>
+                        <th>Win Rate (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var opponentBuild in buildDetails[selectedBuildType.Value]
+                   .OrderByDescending(o => o.Value.Wins + o.Value.Losses == 0 ? 0 : (double)o.Value.Wins / (o.Value.Wins + o.Value.Losses)))
+                    {
+                        (var race, var build) = GetRaceAndString(opponentBuild.Key);
+                        <tr>
+                            <td>
+                                <div class="@race" style="width: 20px; height: 20px;"></div>
+                            </td>
+                            <td>@build</td>
+                            <td>@opponentBuild.Value.Wins</td>
+                            <td>@opponentBuild.Value.Losses</td>
+                            <td><span class="text-warning">@CalculateWinRate(opponentBuild.Value.Wins, opponentBuild.Value.Losses)</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else if (selectedBuildType != null)
+    {
+        <p>No data available for the selected build type.</p>
+    }
+}
+@code {
+    Dictionary<BuildType, Dictionary<BuildType, WinLos>> buildDetails = [];
+    bool isLoading;
+    BuildType? selectedBuildType;
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        buildDetails = await buildService.BuildDetailsTest();
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void OnBuildTypeChanged(ChangeEventArgs e)
+    {
+        if (Enum.TryParse<BuildType>(e.Value?.ToString(), out var selected))
+        {
+            selectedBuildType = selected;
+        }
+        else
+        {
+            selectedBuildType = null;
+        }
+    }
+
+    private string CalculateWinRate(int wins, int losses)
+    {
+        if (wins + losses == 0) return "N/A";
+        return ((double)wins / (wins + losses) * 100).ToString("F2", CultureInfo.InvariantCulture);
+    }
+
+    private int GetTotalGames(BuildType buildType)
+    {
+        if (buildDetails.TryGetValue(buildType, out var opponents))
+        {
+            return opponents.Values.Sum(opponent => opponent.Wins + opponent.Losses);
+        }
+        return 0;
+    }
+
+    private string GetTotalWinRate(BuildType buildType)
+    {
+        if (buildDetails.TryGetValue(buildType, out var opponents))
+        {
+            int totalWins = opponents.Values.Sum(opponent => opponent.Wins);
+            int totalGames = GetTotalGames(buildType);
+            return totalGames == 0 ? "N/A" : ((double)totalWins / totalGames * 100).ToString("F2", CultureInfo.InvariantCulture);
+        }
+        return "N/A";
+    }
+
+    private (string, string) GetRaceAndString(BuildType buildType)
+    {
+        if (buildType == BuildType.None)
+        {
+            return ("", "N/A");
+        }
+        var values = buildType.ToString().Split("_", StringSplitOptions.RemoveEmptyEntries);
+        if (values.Length != 2)
+        {
+            return ("", "N/A");
+        }
+
+        return ($"preload-{values[0].ToLower()}", values[1]);
+    }
+}

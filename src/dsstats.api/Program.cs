@@ -180,8 +180,8 @@ if (app.Environment.IsProduction())
 }
 else
 {
-    var buildService = scope.ServiceProvider.GetRequiredService<IBuildService>();
-    buildService.BuildDetailsTest().Wait();
+    //var buildService = scope.ServiceProvider.GetRequiredService<IBuildService>();
+    //buildService.BuildDetailsTest().Wait();
 }
 
 app.UseRateLimiter();
