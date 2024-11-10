@@ -180,8 +180,8 @@ if (app.Environment.IsProduction())
 }
 else
 {
-    //var comboRatings = scope.ServiceProvider.GetRequiredService<ComboRatings>();
-    //comboRatings.CombineDsstatsSc2ArcadeReplays(add: false).Wait();
+    var buildService = scope.ServiceProvider.GetRequiredService<IBuildService>();
+    buildService.BuildDetailsTest().Wait();
 }
 
 app.UseRateLimiter();
