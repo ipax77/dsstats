@@ -54,26 +54,41 @@ public class StoreUpdateService(ILogger<StoreUpdateService> logger) : IUpdateSer
     {
         try
         {
-            var storeContext = StoreContext.GetDefault();
+            var result = await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                var storeContext = StoreContext.GetDefault();
+                var availableUpdates = await storeContext.GetAppAndOptionalStorePackageUpdatesAsync();
 
-            var availableUpdates = await storeContext.GetAppAndOptionalStorePackageUpdatesAsync();
-            ArgumentNullException.ThrowIfNull(availableUpdates);
+                if (availableUpdates is null || availableUpdates.Count == 0)
+                {
+                    logger.LogWarning("No updates available.");
+                    return null;
+                }
 
-            var progress = new Progress<StorePackageUpdateStatus>(progress => 
-                OnUpdateProgress(new() { Progress = Convert.ToInt32(progress.PackageDownloadProgress * 100.0) }));
+                var progress = new Progress<StorePackageUpdateStatus>(progress =>
+                    OnUpdateProgress(new() { Progress = Convert.ToInt32(progress.PackageDownloadProgress * 100.0) }));
 
-            var result = await storeContext.RequestDownloadStorePackageUpdatesAsync(availableUpdates)
-                .AsTask(progress);
+                return await storeContext.RequestDownloadStorePackageUpdatesAsync(availableUpdates)
+                    .AsTask(progress);
+            });
+
+            if (result == null)
+                return false;
 
             if (result.OverallState != StorePackageUpdateState.Completed)
             {
                 var failedUpdates = result.StorePackageUpdateStatuses.Where(
                     status => status.PackageUpdateState != StorePackageUpdateState.Completed)
-                .ToList();
+                    .ToList();
 
                 if (failedUpdates.Count > 0)
                 {
-                    logger.LogError("app update failed: {errorlist}", string.Join(", ", failedUpdates.Select(s => s.PackageFamilyName)));
+                    var errorDetails = failedUpdates.Select(s => new
+                    {
+                        PackageFamilyName = s.PackageFamilyName,
+                        Error = s.PackageUpdateState
+                    });
+                    logger.LogError("App update failed for packages: {errorDetails}", string.Join(", ", errorDetails));
                 }
             }
             else
@@ -83,8 +98,9 @@ public class StoreUpdateService(ILogger<StoreUpdateService> logger) : IUpdateSer
         }
         catch (Exception ex)
         {
-            logger.LogError("app update failed: {error}", ex.Message);
+            logger.LogError("App update failed: {error}", ex);
         }
         return false;
     }
+
 }
