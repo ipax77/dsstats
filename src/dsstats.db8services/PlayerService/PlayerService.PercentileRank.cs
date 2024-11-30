@@ -48,7 +48,7 @@ public partial class PlayerService
         {
             maxPos = ratingCalcType switch
             {
-                RatingCalcType.Dsstats =>  await context.PlayerRatings
+                RatingCalcType.Dsstats => await context.PlayerRatings
                 .Where(x => x.RatingType == ratingType)
                 .OrderByDescending(o => o.Pos)
                 .Select(s => s.Pos)

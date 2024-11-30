@@ -58,10 +58,10 @@ public class RatingsTests
         services.AddLogging();
         services.AddMemoryCache();
         services.AddAutoMapper(typeof(AutoMapperProfile));
-
+        services.AddScoped<ComboRatings>();
         services.AddSingleton<IRatingService, RatingService>();
         services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
-        services.AddSingleton<ImportService>();
+        services.AddSingleton<IImportService, ImportService>();
         services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
         services.AddScoped<IReplayRepository, ReplayRepository>();
 
@@ -368,7 +368,7 @@ public class RatingsTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
 
         using var md5 = MD5.Create();
         var replayDto = GetBasicReplayDto(md5);

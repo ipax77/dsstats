@@ -15,7 +15,22 @@ namespace SqliteMigrations.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
+            modelBuilder.HasAnnotation("ProductVersion", "8.0.3");
+
+            modelBuilder.Entity("DsAbilityDsUnit", b =>
+                {
+                    b.Property<int>("AbilitiesDsAbilityId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DsUnitsDsUnitId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("AbilitiesDsAbilityId", "DsUnitsDsUnitId");
+
+                    b.HasIndex("DsUnitsDsUnitId");
+
+                    b.ToTable("DsAbilityDsUnit");
+                });
 
             modelBuilder.Entity("ReplayUploader", b =>
                 {
@@ -325,6 +340,33 @@ namespace SqliteMigrations.Migrations
                     b.ToTable("BattleNetInfos");
                 });
 
+            modelBuilder.Entity("dsstats.db8.BonusDamage", b =>
+                {
+                    b.Property<int>("BonusDamageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Damage")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DsWeaponId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PerUpgrade")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UnitType")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("BonusDamageId");
+
+                    b.HasIndex("DsWeaponId");
+
+                    b.HasIndex("UnitType");
+
+                    b.ToTable("BonusDamages");
+                });
+
             modelBuilder.Entity("dsstats.db8.ComboPlayerRating", b =>
                 {
                     b.Property<int>("ComboPlayerRatingId")
@@ -462,6 +504,128 @@ namespace SqliteMigrations.Migrations
                     b.ToTable("CommanderMmrs");
                 });
 
+            modelBuilder.Entity("dsstats.db8.DsAbility", b =>
+                {
+                    b.Property<int>("DsAbilityId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("AbilityTarget")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<float>("AoeRadius")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("CastRange")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Commander")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Cooldown")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(310)
+                        .HasColumnType("TEXT");
+
+                    b.Property<float>("EnergyCost")
+                        .HasColumnType("REAL");
+
+                    b.Property<bool>("GlobalTimer")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Requirements")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("DsAbilityId");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("DsAbilities");
+                });
+
+            modelBuilder.Entity("dsstats.db8.DsUnit", b =>
+                {
+                    b.Property<int>("DsUnitId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Armor")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Color")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Commander")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Cost")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<float>("EnergyRegen")
+                        .HasColumnType("REAL");
+
+                    b.Property<float>("HealthRegen")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("Life")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MaxEnergy")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MovementType")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ShieldArmor")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Shields")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Size")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<float>("Speed")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("StartingEnergy")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UnitId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UnitType")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("DsUnitId");
+
+                    b.HasIndex("Commander");
+
+                    b.HasIndex("Name");
+
+                    b.HasIndex("Name", "Commander");
+
+                    b.ToTable("DsUnits");
+                });
+
             modelBuilder.Entity("dsstats.db8.DsUpdate", b =>
                 {
                     b.Property<int>("DsUpdateId")
@@ -488,6 +652,82 @@ namespace SqliteMigrations.Migrations
                     b.HasIndex("Time");
 
                     b.ToTable("DsUpdates");
+                });
+
+            modelBuilder.Entity("dsstats.db8.DsUpgrade", b =>
+                {
+                    b.Property<int>("DsUpgradeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Commander")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Cost")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("DsUnitId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RequiredTier")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Upgrade")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("DsUpgradeId");
+
+                    b.HasIndex("DsUnitId");
+
+                    b.HasIndex("Upgrade");
+
+                    b.ToTable("DsUpgrades");
+                });
+
+            modelBuilder.Entity("dsstats.db8.DsWeapon", b =>
+                {
+                    b.Property<int>("DsWeaponId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<float>("AttackSpeed")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("Attacks")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CanTarget")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Damage")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DamagePerUpgrade")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DsUnitId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<float>("Range")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("DsWeaponId");
+
+                    b.HasIndex("DsUnitId");
+
+                    b.ToTable("DsWeapons");
                 });
 
             modelBuilder.Entity("dsstats.db8.Event", b =>
@@ -520,6 +760,61 @@ namespace SqliteMigrations.Migrations
                         .IsUnique();
 
                     b.ToTable("Events");
+                });
+
+            modelBuilder.Entity("dsstats.db8.Faq", b =>
+                {
+                    b.Property<int>("FaqId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Answer")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Question")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Upvotes")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("FaqId");
+
+                    b.HasIndex("Question");
+
+                    b.ToTable("Faqs");
+                });
+
+            modelBuilder.Entity("dsstats.db8.FaqVote", b =>
+                {
+                    b.Property<int>("FaqVoteId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("FaqId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("FaqVoteId");
+
+                    b.ToTable("FaqVotes");
                 });
 
             modelBuilder.Entity("dsstats.db8.FunStatsMemory", b =>
@@ -1282,6 +1577,17 @@ namespace SqliteMigrations.Migrations
                     b.ToTable("SpawnUnits");
                 });
 
+            modelBuilder.Entity("dsstats.db8.StreakInfo", b =>
+                {
+                    b.Property<double>("LongestStreak")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("PlayerResult")
+                        .HasColumnType("INTEGER");
+
+                    b.ToTable("StreakInfos");
+                });
+
             modelBuilder.Entity("dsstats.db8.Unit", b =>
                 {
                     b.Property<int>("UnitId")
@@ -1387,6 +1693,21 @@ namespace SqliteMigrations.Migrations
                     b.ToTable("Uploaders");
                 });
 
+            modelBuilder.Entity("DsAbilityDsUnit", b =>
+                {
+                    b.HasOne("dsstats.db8.DsAbility", null)
+                        .WithMany()
+                        .HasForeignKey("AbilitiesDsAbilityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("dsstats.db8.DsUnit", null)
+                        .WithMany()
+                        .HasForeignKey("DsUnitsDsUnitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ReplayUploader", b =>
                 {
                     b.HasOne("dsstats.db8.Replay", null)
@@ -1484,6 +1805,17 @@ namespace SqliteMigrations.Migrations
                     b.Navigation("Uploader");
                 });
 
+            modelBuilder.Entity("dsstats.db8.BonusDamage", b =>
+                {
+                    b.HasOne("dsstats.db8.DsWeapon", "DsWeapon")
+                        .WithMany("BonusDamages")
+                        .HasForeignKey("DsWeaponId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DsWeapon");
+                });
+
             modelBuilder.Entity("dsstats.db8.ComboPlayerRating", b =>
                 {
                     b.HasOne("dsstats.db8.Player", "Player")
@@ -1515,6 +1847,24 @@ namespace SqliteMigrations.Migrations
                         .IsRequired();
 
                     b.Navigation("Replay");
+                });
+
+            modelBuilder.Entity("dsstats.db8.DsUpgrade", b =>
+                {
+                    b.HasOne("dsstats.db8.DsUnit", null)
+                        .WithMany("Upgrades")
+                        .HasForeignKey("DsUnitId");
+                });
+
+            modelBuilder.Entity("dsstats.db8.DsWeapon", b =>
+                {
+                    b.HasOne("dsstats.db8.DsUnit", "DsUnit")
+                        .WithMany("Weapons")
+                        .HasForeignKey("DsUnitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DsUnit");
                 });
 
             modelBuilder.Entity("dsstats.db8.NoUploadResult", b =>
@@ -1708,6 +2058,18 @@ namespace SqliteMigrations.Migrations
             modelBuilder.Entity("dsstats.db8.ArcadeReplayRating", b =>
                 {
                     b.Navigation("ArcadeReplayPlayerRatings");
+                });
+
+            modelBuilder.Entity("dsstats.db8.DsUnit", b =>
+                {
+                    b.Navigation("Upgrades");
+
+                    b.Navigation("Weapons");
+                });
+
+            modelBuilder.Entity("dsstats.db8.DsWeapon", b =>
+                {
+                    b.Navigation("BonusDamages");
                 });
 
             modelBuilder.Entity("dsstats.db8.Event", b =>

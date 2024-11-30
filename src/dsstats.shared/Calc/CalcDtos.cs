@@ -38,10 +38,11 @@ public record RepPlayerRatingDto
 public record DsstatsCalcRequest
 {
     public DateTime FromDate { get; set; } = new DateTime(2021, 2, 1);
-    public List<int> GameModes { get; set; } = [ (int)GameMode.Commanders, (int)GameMode.CommandersHeroic, (int)GameMode.Standard ];
+    public List<int> GameModes { get; set; } = [(int)GameMode.Commanders, (int)GameMode.CommandersHeroic, (int)GameMode.Standard];
     public bool Continue { get; set; }
     public int Skip { get; set; }
     public int Take { get; set; }
+    public DateTime Imported { get; set; }
 }
 
 public record Sc2ArcadeRequest
@@ -56,6 +57,7 @@ public record CalcDto
     public int ReplayId { get; set; }
     public DateTime GameTime { get; init; }
     public int GameMode { get; set; }
+    public int WinnerTeam { get; init; }
     public int Duration { get; init; }
     public bool TournamentEdition { get; init; }
     public bool IsArcade { get; init; }
@@ -66,7 +68,7 @@ public record PlayerCalcDto
 {
     public int ReplayPlayerId { get; init; }
     public int GamePos { get; init; }
-    public int PlayerResult { get; init; }
+    public int PlayerResult { get; set; }
     public bool IsLeaver { get; init; }
     public bool IsMvp { get; init; }
     public int Team { get; init; }

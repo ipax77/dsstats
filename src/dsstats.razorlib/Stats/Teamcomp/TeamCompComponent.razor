@@ -40,7 +40,7 @@
                 <div class="bgchart2 d-inline-block p-2 rounded">
                     <div class="d-flex">
                         <div class="me-3">
-                            <span class="text-warning">. versus </span>
+                            <span class="text-warning">Teams success versus </span>
                         </div>
                         @foreach (var cmdr in HelperService.GetCommanders(interestResponse.Team))
                         {
@@ -130,6 +130,7 @@
         response = await teamcompService.GetTeamcompResult(Request with { Interest = null }, cts.Token);
         replaysRequest.TimePeriod = Request.TimePeriod;
         replaysRequest.Team1 = string.Empty;
+        replaysRequest.TournementEdition = Request.TournamentEdition;
 
         if (Request.Interest == null)
         {
@@ -154,6 +155,7 @@
         isLoading = false;
         replaysRequest.Team1 = team;
         replaysRequest.Team2 = null;
+        replaysRequest.TournementEdition = Request.TournamentEdition;
         await InvokeAsync(() => StateHasChanged());
         await OnRequestChanged.InvokeAsync(Request with { Interest = team });
         teamReplaysComponent?.Reload(replaysRequest);

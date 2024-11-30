@@ -1,4 +1,6 @@
-﻿namespace dsstats.shared.Interfaces;
+﻿using dsstats.shared.Stats;
+
+namespace dsstats.shared.Interfaces;
 
 public interface ITourneysService
 {
@@ -7,4 +9,12 @@ public interface ITourneysService
     Task<List<TourneyDto>> GetTourneys();
     Task<TourneysStatsResponse> GetTourneyStats(TourneysStatsRequest statsRequest, CancellationToken token);
     Task<(string, string)?> DownloadReplay(string replayHash);
+    Task SeedTourneys();
+    Task<List<GroupStateDto>> GetGroupStates();
+    Task<int> GetIhSessionsCount(CancellationToken token);
+    Task<List<IhSessionListDto>> GetIhSessions(int skip, int take, CancellationToken token);
+    Task<IhSessionDto?> GetIhSession(Guid groupId);
+    Task<List<ReplayListDto>> GetReplays(Guid groupId);
+    Task<GroupStateV2?> GetOpenGroupState(Guid groupId);
+    Task<MatchupResponse> GetBestTeammate(MatchupRequest request, CancellationToken token);
 }

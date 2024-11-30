@@ -1,16 +1,15 @@
-﻿using CsvHelper.Configuration;
-using CsvHelper;
+﻿using CsvHelper;
+using CsvHelper.Configuration;
 using dsstats.db8;
-using dsstats.shared.Calc;
 using dsstats.shared;
-using Microsoft.Extensions.DependencyInjection;
-using System.Globalization;
+using dsstats.shared.Calc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MySqlConnector;
-using Microsoft.Extensions.Logging;
 using System.Collections.Frozen;
-using System.Diagnostics;
+using System.Globalization;
 
 namespace dsstats.ratings;
 

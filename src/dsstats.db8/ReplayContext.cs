@@ -1,6 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using dsstats.shared;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using Microsoft.EntityFrameworkCore.Storage;
+using System.Linq.Expressions;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace dsstats.db8;
 
@@ -31,20 +37,31 @@ public class ReplayContext : DbContext
     public virtual DbSet<FunStatsMemory> FunStatMemories { get; set; } = null!;
     public virtual DbSet<ArcadeReplay> ArcadeReplays { get; set; } = null!;
     public virtual DbSet<MaterializedArcadeReplay> MaterializedArcadeReplays { get; set; } = null!;
-    public virtual DbSet<ArcadeReplayPlayer> ArcadeReplayPlayers { get; set; } = null!;
-    public virtual DbSet<ArcadePlayer> ArcadePlayers { get; set; } = null!;
+    public virtual DbSet<ArcadeReplayDsPlayer> ArcadeReplayDsPlayers { get; set; } = null!;
     public virtual DbSet<ArcadeReplayRating> ArcadeReplayRatings { get; set; } = null!;
     public virtual DbSet<ArcadePlayerRating> ArcadePlayerRatings { get; set; } = null!;
-    public virtual DbSet<ArcadeReplayPlayerRating> ArcadeReplayPlayerRatings { get; set; } = null!;
+    public virtual DbSet<ArcadeReplayDsPlayerRating> ArcadeReplayDsPlayerRatings { get; set; } = null!;
     public virtual DbSet<ArcadePlayerRatingChange> ArcadePlayerRatingChanges { get; set; } = null!;
     public virtual DbSet<DsUpdate> DsUpdates { get; set; } = null!;
+    public virtual DbSet<DsUnit> DsUnits { get; set; } = null!;
+    public virtual DbSet<DsWeapon> DsWeapons { get; set; } = null!;
+    public virtual DbSet<BonusDamage> BonusDamages { get; set; } = null!;
+    public virtual DbSet<DsAbility> DsAbilities { get; set; } = null!;
+    public virtual DbSet<DsUpgrade> DsUpgrades { get; set; } = null!;
+    public virtual DbSet<ReplayArcadeMatch> ReplayArcadeMatches { get; set; } = null!;
 
     public virtual DbSet<ComboPlayerRating> ComboPlayerRatings { get; set; } = null!;
     public virtual DbSet<ComboReplayRating> ComboReplayRatings { get; set; } = null!;
     public virtual DbSet<ComboReplayPlayerRating> ComboReplayPlayerRatings { get; set; } = null!;
-
+    public virtual DbSet<Faq> Faqs { get; set; } = null!;
+    public virtual DbSet<FaqVote> FaqVotes { get; set; } = null!;
+    public virtual DbSet<IhSession> IhSessions { get; set; } = null!;
+    public virtual DbSet<IhSessionPlayer> IhSessionPlayers { get; set; } = null!;
+    public virtual DbSet<DsPickBan> DsPickBans { get; set; } = null!;
     public int Week(DateTime date) => throw new InvalidOperationException($"{nameof(Week)} cannot be called client side.");
     public int Strftime(string arg, DateTime date) => throw new InvalidOperationException($"{nameof(Strftime)} cannot be called client side.");
+
+    public virtual DbSet<StreakInfo> StreakInfos { get; set; } = null!;
 
     public ReplayContext(DbContextOptions<ReplayContext> options)
     : base(options)
@@ -53,6 +70,11 @@ public class ReplayContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<StreakInfo>(entity =>
+        {
+            entity.HasNoKey();
+        });
+
         modelBuilder.Entity<Replay>(entity =>
         {
             entity.HasIndex(e => e.FileName);
@@ -152,12 +174,6 @@ public class ReplayContext : DbContext
             entity.HasIndex(i => i.ReplayHash);
         });
 
-        modelBuilder.Entity<ArcadePlayer>(entity =>
-        {
-            entity.HasIndex(i => i.Name);
-            entity.HasIndex(i => new { i.RegionId, i.RealmId, i.ProfileId }).IsUnique();
-        });
-
         modelBuilder.Entity<ArcadePlayerRating>(entity =>
         {
             entity.HasIndex(i => i.RatingType);
@@ -173,6 +189,56 @@ public class ReplayContext : DbContext
             entity.HasIndex(i => i.Time);
         });
 
+        modelBuilder.Entity<DsUnit>(entity =>
+        {
+            entity.HasIndex(i => i.Name);
+            entity.HasIndex(i => i.Commander);
+            entity.HasIndex(i => new { i.Name, i.Commander });
+        });
+
+        modelBuilder.Entity<BonusDamage>(entity =>
+        {
+            entity.HasIndex(i => i.UnitType);
+        });
+
+        modelBuilder.Entity<DsAbility>(entity =>
+        {
+            entity.HasIndex(i => i.Name);
+        });
+
+        modelBuilder.Entity<DsUpgrade>(entity =>
+        {
+            entity.HasIndex(i => i.Upgrade);
+        });
+
+        modelBuilder.Entity<Faq>(entity =>
+        {
+            entity.HasIndex(i => i.Question);
+        });
+
+        modelBuilder.Entity<IhSession>(entity =>
+        {
+            entity.HasIndex(i => i.GroupId).IsUnique();
+            entity.Property(p => p.GroupState).HasConversion(
+                c => JsonSerializer.Serialize(c, (JsonSerializerOptions?)null),
+                c => JsonSerializer.Deserialize<GroupState>(c, (JsonSerializerOptions?)null));
+            entity.Property(p => p.GroupStateV2).HasConversion(
+                c => JsonSerializer.Serialize(c, (JsonSerializerOptions?)null),
+                c => JsonSerializer.Deserialize<GroupStateV2>(c, (JsonSerializerOptions?)null));
+        });
+
+        modelBuilder.Entity<ReplayArcadeMatch>(entity =>
+        {
+            entity.HasIndex(i => i.ReplayId).IsUnique();
+            entity.HasIndex(i => i.ArcadeReplayId).IsUnique();
+            entity.HasIndex(i => i.MatchTime);
+        });
+
+        modelBuilder.Entity<MaterializedArcadeReplay>(entity =>
+        {
+            entity.HasIndex(i => i.CreatedAt);
+        });
+
         MethodInfo weekMethodInfo = typeof(ReplayContext)
             .GetRuntimeMethod(nameof(ReplayContext.Week), new[] { typeof(DateTime) }) ?? throw new ArgumentNullException();
 
@@ -181,7 +247,8 @@ public class ReplayContext : DbContext
                     new SqlFunctionExpression("WEEK",
                         new[]
                         {
-                            args.ToArray()[0]
+                            args.ToArray()[0],
+                            new SqlConstantExpression(Expression.Constant(3, typeof(int)), new IntTypeMapping("int")),
                         },
                         true,
                         new[] { false, false },
@@ -208,4 +275,10 @@ public class ReplayContext : DbContext
                     )
                 );
     }
+}
+
+public record StreakInfo
+{
+    public int PlayerResult { get; set; }
+    public double LongestStreak { get; set; }
 }

@@ -30,19 +30,19 @@ public partial class RatingsSaveService
         DateTime bp10d = DateTime.Today.AddDays(-10);
 
         var query = from p in context.Players
-                        from rp in p.ReplayPlayers
-                        join pr in context.PlayerRatings on p.PlayerId equals pr.PlayerId
-                        join rpr in context.RepPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
-                        join rr in context.ReplayRatings on rp.ReplayId equals rr.ReplayId
-                        join r in context.Replays on rp.ReplayId equals r.ReplayId
-                        where r.GameTime > fromDate && pr.RatingType == ratingType && rr.RatingType == ratingType
-                        select new
-                        {
-                            PlayerId = new PlayerId(p.ToonId, p.RegionId, p.RealmId),
-                            Id = pr.PlayerRatingId,
-                            GameTime = r.GameTime,
-                            Change = rpr.RatingChange
-                        };
+                    from rp in p.ReplayPlayers
+                    join pr in context.PlayerRatings on p.PlayerId equals pr.PlayerId
+                    join rpr in context.RepPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
+                    join rr in context.ReplayRatings on rp.ReplayId equals rr.ReplayId
+                    join r in context.Replays on rp.ReplayId equals r.ReplayId
+                    where r.GameTime > fromDate && pr.RatingType == ratingType && rr.RatingType == ratingType
+                    select new
+                    {
+                        PlayerId = new PlayerId(p.ToonId, p.RegionId, p.RealmId),
+                        Id = pr.PlayerRatingId,
+                        GameTime = r.GameTime,
+                        Change = rpr.RatingChange
+                    };
 
         Dictionary<PlayerId, PlayerRatingChange> changes = new();
 

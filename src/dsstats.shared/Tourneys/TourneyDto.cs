@@ -7,4 +7,5 @@ public record TourneyDto
     public DateTime EventStart { get; set; }
     public GameMode GameMode { get; set; }
     public string? WinnerTeam { get; set; }
+    public string ExternalLink { get; set; } = string.Empty;
 }

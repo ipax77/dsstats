@@ -27,6 +27,22 @@ public static class HelperService
         }
     }
 
+    public static string GetBigNumberString(double num)
+    {
+        if (num > 1000000)
+        {
+            return (num / 1000000.0).ToString("N2", CultureInfo.InvariantCulture) + "m";
+        }
+        else if (num > 1000)
+        {
+            return (num / 1000.0).ToString("N2", CultureInfo.InvariantCulture) + "k";
+        }
+        else
+        {
+            return num.ToString("N2", CultureInfo.InvariantCulture);
+        }
+    }
+
     public static string GetPercentageString(int? wins, int? games)
     {
         if (games == null || wins == null || games == 0 || wins == 0)
@@ -142,7 +158,7 @@ public static class HelperService
 
     public static (double, double) GetChartMiddle(MiddleInfo middleInfo, int atSecond)
     {
-        if (middleInfo.MiddleChanges.Count < 2)
+        if (middleInfo.MiddleChanges.Count < 1)
         {
             return (0, 0);
         }
@@ -249,6 +265,29 @@ public static class HelperService
                 _ => "Unrated"
             };
         }
+    }
+
+    public static string GetUnitColor(UnitColor unitColor)
+    {
+        return unitColor switch
+        {
+            UnitColor.Color1 => "#C0392B",
+            UnitColor.Color2 => "#9B59B6",
+            UnitColor.Color3 => "#2980B9",
+            UnitColor.Color4 => "#1ABC9C",
+            UnitColor.Color5 => "#F1C40F",
+            UnitColor.Color6 => "#D35400",
+            UnitColor.Color7 => "#ECF0F1",
+            UnitColor.Color8 => "#7F8C8D",
+            UnitColor.Color9 => "#943126",
+            UnitColor.Color10 => "#5B2C6F",
+            UnitColor.Color11 => "#21618C",
+            UnitColor.Color12 => "#0E6655",
+            UnitColor.Color13 => "#9C640C",
+            UnitColor.Color14 => "#797D7F",
+            UnitColor.Color15 => "#515A5A",
+            _ => "#F9EBEA"
+        };
     }
 }
 

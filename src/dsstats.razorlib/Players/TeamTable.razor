@@ -1,3 +1,4 @@
+@using System.Globalization
 @using dsstats.shared
 @using dsstats.shared.Extensions
 @using dsstats.razorlib.Services
@@ -16,6 +17,11 @@
                 <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Count"))">
                     <SortArrow Property="Count">
                         Games
+                    </SortArrow>
+                </th>
+                <th scope="col" class="pointer" @onclick="@(e => SortList(e, "AvgGain"))">
+                    <SortArrow Property="AvgGain">
+                        AvgGain
                     </SortArrow>
                 </th>
                 <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Winrate"))">
@@ -39,6 +45,23 @@
                     </span>
                 </td>
                 <td>@player.Count</td>
+                <td>
+                    @if (player.AvgGain < 0)
+                    {
+                        <span class="text-danger">
+                            @player.AvgGain.ToString("N2", CultureInfo.InvariantCulture)
+                        </span>
+                    } else if (player.AvgGain > 0)
+                    {
+                        <span class="text-success">
+                            @player.AvgGain.ToString("N2", CultureInfo.InvariantCulture)
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="text-primary">0</span>
+                    }
+                </td>
                 <td>@HelperService.GetPercentageString(player.Wins, player.Count)</td>
             </tr>
         }

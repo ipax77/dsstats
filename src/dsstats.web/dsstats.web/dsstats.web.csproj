@@ -10,8 +10,13 @@
     <ProjectReference Include="..\..\dsstats.apiServices\dsstats.apiServices.csproj" />
     <ProjectReference Include="..\..\dsstats.razorlib\dsstats.razorlib.csproj" />
     <ProjectReference Include="..\..\dsstats.shared\dsstats.shared.csproj" />
+    <ProjectReference Include="..\dsstats.authclient\dsstats.authclient.csproj" />
     <ProjectReference Include="..\dsstats.web.Client\dsstats.web.Client.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="8.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.11" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
   </ItemGroup>
 
 </Project>

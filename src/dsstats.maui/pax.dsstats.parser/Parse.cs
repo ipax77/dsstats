@@ -175,7 +175,7 @@ public static partial class Parse
         return replay;
     }
 
-    private static void ParseMetadata(DsReplay replay, Metadata metadata)
+    private static void ParseMetadata(DsReplay replay, ReplayMetadata metadata)
     {
         foreach (MetadataPlayer metaPlayer in metadata.Players)
         {

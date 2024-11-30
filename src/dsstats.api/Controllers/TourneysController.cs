@@ -1,5 +1,6 @@
 ﻿using dsstats.shared;
 using dsstats.shared.Interfaces;
+using dsstats.shared.Stats;
 using Microsoft.AspNetCore.Mvc;
 
 namespace dsstats.api.Controllers;
@@ -12,6 +13,13 @@ public class TourneysController(ITourneysService tourneysService) : Controller
     public async Task<ActionResult<List<TourneyDto>>> GetTourneys()
     {
         return await tourneysService.GetTourneys();
+    }
+
+    [HttpGet]
+    [Route("groups")]
+    public async Task<ActionResult<List<GroupStateDto>>> GetOpenGroups()
+    {
+        return await tourneysService.GetGroupStates();
     }
 
     [HttpPost]
@@ -59,5 +67,53 @@ public class TourneysController(ITourneysService tourneysService) : Controller
             stream.Dispose();
             throw;
         }
+    }
+
+    [HttpGet]
+    [Route("ihsessionscount")]
+    public async Task<int> GetIhSessionsCount(CancellationToken token = default)
+    {
+        return await tourneysService.GetIhSessionsCount(token);
+    }
+
+    [HttpGet]
+    [Route("ihsessions/{skip:int}/{take:int}")]
+    public async Task<List<IhSessionListDto>> GetIhSessions(int skip, int take, CancellationToken token)
+    {
+        return await tourneysService.GetIhSessions(skip, take, token);
+    }
+
+    [HttpGet]
+    [Route("ihsession/{groupId:guid}")]
+    public async Task<IhSessionDto?> GetIhSession(Guid groupId)
+    {
+        return await tourneysService.GetIhSession(groupId);
+    }
+
+    [HttpGet]
+    [Route("ihsessionreplays/{groupId:guid}")]
+    public async Task<List<ReplayListDto>> GetReplays(Guid groupId)
+    {
+        return await tourneysService.GetReplays(groupId);
+    }
+
+    [HttpGet]
+    [Route("opengroupstate/{groupId:guid}")]
+    public async Task<GroupStateV2?> GetOpenGroupState(Guid groupId)
+    {
+        return await tourneysService.GetOpenGroupState(groupId);
+    }
+
+    [HttpGet]
+    [Route("bestmm/{cmdr1:int}/{cmdr2:int}")]
+    public async Task<MatchupResponse> GetBestTeammate(int cmdr1, int cmdr2, CancellationToken token)
+    {
+        MatchupRequest request = new()
+        {
+            TimePeriod = TimePeriod.Last2Years,
+            Commander1 = (Commander)cmdr1,
+            Commander2 = (Commander)cmdr2
+        };
+        return await tourneysService.GetBestTeammate(request, token);
     }
 }

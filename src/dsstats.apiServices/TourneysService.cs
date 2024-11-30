@@ -1,5 +1,6 @@
 ﻿using dsstats.shared;
 using dsstats.shared.Interfaces;
+using dsstats.shared.Stats;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 
@@ -14,12 +15,96 @@ public class TourneysService(HttpClient httpClient, ILogger<TourneysService> log
         throw new NotImplementedException();
     }
 
+    public async Task<MatchupResponse> GetBestTeammate(MatchupRequest request, CancellationToken token)
+    {
+        try
+        {
+            return await httpClient
+                .GetFromJsonAsync<MatchupResponse>($"{tourneysController}/bestmm/{(int)request.Commander1}/{(int)request.Commander2}")
+                ?? new MatchupResponse() { Request = request };
+
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting groupStates: {error}", ex.Message);
+        }
+        return new() { Request = request };
+    }
+
+    public async Task<List<GroupStateDto>> GetGroupStates()
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<List<GroupStateDto>>($"{tourneysController}/groups") ?? [];
+
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting groupStates: {error}", ex.Message);
+        }
+        return [];
+    }
+
+    public async Task<IhSessionDto?> GetIhSession(Guid groupId)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<IhSessionDto>($"{tourneysController}/ihsession/{groupId}");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting ihsession {groupId}: {error}", groupId, ex.Message);
+        }
+        return null;
+    }
+
+    public async Task<List<IhSessionListDto>> GetIhSessions(int skip, int take, CancellationToken token)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<List<IhSessionListDto>>($"{tourneysController}/ihsessions/{skip}/{take}", token) ?? [];
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting ihsessions: {error}", ex.Message);
+        }
+        return [];
+    }
+
+    public async Task<int> GetIhSessionsCount(CancellationToken token)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<int>($"{tourneysController}/ihsessionscount");
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting ihsessions count: {error}", ex.Message);
+        }
+        return 0;
+    }
+
+    public async Task<GroupStateV2?> GetOpenGroupState(Guid groupId)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<GroupStateV2>($"{tourneysController}/opengroupstate/{groupId}");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting groupstate: {error}", ex.Message);
+        }
+        return null;
+    }
+
     public async Task<List<TourneysReplayListDto>> GetReplays(TourneysReplaysRequest request, CancellationToken token)
     {
         try
         {
             var result = await httpClient.PostAsJsonAsync($"{tourneysController}/replays", request, token);
-            result .EnsureSuccessStatusCode();
+            result.EnsureSuccessStatusCode();
 
             return await result.Content.ReadFromJsonAsync<List<TourneysReplayListDto>>() ?? new();
         }
@@ -28,6 +113,19 @@ public class TourneysService(HttpClient httpClient, ILogger<TourneysService> log
             logger.LogError("failed getting replays: {error}", ex.Message);
         }
         return new();
+    }
+
+    public async Task<List<ReplayListDto>> GetReplays(Guid groupId)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<List<ReplayListDto>>($"{tourneysController}/ihsessionreplays/{groupId}") ?? [];
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed getting ihsession replays: {error}", ex.Message);
+        }
+        return [];
     }
 
     public async Task<int> GetReplaysCount(TourneysReplaysRequest request, CancellationToken token = default)
@@ -74,5 +172,10 @@ public class TourneysService(HttpClient httpClient, ILogger<TourneysService> log
             logger.LogError("failed getting stats: {error}", ex.Message);
         }
         return new();
+    }
+
+    public Task SeedTourneys()
+    {
+        throw new NotImplementedException();
     }
 }

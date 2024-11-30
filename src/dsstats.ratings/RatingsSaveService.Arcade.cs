@@ -1,15 +1,15 @@
-﻿using CsvHelper.Configuration;
-using CsvHelper;
+﻿using CsvHelper;
+using CsvHelper.Configuration;
 using dsstats.db8;
-using dsstats.shared.Calc;
 using dsstats.shared;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using System.Globalization;
+using dsstats.shared.Calc;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Frozen;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MySqlConnector;
+using System.Collections.Frozen;
+using System.Globalization;
 
 namespace dsstats.ratings;
 
@@ -22,7 +22,7 @@ public partial class RatingsSaveService
         bool append = replayRatingId > 0;
 
         List<ArcadeReplayRatingCsv> replayRatings = new();
-        List<ArcadeReplayPlayerRatingCsv> replayPlayerRatings = new();
+        List<ArcadeReplayDsPlayerRatingCsv> replayPlayerRatings = new();
         for (int i = 0; i < ratings.Count; i++)
         {
             var rating = ratings[i];
@@ -42,21 +42,21 @@ public partial class RatingsSaveService
 
                 replayPlayerRatings.Add(new()
                 {
-                    ArcadeReplayPlayerRatingId = replayPlayerRatingId,
+                    ArcadeReplayDsPlayerRatingId = replayPlayerRatingId,
                     GamePos = rp.GamePos,
                     Rating = MathF.Round(rp.Rating, 2),
                     RatingChange = MathF.Round(rp.RatingChange, 2),
                     Games = rp.Games,
                     Consistency = MathF.Round(rp.Consistency, 2),
                     Confidence = MathF.Round(rp.Confidence, 2),
-                    ArcadeReplayPlayerId = rp.ReplayPlayerId,
+                    ArcadeReplayDsPlayerId = rp.ReplayPlayerId,
                     ArcadeReplayRatingId = replayRatingId
                 });
             }
         }
 
         var replayRatingCsv = GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayRatings));
-        var replayPlayerRatingCsv = GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayPlayerRatings));
+        var replayPlayerRatingCsv = GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayDsPlayerRatings));
         FileMode fileMode = append ? FileMode.Append : FileMode.Create;
 
         using var stream1 = File.Open(replayRatingCsv, fileMode);
@@ -84,9 +84,9 @@ public partial class RatingsSaveService
         using var scope = scopeFactory.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        var playerIds = (await context.ArcadePlayers
-            .Select(s => new { s.ProfileId, s.RealmId, s.RegionId, s.ArcadePlayerId }).ToListAsync())
-            .ToDictionary(k => new PlayerId(k.ProfileId, k.RealmId, k.RegionId), v => v.ArcadePlayerId);
+        var playerIds = (await context.Players
+            .Select(s => new { s.ToonId, s.RealmId, s.RegionId, s.PlayerId }).ToListAsync())
+            .ToDictionary(k => new PlayerId(k.ToonId, k.RealmId, k.RegionId), v => v.PlayerId);
 
         var options = scope.ServiceProvider.GetRequiredService<IOptions<DbImportOptions>>();
         var connectionString = options.Value.ImportConnectionString;
@@ -98,8 +98,8 @@ public partial class RatingsSaveService
         await FixArcadeForeignKey(connectionString);
         await Csv2Mysql(GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayRatings)),
                 nameof(ReplayContext.ArcadeReplayRatings), connectionString);
-        await Csv2Mysql(GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayPlayerRatings)),
-                nameof(ReplayContext.ArcadeReplayPlayerRatings), connectionString);
+        await Csv2Mysql(GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayDsPlayerRatings)),
+                nameof(ReplayContext.ArcadeReplayDsPlayerRatings), connectionString);
 
         await SetArcadePlayerRatingsPos(connectionString);
         await SetArcadeRatingChange(context, connectionString);
@@ -155,7 +155,7 @@ public partial class RatingsSaveService
         }
 
         var playerRatingCsv = GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadePlayerRatings));
-        
+
         using var stream = File.Open(playerRatingCsv, FileMode.Create);
         using var writer = new StreamWriter(stream);
         using var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture)
@@ -180,8 +180,135 @@ public partial class RatingsSaveService
             Mvp = calcRating.Mvps,
             Consistency = calcRating.Consistency,
             Confidence = calcRating.Confidence,
-            ArcadePlayerId = playerId,
+            PlayerId = playerId,
         };
+    }
+
+    public async Task SaveContinueArcadeRatings(Dictionary<int, Dictionary<PlayerId, CalcRating>> mmrIdRatings,
+                                            List<shared.Calc.ReplayRatingDto> replayRatings)
+    {
+        using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var options = scope.ServiceProvider.GetRequiredService<IOptions<DbImportOptions>>();
+        var connectionString = options.Value.ImportConnectionString;
+
+        var playerIds = (await context.Players
+            .Select(s => new { s.ToonId, s.RealmId, s.RegionId, s.PlayerId }).ToListAsync())
+            .ToDictionary(k => new PlayerId(k.ToonId, k.RealmId, k.RegionId), v => v.PlayerId);
+
+        await ContinueArcadePlayerRatings(mmrIdRatings, playerIds);
+        await ContinueCsv2Mysql(GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayRatings)),
+                                nameof(ReplayContext.ArcadeReplayRatings),
+                                connectionString);
+        await ContinueCsv2Mysql(GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayDsPlayerRatings)),
+                                            nameof(ReplayContext.ArcadeReplayDsPlayerRatings),
+                                            connectionString);
+        await SetArcadePlayerRatingsPos(connectionString);
+    }
+
+    private async Task ContinueArcadePlayerRatings(Dictionary<int, Dictionary<PlayerId, CalcRating>> mmrIdRatings,
+                                         Dictionary<PlayerId, int> playerIdDic)
+    {
+        using var scope = scopeFactory.CreateAsyncScope();
+        var options = scope.ServiceProvider.GetRequiredService<IOptions<DbImportOptions>>();
+        var connectionString = options.Value.ImportConnectionString;
+
+        try
+        {
+            using var connection = new MySqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            using var transaction = connection.BeginTransaction();
+            var command = connection.CreateCommand();
+            command.Transaction = transaction;
+
+            command.CommandText =
+$@"INSERT INTO {nameof(ReplayContext.ArcadePlayerRatings)}
+    ({nameof(ArcadePlayerRating.ArcadePlayerRatingId)},
+    {nameof(ArcadePlayerRating.RatingType)},
+    {nameof(ArcadePlayerRating.Rating)},
+    {nameof(ArcadePlayerRating.Pos)},
+    {nameof(ArcadePlayerRating.Games)},
+    {nameof(ArcadePlayerRating.Wins)},
+    {nameof(ArcadePlayerRating.Mvp)},
+    {nameof(ArcadePlayerRating.TeamGames)},
+    {nameof(ArcadePlayerRating.MainCount)},
+    {nameof(ArcadePlayerRating.Main)},
+    {nameof(ArcadePlayerRating.Consistency)},
+    {nameof(ArcadePlayerRating.Confidence)},
+    {nameof(ArcadePlayerRating.IsUploader)},
+    {nameof(ArcadePlayerRating.PlayerId)})
+VALUES ((SELECT t.{nameof(ArcadePlayerRating.ArcadePlayerRatingId)} 
+    FROM (SELECT * from {nameof(ReplayContext.ArcadePlayerRatings)} WHERE {nameof(ArcadePlayerRating.RatingType)} = @value1 
+        AND {nameof(ArcadePlayerRating.PlayerId)} = @value13) as t),
+    @value1,@value2,@value3,@value4,@value5,@value6,@value7,@value8,@value9,@value10,@value11,@value12,@value13)
+ON DUPLICATE KEY UPDATE {nameof(ArcadePlayerRating.Rating)}=@value2,
+                        {nameof(ArcadePlayerRating.Games)}=@value4,
+                        {nameof(ArcadePlayerRating.Wins)}=@value5,
+                        {nameof(ArcadePlayerRating.Consistency)}=@value10,
+                        {nameof(ArcadePlayerRating.Confidence)}=@value11
+;";
+            command.Transaction = transaction;
+
+            List<MySqlParameter> parameters = new List<MySqlParameter>();
+            for (int i = 1; i <= 13; i++)
+            {
+                var parameter = command.CreateParameter();
+                parameter.ParameterName = $"@value{i}";
+                command.Parameters.Add(parameter);
+                parameters.Add(parameter);
+            }
+
+            foreach (var ent in mmrIdRatings)
+            {
+
+                foreach (var calcEnt in ent.Value.Values)
+                {
+                    if (!playerIdDic.TryGetValue(calcEnt.PlayerId, out var playerId))
+                    {
+                        continue;
+                    }
+                    var rating = new ArcadePlayerRatingCsv()
+                    {
+                        RatingType = ent.Key,
+                        Rating = calcEnt.Mmr,
+                        Pos = 0,
+                        Games = calcEnt.Games,
+                        Wins = calcEnt.Wins,
+                        Mvp = 0,
+                        TeamGames = 0,
+                        MainCount = 0,
+                        Main = 0,
+                        Consistency = calcEnt.Consistency,
+                        Confidence = calcEnt.Confidence,
+                        IsUploader = 0,
+                        PlayerId = playerId
+                    };
+
+                    parameters[0].Value = rating.RatingType;
+                    parameters[1].Value = rating.Rating;
+                    parameters[2].Value = rating.Pos;
+                    parameters[3].Value = rating.Games;
+                    parameters[4].Value = rating.Wins;
+                    parameters[5].Value = rating.Mvp;
+                    parameters[6].Value = rating.TeamGames;
+                    parameters[7].Value = rating.MainCount;
+                    parameters[8].Value = rating.Main;
+                    parameters[9].Value = rating.Consistency;
+                    parameters[10].Value = rating.Confidence;
+                    parameters[11].Value = rating.IsUploader;
+                    parameters[12].Value = rating.PlayerId;
+
+                    command.CommandTimeout = 240;
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+            await transaction.CommitAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed continue arcadeplayers: {error}", ex.Message);
+        }
     }
 }
 
@@ -200,7 +327,7 @@ internal record ArcadePlayerRatingCsv
     public double Consistency { get; set; }
     public double Confidence { get; set; }
     public int IsUploader { get; set; }
-    public int ArcadePlayerId { get; set; }
+    public int PlayerId { get; set; }
 }
 
 internal record ArcadeReplayRatingCsv
@@ -213,15 +340,15 @@ internal record ArcadeReplayRatingCsv
     public int AvgRating { get; set; }
 }
 
-internal record ArcadeReplayPlayerRatingCsv
+internal record ArcadeReplayDsPlayerRatingCsv
 {
-    public int ArcadeReplayPlayerRatingId { get; set; }
+    public int ArcadeReplayDsPlayerRatingId { get; set; }
     public int GamePos { get; set; }
     public float Rating { get; set; }
     public float RatingChange { get; set; }
     public int Games { get; set; }
     public float Consistency { get; set; }
     public float Confidence { get; set; }
-    public int ArcadeReplayPlayerId { get; set; }
+    public int ArcadeReplayDsPlayerId { get; set; }
     public int ArcadeReplayRatingId { get; set; }
 }

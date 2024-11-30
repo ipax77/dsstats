@@ -1,0 +1,115 @@
+﻿@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject ITourneysService tourneysService
+@implements IDisposable
+
+<div class="@(interestGuid == Guid.Empty ? "" : "visually-hidden")">
+    <div class="row justify-content-end" style="max-width: 500px;">
+        <div class="col-auto d-flex bgchart border rounded border-secondary p-1">
+            <div>
+                <span class="bi bi-arrow-clockwise text-primary pointer" @onclick="e => Refresh()"></span>
+            </div>
+            <div class="ms-2">
+                # @totalCount
+            </div>
+        </div>
+    </div>
+    <div class="tableFixHead table-responsive text-nowrap" style="max-width: 500px; max-height: 50vh;" tabindex="1">
+        <table class="tptable table">
+            <thead class="user-select-none">
+                <tr>
+                    <th>Date</th>
+                    <th>Players</th>
+                    <th>Games</th>
+                    <th>Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (totalCount > 0)
+                {
+                    <Virtualize @ref="virtualizeComponent" ItemsProvider="LoadSessions" Context="session" ItemSize="47"
+                                SpacerElement="tr">
+                        <ItemContent>
+                            <tr @key="session" height="47px" class="pointer" @onclick="e => LoadSession(session.GroupId)">
+                                <td>@session.Created.ToString("yyyy-MM-dd")</td>
+                                <td>@session.Players</td>
+                                <td>@session.Games</td>
+                                <td>@session.RatingType</td>
+                            </tr>
+                        </ItemContent>
+                        <Placeholder>
+                            <tr height="47px">
+                                <td colspan="100">Loading ...</td>
+                            </tr>
+                        </Placeholder>
+                    </Virtualize>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="@(interestGuid == Guid.Empty ? "visually-hidden" : "")">
+    <IhSessionComponent @ref="ihSessionComponent" GroupdId="interestGuid" OnClose="e => interestGuid = Guid.Empty" />
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public Guid GroupId { get; set; } = Guid.Empty;
+
+    private int totalCount = 0;
+    CancellationTokenSource cts = new();
+    Virtualize<IhSessionListDto>? virtualizeComponent;
+    Guid interestGuid = Guid.Empty;
+    IhSessionComponent? ihSessionComponent;
+
+    protected override void OnInitialized()
+    {
+        _ = SetCount();
+        if (GroupId != Guid.Empty)
+        {
+            LoadSession(GroupId);
+        }
+        base.OnInitialized();
+    }
+
+    private async Task SetCount()
+    {
+        totalCount = await tourneysService.GetIhSessionsCount(cts.Token);
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async ValueTask<ItemsProviderResult<IhSessionListDto>> LoadSessions(ItemsProviderRequest prRequest)
+    {
+        var skip = prRequest.StartIndex;
+        var take = Math.Min(prRequest.Count, totalCount - prRequest.StartIndex);
+
+        var sessions = await tourneysService.GetIhSessions(skip, take, prRequest.CancellationToken);
+        return new ItemsProviderResult<IhSessionListDto>(sessions, totalCount);
+    }
+
+    public async Task Refresh()
+    {
+        await SetCount();
+        if (virtualizeComponent is not null)
+        {
+            await InvokeAsync(async () =>
+            {
+                await virtualizeComponent.RefreshDataAsync();
+                StateHasChanged();
+            });
+        }
+    }
+
+    private void LoadSession(Guid groupId)
+    {
+        interestGuid = groupId;
+        ihSessionComponent?.LoadData(groupId);
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

@@ -11,7 +11,7 @@ public record PlayerDetailSummary
     public List<ReplayPlayerChartDto> ChartDtos { get; set; } = new();
     public double? CmdrPercentileRank { get; set; }
     public double? StdPercentileRank { get; set; }
-    public MvpInfo? MvpInfo {  get; set; }
+    public MvpInfo? MvpInfo { get; set; }
 }
 
 public record MvpInfo
@@ -110,6 +110,7 @@ public record PlayerTeamResult
     public PlayerId PlayerId { get; init; } = null!;
     public int Count { get; init; }
     public int Wins { get; init; }
+    public double AvgGain { get; init; }
 }
 
 public record PlayerMatchupInfo
@@ -134,6 +135,7 @@ public record PlayerTeamResultHelper
     public string Name { get; set; } = string.Empty;
     public int Count { get; set; }
     public int Wins { get; set; }
+    public double AvgGain { get; set; }
 }
 
 public record PlayerDetailResponse

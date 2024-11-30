@@ -1,102 +1,103 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using dsstats.shared;
-using dsstats.api.Services;
+﻿using dsstats.shared;
+using Microsoft.AspNetCore.SignalR;
 
-namespace pax.dsstats.web.Server.Hubs;
+namespace dsstats.pickban;
 
-public class PickBanHub : Hub
+public class PickBanHub(PickBanRepository pickBanRepository) : Hub
 {
-    private readonly PickBanService pickBanService;
-
-    public PickBanHub(PickBanService pickBanService)
-    {
-        this.pickBanService = pickBanService;
-    }
-
-    public async Task EnterPage(PickBanSetting pickBanSetting)
+    public async Task CreatePickBan(Guid guid, PickBanMode mode)
     {
         Context.Items.Clear();
-        Context.Items.Add("guid", pickBanSetting.Id);
-        await Groups.AddToGroupAsync(Context.ConnectionId, pickBanSetting.Id.ToString());
-        var state = pickBanService.CreateOrVisit(pickBanSetting);
-        await Clients.OthersInGroup(pickBanSetting.Id.ToString()).SendAsync("VisitorJoined", state.Visitors);
-        await Clients.Client(Context.ConnectionId).SendAsync("ConnectInfo", state);
+        Context.Items.Add("guid", guid);
+        await Groups.AddToGroupAsync(Context.ConnectionId, guid.ToString());
+
+        var stateDto = pickBanRepository.CreatePickBanState(guid, mode);
+        await Clients.Client(Context.ConnectionId).SendAsync("State", stateDto);
+        await Clients.OthersInGroup(guid.ToString()).SendAsync("Visitors", stateDto.Visitors);
     }
 
-    public async Task Ban(PickBanEnt ent)
+    public async Task JoinPickBan(Guid guid)
     {
-        if (Context.Items.TryGetValue("guid", out object? guidObject))
+        Context.Items.Clear();
+        Context.Items.Add("guid", guid);
+        await Groups.AddToGroupAsync(Context.ConnectionId, guid.ToString());
+
+        var stateDto = pickBanRepository.GetPickBanState(guid, true);
+        if (stateDto == null)
         {
-            if (guidObject is Guid guid)
+            return;
+        }
+        await Clients.Client(Context.ConnectionId).SendAsync("State", stateDto);
+        await Clients.OthersInGroup(guid.ToString()).SendAsync("Visitors", stateDto.Visitors);
+    }
+
+    public async Task LeavePickBan()
+    {
+        if (Context.Items.TryGetValue("guid", out var guidObj)
+            && guidObj is Guid guid)
+        {
+            int visitors = pickBanRepository.SetVisitor(guid, false);
+            await Clients.OthersInGroup(guid.ToString()).SendAsync("Visitors", visitors);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, guid.ToString());
+        }
+        Context.Items.Clear();
+    }
+
+    public async Task SetBan(PickBan pickBan)
+    {
+        if (Context.Items.TryGetValue("guid", out var guidObj)
+            && guidObj is Guid guid)
+        {
+            var resultDto = pickBanRepository.SetBan(guid, pickBan);
+            if (resultDto == null)
             {
-                var state = pickBanService.Ban(guid, ent);
-                if (state == null)
-                {
-                    return;
-                }
-                if (state.IsBansReady)
-                {
-                    await Clients.Group(guid.ToString()).SendAsync("ConnectInfo", state);
-                }
-                else
-                {
-                    await Clients.OthersInGroup(guid.ToString()).SendAsync("CmdrBaned", ent.Pos);
-                }
+                return;
+            }
+            await Clients.Group(guid.ToString()).SendAsync("Bans", resultDto.Bans);
+            if (resultDto.TotalPicks == 0 && resultDto.Bans.Count == resultDto.TotalBans)
+            {
+                await pickBanRepository.SavePickBan(resultDto);
             }
         }
     }
 
-    public async Task Lock(PickBanEnt ent)
+    public async Task SetPick(PickBan pickBan)
     {
-        if (Context.Items.TryGetValue("guid", out object? guidObject))
+        if (Context.Items.TryGetValue("guid", out var guidObj)
+            && guidObj is Guid guid)
         {
-            if (guidObject is Guid guid)
+            var resultDto = pickBanRepository.SetPick(guid, pickBan);
+            if (resultDto == null)
             {
-                var state = pickBanService.Lock(guid, ent);
-                if (state == null)
-                {
-                    return;
-                }
-                if (state.IsPicksReady)
-                {
-                    await Clients.Group(guid.ToString()).SendAsync("ConnectInfo", state);
-                }
-                else
-                {
-                    await Clients.OthersInGroup(guid.ToString()).SendAsync("CmdrLocked", ent.Pos);
-                }
+                return;
+            }
+            await Clients.Group(guid.ToString()).SendAsync("Picks", resultDto.Picks);
+            if (resultDto.Picks.Count == resultDto.TotalPicks)
+            {
+                await pickBanRepository.SavePickBan(resultDto);
             }
         }
-    }
-
-    public override async Task OnDisconnectedAsync(Exception? e)
-    {
-        if (Context.Items.TryGetValue("guid", out object? guidObject))
-        {
-            if (guidObject is Guid guid)
-            {
-                var visitors = pickBanService.Disconnect(guid);
-                await Clients.OthersInGroup(guid.ToString()).SendAsync("VisitorLeft", visitors);
-            }
-        }
-        await base.OnDisconnectedAsync(e);
     }
 
     public override async Task OnConnectedAsync()
     {
-        if (Context.Items.TryGetValue("guid", out object? guidObject))
+        if (Context.Items.TryGetValue("guid", out var guidObj)
+            && guidObj is Guid guid)
         {
-            if (guidObject is Guid guid)
-            {
-                var state = pickBanService.Connect(guid);
-                if (state == null)
-                {
-                    return;
-                }
-                await Clients.OthersInGroup(guid.ToString()).SendAsync("VisitorJoined", state.Visitors);
-                await Clients.Clients(Context.ConnectionId).SendAsync("ConnectInfo", state);
-            }
+            await JoinPickBan(guid);
         }
         await base.OnConnectedAsync();
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? e)
+    {
+        if (Context.Items.TryGetValue("guid", out var guidObj)
+            && guidObj is Guid guid)
+        {
+            int visitors = pickBanRepository.SetVisitor(guid, false);
+            await Clients.OthersInGroup(guid.ToString()).SendAsync("Visitors", visitors);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, guid.ToString());
+        }
+        await base.OnDisconnectedAsync(e);
     }
 }

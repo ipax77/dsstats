@@ -23,6 +23,7 @@
     <table class="tptable table table-sm">
         <thead class="user-select-none">
             <tr>
+                <th>Map</th>
                 <th>GameTime</th>
                 <th>Duration</th>
                 <th>Team1</th>
@@ -48,6 +49,9 @@
                     <ItemContent>
                         <tr @key="replay" id="@replay.ReplayHash" class="pointer @(replayHash == replay.ReplayHash ? "table-primary" : "")" height="47px"
                             @onclick="e => RequestReplay(replay.ReplayHash)">
+                            <td>
+                                <i class="bi bi-diagram-2 text-primary text-decoration-underline" @onclick:stopPropagation @onclick="e => OnMapRequest.InvokeAsync(replay.ReplayHash)"></i>
+                            </td>
                             <td>@replay.GameTime.ToString("yyyy-MM-dd")</td>
                             <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
                             <td>
@@ -95,6 +99,9 @@
 
     [Parameter]
     public EventCallback<string> OnReplayRequest { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnMapRequest { get; set; }
 
     protected override void OnInitialized()
     {

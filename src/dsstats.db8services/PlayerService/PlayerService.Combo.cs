@@ -31,6 +31,16 @@ public partial class PlayerService
     private IQueryable<ComboPlayerRatingDto> FilterComboList(IQueryable<ComboPlayerRatingDto> ratings,
                                                              RatingsRequest request)
     {
+        if (request.Region > 0)
+        {
+            ratings = ratings.Where(x => x.Player.RegionId == request.Region);
+        }
+
+        if (request.Active)
+        {
+            ratings = ratings.Where(x => x.IsActive);
+        }
+
         if (string.IsNullOrEmpty(request.Search))
         {
             return ratings;
@@ -130,8 +140,20 @@ public partial class PlayerService
                         : o.ComboPlayerRating.Wins * 100.0 / o.ComboPlayerRating.Games);
                 }
             }
+            else if (order.Property == "Mvp")
+            {
+                if (order.Ascending)
+                {
+                    ratings = ratings.OrderBy(o => o.PlayerRating.Games == 0 ? 0
+                        : o.PlayerRating.Mvp * 100.0 / o.PlayerRating.Games);
+                }
+                else
+                {
+                    ratings = ratings.OrderByDescending(o => o.PlayerRating.Games == 0 ? 0
+                        : o.PlayerRating.Mvp * 100.0 / o.PlayerRating.Games);
+                }
+            }
             else if (order.Property == "Main"
-                || order.Property == "Mvp"
                 || order.Property == "MainCount"
                 || order.Property.StartsWith("PlayerRatingChange"))
             {
@@ -222,7 +244,8 @@ public partial class PlayerService
                                 Change10d = prc.Change10d,
                                 Change30d = prc.Change30d
                             }
-                        }
+                        },
+                        IsActive = prc != null
                     };
         return query;
     }

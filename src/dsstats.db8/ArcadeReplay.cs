@@ -20,7 +20,7 @@ public class ArcadeReplay
 {
     public ArcadeReplay()
     {
-        ArcadeReplayPlayers = new HashSet<ArcadeReplayPlayer>();
+        ArcadeReplayDsPlayers = new HashSet<ArcadeReplayDsPlayer>();
     }
 
     [Key]
@@ -40,43 +40,24 @@ public class ArcadeReplay
     [StringLength(64)]
     public string ReplayHash { get; set; } = string.Empty;
     public ArcadeReplayRating? ArcadeReplayRating { get; set; }
-    public ICollection<ArcadeReplayPlayer> ArcadeReplayPlayers { get; set; }
+    public ICollection<ArcadeReplayDsPlayer> ArcadeReplayDsPlayers { get; set; }
 }
 
-public class ArcadeReplayPlayer
+public class ArcadeReplayDsPlayer
 {
     [Key]
-    public int ArcadeReplayPlayerId { get; set; }
+    public int ArcadeReplayDsPlayerId { get; set; }
     [MaxLength(50)]
     public string Name { get; set; } = string.Empty;
     public int SlotNumber { get; set; }
     public int Team { get; set; }
     public int Discriminator { get; set; }
     public PlayerResult PlayerResult { get; set; }
-    public int ArcadePlayerId { get; set; }
-    public ArcadeReplayPlayerRating? ArcadeReplayPlayerRating { get; set; }
-    public ArcadePlayer ArcadePlayer { get; set; } = null!;
+    public ArcadeReplayDsPlayerRating? ArcadeReplayPlayerRating { get; set; }
     public int ArcadeReplayId { get; set; }
-    public ArcadeReplay ArcadeReplay { get; set; } = null!;
-}
-
-public class ArcadePlayer
-{
-    public ArcadePlayer()
-    {
-        ArcadeReplayPlayers = new HashSet<ArcadeReplayPlayer>();
-        ArcadePlayerRatings = new HashSet<ArcadePlayerRating>();
-    }
-
-    [Key]
-    public int ArcadePlayerId { get; set; }
-    [MaxLength(50)]
-    public string Name { get; set; } = string.Empty;
-    public int RegionId { get; set; }
-    public int RealmId { get; set; }
-    public int ProfileId { get; set; }
-    public ICollection<ArcadePlayerRating> ArcadePlayerRatings { get; set; }
-    public ICollection<ArcadeReplayPlayer> ArcadeReplayPlayers { get; set; }
+    public ArcadeReplay? ArcadeReplay { get; set; }
+    public int PlayerId { get; set; }
+    public Player? Player { get; set; }
 }
 
 public class ArcadePlayerRating
@@ -95,8 +76,10 @@ public class ArcadePlayerRating
     public double Confidence { get; set; }
     public bool IsUploader { get; set; }
     public ArcadePlayerRatingChange? ArcadePlayerRatingChange { get; set; }
-    public int ArcadePlayerId { get; set; }
-    public virtual ArcadePlayer ArcadePlayer { get; set; } = null!;
+    public int PlayerId { get; set; }
+    public Player? Player { get; set; }
+    //public int? PlayerId { get; set; }
+    //public Player? Player { get; set; }
 }
 
 public class ArcadePlayerRatingChange
@@ -113,7 +96,7 @@ public class ArcadeReplayRating
 {
     public ArcadeReplayRating()
     {
-        ArcadeReplayPlayerRatings = new HashSet<ArcadeReplayPlayerRating>();
+        ArcadeReplayDsPlayerRatings = new HashSet<ArcadeReplayDsPlayerRating>();
     }
     public int ArcadeReplayRatingId { get; set; }
     public RatingType RatingType { get; set; }
@@ -122,20 +105,20 @@ public class ArcadeReplayRating
     public int ArcadeReplayId { get; set; }
     public ArcadeReplay ArcadeReplay { get; set; } = null!;
     public int AvgRating { get; set; }
-    public virtual ICollection<ArcadeReplayPlayerRating> ArcadeReplayPlayerRatings { get; set; }
+    public virtual ICollection<ArcadeReplayDsPlayerRating> ArcadeReplayDsPlayerRatings { get; set; }
 }
 
-public class ArcadeReplayPlayerRating
+public class ArcadeReplayDsPlayerRating
 {
-    public int ArcadeReplayPlayerRatingId { get; set; }
+    public int ArcadeReplayDsPlayerRatingId { get; set; }
     public int GamePos { get; set; }
     public float Rating { get; set; }
     public float RatingChange { get; set; }
     public int Games { get; set; }
     public float Consistency { get; set; }
     public float Confidence { get; set; }
-    public int ArcadeReplayPlayerId { get; set; }
-    public ArcadeReplayPlayer ReplayPlayer { get; set; } = null!;
+    public int ArcadeReplayDsPlayerId { get; set; }
+    public ArcadeReplayDsPlayer ReplayDsPlayer { get; set; } = null!;
     public int ArcadeReplayRatingId { get; set; }
     public ArcadeReplayRating ArcadeReplayRating { get; set; } = null!;
 }

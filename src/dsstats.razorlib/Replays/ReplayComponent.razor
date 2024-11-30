@@ -80,6 +80,15 @@
                                     </label>
                                 </div>
                             }
+                            @if (Replay.ReplayPlayers.Any(a => a.Duration < Replay.Duration - 90))
+                            {
+                                <div class="form-check form-switch">
+                                    <label class="form-check-label" style="user-select: none;">
+                                        Leavers
+                                        <input type="checkbox" class="form-check-input" @bind="showLeavers" @bind:after="@(() => replayMiddleChart?.AddLeaverAnnotations(showLeavers))" />
+                                    </label>
+                                </div>
+                            }
                         </fieldset>
                     </form>
                 </div>
@@ -143,7 +152,7 @@
                 }
             </div>
         </div>
-        @if (buildPlayers.Count > 0)
+        @if (hasBuilds)
         {
             <div class="row">
                 <div class="col-auto text-center align-self-center">
@@ -168,16 +177,7 @@
                 </div>
             </div>
         }
-        <div class="row">
-            <CascadingValue Value="Breakpoint">
-                @foreach (var player in buildPlayers.OrderBy(o => o.GamePos))
-                {
-                    <div class="col-auto p-1">
-                        <ReplayPlayerDetails Player="player" MiddleInfo="middleInfo"></ReplayPlayerDetails>
-                    </div>
-                }
-            </CascadingValue>
-        </div>
+        <ReplayPlayersDetailContainer @ref="replayPlayersDetailContainer" MiddleInfo="middleInfo" />
     </div>
     <div class="card-footer bgchart2">
         <div class="row fw-bolder text-white-50" style="max-width: 1100px;">
@@ -220,6 +220,13 @@
                         <span>Downloads @Replay.Downloads</span>
                     </div>
                 }
+                @if (LoadArcadeReplayEnabled())
+                {
+                    <div class="col-2">
+                        <button type="button" class="btn btn-sm btn-outline-light" @onclick="LoadArcadeReplay">SC2Arcade</button>
+                    </div>
+                }
+
                 @if (!string.IsNullOrEmpty(Replay.FileName))
                 {
                     <div class="col-2">
@@ -233,15 +240,39 @@
                     @Replay.FileName
                 </div>
             }
+            <div class="col-auto">
+                <button class="btn btn-sm btn-outline-light" @onclick="e => showLog = !showLog">
+                    <span class="bi @(showLog ? "bi-chevron-down" : "bi-chevron-up")"></span>
+                    Log
+                </button>
+            </div>
         </div>
     </div>
 </div>
+@if (showLog)
+{
+    <ReplayLog Replay="Replay" MiddleInfo="middleInfo" />
+}
 @if (interestPlayer is not null)
 {
     <dsstats.razorlib.Players.Profile.ProfileComponent PlayerId="interestPlayer" RatingType="ratingType"
                                                        RatingCalcType="RatingCalcType.Combo"
                                                        OnCloseRequested="ClosePlayerDetails"
                                                        OnPlayerReplaysRequested="OnPlayerReplaysRequested" />
+}
+@if (arcadeReplay is not null)
+{
+    <div class="mt-2">
+        <ArcadeReplayComponent Replay="arcadeReplay"
+                               OnCloseRequested="e => arcadeReplay = null"
+                               OnPlayerReplaysRequested="OnPlayerReplaysRequested" />
+    </div>
+}
+else if (noArcadeReplayFound)
+{
+    <div>
+        No Arcade Replay found.
+    </div>
 }
 
 @code {
@@ -256,8 +287,12 @@
 
     [Parameter]
     public bool IsScrollable { get; set; }
+
     [Parameter]
     public EventCallback<bool> OnScrollRequest { get; set; }
+
+    [Parameter]
+    public bool CanLoadArcadeReplay { get; set; }
 
     [Parameter]
     public EventCallback<PlayerReplaysRequest> OnPlayerReplaysRequested { get; set; }
@@ -271,15 +306,18 @@
     ReplayTeamTable? teamTable1;
     ReplayTeamTable? teamTable2;
 
-    List<ReplayPlayerDto> buildPlayers = new();
     private bool showMiddleChart = false;
     Breakpoint Breakpoint = Breakpoint.All;
     int breakpointsCount = 1;
     bool showRating = false;
     bool comboRating = true;
     bool showReplayPath = false;
+    bool showLog = false;
     PlayerId? interestPlayer = null;
     RatingType ratingType = RatingType.Cmdr;
+
+    ArcadeReplayDto? arcadeReplay = null;
+    bool noArcadeReplayFound;
 
     Dictionary<int, List<Breakpoint>> AvailableBreakpoints = new()
     {
@@ -295,6 +333,10 @@
     ReplayMiddleChart? replayMiddleChart;
     bool showTierUps = false;
     bool showRefineries = false;
+    bool showLeavers = false;
+
+    ReplayPlayersDetailContainer? replayPlayersDetailContainer;
+    bool hasBuilds;
 
     protected override void OnParametersSet()
     {
@@ -325,17 +367,22 @@
         {
             comboRating = true;
         }
+        arcadeReplay = null;
+        noArcadeReplayFound = false;
         interestPlayer = null;
         showRating = false;
         showReplayPath = false;
+        showLog = false;
         replayRatings.Clear();
         showMiddleChart = false;
         showTierUps = false;
         showRefineries = false;
+        showLeavers = false;
+        hasBuilds = false;
         Breakpoint = Breakpoint.All;
         breakpointsCount = Math.Min(4, Replay.ReplayPlayers.Select(s => s.Spawns.Count).Max());
-        buildPlayers.Clear();
         middleInfo = Replay.GetMiddleInfo();
+        replayPlayersDetailContainer?.Reset(middleInfo);
         teamTable1?.Uncheck();
         teamTable2?.Uncheck();
         _ = LoadRating();
@@ -368,19 +415,14 @@
         {
             showTierUps = false;
             showRefineries = false;
+            showLeavers = false;
         }
     }
 
     public void ShowHideBuild(ReplayPlayerDto player)
     {
-        if (buildPlayers.Contains(player))
-        {
-            buildPlayers.Remove(player);
-        }
-        else
-        {
-            buildPlayers.Add(player);
-        }
+        hasBuilds = true;
+        replayPlayersDetailContainer?.AddOrRemovePlayer(player);
     }
 
     private void ChangeRatingType(ChangeEventArgs e)
@@ -441,5 +483,26 @@
     private void SetBreakpoint(ChangeEventArgs e, Breakpoint breakpoint)
     {
         Breakpoint = breakpoint;
+        replayPlayersDetailContainer?.SetBreakpoint(breakpoint);
+
+    }
+
+    private async Task LoadArcadeReplay()
+    {
+        arcadeReplay = await replaysService.GetDssstatsArcadeReplay(Replay.ReplayHash);
+        if (arcadeReplay is null)
+        {
+            noArcadeReplayFound = true;
+        }
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private bool LoadArcadeReplayEnabled()
+    {
+        return CanLoadArcadeReplay && Replay.ReplayPlayers.Count == 6
+            && Replay.TournamentEdition == false
+            && (Replay.GameMode == GameMode.Commanders
+                || Replay.GameMode == GameMode.Standard
+                || Replay.GameMode == GameMode.CommandersHeroic);
     }
 }

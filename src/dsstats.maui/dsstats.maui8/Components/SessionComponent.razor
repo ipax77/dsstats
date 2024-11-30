@@ -27,6 +27,14 @@
                     </label>
                 </div>
             </div>
+            @if (remote)
+            {
+                <div class="ms-auto">
+                    <div>
+                        <span class="bi bi-arrow-clockwise text-light pointer" @onclick="e => Reload()"></span>
+                    </div>
+                </div>
+            }
         </div>
         <div class="mt-1">
             @if (infos.Count > 0)
@@ -53,7 +61,7 @@
                 <tbody>
                     @foreach (var info in infos.OrderByDescending(o => o.GameTime))
                     {
-                        <tr>
+                        <tr class="pointer" @onclick="e => RequestReplay.InvokeAsync(info.ReplayHash)">
                             <td>
                                 @if (remote)
                                 {
@@ -90,6 +98,9 @@
 
 
 @code {
+    [Parameter]
+    public EventCallback<string> RequestReplay { get; set; }
+
     List<SessionReplayInfo> infos = [];
     bool remote;
     bool isLoading;
@@ -112,5 +123,13 @@
         infos = await dsstatsService.GetSessionReplayInfos(remote);
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task Reload()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        await dsstatsService.ReloadSessionReplayInfos(remote);
+        await LoadData();
     }
 }

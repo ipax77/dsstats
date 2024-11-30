@@ -12,7 +12,16 @@ public partial class DsstatsService
     private readonly ConcurrentDictionary<string, ReplayRatingDto?> remoteRatings = [];
 
     private readonly DateTime sessionStart = DateTime.UtcNow;
-    // private readonly DateTime sessionStart = new DateTime(2023, 11, 20);
+    // private readonly DateTime sessionStart = new DateTime(2024, 11, 08);
+
+    public async Task ReloadSessionReplayInfos(bool remote)
+    {
+        if (remote)
+        {
+            remoteRatings.Clear();
+        }
+        await GetSessionReplayInfos(remote);
+    }
 
     public async Task<List<SessionReplayInfo>> GetSessionReplayInfos(bool remote)
     {

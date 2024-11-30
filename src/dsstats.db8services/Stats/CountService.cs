@@ -193,27 +193,27 @@ public class CountService : ICountService
                             AvgDuration = (int)g.Average(a => a.Duration)
                         }
                         : from r in context.Replays
-                        from rp in r.ReplayPlayers
-                        join rr in context.ReplayRatings on r.ReplayId equals rr.ReplayId
-                        join rpr in context.RepPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
-                        where r.GameTime >= fromDate
-                            && (toDate > tillDate || r.GameTime <= toDate)
-                            && gameModes.Contains(r.GameMode)
-                            && rr.RatingType == request.RatingType
-                            && (limits.FromRating <= 0 || rpr.Rating >= limits.FromRating)
-                            && (limits.ToRating <= 0 || rpr.Rating <= limits.ToRating)
-                            && (limits.FromExp2Win <= 0 || rr.ExpectationToWin >= limits.FromExp2Win)
-                            && (limits.ToExp2Win <= 0 || rr.ExpectationToWin <= limits.ToExp2Win)
-                            && (noTournamentEdition == true || r.TournamentEdition == true)
+                          from rp in r.ReplayPlayers
+                          join rr in context.ReplayRatings on r.ReplayId equals rr.ReplayId
+                          join rpr in context.RepPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
+                          where r.GameTime >= fromDate
+                              && (toDate > tillDate || r.GameTime <= toDate)
+                              && gameModes.Contains(r.GameMode)
+                              && rr.RatingType == request.RatingType
+                              && (limits.FromRating <= 0 || rpr.Rating >= limits.FromRating)
+                              && (limits.ToRating <= 0 || rpr.Rating <= limits.ToRating)
+                              && (limits.FromExp2Win <= 0 || rr.ExpectationToWin >= limits.FromExp2Win)
+                              && (limits.ToExp2Win <= 0 || rr.ExpectationToWin <= limits.ToExp2Win)
+                              && (noTournamentEdition == true || r.TournamentEdition == true)
                           group r by new { Leaver = r.Maxleaver > 90, NoQuit = r.WinnerTeam > 0 } into g
-                        select new
-                        {
-                            g.Key.Leaver,
-                            g.Key.NoQuit,
-                            Matchups = g.Count(),
-                            Replays = g.Select(s => s.ReplayId).Distinct().Count(),
-                            AvgDuration = (int)g.Average(a => a.Duration)
-                        }
+                          select new
+                          {
+                              g.Key.Leaver,
+                              g.Key.NoQuit,
+                              Matchups = g.Count(),
+                              Replays = g.Select(s => s.ReplayId).Distinct().Count(),
+                              AvgDuration = (int)g.Average(a => a.Duration)
+                          }
                   : from r in context.Replays
                     where r.GameTime >= fromDate
                         && (toDate > tillDate || r.GameTime <= toDate)

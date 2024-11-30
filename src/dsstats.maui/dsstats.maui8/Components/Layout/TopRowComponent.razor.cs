@@ -125,6 +125,7 @@ public partial class TopRowComponent : ComponentBase, IDisposable
         dsstatsService.ScanStateChanged -= DssstatsService_ScanStateChanged;
         dsstatsService.DecodeStateChanged -= DssstatsService_DecodeStateChanged;
         NavigationManager.LocationChanged -= NavigationManager_LocationChanged;
+        updateService.UpdateProgress -= UpdateService_UpdateProgress;
     }
 
     public async Task CheckForUpdates(bool init = false)

@@ -12,13 +12,15 @@ public class ReplayContextFactory : IDesignTimeDbContextFactory<ReplayContext>
         var json = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText("/data/localserverconfig.json"));
         var config = json.GetProperty("ServerConfig");
         var connectionString = config.GetProperty("DsstatsConnectionString").GetString();
-        var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 43));
+        // var connectionString = config.GetProperty("ProdConnectionString").GetString();
+        var serverVersion = new MySqlServerVersion(new System.Version(5, 7, 44));
 
         var optionsBuilder = new DbContextOptionsBuilder<ReplayContext>();
         optionsBuilder.UseMySql(connectionString, serverVersion, x =>
         {
             x.EnableRetryOnFailure();
             x.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
+            x.CommandTimeout(800);
             x.MigrationsAssembly("MysqlMigrations");
         });
 

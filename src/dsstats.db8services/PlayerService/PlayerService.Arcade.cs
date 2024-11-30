@@ -30,9 +30,9 @@ public partial class PlayerService
     private IQueryable<ComboPlayerRatingDto> GetArcadeListQuery(RatingsRequest request)
     {
         var query = from cpr in context.ArcadePlayerRatings
-                    from pr in context.PlayerRatings.Where(x => x.Player!.ToonId == cpr.ArcadePlayer!.ProfileId
-                        && x.Player.RealmId == cpr.ArcadePlayer.RealmId
-                        && x.Player.RegionId == cpr.ArcadePlayer.RegionId).DefaultIfEmpty()
+                    from pr in context.PlayerRatings.Where(x => x.Player!.ToonId == cpr.Player!.ToonId
+                        && x.Player.RealmId == cpr.Player.RealmId
+                        && x.Player.RegionId == cpr.Player.RegionId).DefaultIfEmpty()
                     where cpr.Games > 19 && cpr.RatingType == request.Type && pr.RatingType == request.Type
                     select new ComboPlayerRatingDto()
                     {
@@ -45,10 +45,10 @@ public partial class PlayerService
                         },
                         Player = new PlayerRatingPlayerDto()
                         {
-                            Name = cpr.ArcadePlayer!.Name,
-                            ToonId = cpr.ArcadePlayer.ProfileId,
-                            RegionId = cpr.ArcadePlayer.RegionId,
-                            RealmId = cpr.ArcadePlayer.RealmId
+                            Name = cpr.Player!.Name,
+                            ToonId = cpr.Player.ToonId,
+                            RegionId = cpr.Player.RegionId,
+                            RealmId = cpr.Player.RealmId
                         },
                         PlayerRating = new PlayerRatingDto()
                         {
@@ -66,7 +66,8 @@ public partial class PlayerService
                                 Change10d = cpr.ArcadePlayerRatingChange.Change10d,
                                 Change30d = cpr.ArcadePlayerRatingChange.Change30d
                             }
-                        }
+                        },
+                        IsActive = cpr.ArcadePlayerRatingChange != null,
                     };
         return query;
     }

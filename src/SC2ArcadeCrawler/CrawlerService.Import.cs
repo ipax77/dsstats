@@ -1,19 +1,17 @@
-﻿using Microsoft.EntityFrameworkCore;
-using dsstats.db8;
+﻿using dsstats.db8;
 using dsstats.shared;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace pax.dsstats.web.Server.Services.Arcade;
 
 public partial class CrawlerService
 {
-    private Dictionary<PlayerId, int> arcadePlayerIds = new();
-    private Dictionary<ArcadeReplayId, bool> arcadeReplayIds = new();
+    private Dictionary<ArcadeReplayId, bool> arcadeReplayIds = [];
 
     private async Task ImportArcadeReplays(CrawlInfo crawlInfo, CancellationToken token)
     {
-        await SeedPlayerIds();
         await SeedReplayIds();
 
         List<ArcadeReplay> replays = new();
@@ -117,38 +115,42 @@ public partial class CrawlerService
                 BnetBucketId = result.BnetBucketId,
                 GameMode = gameMode,
                 CreatedAt = result.CreatedAt,
-                Duration = result.Match.CompletedAt == null || result.ClosedAt == null ? 0 
+                Duration = result.Match.CompletedAt == null || result.ClosedAt == null ? 0
                 : Convert.ToInt32((result.Match.CompletedAt.Value - result.ClosedAt.Value).TotalSeconds),
                 PlayerCount = 6,
                 WinnerTeam = winnerTeam,
                 TournamentEdition = crawlInfo.TeMap,
-                ArcadeReplayPlayers = result.Slots.Select(s => new ArcadeReplayPlayer()
+                ArcadeReplayDsPlayers = result.Slots.Select(s => new ArcadeReplayDsPlayer()
                 {
                     Name = s.Name,
                     SlotNumber = s.SlotNumber ?? 0,
                     Team = s.Team ?? 0,
-                    ArcadePlayer = new()
+                    Player = new()
                     {
                         Name = s.Name,
                         RegionId = s.Profile?.RegionId ?? 0,
                         RealmId = s.Profile?.RealmId ?? 0,
-                        ProfileId = s.Profile?.ProfileId ?? 0
+                        ToonId = s.Profile?.ProfileId ?? 0
                     }
-                }).ToList(),
+                }).ToList()
             };
 
-            foreach (var rp in replay.ArcadeReplayPlayers)
+            foreach (var rp in replay.ArcadeReplayDsPlayers)
             {
-                var matchPlayer = result.Match.ProfileMatches.FirstOrDefault(f => 
-                    f.Profile.RegionId == rp.ArcadePlayer.RegionId
-                    && f.Profile.ProfileId == rp.ArcadePlayer.ProfileId
-                    && f.Profile.RealmId == rp.ArcadePlayer.RealmId
+                if (rp.Player is null)
+                {
+                    continue;
+                }
+                var matchPlayer = result.Match.ProfileMatches.FirstOrDefault(f =>
+                    f.Profile.RegionId == rp.Player.RegionId
+                    && f.Profile.ProfileId == rp.Player.ToonId
+                    && f.Profile.RealmId == rp.Player.RealmId
                 );
                 if (matchPlayer == null)
                 {
                     logger.LogInformation("player match profile not found: RegionId {regionId}, BnetBucketId {bnetBucketId}, BnetRecordId {bnetRecordId}",
                             replay.RegionId, replay.BnetBucketId, replay.BnetRecordId);
-                    continue; 
+                    continue;
                 }
                 rp.Discriminator = matchPlayer.Profile.Discriminator;
                 rp.PlayerResult = GetPlayerResult(matchPlayer.Decision);
@@ -183,7 +185,7 @@ public partial class CrawlerService
 
     private static PlayerResult GetPlayerResult(string decision)
     {
-        return decision switch 
+        return decision switch
         {
             "win" => PlayerResult.Win,
             "loss" => PlayerResult.Los,
@@ -203,28 +205,6 @@ public partial class CrawlerService
         arcadeReplayIds = (await context.ArcadeReplays
             .Select(s => new { s.RegionId, s.BnetBucketId, s.BnetRecordId }).Distinct().ToListAsync())
         .ToDictionary(k => new ArcadeReplayId(k.RegionId, k.BnetBucketId, k.BnetRecordId), v => true);
-    }
-
-    private async Task SeedPlayerIds()
-    {
-        if (arcadePlayerIds.Count != 0)
-        {
-            return;
-        }
-
-        using var scope = serviceProvider.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-        var players = await context.ArcadePlayers
-            .Select(s => new
-            {
-                s.ArcadePlayerId,
-                s.RegionId,
-                s.RealmId,
-                s.ProfileId
-            }).ToListAsync();
-        
-        arcadePlayerIds = players.ToDictionary(k => new PlayerId(k.RegionId, k.RealmId, k.ProfileId), v => v.ArcadePlayerId);
     }
 }
 

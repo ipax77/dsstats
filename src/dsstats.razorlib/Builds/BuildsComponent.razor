@@ -1,5 +1,6 @@
 @using Microsoft.JSInterop
 @using dsstats.razorlib.Replays
+@using dsstats.razorlib.Services
 @using dsstats.shared
 @using dsstats.shared.Interfaces
 @using System.Globalization
@@ -133,7 +134,7 @@
                     <div class="d-flex justify-content-evenly" style="font-size: 1.4rem;">
                         <div class="col-auto">
                             <span class="badge bgchart2 border rounded">
-                                Games<br><span class="text-warning">@Response.BuildCounts.Count</span>
+                                Games<br><span class="text-warning">@HelperService.GetBigNumberString(Response.BuildCounts.Count)</span>
                             </span>
                         </div>
                         <div class="col-auto">
@@ -146,7 +147,7 @@
                         </div>
                         <div class="col-auto">
                             <span class="badge bgchart2 border rounded">
-                                Winrate<br><span class="text-warning">@Response.BuildCounts.Winrate%</span>
+                                Winrate<br><span class="text-warning">@Response.BuildCounts.Winrate.ToString("N2", CultureInfo.InvariantCulture)%</span>
                             </span>
                         </div>
                     </div>
@@ -158,12 +159,12 @@
                         </div>
                         <div class="col-auto">
                             <span class="badge bgchart2 border rounded">
-                                ∅ Gas<br><span class="text-warning">@Response.BuildCounts.Gas</span>
+                                ∅ Gas<br><span class="text-warning">@Response.BuildCounts.Gas.ToString("N2", CultureInfo.InvariantCulture)</span>
                             </span>
                         </div>
                         <div class="col-auto">
                             <span class="badge bgchart2 border rounded">
-                                ∅ Upgrades<br><span class="text-warning">@Response.BuildCounts.Upgrades.ToString("N0")</span>
+                                ∅ Upgrades<br><span class="text-warning">@HelperService.GetBigNumberString(Response.BuildCounts.Upgrades)</span>
                             </span>
                         </div>
                     </div>
@@ -174,6 +175,9 @@
             </div>
         </div>
         <div class="col-auto" style="min-width: 800px;">
+            <div>
+                <BuildMapComponent @ref="buildMapComponent" Request="Request" />
+            </div>
             <div class="ms-2">
                 <button class="btn btn-sm btn-outline-light bgchart"
                         type="button"
@@ -189,7 +193,9 @@
             <div class="collapse" id="buildreplays">
                 @if (showReplays)
                 {
-                    <BuildReplaysComponent @ref="buildReplaysComponent" Request="Request" OnReplayRequest="LoadReplay" />
+                    <BuildReplaysComponent @ref="buildReplaysComponent" Request="Request"
+                                           OnReplayRequest="LoadReplay"
+                                           OnMapRequest="MapRequest" />
                 }
             </div>
         </div>
@@ -230,6 +236,7 @@
     bool isLoading = true;
     BuildPlayerRequest? buildPlayerRequest;
     BuildReplaysComponent? buildReplaysComponent;
+    BuildMapComponent? buildMapComponent;
     ReplayDto? replayDto = null;
 
     protected override void OnInitialized()
@@ -245,7 +252,7 @@
     bool initPlayers = false;
     bool showReplays = false;
 
-    private async Task LoadData(bool init = false)
+    private async Task LoadData(bool init = false, bool bpOnly = false)
     {
         replayDto = null;
         isLoading = true;
@@ -271,6 +278,7 @@
         {
             await OnRequestChanged.InvokeAsync(Request);
             buildReplaysComponent?.Reload();
+            buildMapComponent?.Update(Request, bpOnly);
         }
     }
 
@@ -289,7 +297,7 @@
     private void SetBreakpoint(ChangeEventArgs e, Breakpoint breakpoint)
     {
         Request.Breakpoint = breakpoint;
-        _ = LoadData();
+        _ = LoadData(false, true);
     }
 
     private async Task ByPlayers()
@@ -319,5 +327,18 @@
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
         await JSRuntime.InvokeVoidAsync("scrollToElementId", "replaycontainer");
+    }
+
+    private async Task MapRequest(string replayHash)
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        var replay = await replaySerivce.GetReplay(replayHash);
+        if (replay is not null)
+        {
+            buildMapComponent?.Update(Request, replay);
+        }
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
     }
 }

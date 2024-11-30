@@ -11,6 +11,7 @@ public interface IReplayRepository
     Task<ReplayDto?> GetLatestReplay();
     Task<ReplayDto?> GetPreviousReplay(DateTime gameTime);
     Task<ReplayDto?> GetNextReplay(DateTime gameTime);
+    Task<ReplayDto?> GetReplay(string replayHash);
     Task SetReplayViews();
     Task SetReplayDownloads();
     Task FixDsstatsPlayerNames();

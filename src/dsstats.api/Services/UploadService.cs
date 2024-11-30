@@ -190,6 +190,6 @@ public class BlobImportEventArgs : EventArgs
 {
     public string ReplayBlob { get; set; } = string.Empty;
     public bool Success { get; set; }
-    public int Imported {  get; set; }
+    public int Imported { get; set; }
     public int Duplicates { get; set; }
 }

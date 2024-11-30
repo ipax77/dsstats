@@ -1,0 +1,160 @@
+﻿@using System.Globalization
+@using dsstats.razorlib.Replays
+@using dsstats.razorlib.Services
+
+<div class="d-flex">
+    <div>
+        <h4>IH Session - Visitors: @GroupState.Visitors</h4>
+    </div>
+    @if (decoding)
+    {
+        <div class="ms-2">
+            <div class="spinner-border spinner-border-sm text-danger" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+</div>
+@* <div>
+    <button type="button" class="btn btn-primary" @onclick="CalculatePerformance">CalculatePerformance</button>
+</div> *@
+<div>
+    <IhUploadComp Guid="GroupState.GroupId" OnDecodeRequested="DecodeRequested" />
+    <small class="text-info bgchart p-1 rounded">Select or drag&drop replays here to get player stats</small>
+</div>
+
+<div class="row mt-2">
+    <div class="col-auto">
+        <div class="table-responsive tableFixHead" style="max-height: 70vw;">
+            <div class="text-end">
+                <small class="bgchart p-1">Total Players: @GroupState.PlayerStates.Count</small>
+            </div>
+            <table class="tptable table w-auto">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th><span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Rating at session start">Rating</span></th>
+                        <th><span data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Session performance based on opponent ratings">Performance</span></th>
+                        <th>Games</th>
+                        <th>Obs</th>
+                        <th>Winrate</th>
+                        <th>Rating <span class="bi bi-arrow-down-up"></span></th>
+                        <th>In Queue</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var state in GroupState.PlayerStates
+                        .Where(x => !x.Quit)
+                        .OrderByDescending(o => o.Games))
+                    {
+                        <tr>
+                            <td class="@GetPlayerColor(state)">@state.Name</td>
+                            <td>@state.RatingStart</td>
+                            <td><span class="text-warning">@state.Performance</span></td>
+                            <td>@state.Games</td>
+                            <td>@state.Observer</td>
+                            <td>
+                                <span class="text-warning">@HelperService.GetPercentageString(state.Wins, state.Games)</span>
+                            </td>
+                            <td>
+                                <span class="@(state.RatingChange >= 0 ? "text-success" : "text-danger")">
+                                    @state.RatingChange
+                                </span>
+                            </td>
+                            <td class="pointer" @onclick="e => ChangeQueueState(state)">
+                                @if (state.InQueue)
+                                {
+                                    <span class="bi bi-eye text-success"></span>
+                                }
+                                else
+                                {
+                                    <span class="bi bi-eye-slash text-danger"></span>
+                                }
+                            </td>
+                            <td class="pointer" @onclick="e => RemovePlayer(state)">
+                                <span class="bi bi-x-lg text-danger"></span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="btn-group bgchart p-1 rounded">
+            <button type="button" disabled class="btn btn-sm btn-success">Played last game</button>
+            <button type="button" disabled class="btn btn-sm btn-warning">Obs last game</button>
+            <button type="button" disabled class="btn btn-sm btn-light">New player</button>
+        </div>
+    </div>
+    <div class="col-auto">
+        <div class="bgchart p-1 rounded" style="max-width: 500px;">
+            <small class="text-info">
+                Match helper - depending on player state (new, game/obs count, played with/against) it creates the most balanced teams.
+                Drag and drop players for different matchups.
+            </small>
+        </div>
+        <CascadingValue Value="GroupState">
+            <IhMatchComponent @ref="ihMatchComponent" OnAddPlayersRequest="e => addPlayersModal?.Show(GroupState.RatingType)" />
+        </CascadingValue>
+
+    </div>
+</div>
+
+@if (replays.Count > 0)
+{
+    <h4>Replays</h4>
+    @if (interestReplay is not null)
+    {
+        <ReplayComponent Replay="interestReplay" IsCloseable="true" OnCloseRequested="e => interestReplay = null" />
+    }
+    <div class="mt-2 tableFixHead table-responsive @(interestReplay == null ? "" : "visually-hidden")" style="max-height: 50vh;">
+        <table class="tptable table w-auto">
+            <thead>
+                <tr>
+                    <th>GameTime</th>
+                    <th>Duration</th>
+                    <th>Team1</th>
+                    <th>Team2</th>
+                    <th>Exp2Win</th>
+                    <th>GameMode</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var replay in replays)
+                {
+                    <tr class="pointer" @onclick="e => LoadReplay(replay.ReplayHash)">
+                        <td>@replay.GameTime.ToString("yyyy-MM-dd")</td>
+                        <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+                        <td>
+                            <ReplayTeam Team="@replay.CommandersTeam1" WinnerTeam="replay.WinnerTeam == 1" />
+                        </td>
+                        <td>
+                            <ReplayTeam Team="@replay.CommandersTeam2" WinnerTeam="replay.WinnerTeam == 2" />
+                        </td>
+                        <td>
+                            @if (replay.Exp2Win is not null && replay.Exp2Win > 0)
+                            {
+                                <div>
+                                    <span class="@(replay.Exp2Win >= 0.5 ? "text-success" : "text-danger")">
+                                        @((replay.Exp2Win.Value * 100).ToString("N0", CultureInfo.InvariantCulture))%
+                                    </span>
+                                </div>
+                            }
+                        </td>
+                        <td>@HelperService.GetGameMode(replay)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<div class="bgchart p-2 rounded" style="max-width: 500px;">
+    <h4>IH Rules</h4>
+    <p>If it's your first time in In-House you have to play.</p>
+    <p>Invite your friends - all are welcome.</p>
+    <p>All banter is welcome as long as it comes from a good place - we are here to have fun.</p>
+</div>
+
+
+<dsstats.razorlib.Builds.AddPlayersModal @ref="addPlayersModal" OnPlayersSelected="PlayersSelected" SinglePlayer="false" />

@@ -4,6 +4,7 @@
 @using dsstats.shared.Interfaces
 @layout TourneysLayout
 @inject ITourneysService tourneysService
+@inject NavigationManager NavigationManager
 
 <PageTitle>dsstats - tourneys</PageTitle>
 
@@ -15,6 +16,8 @@
                 <th>Name</th>
                 <th>Winner</th>
                 <th>Mode</th>
+                <th>Stats</th>
+                <th>External Link</th>
             </tr>
         </thead>
         <tbody>
@@ -24,6 +27,20 @@
                     <td>@tournament.Name</td>
                     <td>@tournament.WinnerTeam</td>
                     <td>@tournament.GameMode</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-light"
+                                @onclick="e => NavigateToStats(tournament)">
+                            Stats
+                        </button>
+                    </td>
+                    @if (string.IsNullOrEmpty(tournament.ExternalLink))
+                    {
+                        <td></td>
+                    }
+                    else
+                    {
+                        <td><a href="@tournament.ExternalLink">Challonge</a></td>
+                    }
                 </tr>
             }
         </tbody>
@@ -33,6 +50,15 @@
 @code {
     List<TourneyDto> tourneys = new();
 
+    private void NavigateToStats(TourneyDto tourney)
+    {
+        NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters("tourneys/stats",
+            new Dictionary<string, object?>()
+                        {
+                    {"Tourney", tourney.Name }
+                        }
+        ), false);
+    }
 
     protected override async Task OnInitializedAsync()
     {

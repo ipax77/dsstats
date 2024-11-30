@@ -69,6 +69,7 @@ public class Player
     {
         ReplayPlayers = new HashSet<ReplayPlayer>();
         PlayerRatings = new HashSet<PlayerRating>();
+        ArcadePlayerRatings = new HashSet<ArcadePlayerRating>();
     }
     public int PlayerId { get; set; }
     [MaxLength(50)]
@@ -84,6 +85,7 @@ public class Player
     public virtual Uploader? Uploader { get; set; }
     public virtual ICollection<ReplayPlayer> ReplayPlayers { get; set; }
     public virtual ICollection<PlayerRating> PlayerRatings { get; set; }
+    public virtual ICollection<ArcadePlayerRating> ArcadePlayerRatings { get; set; }
 }
 
 public class PlayerRating
@@ -131,6 +133,8 @@ public class Event
     public DateTime EventStart { get; set; }
     public string? WinnerTeam { get; set; }
     public GameMode GameMode { get; set; }
+    [MaxLength(200)]
+    public string ExternalLink { get; set; } = string.Empty;
     public virtual ICollection<ReplayEvent> ReplayEvents { get; set; }
 }
 

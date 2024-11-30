@@ -1,0 +1,170 @@
+@using System.Globalization
+@using Microsoft.JSInterop
+@using dsstats.razorlib.Players.Profile
+@using dsstats.razorlib.Replays
+@using dsstats.razorlib.Services
+@using dsstats.razorlib.Stats.Count
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IReviewService reviewService
+@inject IReplaysService replaysService
+@inject IJSRuntime JSRuntime
+
+<div class="container-fluid" style="background-color: #080808CC;">
+    <div>
+        <div class="d-flex flex-row bgchart2">
+            <div class="p-2">
+                <h3 class="text-warning fw-bold">dsstats review of <b>@Year</b></h3>
+            </div>
+            @if (isLoading)
+            {
+                <div class="p-2 spinner-border spinner-border-sm text-info mx-2 mt-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            }
+            <div style="height: 50px; width: 50px; position: relative;">
+                <AnnotationChartComponent OnAnnotationsRegistered="SetAnnotationRegistered" />
+            </div>
+        </div>
+    </div>
+
+    @if (review is not null && isChartReady)
+    {
+        <div class="mt-2">
+            <h3>@HelperService.GetBigNumberString(review.TotalGames) Games uploaded</h3>
+
+            <div class="mt-1">
+                <form @formname="reviewRatingTypeToggle">
+                    <fieldset>
+                        <div class="btn-group bgchart" role="group" aria-label="bptogglegroup">
+                            @foreach (RatingType rt in Enum.GetValues(typeof(RatingType)))
+                            {
+                                <input type="radio" class="btn-check" name="bptoggle" id="@($"reviewrt{rt}")"
+                                       checked="@(ratingType == rt)"
+                                       autocomplete="off" @onchange="e => SetRatingType(e, rt)">
+                                <label class="btn btn-outline-light check-label" for="@($"reviewrt{rt}")">
+                                    @Data.GetRatingTypeLongName(rt)
+                                </label>
+                            }
+                            @if (isLoading)
+                            {
+                                <div class="p-2 spinner-border spinner-border-sm text-info mx-2 mt-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            }
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+
+            <div class="row">
+                <div class="col-auto mt-1">
+                    <h4 class="text-warning d-inline-block p-1 bgchart2">@HelperService.GetBigNumberString(review.CommanderInfos.Sum(s => s.Count)) matchups on @Data.GetRatingTypeLongName(review.RatingType)</h4>
+                    <div class="bgchart p-1 border border-secondary rounded"
+                         style="position: relative; width: 12.5vw; min-width: 400px; max-width: 600px; height: 12.5vw; min-height: 400px; max-height: 600px;">
+                        <CountChart @ref="countChart" Response="GetCountResponse()" DisplayTitle="false" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+<div class="mt-1">
+    @if (longestReplay is not null)
+    {
+        <h3 class="mt-1 text-warning p-1 bgchart2">Longest Replay</h3>
+        <ReplayComponent Replay="longestReplay" />
+    }
+    @if (mostCompetivieReplay is not null)
+    {
+        <h3 class="mt-1 text-warning p-1 bgchart2">Most Competitive Replay</h3>
+        <ReplayComponent Replay="mostCompetivieReplay" />
+    }
+    @if (greatestComebackReplay is not null)
+    {
+        <h3 class="mt-1 text-warning p-1 bgchart2">Greatest Comeback Replay</h3>
+        <ReplayComponent Replay="greatestComebackReplay" />
+    }
+</div>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public int Year { get; set; }
+
+    [Parameter]
+    public EventCallback OnCloseRequested { get; set; }
+
+    ReviewYearResponse? review;
+    private bool isLoading;
+    private bool isChartReady;
+
+    CountChart? countChart;
+
+    ReplayDto? longestReplay;
+    ReplayDto? mostCompetivieReplay;
+    ReplayDto? greatestComebackReplay;
+
+    RatingType ratingType = RatingType.Cmdr;
+
+
+    protected override void OnInitialized()
+    {
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private void SetAnnotationRegistered()
+    {
+        isChartReady = true;
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        review = await reviewService.GetYearReview(ratingType, Year);
+        countChart?.ResetChart(GetCountResponse());
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+
+        if (review.LongestReplay != null && longestReplay?.ReplayHash != review.LongestReplay)
+        {
+            longestReplay = await replaysService.GetReplay(review.LongestReplay);
+        }
+        if (review.MostCompetitiveReplay != null && mostCompetivieReplay?.ReplayHash != review.MostCompetitiveReplay)
+        {
+            mostCompetivieReplay = await replaysService.GetReplay(review.MostCompetitiveReplay);
+        }
+        if (review.GreatestComebackReplay != null && greatestComebackReplay?.ReplayHash != review.GreatestComebackReplay)
+        {
+            greatestComebackReplay = await replaysService.GetReplay(review.GreatestComebackReplay);
+        }
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void SetRatingType(ChangeEventArgs e, RatingType rt)
+    {
+        ratingType = rt;
+        _ = LoadData();
+    }
+
+    private CountResponse GetCountResponse()
+    {
+        ArgumentNullException.ThrowIfNull(review);
+        if (review.CommanderInfos.Count == 0)
+        {
+            return new();
+        }
+
+        return new()
+            {
+                CountEnts = review.CommanderInfos.Select(s => new CountEnt()
+                {
+                    Commander = s.Cmdr,
+                    Matchups = s.Count
+                }).ToList()
+            };
+    }
+}

@@ -1,12 +1,12 @@
 ﻿using dsstats.db8;
-using dsstats.shared.Calc;
 using dsstats.shared;
-using Microsoft.Extensions.DependencyInjection;
+using dsstats.shared.Calc;
+using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MySqlConnector;
-using Microsoft.Extensions.Logging;
-using dsstats.shared.Interfaces;
 using System.Collections.Frozen;
 
 namespace dsstats.ratings;
@@ -15,6 +15,11 @@ public partial class RatingService
 {
     private async Task ProduceArcadeRatings(bool recalc)
     {
+        if (!recalc)
+        {
+            await ContinueArcadeRatings();
+            return;
+        }
         using var scope = scopeFactory.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var ratingSaveService = scope.ServiceProvider.GetRequiredService<IRatingsSaveService>();
@@ -40,8 +45,6 @@ public partial class RatingService
             BannedPlayers = new Dictionary<PlayerId, bool>().ToFrozenDictionary()
         };
 
-        // var arcadeCalcDtos = await GetArcadeCalcDtos(dsstatsRequest, context);
-
         await CreateMaterializedReplays();
         var arcadeCalcDtos = await GetMaterializedArcadeCalcDtos(dsstatsRequest, context);
 
@@ -51,7 +54,9 @@ public partial class RatingService
         {
             for (int i = 0; i < arcadeCalcDtos.Count; i++)
             {
-                var rating = ratings.lib.Ratings.ProcessReplay(arcadeCalcDtos[i], ratingRequest);
+                var calcDto = arcadeCalcDtos[i];
+                CorrectPlayerResults(calcDto);
+                var rating = ratings.lib.Ratings.ProcessReplay(calcDto, ratingRequest);
                 if (rating is not null)
                 {
                     replayRatings.Add(rating);
@@ -64,7 +69,6 @@ public partial class RatingService
                                                    ratingRequest.ReplayPlayerRatingAppendId);
             replayRatings = new();
             dsstatsRequest.Skip += dsstatsRequest.Take;
-            // arcadeCalcDtos = await GetArcadeCalcDtos(dsstatsRequest, context);
             arcadeCalcDtos = await GetMaterializedArcadeCalcDtos(dsstatsRequest, context);
         }
 
@@ -112,13 +116,13 @@ public partial class RatingService
                 Duration = s.Duration,
                 GameMode = (int)s.GameMode,
                 TournamentEdition = s.TournamentEdition,
-                Players = s.ArcadeReplayPlayers.Select(t => new PlayerCalcDto()
+                Players = s.ArcadeReplayDsPlayers.Select(t => new PlayerCalcDto()
                 {
-                    ReplayPlayerId = t.ArcadeReplayPlayerId,
+                    ReplayPlayerId = t.PlayerId,
                     GamePos = t.SlotNumber,
                     PlayerResult = (int)t.PlayerResult,
                     Team = t.Team,
-                    PlayerId = new(t.ArcadePlayer.ProfileId, t.ArcadePlayer.RealmId, t.ArcadePlayer.RegionId)
+                    PlayerId = new(t.Player!.ToonId, t.Player.RealmId, t.Player.RegionId)
                 }).ToList()
             })
             .Skip(request.Skip)
@@ -137,22 +141,30 @@ public partial class RatingService
                         GameTime = r.CreatedAt,
                         Duration = r.Duration,
                         GameMode = (int)r.GameMode,
-                        Players = context.ArcadeReplayPlayers
+                        WinnerTeam = r.WinnerTeam,
+                        Players = context.ArcadeReplayDsPlayers
                             .Where(x => x.ArcadeReplayId == r.ArcadeReplayId)
                             .Select(t => new PlayerCalcDto()
                             {
-                                ReplayPlayerId = t.ArcadeReplayPlayerId,
+                                ReplayPlayerId = t.ArcadeReplayDsPlayerId,
                                 GamePos = t.SlotNumber,
                                 PlayerResult = (int)t.PlayerResult,
                                 Team = t.Team,
-                                PlayerId = new(t.ArcadePlayer.ProfileId, t.ArcadePlayer.RealmId, t.ArcadePlayer.RegionId)
+                                PlayerId = new(t.Player!.ToonId, t.Player.RealmId, t.Player.RegionId)
                             }).ToList()
                     };
-
         return await query
             .AsSplitQuery()
             .Skip(request.Skip)
             .Take(request.Take)
             .ToListAsync();
+    }
+
+    private static void CorrectPlayerResults(CalcDto calcDto)
+    {
+        foreach (var pl in calcDto.Players)
+        {
+            pl.PlayerResult = pl.Team == calcDto.WinnerTeam ? 1 : 2;
+        }
     }
 }

@@ -9,7 +9,7 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Create config
         run: |
           sudo mkdir -p /data/mysqlfiles \
@@ -19,12 +19,12 @@ jobs:
           && sudo chmod 777 /data/temp \
           && sudo chmod 777 /data/ds/replayblobs \
           && sudo cp ./src/tests/appsettings.Development.json /data/localserverconfig.json      
-      - uses: isbang/compose-action@v1.4.1
+      - uses: hoverkraft-tech/compose-action@v2.0.1
         with:
           compose-file: "./src/tests/docker/docker-compose.yml"
           services: mysql
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
       - run: dotnet build ./src/tests/dsstats.ratings.tests/dsstats.ratings.tests.csproj

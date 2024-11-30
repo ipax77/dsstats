@@ -20,6 +20,19 @@ public partial class ReplaysService : IReplaysService
         this.mapper = mapper;
     }
 
+    public async Task<ArcadeReplayDto?> GetDssstatsArcadeReplay(string replayHash, CancellationToken token = default)
+    {
+        var arcadeReplayDto = await (from r in context.Replays
+                                     join ram in context.ReplayArcadeMatches on r.ReplayId equals ram.ReplayId
+                                     join ar in context.ArcadeReplays on ram.ArcadeReplayId equals ar.ArcadeReplayId
+                                     where r.ReplayHash == replayHash
+                                     select ar)
+                                    .ProjectTo<ArcadeReplayDto>(mapper.ConfigurationProvider)
+                                    .FirstOrDefaultAsync(token);
+
+        return arcadeReplayDto;
+    }
+
     public async Task<ReplayRatingDto?> GetReplayRating(string replayHash, bool comboRating)
     {
         if (comboRating)
@@ -450,41 +463,17 @@ public partial class ReplaysService : IReplaysService
         {
             return replays;
         }
-        else if (names.Count == 1)
-        {
-            var name = names[0];
-            replays = from r in replays
-                      from rp in r.ReplayPlayers
-                      where rp.Name == name
-                      select r;
-        }
-        else
-        {
-            var name = names[0];
-            replays = from r in replays
-                      from rp in r.ReplayPlayers
-                      where rp.Name == name
-                      select r;
 
-            for (int i = 1; i < names.Count; i++)
-            {
-                var iname = names[i];
-                replays = replays.Where(x => x.ReplayPlayers.Any(a => a.Name == iname));
-            }
+        for (int i = 0; i < names.Count; i++)
+        {
+            var name = names[i];
+            replays = from r in replays
+                      from rp in r.ReplayPlayers
+                      where rp.Name == name
+                      select r;
         }
+
         return replays.Distinct();
-
-        //var predicate = PredicateBuilder.New<Replay>();
-
-        //foreach (var player in playerEnts)
-        //{
-        //    // predicate = predicate.Or(replay => replay.ReplayPlayers.Any(rp => rp.Name.Contains(player)));
-        //    predicate = predicate.And(replay => replay.ReplayPlayers.Any(rp => rp.Name.Equals(player)));
-        //}
-
-        //replays = replays.Where(predicate);
-
-        //return replays;
     }
 
     private List<Commander> GetCommanders(string commanders)
@@ -579,6 +568,8 @@ public partial class ReplaysService : IReplaysService
             return replays.OrderByDescending(o => o.GameTime);
         }
 
+        int i = 0;
+
         foreach (var order in request.Orders)
         {
             var propertyInfo = typeof(ReplayListDto).GetProperty(order.Property);
@@ -587,6 +578,13 @@ public partial class ReplaysService : IReplaysService
             {
                 continue;
             }
+
+            if (request.Filter?.ReplaysRatingRequest is null
+                && propertyInfo.Name == nameof(ReplayListDto.AvgRating))
+            {
+                continue;
+            }
+            i++;
 
             if (order.Ascending)
             {
@@ -597,6 +595,12 @@ public partial class ReplaysService : IReplaysService
                 replays = replays.AppendOrderByDescending(order.Property);
             }
         }
+
+        if (i == 0)
+        {
+            return replays.OrderByDescending(o => o.GameTime);
+        }
+
         return replays;
     }
 }

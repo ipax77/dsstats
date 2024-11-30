@@ -1,0 +1,164 @@
+﻿@using Blazored.Toast.Services
+@using Microsoft.AspNetCore.Components.Forms
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IFaqService faqService
+@inject IToastService toastService
+@implements IDisposable
+
+<div class="bgchart rounded p-2">
+    <h3 class="text-warning">Direct Strike Gameplay FAQ</h3>
+    <small class="text-warning">
+        Feel free to suggest additional questions on  
+        <a href="https://discord.gg/rKAyaggtqP">
+            <img src="_content/dsstats.razorlib/images/discord.svg" alt="Discord" width="20" />
+            <span class="badge bgchart2 text-decoration-underline">
+                Discord
+            </span>
+        </a> or             
+        <a href="https://github.com/ipax77/dsstats/issues">
+            <img src="_content/dsstats.razorlib/images/GitHub-Mark-Light-64px.png" alt="GitHub" width="20" />
+            <span class="badge bgchart2 text-decoration-underline">
+                GitHub
+            </span>
+        </a>
+    </small>
+    @if (isLoading)
+    {
+        <div class="spinner-border spinner-border-sm text-danger ms-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
+</div>
+<div class="mt-2 d-inline-block">
+    <div class="d-flex bgchart border border-secondary rounded p-2">
+        <div>
+            <EditForm EditContext="editContext" FormName="faqrequestform">
+                <label class="form-label">
+                    <InputText class="form-control bgchart" placeholder="Search" @bind-Value="Request.Search" />
+                </label>
+                <label class="form-label">
+                    <InputSelect class="form-select text-light bgchart" @bind-Value="Request.Level">
+                        @foreach (FaqLevel level in Enum.GetValues(typeof(FaqLevel)))
+                        {
+                            @if (level == FaqLevel.None)
+                            {
+                                <option value="@level">All Levels</option>
+                            }
+                            else
+                            {
+                                <option value="@level">@level</option>
+                            }
+                        }
+                    </InputSelect>
+                </label>
+            </EditForm>
+        </div>
+        <div class="ms-1">
+            <i class="bi bi-x-lg text-danger pointer" @onclick="ResetSearch"></i>
+        </div>
+        <div class="ms-3 align-self-end">
+            <small># @totalCount</small>
+        </div>
+    </div>
+</div>
+<div class="row">
+    @foreach (var faq in faqs)
+    {
+        <div class="col-auto mt-2">
+            <FaqComponent @key="@faq.FaqId" Faq="faq" OnUpvoteRequest="UpvoteRequest" />
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public FaqRequest Request { get; set; } = new()
+        {
+            Orders = new()
+        {
+            new()
+            {
+                Property = nameof(FaqDto.Level),
+                Ascending = true
+            },
+            new()
+            {
+                Property = nameof(FaqDto.Upvotes),
+                Ascending = false
+            },
+            new()
+            {
+                Property = nameof(FaqDto.Question),
+                Ascending = true
+            }
+        },
+            Take = 20
+        };
+
+    private List<FaqDto> faqs = [];
+    bool isLoading = false;
+    private CancellationTokenSource cts = new();
+    EditContext editContext = null!;
+    int totalCount;
+
+    protected override void OnInitialized()
+    {
+        editContext = new(Request);
+        editContext.OnFieldChanged += FieldChanged;
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+
+        totalCount = await faqService.GetCount(Request, cts.Token);
+        faqs = await faqService.GetList(Request, cts.Token);
+
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        _ = LoadData();
+    }
+
+    private void ResetSearch()
+    {
+        Request.Search = string.Empty;
+        Request.Level = FaqLevel.None;
+        _ = LoadData();
+    }
+
+    private async Task UpvoteRequest(int faqId)
+    {
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        var response = await faqService.Upvote(faqId, string.Empty);
+        if (response)
+        {
+            toastService.ShowSuccess("Thank you for your upvote!");
+            var faq = faqs.FirstOrDefault(f => f.FaqId == faqId);
+            if (faq is not null)
+            {
+                faq.Upvotes++;
+            }
+        }
+        else
+        {
+            toastService.ShowWarning("☝️ Upvote limit reached today.");
+        }
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

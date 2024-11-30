@@ -9,7 +9,7 @@ public partial class ReplaysService
     {
         if (request.Filter?.ReplaysRatingRequest is null)
         {
-            if (request.MauiInfo)
+            if (request.MauiInfo || (request.Filter?.TournamentEdition ?? false))
             {
                 return from r in replays
                        join rr in context.ReplayRatings

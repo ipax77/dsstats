@@ -48,13 +48,14 @@
 {
     <ReplayComponent Replay="interestReplay" IsCloseable="true" IsScrollable="true" OnCloseRequested="CloseReplay"
                      OnScrollRequest="LoadNextReplay"
-                     OnPlayerReplaysRequested="PlayerReplaysRequest" />
+                     OnPlayerReplaysRequested="PlayerReplaysRequest"
+                     CanLoadArcadeReplay="true"/>
 }
 
 @if (interestArcadeReplay is not null)
 {
     <ArcadeReplayComponent Replay="interestArcadeReplay" OnCloseRequested="CloseReplay"
-            OnPlayerReplaysRequested="PlayerReplaysRequest" />
+                           OnPlayerReplaysRequested="PlayerReplaysRequest" />
 }
 
 <div class="@(interestReplay == null && interestArcadeReplay == null ? "" : "visually-hidden")">
@@ -67,16 +68,20 @@
     }
     <div class="row mt-2" style="width: 75vw; max-width: 1100px;">
         <div class="col-auto">
-            <button class="btn btn-sm btn-outline-light bgchart"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#ReplaysFilter"
-                    aria-expanded="false"
-                    aria-controls="ReplaysFilter"
-                    @onclick="e => showHideFilter = !showHideFilter">
-                <span class="bi @(showHideFilter ? "bi-chevron-down" : "bi-chevron-up")"></span>
-                Filter
-            </button>
+            @if (!Request.Arcade)
+            {
+                <button class="btn btn-sm btn-outline-light bgchart"
+                        type="button"
+                        id="filterButton"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#ReplaysFilter"
+                        aria-expanded="false"
+                        aria-controls="ReplaysFilter"
+                        @onclick="e => showHideFilter = !showHideFilter">
+                    <span class="bi @(showHideFilter ? "bi-chevron-down" : "bi-chevron-up")"></span>
+                    Filter
+                </button>
+            }
         </div>
         <div class="col-8 d-flex justify-content-between">
             <div>
@@ -323,6 +328,13 @@
 
     private async Task Reload(bool dry = false)
     {
+        if (Request.Arcade && showHideFilter)
+        {
+            showHideFilter = false;
+            Request.Filter = null;
+            await JSRuntime.InvokeVoidAsync("toggleButton", "filterButton", "ReplaysFilter");
+        }
+
         await SetCount();
         if (virtualizeComponent != null)
         {
@@ -373,7 +385,7 @@
         interestArcadeReplay = await replaysService.GetArcadeReplay(replayHash);
         if (interestArcadeReplay is not null)
         {
-            Request.ReplayHash = interestArcadeReplay.ReplayHash;
+            Request.ReplayHash = replayHash;
         }
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
@@ -402,7 +414,7 @@
     {
         if (Request.Arcade)
         {
-            lastestInterestReplayHash = interestArcadeReplay?.ReplayHash;
+            lastestInterestReplayHash = interestArcadeReplay?.GetBnetHash();
         }
         else
         {

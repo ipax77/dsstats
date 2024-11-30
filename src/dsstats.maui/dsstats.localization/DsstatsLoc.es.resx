@@ -391,4 +391,16 @@
   <data name="Players" xml:space="preserve">
     <value>Jugadores</value>
   </data>
+  <data name="Should a backup be created at this location now?" xml:space="preserve">
+    <value>¿Debería crearse una copia de seguridad en este lugar ahora?</value>
+  </data>
+  <data name="Restore Database?" xml:space="preserve">
+    <value>¿Restaurar base de datos?</value>
+  </data>
+  <data name="The current data will be overwritten." xml:space="preserve">
+    <value>Los datos actuales serán sobrescritos.</value>
+  </data>
+  <data name="Please check if the settings are as expected." xml:space="preserve">
+    <value>Por favor, compruebe si la configuración es la esperada.</value>
+  </data>
 </root>

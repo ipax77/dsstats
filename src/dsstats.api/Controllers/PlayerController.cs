@@ -10,10 +10,12 @@ namespace dsstats.api.Controllers;
 public class PlayerController : Controller
 {
     private readonly IPlayerService playerService;
+    private readonly IReviewService reviewService;
 
-    public PlayerController(IPlayerService playerService)
+    public PlayerController(IPlayerService playerService, IReviewService reviewService)
     {
         this.playerService = playerService;
+        this.reviewService = reviewService;
     }
 
     [HttpGet]
@@ -145,5 +147,33 @@ public class PlayerController : Controller
     public async Task<ActionResult<DistributionResponse>> GetDistribution(DistributionRequest request)
     {
         return await playerService.GetDistribution(request);
+    }
+
+    [HttpPost]
+    [Route("review")]
+    public async Task<ActionResult<ReviewResponse>> GetReview(ReviewRequest request, CancellationToken token)
+    {
+        return await reviewService.GetReview(request, token);
+    }
+
+    [HttpPost]
+    [Route("reviewratingtypeinfo")]
+    public async Task<ActionResult<ReviewResponse>> GetReviewRatingTypeInfo(ReviewRequest request, CancellationToken token)
+    {
+        return await reviewService.GetReviewRatingTypeInfo(request, token);
+    }
+
+    [HttpGet]
+    [Route("reviewyear/{ratingType:int}/{year:int}")]
+    public async Task<ActionResult<ReviewYearResponse>> GetYearReview(int ratingType, int year, CancellationToken token)
+    {
+        return await reviewService.GetYearReview((RatingType)ratingType, year, token);
+    }
+
+    [HttpGet]
+    [Route("reviewyearratingtypeinfo/{ratingType:int}/{year:int}")]
+    public async Task<ActionResult<ReviewYearResponse>> GetYearReviewratingtypeinfo(int ratingType, int year, CancellationToken token)
+    {
+        return await reviewService.GetYearRatingTypeReview((RatingType)ratingType, year, token);
     }
 }

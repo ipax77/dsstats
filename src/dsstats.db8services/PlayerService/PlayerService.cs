@@ -34,8 +34,8 @@ public partial class PlayerService : IPlayerService
 
     public async Task<string?> GetPlayerIdName(PlayerId playerId)
     {
-        return await context.ArcadePlayers
-            .Where(x => x.ProfileId == playerId.ToonId
+        return await context.Players
+            .Where(x => x.ToonId == playerId.ToonId
                 && x.RealmId == playerId.RealmId
                 && x.RegionId == playerId.RegionId)
             .Select(s => s.Name)
@@ -130,11 +130,7 @@ public partial class PlayerService : IPlayerService
                                group new { r, rpr } by new { r.GameTime.Year, Week = context.Strftime("'%W'", r.GameTime) } into g
                                select new ReplayPlayerChartDto()
                                {
-                                   Replay = new()
-                                   {
-                                       Year = g.Key.Year,
-                                       Week = g.Key.Week,
-                                   },
+                                   Replay = new(g.Key.Year, g.Key.Week),
                                    ReplayPlayerRatingInfo = new()
                                    {
                                        Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),
@@ -153,11 +149,7 @@ public partial class PlayerService : IPlayerService
                       group new { r, rpr } by new { r.GameTime.Year, Week = context.Week(r.GameTime) } into g
                       select new ReplayPlayerChartDto()
                       {
-                          Replay = new()
-                          {
-                              Year = g.Key.Year,
-                              Week = g.Key.Week,
-                          },
+                          Replay = new(g.Key.Year, g.Key.Week),
                           ReplayPlayerRatingInfo = new()
                           {
                               Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),
@@ -191,23 +183,18 @@ public partial class PlayerService : IPlayerService
                                                            RatingType ratingType,
                                                            CancellationToken token)
     {
-        var query = from p in context.ArcadePlayers
-                    from rp in p.ArcadeReplayPlayers
+        var query = from rp in context.ArcadeReplayDsPlayers
                     join r in context.ArcadeReplays on rp.ArcadeReplayId equals r.ArcadeReplayId
                     join rr in context.ArcadeReplayRatings on r.ArcadeReplayId equals rr.ArcadeReplayId
-                    join rpr in context.ArcadeReplayPlayerRatings on rp.ArcadeReplayPlayerId equals rpr.ArcadeReplayPlayerId
-                    where p.ProfileId == playerId.ToonId
-                     && p.RealmId == playerId.RealmId
-                     && p.RegionId == playerId.RegionId
+                    join rpr in context.ArcadeReplayDsPlayerRatings on rp.ArcadeReplayDsPlayerId equals rpr.ArcadeReplayDsPlayerId
+                    where rp.Player!.ToonId == playerId.ToonId
+                     && rp.Player.RealmId == playerId.RealmId
+                     && rp.Player.RegionId == playerId.RegionId
                      && rr.RatingType == ratingType
                     group new { r, rpr } by new { r.CreatedAt.Year, Week = context.Week(r.CreatedAt) } into g
                     select new ReplayPlayerChartDto()
                     {
-                        Replay = new()
-                        {
-                            Year = g.Key.Year,
-                            Week = g.Key.Week,
-                        },
+                        Replay = new(g.Key.Year, g.Key.Week),
                         ReplayPlayerRatingInfo = new()
                         {
                             Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),
@@ -233,11 +220,7 @@ public partial class PlayerService : IPlayerService
                     group new { r, rpr } by new { r.GameTime.Year, Week = context.Week(r.GameTime) } into g
                     select new ReplayPlayerChartDto()
                     {
-                        Replay = new()
-                        {
-                            Year = g.Key.Year,
-                            Week = g.Key.Week,
-                        },
+                        Replay = new(g.Key.Year, g.Key.Week),
                         ReplayPlayerRatingInfo = new()
                         {
                             Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),
@@ -263,11 +246,7 @@ public partial class PlayerService : IPlayerService
                     group new { r, rpr } by new { r.GameTime.Year, Week = context.Week(r.GameTime) } into g
                     select new ReplayPlayerChartDto()
                     {
-                        Replay = new()
-                        {
-                            Year = g.Key.Year,
-                            Week = g.Key.Week,
-                        },
+                        Replay = new(g.Key.Year, g.Key.Week),
                         ReplayPlayerRatingInfo = new()
                         {
                             Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),
@@ -301,11 +280,7 @@ public partial class PlayerService : IPlayerService
                     } into g
                     select new ReplayPlayerChartDto()
                     {
-                        Replay = new()
-                        {
-                            Year = g.Key.Year,
-                            Week = g.Key.Week,
-                        },
+                        Replay = new(g.Key.Year, g.Key.Week),
                         ReplayPlayerRatingInfo = new()
                         {
                             Rating = Math.Round(g.Average(a => a.rpr.Rating), 2),
@@ -314,5 +289,5 @@ public partial class PlayerService : IPlayerService
                     };
         return await query.ToListAsync(token);
     }
-                               
+
 }

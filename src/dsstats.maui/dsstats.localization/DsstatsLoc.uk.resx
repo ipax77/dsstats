@@ -391,4 +391,16 @@
   <data name="Players" xml:space="preserve">
     <value>Гравці</value>
   </data>
+  <data name="Should a backup be created at this location now?" xml:space="preserve">
+    <value>Чи слід створити резервну копію зараз у цьому місці?</value>
+  </data>
+  <data name="Restore Database?" xml:space="preserve">
+    <value>Відновити базу даних?</value>
+  </data>
+  <data name="The current data will be overwritten." xml:space="preserve">
+    <value>Поточні дані будуть перезаписані.</value>
+  </data>
+  <data name="Please check if the settings are as expected." xml:space="preserve">
+    <value>Будь ласка, перевірте, чи налаштування відповідають очікуванням.</value>
+  </data>
 </root>

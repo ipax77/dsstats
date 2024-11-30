@@ -1,6 +1,4 @@
-﻿
-using AutoMapper.QueryableExtensions;
-using dsstats.db8;
+﻿using dsstats.db8;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
 
@@ -75,7 +73,7 @@ public partial class PlayerService
                 && x.Player.RegionId == playerId.RegionId)
             .Select(s => new MvpInfo()
             {
-                Games= s.Games,
+                Games = s.Games,
                 Mvp = s.Mvp,
                 MainCount = s.MainCount,
                 Main = s.Main
@@ -144,7 +142,7 @@ public partial class PlayerService
         {
             RatingCalcType.Dsstats => await GetPlayerIdDsstatsPlayerRatingDetails(playerId, ratingType, token),
             RatingCalcType.Arcade => await GetPlayerIdArcadePlayerRatingDetails(playerId, ratingType, token),
-            RatingCalcType.Combo => await GetPlayerIdArcadePlayerRatingDetails(playerId, ratingType, token),
+            RatingCalcType.Combo => await GetPlayerIdComboPlayerRatingDetails(playerId, ratingType, token),
             _ => throw new NotImplementedException()
         };
     }
@@ -236,12 +234,13 @@ public partial class PlayerService
                             from rp in p.ReplayPlayers
                             from t in rp.Replay.ReplayPlayers
                             join rr in context.ReplayRatings on rp.ReplayId equals rr.ReplayId
+                            join rpr in context.RepPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
                             where p.ToonId == playerId.ToonId
                                 && p.RealmId == playerId.RealmId
                                 && p.RegionId == playerId.RegionId
                                 && rr.RatingType == ratingType
                             where t != rp && t.Team == rp.Team
-                            group t by new { t.Player.ToonId, t.Player.RealmId, t.Player.RegionId, t.Player.Name } into g
+                            group new { t, rpr } by new { t.Player.ToonId, t.Player.RealmId, t.Player.RegionId, t.Player.Name } into g
                             orderby g.Count() descending
                             where g.Count() > 10
                             select new PlayerTeamResultHelper()
@@ -249,9 +248,10 @@ public partial class PlayerService
                                 PlayerId = new(g.Key.ToonId, g.Key.RealmId, g.Key.RegionId),
                                 Name = g.Key.Name,
                                 Count = g.Count(),
-                                Wins = g.Count(c => c.PlayerResult == PlayerResult.Win),
+                                Wins = g.Count(c => c.t.PlayerResult == PlayerResult.Win),
+                                AvgGain = Math.Round(g.Average(a => a.rpr.RatingChange), 2)
                             };
-                            
+
 
         var results = await teammateGroup
             .ToListAsync(token);
@@ -263,6 +263,7 @@ public partial class PlayerService
             PlayerId = s.PlayerId,
             Count = s.Count,
             Wins = s.Wins,
+            AvgGain = s.AvgGain
         }).ToList();
     }
 
@@ -272,19 +273,21 @@ public partial class PlayerService
                             from rp in p.ReplayPlayers
                             from o in rp.Replay.ReplayPlayers
                             join rr in context.ReplayRatings on rp.ReplayId equals rr.ReplayId
+                            join rpr in context.RepPlayerRatings on o.ReplayPlayerId equals rpr.ReplayPlayerId
                             where p.ToonId == playerId.ToonId
                                     && p.RealmId == playerId.RealmId
                                     && p.RegionId == playerId.RegionId
                                 && rr.RatingType == ratingType
                             where o.Team != rp.Team
-                            group o by new { o.Player.ToonId, o.Player.RealmId, o.Player.RegionId, o.Player.Name } into g
+                            group new { o, rpr } by new { o.Player.ToonId, o.Player.RealmId, o.Player.RegionId, o.Player.Name } into g
                             where g.Count() > 10
                             select new PlayerTeamResultHelper()
                             {
                                 PlayerId = new(g.Key.ToonId, g.Key.RealmId, g.Key.RegionId),
                                 Name = g.Key.Name,
                                 Count = g.Count(),
-                                Wins = g.Count(c => c.PlayerResult == PlayerResult.Win),
+                                Wins = g.Count(c => c.o.PlayerResult == PlayerResult.Win),
+                                AvgGain = Math.Round(g.Average(a => a.rpr.RatingChange), 2)
                             };
 
         var results = await teammateGroup
@@ -297,6 +300,7 @@ public partial class PlayerService
             PlayerId = s.PlayerId,
             Count = s.Count,
             Wins = s.Wins,
+            AvgGain = s.AvgGain
         }).ToList();
     }
 

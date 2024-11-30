@@ -1,5 +1,8 @@
+@using Microsoft.JSInterop
 @using dsstats.shared
 @using dsstats.razorlib.Services
+@using dsstats.shared.Interfaces
+@inject IDsDataService dsDataService
 
 <div class="card w-auto">
     <div class="card-header bgchart">
@@ -13,8 +16,8 @@
             </div>
             <div>
                 <button class="btn btn-sm btn-outline-light bgchart" type="button" data-bs-toggle="collapse"
-                    data-bs-target="@($"#Player{Player.GamePos}Map")" aria-expanded="false"
-                    aria-controls="@($"Player{Player.GamePos}Map")" @onclick="e => showMap = !showMap">
+                        data-bs-target="@($"#Player{Player.GamePos}Map")" aria-expanded="false"
+                        aria-controls="@($"Player{Player.GamePos}Map")" @onclick="e => showMap = !showMap">
                     <span class="oi @(showMap ? "bi-chevron-down" : "bi-chevron-up")"></span>
                     Map
                 </button>
@@ -22,29 +25,34 @@
         </div>
         <div class="d-flex justify-content-between">
             <img src="@HelperService.GetImageSrc(Player.Race)" alt="@Player.Race" title="@Player.Race" width="30"
-                height="30" />
+                 height="30" />
             <div class="ms-1 me-1">
                 <button class="btn btn-sm btn-outline-info bgchart" type="button" data-bs-toggle="collapse"
-                    data-bs-target="@($"#Player{Player.GamePos}Gas")" aria-expanded="false"
-                    aria-controls="@($"Player{Player.GamePos}Gas")" @onclick="e => showGas = !showGas">
+                        data-bs-target="@($"#Player{Player.GamePos}Gas")" aria-expanded="false"
+                        aria-controls="@($"Player{Player.GamePos}Gas")" @onclick="e => showGas = !showGas">
                     <span class="bi @(showGas ? "bi-chevron-down" : "bi-chevron-up")"></span>
                     Gas @Spawn?.GasCount
-                </button>                
+                </button>
             </div>
             <div class="">
                 <button class="btn btn-sm btn-outline-light bgchart" type="button" data-bs-toggle="collapse"
-                    data-bs-target="@($"#Player{Player.GamePos}Upgrades")" aria-expanded="false"
-                    aria-controls="@($"Player{Player.GamePos}Upgrades")" @onclick="e => showUpgrades = !showUpgrades">
+                        data-bs-target="@($"#Player{Player.GamePos}Upgrades")" aria-expanded="false"
+                        aria-controls="@($"Player{Player.GamePos}Upgrades")" @onclick="e => showUpgrades = !showUpgrades">
                     <span class="bi @(showUpgrades ? "bi-chevron-down" : "bi-chevron-up")"></span>
                     Upgrades @Spawn?.UpgradeSpent
-                </button>                   
+                </button>
             </div>
         </div>
     </div>
 
     <div class="card-body bgchart2">
         <div class="collapse" id="@($"Player{Player.GamePos}Map")">
-            <ReplayPlayerMap Spawn="Spawn" Team="@Player.Team" />
+            <div class="bgchart" style="height: 600px; width: 500px;">
+                @if (showMap)
+                {
+                    <ReplayPlayerChartMap @ref="replayPlayerChartMap" Spawn="Spawn" SpawnInfo="spawnInfo" Team="Player.Team" moduleTask="moduleTask" />
+                }
+            </div>
         </div>
         <div class="collapse" id="@($"Player{Player.GamePos}Gas")">
             <ReplayPlayerGas Player="Player" TeamIncome="Player.Team == 1 ? MiddleInfo.Team1Income : MiddleInfo.Team2Income" />
@@ -52,20 +60,54 @@
         <div class="collapse" id="@($"Player{Player.GamePos}Upgrades")">
             <ReplayPlayerUpgrades Player="Player" />
         </div>
+        <div class="row">
+            @if (isLoading)
+            {
+                <div class="col-auto">
+                    <div class="spinner-border spinner-border-sm text-danger" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            }
+            @if (armyValue > 0)
+            {
+                <div class="col-auto">
+                    <h5>
+                        <span class="badge border border-info">
+                            ArmyValue <span class="text-warning">@HelperService.GetBigNumberString(armyValue)</span>
+                        </span>
+                    </h5>
+                </div>
+            }
+            @if (armyLife > 0)
+            {
+                <div class="col-auto">
+                    <h5>
+                        <span class="badge border border-info">
+                            ArmyLife <span class="text-warning">@HelperService.GetBigNumberString(armyLife)</span>
+                        </span>
+                    </h5>
+                </div>
+            }
+        </div>
         <div class="table-responsive w-auto">
             <table class="tptable table table-sm">
                 <thead>
                     <tr>
+                        <th></th>
                         <th>Unit</th>
                         <th>Count</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var unit in GetUnits())
+                    @foreach (var unit in units)
                     {
-                        <tr>
-                            <td>@unit.Key</td>
-                            <td>@unit.Value</td>
+                        <tr @onmouseover="e => HighlightUnit(unit)">
+                            <td>
+                                <span class="rounded d-inline-block" style="width: 20px; height: 15px; background-color: @unit.Color;"></span>
+                            </td>
+                            <td>@unit.Name</td>
+                            <td>@unit.Count</td>
                         </tr>
                     }
                 </tbody>
@@ -75,7 +117,7 @@
 </div>
 
 @code {
-    [CascadingParameter]
+    [Parameter, EditorRequired]
     public Breakpoint Breakpoint { get; set; }
 
     [Parameter, EditorRequired]
@@ -84,27 +126,120 @@
     [Parameter, EditorRequired]
     public MiddleInfo MiddleInfo { get; set; } = default!;
 
-    bool IsWinner => Player.PlayerResult == PlayerResult.Win;
+    [Parameter, EditorRequired]
+    public Lazy<Task<IJSObjectReference>> moduleTask { get; set; } = default!;
 
-    SpawnDto? Spawn => Player.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint);
+    bool IsWinner;
+    bool isLoading;
+
+    SpawnDto? Spawn = null;
+    SpawnInfo spawnInfo = new();
+    ListBuildUnit? highlightUnit = null;
 
     bool showMap = false;
     bool showUpgrades = false;
     bool showGas = false;
+    ReplayPlayerChartMap? replayPlayerChartMap;
 
-    public void Reset()
+    int armyValue = 0;
+    int armyLife = 0;
+    List<ListBuildUnit> units = [];
+
+    protected override void OnInitialized()
     {
-        showMap = false;
-        showUpgrades = false;
-        showGas = false;
+        // IsWinner = Player.PlayerResult == PlayerResult.Win;
+        // Spawn = Player.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint);
+        Update(Breakpoint);
+        base.OnInitialized();
     }
 
-    List<KeyValuePair<string, byte>> GetUnits()
+    public async void Update(Breakpoint breakpoint)
     {
-        if (Spawn == null)
+        isLoading = true;
+        await InvokeAsync(() => StateHasChanged());
+        Breakpoint = breakpoint;
+        armyValue = 0;
+        armyLife = 0;
+        units.Clear();
+        spawnInfo = new();
+        highlightUnit = null;
+        IsWinner = Player.PlayerResult == PlayerResult.Win;
+        Spawn = Player.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint);
+        if (Spawn is not null)
         {
-            return new List<KeyValuePair<string, byte>>();
+            spawnInfo = await dsDataService.GetSpawnInfo(new SpawnRequest()
+                {
+                    Units = Spawn.Units.Select(s => s.Unit).ToList(),
+                    Commander = Player.Race
+                });
+            SetInfos(Spawn, spawnInfo);
         }
-        return Spawn.Units.ToDictionary(x => x.Unit.Name, x => x.Count).OrderByDescending(o => o.Value).ToList();
+        replayPlayerChartMap?.Update(Spawn, spawnInfo, Player.Team);
+        isLoading = false;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    private void SetInfos(SpawnDto spawnDto, SpawnInfo spawnInfo)
+    {
+        if (spawnDto.Units.Count == 0)
+        {
+            return;
+        }
+
+        int spawnArmyValue = 0;
+        int spawnArmyLife = 0;
+
+        List<ListBuildUnit> spawnUnits = new();
+
+        foreach (var spawnUnit in spawnDto.Units)
+        {
+            if (spawnInfo.BuildUnits.TryGetValue(spawnUnit.Unit.Name, out var buildUnit)
+                && buildUnit is not null)
+            {
+                spawnArmyValue += buildUnit.Cost * spawnUnit.Count;
+                spawnArmyLife += (buildUnit.Life + buildUnit.Shields) * spawnUnit.Count;
+                spawnUnits.Add(new()
+                    {
+                        Name = buildUnit.Name,
+                        ChartName = spawnUnit.Unit.Name,
+                        Count = spawnUnit.Count,
+                        Color = HelperService.GetUnitColor(buildUnit.Color)
+                    });
+            }
+            else
+            {
+                spawnUnits.Add(new()
+                {
+                    Name = spawnUnit.Unit.Name,
+                    ChartName = spawnUnit.Unit.Name,
+                    Count = spawnUnit.Count
+                });
+            }
+        }
+
+        units = spawnUnits.OrderByDescending(o => o.Count).ToList();
+        armyValue = spawnArmyValue;
+        armyLife = spawnArmyLife;
+    }
+
+    private void HighlightUnit(ListBuildUnit unit)
+    {
+        if (highlightUnit == unit)
+        {
+            return;
+        }
+        else
+        {
+            highlightUnit = unit;
+            replayPlayerChartMap?.HighlightUnits(highlightUnit.ChartName);
+        }
+    }
+
+    private record ListBuildUnit
+    {
+        public string Name { get; set; } = string.Empty;
+        public string ChartName { get; set; } = string.Empty;
+        public int Count { get; set; }
+        public string Color { get; set; } = string.Empty;
     }
 }

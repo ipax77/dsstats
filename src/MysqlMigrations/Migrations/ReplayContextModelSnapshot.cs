@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using dsstats.db8;
 
@@ -16,8 +17,25 @@ namespace MysqlMigrations.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0-rc.2.23480.1")
+                .HasAnnotation("ProductVersion", "8.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
+
+            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
+
+            modelBuilder.Entity("DsAbilityDsUnit", b =>
+                {
+                    b.Property<int>("AbilitiesDsAbilityId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DsUnitsDsUnitId")
+                        .HasColumnType("int");
+
+                    b.HasKey("AbilitiesDsAbilityId", "DsUnitsDsUnitId");
+
+                    b.HasIndex("DsUnitsDsUnitId");
+
+                    b.ToTable("DsAbilityDsUnit");
+                });
 
             modelBuilder.Entity("ReplayUploader", b =>
                 {
@@ -34,44 +52,13 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("UploaderReplays", (string)null);
                 });
 
-            modelBuilder.Entity("dsstats.db8.ArcadePlayer", b =>
-                {
-                    b.Property<int>("ArcadePlayerId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<int>("ProfileId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("RealmId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("RegionId")
-                        .HasColumnType("int");
-
-                    b.HasKey("ArcadePlayerId");
-
-                    b.HasIndex("Name");
-
-                    b.HasIndex("RegionId", "RealmId", "ProfileId")
-                        .IsUnique();
-
-                    b.ToTable("ArcadePlayers");
-                });
-
             modelBuilder.Entity("dsstats.db8.ArcadePlayerRating", b =>
                 {
                     b.Property<int>("ArcadePlayerRatingId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("ArcadePlayerId")
-                        .HasColumnType("int");
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ArcadePlayerRatingId"));
 
                     b.Property<double>("Confidence")
                         .HasColumnType("double");
@@ -94,6 +81,9 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("Mvp")
                         .HasColumnType("int");
 
+                    b.Property<int>("PlayerId")
+                        .HasColumnType("int");
+
                     b.Property<int>("Pos")
                         .HasColumnType("int");
 
@@ -111,7 +101,7 @@ namespace MysqlMigrations.Migrations
 
                     b.HasKey("ArcadePlayerRatingId");
 
-                    b.HasIndex("ArcadePlayerId");
+                    b.HasIndex("PlayerId");
 
                     b.HasIndex("RatingType");
 
@@ -123,6 +113,8 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("ArcadePlayerRatingChangeId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ArcadePlayerRatingChangeId"));
 
                     b.Property<int>("ArcadePlayerRatingId")
                         .HasColumnType("int");
@@ -149,6 +141,8 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("ArcadeReplayId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ArcadeReplayId"));
 
                     b.Property<long>("BnetBucketId")
                         .HasColumnType("bigint");
@@ -201,14 +195,13 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("ArcadeReplays");
                 });
 
-            modelBuilder.Entity("dsstats.db8.ArcadeReplayPlayer", b =>
+            modelBuilder.Entity("dsstats.db8.ArcadeReplayDsPlayer", b =>
                 {
-                    b.Property<int>("ArcadeReplayPlayerId")
+                    b.Property<int>("ArcadeReplayDsPlayerId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("ArcadePlayerId")
-                        .HasColumnType("int");
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ArcadeReplayDsPlayerId"));
 
                     b.Property<int>("ArcadeReplayId")
                         .HasColumnType("int");
@@ -221,6 +214,9 @@ namespace MysqlMigrations.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
 
+                    b.Property<int>("PlayerId")
+                        .HasColumnType("int");
+
                     b.Property<int>("PlayerResult")
                         .HasColumnType("int");
 
@@ -230,22 +226,24 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("Team")
                         .HasColumnType("int");
 
-                    b.HasKey("ArcadeReplayPlayerId");
-
-                    b.HasIndex("ArcadePlayerId");
+                    b.HasKey("ArcadeReplayDsPlayerId");
 
                     b.HasIndex("ArcadeReplayId");
 
-                    b.ToTable("ArcadeReplayPlayers");
+                    b.HasIndex("PlayerId");
+
+                    b.ToTable("ArcadeReplayDsPlayers");
                 });
 
-            modelBuilder.Entity("dsstats.db8.ArcadeReplayPlayerRating", b =>
+            modelBuilder.Entity("dsstats.db8.ArcadeReplayDsPlayerRating", b =>
                 {
-                    b.Property<int>("ArcadeReplayPlayerRatingId")
+                    b.Property<int>("ArcadeReplayDsPlayerRatingId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("ArcadeReplayPlayerId")
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ArcadeReplayDsPlayerRatingId"));
+
+                    b.Property<int>("ArcadeReplayDsPlayerId")
                         .HasColumnType("int");
 
                     b.Property<int>("ArcadeReplayRatingId")
@@ -269,14 +267,14 @@ namespace MysqlMigrations.Migrations
                     b.Property<float>("RatingChange")
                         .HasColumnType("float");
 
-                    b.HasKey("ArcadeReplayPlayerRatingId");
+                    b.HasKey("ArcadeReplayDsPlayerRatingId");
 
-                    b.HasIndex("ArcadeReplayPlayerId")
+                    b.HasIndex("ArcadeReplayDsPlayerId")
                         .IsUnique();
 
                     b.HasIndex("ArcadeReplayRatingId");
 
-                    b.ToTable("ArcadeReplayPlayerRatings");
+                    b.ToTable("ArcadeReplayDsPlayerRatings");
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadeReplayRating", b =>
@@ -284,6 +282,8 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("ArcadeReplayRatingId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ArcadeReplayRatingId"));
 
                     b.Property<int>("ArcadeReplayId")
                         .HasColumnType("int");
@@ -314,6 +314,8 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("BattleNetInfoId"));
+
                     b.Property<int>("BattleNetId")
                         .HasColumnType("int");
 
@@ -327,11 +329,42 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("BattleNetInfos");
                 });
 
+            modelBuilder.Entity("dsstats.db8.BonusDamage", b =>
+                {
+                    b.Property<int>("BonusDamageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("BonusDamageId"));
+
+                    b.Property<int>("Damage")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DsWeaponId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PerUpgrade")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UnitType")
+                        .HasColumnType("int");
+
+                    b.HasKey("BonusDamageId");
+
+                    b.HasIndex("DsWeaponId");
+
+                    b.HasIndex("UnitType");
+
+                    b.ToTable("BonusDamages");
+                });
+
             modelBuilder.Entity("dsstats.db8.ComboPlayerRating", b =>
                 {
                     b.Property<int>("ComboPlayerRatingId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ComboPlayerRatingId"));
 
                     b.Property<double>("Confidence")
                         .HasColumnType("double");
@@ -372,6 +405,8 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ComboReplayPlayerRatingId"));
+
                     b.Property<double>("Change")
                         .HasPrecision(5, 2)
                         .HasColumnType("double");
@@ -410,6 +445,11 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ComboReplayRatingId"));
+
+                    b.Property<int>("AvgRating")
+                        .HasColumnType("int");
+
                     b.Property<double>("ExpectationToWin")
                         .HasPrecision(5, 2)
                         .HasColumnType("double");
@@ -442,6 +482,8 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("CommanderMmrId"));
+
                     b.Property<double>("AntiSynergyMmr")
                         .HasColumnType("double");
 
@@ -461,11 +503,167 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("CommanderMmrs");
                 });
 
+            modelBuilder.Entity("dsstats.db8.DsAbility", b =>
+                {
+                    b.Property<int>("DsAbilityId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DsAbilityId"));
+
+                    b.Property<int>("AbilityTarget")
+                        .HasColumnType("int");
+
+                    b.Property<float>("AoeRadius")
+                        .HasColumnType("float");
+
+                    b.Property<int>("CastRange")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Commander")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Cooldown")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(310)
+                        .HasColumnType("varchar(310)");
+
+                    b.Property<float>("EnergyCost")
+                        .HasColumnType("float");
+
+                    b.Property<bool>("GlobalTimer")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Requirements")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("DsAbilityId");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("DsAbilities");
+                });
+
+            modelBuilder.Entity("dsstats.db8.DsPickBan", b =>
+                {
+                    b.Property<int>("DsPickBanId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DsPickBanId"));
+
+                    b.Property<string>("Bans")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("PickBanMode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Picks")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("Time")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.HasKey("DsPickBanId");
+
+                    b.ToTable("DsPickBans");
+                });
+
+            modelBuilder.Entity("dsstats.db8.DsUnit", b =>
+                {
+                    b.Property<int>("DsUnitId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DsUnitId"));
+
+                    b.Property<int>("Armor")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Color")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Commander")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Cost")
+                        .HasColumnType("int");
+
+                    b.Property<float>("EnergyRegen")
+                        .HasColumnType("float");
+
+                    b.Property<float>("HealthRegen")
+                        .HasColumnType("float");
+
+                    b.Property<int>("Life")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxEnergy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MovementType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<int>("ShieldArmor")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Shields")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Size")
+                        .HasColumnType("int");
+
+                    b.Property<float>("Speed")
+                        .HasColumnType("float");
+
+                    b.Property<int>("StartingEnergy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UnitId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UnitType")
+                        .HasColumnType("int");
+
+                    b.HasKey("DsUnitId");
+
+                    b.HasIndex("Commander");
+
+                    b.HasIndex("Name");
+
+                    b.HasIndex("Name", "Commander");
+
+                    b.ToTable("DsUnits");
+                });
+
             modelBuilder.Entity("dsstats.db8.DsUpdate", b =>
                 {
                     b.Property<int>("DsUpdateId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DsUpdateId"));
 
                     b.Property<string>("Change")
                         .IsRequired()
@@ -489,11 +687,93 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("DsUpdates");
                 });
 
+            modelBuilder.Entity("dsstats.db8.DsUpgrade", b =>
+                {
+                    b.Property<int>("DsUpgradeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DsUpgradeId"));
+
+                    b.Property<int>("Commander")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Cost")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("varchar(300)");
+
+                    b.Property<int?>("DsUnitId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RequiredTier")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Upgrade")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("DsUpgradeId");
+
+                    b.HasIndex("DsUnitId");
+
+                    b.HasIndex("Upgrade");
+
+                    b.ToTable("DsUpgrades");
+                });
+
+            modelBuilder.Entity("dsstats.db8.DsWeapon", b =>
+                {
+                    b.Property<int>("DsWeaponId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DsWeaponId"));
+
+                    b.Property<float>("AttackSpeed")
+                        .HasColumnType("float");
+
+                    b.Property<int>("Attacks")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CanTarget")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Damage")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DamagePerUpgrade")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DsUnitId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<float>("Range")
+                        .HasColumnType("float");
+
+                    b.HasKey("DsWeaponId");
+
+                    b.HasIndex("DsUnitId");
+
+                    b.ToTable("DsWeapons");
+                });
+
             modelBuilder.Entity("dsstats.db8.Event", b =>
                 {
                     b.Property<int>("EventId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("EventId"));
 
                     b.Property<Guid>("EventGuid")
                         .HasColumnType("char(36)");
@@ -501,6 +781,11 @@ namespace MysqlMigrations.Migrations
                     b.Property<DateTime>("EventStart")
                         .HasPrecision(0)
                         .HasColumnType("datetime(0)");
+
+                    b.Property<string>("ExternalLink")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
 
                     b.Property<int>("GameMode")
                         .HasColumnType("int");
@@ -521,11 +806,72 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("Events");
                 });
 
+            modelBuilder.Entity("dsstats.db8.Faq", b =>
+                {
+                    b.Property<int>("FaqId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("FaqId"));
+
+                    b.Property<string>("Answer")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("varchar(400)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Question")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<int>("Upvotes")
+                        .HasColumnType("int");
+
+                    b.HasKey("FaqId");
+
+                    b.HasIndex("Question");
+
+                    b.ToTable("Faqs");
+                });
+
+            modelBuilder.Entity("dsstats.db8.FaqVote", b =>
+                {
+                    b.Property<int>("FaqVoteId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("FaqVoteId"));
+
+                    b.Property<int>("FaqId")
+                        .HasColumnType("int");
+
+                    b.HasKey("FaqVoteId");
+
+                    b.ToTable("FaqVotes");
+                });
+
             modelBuilder.Entity("dsstats.db8.FunStatsMemory", b =>
                 {
                     b.Property<int>("FunStatsMemoryId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("FunStatsMemoryId"));
 
                     b.Property<int>("AvgGameDuration")
                         .HasColumnType("int");
@@ -591,11 +937,99 @@ namespace MysqlMigrations.Migrations
                     b.ToView("GroupByHelper", (string)null);
                 });
 
+            modelBuilder.Entity("dsstats.db8.IhSession", b =>
+                {
+                    b.Property<int>("IhSessionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IhSessionId"));
+
+                    b.Property<bool>("Closed")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime>("Created")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<int>("Games")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("GroupState")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("GroupStateV2")
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("Players")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RatingType")
+                        .HasColumnType("int");
+
+                    b.HasKey("IhSessionId");
+
+                    b.HasIndex("GroupId")
+                        .IsUnique();
+
+                    b.ToTable("IhSessions");
+                });
+
+            modelBuilder.Entity("dsstats.db8.IhSessionPlayer", b =>
+                {
+                    b.Property<int>("IhSessionPlayerId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IhSessionPlayerId"));
+
+                    b.Property<int>("Games")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IhSessionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("Obs")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Performance")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PlayerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RatingEnd")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RatingStart")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Wins")
+                        .HasColumnType("int");
+
+                    b.HasKey("IhSessionPlayerId");
+
+                    b.HasIndex("IhSessionId");
+
+                    b.HasIndex("PlayerId");
+
+                    b.ToTable("IhSessionPlayers");
+                });
+
             modelBuilder.Entity("dsstats.db8.MaterializedArcadeReplay", b =>
                 {
                     b.Property<int>("MaterializedArcadeReplayId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("MaterializedArcadeReplayId"));
 
                     b.Property<int>("ArcadeReplayId")
                         .HasColumnType("int");
@@ -615,6 +1049,8 @@ namespace MysqlMigrations.Migrations
 
                     b.HasKey("MaterializedArcadeReplayId");
 
+                    b.HasIndex("CreatedAt");
+
                     b.ToTable("MaterializedArcadeReplays");
                 });
 
@@ -623,6 +1059,8 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("NoUploadResultId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("NoUploadResultId"));
 
                     b.Property<DateTime>("Created")
                         .HasPrecision(0)
@@ -664,6 +1102,8 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("PlayerId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("PlayerId"));
 
                     b.Property<int>("ArcadeDefeatsSinceLastUpload")
                         .HasColumnType("int");
@@ -709,6 +1149,8 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("PlayerRatingId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("PlayerRatingId"));
 
                     b.Property<int>("ArcadeDefeatsSinceLastUpload")
                         .HasColumnType("int");
@@ -767,6 +1209,8 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("PlayerRatingChangeId"));
+
                     b.Property<float>("Change10d")
                         .HasColumnType("float");
 
@@ -793,6 +1237,8 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("PlayerUpgradeId"));
+
                     b.Property<int>("Gameloop")
                         .HasColumnType("int");
 
@@ -816,6 +1262,8 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("RepPlayerRatingId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("RepPlayerRatingId"));
 
                     b.Property<float>("Confidence")
                         .HasColumnType("float");
@@ -856,6 +1304,8 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("ReplayId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayId"));
 
                     b.Property<int>("Bunker")
                         .HasColumnType("int");
@@ -978,11 +1428,44 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("Replays");
                 });
 
+            modelBuilder.Entity("dsstats.db8.ReplayArcadeMatch", b =>
+                {
+                    b.Property<int>("ReplayArcadeMatchId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayArcadeMatchId"));
+
+                    b.Property<int>("ArcadeReplayId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("MatchTime")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<int>("ReplayId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReplayArcadeMatchId");
+
+                    b.HasIndex("ArcadeReplayId")
+                        .IsUnique();
+
+                    b.HasIndex("MatchTime");
+
+                    b.HasIndex("ReplayId")
+                        .IsUnique();
+
+                    b.ToTable("ReplayArcadeMatches");
+                });
+
             modelBuilder.Entity("dsstats.db8.ReplayDownloadCount", b =>
                 {
                     b.Property<int>("ReplayDownloadCountId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayDownloadCountId"));
 
                     b.Property<string>("ReplayHash")
                         .IsRequired()
@@ -999,6 +1482,8 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("ReplayEventId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayEventId"));
 
                     b.Property<int>("Ban1")
                         .HasColumnType("int");
@@ -1043,6 +1528,8 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("ReplayPlayerId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayPlayerId"));
 
                     b.Property<int>("APM")
                         .HasColumnType("int");
@@ -1155,6 +1642,8 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayRatingId"));
+
                     b.Property<int>("AvgRating")
                         .HasColumnType("int");
 
@@ -1189,6 +1678,8 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayViewCountId"));
+
                     b.Property<string>("ReplayHash")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -1205,6 +1696,8 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("SkipReplayId"));
+
                     b.Property<string>("Path")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -1220,6 +1713,8 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("SpawnId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("SpawnId"));
 
                     b.Property<int>("ArmyValue")
                         .HasColumnType("int");
@@ -1258,6 +1753,8 @@ namespace MysqlMigrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("SpawnUnitId"));
+
                     b.Property<byte>("Count")
                         .HasColumnType("tinyint unsigned");
 
@@ -1281,11 +1778,24 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("SpawnUnits");
                 });
 
+            modelBuilder.Entity("dsstats.db8.StreakInfo", b =>
+                {
+                    b.Property<double>("LongestStreak")
+                        .HasColumnType("double");
+
+                    b.Property<int>("PlayerResult")
+                        .HasColumnType("int");
+
+                    b.ToTable("StreakInfos");
+                });
+
             modelBuilder.Entity("dsstats.db8.Unit", b =>
                 {
                     b.Property<int>("UnitId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("UnitId"));
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1305,6 +1815,8 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("UpgradeId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("UpgradeId"));
 
                     b.Property<int>("Cost")
                         .HasColumnType("int");
@@ -1327,6 +1839,8 @@ namespace MysqlMigrations.Migrations
                     b.Property<int>("UploaderId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("UploaderId"));
 
                     b.Property<Guid>("AppGuid")
                         .HasColumnType("char(36)");
@@ -1386,6 +1900,21 @@ namespace MysqlMigrations.Migrations
                     b.ToTable("Uploaders");
                 });
 
+            modelBuilder.Entity("DsAbilityDsUnit", b =>
+                {
+                    b.HasOne("dsstats.db8.DsAbility", null)
+                        .WithMany()
+                        .HasForeignKey("AbilitiesDsAbilityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("dsstats.db8.DsUnit", null)
+                        .WithMany()
+                        .HasForeignKey("DsUnitsDsUnitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ReplayUploader", b =>
                 {
                     b.HasOne("dsstats.db8.Replay", null)
@@ -1403,13 +1932,13 @@ namespace MysqlMigrations.Migrations
 
             modelBuilder.Entity("dsstats.db8.ArcadePlayerRating", b =>
                 {
-                    b.HasOne("dsstats.db8.ArcadePlayer", "ArcadePlayer")
+                    b.HasOne("dsstats.db8.Player", "Player")
                         .WithMany("ArcadePlayerRatings")
-                        .HasForeignKey("ArcadePlayerId")
+                        .HasForeignKey("PlayerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("ArcadePlayer");
+                    b.Navigation("Player");
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadePlayerRatingChange", b =>
@@ -1423,42 +1952,42 @@ namespace MysqlMigrations.Migrations
                     b.Navigation("ArcadePlayerRating");
                 });
 
-            modelBuilder.Entity("dsstats.db8.ArcadeReplayPlayer", b =>
+            modelBuilder.Entity("dsstats.db8.ArcadeReplayDsPlayer", b =>
                 {
-                    b.HasOne("dsstats.db8.ArcadePlayer", "ArcadePlayer")
-                        .WithMany("ArcadeReplayPlayers")
-                        .HasForeignKey("ArcadePlayerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("dsstats.db8.ArcadeReplay", "ArcadeReplay")
-                        .WithMany("ArcadeReplayPlayers")
+                        .WithMany("ArcadeReplayDsPlayers")
                         .HasForeignKey("ArcadeReplayId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("ArcadePlayer");
+                    b.HasOne("dsstats.db8.Player", "Player")
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("ArcadeReplay");
+
+                    b.Navigation("Player");
                 });
 
-            modelBuilder.Entity("dsstats.db8.ArcadeReplayPlayerRating", b =>
+            modelBuilder.Entity("dsstats.db8.ArcadeReplayDsPlayerRating", b =>
                 {
-                    b.HasOne("dsstats.db8.ArcadeReplayPlayer", "ReplayPlayer")
+                    b.HasOne("dsstats.db8.ArcadeReplayDsPlayer", "ReplayDsPlayer")
                         .WithOne("ArcadeReplayPlayerRating")
-                        .HasForeignKey("dsstats.db8.ArcadeReplayPlayerRating", "ArcadeReplayPlayerId")
+                        .HasForeignKey("dsstats.db8.ArcadeReplayDsPlayerRating", "ArcadeReplayDsPlayerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("dsstats.db8.ArcadeReplayRating", "ArcadeReplayRating")
-                        .WithMany("ArcadeReplayPlayerRatings")
+                        .WithMany("ArcadeReplayDsPlayerRatings")
                         .HasForeignKey("ArcadeReplayRatingId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("ArcadeReplayRating");
 
-                    b.Navigation("ReplayPlayer");
+                    b.Navigation("ReplayDsPlayer");
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadeReplayRating", b =>
@@ -1481,6 +2010,17 @@ namespace MysqlMigrations.Migrations
                         .IsRequired();
 
                     b.Navigation("Uploader");
+                });
+
+            modelBuilder.Entity("dsstats.db8.BonusDamage", b =>
+                {
+                    b.HasOne("dsstats.db8.DsWeapon", "DsWeapon")
+                        .WithMany("BonusDamages")
+                        .HasForeignKey("DsWeaponId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DsWeapon");
                 });
 
             modelBuilder.Entity("dsstats.db8.ComboPlayerRating", b =>
@@ -1514,6 +2054,43 @@ namespace MysqlMigrations.Migrations
                         .IsRequired();
 
                     b.Navigation("Replay");
+                });
+
+            modelBuilder.Entity("dsstats.db8.DsUpgrade", b =>
+                {
+                    b.HasOne("dsstats.db8.DsUnit", null)
+                        .WithMany("Upgrades")
+                        .HasForeignKey("DsUnitId");
+                });
+
+            modelBuilder.Entity("dsstats.db8.DsWeapon", b =>
+                {
+                    b.HasOne("dsstats.db8.DsUnit", "DsUnit")
+                        .WithMany("Weapons")
+                        .HasForeignKey("DsUnitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DsUnit");
+                });
+
+            modelBuilder.Entity("dsstats.db8.IhSessionPlayer", b =>
+                {
+                    b.HasOne("dsstats.db8.IhSession", "IhSession")
+                        .WithMany("IhSessionPlayers")
+                        .HasForeignKey("IhSessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("dsstats.db8.Player", "Player")
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("IhSession");
+
+                    b.Navigation("Player");
                 });
 
             modelBuilder.Entity("dsstats.db8.NoUploadResult", b =>
@@ -1680,13 +2257,6 @@ namespace MysqlMigrations.Migrations
                     b.Navigation("Unit");
                 });
 
-            modelBuilder.Entity("dsstats.db8.ArcadePlayer", b =>
-                {
-                    b.Navigation("ArcadePlayerRatings");
-
-                    b.Navigation("ArcadeReplayPlayers");
-                });
-
             modelBuilder.Entity("dsstats.db8.ArcadePlayerRating", b =>
                 {
                     b.Navigation("ArcadePlayerRatingChange");
@@ -1694,19 +2264,31 @@ namespace MysqlMigrations.Migrations
 
             modelBuilder.Entity("dsstats.db8.ArcadeReplay", b =>
                 {
-                    b.Navigation("ArcadeReplayPlayers");
+                    b.Navigation("ArcadeReplayDsPlayers");
 
                     b.Navigation("ArcadeReplayRating");
                 });
 
-            modelBuilder.Entity("dsstats.db8.ArcadeReplayPlayer", b =>
+            modelBuilder.Entity("dsstats.db8.ArcadeReplayDsPlayer", b =>
                 {
                     b.Navigation("ArcadeReplayPlayerRating");
                 });
 
             modelBuilder.Entity("dsstats.db8.ArcadeReplayRating", b =>
                 {
-                    b.Navigation("ArcadeReplayPlayerRatings");
+                    b.Navigation("ArcadeReplayDsPlayerRatings");
+                });
+
+            modelBuilder.Entity("dsstats.db8.DsUnit", b =>
+                {
+                    b.Navigation("Upgrades");
+
+                    b.Navigation("Weapons");
+                });
+
+            modelBuilder.Entity("dsstats.db8.DsWeapon", b =>
+                {
+                    b.Navigation("BonusDamages");
                 });
 
             modelBuilder.Entity("dsstats.db8.Event", b =>
@@ -1714,8 +2296,15 @@ namespace MysqlMigrations.Migrations
                     b.Navigation("ReplayEvents");
                 });
 
+            modelBuilder.Entity("dsstats.db8.IhSession", b =>
+                {
+                    b.Navigation("IhSessionPlayers");
+                });
+
             modelBuilder.Entity("dsstats.db8.Player", b =>
                 {
+                    b.Navigation("ArcadePlayerRatings");
+
                     b.Navigation("PlayerRatings");
 
                     b.Navigation("ReplayPlayers");

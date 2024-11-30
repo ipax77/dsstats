@@ -1,4 +1,6 @@
-﻿namespace dsstats.shared;
+﻿using System.Diagnostics.Tracing;
+
+namespace dsstats.shared;
 
 public enum GameMode
 {
@@ -116,4 +118,100 @@ public enum DamageChartType
     Damage = 0,
     MVP = 1,
     Army = 2,
+}
+
+public enum UnitSize
+{
+    VerySmall = 0,
+    Small = 1,
+    Normal = 2,
+    Big = 3,
+    Hero = 4,
+    VeryBig = 5,
+    AirSmall = 6,
+    AirNormal = 7,
+    AirBig = 8,
+    AirVeryBig = 9
+}
+
+[Flags]
+public enum UnitType
+{
+    None = 0,
+    Armored = 1 << 0,
+    Biological = 1 << 1,
+    Detector = 1 << 2,
+    Frencied = 1 << 3,
+    Heroic = 1 << 4,
+    ImportantHero = 1 << 5,
+    Light = 1 << 6,
+    Massive = 1 << 7,
+    Mechanical = 1 << 8,
+    Psionic = 1 << 9,
+    Structure = 1 << 10
+}
+
+[Flags]
+public enum WeaponTarget
+{
+    None = 0,
+    Air = 1 << 0,
+    Ground = 1 << 1
+}
+
+[Flags]
+public enum AbilityTarget
+{
+    None = 0,
+    Self = 1 << 0,
+    Single = 1 << 1,
+    AOE = 1 << 2,
+    Multiple = 1 << 3,
+}
+
+public enum UnitColor
+{
+    None = 0,
+    Color1 = 1,
+    Color2 = 2,
+    Color3 = 3,
+    Color4= 4,
+    Color5 = 5,
+    Color6 = 6,
+    Color7 = 7,
+    Color8 = 8,
+    Color9 = 9,
+    Color10 = 10,
+    Color11 = 11,
+    Color12 = 12,
+    Color13 = 13,
+    Color14 = 14,
+    Color15 = 15,
+}
+
+public enum FaqLevel
+{
+    None = 0,
+    Basic = 1,
+    Intermediate = 2,
+    Advanced = 3
+}
+
+public enum QueuePriority
+{
+    None = 0,
+    Low = 1,
+    Medium = 2,
+    High = 3
+}
+
+public enum PickBanMode
+{
+    None = 0,
+    Standard = 1,
+    Commanders = 2,
+    Name = 3,
+    StdRandom = 4,
+    Std1v1 = 5,
+    CmdrBanOnly = 6
 }

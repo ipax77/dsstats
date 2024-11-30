@@ -65,9 +65,15 @@ public class TimedHostedService : BackgroundService
                 await replayRepository.FixDsstatsPlayerNames();
                 var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
                 await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-6), token);
-                await ratingService.ProduceRatings(shared.RatingCalcType.Arcade);
+
+                bool arcadeRecalc = nowTime.DayOfWeek == DayOfWeek.Friday;
+                await ratingService.ProduceRatings(shared.RatingCalcType.Arcade, arcadeRecalc);
+
                 await replayRepository.FixArcadePlayerNames();
                 await ratingService.ProduceRatings(shared.RatingCalcType.Combo, true);
+
+                var ihService = scope.ServiceProvider.GetRequiredService<IIhService>();
+                await ihService.Cleanup();
             }
             else
             {

@@ -6,9 +6,9 @@ Fan Project for analyzing [Starcarft II](https://starcraft2.com) [Direct Strike]
 
 ## Install instructions
 
-[<img src="images/store.png" alt="store" width="100"/>](https://www.microsoft.com/store/apps/9NNNMB503HN5)
+[<img src="images/store.png" alt="store" width="100"/>](https://apps.microsoft.com/detail/9nnnmb503hn5)
 
-Go to the Microsoft Store and install the [sc2dsstats app](https://www.microsoft.com/store/apps/9NNNMB503HN5) for free.
+Go to the Microsoft Store and install the [sc2dsstats app](https://apps.microsoft.com/detail/9nnnmb503hn5) for free.
 
 The app can be used offline to analyze your stats locally. If you want to upload your replays and contribute to this site, you must give your explicit consent.
 
@@ -30,7 +30,41 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v2.0.2</summary>
+<details open="open"><summary>v2.0.6</summary>
+
+>- s2protocol 5.0.14.93272.0 (s2protocol.NET v0.8.3)
+>- dotnet v8.0.11 (8.0.404)
+>- Maui Session Progress reload button
+>- Replay Leaver duration indication
+
+</details>
+
+<details><summary>v2.0.5</summary>
+
+>- s2protocol v5.0.13.92440.0 (s2protocol.NET v0.8.2)
+>- dotnet v8.0.7 (8.0.303)
+>- Maui builds fixed
+>- Maui hanging loading indicator fixed
+>- Combo ratings replay mapping improved (~90% hit rate)
+
+</details>
+
+<details><summary>v2.0.4</summary>
+
+>- Fixed Maui Replay duplicates import loop - thank you @Jurzal for reporting and helping to fix it!
+>- Unit Names and Colors for Replay-Unit-Map
+
+</details>
+
+<details><summary>v2.0.3</summary>
+
+>- Unit map update
+>- App localization
+>- Fix ChartJs annotation plugin registration
+
+</details>
+
+<details><summary>v2.0.2</summary>
 
 >- App localization for de, en, es, fr, ru and last but not least uk.
 >- Replay middle chart with optional tier/refiniery info

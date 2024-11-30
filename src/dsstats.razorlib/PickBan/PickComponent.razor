@@ -1,0 +1,87 @@
+﻿@using dsstats.shared
+@using Microsoft.AspNetCore.Components.Forms
+
+@if (ClientPick.Locked)
+{
+    <div>
+        @if (PbSetting.PicksReady)
+        {
+            @if (ClientPick.Commander == Commander.None)
+            {
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-question-square" style="font-size: 22px;"></i>
+                    <span class="ms-2">Random</span>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex align-items-center">
+                    <div class="preload-@(ClientPick.Commander.ToString().ToLower())" alt="@ClientPick.Commander"
+                         style="width: 30px; height: 30px;"></div>
+                    <span class="ms-2">@ClientPick.Commander</span>
+                </div>
+            }
+        }
+        else
+        {
+            @if (ClientPick.Commander == Commander.None)
+            {
+                <span class="bi bi-question-lg" style="width: 30px; height: 30px;"></span>
+            }
+            else
+            {
+                <div class="preload-@(ClientPick.Commander.ToString().ToLower())" alt="@ClientPick.Commander"
+                     style="width: 30px; height: 30px;"></div>
+            }
+        }
+    </div>
+}
+else
+{
+    <div class="d-flex">
+        <div>
+            <InputSelect class="form-select" @bind-Value="ClientPick.Commander">
+                @foreach (var cmdr in PbSetting.AvailableCommanders)
+                {
+                    @if (cmdr == Commander.None)
+                    {
+                        <option value="@cmdr">@(PbSetting.WithRandom ? "Random" : "Select")</option>
+                    }
+                    else
+                    {
+                        <option value="@cmdr">@cmdr</option>
+                    }
+                }
+            </InputSelect>
+        </div>
+        <div class="ms-2">
+            <button type="button" class="btn btn-danger" @onclick="Lock">Lock</button>
+        </div>
+    </div>
+}
+
+@code {
+    [CascadingParameter]
+    public EditContext EditContext { get; set; } = default!;
+    [CascadingParameter]
+    public PickBanSetting PbSetting { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public PickBan ClientPick { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<PickBan> OnLocked { get; set; }
+
+    private void Lock()
+    {
+        if (!PbSetting.WithRandom && ClientPick.Commander == Commander.None)
+        {
+            return;
+        }
+
+        if (PbSetting.AvailableCommanders.Contains(ClientPick.Commander))
+        {
+            OnLocked.InvokeAsync(ClientPick);
+        }
+    }
+}

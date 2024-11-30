@@ -5,7 +5,6 @@ namespace dsstats.maui8.Services;
 
 public class StoreUpdateService(ILogger<StoreUpdateService> logger) : IUpdateService
 {
-    private IReadOnlyList<StorePackageUpdate>? availableUpdates = null;
     private readonly object lockobject = new();
 
     public EventHandler<UpdateProgressEvent>? UpdateProgress;
@@ -39,7 +38,7 @@ public class StoreUpdateService(ILogger<StoreUpdateService> logger) : IUpdateSer
         try
         {
             var storeContext = StoreContext.GetDefault();
-            availableUpdates = await storeContext.GetAppAndOptionalStorePackageUpdatesAsync();
+            var availableUpdates = await storeContext.GetAppAndOptionalStorePackageUpdatesAsync();
             ArgumentNullException.ThrowIfNull(availableUpdates);
 
             return availableUpdates.Count > 0;
@@ -53,29 +52,43 @@ public class StoreUpdateService(ILogger<StoreUpdateService> logger) : IUpdateSer
 
     public async Task<bool> UpdateApp()
     {
-        if (availableUpdates is null || availableUpdates.Count == 0)
-        {
-            return true;
-        }
-
         try
         {
-            var storeContext = StoreContext.GetDefault();
-            var progress = new Progress<StorePackageUpdateStatus>(progress => 
-                OnUpdateProgress(new() { Progress = Convert.ToInt32(progress.PackageDownloadProgress * 100.0) }));
+            var result = await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                var storeContext = StoreContext.GetDefault();
+                var availableUpdates = await storeContext.GetAppAndOptionalStorePackageUpdatesAsync();
 
-            var result = await storeContext.RequestDownloadStorePackageUpdatesAsync(availableUpdates)
-                .AsTask(progress);
+                if (availableUpdates is null || availableUpdates.Count == 0)
+                {
+                    logger.LogWarning("No updates available.");
+                    return null;
+                }
+
+                var progress = new Progress<StorePackageUpdateStatus>(progress =>
+                    OnUpdateProgress(new() { Progress = Convert.ToInt32(progress.PackageDownloadProgress * 100.0) }));
+
+                return await storeContext.RequestDownloadStorePackageUpdatesAsync(availableUpdates)
+                    .AsTask(progress);
+            });
+
+            if (result == null)
+                return false;
 
             if (result.OverallState != StorePackageUpdateState.Completed)
             {
                 var failedUpdates = result.StorePackageUpdateStatuses.Where(
                     status => status.PackageUpdateState != StorePackageUpdateState.Completed)
-                .ToList();
+                    .ToList();
 
                 if (failedUpdates.Count > 0)
                 {
-                    logger.LogError("app update failed: {errorlist}", string.Join(", ", failedUpdates.Select(s => s.PackageFamilyName)));
+                    var errorDetails = failedUpdates.Select(s => new
+                    {
+                        PackageFamilyName = s.PackageFamilyName,
+                        Error = s.PackageUpdateState
+                    });
+                    logger.LogError("App update failed for packages: {errorDetails}", string.Join(", ", errorDetails));
                 }
             }
             else
@@ -85,8 +98,9 @@ public class StoreUpdateService(ILogger<StoreUpdateService> logger) : IUpdateSer
         }
         catch (Exception ex)
         {
-            logger.LogError("app update failed: {error}", ex.Message);
+            logger.LogError("App update failed: {error}", ex);
         }
         return false;
     }
+
 }

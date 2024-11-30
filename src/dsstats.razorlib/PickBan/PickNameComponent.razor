@@ -1,0 +1,57 @@
+﻿@using dsstats.shared
+@using Microsoft.AspNetCore.Components.Forms
+
+@if (ClientPick.Locked)
+{
+    <div>
+        @if (PbSetting.PicksReady)
+        {
+            <span>@ClientPick.Name</span>
+        }
+        else
+        {
+            @if (string.IsNullOrEmpty(ClientPick.Name))
+            {
+                <span class="bi bi-question-lg" style="width: 30px; height: 30px;"></span>
+            }
+            else
+            {
+                <span>@ClientPick.Name</span>
+            }
+        }
+    </div>
+}
+else
+{
+    <div class="d-flex">
+        <div>
+            <InputText class="form-control" @bind-Value="ClientPick.Name" />
+        </div>
+        <div class="ms-2">
+            <button type="button" class="btn btn-danger" @onclick="Lock">Lock</button>
+        </div>
+    </div>
+}
+
+@code {
+    [CascadingParameter]
+    public EditContext EditContext { get; set; } = default!;
+    [CascadingParameter]
+    public PickBanSetting PbSetting { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public PickBan ClientPick { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<PickBan> OnLocked { get; set; }
+
+    private void Lock()
+    {
+        if (ClientPick.Name?.Length < 3)
+        {
+            return;
+        }
+
+        OnLocked.InvokeAsync(ClientPick);
+    }
+}

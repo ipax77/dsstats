@@ -37,7 +37,7 @@ public class ReplayPlayerNgRating
     public int ReplayPlayerNgRatingId { get; set; }
     public float Rating { get; set; }
     public float Change { get; set; }
-    public int Games {  get; set; }
+    public int Games { get; set; }
     public float Consistency { get; set; }
     public float Confidence { get; set; }
     public int ReplayPlayerId { get; set; }

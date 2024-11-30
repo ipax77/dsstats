@@ -6,6 +6,7 @@ using dsstats.razorlib.Replays;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace dsstats.maui8.Components.Pages;
 
@@ -23,6 +24,8 @@ public partial class Home : ComponentBase, IDisposable
     public IToastService toastService { get; set; } = default!;
     [Inject]
     public IRemoteToggleService remoteToggleService { get; set; } = default!;
+    [Inject]
+    public IJSRuntime JSRuntime { get; set; } = default!;
 
     ReplayDto? currentReplay = null;
     PlayerId? interestPlayer = null;
@@ -35,6 +38,7 @@ public partial class Home : ComponentBase, IDisposable
     AppPlayersComponent? appPlayersComponent;
     ReplayComponent? replayComponent;
     bool DEBUG = false;
+    bool isChartAnnotationPluginRegistered;
 
     protected override void OnInitialized()
     {
@@ -43,6 +47,18 @@ public partial class Home : ComponentBase, IDisposable
         remoteToggleService.CultureChanged += RemoteToggleService_CultureChanged;
         base.OnInitialized();
     }
+
+    //protected override async Task OnAfterRenderAsync(bool firstRender)
+    //{
+    //    if (firstRender)
+    //    {
+    //        var module = await moduleTask.Value.ConfigureAwait(false);
+    //        await module.InvokeVoidAsync("registerPlugin");
+    //        isChartAnnotationPluginRegistered = true;
+    //        await InvokeAsync(() => StateHasChanged());
+    //    }
+    //    await base.OnAfterRenderAsync(firstRender);
+    //}
 
     private void RemoteToggleService_CultureChanged(object? sender, EventArgs e)
     {
@@ -122,6 +138,17 @@ public partial class Home : ComponentBase, IDisposable
         await InvokeAsync(() => StateHasChanged());
     }
 
+    private async Task LoadSessionReplay(string replayHash)
+    {
+        var sessionReplay = await replayRepository.GetReplay(replayHash);
+        if (sessionReplay is null)
+        {
+            return;
+        }
+        currentReplay = sessionReplay;
+        await InvokeAsync(() => StateHasChanged());
+    }
+
     private void Upload()
     {
         if (!configService.AppOptions.UploadCredential)
@@ -139,7 +166,16 @@ public partial class Home : ComponentBase, IDisposable
     {
         interestPlayer = playerId;
         var ratingType = currentReplay is null ? RatingType.Cmdr : Data.GetReplayRatingType(currentReplay.GameMode, currentReplay.TournamentEdition);
-        playerDetails?.Update(playerId, RatingCalcType.Dsstats, ratingType);
+        playerDetails?.Update(playerId, RatingCalcType.Dsstats, ratingType, true);
+    }
+
+    private void AnnotationsRegistered()
+    {
+        InvokeAsync(() =>
+        {
+            isChartAnnotationPluginRegistered = true;
+            StateHasChanged();
+        });
     }
 
     public void Dispose()

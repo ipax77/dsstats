@@ -29,7 +29,7 @@
             <div class="ms-1">
                 <label class="form-label">
                     Rating Type
-                    <select class="form-select text-light bgchart" @bind="RatingType" @bind:after="LoadData">
+                    <select class="form-select text-light bgchart" @bind="RatingType" @bind:after="@(() => LoadData(false))">
                         <option value="@RatingType.Cmdr">Commanders</option>
                         <option value="@RatingType.Std">Standard</option>
                         <option value="@RatingType.CmdrTE">Commanders TE</option>
@@ -40,7 +40,7 @@
             <div class="ms-1">
                 <label class="form-label">
                     Calc Type
-                    <select class="form-select text-light bgchart" @bind="RatingCalcType" @bind:after="LoadData">
+                    <select class="form-select text-light bgchart" @bind="RatingCalcType" @bind:after="@(() => LoadData(false))">
                         <option value="@RatingCalcType.Dsstats">Dsstats</option>
                         <option value="@RatingCalcType.Arcade">Arcade</option>
                         <option value="@RatingCalcType.Combo">Combo</option>
@@ -103,6 +103,16 @@
             }
         }
     </div>
+
+    @if (isUploader)
+    {
+        <div class="mt-1 mb-1">
+            <button type="button" class="btn btn-outline-light btn-lg text-warning fw-bold bgchart"
+                @onclick="ShowReview">
+                <span class="bi bi-person-plus-fill"></span> Player review
+            </button>
+        </div>
+    }
 
     <div class="mt-3">
         <PlayerRatingCards Ratings="summary.Ratings" RatingType="RatingType" OnRatingSelected="ChangeRating" />
@@ -199,7 +209,7 @@
                     <div class="card-header bgchart2">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h4><span class="text-warning">Opponents</span> <small>and their winrate</small></h4>
+                                <h4><span class="text-warning">Opponents</span> <small>and their stats</small></h4>
                             </div>
                             <div>
                                 <span class="text-info">min 10 games</span>

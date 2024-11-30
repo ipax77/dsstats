@@ -1,0 +1,86 @@
+﻿@using dsstats.shared
+
+<div class="container-fluid">
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-light bgchart"
+            @onclick="CreateIhMatch">
+            Create Match
+        </button>
+        <button type="button" class="btn btn-outline-light bgchart" @onclick="e => OnAddPlayersRequest.InvokeAsync()">
+            Add Player(s)
+        </button>
+    </div>
+    <div class="row">
+        <div class="col-auto">
+            <div class="card bgchart" style="width: 14rem;">
+                <div class="card-header bgchart2">
+                    Available Players + Rating
+                </div>
+                <div class="card-body bgchart">
+                    <ul class="list-group list-group-flush"
+                        ondragover="event.preventDefault()"
+                        ondragstart="event.dataTransfer.setData('text/plain', event.target.id)"
+                        @ondrop="HandleListDrop"
+                        @ondragenter="HandleListDragEnter"
+                        @ondragleave="HandleListDragLeave">
+                        @foreach (var player in availablePlayers)
+                        {
+                            <li id="@GetId(player.PlayerId)" class="list-group-item @GetPlayerColor(player)"
+                                style="cursor:grab"
+                                draggable="true"
+                                @ondragstart="e => HandleListDragStart(player.PlayerId)">
+                                @player.Name @player.RatingStart
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="card bgchart" style="width: 22rem;">
+                <div class="card-header bgchart2">
+                    IH Match RatingGap: @GroupState.IhMatch.RatingGap AgainstScore: @GroupState.IhMatch.AgainstScore
+                </div>
+                <div class="card-body bgchart">
+                    @for (int i = 0; i < 2; i++)
+                    {
+                        var teamId = i;
+                        var team = GroupState.IhMatch.Teams[teamId];
+                        <div class="card bgchart" style="width: 18rem;">
+                            <div class="card-header bgchart2">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        Team @(i + 1) Rating: @team.Rating WithScore: @team.WithScore
+                                    </div>
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-outline-light bgchart"
+                                            @onclick="e => GroupState.FillTeam(teamId)">
+                                            Fill
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body bgchart">
+                                <ul class="list-group list-group-flush">
+                                    @foreach (var slot in team.Slots)
+                                    {
+                                        <li id="@GetId(slot.PlayerId)" class="list-group-item @GetPlayerColor(slot)"
+                                            style="cursor:grab"
+                                            draggable="true"
+                                            @ondragstart="e => HandleTeamDragStart(teamId, slot.PlayerId)"
+                                            ondragover="event.preventDefault()"
+                                            @ondrop="e => HandleTeamDrop(e, teamId, slot.PlayerId)"
+                                            @ondragenter="e => HandleTeamDragEnter(e, teamId, slot.PlayerId)"
+                                            @ondragleave="e => HandleTeamDragLeave(e, teamId, slot.PlayerId)">
+                                            @slot.Name @slot.Rating 
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

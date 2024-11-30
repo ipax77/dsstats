@@ -1,19 +1,28 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <PackageReference Include="MailKit" Version="4.8.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.1.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\dsstats.auth\dsstats.auth.csproj" />
     <ProjectReference Include="..\dsstats.db8services\dsstats.db8services.csproj" />
     <ProjectReference Include="..\dsstats.db8\dsstats.db8.csproj" />
+    <ProjectReference Include="..\dsstats.pickban\dsstats.pickban.csproj" />
     <ProjectReference Include="..\dsstats.ratings.lib\dsstats.ratings.lib.csproj" />
     <ProjectReference Include="..\dsstats.ratings\dsstats.ratings.csproj" />
     <ProjectReference Include="..\dsstats.shared\dsstats.shared.csproj" />

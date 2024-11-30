@@ -167,6 +167,7 @@ public partial class DsstatsService
     private async Task ImportReplays(bool final = false)
     {
         await ssSave.WaitAsync();
+        List<ReplayDto> errorReplays = [];
         try
         {
             if (replayBag.Count >= 100 || final)
@@ -190,7 +191,11 @@ public partial class DsstatsService
                         }
                     }
                 }
-                await importService.Import(replays, PlayerIds.ToList());
+                var result = await importService.Import(replays, PlayerIds.ToList());
+                if (!string.IsNullOrEmpty(result.Error))
+                {
+                    errorReplays.AddRange(replays);
+                }
 
                 if (final)
                 {
@@ -212,6 +217,14 @@ public partial class DsstatsService
         finally
         {
             ssSave.Release();
+        }
+
+        if (errorReplays.Count > 0)
+        {
+            foreach (var errorReplay in errorReplays)
+            {
+                await SaveReplay(errorReplay, true);
+            }
         }
     }
 

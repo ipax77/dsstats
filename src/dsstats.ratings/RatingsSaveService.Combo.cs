@@ -1,15 +1,15 @@
-﻿using CsvHelper.Configuration;
-using CsvHelper;
+﻿using CsvHelper;
+using CsvHelper.Configuration;
 using dsstats.db8;
-using dsstats.shared.Calc;
 using dsstats.shared;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using System.Globalization;
+using dsstats.shared.Calc;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Frozen;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MySqlConnector;
+using System.Collections.Frozen;
+using System.Globalization;
 
 namespace dsstats.ratings;
 
@@ -179,7 +179,7 @@ public partial class RatingsSaveService
             .ToDictionary(k => new PlayerId(k.ToonId, k.RealmId, k.RegionId), v => v.PlayerId);
 
         await ContinueComboPlayerRatings(mmrIdRatings, playerIds);
-        await ContinueCsv2Mysql(GetFileName(RatingCalcType.Combo,nameof(ReplayContext.ComboReplayRatings)),
+        await ContinueCsv2Mysql(GetFileName(RatingCalcType.Combo, nameof(ReplayContext.ComboReplayRatings)),
                                 nameof(ReplayContext.ComboReplayRatings),
                                 connectionString);
         await ContinueCsv2Mysql(GetFileName(RatingCalcType.Combo, nameof(ReplayContext.ComboReplayPlayerRatings)),
@@ -284,7 +284,7 @@ internal record ComboReplayRatingCsv
     public int ComboReplayRatingId { get; init; }
     public int RatingType { get; init; }
     public int LeaverType { get; init; }
-    public double ExpectationToWin { get; init; }
+    public float ExpectationToWin { get; init; }
     public int ReplayId { get; init; }
     public int IsPreRating { get; init; }
     public int AvgRating { get; init; }
@@ -295,7 +295,7 @@ internal record ComboReplayPlayerRatingCsv
     public int ComboReplayPlayerRatingId { get; init; }
     public int GamePos { get; init; }
     public int Rating { get; init; }
-    public double Change { get; init; }
+    public float Change { get; init; }
     public int Games { get; init; }
     public double Consistency { get; init; }
     public double Confidence { get; init; }

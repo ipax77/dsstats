@@ -22,7 +22,7 @@ public partial class ReplaysService
             replays = replays.Where(x => x.TournamentEdition);
         }
 
-        if (request.Filter.GameModes.Count > 0 
+        if (request.Filter.GameModes.Count > 0
             && !request.Filter.GameModes.Contains(GameMode.None))
         {
             replays = replays.Where(x => request.Filter.GameModes.Contains(x.GameMode));
@@ -43,7 +43,7 @@ public partial class ReplaysService
                               where (posFilter.GamePos == 0 || rp.GamePos == posFilter.GamePos)
                               && (posFilter.Commander == Commander.None || rp.Race == posFilter.Commander)
                               && (posFilter.OppCommander == Commander.None || rp.OppRace == posFilter.OppCommander)
-                              && p.ToonId == playerId.ToonId && p.RealmId == playerId.RealmId && p.RegionId == playerId.RegionId    
+                              && p.ToonId == playerId.ToonId && p.RealmId == playerId.RealmId && p.RegionId == playerId.RegionId
                               select r;
                 }
                 else

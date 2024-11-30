@@ -1,16 +1,4 @@
-﻿using dsstats.db8;
-using dsstats.db8.AutoMapper;
-using dsstats.db8services;
-using dsstats.ratings.lib;
-using dsstats.shared;
-using dsstats.shared.Calc;
-using dsstats.shared.Extensions;
-using dsstats.shared.Interfaces;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using System.Security.Cryptography;
-
-namespace dsstats.ratings.tests;
+﻿namespace dsstats.ratings.tests;
 
 //[TestClass]
 //public class RatingsSqliteTests

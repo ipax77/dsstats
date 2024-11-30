@@ -6,7 +6,7 @@ namespace dsstats.db8services.Import;
 
 public partial class ImportService
 {
-    public async Task<int> HandleDuplicates(List<Replay> replays, ReplayContext context)
+    private async Task<int> HandleDuplicates(List<Replay> replays, ReplayContext context)
     {
         var replayHashes = replays.Select(s => s.ReplayHash).ToList();
         var dupReplays = await context.Replays
@@ -53,7 +53,7 @@ public partial class ImportService
             if (importReplay is null && lsDupReplays.Count > 0)
             {
                 var repLastSpawnHashes = dbReplay.ReplayPlayers
-                    .Where(x => x.LastSpawnHash  != null)
+                    .Where(x => x.LastSpawnHash != null)
                     .Select(s => s.LastSpawnHash)
                     .ToList();
 

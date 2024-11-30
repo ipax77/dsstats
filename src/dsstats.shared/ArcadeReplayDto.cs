@@ -11,7 +11,7 @@ public record ArcadePlayerRatingDto
     public int Pos { get; init; }
     public int Games { get; init; }
     public int Wins { get; init; }
-    public ArcadePlayerRatingPlayerDto ArcadePlayer { get; init; } = null!;
+    public PlayerDto Player { get; init; } = null!;
     public ArcadePlayerRatingChangeDto? ArcadePlayerRatingChange { get; init; }
 }
 
@@ -45,14 +45,19 @@ public record ArcadeReplayListDto
 
 public record ArcadeReplayDto
 {
-    public string ReplayHash { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public GameMode GameMode { get; set; }
     public int RegionId { get; set; }
+    public long BnetBucketId { get; set; }
+    public long BnetRecordId { get; set; }
     public int WinnerTeam { get; set; }
     public int Duration { get; set; }
     public ArcadeReplayRatingDto? ArcadeReplayRating { get; set; }
-    public List<ArcadeReplayPlayerDto> ArcadeReplayPlayers { get; set; } = new();
+    public List<ArcadeReplayDsPlayerDto> ArcadeReplayDsPlayers { get; set; } = new();
+    public string GetBnetHash()
+    {
+        return $"{RegionId}|{BnetBucketId}|{BnetRecordId}";
+    }
 }
 
 public record ArcadeReplayPlayerDto
@@ -63,6 +68,16 @@ public record ArcadeReplayPlayerDto
     public int Discriminator { get; set; }
     public PlayerResult PlayerResult { get; set; }
     public ArcadePlayerReplayDto ArcadePlayer { get; set; } = new();
+}
+
+public record ArcadeReplayDsPlayerDto
+{
+    public string Name { get; set; } = string.Empty;
+    public int SlotNumber { get; set; }
+    public int Team { get; set; }
+    public int Discriminator { get; set; }
+    public PlayerResult PlayerResult { get; set; }
+    public PlayerDto Player { get; set; } = new();
 }
 
 public record ArcadePlayerReplayDto
@@ -76,7 +91,7 @@ public record ArcadeReplayRatingDto
 {
     public RatingType RatingType { get; set; }
     public float ExpectationToWin { get; set; }
-    public List<ArcadeReplayPlayerRatingDto> ArcadeReplayPlayerRatings { get; set; } = new();
+    public List<ArcadeReplayPlayerRatingDto> ArcadeReplayDsPlayerRatings { get; set; } = new();
 }
 
 public record ArcadeReplayPlayerRatingDto
@@ -96,7 +111,6 @@ public record ArcadePlayerDto
     public int RegionId { get; set; }
     public int RealmId { get; set; }
     public int ProfileId { get; set; }
-    public List<ArcadePlayerRatingDetailDto> ArcadePlayerRatings { get; set; } = new();
 }
 
 public record ArcadePlayerRatingDetailDto
@@ -114,14 +128,14 @@ public record ArcadePlayerRatingDetailDto
 public record ArcadeReplayListRatingDto : ArcadeReplayListDto
 {
     public ArcadeReplayRatingListDto? ArcadeReplayRating { get; set; }
-    public List<ArcadeReplayPlayerListDto> ArcadeReplayPlayers { get; set; } = new();
+    public List<ArcadeReplayPlayerListDto> ArcadeReplayDsPlayers { get; set; } = new();
 }
 
 public record ArcadeReplayPlayerListDto
 {
     public string Name { get; set; } = string.Empty;
     public int SlotNumber { get; set; }
-    public ArcadePlayerListDto ArcadePlayer { get; set; } = null!;
+    public PlayerDto Player { get; set; } = null!;
 }
 
 public record ArcadePlayerListDto
@@ -131,7 +145,7 @@ public record ArcadePlayerListDto
 
 public record ArcadeReplayRatingListDto
 {
-    public List<ArcadeReplayPlayerRatingListDto> ArcadeReplayPlayerRatings { get; set; } = new();
+    public List<ArcadeReplayPlayerRatingListDto> ArcadeReplayDsPlayerRatings { get; set; } = new();
 }
 
 public record ArcadeReplayPlayerRatingListDto
@@ -211,27 +225,33 @@ public record ReplayPlayerChartDto
 
 public record ReplayChartDto
 {
-    public DateTime GameTime => GetDateTime();
-    public int Year { get; set; }
-    public int Week { get; set; }
+    public ReplayChartDto() { }
 
-    private DateTime GetDateTime()
+    public ReplayChartDto(int year, int week)
     {
-        DayOfWeek dayOfWeek = DayOfWeek.Monday;
+        DateTime jan1 = new DateTime(year, 1, 1);
+        int daysOffset = DayOfWeek.Monday - jan1.DayOfWeek;
 
-        DateTime dateOfMonday = new DateTime(Year, 1, 1)
-            .AddDays((Week - 1) * 7)
-            .AddDays(-(int)(new GregorianCalendar().GetDayOfWeek(new DateTime(Year, 1, 1))) + (int)dayOfWeek + 7);
+        // Use the first Monday in January to get the first week of the year
+        DateTime firstMonday = jan1.AddDays(daysOffset);
 
-        if (dateOfMonday.Year < Year)
-        {
-            dateOfMonday = dateOfMonday.AddDays(7);
-        }
+        var cal = CultureInfo.CurrentCulture.Calendar;
+        int firstWeek = cal.GetWeekOfYear(firstMonday, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
 
-        DateTime startOfWeek = dateOfMonday;
+        // Adjust week number based on MySQL convention
+        var adjustedWeek = (firstWeek == 0) ? week + 1 : week;
 
-        return startOfWeek;
+        // Calculate the start of the desired week based on the first Monday
+        GameTime = firstMonday.AddDays((adjustedWeek - 1) * 7);
     }
+
+    public ReplayChartDto(int year, int month, int day)
+    {
+        GameTime = new DateTime(year, month, day);
+    }
+
+    public DateTime GameTime { get; init; }
+    public RatingType RatingType { get; set; }
 }
 
 public record RepPlayerRatingChartDto

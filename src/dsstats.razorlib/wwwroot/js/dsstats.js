@@ -1,6 +1,7 @@
-//v1.10
+//v1.13
 
 const cmdrIconsMap = new Map();
+let dsmodal = null;
 
 function delay(time) {
     return new Promise(resolve => setTimeout(resolve, time));
@@ -29,25 +30,37 @@ function hideTooltip(id) {
     tooltip[0].parentNode.removeChild(tooltip[0]);
 }
 
-
 function registerImagePlugin(xWidth, yWidth) {
-    const barIcons = barIconsPlugin();
-    Chart.register(barIcons);
-    preloadChartIcons(xWidth, yWidth);
+    preloadChartIcons(xWidth, yWidth).then(() => {
+        const barIcons = barIconsPlugin();
+        Chart.register(barIcons);
+    });
 }
 
 function preloadChartIcons(xWidth, yWidth) {
     if (cmdrIconsMap.size > 0) {
-        return;
+        return Promise.resolve();
     }
-    const cmdrs = ["terran", "protoss", "zerg", "abathur", "alarak", "artanis", "dehaka", "fenix", "horner", "karax", "kerrigan", "mengsk", "nova", "raynor", "stetmann", "stukov", "swann", "tychus", "vorazun", "zagara", "zeratul"];
-    for (let i = 0; i < cmdrs.length; i++) {
-        const img = new Image(xWidth, yWidth);
-        img.onload = () => {
-            cmdrIconsMap.set(cmdrs[i], img);
-        };
-        img.src = "_content/dsstats.razorlib/images/" + cmdrs[i] + "-min.png";
-    }
+
+    const cmdrs = [
+        "terran", "protoss", "zerg", "abathur", "alarak", "artanis", "dehaka",
+        "fenix", "horner", "karax", "kerrigan", "mengsk", "nova", "raynor",
+        "stetmann", "stukov", "swann", "tychus", "vorazun", "zagara", "zeratul"
+    ];
+
+    const loadPromises = cmdrs.map(cmdr => {
+        return new Promise((resolve, reject) => {
+            const img = new Image(xWidth, yWidth);
+            img.onload = () => {
+                cmdrIconsMap.set(cmdr, img);
+                resolve();
+            };
+            img.onerror = reject;
+            img.src = `_content/dsstats.razorlib/images/${cmdr}-min.png`;
+        });
+    });
+
+    return Promise.all(loadPromises);
 }
 
 function increaseChartHeight(chartId, height) {
@@ -361,10 +374,19 @@ function openModalById(id) {
     dsmodal.show();
 }
 
-
 function closeModalById(id) {
-    if (dsmodal) {
+    if (dsmodal !== undefined && dsmodal !== null) {
         dsmodal.hide();
+        dsmodal = null;
+    } else {
+        const modalEl = document.getElementById(id);
+        const myModal = bootstrap.Modal.getInstance(modalEl);
+        if (myModal !== undefined && myModal != null) {
+            myModal.hide();
+            modalEl.addEventListener('hidden.bs.modal', () => {
+                modal.dispose();
+            }, { once: true });
+        }
     }
 }
 
@@ -381,6 +403,16 @@ function toggleButton(buttonId, elementId) {
             targetElement.classList.remove('show');
         } else {
             targetElement.classList.add('show');
+        }
+    }
+}
+
+function closeDropdown(dropdownId) {
+    var dropdown = document.getElementById(dropdownId);
+    if (dropdown) {
+        var dropdownInstance = bootstrap.Dropdown.getInstance(dropdown);
+        if (dropdownInstance) {
+            dropdownInstance.hide();
         }
     }
 }

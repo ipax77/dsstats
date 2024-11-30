@@ -3,7 +3,6 @@ using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
 using dsstats.db8services.Import;
-using dsstats.ratings.lib;
 using dsstats.shared;
 using dsstats.shared.Extensions;
 using dsstats.shared.Interfaces;
@@ -52,10 +51,13 @@ public class PreRatingTests
 
         services.AddSingleton<IRatingService, RatingService>();
         services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
-        services.AddSingleton<ImportService>();
+        services.AddSingleton<IImportService, ImportService>();
         services.AddSingleton<IRemoteToggleService, RemoteToggleService>();
 
+        services.AddScoped<ComboRatings>();
         services.AddScoped<IReplayRepository, ReplayRepository>();
+        services.AddScoped<IReplaysService, ReplaysService>();
+
 
         serviceProvider = services.BuildServiceProvider();
     }
@@ -66,7 +68,7 @@ public class PreRatingTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
         var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 
         context.Database.EnsureDeleted();
@@ -109,7 +111,7 @@ public class PreRatingTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
 
         var comboPreRatingsBefore = context.ComboReplayRatings
             .Where(x => x.IsPreRating)
@@ -142,7 +144,7 @@ public class PreRatingTests
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
 
         var comboPreRatingsBefore = context.ComboReplayRatings
             .Where(x => x.IsPreRating)
@@ -164,6 +166,48 @@ public class PreRatingTests
 
         Assert.AreEqual(comboPreRatingsBefore + 1, dsstatsPreRatings);
         Assert.AreEqual(comboPreRatingsBefore + 1, comboPreRatings);
+    }
+
+    [TestMethod]
+    public void T04ConsConfPreRatingTest()
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
+        var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
+        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
+        var replaysService = scope.ServiceProvider.GetRequiredService<IReplaysService>();
+
+        var comboPreRatingsBefore = context.ComboReplayRatings
+            .Where(x => x.IsPreRating)
+            .Count();
+        using var md5 = MD5.Create();
+
+        for (int i = 0; i < 10; i++)
+        {
+            var replay = GetBasicReplayDto(md5);
+            replayRepository.SaveReplay(replay, new(), new()).Wait();
+        }
+
+        importService.SetPreRatings().Wait();
+
+        var latestReplayHash = context.Replays
+            .OrderByDescending(o => o.ReplayId)
+            .Select(s => s.ReplayHash)
+            .FirstOrDefault();
+
+        Assert.IsNotNull(latestReplayHash);
+
+        var latestReplayRatings = replaysService.GetReplayRating(latestReplayHash, true)
+            .GetAwaiter().GetResult();
+
+        Assert.IsNotNull(latestReplayRatings);
+
+        var defaultPlayerReplayRating = latestReplayRatings.RepPlayerRatings
+            .FirstOrDefault(f => f.GamePos == 1);
+
+        Assert.IsNotNull(defaultPlayerReplayRating);
+
+        Assert.AreNotEqual(defaultPlayerReplayRating.Consistency, defaultPlayerReplayRating.Confidence);
     }
 
     public static ReplayDto GetBasicReplayDto(MD5 md5, GameMode gameMode = GameMode.Commanders)

@@ -1,9 +1,4 @@
-﻿using System.Diagnostics;
-using System.Security.Cryptography;
-using System.Text.Json;
-using AutoMapper;
-using AutoMapper.QueryableExtensions;
-using dsstats.db8;
+﻿using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8.Extensions;
 using dsstats.shared;
@@ -11,6 +6,9 @@ using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace dsstats.ratings;
 
@@ -51,6 +49,7 @@ class Program
         });
 
         services.AddAutoMapper(typeof(AutoMapperProfile));
+        services.AddScoped<ComboRatings>();
         services.AddSingleton<IRatingService, RatingService>();
         services.AddSingleton<IRatingsSaveService, RatingsSaveService>();
 
@@ -61,40 +60,47 @@ class Program
 
         logger.LogInformation("ratings start.");
 
-        Stopwatch sw = Stopwatch.StartNew();
-        if (args.Length == 1)
+        if (args.Length == 0)
         {
+            args = ["combo"];
+        }
+
+        Stopwatch sw = Stopwatch.StartNew();
+        if (args.Length > 0)
+        {
+            bool recalc = true;
+            if (args.Length > 1 && args[1] == "continue")
+            {
+                recalc = false;
+            }
+
             var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
             if (args[0] == "dsstats")
             {
                 logger.LogInformation("producing dsstats ratings.");
-                ratingService.ProduceRatings(RatingCalcType.Dsstats, true).Wait();
+                ratingService.ProduceRatings(RatingCalcType.Dsstats, recalc).Wait();
             }
-            else if (args[0] == "sc2arcade")
+            else if (args[0] == "arcade")
             {
                 logger.LogInformation("producing sc2arcade ratings.");
-                ratingService.ProduceRatings(RatingCalcType.Arcade, true).Wait();
+                ratingService.ProduceRatings(RatingCalcType.Arcade, recalc).Wait();
             }
             else if (args[0] == "combo")
             {
                 logger.LogInformation("producing combo ratings.");
-                ratingService.ProduceRatings(RatingCalcType.Combo, true).Wait();
-            }
-            else if (args[0] == "combocontinue")
-            {
-                logger.LogInformation("producing combo ratings.");
-                ratingService.ProduceRatings(RatingCalcType.Combo, false).Wait();
-            }
-            else if (args[0] == "combo2")
-            {
-                logger.LogInformation("producing combo2 ratings.");
-                ratingService.CombineTest().Wait();
+                ratingService.ProduceRatings(RatingCalcType.Combo, recalc).Wait();
             }
             else if (args[0] == "lsdups")
             {
                 logger.LogInformation("Checking lastSpawnHashes");
                 SetLastSpawnHashes(serviceProvider);
                 CheckLastSpawnHashDuplicates(serviceProvider);
+            }
+            else if (args[0] == "prep")
+            {
+                logger.LogInformation("CombineDsstatsSc2ArcadeReplays");
+                var comboRatings = scope.ServiceProvider.GetRequiredService<ComboRatings>();
+                comboRatings.CombineDsstatsSc2ArcadeReplays(add: false).Wait();
             }
             else
             {
@@ -241,7 +247,7 @@ class Program
         var logger = mscope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         MD5 md5Hash = MD5.Create();
 
-        var lsDups = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText("/data/ds/lsdups.json")) ?? new(); 
+        var lsDups = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText("/data/ds/lsdups.json")) ?? new();
 
         foreach (var ent in lsDups)
         {

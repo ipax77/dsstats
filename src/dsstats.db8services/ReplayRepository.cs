@@ -7,7 +7,7 @@ using dsstats.shared.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MySqlConnector;
+using System;
 using System.Diagnostics;
 
 namespace dsstats.db8services;
@@ -193,6 +193,16 @@ public class ReplayRepository : IReplayRepository
             .FirstOrDefaultAsync();
     }
 
+    public async Task<ReplayDto?> GetReplay(string replayHash)
+    {
+        return await context.Replays
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Where(x => x.ReplayHash == replayHash)
+            .ProjectTo<ReplayDto>(mapper.ConfigurationProvider)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task SetReplayViews()
     {
         var viewedHashes = await context.ReplayViewCounts
@@ -305,8 +315,8 @@ public class ReplayRepository : IReplayRepository
         Stopwatch sw = Stopwatch.StartNew();
 
         var replays = await context.ArcadeReplays
-            .Include(i => i.ArcadeReplayPlayers)
-                .ThenInclude(i => i.ArcadePlayer)
+            .Include(i => i.ArcadeReplayDsPlayers)
+                .ThenInclude(i => i.Player)
             .Where(x => x.CreatedAt > fromDate)
             .OrderByDescending(o => o.CreatedAt)
             .ToListAsync();
@@ -320,21 +330,21 @@ public class ReplayRepository : IReplayRepository
 
         foreach (var replay in replays)
         {
-            foreach (var replayPlayer in replay.ArcadeReplayPlayers)
+            foreach (var replayPlayer in replay.ArcadeReplayDsPlayers)
             {
-                if (playersDone.ContainsKey(replayPlayer.ArcadePlayer.ArcadePlayerId))
+                if (playersDone.ContainsKey(replayPlayer.Player!.PlayerId))
                 {
                     continue;
                 }
 
-                if (replayPlayer.Name != replayPlayer.ArcadePlayer.Name)
+                if (replayPlayer.Name != replayPlayer.Player.Name)
                 {
-                    replayPlayer.ArcadePlayer.Name = replayPlayer.Name;
-                    playersDone[replayPlayer.ArcadePlayer.ArcadePlayerId] = replayPlayer.Name;
+                    replayPlayer.Player.Name = replayPlayer.Name;
+                    playersDone[replayPlayer.Player!.PlayerId] = replayPlayer.Name;
                 }
                 else
                 {
-                    playersDone[replayPlayer.ArcadePlayer.ArcadePlayerId] = replayPlayer.ArcadePlayer.Name;
+                    playersDone[replayPlayer.Player!.PlayerId] = replayPlayer.Player.Name;
                 }
             }
         }

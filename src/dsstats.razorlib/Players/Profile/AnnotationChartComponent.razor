@@ -1,0 +1,62 @@
+﻿@using Microsoft.JSInterop
+@using pax.BlazorChartJs
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered" />
+
+@code {
+    [Parameter]
+    public EventCallback OnAnnotationsRegistered { get; set; }
+
+    private Lazy<Task<IJSObjectReference>> moduleTask = null!;
+    private ChartJsConfig chartConfig = null!;
+    private ChartComponent? chartComponent;
+    private bool annotationsRegistered;
+
+    protected override void OnInitialized()
+    {
+        moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import", "./_content/dsstats.razorlib/js/annotationChart.js").AsTask());
+
+        chartConfig = new()
+            {
+                Type = ChartType.line
+            };
+        base.OnInitialized();
+    }
+
+    private async void ChartEventTriggered(ChartJsEvent e)
+    {
+        if (e is ChartJsInitEvent initEvent)
+        {
+            var success = await RegisterPlugin();
+        }
+    }
+
+    private async Task<bool> RegisterPlugin()
+    {
+        if (!annotationsRegistered)
+        {
+            var module = await moduleTask.Value.ConfigureAwait(false);
+            await module.InvokeVoidAsync("registerPlugin")
+                .ConfigureAwait(false);
+
+            annotationsRegistered = true;
+
+
+            chartConfig.ReinitializeChart();
+            await InvokeAsync(() => OnAnnotationsRegistered.InvokeAsync());
+            return true;
+        }
+        return false;
+    }
+
+    public void Dispose()
+    {
+        if (moduleTask.IsValueCreated)
+        {
+            moduleTask.Value.Dispose();
+        }
+    }
+}
