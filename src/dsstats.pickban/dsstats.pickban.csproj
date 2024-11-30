@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\dsstats.db8\dsstats.db8.csproj" />
     <ProjectReference Include="..\dsstats.shared\dsstats.shared.csproj" />
   </ItemGroup>
