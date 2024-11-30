@@ -30,9 +30,18 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v2.0.5</summary>
+<details open="open"><summary>v2.0.6</summary>
 
->- s2protocol v5.0.13.92440.0 (s2protocol.NET v0.8.3)
+>- s2protocol 5.0.14.93272.0 (s2protocol.NET v0.8.3)
+>- dotnet v8.0.11 (8.0.404)
+>- Maui Session Progress reload button
+>- Replay Leaver duration indication
+
+</details>
+
+<details><summary>v2.0.5</summary>
+
+>- s2protocol v5.0.13.92440.0 (s2protocol.NET v0.8.2)
 >- dotnet v8.0.7 (8.0.303)
 >- Maui builds fixed
 >- Maui hanging loading indicator fixed
