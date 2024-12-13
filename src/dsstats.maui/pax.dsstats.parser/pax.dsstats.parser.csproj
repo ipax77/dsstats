@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="33.0.1" />
     <PackageReference Include="IronPython.StdLib" Version="2.7.12" />
-    <PackageReference Include="s2protocol.NET" Version="0.8.3" />
+    <PackageReference Include="s2protocol.NET" Version="0.8.4" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.11" />
   </ItemGroup>
 
