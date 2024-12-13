@@ -30,7 +30,14 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v2.0.6</summary>
+<details open="open"><summary>v2.0.7</summary>
+
+>- s2protocol 5.0.14.93333.0 (s2protocol.NET v0.8.4)
+>- Maui Player Review disabled
+
+</details>
+
+<details><summary>v2.0.6</summary>
 
 >- s2protocol 5.0.14.93272.0 (s2protocol.NET v0.8.3)
 >- dotnet v8.0.11 (8.0.404)
