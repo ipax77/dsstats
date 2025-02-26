@@ -40,36 +40,61 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
 
     public async Task<int> SaveReplays(Guid guid, List<IFormFile> files)
     {
+        int filesSaved = 0;
+
         try
         {
-            long size = files.Sum(f => f.Length);
-
             foreach (var formFile in files)
             {
                 if (formFile.Length > 0)
                 {
-                    var fileGuid = Guid.NewGuid();
-                    var filePath = Path.Combine(decodeSettings.Value.ReplayFolders.ToDo, guid.ToString() + "_" + fileGuid.ToString() + ".SC2Replay");
-                    var tmpFilePath = Path.Combine(decodeSettings.Value.ReplayFolders.ToDo, guid.ToString() + "_" + fileGuid.ToString() + ".tmp");
-
+                    string fileHash;
+                    using (var md5 = MD5.Create())
                     {
-                        using var stream = File.Create(tmpFilePath);
-                        await formFile.CopyToAsync(stream);
+                        using var stream = formFile.OpenReadStream();
+                        fileHash = BitConverter.ToString(md5.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
                     }
-                    File.Move(tmpFilePath, filePath);
+
+                    var destinationFile = Path.Combine(decodeSettings.Value.ReplayFolders.Done, $"{fileHash}.SC2Replay");
+                    var todoFile = Path.Combine(decodeSettings.Value.ReplayFolders.ToDo, $"{guid}_{fileHash}.SC2Replay");
+
+                    if (File.Exists(destinationFile))
+                    {
+                        logger.LogInformation("File {FileName} already exists. Skipping upload.", formFile.FileName);
+                        continue;
+                    }
+
+                    try
+                    {
+                        var tmpFile = todoFile + ".tmp";
+                        using var fileStream = File.Create(tmpFile);
+                        await formFile.CopyToAsync(fileStream);
+                        File.Move(tmpFile, todoFile);
+                        filesSaved++;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Error saving file {FileName}.", formFile.FileName);
+                    }
+                }
+                else
+                {
+                    logger.LogWarning("File {FileName} is empty and will be skipped.", formFile.FileName);
                 }
             }
-            _ = Decode();
 
-            logger.LogWarning("replays saved ({size})", size);
-            return queueCount;
+            _ = Decode();
         }
         catch (Exception ex)
         {
-            logger.LogError("failed saving replays: {error}", ex.Message);
+            logger.LogError(ex, "Unexpected error in SaveReplays.");
+            return -1;
         }
-        return -1;
+
+        logger.LogInformation("{FilesSaved} files saved for GUID {Guid}.", filesSaved, guid);
+        return filesSaved;
     }
+
 
     public async Task Decode()
     {
