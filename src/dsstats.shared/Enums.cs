@@ -215,3 +215,17 @@ public enum PickBanMode
     Std1v1 = 5,
     CmdrBanOnly = 6
 }
+
+public enum  Region
+{
+    None = 0,
+    Americas = 1,
+    Europe = 2,
+    Asia = 3,
+    Korea = 4,
+    Taiwan = 5,
+    China = 6
+}
+
+public sealed record Position(int X, int Y);
+public sealed record MiddleControl(int FirstTeam, List<int> Gameloops);
