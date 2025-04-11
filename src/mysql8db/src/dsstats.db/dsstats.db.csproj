@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Automapper" Version="14.0.0" />
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
+    <PackageReference Include="EFCore.BulkExtensions" Version="8.1.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.15" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\dsstats.shared8\dsstats.shared8.csproj" />
+    <ProjectReference Include="..\..\..\dsstats.shared\dsstats.shared.csproj" />
+    <ProjectReference Include="..\..\..\dsstats.db8\dsstats.db8.csproj" />
+  </ItemGroup>
+
+</Project>

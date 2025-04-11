@@ -1,0 +1,9 @@
+{
+    "ServerConfig": {
+        "MySqlImportDir": "/data/mysqlfiles",
+        "Dsstats8ConnectionString": "server=127.0.0.1;port=9802;database=dsstats8;user=myuser;password=My_User_Password_1;AllowPublicKeyRetrieval=True;SSL Mode=None;AllowLoadLocalInfile=true;",
+        "Import8ConnectionString": "server=127.0.0.1;port=9802;database=dsstats8;user=root;password=My_Root_Password_1;AllowPublicKeyRetrieval=True;SSL Mode=None;AllowLoadLocalInfile=true;",
+        "ImportTest8ConnectionString": "server=127.0.0.1;port=9802;database=dsstatstest;user=root;password=My_Root_Password_1;AllowPublicKeyRetrieval=True;SSL Mode=None;AllowLoadLocalInfile=true;",
+        "Test8ConnectionString": "server=127.0.0.1;port=9802;database=dsstatstest;user=myuser;password=My_User_Password_1;AllowPublicKeyRetrieval=True;SSL Mode=None;AllowLoadLocalInfile=true;"
+    }
+  }

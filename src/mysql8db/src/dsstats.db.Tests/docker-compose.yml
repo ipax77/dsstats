@@ -1,0 +1,22 @@
+services:
+  mysql8test:
+    image: mysql:lts
+    restart: unless-stopped
+    volumes:
+      - /data:/data
+      - ./db:/var/lib/mysql
+      - ./logs:/var/log/mysql
+      - ./mysql:/etc/mysql
+      - ./backup:/backup
+    ports:
+      - "9802:3306"
+    networks:
+      - dsstats
+    environment:
+      MYSQL_ROOT_PASSWORD: My_Root_Password_1
+      MYSQL_DATABASE: dsstatstest
+      MYSQL_USER: myuser
+      MYSQL_PASSWORD: My_User_Password_1
+networks:
+  dsstats:
+    name: dsstats
