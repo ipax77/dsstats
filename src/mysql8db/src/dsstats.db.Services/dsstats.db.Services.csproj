@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\dsstats.db\dsstats.db.csproj" />
-    <ProjectReference Include="..\..\..\dsstats\src\dsstats.shared\dsstats.shared.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -16,9 +16,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\dsstats.shared8\dsstats.shared8.csproj" />
-    <ProjectReference Include="..\..\..\dsstats.shared\dsstats.shared.csproj" />
     <ProjectReference Include="..\..\..\dsstats.db8\dsstats.db8.csproj" />
+    <ProjectReference Include="..\..\..\dsstats.shared\dsstats.shared.csproj" />
+    <ProjectReference Include="..\dsstats.shared8\dsstats.shared8.csproj" />
   </ItemGroup>
 
 </Project>

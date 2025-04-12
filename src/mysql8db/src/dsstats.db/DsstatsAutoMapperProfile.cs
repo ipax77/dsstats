@@ -97,5 +97,8 @@ public class DsstatsAutoMapperProfile : Profile
 
         CreateMap<Upgrade, UpgradeDto>(MemberList.Destination);
         CreateMap<UpgradeDto, Upgrade>(MemberList.Source);
+
+        // ng
+        CreateMap<PlayerRating, dsstats.shared8.PlayerRatingDto>(MemberList.Destination);
     }
 }

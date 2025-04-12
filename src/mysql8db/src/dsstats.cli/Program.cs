@@ -2,6 +2,7 @@
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using dsstats.db;
+using dsstats.db.Services.Ratings;
 using dsstats.db.Services.Stats;
 using dsstats.db8;
 using dsstats.db8.AutoMapper;

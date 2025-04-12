@@ -1,21 +1,38 @@
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using dsstats.shared;
 using dsstats.shared8;
+using dsstats.shared8.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace dsstats.db.Services.Players;
 
-public class PlayerService(DsstatsContext context, ILogger<PlayerService> logger)
+public class PlayerService(DsstatsContext context, IMapper mapper, ILogger<PlayerService> logger) : IPlayerService
 {
-    public async Task GetPlayerStats(PlayerId playerId, RatingNgType ratingNgType, CancellationToken token)
+    private readonly bool DEBUG = false;
+    public async Task<PlayerStatsResponse> GetPlayerStats(PlayerId playerId, RatingNgType ratingNgType, CancellationToken token)
     {
+        Stopwatch sw = Stopwatch.StartNew();
         var ratings = await context.PlayerRatings
-            .Where(x => x.Player!.ToonId == playerId.ToonId
+            .Where(x => x.Player!.RegionId == playerId.RegionId
                 && x.Player.RealmId == playerId.RealmId
-                && x.Player.RegionId == playerId.RegionId)
+                && x.Player.ToonId == playerId.ToonId)
+            .ProjectTo<dsstats.shared8.PlayerRatingDto>(mapper.ConfigurationProvider)
             .ToListAsync(token);
-        
 
+        var avgGains = await GetPlayerIdPlayerCmdrAvgGain(playerId, ratingNgType, TimePeriod.Past90Days, token);
+
+        sw.Stop();
+        logger.LogInformation("GetPlayerStats took {ElapsedMilliseconds}ms", sw.ElapsedMilliseconds);
+
+        return new PlayerStatsResponse()
+        {
+            RatingType = ratingNgType,
+            PlayerRatings = ratings.Where(x => x.RatingType == ratingNgType).ToList(),
+            PlayerCmdrAvgGains = avgGains
+        };
     }
 
     public async Task<List<PlayerCmdrAvgGain>> GetPlayerIdPlayerCmdrAvgGain(PlayerId playerId,
