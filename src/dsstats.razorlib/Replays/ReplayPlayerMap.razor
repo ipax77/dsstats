@@ -61,7 +61,7 @@
 
     private string Interest = "";
 
-    public static readonly Position center = new Position() { X = 128, Y = 120 };
+    public static readonly dsstats.razorlib.Services.Position center = new() { X = 128, Y = 120 };
 
     List<MapUnit> GetUnits()
     {
@@ -87,7 +87,7 @@
         return units;
     }
 
-    public KeyValuePair<float, float> GetRelPos(Position unitPos, int team)
+    public KeyValuePair<float, float> GetRelPos(dsstats.razorlib.Services.Position unitPos, int team)
     {
 
         var pos = RotatePoint(unitPos, center, -45);
@@ -110,8 +110,8 @@
             MathF.Round(distance_left_percent, 2));
     }
 
-    public static KeyValuePair<float, float> RotatePoint(Position pointToRotate,
-                                                         Position centerPoint,
+    public static KeyValuePair<float, float> RotatePoint(dsstats.razorlib.Services.Position pointToRotate,
+                                                         dsstats.razorlib.Services.Position centerPoint,
                                                          double angleInDegrees)
     {
         double angleInRadians = angleInDegrees * (Math.PI / 180);

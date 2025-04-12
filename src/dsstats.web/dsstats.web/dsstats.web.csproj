@@ -10,6 +10,7 @@
     <ProjectReference Include="..\..\dsstats.apiServices\dsstats.apiServices.csproj" />
     <ProjectReference Include="..\..\dsstats.razorlib\dsstats.razorlib.csproj" />
     <ProjectReference Include="..\..\dsstats.shared\dsstats.shared.csproj" />
+    <ProjectReference Include="..\..\mysql8db\src\dsstats.api.Services\dsstats.api.Services.csproj" />
     <ProjectReference Include="..\dsstats.authclient\dsstats.authclient.csproj" />
     <ProjectReference Include="..\dsstats.web.Client\dsstats.web.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="8.0.13" />

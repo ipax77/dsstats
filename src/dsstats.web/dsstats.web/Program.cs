@@ -7,6 +7,7 @@ using dsstats.web.Client.Services;
 using dsstats.web.Components;
 using pax.BlazorChartJs;
 using dsstats.authclient;
+using dsstats.api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,7 +23,7 @@ if (builder.Environment.IsDevelopment())
 if (builder.Environment.IsProduction())
 {
     builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://dsstats.pax77.org") });
-    
+
     builder.Services.AddDsstatsAuthClient(options =>
     {
         options.ApiBaseUri = new Uri("https://dsstats.pax77.org");
@@ -52,7 +53,7 @@ builder.Services.AddScoped<IDamageService, DamageService>();
 builder.Services.AddScoped<ICountService, CountService>();
 builder.Services.AddScoped<ITeamcompService, TeamcompService>();
 builder.Services.AddScoped<IArcadeService, ArcadeService>();
-builder.Services.AddScoped<IPlayerService, PlayerService>();
+builder.Services.AddScoped<IPlayerService, dsstats.apiServices.PlayerService>();
 builder.Services.AddScoped<IBuildService, BuildService>();
 builder.Services.AddScoped<ICmdrInfoService, CmdrInfoService>();
 builder.Services.AddScoped<ITourneysService, TourneysService>();
@@ -60,6 +61,8 @@ builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
 builder.Services.AddScoped<IFaqService, FaqService>();
+
+builder.Services.AddApiServices(builder.Environment.IsProduction());
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

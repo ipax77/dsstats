@@ -17,6 +17,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.authclient", "dssta
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.authshared", "dsstats.authshared\dsstats.authshared.csproj", "{82B54989-E47A-48D2-9E10-87236FDE204C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.api.Services", "..\mysql8db\src\dsstats.api.Services\dsstats.api.Services.csproj", "{B592E1BA-DBCE-91F7-37B8-CB9422CC2A34}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{82B54989-E47A-48D2-9E10-87236FDE204C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{82B54989-E47A-48D2-9E10-87236FDE204C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{82B54989-E47A-48D2-9E10-87236FDE204C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B592E1BA-DBCE-91F7-37B8-CB9422CC2A34}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B592E1BA-DBCE-91F7-37B8-CB9422CC2A34}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B592E1BA-DBCE-91F7-37B8-CB9422CC2A34}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B592E1BA-DBCE-91F7-37B8-CB9422CC2A34}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -6,6 +6,7 @@ using dsstats.web.Client.Services;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using pax.BlazorChartJs;
 using dsstats.authclient;
+using dsstats.api.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -51,7 +52,7 @@ builder.Services.AddScoped<IDamageService, DamageService>();
 builder.Services.AddScoped<ICountService, CountService>();
 builder.Services.AddScoped<ITeamcompService, TeamcompService>();
 builder.Services.AddScoped<IArcadeService, ArcadeService>();
-builder.Services.AddScoped<IPlayerService, PlayerService>();
+builder.Services.AddScoped<IPlayerService, dsstats.apiServices.PlayerService>();
 builder.Services.AddScoped<IBuildService, BuildService>();
 builder.Services.AddScoped<ICmdrInfoService, CmdrInfoService>();
 builder.Services.AddScoped<ITourneysService, TourneysService>();
@@ -60,5 +61,6 @@ builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
 builder.Services.AddScoped<IFaqService, FaqService>();
 
+builder.Services.AddApiServices(builder.HostEnvironment.IsProduction());
 
 await builder.Build().RunAsync();

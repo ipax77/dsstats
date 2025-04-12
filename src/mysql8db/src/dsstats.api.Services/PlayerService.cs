@@ -6,7 +6,7 @@ using System.Net.Http.Json;
 
 namespace dsstats.api.Services;
 
-public class PlayerService(HttpClient httpClient, ILogger<PlayerService> logger) : IPlayerService
+public class PlayerService(IHttpClientFactory httpClientFactory, ILogger<PlayerService> logger) : IPlayerService
 {
     private readonly string playerController = "api/v1/playerstats";
 
@@ -17,6 +17,7 @@ public class PlayerService(HttpClient httpClient, ILogger<PlayerService> logger)
     {
         try
         {
+            var httpClient = httpClientFactory.CreateClient("dsstats8");
             var request = $"{playerController}/avggain/{playerId.ToonId}/{playerId.RegionId}/{playerId.RealmId}/{(int)ratingType}/{(int)timePeriod}";
             var response = await httpClient.GetFromJsonAsync<List<PlayerCmdrAvgGain>>(request, token);
             ArgumentNullException.ThrowIfNull(response);
@@ -33,6 +34,7 @@ public class PlayerService(HttpClient httpClient, ILogger<PlayerService> logger)
     {
         try
         {
+            var httpClient = httpClientFactory.CreateClient("dsstats8");
             var request = $"{playerController}/stats/{playerId.ToonId}/{playerId.RegionId}/{playerId.RealmId}/{(int)ratingNgType}";
             var response = await httpClient.GetFromJsonAsync<PlayerStatsResponse>(request, token);
             ArgumentNullException.ThrowIfNull(response);

@@ -1,0 +1,53 @@
+﻿@page "/dsstats8/playerpage"
+@using dsstats.shared
+@using dsstats.shared8
+@using dsstats.shared8.Interfaces
+@inject IPlayerService playerService
+@implements IDisposable
+
+<PageTitle>Player Stats</PageTitle>
+
+@if (playerStatsResponse is not null)
+{
+    @foreach (var rating in playerStatsResponse.PlayerRatings)
+    {
+        <div>
+            <h3>@rating.RatingType</h3>
+            <p>Rating: @rating.Rating</p>
+            <p>Rank: @rating.Pos</p>
+            <p>Games Played: @rating.Games</p>
+            <p>Wins: @rating.Wins</p>
+            <p>Losses: @rating.Mvp</p>
+        </div>
+    }
+
+    @foreach (var gain in playerStatsResponse.PlayerCmdrAvgGains)
+    {
+        <div>
+            <h3>@gain.Commander</h3>
+            <p>Avg Gain: @gain.AvgGain</p>
+            <p>Games Played: @gain.Count</p>
+            <p>Wins: @gain.Wins</p>
+        </div>
+    }
+}
+
+@code {
+    PlayerStatsResponse? playerStatsResponse = null;
+
+    PlayerId playerId = new(226401, 1, 2);
+    RatingNgType ratingType = RatingNgType.Global;
+    TimePeriod timePeriod = TimePeriod.Last2Years;
+    private readonly CancellationTokenSource cts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        playerStatsResponse = await playerService.GetPlayerStats(playerId, ratingType, cts.Token);
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}
