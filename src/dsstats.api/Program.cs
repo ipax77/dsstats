@@ -89,9 +89,11 @@ builder.Services.AddDbContext<DsstatsContext>(options =>
 {
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), p =>
     {
-        p.CommandTimeout(600);
+        p.CommandTimeout(30);
         p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
     })
+    .EnableDetailedErrors()
+    .EnableSensitiveDataLogging()
     ;
 });
 

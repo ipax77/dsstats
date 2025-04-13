@@ -111,125 +111,35 @@ public partial class PlayerService
         return ratings;
     }
 
-    private IQueryable<ComboPlayerRatingDto> SortComboListByCombo(IQueryable<ComboPlayerRatingDto> ratings, RatingsRequest request)
-    {
-        if (request.Orders.Count == 0)
-        {
-            return ratings.OrderByDescending(o => o.ComboPlayerRating.Rating);
-        }
-
-        foreach (var order in request.Orders)
-        {
-            if (order.Property == "Wins")
-            {
-                if (order.Ascending)
-                {
-                    ratings = ratings.OrderBy(o => o.ComboPlayerRating.Games == 0 ? 0
-                        : o.ComboPlayerRating.Wins * 100.0 / o.ComboPlayerRating.Games);
-                }
-                else
-                {
-                    ratings = ratings.OrderByDescending(o => o.ComboPlayerRating.Games == 0 ? 0
-                        : o.ComboPlayerRating.Wins * 100.0 / o.ComboPlayerRating.Games);
-                }
-            }
-            else if (order.Property == "Mvp")
-            {
-                if (order.Ascending)
-                {
-                    ratings = ratings.OrderBy(o => o.PlayerRating.Games == 0 ? 0
-                        : o.PlayerRating.Mvp * 100.0 / o.PlayerRating.Games);
-                }
-                else
-                {
-                    ratings = ratings.OrderByDescending(o => o.PlayerRating.Games == 0 ? 0
-                        : o.PlayerRating.Mvp * 100.0 / o.PlayerRating.Games);
-                }
-            }
-            else if (order.Property == "Main"
-                || order.Property == "MainCount"
-                || order.Property.StartsWith("PlayerRatingChange"))
-            {
-                if (order.Ascending)
-                {
-                    ratings = ratings.AppendOrderBy($"PlayerRating.{order.Property}");
-                }
-                else
-                {
-                    ratings = ratings.AppendOrderByDescending($"PlayerRating.{order.Property}");
-                }
-            }
-            else if (order.Property == "Region")
-            {
-                if (order.Ascending)
-                {
-                    ratings = ratings.AppendOrderBy("Player.RegionId");
-                }
-                else
-                {
-                    ratings = ratings.AppendOrderByDescending("Player.RegionId");
-                }
-            }
-            else if (order.Property == "Name")
-            {
-                if (order.Ascending)
-                {
-                    ratings = ratings.AppendOrderBy("Player.Name");
-                }
-                else
-                {
-                    ratings = ratings.AppendOrderByDescending("Player.Name");
-                }
-            }
-            else
-            {
-                if (order.Ascending)
-                {
-                    ratings = ratings.AppendOrderBy($"ComboPlayerRating.{order.Property}");
-                }
-                else
-                {
-                    ratings = ratings.AppendOrderByDescending($"ComboPlayerRating.{order.Property}");
-                }
-            }
-        }
-        return ratings;
-    }
-
     private IQueryable<ComboPlayerRatingDto> GetComboListQuery(RatingsRequest request)
     {
         var query = from cpr in context.PlayerRatings
-                    join pr in context.PlayerRatings on cpr.PlayerId equals pr.PlayerId
+                    join p in context.Players on cpr.PlayerId equals p.PlayerId
+                    // join pr in context.PlayerRatings on cpr.PlayerId equals pr.PlayerId
                     // join prc in context.PlayerRatingChanges on pr.PlayerRatingId equals prc.PlayerRatingId into grouping
                     // from prc in grouping.DefaultIfEmpty()
-                    where cpr.Games > 19 && cpr.RatingType == request.Type && pr.RatingType == request.Type
+                    where cpr.Games > 19 && cpr.RatingType == request.Type 
+                        // && pr.RatingType == request.Type
                     // && (!request.Uploaders || cpr.Player.UploaderId != null)
                     select new ComboPlayerRatingDto()
                     {
-                        ComboPlayerRating = new()
+                        Player = new PlayerRatingPlayerDto()
+                        {
+                            Name = p.Name,
+                            ToonId = p.ToonId,
+                            RegionId = p.RegionId,
+                            RealmId = p.RealmId,
+                            // IsUploader = cpr.Player.UploaderId != null,
+                        },
+                        PlayerRating = new PlayerRatingDto()
                         {
                             Rating = cpr.Rating,
                             Pos = cpr.Pos,
                             Games = cpr.Games,
                             Wins = cpr.Wins,
-                        },
-                        Player = new PlayerRatingPlayerDto()
-                        {
-                            Name = cpr.Player!.Name,
-                            ToonId = cpr.Player.ToonId,
-                            RegionId = cpr.Player.RegionId,
-                            RealmId = cpr.Player.RealmId,
-                            // IsUploader = cpr.Player.UploaderId != null,
-                        },
-                        PlayerRating = new PlayerRatingDto()
-                        {
-                            Rating = pr.Rating,
-                            Pos = pr.Pos,
-                            Games = pr.Games,
-                            Wins = pr.Wins,
-                            Mvp = pr.Mvp,
-                            MainCount = pr.MainCount,
-                            Main = pr.Main,
+                            Mvp = cpr.Mvp,
+                            MainCount = cpr.MainCount,
+                            Main = cpr.Main,
                             //IsUploader = pr.IsUploader,
                             //PlayerRatingChange = prc == null ? null : new()
                             //{

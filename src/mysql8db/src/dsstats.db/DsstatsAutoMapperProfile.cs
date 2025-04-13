@@ -100,5 +100,11 @@ public class DsstatsAutoMapperProfile : Profile
 
         // ng
         CreateMap<PlayerRating, dsstats.shared8.PlayerRatingDto>(MemberList.Destination);
+        CreateMap<Replay, ReplayListDto>(MemberList.Destination)
+            .ForMember(m => m.TournamentEdition, t => t.MapFrom(m => m.IsTE))
+            .ForMember(m => m.DefaultFilter, opt => opt.Ignore())
+            .ForMember(m => m.Exp2Win, opt => opt.Ignore())
+            .ForMember(m => m.AvgRating, opt => opt.Ignore())
+            .ForMember(m => m.PlayerInfo, opt => opt.Ignore());
     }
 }

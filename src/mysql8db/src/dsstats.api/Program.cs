@@ -2,6 +2,7 @@
 using AutoMapper;
 using dsstats.db;
 using dsstats.db.Services.Players;
+using dsstats.db.Services.Replays;
 using dsstats.db8;
 using dsstats.shared8;
 using dsstats.shared8.Interfaces;
@@ -37,9 +38,7 @@ namespace dsstats.api
                                   {
                                       policy.WithOrigins("https://dsstats.pax77.org",
                                                          "https://dsstats-dev.pax77.org",
-                                                         "https://localhost:7257",
-                                                         "https://localhost:7227",
-                                                         "http://localhost:5123")
+                                                         "http://localhost:5124")
                                       .AllowAnyHeader()
                                       .AllowAnyMethod();
                                   });
@@ -94,6 +93,7 @@ namespace dsstats.api
             builder.Services.AddAutoMapper(typeof(DsstatsAutoMapperProfile));
 
             builder.Services.AddScoped<IPlayerService, PlayerService>();
+            builder.Services.AddScoped<IReplaysService, ReplaysService>();
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();

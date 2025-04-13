@@ -142,7 +142,7 @@
                                             @HelperService.GetPercentageString(rating.PlayerRating.MainCount,
                                                  rating.PlayerRating.Games)
                                         </td>
-                                        <td class="border-start">@rating.ComboPlayerRating.Games</td>
+                                        <td class="border-start">@rating.PlayerRating.Games</td>
                                         <td class="text-warning">
                                             @rating.PlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture)
                                         </td>
@@ -161,7 +161,7 @@
                                             }
                                         </td>
                                         <td>
-                                            @HelperService.GetPercentageString(rating.ComboPlayerRating.Wins, rating.ComboPlayerRating.Games)
+                                            @HelperService.GetPercentageString(rating.PlayerRating.Wins, rating.PlayerRating.Games)
                                         </td>
                                         <td>
                                             @HelperService.GetPercentageString(rating.PlayerRating.Mvp, rating.PlayerRating.Games)

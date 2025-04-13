@@ -1,0 +1,85 @@
+@using dsstats.shared8.Interfaces
+@inject IReplaysService replaysService
+
+<HeadContent>
+    <style>
+        html,
+        body {
+            overflow-y: hidden;
+        }
+
+        .tr {
+            height: 50px;
+        }
+
+        .fixed-col {
+            white-space: nowrap;
+        }
+
+        .scroll-container {
+            width: fit-content;
+            max-height: 60vh;
+            overflow-y: auto;
+            overflow-x: auto;
+            border: 1px solid #ccc;
+        }
+
+        table {
+            width: 850px;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background-color: white;
+        }
+    </style>
+</HeadContent>
+
+<p>Hello Replays. Count: @totalReplays (@replaysRequest.Skip/@replaysRequest.Take)</p>
+<button type="button" @onclick="Refresh">Refresh</button>
+
+<div class="scroll-container">
+    <table tabindex="-1">
+        <thead style="user-select: none;">
+            <tr>
+                <th>Time</th>
+                <th>Mode</th>
+                <th>Team1</th>
+                <th>Team2</th>
+                <th>Duration</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (totalReplays > 0)
+            {
+                <Virtualize Context="replay" ItemsProvider="LoadReplays" OverscanCount="10" SpacerElement="tr">
+                    <ItemContent>
+                        <tr @key="replay" id="@replay.ReplayHash">
+                            <td class="fixed-col col-time">@replay.GameTime.ToString(@"yyyy-MM-dd")</td>
+                            <td class="fixed-col col-mode">@replay.GameMode</td>
+                            <td class="fixed-col col-team">@replay.CommandersTeam1</td>
+                            <td class="fixed-col col-team">@replay.CommandersTeam2</td>
+                            <td class="fixed-col col-duration">@replay.Duration</td>
+                        </tr>
+                    </ItemContent>
+                    <Placeholder>
+                        <tr>
+                            <td colspan="100">Loading ...</td>
+                        </tr>
+                    </Placeholder>
+                    <EmptyContent>
+                        <tr>
+                            <td colspan="100">No Replays found.</td>
+                        </tr>
+                    </EmptyContent>
+                </Virtualize>
+            }
+            else
+            {
+                <p>Loading ...</p>
+            }
+        </tbody>
+    </table>
+</div>

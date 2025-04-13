@@ -41,7 +41,6 @@ public record PlayerRatingDto
 
 public record ComboPlayerRatingDto
 {
-    public PlayerRatingDto ComboPlayerRating { get; set; } = new();
     public PlayerRatingDto PlayerRating { get; set; } = new();
     public PlayerRatingPlayerDto Player { get; init; } = null!;
     public PlayerRatingChangeDto? PlayerRatingChange { get; init; }
