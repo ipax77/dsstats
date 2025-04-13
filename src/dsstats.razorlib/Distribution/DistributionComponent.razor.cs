@@ -33,7 +33,6 @@ namespace dsstats.razorlib.Distribution
 
         public void Update(DistributionRequest request)
         {
-            Request.RatingCalcType = request.RatingCalcType;
             Request.RatingType = request.RatingType;
             Request.TimePeriod = request.TimePeriod;
             Request.Interest = request.Interest;
@@ -75,7 +74,7 @@ namespace dsstats.razorlib.Distribution
 
             if (chartConfig.Options?.Plugins?.Title is not null)
             {
-                chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"{Request.RatingCalcType} {Request.RatingType} Distribution");
+                chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"{Request.RatingType} Distribution");
                 chartConfig.UpdateChartOptions();
             }
 

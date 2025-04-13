@@ -123,7 +123,7 @@
                                         <td>
                                             <span class="text-truncate text-warning"
                                                   style="display: block; width: 40px;">
-                                                @(Request.ComboRating || Request.Arcade ? rating.ComboPlayerRating.Pos : rating.PlayerRating.Pos)
+                                                @rating.PlayerRating.Pos
                                             </span>
                                         </td>
                                         <td>
@@ -144,8 +144,7 @@
                                         </td>
                                         <td class="border-start">@rating.ComboPlayerRating.Games</td>
                                         <td class="text-warning">
-                                            @(Request.ComboRating || Request.Arcade ? rating.ComboPlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture)
-                                            : rating.PlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture))
+                                            @rating.PlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture)
                                         </td>
                                         <td>
                                             @if (rating.PlayerRating.PlayerRatingChange != null)
@@ -162,14 +161,7 @@
                                             }
                                         </td>
                                         <td>
-                                            @if (Request.ComboRating || Request.Arcade)
-                                            {
-                                                @HelperService.GetPercentageString(rating.ComboPlayerRating.Wins, rating.ComboPlayerRating.Games)
-                                            }
-                                            else
-                                            {
-                                                @HelperService.GetPercentageString(rating.PlayerRating.Wins, rating.PlayerRating.Games)
-                                            }
+                                            @HelperService.GetPercentageString(rating.ComboPlayerRating.Wins, rating.ComboPlayerRating.Games)
                                         </td>
                                         <td>
                                             @HelperService.GetPercentageString(rating.PlayerRating.Mvp, rating.PlayerRating.Games)
@@ -218,7 +210,7 @@
 } *@
 @if (Request.PlayerId is not null)
 {
-    <dsstats.razorlib.Players.Profile.ProfileComponent PlayerId="Request.PlayerId" RatingType="Request.Type" RatingCalcType="GetRatingCalcType()" OnCloseRequested="ClosePlayerDetails" />
+    <dsstats.razorlib.Players.Profile.ProfileComponent PlayerId="Request.PlayerId" RatingType="Request.Type" OnCloseRequested="ClosePlayerDetails" />
 }
 
 @code {
@@ -243,8 +235,7 @@
     bool showDistribution;
     DistributionRequest distributionRequest = new()
         {
-            RatingCalcType = RatingCalcType.Combo,
-            RatingType = RatingType.Cmdr
+            RatingType = RatingNgType.Global
         };
 
     protected override void OnInitialized()
@@ -353,28 +344,11 @@
         Request.TimePeriod = (RatingChangeTimePeriod)(nextPeriodValue + 1);
     }
 
-    private RatingCalcType GetRatingCalcType()
-    {
-        if (Request.ComboRating)
-        {
-            return RatingCalcType.Combo;
-        }
-        if (Request.Arcade)
-        {
-            return RatingCalcType.Arcade;
-        }
-        return RatingCalcType.Dsstats;
-    }
-
     private void ShowHideDistribution()
     {
         if (!showDistribution)
         {
             distributionRequest.RatingType = Request.Type;
-            distributionRequest.RatingCalcType = Request.ComboRating
-                ? RatingCalcType.Combo :
-                    Request.Arcade ? RatingCalcType.Combo :
-                        RatingCalcType.Dsstats;
         }
         showDistribution = !showDistribution;
         StateHasChanged();

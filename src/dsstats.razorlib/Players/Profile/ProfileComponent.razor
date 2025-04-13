@@ -30,20 +30,11 @@
                 <label class="form-label">
                     Rating Type
                     <select class="form-select text-light bgchart" @bind="RatingType" @bind:after="@(() => LoadData(false))">
-                        <option value="@RatingType.Cmdr">Commanders</option>
-                        <option value="@RatingType.Std">Standard</option>
-                        <option value="@RatingType.CmdrTE">Commanders TE</option>
-                        <option value="@RatingType.StdTE">Standard TE</option>
-                    </select>
-                </label>
-            </div>
-            <div class="ms-1">
-                <label class="form-label">
-                    Calc Type
-                    <select class="form-select text-light bgchart" @bind="RatingCalcType" @bind:after="@(() => LoadData(false))">
-                        <option value="@RatingCalcType.Dsstats">Dsstats</option>
-                        <option value="@RatingCalcType.Arcade">Arcade</option>
-                        <option value="@RatingCalcType.Combo">Combo</option>
+                        <option value="@RatingNgType.Global">Global</option>
+                        <option value="@RatingNgType.Commanders_3v3">Commanders</option>
+                        <option value="@RatingNgType.Standard_3v3">Standard</option>
+                        <option value="@RatingNgType.CommandersTE">Commanders TE</option>
+                        <option value="@RatingNgType.StandardTE">Standard TE</option>
                     </select>
                 </label>
             </div>
@@ -79,7 +70,7 @@
         }
         @foreach (var interestRating in summary.Ratings.OrderBy(o => o.RatingType))
         {
-            @if (interestRating.RatingType == RatingType.Cmdr
+            @if (interestRating.RatingType == RatingNgType.Commanders_3v3
            && summary.CmdrPercentileRank != null
            && summary.CmdrPercentileRank != 0
            && summary.CmdrPercentileRank > 20)
@@ -90,7 +81,7 @@
                     </span>
                 </div>
             }
-            else if (interestRating.RatingType == RatingType.Std
+            else if (interestRating.RatingType == RatingNgType.Standard_3v3
             && summary.StdPercentileRank != null
             && summary.StdPercentileRank != 0
             && summary.StdPercentileRank > 20)
@@ -146,7 +137,7 @@
                     <PlayerRatingDetailChart @ref="playerRatingDetailChart" PlayerId="PlayerId"
                                              RatingType="RatingType"
                                              RatingCalcType="RatingCalcType"
-                                             CurrentRating="RatingCalcType == RatingCalcType.Combo ? 0 : interestRating.Rating"
+                                             CurrentRating="interestRating.Rating"
                                              ChartDtos="summary.ChartDtos" />
                 </div>
             </div>

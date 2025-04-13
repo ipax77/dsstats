@@ -1,4 +1,4 @@
-using dsstats.shared8;
+using dsstats.shared;
 
 namespace dsstats.db;
 
@@ -14,6 +14,8 @@ public sealed class PlayerRating
     public double Rating { get; set; } = 1000;
     public double Consistency { get; set; }
     public double Confidence { get; set; }
+    public Commander Main { get; set; }
+    public int MainCount { get; set; }
     public int Pos { get; set; }
     public int PlayerId { get; set; }
     public Player? Player { get; set; }

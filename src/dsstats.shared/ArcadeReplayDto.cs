@@ -169,8 +169,7 @@ public record ArcadeRatingsRequest
 
 public record DistributionRequest
 {
-    public RatingCalcType RatingCalcType { get; set; }
-    public RatingType RatingType { get; set; }
+    public RatingNgType RatingType { get; set; }
     public TimePeriod TimePeriod { get; set; } = TimePeriod.All;
     public Commander Interest { get; set; }
 }
@@ -266,7 +265,6 @@ public static class DistributionRequestExtension
     {
         StringBuilder sb = new();
         sb.Append("Distribution");
-        sb.Append(request.RatingCalcType);
         sb.Append(request.RatingType);
         sb.Append(request.TimePeriod);
         sb.Append(request.Interest);

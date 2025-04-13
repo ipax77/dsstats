@@ -3,6 +3,7 @@ using dsstats.api;
 using dsstats.api.Hubs;
 using dsstats.api.Services;
 using dsstats.auth;
+using dsstats.db;
 using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
@@ -57,8 +58,18 @@ var authConnectionString = builder.Configuration["ServerConfig:DsAuthConnectionS
 var userRolesConfig = builder.Configuration.GetSection("ServerConfig:Auth:UserRoles");
 var userRoles = userRolesConfig.Get<Dictionary<string, List<string>>>();
 
+var config = builder.Configuration.GetSection("ServerConfig");
+var connectionString8 = config.GetValue<string>("Dsstats8ConnectionString");
+var importConnectionString8 = config.GetValue<string>("Import8ConnectionString");
+var mySqlImportDir = config.GetValue<string>("MySqlImportDir");
+ArgumentNullException.ThrowIfNull(mySqlImportDir);
+
 builder.Services.AddOptions<DbImportOptions>()
-    .Configure(x => x.ImportConnectionString = importConnectionString ?? "");
+    .Configure(x =>
+    {
+        x.ImportConnectionString = importConnectionString ?? "";
+        x.MySqlImportDir = mySqlImportDir;
+    });
 
 builder.Services.AddDbContext<ReplayContext>(options =>
 {
@@ -71,6 +82,16 @@ builder.Services.AddDbContext<ReplayContext>(options =>
     })
     //.EnableDetailedErrors()
     //.EnableSensitiveDataLogging()
+    ;
+});
+
+builder.Services.AddDbContext<DsstatsContext>(options =>
+{
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), p =>
+    {
+        p.CommandTimeout(600);
+        p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
+    })
     ;
 });
 

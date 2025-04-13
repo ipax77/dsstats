@@ -11,7 +11,7 @@
     public PlayerId PlayerId { get; set; } = default!;
 
     [Parameter, EditorRequired]
-    public RatingType RatingType { get; set; }
+    public RatingNgType RatingType { get; set; }
 
     [Parameter, EditorRequired]
     public List<CommanderInfo> CommanderInfos { get; set; } = default!;
@@ -40,7 +40,7 @@
         }
     }
 
-    public void Update(RatingType ratingType, bool force = false)
+    public void Update(RatingNgType ratingType, bool force = false)
     {
         RatingType = ratingType;
 
@@ -89,7 +89,7 @@
 
         if (chartConfig.Options?.Plugins?.Title != null)
         {
-            chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"Commanders played - {Data.GetRatingTypeLongName(RatingType)}");
+            chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"Commanders played - {RatingType}");
             chartConfig.UpdateChartOptions();
         }
 
@@ -148,13 +148,13 @@
 
     public record ChartTypeMemory
     {
-        public ChartTypeMemory(RatingType ratingType, bool remote)
+        public ChartTypeMemory(RatingNgType ratingType, bool remote)
         {
             RatingType = ratingType;
             Remote = remote;
         }
 
-        public RatingType RatingType { get; init; }
+        public RatingNgType RatingType { get; init; }
         public bool Remote { get; init; }
     }
 }

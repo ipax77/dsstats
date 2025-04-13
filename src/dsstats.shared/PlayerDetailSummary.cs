@@ -37,7 +37,7 @@ public record PlayerGameModeResult
 
 public record PlayerRatingDetailDto
 {
-    public RatingType RatingType { get; init; }
+    public RatingNgType RatingType { get; init; }
     public double Rating { get; init; }
     public int Pos { get; init; }
     public int Games { get; init; }
@@ -160,7 +160,7 @@ public record PlayerDetailRequest
 {
     public RequestNames RequestNames { get; set; } = new("", 0, 0, 1);
     public TimePeriod TimePeriod { get; set; }
-    public RatingType RatingType { get; set; }
+    public RatingNgType RatingType { get; set; }
     public Commander Interest { get; set; }
     public bool Complete { get; set; }
 }

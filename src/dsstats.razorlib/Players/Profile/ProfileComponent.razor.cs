@@ -27,10 +27,7 @@ public partial class ProfileComponent : ComponentBase
     public PlayerId PlayerId { get; set; } = default!;
 
     [Parameter, EditorRequired]
-    public RatingType RatingType { get; set; } = RatingType.Cmdr;
-
-    [Parameter, EditorRequired]
-    public RatingCalcType RatingCalcType { get; set; } = RatingCalcType.Combo;
+    public RatingNgType RatingType { get; set; } = RatingNgType.Global;
 
     [Parameter]
     public EventCallback OnCloseRequested { get; set; }
@@ -54,10 +51,6 @@ public partial class ProfileComponent : ComponentBase
     }
     protected override void OnInitialized()
     {
-        if (RemoteToggleService.IsMaui)
-        {
-            RatingCalcType = RatingCalcType.Dsstats;
-        }
         _ = LoadData();
         base.OnInitialized();
     }
@@ -68,7 +61,7 @@ public partial class ProfileComponent : ComponentBase
         await InvokeAsync(() => StateHasChanged());
         try
         {
-            summary = await PlayerService.GetPlayerPlayerIdSummary(PlayerId, RatingType, RatingCalcType);
+            summary = await PlayerService.GetPlayerPlayerIdSummary(PlayerId, RatingType);
 
             if (summary.Ratings.Count > 0)
             {
@@ -77,7 +70,7 @@ public partial class ProfileComponent : ComponentBase
                 name = summary.Ratings[0].Player.Name;
                 if (interestRating != null)
                 {
-                    playerRatingDetailChart?.Update(RatingType, RatingCalcType, RatingCalcType == RatingCalcType.Combo ? 0 : interestRating.Rating
+                    playerRatingDetailChart?.Update(RatingType,interestRating.Rating
                         , forceDetailChartRefresh);
                     playerCmdrCounts?.Update(RatingType);
                 }
@@ -95,7 +88,7 @@ public partial class ProfileComponent : ComponentBase
     {
         isLoading = true;
         await InvokeAsync(() => StateHasChanged());
-        ratingDetails = await PlayerService.GetPlayerIdPlayerRatingDetails(PlayerId, RatingType, RatingCalcType);
+        ratingDetails = await PlayerService.GetPlayerIdPlayerRatingDetails(PlayerId, RatingType);
         isLoading = false;
         await InvokeAsync(() => StateHasChanged());
         await JSRuntime.InvokeVoidAsync("scrollToElementId", "playerdetails");
@@ -117,10 +110,9 @@ public partial class ProfileComponent : ComponentBase
         await InvokeAsync(() => StateHasChanged());
     }
 
-    public void Update(PlayerId playerId, RatingCalcType ratingCalcType, RatingType ratingType, bool force = false)
+    public void Update(PlayerId playerId, RatingNgType ratingType, bool force = false)
     {
         PlayerId = playerId;
-        RatingCalcType = ratingCalcType;
         RatingType = ratingType;
         _ = LoadData(force);
     }
@@ -130,7 +122,7 @@ public partial class ProfileComponent : ComponentBase
         shouldRender = false;
         RatingType = rating.RatingType;
         interestRating = rating;
-        playerRatingDetailChart?.Update(RatingType, RatingCalcType, rating.Rating);
+        playerRatingDetailChart?.Update(RatingType, rating.Rating);
         playerCmdrCounts?.Update(RatingType);
         shouldRender = true;
         ratingDetails = null;

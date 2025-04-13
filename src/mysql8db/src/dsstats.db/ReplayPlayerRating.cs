@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using dsstats.shared8;
+using dsstats.shared;
 
 namespace dsstats.db;
 

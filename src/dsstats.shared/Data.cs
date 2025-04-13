@@ -155,6 +155,11 @@ public static class Data
         };
     }
 
+    public static string GetRatingTypeLongName(RatingNgType ratingType)
+    {
+        return ratingType.ToString();
+    }
+
     public static List<TimePeriod> GetTimePeriods(TimePeriodGet timePeriodGet = TimePeriodGet.None)
     {
         return timePeriodGet switch

@@ -33,7 +33,7 @@
     public List<PlayerRatingDetailDto> Ratings { get; set; } = default!;
 
     [Parameter, EditorRequired]
-    public RatingType RatingType { get; set; }
+    public RatingNgType RatingType { get; set; }
 
     [Parameter]
     public EventCallback<PlayerRatingDetailDto> OnRatingSelected { get; set; }

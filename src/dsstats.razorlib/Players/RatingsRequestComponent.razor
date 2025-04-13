@@ -19,12 +19,8 @@
                     <span class="bi bi-info-circle pointer ms-2"
                           onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/Mmr-calculation#rating-types'"></span>
                     <InputSelect class="form-select text-light bgchart" @bind-Value="Request.Type">
-                        @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+                        @foreach (RatingNgType ratingType in Enum.GetValues(typeof(RatingNgType)))
                         {
-                            @if (ratingType == RatingType.None)
-                            {
-                                continue;
-                            }
                             <option value="@ratingType">@Data.GetRatingTypeLongName(ratingType)</option>
                         }
                     </InputSelect>
@@ -56,34 +52,6 @@
                         Uploaders
                         <InputCheckbox class="form-check-input" @bind-Value="Request.Uploaders"></InputCheckbox>
                     </label>
-                </div>
-                <div class="d-flex">
-                    <div class="form-check form-switch">
-                        <label class="form-check-label">
-                            ComboRatings
-                            <InputCheckbox class="form-check-input" @bind-Value="Request.ComboRating">
-                            </InputCheckbox>
-                        </label>
-                    </div>
-                    <div class="ms-2">
-                        <span class="bi bi-info-circle pointer"
-                              onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/ComboRatings'">
-                        </span>
-                    </div>
-                </div>
-                <div class="d-flex">
-                    <div class="form-check form-switch">
-                        <label class="form-check-label">
-                            SC2Arcade
-                            <InputCheckbox class="form-check-input" @bind-Value="Request.Arcade" />
-                        </label>
-
-                    </div>
-                    <div class="ms-2">
-                        <span class="bi bi-info-circle pointer"
-                              onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/SC2Arcade'">
-                        </span>
-                    </div>
                 </div>
             </div>
             <div class="col-auto align-self-center ms-2">
@@ -154,25 +122,6 @@
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
-        if (e.FieldIdentifier.FieldName == nameof(RatingsRequest.ComboRating))
-        {
-            Request.Arcade = false;
-            remoteToggleService.SetFromServer(true);
-        }
-        else if (e.FieldIdentifier.FieldName == nameof(RatingsRequest.Arcade))
-        {
-            Request.ComboRating = false;
-            remoteToggleService.SetFromServer(true);
-        }
-        else if (e.FieldIdentifier.FieldName == nameof(RatingsRequest.Type))
-        {
-            if (Request.Type == RatingType.CmdrTE || Request.Type == RatingType.StdTE)
-            {
-                Request.ComboRating = false;
-                Request.Arcade = false;
-            }
-        }
-
         OnRequestChanged.InvokeAsync();
     }
 

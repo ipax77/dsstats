@@ -40,19 +40,17 @@ public class PlayerController : Controller
     }
 
     [HttpGet]
-    [Route("summary/{toonId:int}/{regionId:int}/{realmId:int}/{ratingType:int}/{ratingCalctype:int}")]
+    [Route("summary/{toonId:int}/{regionId:int}/{realmId:int}/{ratingType:int}")]
     public async Task<IActionResult> GetPlayerSummary(int toonId,
                                                       int regionId,
                                                       int realmId,
                                                       int ratingType,
-                                                      int ratingCalctype,
                                                       CancellationToken token = default)
     {
         try
         {
             var summary = await playerService.GetPlayerPlayerIdSummary(new(toonId, realmId, regionId),
-                                                                       (RatingType)ratingType,
-                                                                       (RatingCalcType)ratingCalctype,
+                                                                       (RatingNgType)ratingType,
                                                                        token);
             return Ok(summary);
         }
@@ -63,19 +61,17 @@ public class PlayerController : Controller
     }
 
     [HttpGet]
-    [Route("rating/{toonId:int}/{regionId:int}/{realmId:int}/{ratingType:int}/{ratingCalcType:int}")]
+    [Route("rating/{toonId:int}/{regionId:int}/{realmId:int}/{ratingType:int}")]
     public async Task<IActionResult> GetPlayerRatingDetails(int toonId,
                                                             int regionId,
                                                             int realmId,
                                                             int ratingType,
-                                                            int ratingCalcType,
                                                             CancellationToken token = default)
     {
         try
         {
             var ratingDetails = await playerService.GetPlayerIdPlayerRatingDetails(new(toonId, realmId, regionId),
-                                                                                   (RatingType)ratingType,
-                                                                                   (RatingCalcType)ratingCalcType,
+                                                                                   (RatingNgType)ratingType,
                                                                                    token);
             return Ok(ratingDetails);
         }
@@ -91,7 +87,7 @@ public class PlayerController : Controller
     {
         try
         {
-            var cmdrAvgGain = await playerService.GetPlayerIdPlayerCmdrAvgGain(new(toonId, realmId, regionId), (RatingType)ratingType, (TimePeriod)timePeriod, token);
+            var cmdrAvgGain = await playerService.GetPlayerIdPlayerCmdrAvgGain(new(toonId, realmId, regionId), (RatingNgType)ratingType, (TimePeriod)timePeriod, token);
             return Ok(cmdrAvgGain);
         }
         catch (Exception ex)
@@ -120,18 +116,9 @@ public class PlayerController : Controller
                                                                                          int ratingType,
                                                                                          CancellationToken token = default)
     {
-        return await playerService.GetPlayerRatingChartData(playerId, (RatingType)ratingType, token);
+        return await playerService.GetPlayerRatingChartData(playerId, (RatingNgType)ratingType, token);
     }
 
-    [HttpPost]
-    [Route("playerratingchartdata/{ratingType:int}/{ratingCalcType:int}")]
-    public async Task<ActionResult<List<ReplayPlayerChartDto>>> GetPlayerRatingChartData(PlayerId playerId,
-                                                                                     int ratingType,
-                                                                                     int ratingCalcType,
-                                                                                     CancellationToken token = default)
-    {
-        return await playerService.GetPlayerRatingChartData(playerId, (RatingCalcType)ratingCalcType, (RatingType)ratingType, token);
-    }
 
     [HttpPost]
     [Route("playercommandersplayed/{ratingType:int}")]
@@ -139,7 +126,7 @@ public class PlayerController : Controller
                                                                        int ratingType,
                                                                        CancellationToken token)
     {
-        return await playerService.GetPlayerIdCommandersPlayed(playerId, (RatingType)ratingType, token);
+        return await playerService.GetPlayerIdCommandersPlayed(playerId, (RatingNgType)ratingType, token);
     }
 
     [HttpPost]

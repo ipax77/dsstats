@@ -64,8 +64,7 @@
                             </td>
                             <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Player.Name</span></td>
                             <td class="text-warning">
-                                @(ratingsRequest.ComboRating || ratingsRequest.Arcade ? rating.ComboPlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture)
-                                    : rating.PlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture))
+                                @rating.PlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture)
                             </td>
                             <td class="border-start">@rating.ComboPlayerRating.Games</td>
                             <td>
@@ -74,14 +73,7 @@
                                     rating.PlayerRating.Main.ToString())
                             </td>
                             <td>
-                                @if (ratingsRequest.ComboRating || ratingsRequest.Arcade)
-                                {
-                                    @HelperService.GetPercentageString(rating.ComboPlayerRating.Wins, rating.ComboPlayerRating.Games)
-                                }
-                                else
-                                {
-                                    @HelperService.GetPercentageString(rating.PlayerRating.Wins, rating.PlayerRating.Games)
-                                }
+                                @HelperService.GetPercentageString(rating.PlayerRating.Wins, rating.PlayerRating.Games)
                             </td>
                         </tr>
                     }
@@ -93,7 +85,7 @@
 
 @code {
     [Parameter, EditorRequired]
-    public RatingType RatingType { get; set; }
+    public RatingNgType RatingType { get; set; }
 
     private List<ComboPlayerRatingDto> ratings = new();
     private CancellationTokenSource cts = new();
@@ -102,7 +94,6 @@
         {
             Skip = 0,
             Take = 7,
-            ComboRating = true,
             Active = true,
             Orders = new()
             {

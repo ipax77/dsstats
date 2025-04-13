@@ -5,6 +5,7 @@ public record DbImportOptions
 {
     public string ImportConnectionString { get; set; } = string.Empty;
     public bool IsSqlite { get; set; }
+    public string MySqlImportDir { get; set; } = string.Empty;
 }
 
 public record BlizzardAPIOptions

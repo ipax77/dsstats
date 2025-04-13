@@ -7,11 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MailKit" Version="4.10.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.13" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.13" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.13" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.13">
+    <PackageReference Include="MailKit" Version="4.11.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.15" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.15" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.15" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.15">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -26,6 +26,7 @@
     <ProjectReference Include="..\dsstats.ratings.lib\dsstats.ratings.lib.csproj" />
     <ProjectReference Include="..\dsstats.ratings\dsstats.ratings.csproj" />
     <ProjectReference Include="..\dsstats.shared\dsstats.shared.csproj" />
+    <ProjectReference Include="..\mysql8db\src\dsstats.db\dsstats.db.csproj" />
     <ProjectReference Include="..\MysqlMigrations\MysqlMigrations.csproj" />
     <ProjectReference Include="..\SC2ArcadeCrawler\SC2ArcadeCrawler.csproj" />
   </ItemGroup>

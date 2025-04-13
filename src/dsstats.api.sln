@@ -33,6 +33,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dsstats.pickban", "dsstats.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.pickban.tests", "tests\dsstats.pickban.tests\dsstats.pickban.tests.csproj", "{2428AFF9-03C3-463B-9F41-4B93460EDB63}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.db", "mysql8db\src\dsstats.db\dsstats.db.csproj", "{91BD1341-BAC2-E98D-C24A-ADDC01D7B4CD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -99,6 +101,10 @@ Global
 		{2428AFF9-03C3-463B-9F41-4B93460EDB63}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2428AFF9-03C3-463B-9F41-4B93460EDB63}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2428AFF9-03C3-463B-9F41-4B93460EDB63}.Release|Any CPU.Build.0 = Release|Any CPU
+		{91BD1341-BAC2-E98D-C24A-ADDC01D7B4CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{91BD1341-BAC2-E98D-C24A-ADDC01D7B4CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{91BD1341-BAC2-E98D-C24A-ADDC01D7B4CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{91BD1341-BAC2-E98D-C24A-ADDC01D7B4CD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

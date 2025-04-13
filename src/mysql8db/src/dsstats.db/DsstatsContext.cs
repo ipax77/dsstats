@@ -1,6 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using dsstats.db8;
+using System.Reflection;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace dsstats.db;
 
@@ -20,6 +25,8 @@ public sealed class DsstatsContext : DbContext
     public DbSet<ArcadeReplay> ArcadeReplays { get; set; }
     public DbSet<ArcadeReplayPlayer> ArcadeReplayPlayers { get; set; }
     public DbSet<ReplayArcadeMatch> ReplayArcadeMatches { get; set; }
+    public int Week(DateTime date) => throw new InvalidOperationException($"{nameof(Week)} cannot be called client side.");
+    public int Strftime(string arg, DateTime date) => throw new InvalidOperationException($"{nameof(Strftime)} cannot be called client side.");
 
     public DsstatsContext(DbContextOptions<DsstatsContext> options)
         : base(options)
@@ -90,6 +97,42 @@ public sealed class DsstatsContext : DbContext
             entity.HasIndex(i => new { i.Imported });
             entity.HasIndex(i => new { i.RegionId, i.BnetBucketId, i.BnetRecordId }).IsUnique();
         });
+
+        MethodInfo weekMethodInfo = typeof(ReplayContext)
+    .GetRuntimeMethod(nameof(ReplayContext.Week), new[] { typeof(DateTime) }) ?? throw new ArgumentNullException();
+
+        modelBuilder.HasDbFunction(weekMethodInfo)
+           .HasTranslation(args =>
+                    new SqlFunctionExpression("WEEK",
+                        new[]
+                        {
+                            args.ToArray()[0],
+                            new SqlConstantExpression(Expression.Constant(3, typeof(int)), new IntTypeMapping("int")),
+                        },
+                        true,
+                        new[] { false, false },
+                        typeof(int),
+                        null
+                    )
+                );
+
+        MethodInfo strftimeMethodInfo = typeof(ReplayContext)
+            .GetRuntimeMethod(nameof(ReplayContext.Strftime), new[] { typeof(string), typeof(DateTime) }) ?? throw new ArgumentNullException();
+
+        modelBuilder.HasDbFunction(strftimeMethodInfo)
+           .HasTranslation(args =>
+                    new SqlFunctionExpression("strftime",
+                        new[]
+                        {
+                            new SqlFragmentExpression((args.ToArray()[0] as SqlConstantExpression)?.Value?.ToString() ?? string.Empty),
+                            args.ToArray()[1]
+                        },
+                        true,
+                        new[] { false, false },
+                        typeof(int),
+                        null
+                    )
+                );
     }
 }
 

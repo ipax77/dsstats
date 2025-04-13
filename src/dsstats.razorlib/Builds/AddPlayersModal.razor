@@ -125,7 +125,7 @@
                                             <td>
                                                 <span class="text-truncate text-warning"
                                                       style="display: block; width: 40px;">
-                                                    @(Request.ComboRating ? rating.ComboPlayerRating.Pos : rating.PlayerRating.Pos)
+                                                    @rating.PlayerRating.Pos
                                                 </span>
                                             </td>
                                             <td>
@@ -146,8 +146,7 @@
                                             </td>
                                             <td class="border-start">@rating.PlayerRating.Games</td>
                                             <td class="text-warning">
-                                                @(Request.ComboRating ? rating.ComboPlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture)
-                                                : rating.PlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture))
+                                                @rating.PlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture)
                                             </td>
                                             <td>
                                                 @if (rating.PlayerRating.PlayerRatingChange != null)
@@ -164,14 +163,7 @@
                                                 }
                                             </td>
                                             <td>
-                                                @if (Request.ComboRating || Request.Arcade)
-                                                {
-                                                    @HelperService.GetPercentageString(rating.ComboPlayerRating.Wins, rating.ComboPlayerRating.Games)
-                                                }
-                                                else
-                                                {
-                                                    @HelperService.GetPercentageString(rating.PlayerRating.Wins, rating.PlayerRating.Games)
-                                                }
+                                                @HelperService.GetPercentageString(rating.PlayerRating.Wins, rating.PlayerRating.Games)
                                             </td>
                                             <td>
                                                 @HelperService.GetPercentageString(rating.PlayerRating.Mvp, rating.PlayerRating.Games)
@@ -201,8 +193,7 @@
 
     private RatingsRequest Request = new()
         {
-            Type = RatingType.Cmdr,
-            ComboRating = true,
+            Type = RatingNgType.Commanders_3v3,
             Orders = new() { new() { Property = "Rating" } }
         };
 
@@ -221,22 +212,16 @@
     {
         if (!remoteToggleService.FromServer)
         {
-            Request.ComboRating = false;
             Request.Uploaders = false;
         }
         base.OnInitialized();
     }
 
-    public void Show(RatingType ratingType)
+    public void Show(RatingNgType ratingType)
     {
         JSRuntime.InvokeVoidAsync("openModalById", "addplayermodal");
         addPlayers.Clear();
         Request.Type = ratingType;
-        if (ratingType == RatingType.StdTE || ratingType == RatingType.CmdrTE)
-        {
-            Request.ComboRating = false;
-            Request.Uploaders = false;
-        }
         _ = Reload();
     }
 

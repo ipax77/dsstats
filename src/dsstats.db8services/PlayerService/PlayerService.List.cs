@@ -7,17 +7,7 @@ public partial class PlayerService
 {
     public async Task<int> GetRatingsCount(RatingsRequest request, CancellationToken token)
     {
-        if (request.ComboRating)
-        {
-            return await GetComboRatingsListCount(request, token);
-        }
-
-        if (request.Arcade)
-        {
-            return await GetArcadeRatingsListCount(request, token);
-        }
-
-        return await GetDsstatsRatingsListCount(request, token);
+        return await GetComboRatingsListCount(request, token);
     }
 
     public async Task<List<ComboPlayerRatingDto>> GetRatings(RatingsRequest request, CancellationToken token)
@@ -26,17 +16,7 @@ public partial class PlayerService
         {
             return new();
         }
+        return await GetComboRatingsList(request, token);
 
-        if (request.ComboRating)
-        {
-            return await GetComboRatingsList(request, token);
-        }
-
-        if (request.Arcade)
-        {
-            return await GetArcadeRatingsList(request, token);
-        }
-
-        return await GetDsstatsRatingsList(request, token);
     }
 }

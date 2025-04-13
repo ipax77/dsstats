@@ -600,6 +600,8 @@ public sealed record PlayerRatingCsv
         Rating = rating.Rating;
         Consistency = rating.Consistency;
         Confidence = rating.Confidence;
+        Main = (int)rating.Main;
+        MainCount = rating.MainCount;
         Pos = rating.Pos;
         PlayerId = rating.PlayerId;
     }
@@ -613,6 +615,8 @@ public sealed record PlayerRatingCsv
     public double Rating { get; set; } = 1000;
     public double Consistency { get; set; }
     public double Confidence { get; set; }
+    public int Main { get; set; }
+    public int MainCount { get; set; }
     public int Pos { get; set; }
     public int PlayerId { get; set; }
 }

@@ -62,14 +62,7 @@ public partial class PlayerService
 
     private IQueryable<ComboPlayerRatingDto> SortComboList(IQueryable<ComboPlayerRatingDto> ratings, RatingsRequest request)
     {
-        if (request.ComboRating || request.Arcade)
-        {
-            return SortComboListByCombo(ratings, request);
-        }
-        else
-        {
-            return SortComboListByDs(ratings, request);
-        }
+        return SortComboListByDs(ratings, request);
     }
 
     private IQueryable<ComboPlayerRatingDto> SortComboListByDs(IQueryable<ComboPlayerRatingDto> ratings, RatingsRequest request)
@@ -205,12 +198,12 @@ public partial class PlayerService
 
     private IQueryable<ComboPlayerRatingDto> GetComboListQuery(RatingsRequest request)
     {
-        var query = from cpr in context.ComboPlayerRatings
+        var query = from cpr in context.PlayerRatings
                     join pr in context.PlayerRatings on cpr.PlayerId equals pr.PlayerId
-                    join prc in context.PlayerRatingChanges on pr.PlayerRatingId equals prc.PlayerRatingId into grouping
-                    from prc in grouping.DefaultIfEmpty()
+                    // join prc in context.PlayerRatingChanges on pr.PlayerRatingId equals prc.PlayerRatingId into grouping
+                    // from prc in grouping.DefaultIfEmpty()
                     where cpr.Games > 19 && cpr.RatingType == request.Type && pr.RatingType == request.Type
-                        && (!request.Uploaders || cpr.Player.UploaderId != null)
+                    // && (!request.Uploaders || cpr.Player.UploaderId != null)
                     select new ComboPlayerRatingDto()
                     {
                         ComboPlayerRating = new()
@@ -222,11 +215,11 @@ public partial class PlayerService
                         },
                         Player = new PlayerRatingPlayerDto()
                         {
-                            Name = cpr.Player.Name,
+                            Name = cpr.Player!.Name,
                             ToonId = cpr.Player.ToonId,
                             RegionId = cpr.Player.RegionId,
                             RealmId = cpr.Player.RealmId,
-                            IsUploader = cpr.Player.UploaderId != null,
+                            // IsUploader = cpr.Player.UploaderId != null,
                         },
                         PlayerRating = new PlayerRatingDto()
                         {
@@ -237,15 +230,15 @@ public partial class PlayerService
                             Mvp = pr.Mvp,
                             MainCount = pr.MainCount,
                             Main = pr.Main,
-                            IsUploader = pr.IsUploader,
-                            PlayerRatingChange = prc == null ? null : new()
-                            {
-                                Change24h = prc.Change24h,
-                                Change10d = prc.Change10d,
-                                Change30d = prc.Change30d
-                            }
+                            //IsUploader = pr.IsUploader,
+                            //PlayerRatingChange = prc == null ? null : new()
+                            //{
+                            //    Change24h = prc.Change24h,
+                            //    Change10d = prc.Change10d,
+                            //    Change30d = prc.Change30d
+                            //}
                         },
-                        IsActive = prc != null
+                        IsActive = true
                     };
         return query;
     }

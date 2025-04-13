@@ -6,17 +6,6 @@
     <div class="row">
         <div class="col-auto">
             <label class="form-label">
-                Rating CalcType
-                <InputSelect class="form-select" @bind-Value="Request.RatingCalcType">
-                    @foreach (RatingCalcType ratingType in Enum.GetValues(typeof(RatingCalcType)))
-                    {
-                        <option value="@ratingType">@ratingType</option>
-                    }
-                </InputSelect>
-            </label>
-        </div>
-        <div class="col-auto">
-            <label class="form-label">
                 Rating Type
                 <span class="bi bi-info-circle pointer ms-2" onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/Mmr-calculation#rating-types'"></span>
                 <InputSelect class="form-select" @bind-Value="Request.RatingType">

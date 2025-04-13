@@ -15,18 +15,11 @@
     [SupplyParameterFromQuery]
     public string? Mode { get; set; }
 
-    [Parameter, SupplyParameterFromQuery]
-    public bool? Combo { get; set; }
-
-    [Parameter, SupplyParameterFromQuery]
-    public bool? Arcade { get; set; }
-
     private RatingsRequest ratingsRequest = new()
     {
-        Type = shared.RatingType.Cmdr,
+        Type = RatingNgType.Global,
         Skip = 0,
         Take = 20,
-        ComboRating = true,
         Orders = new()
         {
             new()
@@ -52,22 +45,12 @@
         }
 
         if (!String.IsNullOrEmpty(Mode) 
-            && Enum.TryParse(typeof(RatingType), Mode, out var ratingTypeObject))
+            && Enum.TryParse(typeof(RatingNgType), Mode, out var ratingTypeObject))
         {
-            if (ratingTypeObject is RatingType ratingType)
+            if (ratingTypeObject is RatingNgType ratingType)
             {
                 ratingsRequest.Type = ratingType;
             }
-        }
-
-        if (Combo is not null)
-        {
-            ratingsRequest.ComboRating = Combo.Value;
-        }
-
-        if (Arcade is not null)
-        {
-            ratingsRequest.Arcade = Arcade.Value;
         }
     }
 
@@ -77,31 +60,13 @@
 
         queryDic.Add("PlayerId", Data.GetPlayerIdString(request.PlayerId));
 
-        if (request.Type != shared.RatingType.Cmdr)
+        if (request.Type != shared.RatingNgType.Global)
         {
             queryDic.Add("Mode", request.Type.ToString());
         }
         else
         {
             queryDic.Add("Mode", null);
-        }
-
-        if (!request.ComboRating)
-        {
-            queryDic.Add("Combo", request.ComboRating);
-        }
-        else
-        {
-            queryDic.Add("Combo", null);
-        }
-
-        if (request.Arcade)
-        {
-            queryDic.Add("Arcade", request.Arcade);
-        }
-        else
-        {
-            queryDic.Add("Arcade", null);
         }
 
         NavigationManager.NavigateTo(

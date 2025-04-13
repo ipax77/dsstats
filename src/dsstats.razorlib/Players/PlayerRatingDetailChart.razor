@@ -14,10 +14,8 @@
     public PlayerId PlayerId { get; set; } = default!;
 
     [Parameter, EditorRequired]
-    public RatingType RatingType { get; set; }
+    public RatingNgType RatingType { get; set; }
 
-    [Parameter, EditorRequired]
-    public RatingCalcType RatingCalcType { get; set; }
 
     [Parameter, EditorRequired]
     public double CurrentRating { get; set; }
@@ -46,7 +44,7 @@
                         "import", "./_content/dsstats.razorlib/js/timeChart.js").AsTask());
         if (ChartDtos.Count > 0)
         {
-            rpChartDtos[new(RatingType, RatingCalcType, remoteToggleService.FromServer)] = new(ChartDtos);
+            rpChartDtos[new(RatingType, remoteToggleService.FromServer)] = new(ChartDtos);
             dataReady = true;
             SetupChart();
         }
@@ -56,10 +54,9 @@
         }
     }
 
-    public void Update(RatingType ratingType, RatingCalcType ratingCalcType, double currentRating, bool force = false)
+    public void Update(RatingNgType ratingType, double currentRating, bool force = false)
     {
         RatingType = ratingType;
-        RatingCalcType = ratingCalcType;
         CurrentRating = currentRating;
 
         if (force)
@@ -67,7 +64,7 @@
             rpChartDtos.Clear();
         }
 
-        if (rpChartDtos.ContainsKey(new(RatingType, RatingCalcType, remoteToggleService.FromServer)))
+        if (rpChartDtos.ContainsKey(new(RatingType, remoteToggleService.FromServer)))
         {
             SetupChart();
         }
@@ -77,7 +74,7 @@
         }
     }
 
-    public void Reset(RatingType ratingType, List<ReplayPlayerChartDto> chartDtos)
+    public void Reset(RatingNgType ratingType, List<ReplayPlayerChartDto> chartDtos)
     {
         RatingType = ratingType;
 
@@ -86,10 +83,10 @@
 
         if (chartDtos.Count > 0)
         {
-            var key = new ChartTypeMemory(RatingType, RatingCalcType, remoteToggleService.FromServer);
+            var key = new ChartTypeMemory(RatingType, remoteToggleService.FromServer);
             rpChartDtos[key] = chartDtos;
 
-            (var ratingData, var gamesData) = GetChartData(rpChartDtos[new(RatingType, RatingCalcType, remoteToggleService.FromServer)]);
+            (var ratingData, var gamesData) = GetChartData(rpChartDtos[new(RatingType, remoteToggleService.FromServer)]);
 
             chartConfig.Data.Labels = ratingData.Select(s => s.X).ToList();
 
@@ -105,7 +102,7 @@
 
     private async Task LoadData()
     {
-        rpChartDtos[new(RatingType, RatingCalcType, remoteToggleService.FromServer)] = await playerService.GetPlayerRatingChartData(PlayerId, RatingCalcType, RatingType, default);
+        rpChartDtos[new(RatingType, remoteToggleService.FromServer)] = await playerService.GetPlayerRatingChartData(PlayerId, RatingType, default);
         dataReady = true;
         SetupChart();
     }
@@ -132,17 +129,17 @@
             chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
             if (chartConfig.Options?.Plugins?.Title != null)
             {
-                chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"Ratings {Data.GetRatingTypeLongName(RatingType)}");
+                chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"Ratings {RatingType}");
                 chartConfig.UpdateChartOptions();
             }
         }
 
-        if (!rpChartDtos.ContainsKey(new(RatingType, RatingCalcType, remoteToggleService.FromServer)) || !rpChartDtos[new(RatingType, RatingCalcType, remoteToggleService.FromServer)].Any())
+        if (!rpChartDtos.ContainsKey(new(RatingType, remoteToggleService.FromServer)) || !rpChartDtos[new(RatingType, remoteToggleService.FromServer)].Any())
         {
             return;
         }
 
-        (var ratingData, var gamesData) = GetChartData(rpChartDtos[new(RatingType, RatingCalcType, remoteToggleService.FromServer)]);
+        (var ratingData, var gamesData) = GetChartData(rpChartDtos[new(RatingType, remoteToggleService.FromServer)]);
 
         chartConfig.SetLabels(ratingData.Select(s => s.X).ToList());
 
@@ -303,7 +300,7 @@
                         Title = new Title()
                         {
                             Display = !WithoutTitle,
-                            Text = new IndexableOption<string>($"Ratings {Data.GetRatingTypeLongName(RatingType)}"),
+                            Text = new IndexableOption<string>($"Ratings {RatingType}"),
                             Color = "#4E58A0",
                             Font = new Font()
                             {
@@ -453,15 +450,13 @@
 
     public record ChartTypeMemory
     {
-        public ChartTypeMemory(RatingType ratingType, RatingCalcType ratingCalcType, bool remote)
+        public ChartTypeMemory(RatingNgType ratingType, bool remote)
         {
             RatingType = ratingType;
-            RatingCalcType = ratingCalcType;
             Remote = remote;
         }
 
-        public RatingType RatingType { get; init; }
-        public RatingCalcType RatingCalcType { get; init; }
+        public RatingNgType RatingType { get; init; }
         public bool Remote { get; init; }
     }
 }

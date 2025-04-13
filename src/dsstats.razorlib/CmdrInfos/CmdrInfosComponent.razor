@@ -94,7 +94,7 @@
 @if (interestPlayer is not null)
 {
     @* <PlayerDetails PlayerId="interestPlayer" RatingType="Request.RatingType" RatingCalcType="RatingCalcType.Dsstats" OnCloseRequested="e => interestPlayer = null" /> *@
-    <dsstats.razorlib.Players.Profile.ProfileComponent PlayerId ="interestPlayer" RatingType="Request.RatingType" RatingCalcType="RatingCalcType.Dsstats" OnCloseRequested="e => interestPlayer = null" />
+    <dsstats.razorlib.Players.Profile.ProfileComponent PlayerId ="interestPlayer" RatingType="RatingNgType.Global" RatingCalcType="RatingCalcType.Dsstats" OnCloseRequested="e => interestPlayer = null" />
 }
 @if (interestReplay is not null)
 {

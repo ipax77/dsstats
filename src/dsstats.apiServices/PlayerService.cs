@@ -67,13 +67,12 @@ public class PlayerService : IPlayerService
     }
 
     public async Task<PlayerDetailSummary> GetPlayerPlayerIdSummary(PlayerId playerId,
-                                                                    RatingType ratingType,
-                                                                    RatingCalcType ratingCalcType,
+                                                                    RatingNgType ratingType,
                                                                     CancellationToken token = default)
     {
         try
         {
-            var request = $"{playerController}/summary/{playerId.ToonId}/{playerId.RegionId}/{playerId.RealmId}/{(int)ratingType}/{(int)ratingCalcType}";
+            var request = $"{playerController}/summary/{playerId.ToonId}/{playerId.RegionId}/{playerId.RealmId}/{(int)ratingType}";
             var response = await httpClient.GetFromJsonAsync<PlayerDetailSummary>(request, token);
             if (response is not null)
             {
@@ -88,13 +87,13 @@ public class PlayerService : IPlayerService
     }
 
     public async Task<PlayerRatingDetails> GetPlayerIdPlayerRatingDetails(PlayerId playerId,
-                                                                          RatingType ratingType,
-                                                                          RatingCalcType ratingCalcType,
+                                                                          RatingNgType ratingType,
                                                                           CancellationToken token = default)
     {
         try
         {
-            return await httpClient.GetFromJsonAsync<PlayerRatingDetails>($"{playerController}/rating/{playerId.ToonId}/{playerId.RegionId}/{playerId.RealmId}/{(int)ratingType}/{(int)ratingCalcType}", token) ?? new PlayerRatingDetails();
+            return await httpClient.GetFromJsonAsync<PlayerRatingDetails>($"{playerController}/rating/{playerId.ToonId}/{playerId.RegionId}/{playerId.RealmId}/{(int)ratingType}", token)
+                ?? new PlayerRatingDetails();
         }
         catch (Exception ex)
         {
@@ -103,12 +102,13 @@ public class PlayerService : IPlayerService
         }
     }
 
-    public async Task<List<PlayerCmdrAvgGain>> GetPlayerIdPlayerCmdrAvgGain(PlayerId playerId, RatingType ratingType, TimePeriod timePeriod, CancellationToken token)
+    public async Task<List<PlayerCmdrAvgGain>> GetPlayerIdPlayerCmdrAvgGain(PlayerId playerId, RatingNgType ratingType, TimePeriod timePeriod, CancellationToken token)
     {
         try
         {
             return await httpClient
-            .GetFromJsonAsync<List<PlayerCmdrAvgGain>>($"{playerController}/cmdravggain/{playerId.ToonId}/{playerId.RegionId}/{playerId.RealmId}/{(int)ratingType}/{(int)timePeriod}", token) ?? new();
+            .GetFromJsonAsync<List<PlayerCmdrAvgGain>>($"{playerController}/cmdravggain/{playerId.ToonId}/{playerId.RegionId}/{playerId.RealmId}/{(int)ratingType}/{(int)timePeriod}", token)
+                ?? new();
         }
         catch (Exception ex)
         {
@@ -139,36 +139,16 @@ public class PlayerService : IPlayerService
     }
 
     public async Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId,
-                                                                           RatingType ratingType,
+                                                                           RatingNgType ratingType,
                                                                            CancellationToken token = default)
     {
         try
         {
             var response =
-             await httpClient.PostAsJsonAsync($"{playerController}/playerratingchartdata/{(int)ratingType}", playerId);
+             await httpClient.PostAsJsonAsync($"{playerController}/playerratingchartdata/{(int)ratingType}", playerId, token);
 
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<List<ReplayPlayerChartDto>>() ?? new();
-        }
-        catch (Exception ex)
-        {
-            logger.LogError("Failed getting player rating chart data: {error}", ex.Message);
-        }
-        return new();
-    }
-
-    public async Task<List<ReplayPlayerChartDto>> GetPlayerRatingChartData(PlayerId playerId,
-                                                                       RatingCalcType ratingCalcType,
-                                                                       RatingType ratingType,
-                                                                       CancellationToken token = default)
-    {
-        try
-        {
-            var response =
-             await httpClient.PostAsJsonAsync($"{playerController}/playerratingchartdata/{(int)ratingType}/{(int)ratingCalcType}", playerId);
-
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<List<ReplayPlayerChartDto>>() ?? new();
+            return await response.Content.ReadFromJsonAsync<List<ReplayPlayerChartDto>>(token) ?? new();
         }
         catch (Exception ex)
         {
@@ -178,16 +158,16 @@ public class PlayerService : IPlayerService
     }
 
     public async Task<List<CommanderInfo>> GetPlayerIdCommandersPlayed(PlayerId playerId,
-                                                                       RatingType ratingType,
+                                                                       RatingNgType ratingType,
                                                                        CancellationToken token)
     {
         try
         {
             var response =
-             await httpClient.PostAsJsonAsync($"{playerController}/playercommandersplayed/{(int)ratingType}", playerId);
+             await httpClient.PostAsJsonAsync($"{playerController}/playercommandersplayed/{(int)ratingType}", playerId, token);
 
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<List<CommanderInfo>>() ?? new();
+            return await response.Content.ReadFromJsonAsync<List<CommanderInfo>>(token) ?? new();
         }
         catch (Exception ex)
         {

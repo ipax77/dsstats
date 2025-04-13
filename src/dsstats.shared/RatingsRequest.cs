@@ -5,14 +5,12 @@ namespace dsstats.shared;
 
 public record RatingsRequest
 {
-    public RatingType Type { get; set; }
+    public RatingNgType Type { get; set; }
     public int Skip { get; set; }
     public int Take { get; set; }
     public List<TableOrder> Orders { get; set; } = new();
     public string? Search { get; set; }
     public bool Uploaders { get; set; } = true;
-    public bool ComboRating { get; set; }
-    public bool Arcade { get; set; }
     public bool Active { get; set; }
     public int Region { get; set; }
     [JsonIgnore]
