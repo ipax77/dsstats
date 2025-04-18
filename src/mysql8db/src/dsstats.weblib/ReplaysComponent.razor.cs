@@ -2,7 +2,7 @@ using dsstats.shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 
-namespace dsstats.web.Components;
+namespace dsstats.weblib;
 
 public partial class ReplaysComponent : ComponentBase
 {

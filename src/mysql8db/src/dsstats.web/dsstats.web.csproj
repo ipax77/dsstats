@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\dsstats.api.Services\dsstats.api.Services.csproj" />
+    <ProjectReference Include="..\dsstats.weblib\dsstats.weblib.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

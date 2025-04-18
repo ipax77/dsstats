@@ -1,47 +1,12 @@
+@using Microsoft.AspNetCore.Components.Web.Virtualization
 @using dsstats.shared8.Interfaces
 @inject IReplaysService replaysService
-
-<HeadContent>
-    <style>
-        html,
-        body {
-            overflow-y: hidden;
-        }
-
-        .tr {
-            height: 50px;
-        }
-
-        .fixed-col {
-            white-space: nowrap;
-        }
-
-        .scroll-container {
-            width: fit-content;
-            max-height: 60vh;
-            overflow-y: auto;
-            overflow-x: auto;
-            border: 1px solid #ccc;
-        }
-
-        table {
-            width: 850px;
-            border-collapse: collapse;
-        }
-
-        thead th {
-            position: sticky;
-            top: 0;
-            background-color: white;
-        }
-    </style>
-</HeadContent>
 
 <p>Hello Replays. Count: @totalReplays (@replaysRequest.Skip/@replaysRequest.Take)</p>
 <button type="button" @onclick="Refresh">Refresh</button>
 
-<div class="scroll-container">
-    <table tabindex="-1">
+<div class="table-responsive" style="max-width: 1150px; max-height: 80vh;">
+    <table class="tptable" tabindex="-1">
         <thead style="user-select: none;">
             <tr>
                 <th>Time</th>
@@ -54,7 +19,7 @@
         <tbody>
             @if (totalReplays > 0)
             {
-                <Virtualize Context="replay" ItemsProvider="LoadReplays" OverscanCount="10" SpacerElement="tr">
+                <Virtualize Context="replay" ItemsProvider="LoadReplays" OverscanCount="10" ItemSize="41" SpacerElement="tr">
                     <ItemContent>
                         <tr @key="replay" id="@replay.ReplayHash">
                             <td class="fixed-col col-time">@replay.GameTime.ToString(@"yyyy-MM-dd")</td>
@@ -78,7 +43,9 @@
             }
             else
             {
-                <p>Loading ...</p>
+                <tr>
+                    <td colspan="100">Loading ...</td>
+                </tr>
             }
         </tbody>
     </table>
