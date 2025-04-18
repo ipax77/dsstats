@@ -87,6 +87,7 @@ h1:focus {
         position: sticky;
         top: 0;
         background-color: #080808;
+        z-index: 100;
     }
 
     .tptable tr {
