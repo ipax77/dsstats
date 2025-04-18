@@ -1,32 +1,116 @@
 @using Microsoft.AspNetCore.Components.Web.Virtualization
 @using dsstats.shared8.Interfaces
+@using dsstats.weblib.Helpers
 @inject IReplaysService replaysService
 
-<p>Hello Replays. Count: @totalReplays (@replaysRequest.Skip/@replaysRequest.Take)</p>
-<button type="button" @onclick="Refresh">Refresh</button>
+<HeadContent>
+    <style>
+        .scroll-container {
+            width: 800px;
+            max-height: 75vh;
+            overflow-y: scroll;
+            display: block;
+        }
+    </style>
+</HeadContent>
 
-<div class="table-responsive" style="max-width: 1150px; max-height: 80vh;">
+<div class="p-1">
+    <p>Hello Replays. Count: @pageInfo.TotalSize (@replaysRequest.Skip/@replaysRequest.Take)</p>
+    <button type="button" @onclick="Refresh">Refresh</button>
+</div>
+
+<div class="mt-2 btn-group bgchart p-1">
+    @if (!isLoading && pageInfo.CanMoveLeft)
+    {
+        <button type="button" class="btn btn-sm btn-outline-light" aria-disabled="false" @onclick="e => OnPageChanged(pageInfo.Page - 1)"><i class="bi bi-chevron-double-left"></i></button>
+    }
+    else
+    {
+        <button type="button" class="btn btn-sm btn-outline-light disabled" aria-disabled="true"><i class="bi bi-chevron-double-left"></i></button>
+    }
+
+
+    <div class="input-group input-group-sm" style="width: 100px;">
+        <input type="number"
+               class="form-control text-center"
+               min="0"
+               max="@pageInfo.MaxPages"
+               @bind="@pageInfo.PageRequest"
+               @bind:after="PageChanged" />
+        <span class="input-group-text">/ @pageInfo.MaxPages</span>
+    </div>
+
+    @if (!isLoading && pageInfo.CanMoveRight)
+    {
+        <button type="button" class="btn btn-sm btn-outline-light" aria-disabled="false" @onclick="e => OnPageChanged(pageInfo.Page + 1)"><i class="bi bi-chevron-double-right"></i></button>
+    }
+    else
+    {
+        <button type="button" class="btn btn-sm btn-outline-light disabled" aria-disabled="true"><i class="bi bi-chevron-double-right"></i></button>
+    }
+    <button type="button" class="ms-2 btn btn-outline-light disabled" aria-disabled="true" style="font-size: 0.8rem; width: 250px;">
+        @pageInfo.TotalSize.ToString("N0")
+        (@((pageInfo.Page * pageInfo.PageSize).ToString("N0")) - @((Math.Min((pageInfo.Page + 1) * pageInfo.PageSize, pageInfo.TotalSize)).ToString("N0")))
+    </button>
+    <button type="button" class="btn btn-outline-secondary" @onclick="Reload"><i class="bi bi-arrow-clockwise"></i></button>
+    @if (isLoading)
+    {
+        <div class="spinner-border text-danger ms-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
+</div>
+<div class="scroll-container">
     <table class="tptable" tabindex="-1">
-        <thead style="user-select: none;">
-            <tr>
-                <th>Time</th>
-                <th>Mode</th>
-                <th>Team1</th>
-                <th>Team2</th>
-                <th>Duration</th>
-            </tr>
-        </thead>
+        <colgroup>
+            <col span="1" style="width: 15%;">
+            <col span="1" style="width: 20%;">
+            <col span="1" style="width: 25%;">
+            <col span="1" style="width: 25%;">
+            <col span="1" style="width: 13%;">
+        </colgroup>
+        <CascadingValue Value="replaysRequest.Orders">
+            <thead style="user-select: none;">
+                <tr>
+                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GameTime"))">
+                        <SortArrow Property="GameTime">
+                            GameTime
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Duration"))">
+                        <SortArrow Property="Duration">
+                            Duration
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "CommandersTeam1"))">
+                        <SortArrow Property="CommandersTeam1">
+                            Team1
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "CommandersTeam2"))">
+                        <SortArrow Property="CommandersTeam2">
+                            Team2
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "GameMode"))">
+                        <SortArrow Property="GameMode">
+                            GameMode
+                        </SortArrow>
+                    </th>
+                </tr>
+            </thead>
+        </CascadingValue>
         <tbody>
-            @if (totalReplays > 0)
+            @if (pageInfo.TotalSize > 0)
             {
-                <Virtualize Context="replay" ItemsProvider="LoadReplays" OverscanCount="10" ItemSize="41" SpacerElement="tr">
+                <Virtualize @ref="virtualize" Context="replay" ItemsProvider="LoadReplays" OverscanCount="4" ItemSize="41" SpacerElement="tr">
                     <ItemContent>
-                        <tr @key="replay" id="@replay.ReplayHash">
-                            <td class="fixed-col col-time">@replay.GameTime.ToString(@"yyyy-MM-dd")</td>
-                            <td class="fixed-col col-mode">@replay.GameMode</td>
-                            <td class="fixed-col col-team">@replay.CommandersTeam1</td>
-                            <td class="fixed-col col-team">@replay.CommandersTeam2</td>
-                            <td class="fixed-col col-duration">@replay.Duration</td>
+                        <tr @key="replay" class="pointer" id="@replay.ReplayHash">
+                            <td>@replay.GameTime.ToString(@"yyyy-MM-dd")</td>
+                            <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+                            <td><dsstats.weblib.Helpers.ReplayTeam Team="1" Replay="replay" /></td>
+                            <td><dsstats.weblib.Helpers.ReplayTeam Team="2" Replay="replay" /></td>
+                            <td>@replay.GameMode @(replay.TournamentEdition ? "TE" : "")</td>
                         </tr>
                     </ItemContent>
                     <Placeholder>

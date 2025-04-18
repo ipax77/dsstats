@@ -1,0 +1,48 @@
+﻿@using dsstats.shared
+<div class="@(Replay.WinnerTeam == Team ? "d-flex border-start border-3 border-success" : "d-flex border-start border-3 border-danger")">
+    @{
+        var playerPos = GetPlayerPos(Replay);
+    }
+    
+    @for (int i = 0; i < cmdrs.Count; i++)
+    {
+        @if (i + 1 == playerPos)
+        {
+            <div class="border border-warning border-2 preload-@(((Commander)cmdrs[i]).ToString().ToLower())" alt="@((Commander)cmdrs[i])"></div>
+        }
+        else
+        {
+            <div class="preload-@(((Commander)cmdrs[i]).ToString().ToLower())" alt="@((Commander)cmdrs[i])"></div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public int Team { get; set; }
+
+    [Parameter, EditorRequired]
+    public ReplayListDto Replay { get; set; } = default!;
+
+    List<int> cmdrs => Team == 1 ? Replay.CommandersTeam1.Split('|', StringSplitOptions.RemoveEmptyEntries)
+        .Select(s => Convert.ToInt32(s))
+        .ToList()
+    : Replay.CommandersTeam2.Split('|', StringSplitOptions.RemoveEmptyEntries)
+        .Select(s => Convert.ToInt32(s))
+        .ToList();
+
+    private int GetPlayerPos(ReplayListDto replay)
+    {
+        if (replay.PlayerInfo is null)
+        {
+            return 0;
+        }
+
+        return (replay.PlayerInfo.Pos, Team) switch
+        {
+            ( <= 3, 1) => replay.PlayerInfo.Pos,
+            ( > 3, 2) => replay.PlayerInfo.Pos - 3,
+            _ => 0
+        };
+    }
+}
