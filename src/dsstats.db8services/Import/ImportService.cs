@@ -38,6 +38,7 @@ public partial class ImportService : IImportService
         await initSs.WaitAsync();
         if (IsInit)
         {
+            initSs.Release();
             return;
         }
         try

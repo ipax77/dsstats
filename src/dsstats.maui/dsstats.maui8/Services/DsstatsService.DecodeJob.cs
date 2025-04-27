@@ -1,9 +1,6 @@
-﻿using dsstats.db8;
-using dsstats.db8services;
-using dsstats.db8services.Import;
+﻿using dsstats.db8services;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using pax.dsstats.parser;
 using s2protocol.NET;
 using System.Collections.Concurrent;
@@ -126,6 +123,7 @@ public partial class DsstatsService
                 }
             });
         }
+        await ImportReplays(true);
     }
 
     private async Task SaveReplay(ReplayDto replayDto, bool singleSave)
