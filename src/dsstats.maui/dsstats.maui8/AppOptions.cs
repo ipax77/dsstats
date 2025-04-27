@@ -1,5 +1,4 @@
-﻿using dsstats.db8;
-using dsstats.shared;
+﻿using dsstats.shared;
 using System.Text.Json.Serialization;
 
 namespace dsstats.maui8;
@@ -27,6 +26,7 @@ public record AppOptions
     public List<string> IgnoreReplays { get; set; } = new();
     public string ReplayStartName { get; set; } = "Direct Strike";
     public string Culture { get; set; } = "iv";
+    public bool NoBatchImport { get; set; }
 }
 
 public record Sc2Profile

@@ -403,4 +403,7 @@
   <data name="Please check if the settings are as expected." xml:space="preserve">
     <value>Пожалуйста, проверьте, соответствуют ли настройки ожидаемым.</value>
   </data>
+  <data name="NoBatchImport" xml:space="preserve">
+    <value>Консервативный импорт повторов (немного медленнее, но более надежный)</value>
+  </data>
 </root>

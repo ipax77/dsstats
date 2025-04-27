@@ -4,10 +4,10 @@ using AutoMapper.QueryableExtensions;
 using dsstats.db8;
 using dsstats.shared;
 using dsstats.shared.Extensions;
+using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System;
 using System.Diagnostics;
 
 namespace dsstats.db8services;
@@ -18,20 +18,24 @@ public class ReplayRepository : IReplayRepository
     private readonly ReplayContext context;
     private readonly IOptions<DbImportOptions> dbImportOptions;
     private readonly IMapper mapper;
+    private readonly IImportService importService;
 
     public ReplayRepository(ILogger<ReplayRepository> logger,
                         ReplayContext context,
                         IOptions<DbImportOptions> dbImportOptions,
-                        IMapper mapper)
+                        IMapper mapper,
+                        IImportService importService)
     {
         this.logger = logger;
         this.context = context;
         this.dbImportOptions = dbImportOptions;
         this.mapper = mapper;
+        this.importService = importService;
     }
 
-    public async Task SaveReplay(ReplayDto replayDto, HashSet<Unit> units, HashSet<Upgrade> upgrades)
+    public async Task SaveReplay(ReplayDto replayDto)
     {
+        await importService.Init();
         replayDto.SetDefaultFilter();
 
         var dbReplay = mapper.Map<Replay>(replayDto);
@@ -80,10 +84,10 @@ public class ReplayRepository : IReplayRepository
 
             foreach (var spawn in replayPlayer.Spawns)
             {
-                spawn.Units = await GetMapedSpawnUnits(spawn, replayPlayer.Race, units);
+                spawn.Units = GetMapedSpawnUnits(spawn, replayPlayer.Race);
             }
 
-            replayPlayer.Upgrades = await GetMapedPlayerUpgrades(replayPlayer, upgrades);
+            replayPlayer.Upgrades = GetMapedPlayerUpgrades(replayPlayer);
 
         }
 
@@ -106,55 +110,31 @@ public class ReplayRepository : IReplayRepository
         }
     }
 
-    private async Task<ICollection<SpawnUnit>> GetMapedSpawnUnits(Spawn spawn, Commander commander, HashSet<Unit> units)
+    private ICollection<SpawnUnit> GetMapedSpawnUnits(Spawn spawn, Commander commander)
     {
         List<SpawnUnit> spawnUnits = new();
         foreach (var spawnUnit in spawn.Units)
         {
-            var listUnit = units.FirstOrDefault(f => f.Name.Equals(spawnUnit.Unit.Name));
-            if (listUnit == null)
-            {
-                listUnit = new()
-                {
-                    Name = spawnUnit.Unit.Name
-                };
-                context.Units.Add(listUnit);
-                await context.SaveChangesAsync();
-                units.Add(listUnit);
-            }
-
             spawnUnits.Add(new()
             {
                 Count = spawnUnit.Count,
                 Poss = spawnUnit.Poss,
-                UnitId = listUnit.UnitId,
+                UnitId = importService.GetUnitId(spawnUnit.Unit.Name),
                 SpawnId = spawn.SpawnId
             });
         }
         return spawnUnits;
     }
 
-    private async Task<ICollection<PlayerUpgrade>> GetMapedPlayerUpgrades(ReplayPlayer player, HashSet<Upgrade> upgrades)
+    private ICollection<PlayerUpgrade> GetMapedPlayerUpgrades(ReplayPlayer player)
     {
         List<PlayerUpgrade> playerUpgrades = new();
         foreach (var playerUpgrade in player.Upgrades)
         {
-            var listUpgrade = upgrades.FirstOrDefault(f => f.Name.Equals(playerUpgrade.Upgrade.Name));
-            if (listUpgrade == null)
-            {
-                listUpgrade = new()
-                {
-                    Name = playerUpgrade.Upgrade.Name
-                };
-                context.Upgrades.Add(listUpgrade);
-                await context.SaveChangesAsync();
-                upgrades.Add(listUpgrade);
-            }
-
             playerUpgrades.Add(new()
             {
                 Gameloop = playerUpgrade.Gameloop,
-                UpgradeId = listUpgrade.UpgradeId,
+                UpgradeId = importService.GetUpgradeId(playerUpgrade.Upgrade.Name),
                 ReplayPlayerId = player.ReplayPlayerId
             });
         }

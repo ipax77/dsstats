@@ -10,4 +10,6 @@ public interface IImportService
     Task Init();
     Task SetPreRatings();
     Task FixArcadePlayers();
+    int GetUnitId(string name);
+    int GetUpgradeId(string name);
 }

@@ -403,4 +403,7 @@
   <data name="Please check if the settings are as expected." xml:space="preserve">
     <value>Please check if the settings are as expected.</value>
   </data>
+  <data name="NoBatchImport" xml:space="preserve">
+    <value>Conservative Replay Import (slightly slower, but more robust)</value>
+  </data>
 </root>

@@ -83,7 +83,7 @@ public class RatingsTests
 
         using var md5 = MD5.Create();
         var replay = GetBasicReplayDto(md5);
-        replayRepository.SaveReplay(replay, new(), new()).Wait();
+        replayRepository.SaveReplay(replay).Wait();
 
         var playerCount = context.Players.Count();
         Assert.AreEqual(6, playerCount);
@@ -123,7 +123,7 @@ public class RatingsTests
         for (int i = 0; i < 102; i++)
         {
             var replay = GetBasicReplayDto(md5);
-            replayRepository.SaveReplay(replay, new(), new()).Wait();
+            replayRepository.SaveReplay(replay).Wait();
         }
         ratingService.ProduceRatings(RatingCalcType.Dsstats, true).GetAwaiter().GetResult();
 
@@ -147,7 +147,7 @@ public class RatingsTests
         for (int i = 0; i < 10; i++)
         {
             var replay = GetBasicReplayDto(md5);
-            replayRepository.SaveReplay(replay, new(), new()).Wait();
+            replayRepository.SaveReplay(replay).Wait();
         }
         ratingService.ProduceRatings(RatingCalcType.Dsstats).GetAwaiter().GetResult();
 
@@ -181,7 +181,7 @@ public class RatingsTests
                 replay.ReplayPlayers.Remove(pl1);
                 replay.ReplayPlayers.Add(testpl);
             }
-            replayRepository.SaveReplay(replay, new(), new()).Wait();
+            replayRepository.SaveReplay(replay).Wait();
         }
         ratingService.ProduceRatings(RatingCalcType.Dsstats).GetAwaiter().GetResult();
 
@@ -235,13 +235,13 @@ public class RatingsTests
         var firstPlayer = cmdrReplay.ReplayPlayers.First();
         cmdrReplay.ReplayPlayers.Remove(firstPlayer);
         cmdrReplay.ReplayPlayers.Add(firstPlayer with { Player = player });
-        replayRepository.SaveReplay(cmdrReplay, new(), new()).Wait();
+        replayRepository.SaveReplay(cmdrReplay).Wait();
 
         var stdReplay = GetBasicReplayDto(md5, GameMode.Standard);
         var firstStdPlayer = stdReplay.ReplayPlayers.First();
         stdReplay.ReplayPlayers.Remove(firstStdPlayer);
         stdReplay.ReplayPlayers.Add(firstStdPlayer with { Player = player });
-        replayRepository.SaveReplay(stdReplay, new(), new()).Wait();
+        replayRepository.SaveReplay(stdReplay).Wait();
 
         ratingService.ProduceRatings(RatingCalcType.Dsstats, true).Wait();
 
@@ -257,13 +257,13 @@ public class RatingsTests
         var firstPlayer2 = cmdrReplay2.ReplayPlayers.First();
         cmdrReplay2.ReplayPlayers.Remove(firstPlayer2);
         cmdrReplay2.ReplayPlayers.Add(firstPlayer2 with { Player = player });
-        replayRepository.SaveReplay(cmdrReplay2, new(), new()).Wait();
+        replayRepository.SaveReplay(cmdrReplay2).Wait();
 
         var stdReplay2 = GetBasicReplayDto(md5, GameMode.Standard);
         var firstStdPlayer2 = stdReplay2.ReplayPlayers.First();
         stdReplay2.ReplayPlayers.Remove(firstStdPlayer2);
         stdReplay2.ReplayPlayers.Add(firstStdPlayer2 with { Player = player });
-        replayRepository.SaveReplay(stdReplay2, new(), new()).Wait();
+        replayRepository.SaveReplay(stdReplay2).Wait();
 
         ratingService.ProduceRatings(RatingCalcType.Dsstats).GetAwaiter().GetResult();
 
@@ -317,13 +317,13 @@ public class RatingsTests
         var firstPlayer = cmdrReplay.ReplayPlayers.First();
         cmdrReplay.ReplayPlayers.Remove(firstPlayer);
         cmdrReplay.ReplayPlayers.Add(firstPlayer with { Player = player });
-        replayRepository.SaveReplay(cmdrReplay, new(), new()).Wait();
+        replayRepository.SaveReplay(cmdrReplay).Wait();
 
         var stdReplay = GetBasicReplayDto(md5, GameMode.Standard);
         var firstStdPlayer = stdReplay.ReplayPlayers.First();
         stdReplay.ReplayPlayers.Remove(firstStdPlayer);
         stdReplay.ReplayPlayers.Add(firstStdPlayer with { Player = player });
-        replayRepository.SaveReplay(stdReplay, new(), new()).Wait();
+        replayRepository.SaveReplay(stdReplay).Wait();
 
         ratingService.ProduceRatings(RatingCalcType.Dsstats, true).Wait();
         ratingService.ProduceRatings(RatingCalcType.Arcade, true).Wait();
@@ -341,13 +341,13 @@ public class RatingsTests
         var firstPlayer2 = cmdrReplay2.ReplayPlayers.First();
         cmdrReplay2.ReplayPlayers.Remove(firstPlayer2);
         cmdrReplay2.ReplayPlayers.Add(firstPlayer2 with { Player = player });
-        replayRepository.SaveReplay(cmdrReplay2, new(), new()).Wait();
+        replayRepository.SaveReplay(cmdrReplay2).Wait();
 
         var stdReplay2 = GetBasicReplayDto(md5, GameMode.Standard);
         var firstStdPlayer2 = stdReplay2.ReplayPlayers.First();
         stdReplay2.ReplayPlayers.Remove(firstStdPlayer2);
         stdReplay2.ReplayPlayers.Add(firstStdPlayer2 with { Player = player });
-        replayRepository.SaveReplay(stdReplay2, new(), new()).Wait();
+        replayRepository.SaveReplay(stdReplay2).Wait();
 
         ratingService.ProduceRatings(RatingCalcType.Dsstats).Wait();
         ratingService.ProduceRatings(RatingCalcType.Arcade).Wait();

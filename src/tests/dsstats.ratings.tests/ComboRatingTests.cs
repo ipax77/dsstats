@@ -82,7 +82,7 @@ public class ComboRatingsTests
 
         using var md5 = MD5.Create();
         var replay = GetBasicReplayDto(md5);
-        replayRepository.SaveReplay(replay, new(), new()).Wait();
+        replayRepository.SaveReplay(replay).Wait();
 
         var playerCount = context.Players.Count();
         Assert.AreEqual(6, playerCount);
@@ -122,7 +122,7 @@ public class ComboRatingsTests
         for (int i = 0; i < 102; i++)
         {
             var replay = GetBasicReplayDto(md5);
-            replayRepository.SaveReplay(replay, new(), new()).Wait();
+            replayRepository.SaveReplay(replay).Wait();
         }
         ratingService.ProduceRatings(RatingCalcType.Combo, true).GetAwaiter().GetResult();
 
@@ -146,7 +146,7 @@ public class ComboRatingsTests
         for (int i = 0; i < 10; i++)
         {
             var replay = GetBasicReplayDto(md5);
-            replayRepository.SaveReplay(replay, new(), new()).Wait();
+            replayRepository.SaveReplay(replay).Wait();
         }
         ratingService.ProduceRatings(RatingCalcType.Combo, false).GetAwaiter().GetResult();
 
@@ -180,7 +180,7 @@ public class ComboRatingsTests
                 replay.ReplayPlayers.Remove(pl1);
                 replay.ReplayPlayers.Add(testpl);
             }
-            replayRepository.SaveReplay(replay, new(), new()).Wait();
+            replayRepository.SaveReplay(replay).Wait();
         }
         ratingService.ProduceRatings(RatingCalcType.Combo, false).GetAwaiter().GetResult();
 

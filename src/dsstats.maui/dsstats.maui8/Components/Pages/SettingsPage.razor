@@ -39,10 +39,18 @@
                         <InputCheckbox class="form-check-input" @bind-Value="options.CheckForUpdates" />
                     </label>
                 </div>
-                <label class="col-form-label">
-                    <InputNumber class="form-control" @bind-Value="options.CPUCores" style="max-width: 150px;"></InputNumber>
-                    @Loc["CPU Cores - used for decoding new replays (available CPU-Cores: {0})", Environment.ProcessorCount]
-                </label>
+                <div>
+                    <label class="col-form-label">
+                        <InputNumber class="form-control" @bind-Value="options.CPUCores" style="max-width: 150px;"></InputNumber>
+                        @Loc["CPU Cores - used for decoding new replays (available CPU-Cores: {0})", Environment.ProcessorCount]
+                    </label>
+                </div>
+                <div class="form-check form-switch">
+                    <label class="form-check-label">
+                        <InputCheckbox class="form-check-input" @bind-Value="options.NoBatchImport" />
+                        @Loc["NoBatchImport"]
+                    </label>
+                </div>
             </div>
         </div>
         <div>
@@ -74,7 +82,7 @@
                                     <td>@profile.Folder</td>
                                     <td>
                                         <button type="button" class="@(ignore ? "btn btn-sm btn-success" : "btn btn-sm btn-outline-danger")"
-                                            @onclick:stopPropagation @onclick="e => DeOrActivateProfile(profile, ignore)">
+                                        @onclick:stopPropagation @onclick="e => DeOrActivateProfile(profile, ignore)">
                                             @(ignore ? Loc["Activate"] : Loc["Deactivate"])
                                         </button>
                                     </td>
@@ -144,7 +152,7 @@
                                         <td>@replayPath</td>
                                         <td>
                                             <button type="button" class="btn btn-sm btn-outline-warning"
-                                                @onclick="e => RemoveIgnoreReplay(replayPath)">
+                                                    @onclick="e => RemoveIgnoreReplay(replayPath)">
                                                 @Loc["UnIgnore"]
                                             </button>
                                         </td>
@@ -349,9 +357,9 @@
     public async Task Restore()
     {
         var pickResult = await filePicker.PickAsync(new PickOptions()
-        {
-            PickerTitle = "Select dsstats backup file",
-        });
+            {
+                PickerTitle = "Select dsstats backup file",
+            });
         if (pickResult is not null)
         {
             var result = await backupService.Restore(pickResult.FullPath);
