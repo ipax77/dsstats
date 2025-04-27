@@ -44,43 +44,17 @@ public class ReplayRepository : IReplayRepository
 
         foreach (var replayPlayer in dbReplay.ReplayPlayers)
         {
-            if (replayPlayer.Player.ToonId == 0)
+            if (replayPlayer.Player!.ToonId == 0)
             {
                 isComputer = true;
             }
 
-            var dbPlayer = await context.Players.FirstOrDefaultAsync(f =>
-                f.ToonId == replayPlayer.Player.ToonId
-                && f.RealmId == replayPlayer.Player.RealmId
-                && f.RegionId == replayPlayer.Player.RegionId);
-            if (dbPlayer == null)
-            {
-                dbPlayer = new()
-                {
-                    Name = replayPlayer.Player.Name,
-                    ToonId = replayPlayer.Player.ToonId,
-                    RegionId = replayPlayer.Player.RegionId,
-                    RealmId = replayPlayer.Player.RealmId,
-                };
-                context.Players.Add(dbPlayer);
-                try
-                {
-                    await context.SaveChangesAsync();
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError("failed saving replay: {error}", ex.Message);
-                    throw;
-                }
-            }
-            else
-            {
-                dbPlayer.RegionId = replayPlayer.Player.RegionId;
-                dbPlayer.Name = replayPlayer.Player.Name;
-            }
-
-            replayPlayer.Player = dbPlayer;
-            replayPlayer.Name = dbPlayer.Name;
+            replayPlayer.PlayerId = await importService
+                .GetPlayerIdAsync(new(replayPlayer.Player.ToonId, replayPlayer.Player.RealmId, replayPlayer.Player.RegionId), 
+                    replayPlayer.Name);
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+            replayPlayer.Player = null;
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
             foreach (var spawn in replayPlayer.Spawns)
             {
