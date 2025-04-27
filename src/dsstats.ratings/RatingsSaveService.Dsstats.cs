@@ -83,9 +83,6 @@ public partial class RatingsSaveService
         using var scope = scopeFactory.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
 
-        // var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
-        // var playerIds = await importService.GetPlayerIdDictionary();
-
         var playerIds = (await context.Players
             .Select(s => new { s.ToonId, s.RealmId, s.RegionId, s.PlayerId }).ToListAsync())
             .ToDictionary(k => new PlayerId(k.ToonId, k.RealmId, k.RegionId), v => v.PlayerId);

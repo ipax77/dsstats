@@ -74,7 +74,7 @@ namespace dsstats.maui8
             builder.Services.AddSingleton<IRemoteToggleService, maui8.Services.RemoteToggleService>();
             builder.Services.AddSingleton<ConfigService>();
             builder.Services.AddSingleton<DsstatsService>();
-            builder.Services.AddSingleton<ImportService>();
+            builder.Services.AddSingleton<IImportService, ImportService>();
             builder.Services.AddSingleton<IRatingService, RatingService>();
             builder.Services.AddSingleton<IRatingsSaveService, Services.RatingsSaveService>();
             builder.Services.AddSingleton<IUpdateService, StoreUpdateService>();

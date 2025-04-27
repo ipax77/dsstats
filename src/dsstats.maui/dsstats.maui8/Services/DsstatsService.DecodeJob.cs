@@ -2,6 +2,7 @@
 using dsstats.db8services;
 using dsstats.db8services.Import;
 using dsstats.shared;
+using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using pax.dsstats.parser;
 using s2protocol.NET;
@@ -171,7 +172,7 @@ public partial class DsstatsService
                     if (replaysToSave.Count > 0)
                     {
                         using var scope = scopeFactory.CreateAsyncScope();
-                        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+                        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
                         var result = await importService.Import(replaysToSave, PlayerIds.ToList());
 
                         if (!string.IsNullOrEmpty(result.Error))

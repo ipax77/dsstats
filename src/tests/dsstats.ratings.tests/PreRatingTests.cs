@@ -79,7 +79,7 @@ public class PreRatingTests
         for (int i = 0; i < 10; i++)
         {
             var replay = GetBasicReplayDto(md5);
-            replayRepository.SaveReplay(replay, new(), new()).Wait();
+            replayRepository.SaveReplay(replay).Wait();
         }
 
         ratingService.ProduceRatings(RatingCalcType.Dsstats, recalc: true).Wait();
@@ -88,7 +88,7 @@ public class PreRatingTests
         for (int i = 0; i < 10; i++)
         {
             var replay = GetBasicReplayDto(md5);
-            replayRepository.SaveReplay(replay, new(), new()).Wait();
+            replayRepository.SaveReplay(replay).Wait();
         }
 
         importService.SetPreRatings().Wait();
@@ -121,7 +121,7 @@ public class PreRatingTests
         for (int i = 0; i < 10; i++)
         {
             var replay = GetBasicReplayDto(md5);
-            replayRepository.SaveReplay(replay, new(), new()).Wait();
+            replayRepository.SaveReplay(replay).Wait();
         }
 
         importService.SetPreRatings().Wait();
@@ -152,7 +152,7 @@ public class PreRatingTests
         using var md5 = MD5.Create();
 
         var replay = GetBasicReplayDto(md5);
-        replayRepository.SaveReplay(replay, new(), new()).Wait();
+        replayRepository.SaveReplay(replay).Wait();
 
         importService.SetPreRatings().Wait();
 
@@ -185,7 +185,7 @@ public class PreRatingTests
         for (int i = 0; i < 10; i++)
         {
             var replay = GetBasicReplayDto(md5);
-            replayRepository.SaveReplay(replay, new(), new()).Wait();
+            replayRepository.SaveReplay(replay).Wait();
         }
 
         importService.SetPreRatings().Wait();

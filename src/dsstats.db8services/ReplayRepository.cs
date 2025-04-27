@@ -2,9 +2,9 @@
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using dsstats.db8;
-using dsstats.db8services.Import;
 using dsstats.shared;
 using dsstats.shared.Extensions;
+using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -18,13 +18,13 @@ public class ReplayRepository : IReplayRepository
     private readonly ReplayContext context;
     private readonly IOptions<DbImportOptions> dbImportOptions;
     private readonly IMapper mapper;
-    private readonly ImportService importService;
+    private readonly IImportService importService;
 
     public ReplayRepository(ILogger<ReplayRepository> logger,
                         ReplayContext context,
                         IOptions<DbImportOptions> dbImportOptions,
                         IMapper mapper,
-                        ImportService importService)
+                        IImportService importService)
     {
         this.logger = logger;
         this.context = context;
@@ -35,6 +35,7 @@ public class ReplayRepository : IReplayRepository
 
     public async Task SaveReplay(ReplayDto replayDto)
     {
+        await importService.Init();
         replayDto.SetDefaultFilter();
 
         var dbReplay = mapper.Map<Replay>(replayDto);
