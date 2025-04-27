@@ -181,7 +181,7 @@ public partial class ImportService : IImportService
         }
     }
 
-    private int GetUnitId(string name)
+    public int GetUnitId(string name)
     {
         if (!Units.TryGetValue(name, out var unitId))
         {
@@ -236,7 +236,7 @@ public partial class ImportService : IImportService
         }
     }
 
-    private int GetUpgradeId(string name)
+    public int GetUpgradeId(string name)
     {
         if (!Upgrades.TryGetValue(name, out var upgradeId))
         {

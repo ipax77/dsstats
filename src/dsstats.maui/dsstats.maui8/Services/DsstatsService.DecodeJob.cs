@@ -14,8 +14,8 @@ namespace dsstats.maui8.Services;
 public partial class DsstatsService
 {
     private readonly SemaphoreSlim ssSave = new(1, 1);
-    private HashSet<Unit> Units = new();
-    private HashSet<Upgrade> Upgrades = new();
+    private readonly SemaphoreSlim ssBatch = new(1, 1);
+    private readonly int batchSize = 100;
     private HashSet<PlayerId> PlayerIds = new();
 
     private ReplayDecoderOptions decoderOptions = new()
@@ -33,14 +33,13 @@ public partial class DsstatsService
 
     public async Task Decode(List<string> replayFiles, CancellationToken token, bool singleSave = true)
     {
-        SetPlayerIds();
-        if (singleSave)
-        {
-            await SetUnitsAndUpgrades();
-        }
-
         try
         {
+            SetPlayerIds();
+            using var scope = scopeFactory.CreateAsyncScope();
+            var configService = scope.ServiceProvider.GetRequiredService<ConfigService>();
+            singleSave = configService.AppOptions.NoBatchImport || singleSave;
+
             var decoder = GetDecoder();
             using var md5hash = MD5.Create();
 
@@ -97,7 +96,7 @@ public partial class DsstatsService
                         continue;
                     }
 
-                    _ = SaveReplay(dtoRep, singleSave);
+                    await SaveReplay(dtoRep, singleSave);
 
                     Interlocked.Increment(ref doneDecoding);
                 }
@@ -132,14 +131,55 @@ public partial class DsstatsService
     {
         if (singleSave)
         {
-            await ssSave.WaitAsync();
+            await SaveReplaySingle(replayDto);
+        }
+        else
+        {
+            replayBag.Add(replayDto);
+            _ = Task.Run(() => ImportReplays());
+        }
+    }
+
+    private async Task ImportReplays(bool flush = false)
+    {
+        await ssBatch.WaitAsync();
+        try
+        {
+            List<ReplayDto> errorReplays = [];
             try
             {
-                SetIsUploader(replayDto);
+                if (replayBag.Count >= batchSize || flush)
+                {
+                    List<ReplayDto> replaysToSave = [];
 
-                using var scope = scopeFactory.CreateScope();
-                var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-                await replayRepository.SaveReplay(replayDto, Units, Upgrades);
+                    if (flush)
+                    {
+                        replaysToSave = replayBag.ToList();
+                        replayBag.Clear();
+                    }
+                    else
+                    {
+                        for (int i = 0; i < batchSize; i++)
+                        {
+                            if (replayBag.TryTake(out var replayDto))
+                            {
+                                replaysToSave.Add(replayDto);
+                            }
+                        }
+                    }
+
+                    if (replaysToSave.Count > 0)
+                    {
+                        using var scope = scopeFactory.CreateAsyncScope();
+                        var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+                        var result = await importService.Import(replaysToSave, PlayerIds.ToList());
+
+                        if (!string.IsNullOrEmpty(result.Error))
+                        {
+                            errorReplays.AddRange(replaysToSave);
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -147,61 +187,37 @@ public partial class DsstatsService
                 {
                     DecodeError = new()
                     {
-                        ReplayPath = replayDto.FileName,
+                        ReplayPath = "Batch save failed.",
                         Error = ex.Message
                     }
                 });
             }
-            finally
+
+            // Retry error replays individually
+            if (errorReplays.Count > 0)
             {
-                ssSave.Release();
+                foreach (var errorReplay in errorReplays)
+                {
+                    await SaveReplaySingle(errorReplay);
+                }
             }
         }
-        else
+        finally
         {
-            replayBag.Add(replayDto);
-            _ = ImportReplays();
+            ssBatch.Release();
         }
     }
 
-    private async Task ImportReplays(bool final = false)
+    private async Task SaveReplaySingle(ReplayDto replayDto)
     {
         await ssSave.WaitAsync();
-        List<ReplayDto> errorReplays = [];
         try
         {
-            if (replayBag.Count >= 100 || final)
-            {
-                using var scope = scopeFactory.CreateAsyncScope();
-                var importService = scope.ServiceProvider.GetRequiredService<ImportService>();
+            SetIsUploader(replayDto);
 
-                List<ReplayDto> replays = new();
-                if (final)
-                {
-                    replays = replayBag.ToList();
-                    replayBag.Clear();
-                }
-                else
-                {
-                    for (int i = 0; i < 100; i++)
-                    {
-                        if (replayBag.TryTake(out var replayDto))
-                        {
-                            replays.Add(replayDto);
-                        }
-                    }
-                }
-                var result = await importService.Import(replays, PlayerIds.ToList());
-                if (!string.IsNullOrEmpty(result.Error))
-                {
-                    errorReplays.AddRange(replays);
-                }
-
-                if (final)
-                {
-                    replayBag.Clear();
-                }
-            }
+            using var scope = scopeFactory.CreateScope();
+            var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
+            await replayRepository.SaveReplay(replayDto);
         }
         catch (Exception ex)
         {
@@ -209,22 +225,14 @@ public partial class DsstatsService
             {
                 DecodeError = new()
                 {
-                    ReplayPath = "Batch save failed.",
-                    Error = ex.Message
+                    ReplayPath = replayDto.FileName,
+                    Error = GetImportantErrorMessage(ex)
                 }
             });
         }
         finally
         {
             ssSave.Release();
-        }
-
-        if (errorReplays.Count > 0)
-        {
-            foreach (var errorReplay in errorReplays)
-            {
-                await SaveReplay(errorReplay, true);
-            }
         }
     }
 
@@ -246,35 +254,6 @@ public partial class DsstatsService
         }
     }
 
-    private void SetPlayerIds()
-    {
-        using var scope = scopeFactory.CreateScope();
-        var configService = scope.ServiceProvider.GetRequiredService<ConfigService>();
-
-        PlayerIds = new(configService.AppOptions.ActiveProfiles.Select(s => s.PlayerId));
-    }
-
-    private async Task SetUnitsAndUpgrades()
-    {
-        if (Units.Count > 0 && Upgrades.Count > 0)
-        {
-            return;
-        }
-
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
-
-        if (Units.Count == 0)
-        {
-            Units = (await context.Units.AsNoTracking().ToListAsync()).ToHashSet();
-        }
-
-        if (Upgrades.Count == 0)
-        {
-            Upgrades = (await context.Upgrades.AsNoTracking().ToListAsync()).ToHashSet();
-        }
-    }
-
     private ReplayDecoder GetDecoder()
     {
         if (decoder == null)
@@ -283,5 +262,26 @@ public partial class DsstatsService
             decoder = new ReplayDecoder(_assemblyPath);
         }
         return decoder;
+    }
+
+    private void SetPlayerIds()
+    {
+        using var scope = scopeFactory.CreateScope();
+        var configService = scope.ServiceProvider.GetRequiredService<ConfigService>();
+
+        PlayerIds = new(configService.AppOptions.ActiveProfiles.Select(s => s.PlayerId));
+    }
+
+    private static string GetImportantErrorMessage(Exception ex)
+    {
+        // Navigate to the innermost exception
+        var innerMost = ex;
+        while (innerMost.InnerException != null)
+        {
+            innerMost = innerMost.InnerException;
+        }
+
+        // Return the exception type and message
+        return $"{innerMost.GetType().Name}: {innerMost.Message}";
     }
 }

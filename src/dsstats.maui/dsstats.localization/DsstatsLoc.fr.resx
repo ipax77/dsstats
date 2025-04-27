@@ -403,4 +403,7 @@
   <data name="Please check if the settings are as expected." xml:space="preserve">
     <value>Veuillez vérifier si les paramètres sont conformes aux attentes.</value>
   </data>
+  <data name="NoBatchImport" xml:space="preserve">
+    <value>Importation de rediffusions conservatrice (légèrement plus lente, mais plus robuste)</value>
+  </data>
 </root>
