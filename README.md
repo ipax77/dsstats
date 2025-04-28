@@ -35,10 +35,11 @@ We really like people helping us with the project. Nevertheless, take your time 
 >- dotnet update to 8.0.15
 >- Maui Replay Import improved
 >- Maui Import 'Robust Import' - saving replays one by one
+>- Builds unit chart - thanks to PISTE D'ATTERISSAGE for the suggestion
 
 </details>
 
-<details open="open"><summary>v2.0.7</summary>
+<details><summary>v2.0.7</summary>
 
 >- s2protocol 5.0.14.93333.0 (s2protocol.NET v0.8.4)
 >- Maui Player Review disabled

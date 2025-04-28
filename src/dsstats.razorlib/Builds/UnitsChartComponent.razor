@@ -1,0 +1,294 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using pax.BlazorChartJs
+@inject IBuildService BuildService
+@inject IJSRuntime JSRuntime
+
+<ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="ChartEventTriggered"></ChartComponent>
+
+@code {
+    [Parameter, EditorRequired]
+    public BuildRequest Request { get; set; } = default!;
+
+    ChartJsConfig chartJsConfig = null!;
+    ChartComponent? chartComponent;
+
+    private UnitChartData unitChartData = new();
+    private bool isInit;
+
+    protected override void OnInitialized()
+    {
+        chartJsConfig = new()
+            {
+                Type = ChartType.bar,
+                Data = new ChartJsData()
+                {
+                    Labels = new List<string>()
+                    {
+                        "Minute 5", "Minute 10", "Minute 15"
+                    },
+                    Datasets = new List<ChartJsDataset>()
+                    {
+                        new BarDataset()
+                        {
+                            Label = "Roach",
+                            Data = new List<object>() { 12, 19, 3 },
+                            BackgroundColor = "rgba(255, 99, 132, 0.2)",
+                            BorderColor = "rgba(255, 99, 132, 1)",
+                            BorderWidth = 1
+                        },
+                        new BarDataset()
+                        {
+                            Label = "Mutalisk",
+                            Data = new List<object>() { 30, 20, 10 },
+                            BackgroundColor = "rgba(54, 162, 235, 0.2)",
+                            BorderColor = "rgba(54, 162, 235, 1)",
+                            BorderWidth = 1
+                        },
+                        new BarDataset()
+                        {
+                            Label = "Swarmhost",
+                            Data = new List<object>() { 22, 19, 30 },
+                            BackgroundColor = "rgba(255, 206, 86, 0.2)",
+                            BorderColor = "rgba(255, 206, 86, 1)",
+                            BorderWidth = 1
+                        },
+                    }
+                },
+                Options = new ChartJsOptions()
+                {
+                    Responsive = true,
+                    MaintainAspectRatio = true,
+                    Plugins = new Plugins()
+                    {
+                        Legend = new Legend()
+                        {
+                            Position = "top",
+                            Display = true,
+                            Labels = new()
+                            {
+                                Color = "rgba(54, 162, 235, 1)",
+                                Font = new()
+                                {
+                                    Size = 14,
+                                    Family = "Arial",
+                                    Style = "normal",
+                                    LineHeight = 1.2,
+                                },
+                            }
+
+                        },
+                        Title = new()
+                        {
+                            Display = true,
+                            Color = "#e4eaf5",
+                            Font = new()
+                            {
+                                Size = 16,
+                            },
+                            Text = $"Top 3 Units for {Request.Interest}{(Request.Versus == Commander.None ? "" : $" vs {Request.Versus}")}",
+                        },
+                        Datalabels = new()
+                        {
+                            Display = true,
+                            Color = "#e4eaf5",
+                        }
+                    },
+                    Scales = new ChartJsOptionsScales()
+                    {
+                        X = new LinearAxis()
+                        {
+                            Stacked = true,
+                            Display = true,
+                            Grid = new ChartJsGrid()
+                            {
+                                Display = false,
+                            },
+                            Border = new ChartJsAxisBorder()
+                            {
+                                Display = false
+                            },
+                            Ticks = new LinearAxisTick()
+                            {
+                                Display = true,
+                                Color = "rgba(54, 162, 235, 1)",
+                                Font = new()
+                                {
+                                    Size = 16,
+                                    Family = "Arial",
+                                    Style = "normal",
+                                    LineHeight = 1.2,
+                                },
+                            }
+                        },
+                        Y = new LinearAxis()
+                        {
+                            BeginAtZero = true,
+                            Stacked = true,
+                            Ticks = new LinearAxisTick()
+                            {
+                                Display = true,
+                            }
+                        },
+
+                    },
+
+                }
+            };
+        base.OnInitialized();
+    }
+
+    private void ChartEventTriggered(ChartJsEvent e)
+    {
+        if (e is ChartJsInitEvent initEvent)
+        {
+            JSRuntime.InvokeVoidAsync("setDataLabelsDatasetLabel", chartJsConfig.ChartJsConfigGuid);
+            isInit = true;
+            _ = LoadData();
+        }
+    }
+
+    public void Update(BuildRequest request)
+    {
+        Request = request;
+        _ = LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        if (!isInit)
+        {
+            return;
+        }
+        var bp5data = await BuildService.GetBuild(Request with { Breakpoint = Breakpoint.Min5 });
+        var bp10data = await BuildService.GetBuild(Request with { Breakpoint = Breakpoint.Min10 });
+        var bp15data = await BuildService.GetBuild(Request with { Breakpoint = Breakpoint.Min15 });
+
+        unitChartData.Units.Clear();
+        unitChartData.Units.AddRange(GetBpStats(Breakpoint.Min5, bp5data.Units));
+        unitChartData.Units.AddRange(GetBpStats(Breakpoint.Min10, bp10data.Units));
+        unitChartData.Units.AddRange(GetBpStats(Breakpoint.Min15, bp15data.Units));
+
+        chartJsConfig.RemoveDatasets(chartJsConfig.Data.Datasets);
+        if (chartJsConfig.Options?.Plugins?.Title != null)
+        {
+            chartJsConfig.Options.Plugins.Title.Text = $"Top 3 Units for {Request.Interest}{(Request.Versus == Commander.None ? "" : $" vs {Request.Versus}")}";
+        }
+        chartJsConfig.UpdateChartOptions();
+        await JSRuntime.InvokeVoidAsync("setDataLabelsDatasetLabel", chartJsConfig.ChartJsConfigGuid);
+        var units = unitChartData.GetUnits();
+
+        for (int i = 0; i < units.Count; i++)
+        {
+            var unitName = units[i];
+            var color = GetColor(i);
+            var data = unitChartData.GetUnitData(unitName);
+            var dataset = GetDataset(unitName, color, data);
+            chartJsConfig.AddDataset(dataset);
+        }
+    }
+
+    private BarDataset GetDataset(string unitName, string hexColor, List<double>
+    data)
+    {
+        return new BarDataset()
+            {
+                Label = unitName,
+                Data = data.Cast
+                <object>
+                    ().ToList(),
+                BackgroundColor = hexColor + "80",
+                BorderColor = hexColor,
+                BorderWidth = 1,
+                BorderRadius = 5,
+            };
+    }
+
+    private List
+    <UnitChartInfo>
+        GetBpStats(Breakpoint bp, List<BuildResponseBreakpointUnit>
+            units)
+    {
+        List<UnitChartInfo>
+            infos = [];
+        foreach (var unit in units.OrderByDescending(o => o.Count).Take(3))
+        {
+            infos.Add(new()
+                {
+                    Breakpoint = bp,
+                    Name = unit.Name,
+                    Count = unit.Count
+                });
+        }
+        return infos;
+    }
+
+    internal record UnitChartData
+    {
+        public List<UnitChartInfo>
+            Units
+        { get; init; } = [];
+
+        public List<string>
+            GetUnits()
+        {
+            List<string>
+                labels = [];
+            foreach (var unit in Units.OrderByDescending(o => o.Count))
+            {
+                if (!labels.Contains(unit.Name))
+                {
+                    labels.Add(unit.Name);
+                }
+            }
+            return labels;
+        }
+
+        public List<double>
+            GetUnitData(string unitName)
+        {
+            var data = new List<double>
+                ();
+
+            foreach (var bp in new[] { Breakpoint.Min5, Breakpoint.Min10, Breakpoint.Min15 })
+            {
+                var unit = Units.FirstOrDefault(u => u.Name == unitName && u.Breakpoint == bp);
+                if (unit != null)
+                    data.Add(unit.Count);
+                else
+                    data.Add(0);
+            }
+
+            return data;
+        }
+    }
+
+    private string GetColor(int index)
+    {
+        return index switch
+        {
+            0 => "#A93226",
+            1 => "#884EA0",
+            2 => "#2471A3",
+            3 => "#17A589",
+            4 => "#D4AC0D",
+            5 => "#BA4A00",
+            6 => "#633974",
+            7 => "#0E6655",
+            8 => "#9A7D0A",
+            9 => "#873600",
+            10 => "#D0D3D4",
+            _ => "#EC7063"
+        };
+    }
+
+    internal record UnitChartInfo
+    {
+        public Breakpoint Breakpoint { get; init; }
+        public string Name { get; init; } = string.Empty;
+        public double Count { get; init; }
+    }
+}
+
+
