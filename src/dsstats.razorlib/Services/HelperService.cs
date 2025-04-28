@@ -1,5 +1,4 @@
 ﻿using dsstats.shared;
-using System.Globalization;
 using System.Numerics;
 using System.Text.Json.Serialization;
 
@@ -15,11 +14,11 @@ public static class HelperService
     {
         if (num > 1000000)
         {
-            return (num / 1000000.0).ToString("N2", CultureInfo.InvariantCulture) + "m";
+            return (num / 1000000.0).ToString("N2") + "m";
         }
         else if (num > 1000)
         {
-            return (num / 1000.0).ToString("N2", CultureInfo.InvariantCulture) + "k";
+            return (num / 1000.0).ToString("N2") + "k";
         }
         else
         {
@@ -31,15 +30,15 @@ public static class HelperService
     {
         if (num > 1000000)
         {
-            return (num / 1000000.0).ToString("N2", CultureInfo.InvariantCulture) + "m";
+            return (num / 1000000.0).ToString("N2") + "m";
         }
         else if (num > 1000)
         {
-            return (num / 1000.0).ToString("N2", CultureInfo.InvariantCulture) + "k";
+            return (num / 1000.0).ToString("N2") + "k";
         }
         else
         {
-            return num.ToString("N2", CultureInfo.InvariantCulture);
+            return num.ToString("N2");
         }
     }
 
@@ -49,7 +48,7 @@ public static class HelperService
         {
             return "0";
         }
-        return $"{Math.Round(wins.Value * 100.0 / games.Value, 2).ToString(CultureInfo.InvariantCulture)}%";
+        return Math.Round(wins.Value / (double)games.Value, 2).ToString("P");
     }
 
     public static string GetPlayerCountString(int playerCount)

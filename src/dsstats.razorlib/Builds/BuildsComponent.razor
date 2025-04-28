@@ -10,9 +10,9 @@
 
 <style>
     .check-label:hover {
-        color: white !important;
-        background-color: #adb5bd !important;
-        border-color: white !important;
+    color: white !important;
+    background-color: #adb5bd !important;
+    border-color: white !important;
     }
 </style>
 
@@ -25,24 +25,24 @@
             <nav>
                 <div class="nav nav-tabs" id="nav-tab" role="tablist">
                     <button class="@(initPlayers ? "nav-link" : "nav-link active")" id="nav-home-tab"
-                            data-bs-toggle="tab" data-bs-target="#nav-rating" type="button" role="tab"
-                            aria-controls="nav-ratings" aria-selected="true" @onclick="ByRating">
+                    data-bs-toggle="tab" data-bs-target="#nav-rating" type="button" role="tab"
+                    aria-controls="nav-ratings" aria-selected="true" @onclick="ByRating">
                         By Ratings
                     </button>
                     <button class="@(initPlayers ? "nav-link active" : "nav-link")" id="nav-profile-tab"
-                            data-bs-toggle="tab" data-bs-target="#nav-players" type="button" role="tab"
-                            aria-controls="nav-players" aria-selected="false" @onclick="ByPlayers">
+                    data-bs-toggle="tab" data-bs-target="#nav-players" type="button" role="tab"
+                    aria-controls="nav-players" aria-selected="false" @onclick="ByPlayers">
                         By Players
                     </button>
                 </div>
             </nav>
             <div class="tab-content mt-1 bgchart p-2 border rounded" id="nav-tabContent">
                 <div class="@(initPlayers ? "tab-pane fade" : "tab-pane fade show active")" id="nav-rating"
-                     role="tabpanel" aria-labelledby="nav-rating-tab">
+                role="tabpanel" aria-labelledby="nav-rating-tab">
                     <RatingRangeRequest OnRangeSelected="e => LoadData()" />
                 </div>
                 <div class="@(initPlayers ? "tab-pane fade show active" : "tab-pane fade")" id="nav-players"
-                     role="tabpanel" aria-labelledby="nav-players-tab">
+                role="tabpanel" aria-labelledby="nav-players-tab">
                     <BuildPlayerRequest @ref="buildPlayerRequest" OnPlayersSet="e => LoadData()" />
                 </div>
             </div>
@@ -63,13 +63,13 @@
                         }
                     </div>
                     <CmdrSelectComponent Selected="Request.Interest" None="false"
-                                         Std="@(Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)"
-                                         OnCommanderSelected="SelectInterest" />
+                    Std="@(Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)"
+                    OnCommanderSelected="SelectInterest" />
                 </div>
                 <div>
                     <CmdrSelectComponent Selected="Request.Versus" None="true"
-                                         Std="@(Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)"
-                                         OnCommanderSelected="SelectVersus" />
+                    Std="@(Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE)"
+                    OnCommanderSelected="SelectVersus" />
                 </div>
             </div>
         </div>
@@ -98,13 +98,13 @@
                             Player Ratings Range
                             <span class="text-danger">
                                 @(Request.FromRating <= Data.MinBuildRating ? "0"
-                                    : Request.FromRating) - @(Request.ToRating >= Data.MaxBuildRating ?
+                                            : Request.FromRating) - @(Request.ToRating >= Data.MaxBuildRating ?
                             $"{Data.MaxBuildRating}+" : Request.ToRating)
                             </span>
                         </h5>
                     }
                     <div class="row">
-                        <div class="col-auto text-center align-self-center">
+                        <div class="col-auto mt-1">
                             <span class="fw-bold">Breakpoint</span>
                         </div>
                         <div class="col-auto">
@@ -118,12 +118,19 @@
                                                 continue;
                                             }
                                             <input type="radio" class="btn-check" name="bptoggle" id="@($"buildbp{bp}")"
-                                                   checked="@(Request.Breakpoint == bp)"
-                                                   autocomplete="off" @onchange="e => SetBreakpoint(e, bp)">
-                                            <label class="btn btn-outline-light check-label" for="@($"buildbp{bp}")">
+                                            checked="@(Request.Breakpoint == bp)"
+                                            autocomplete="off" @onchange="e => SetBreakpoint(e, bp)">
+                                            <label class="btn btn-sm btn-outline-light check-label" for="@($"buildbp{bp}")">
                                                 @(bp == Breakpoint.All ? "Game End" : $"{bp}")
                                             </label>
                                         }
+                                        <div class="form-check form-switch mt-1 ms-1">
+                                            <label class="form-check-label">
+                                                Adv. Table
+                                                <input type="checkbox" class="form-check-input" @bind-value="ShowFullStats" />
+                                            </label>
+
+                                        </div>
                                     </div>
                                 </fieldset>
                             </form>
@@ -147,7 +154,7 @@
                         </div>
                         <div class="col-auto">
                             <span class="badge bgchart2 border rounded">
-                                Winrate<br><span class="text-warning">@Response.BuildCounts.Winrate.ToString("N2", CultureInfo.InvariantCulture)%</span>
+                                Winrate<br><span class="text-warning">@Response.BuildCounts.Winrate.ToString("N2")%</span>
                             </span>
                         </div>
                     </div>
@@ -159,7 +166,7 @@
                         </div>
                         <div class="col-auto">
                             <span class="badge bgchart2 border rounded">
-                                ∅ Gas<br><span class="text-warning">@Response.BuildCounts.Gas.ToString("N2", CultureInfo.InvariantCulture)</span>
+                                ∅ Gas<br><span class="text-warning">@Response.BuildCounts.Gas.ToString("N2")</span>
                             </span>
                         </div>
                         <div class="col-auto">
@@ -169,23 +176,23 @@
                         </div>
                     </div>
                     <div class="d-flex mt-1 justify-content-center">
-                        <UnitsTable Units="Response.Units" />
+                        <UnitsTable Units="Response.Units" ShowFullStats="ShowFullStats" />
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-auto" style="min-width: 800px;">
+        <div class="col-auto">
             <div>
                 <BuildMapComponent @ref="buildMapComponent" Request="Request" />
             </div>
             <div class="ms-2">
                 <button class="btn btn-sm btn-outline-light bgchart"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#buildreplays"
-                        aria-expanded="false"
-                        aria-controls="buildreplays"
-                        @onclick="e => showReplays = !showReplays">
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#buildreplays"
+                aria-expanded="false"
+                aria-controls="buildreplays"
+                @onclick="e => showReplays = !showReplays">
                     <span class="bi @(showReplays ? "bi bi-chevron-double-down" : "bi-chevron-double-up")"></span>
                     Replays
                 </button>
@@ -194,9 +201,13 @@
                 @if (showReplays)
                 {
                     <BuildReplaysComponent @ref="buildReplaysComponent" Request="Request"
-                                           OnReplayRequest="LoadReplay"
-                                           OnMapRequest="MapRequest" />
+                    OnReplayRequest="LoadReplay"
+                    OnMapRequest="MapRequest" />
                 }
+            </div>
+            <div class="border rounded border-secondary bgchart mt-2"
+                 style="min-width: 700px; width: 40vw; height: calc(40vw * 0.5); min-height: 350px;">
+                <UnitsChartComponent @ref="unitsChartComponent" Request="Request" />
             </div>
         </div>
     </div>
@@ -238,6 +249,8 @@
     BuildReplaysComponent? buildReplaysComponent;
     BuildMapComponent? buildMapComponent;
     ReplayDto? replayDto = null;
+    private bool ShowFullStats;
+    UnitsChartComponent? unitsChartComponent;
 
     protected override void OnInitialized()
     {
@@ -280,6 +293,7 @@
             buildReplaysComponent?.Reload();
             buildMapComponent?.Update(Request, bpOnly);
         }
+        unitsChartComponent?.Update(Request);
     }
 
     private void SelectInterest(Commander cmdr)

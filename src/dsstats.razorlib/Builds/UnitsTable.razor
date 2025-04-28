@@ -1,33 +1,64 @@
 @using System.Globalization
 @using dsstats.razorlib.Services
 @using dsstats.shared
+@using dsstats.shared.Extensions
 
 <div class="table-responsive tableFixHead text-nowrap" style="max-width: 1150px; max-height: 80vh;" tabindex="1">
     <table class="tptable table table-sm w-auto">
         <thead class="user-select-none">
             <tr>
-                <th>Unit</th>
-                <th>AvgCount</th>
+                <CascadingValue Value="tableOrders">
+                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Name"))">
+                        <SortArrow Property="Name">
+                            Unit
+                        </SortArrow>
+                    </th>
+                    <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Count"))">
+                        <SortArrow Property="Count">
+                            Count
+                        </SortArrow>
+                    </th>
+                    @if (ShowFullStats)
+                    {
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Cost"))">
+                            <SortArrow Property="Cost">
+                                Cost %
+                            </SortArrow>
+                        </th>
+                        <th scope="col" class="pointer" @onclick="@(e => SortList(e, "Life"))">
+                            <SortArrow Property="Life">
+                                Life %
+                            </SortArrow>
+                        </th>
+                    }
+                </CascadingValue>
             </tr>
         </thead>
         <tbody>
-            @foreach (var (unit, index) in Units.Select((unit, index) => (unit, index)))
+            @foreach (var unit in Units)
             {
-                @if (unit.Cost == 0)
-                {
-                    continue;
-                }
-                <tr class="@((index < 3) ? "text-warning" : "")">
+                <tr>
                     <td>@unit.Name</td>
-                    <td>@unit.Count.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td class="@(TopCountUnits.Contains(unit.Name) ? "text-success fw-bold" : "")">@unit.Count.ToString("N2")</td>
+                    @if (ShowFullStats)
+                    {
+                        <td class="@(TopCostUnits.Contains(unit.Name) ? "text-warning fw-bold" : "")">
+                            @(TotalCost == 0 ? "" : (unit.Cost * 100 / TotalCost).ToString("N2"))
+                        </td>
+                        <td class="@(TopLifeUnits.Contains(unit.Name) ? "text-danger fw-bold" : "")">
+                            @(TotalLife == 0 ? "" : (unit.Life * 100 / TotalLife).ToString("N2"))
+                        </td>
+                    }
                 </tr>
             }
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="2">
-                    &sum; Life <span class="text-warning">@HelperService.GetBigNumberString(Units.Sum(s => s.Life))</span>
-                    Cost <span class="text-warning">@HelperService.GetBigNumberString(Units.Sum(s => s.Cost))</span>
+                <td colspan="4">
+                    <div class="text-center">
+                        &sum; Life <span class="text-warning">@HelperService.GetBigNumberString(TotalLife)</span>
+                        Cost <span class="text-warning">@HelperService.GetBigNumberString(TotalCost)</span>
+                    </div>
                 </td>
             </tr>
         </tfoot>
@@ -37,5 +68,69 @@
 @code {
     [Parameter, EditorRequired]
     public List<BuildResponseBreakpointUnit> Units { get; set; } = default!;
-        
+
+    [Parameter, EditorRequired]
+    public bool ShowFullStats { get; set; }
+
+    private HashSet<string> TopCountUnits = new();
+    private HashSet<string> TopCostUnits = new();
+    private HashSet<string> TopLifeUnits = new();
+
+    private List<TableOrder> tableOrders = new()
+    {
+        new TableOrder()
+        {
+            Property = "Count",
+            Ascending = false,
+        },
+    };
+
+
+    protected override void OnParametersSet()
+    {
+        TopCountUnits = Units.OrderByDescending(u => u.Count).Take(3).Select(u => u.Name).ToHashSet();
+        TopCostUnits = Units.OrderByDescending(u => u.Cost).Take(3).Select(u => u.Name).ToHashSet();
+        TopLifeUnits = Units.OrderByDescending(u => u.Life).Take(3).Select(u => u.Name).ToHashSet();
+    }
+
+    double TotalLife => Units.Sum(s => s.Life);
+    double TotalCost => Units.Sum(s => s.Cost);
+
+    private void SortList(MouseEventArgs e, string property)
+    {
+        var exOrder = tableOrders.FirstOrDefault(f => f.Property == property);
+        if (e.ShiftKey)
+        {
+            if (exOrder == null)
+            {
+                tableOrders.Add(new TableOrder()
+                    {
+                        Property = property
+                    });
+            }
+            else
+            {
+                exOrder.Ascending = !exOrder.Ascending;
+            }
+        }
+        else
+        {
+            tableOrders.Clear();
+            tableOrders.Add(new TableOrder()
+                {
+                    Property = property,
+                    Ascending = exOrder == null ? false : !exOrder.Ascending
+                });
+        }
+
+        var query = Units.AsQueryable();
+        foreach (var order in tableOrders)
+        {
+            if (order.Ascending)
+                query = query.AppendOrderBy(order.Property);
+            else
+                query = query.AppendOrderByDescending(order.Property);
+        }
+        Units = query.ToList();
+    }
 }

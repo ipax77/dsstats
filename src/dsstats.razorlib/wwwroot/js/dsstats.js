@@ -1,4 +1,4 @@
-//v1.13
+//v1.14
 
 const cmdrIconsMap = new Map();
 let dsmodal = null;
@@ -414,5 +414,15 @@ function closeDropdown(dropdownId) {
         if (dropdownInstance) {
             dropdownInstance.hide();
         }
+    }
+}
+
+function setDataLabelsDatasetLabel(chartId) {
+    const chart = Chart.getChart(chartId);
+    if (chart !== undefined) {
+        chart.options.plugins.datalabels.formatter = (value, context) => {
+            return value > 0 ? context.dataset.label : '';
+        };
+        chart.update();
     }
 }
