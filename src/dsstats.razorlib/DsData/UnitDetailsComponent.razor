@@ -1,5 +1,4 @@
-﻿@using System.Globalization
-@using dsstats.shared
+﻿@using dsstats.shared
 
 <div class="container-fluid">
     <div class="card border-secondary @($"{(Unit.Abilities.Count + Unit.Weapons.Count + Unit.Upgrades.Count <= 1 ? "" : "d-inline-block")}")">
@@ -58,7 +57,7 @@
                                 }
                                 <tr>
                                     <td>Speed</td>
-                                    <td>@Unit.Speed.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                    <td>@Unit.Speed.ToString("N2")</td>
                                 </tr>
                                 @if (Unit.MaxEnergy > 0)
                                 {
@@ -72,14 +71,14 @@
                                     </tr>
                                     <tr>
                                         <td>Energy Regeneration</td>
-                                        <td>@Unit.EnergyRegen.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                        <td>@Unit.EnergyRegen.ToString("N2")</td>
                                     </tr>
                                 }
                                 @if (Unit.HealthRegen > 0)
                                 {
                                     <tr>
                                         <td>Health Regeneration</td>
-                                        <td>@Unit.HealthRegen.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                        <td>@Unit.HealthRegen.ToString("N2")</td>
                                     </tr>
                                 }
                                 <tr>
@@ -111,13 +110,13 @@
                                                     }
                                                     else
                                                     {
-                                                        @weapon.Range.ToString("N2", CultureInfo.InvariantCulture)
+                                                        @weapon.Range.ToString("N2")
                                                     }
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td>Attack Speed</td>
-                                                <td>@weapon.AttackSpeed.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                                <td>@weapon.AttackSpeed.ToString("N2")</td>
                                             </tr>
                                             <tr>
                                                 <td>Damage</td>
@@ -187,7 +186,7 @@
                                             {
                                                 <tr>
                                                     <td>EnergyCost</td>
-                                                    <td>@ability.EnergyCost.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                                    <td>@ability.EnergyCost.ToString("N2")</td>
                                                 </tr>
                                             }
                                             <tr>
@@ -198,7 +197,7 @@
                                             {
                                                 <tr>
                                                     <td>AoeRadius</td>
-                                                    <td>@ability.AoeRadius.ToString("N2", CultureInfo.InvariantCulture)</td>
+                                                    <td>@ability.AoeRadius.ToString("N2")</td>
                                                 </tr>
                                             }
                                             <tr>

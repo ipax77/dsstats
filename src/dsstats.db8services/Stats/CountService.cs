@@ -239,7 +239,7 @@ public class CountService : ICountService
             Matchups = result.Sum(s => s.Matchups),
             LeaverReplays = result.Where(x => x.Leaver).Sum(s => s.Replays),
             Quits = result.Where(x => !x.NoQuit).Sum(s => s.Replays),
-            Duration = result.Sum(s => s.Replays * s.AvgDuration) / sum
+            Duration = sum == 0 ? 0 : result.Sum(s => s.Replays * s.AvgDuration) / sum
         };
     }
 }

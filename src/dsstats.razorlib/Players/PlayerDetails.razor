@@ -1,7 +1,6 @@
 @using dsstats.shared
 @using dsstats.shared.Interfaces
 @using dsstats.razorlib.Services
-@using System.Globalization
 @using Microsoft.JSInterop
 @inject IPlayerService playerService
 @inject NavigationManager NavigationManager
@@ -184,7 +183,7 @@
                                 <h4>
                                     <span class="text-warning">Teammates</span> <small class="text-light">
                                         AvgRating
-                                        @ratingDetails.AvgTeamRating.ToString("N2", CultureInfo.InvariantCulture)
+                                        @ratingDetails.AvgTeamRating.ToString("N2")
                                     </small>
                                 </h4>
                             </div>

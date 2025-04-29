@@ -1,5 +1,4 @@
-﻿@using System.Globalization;
-@using dsstats.shared;
+﻿@using dsstats.shared;
 @using dsstats.razorlib.Services;
 
 <div class="table-responsive tableFixHead">
@@ -36,10 +35,10 @@
             </tr>
             <tr class="table-primary">
                 <th></th>
-                <th>&Oslash; @GetAverageRatingGain().ToString("N2", CultureInfo.InvariantCulture)</th>
-                <th>&Oslash; @GetAverageWinrate().ToString("N2", CultureInfo.InvariantCulture)</th>
+                <th>&Oslash; @GetAverageRatingGain().ToString("N2")</th>
+                <th>&Oslash; @GetAverageWinrate().ToString("N2")</th>
                 <th>&sum; @HelperService.GetBigNumberString(Response.WinrateEnts.Sum(s => s.Count))</th>
-                <th>&Oslash; @GetAverageRating().ToString("N2", CultureInfo.InvariantCulture)</th>
+                <th>&Oslash; @GetAverageRating().ToString("N2")</th>
             </tr>
         </thead>
         <tbody>
@@ -52,10 +51,10 @@
                             <div><span>@ent.Commander</span></div>
                         </div>
                     </td>
-                    <td>@ent.AvgGain.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td>@ent.AvgGain.ToString("N2")</td>
                     <td>@HelperService.GetPercentageString(ent.Wins, ent.Count)</td>
                     <td>@ent.Count</td>
-                    <td>@ent.AvgRating.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td>@ent.AvgRating.ToString("N2")</td>
                 </tr>
             }
         </tbody>

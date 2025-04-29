@@ -1,4 +1,3 @@
-@using System.Globalization;
 @using Microsoft.AspNetCore.Components.Forms;
 @using Microsoft.JSInterop;
 @using dsstats.shared;
@@ -28,7 +27,7 @@
             <div class="me-5">
                 &Oslash;
                 <span class="@(avgGain < 0 ? "text-danger" : "text-success")">
-                     @avgGain.ToString("N2", CultureInfo.InvariantCulture)
+                     @avgGain.ToString("N2")
                 </span>
             </div>
         </div>
@@ -81,7 +80,7 @@
                                 @HelperService.GetPercentageString(cmdrAvgGain.Wins, cmdrAvgGain.Count)
                             </td>
                             <td class="@(cmdrAvgGain.AvgGain < 0 ? "text-danger" : "text-success")">
-                                @cmdrAvgGain.AvgGain.ToString("N2", CultureInfo.InvariantCulture)
+                                @cmdrAvgGain.AvgGain.ToString("N2")
                             </td>
                         </tr>
                     }

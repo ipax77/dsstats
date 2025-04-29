@@ -1,5 +1,4 @@
-﻿@using System.Globalization;
-@using Microsoft.JSInterop;
+﻿@using Microsoft.JSInterop;
 @using dsstats.razorlib.Services
 @using dsstats.shared;
 @inject IJSRuntime JSRuntime
@@ -33,7 +32,7 @@
                                     <span class="badge bg-secondary" style="font-size: 1.1rem;">
                                         <small>Expectation to win</small>
                                         <span class="fw-bold @(Replay.ArcadeReplayRating.ExpectationToWin > 0.5 ? "text-success" : "text-danger")">
-                                            @Replay.ArcadeReplayRating.ExpectationToWin.ToString("P0", CultureInfo.InvariantCulture)
+                                            @Replay.ArcadeReplayRating.ExpectationToWin.ToString("P0")
                                         </span>
                                     </span>
                                 </div>
@@ -52,7 +51,7 @@
                                     <span class="badge bg-secondary" style="font-size: 1.2rem;">
                                         <small>Expectation to win</small>
                                         <span class="fw-bold @(Replay.ArcadeReplayRating.ExpectationToWin < 0.5 ? "text-success" : "text-danger")">
-                                            @((1 - Replay.ArcadeReplayRating.ExpectationToWin).ToString("P0", CultureInfo.InvariantCulture))
+                                            @((1 - Replay.ArcadeReplayRating.ExpectationToWin).ToString("P0"))
                                         </span>
                                     </span>
                                 </div>
@@ -82,7 +81,7 @@
                                             @if (plRating != null)
                                             {
                                                 <span class="oi @(plRating.RatingChange < 0 ? "oi-arrow-bottom text-danger" : "oi-arrow-top text-success")">
-                                                    @plRating.RatingChange.ToString("N1", CultureInfo.InvariantCulture)
+                                                    @plRating.RatingChange.ToString("N1")
                                                 </span>
                                             }
                                         </td>
@@ -96,7 +95,7 @@
                                         <td>
                                             @if (plRating != null)
                                             {
-                                                <span class="text-warning">@plRating.Rating.ToString("N2", CultureInfo.InvariantCulture)</span>
+                                                <span class="text-warning">@plRating.Rating.ToString("N2")</span>
                                             }
                                         </td>
                                         <td>

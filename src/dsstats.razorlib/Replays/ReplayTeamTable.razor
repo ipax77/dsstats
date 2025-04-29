@@ -1,7 +1,7 @@
+@using System.Globalization
 @using dsstats.shared
 @using dsstats.razorlib.Services
 @using Microsoft.JSInterop
-@using System.Globalization
 @inject IJSRuntime JSRuntime
 
 <div class="d-flex">
@@ -87,38 +87,37 @@
                             {
                                 <span class="p-1 bgchart2 rounded-1 bi @(playerRating.RatingChange < 0 ? "bi-arrow-down text-danger"
                                 : "bi-arrow-up text-success")">
-                                    @playerRating.RatingChange.ToString("N1", CultureInfo.InvariantCulture)
+                                    @playerRating.RatingChange.ToString("N1")
                                 </span>
                             }
                         </td>
                         <td class="@trClass" @onclick:stopPropagation
                             @onclick="e => OnPlayerDetailsRequest.InvokeAsync(player)">
                             <div class="d-inline-block text-truncate text-decoration-underline" style="max-width: 120px;"
-                                data-bs-toggle="tooltip" data-bs-placement="top"
-                                data-bs-title="@HelperService.SanitizePlayerName(player.Name)">
+                                 data-bs-toggle="tooltip" data-bs-placement="top"
+                                 data-bs-title="@HelperService.SanitizePlayerName(player.Name)">
                                 @player.Name
                             </div>
                         </td>
                         <td class="@trClass">@player.APM</td>
                         <td>
                             <img src="@HelperService.GetImageSrc(player.Race)" alt="@player.Race" title="@player.Race"
-                                width="30" height="30" />
+                                 width="30" height="30" />
                         </td>
                         <td>
                             <span class="text-warning">
-                                @playerRating?.Rating.ToString("N0", CultureInfo.InvariantCulture)
+                                @playerRating?.Rating.ToString("N0")
                             </span>
                         </td>
                         <td>
                             <span class="text-info">
                                 @(playerRating is null ? 0 : (playerRating.Rating -
-                                    playerRating.RatingChange).ToString("N0",
-                                    CultureInfo.InvariantCulture))
+                                    playerRating.RatingChange).ToString("N0"))
                             </span>
                         </td>
                         <td>@HelperService.GetBigNumberString(playerRating?.Games ?? 0)</td>
-                        <td>@playerRating?.Consistency.ToString("N2", CultureInfo.InvariantCulture)</td>
-                        <td>@playerRating?.Confidence.ToString("N2", CultureInfo.InvariantCulture)</td>
+                        <td>@playerRating?.Consistency.ToString("N2")</td>
+                        <td>@playerRating?.Confidence.ToString("N2")</td>
                     </tr>
                 }
             </tbody>
@@ -145,7 +144,7 @@
                     <th>Income</th>
                     <th>
                         <span data-bs-toggle="tooltip" data-bs-placement="top"
-                            data-bs-title="Army Value Summary of all Spawns">
+                              data-bs-title="Army Value Summary of all Spawns">
                             Army
                         </span>
                     </th>
@@ -170,7 +169,7 @@
                                 {
                                     <span class="p-1 bgchart2 rounded-1 bi @(playerRating.RatingChange < 0 ? "bi-arrow-down text-danger"
                                  : "bi-arrow-up text-success")">
-                                        @playerRating.RatingChange.ToString("N1", CultureInfo.InvariantCulture)
+                                        @playerRating.RatingChange.ToString("N1")
                                     </span>
                                 }
                             }
@@ -178,8 +177,8 @@
                         <td class="@trClass" @onclick:stopPropagation
                             @onclick="e => OnPlayerDetailsRequest.InvokeAsync(player)">
                             <div class="d-inline-block text-truncate text-decoration-underline" style="max-width: 120px;"
-                                data-bs-toggle="tooltip" data-bs-placement="top"
-                                data-bs-title="@HelperService.SanitizePlayerName(player.Name)">
+                                 data-bs-toggle="tooltip" data-bs-placement="top"
+                                 data-bs-title="@HelperService.SanitizePlayerName(player.Name)">
                                 @player.Name
                             </div>
                         </td>
@@ -187,14 +186,14 @@
                         <td class="@trClass">
                             <div class="d-flex">
                                 <img src="@HelperService.GetImageSrc(player.Race)" alt="@player.Race" title="@player.Race"
-                                    width="30" height="30" />
+                                     width="30" height="30" />
                                 <span><small>@player.Race</small></span>
                             </div>
                         </td>
                         <td class="@trClass">
                             <input id="@($"{guid}show{Team}build{player.GamePos}")" name="@($"showbuild{player.GamePos}")"
-                                type="checkbox" class="form-check-input" @onclick:stopPropagation
-                                @onclick="e => OnBuildRequest.InvokeAsync(player)" />
+                                   type="checkbox" class="form-check-input" @onclick:stopPropagation
+                                   @onclick="e => OnBuildRequest.InvokeAsync(player)" />
                         </td>
                         <td class="@trClass">
                             @HelperService.GetBigNumberString(income + HelperService.GetGasIncome(player))

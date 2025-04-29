@@ -1,5 +1,4 @@
-﻿@using System.Globalization;
-@using dsstats.razorlib.Services;
+﻿@using dsstats.razorlib.Services;
 
 <div class="tableFixHead" style="max-width: 1600px;">
     <table class="tptable table text-nowrap">
@@ -56,7 +55,7 @@
                     @for (int k = 0; k < data.Strengths.Count; k++)
                     {
                         var l = k;
-                        <td class="text-nowrap">@data.Strengths[l].ToString("N2", CultureInfo.InvariantCulture) (@data.Counts[l])</td>
+                        <td class="text-nowrap">@data.Strengths[l].ToString("N2") (@data.Counts[l])</td>
                     }
                 </tr>
             }

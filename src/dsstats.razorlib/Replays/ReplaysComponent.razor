@@ -3,7 +3,6 @@
 @using dsstats.shared
 @using dsstats.razorlib.Services
 @using Microsoft.JSInterop
-@using System.Globalization
 @inject IReplaysService replaysService
 @inject IJSRuntime JSRuntime
 
@@ -200,7 +199,7 @@
                                                 {
                                                     <div>
                                                         <span class="@(replay.PlayerInfo.RatingChange >= 0 ? "text-success" : "text-danger")">
-                                                            @replay.PlayerInfo.RatingChange.ToString("N1", CultureInfo.InvariantCulture)
+                                                            @replay.PlayerInfo.RatingChange.ToString("N1")
                                                         </span>
                                                     </div>
                                                 }
@@ -217,7 +216,7 @@
                                             {
                                                 <div>
                                                     <span class="@(replay.Exp2Win >= 0.5 ? "text-success" : "text-danger")">
-                                                        @((replay.Exp2Win.Value * 100).ToString("N0", CultureInfo.InvariantCulture))%
+                                                        @((replay.Exp2Win.Value * 100).ToString("N0"))%
                                                     </span>
                                                 </div>
                                             }

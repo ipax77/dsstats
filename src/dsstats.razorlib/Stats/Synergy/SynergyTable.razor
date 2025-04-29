@@ -1,5 +1,4 @@
-﻿@using System.Globalization;
-@using dsstats.shared;
+﻿@using dsstats.shared;
 @using dsstats.shared.Extensions;
 @using dsstats.razorlib.Services;
 
@@ -78,11 +77,11 @@
                             </div>
                         }
                     </td>
-                    <td>@ent.AvgGain.ToString("N2", CultureInfo.InvariantCulture)</td>
-                    <td>@ent.Winrate().ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td>@ent.AvgGain.ToString("N2")</td>
+                    <td>@ent.Winrate().ToString("N2")</td>
                     <td>@ent.Count</td>
-                    <td>@ent.AvgRating.ToString("N2", CultureInfo.InvariantCulture)</td>
-                    <td>@ent.NormalizedAvgGain.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td>@ent.AvgRating.ToString("N2")</td>
+                    <td>@ent.NormalizedAvgGain.ToString("N2")</td>
                 </tr>
             }
         </tbody>

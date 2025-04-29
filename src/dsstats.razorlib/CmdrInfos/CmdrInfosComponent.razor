@@ -3,7 +3,6 @@
 @using dsstats.razorlib.Replays
 @using dsstats.shared
 @using dsstats.shared.Interfaces
-@using System.Globalization
 @using Microsoft.JSInterop
 @inject ICmdrInfoService cmdrInfoService
 @inject IReplaysService replayService
@@ -39,7 +38,7 @@
                 <div class="ms-auto">
                     &Oslash;
                     <span class="@(avgGain < 0 ? "text-danger" : "text-success")">
-                        @avgGain.ToString("N2", CultureInfo.InvariantCulture)
+                        @avgGain.ToString("N2")
                     </span>
                 </div>
             </div>

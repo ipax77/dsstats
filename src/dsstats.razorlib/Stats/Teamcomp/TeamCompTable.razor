@@ -1,5 +1,4 @@
-﻿@using System.Globalization
-@using Microsoft.JSInterop
+﻿@using Microsoft.JSInterop
 @using dsstats.shared
 @using dsstats.shared.Extensions
 @using dsstats.razorlib.Services
@@ -53,7 +52,7 @@
                         </div>
                     </td>
                     <td>@item.Count</td>
-                    <td><span class="text-warning">@item.AvgGain.ToString("N2", CultureInfo.InvariantCulture)</span></td>
+                    <td><span class="text-warning">@item.AvgGain.ToString("N2")</span></td>
                     <td>@HelperService.GetPercentageString(item.Wins, item.Count)</td>
                 </tr>
             }
