@@ -132,4 +132,15 @@ public static class CmdrInfoHelper
             }
         ];
     }
+
+    public static List<CmdrInfo> GetAlarakInfos()
+    {
+        return [
+            new() {
+                Cmdr = Commander.Alarak,
+                Vs = Commander.None,
+                Info = ""
+            }
+        ];
+    }
 }
