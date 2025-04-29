@@ -1,5 +1,4 @@
-﻿@using System.Globalization;
-@using Microsoft.JSInterop;
+﻿@using Microsoft.JSInterop;
 @using dsstats.shared;
 @using dsstats.shared.Extensions;
 @using dsstats.razorlib.Services;
@@ -86,12 +85,12 @@
                         @ent.Commander
                     </td>
                     <td>@ent.Count</td>
-                    <td>@ent.MvpPercentage.ToString("N2", CultureInfo.InvariantCulture)%</td>
+                    <td>@ent.MvpPercentage.ToString("N2")%</td>
                     <td>@HelperService.GetBigNumberString(ent.AvgKills)</td>
                     <td>@ent.AvgArmy</td>
                     <td>@ent.AvgUpgrades</td>
                     <td>@ent.ArmyValue</td>
-                    <td>@ent.AvgGas.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td>@ent.AvgGas.ToString("N2")</td>
                     @*<td>@ent.AvgIncome</td>*@
                     <td>@ent.AvgAPM</td>
                 </tr>

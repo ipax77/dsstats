@@ -1,7 +1,6 @@
 ﻿@using dsstats.razorlib.Services
 @using dsstats.shared
 @using dsstats.shared.Extensions
-@using System.Globalization
 
 <div class="table-responsive tableFixHead text-nowrap" style="max-height: 80vh; max-width: 900px;">
     <table class="tptable table w-auto">
@@ -89,13 +88,13 @@
                             }
                         </span>
                     </td>
-                    <td class="text-info">@info.Strength.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td class="text-info">@info.Strength.ToString("N2")</td>
                     <td>@info.Count</td>
                     <td>@HelperService.GetPercentageString(info.Wins, info.Count)</td>
                     <td class="text-warning">@info.AvgRating</td>
                     <td class="@(info.AvgGain >= 0 ? "text-success" : "text-danger")">
                         <span class="@(info.AvgGain >= 0 ? "oi oi-arrow-top" : "oi oi-arrow-bottom")"></span>
-                        @info.AvgGain.ToString("N2", CultureInfo.InvariantCulture)
+                        @info.AvgGain.ToString("N2")
                     </td>
                     <td>@info.TeamRating</td>
                 </tr>

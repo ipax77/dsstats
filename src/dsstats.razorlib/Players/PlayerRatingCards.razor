@@ -1,6 +1,5 @@
 @using dsstats.shared
 @using dsstats.razorlib.Services
-@using System.Globalization
 
 <div class="row">
     @foreach (var rating in Ratings)
@@ -18,7 +17,7 @@
                         </div>
                         <div class="ms-1">
                             <span class="text-warning fw-bold" style="font-size: 1.4rem;">
-                                @rating.Rating.ToString("N2",CultureInfo.InvariantCulture)
+                                @rating.Rating.ToString("N2")
                             </span>
                         </div>
                     </div>

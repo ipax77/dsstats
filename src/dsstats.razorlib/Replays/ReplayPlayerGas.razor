@@ -1,4 +1,3 @@
-@using System.Globalization
 @using dsstats.shared
 @using dsstats.razorlib.Services
 
@@ -83,7 +82,7 @@
     private string GasIncomePercentageFromTeamIncome(int total)
     {
         var per = total * 100.0 / (double)TeamIncome;
-        return $"{per.ToString("N2", CultureInfo.InvariantCulture)}%";
+        return $"{per.ToString("N2")}%";
     }
 
 }

@@ -1,5 +1,4 @@
-﻿@using System.Globalization;
-@using dsstats.shared;
+﻿@using dsstats.shared;
 @using dsstats.razorlib.Services;
 @using dsstats.shared.Interfaces
 @inject IPlayerService playerService
@@ -64,8 +63,8 @@
                             </td>
                             <td><span class="text-truncate text-info" style="display: block; width: 150px;">@rating.Player.Name</span></td>
                             <td class="text-warning">
-                                @(ratingsRequest.ComboRating || ratingsRequest.Arcade ? rating.ComboPlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture)
-                                    : rating.PlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture))
+                                @(ratingsRequest.ComboRating || ratingsRequest.Arcade ? rating.ComboPlayerRating.Rating.ToString("N2")
+                                    : rating.PlayerRating.Rating.ToString("N2"))
                             </td>
                             <td class="border-start">@rating.ComboPlayerRating.Games</td>
                             <td>

@@ -1,5 +1,4 @@
-﻿@using System.Globalization
-@using dsstats.razorlib.Services
+﻿@using dsstats.razorlib.Services
 
 <div class="mt-1">
     <h4 class="bgchart p-1 rounded d-inline-block">Replay Log</h4>
@@ -68,14 +67,14 @@
                                     <tbody>
                                         <tr>
                                             <td><span class="@(Replay.WinnerTeam == 1 ? "text-success" : "text-danger")">1</span></td>
-                                            <td>@replayEvent.Sum1.Mid.ToString("N2", CultureInfo.InvariantCulture)%</td>
+                                            <td>@replayEvent.Sum1.Mid.ToString("N2")%</td>
                                             <td class="text-center">@replayEvent.Sum1.GasCount</td>
                                             <td>@HelperService.GetBigNumberString(replayEvent.Sum1.ArmyValue)</td>
                                             <td>@HelperService.GetBigNumberString(replayEvent.Sum1.Kills)</td>
                                         </tr>
                                         <tr>
                                             <td><span class="@(Replay.WinnerTeam == 2 ? "text-success" : "text-danger")">2</span></td>
-                                            <td>@replayEvent.Sum2.Mid.ToString("N2", CultureInfo.InvariantCulture)%</td>
+                                            <td>@replayEvent.Sum2.Mid.ToString("N2")%</td>
                                             <td class="text-center">@replayEvent.Sum2.GasCount</td>
                                             <td>@HelperService.GetBigNumberString(replayEvent.Sum2.ArmyValue)</td>
                                             <td>@HelperService.GetBigNumberString(replayEvent.Sum2.Kills)</td>

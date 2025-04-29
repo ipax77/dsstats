@@ -3,7 +3,6 @@
 @using dsstats.shared.Interfaces
 @using Microsoft.AspNetCore.Components.Web.Virtualization
 @using dsstats.razorlib.Services
-@using System.Globalization
 @inject IPlayerService playerService
 @inject IRemoteToggleService remoteToggleService
 
@@ -144,8 +143,8 @@
                                         </td>
                                         <td class="border-start">@rating.ComboPlayerRating.Games</td>
                                         <td class="text-warning">
-                                            @(Request.ComboRating || Request.Arcade ? rating.ComboPlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture)
-                                            : rating.PlayerRating.Rating.ToString("N2", CultureInfo.InvariantCulture))
+                                            @(Request.ComboRating || Request.Arcade ? rating.ComboPlayerRating.Rating.ToString("N2")
+                                            : rating.PlayerRating.Rating.ToString("N2"))
                                         </td>
                                         <td>
                                             @if (rating.PlayerRating.PlayerRatingChange != null)
@@ -157,7 +156,7 @@
                                                     _ => rating.PlayerRating.PlayerRatingChange.Change30d
                                                 };
                                                 <span class="@(ratingChange >= 0 ? "bi bi-arrow-top text-success" : "bi bi-arrow-bottom text-danger")">
-                                                    @ratingChange.ToString("N2", CultureInfo.InvariantCulture)
+                                                    @ratingChange.ToString("N2")
                                                 </span>
                                             }
                                         </td>

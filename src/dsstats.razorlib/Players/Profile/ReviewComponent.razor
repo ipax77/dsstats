@@ -1,5 +1,4 @@
-﻿@using System.Globalization
-@using Microsoft.JSInterop
+﻿@using Microsoft.JSInterop
 @using dsstats.razorlib.Replays
 @using dsstats.razorlib.Stats.Count
 @using dsstats.shared
@@ -48,7 +47,7 @@
                             Games Played
                         </div>
                         <div class="card-body bgchart">
-                            <span class="text-warning">@review.TotalGames.ToString("N0", CultureInfo.InvariantCulture)</span>
+                            <span class="text-warning">@review.TotalGames.ToString("N0")</span>
                         </div>
                     </div>
                     <div class="col-auto card bg-transparent">
@@ -134,15 +133,15 @@
                                         <tbody>
                                             <tr>
                                                 <td>Top Rating</td>
-                                                <td>@typeRatings.Max(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N0", CultureInfo.InvariantCulture)</td>
+                                                <td>@typeRatings.Max(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N0")</td>
                                             </tr>
                                             <tr>
                                                 <td>Avg Rating</td>
-                                                <td>@typeRatings.Average(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N0", CultureInfo.InvariantCulture)</td>
+                                                <td>@typeRatings.Average(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N0")</td>
                                             </tr>
                                             <tr>
                                                 <td>Min Rating</td>
-                                                <td>@typeRatings.Min(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N0", CultureInfo.InvariantCulture)</td>
+                                                <td>@typeRatings.Min(m => m.ReplayPlayerRatingInfo?.Rating ?? 0).ToString("N0")</td>
                                             </tr>
                                         </tbody>
                                     </table>

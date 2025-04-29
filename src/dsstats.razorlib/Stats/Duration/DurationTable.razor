@@ -1,5 +1,4 @@
-﻿@using System.Globalization;
-@using dsstats.shared;
+﻿@using dsstats.shared;
 @using dsstats.shared.Extensions;
 @using dsstats.razorlib.Services;
 
@@ -99,16 +98,16 @@
                             </div>
                         </div>
                     </td>
-                    <td style="color: @GetColumnColor(1, durData.Commander);">@durData.Dur1.ToString("N2", CultureInfo.InvariantCulture)</td>
-                    <td style="color: @GetColumnColor(2, durData.Commander);">@durData.Dur2.ToString("N2", CultureInfo.InvariantCulture)</td>
-                    <td style="color: @GetColumnColor(3, durData.Commander);">@durData.Dur3.ToString("N2", CultureInfo.InvariantCulture)</td>
-                    <td style="color: @GetColumnColor(4, durData.Commander);">@durData.Dur4.ToString("N2", CultureInfo.InvariantCulture)</td>
-                    <td style="color: @GetColumnColor(5, durData.Commander);">@durData.Dur5.ToString("N2", CultureInfo.InvariantCulture)</td>
-                    <td style="color: @GetColumnColor(6, durData.Commander);">@durData.Dur6.ToString("N2", CultureInfo.InvariantCulture)</td>
-                    <td style="color: @GetColumnColor(7, durData.Commander);">@durData.Dur7.ToString("N2", CultureInfo.InvariantCulture)</td>
-                    <td style="color: @GetColumnColor(8, durData.Commander);">@durData.Dur8.ToString("N2", CultureInfo.InvariantCulture)</td>
-                    <td style="color: @GetColumnColor(9, durData.Commander);">@durData.Dur9.ToString("N2", CultureInfo.InvariantCulture)</td>
-                    <td style="color: @GetColumnColor(10, durData.Commander);">@durData.Dur10.ToString("N2", CultureInfo.InvariantCulture)</td>
+                    <td style="color: @GetColumnColor(1, durData.Commander);">@durData.Dur1.ToString("N2")</td>
+                    <td style="color: @GetColumnColor(2, durData.Commander);">@durData.Dur2.ToString("N2")</td>
+                    <td style="color: @GetColumnColor(3, durData.Commander);">@durData.Dur3.ToString("N2")</td>
+                    <td style="color: @GetColumnColor(4, durData.Commander);">@durData.Dur4.ToString("N2")</td>
+                    <td style="color: @GetColumnColor(5, durData.Commander);">@durData.Dur5.ToString("N2")</td>
+                    <td style="color: @GetColumnColor(6, durData.Commander);">@durData.Dur6.ToString("N2")</td>
+                    <td style="color: @GetColumnColor(7, durData.Commander);">@durData.Dur7.ToString("N2")</td>
+                    <td style="color: @GetColumnColor(8, durData.Commander);">@durData.Dur8.ToString("N2")</td>
+                    <td style="color: @GetColumnColor(9, durData.Commander);">@durData.Dur9.ToString("N2")</td>
+                    <td style="color: @GetColumnColor(10, durData.Commander);">@durData.Dur10.ToString("N2")</td>
                 </tr>
             }
         </tbody>
@@ -220,8 +219,8 @@
                 var prop = data.GetType().GetProperty($"Dur{i+1}");
                 if (prop != null)
                 {
-                    // prop.SetValue(data, $"{cmdrData.Data[i].ToString("N2", CultureInfo.InvariantCulture)} ({cmdrData.Counts[i]})");
-                    // prop.SetValue(data, $"{cmdrData.Data[i].ToString("N2", CultureInfo.InvariantCulture)}{(WithRating ? "" : "%")}");
+                    // prop.SetValue(data, $"{cmdrData.Data[i].ToString("N2")} ({cmdrData.Counts[i]})");
+                    // prop.SetValue(data, $"{cmdrData.Data[i].ToString("N2")}{(WithRating ? "" : "%")}");
                     prop.SetValue(data, cmdrData.Data[i]);
                 }
             }
@@ -250,7 +249,7 @@
             var orderedData = response.ChartDatas.OrderByDescending(o => o.Data[i]).ToList();
             durInfos.Add(new()
             {
-                Percentage = (sum * 100.0 / total).ToString("N2", CultureInfo.InvariantCulture),
+                Percentage = (sum * 100.0 / total).ToString("N2"),
                 Total = sum,
                 TopCmdr = orderedData[0].Commander,
                 Top2Cmdr = orderedData[1].Commander,

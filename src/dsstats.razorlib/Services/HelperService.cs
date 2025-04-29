@@ -48,7 +48,7 @@ public static class HelperService
         {
             return "0";
         }
-        return Math.Round(wins.Value / (double)games.Value, 2).ToString("P");
+        return Math.Round(wins.Value / (double)games.Value, 2).ToString("P2");
     }
 
     public static string GetPlayerCountString(int playerCount)

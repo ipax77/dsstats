@@ -1,4 +1,3 @@
-@using System.Globalization
 @using dsstats.shared
 @using dsstats.shared.Extensions
 @using dsstats.razorlib.Services
@@ -49,12 +48,12 @@
                     @if (player.AvgGain < 0)
                     {
                         <span class="text-danger">
-                            @player.AvgGain.ToString("N2", CultureInfo.InvariantCulture)
+                            @player.AvgGain.ToString("N2")
                         </span>
                     } else if (player.AvgGain > 0)
                     {
                         <span class="text-success">
-                            @player.AvgGain.ToString("N2", CultureInfo.InvariantCulture)
+                            @player.AvgGain.ToString("N2")
                         </span>
                     }
                     else

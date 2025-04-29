@@ -1,6 +1,5 @@
 @using dsstats.shared
 @using dsstats.razorlib.Services
-@using System.Globalization
 
 <div class="card">
     <div class="card-header bgchart2">
@@ -33,11 +32,11 @@
                     </tr>
                     <tr>
                         <td>Consistency</td>
-                        <td colspan="2">@Rating.Consistency.ToString("N2", CultureInfo.InvariantCulture)</td>
+                        <td colspan="2">@Rating.Consistency.ToString("N2")</td>
                     </tr>
                     <tr>
                         <td>Confidence</td>
-                        <td colspan="2">@Rating.Confidence.ToString("N2", CultureInfo.InvariantCulture)</td>
+                        <td colspan="2">@Rating.Confidence.ToString("N2")</td>
                     </tr>
                     <tr>
                         <td>
@@ -49,7 +48,7 @@
                             @if (Rating.PlayerRatingChange != null)
                             {
                                 <span class="@(Rating.PlayerRatingChange.Change30d >= 0 ? "bi bi-arrow-up text-success" : "bi bi-arrow-down text-danger")">
-                                    @Rating.PlayerRatingChange.Change30d.ToString("N2", CultureInfo.InvariantCulture)
+                                    @Rating.PlayerRatingChange.Change30d.ToString("N2")
                                 </span>
                             }
                         </td>
