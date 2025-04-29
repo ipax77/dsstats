@@ -33,104 +33,105 @@ public static class CmdrInfoHelper
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.None,
-                Info = "Abathur is a support kind of Commander with very low damage output but very good stacking/tanking capabilities. " +
-                    "Main strength is the Viper which can be game changing when microed properly. Good Matchups: Horner, Difficult Matchups: Mengsk, Swann"
+                Info = "Abathur is a support-oriented Commander with very low damage output but excellent stacking and tanking capabilities. " +
+                    "His main strength is the Viper, which can be game-changing when microed properly. Good Matchups: Horner. Difficult Matchups: Mengsk, Swann."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Abathur,
-                Info = "In a mirror matchup you have two options to either go full air (Mutas into Leviathan/Vipers) or heavy Ravagers. " + 
-                    "If you feel comfortable in microing Ravagers it is the more solid approach."
+                Info = "In a mirror matchup, you can either go full air (Mutas into Leviathans/Vipers) or go heavy on Ravagers. " +
+                    "If you're comfortable microing Ravagers, it's generally the more reliable option."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Alarak,
-                Info = "Alarak is a difficult matchup, but your best bet are mass Mutas into Guardians. Be careful once Alarak has his R up, then he can oneshot all Mutas. " +
-                    "All Biomass should go on Mutas with one one Roach and maybe some on Vipers."                                    
+                Info = "Alarak is a difficult matchup. Your best option is mass Mutas into Guardians. Be careful once Alarak has his ultimate, as he can one-shot all Mutas. " +
+                    "All Biomass should go on Mutas, with one Roach and possibly some on Vipers."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Artanis,
-                Info = "Vs Artanis you can go mass Mutas into Guardians. You have a tempo advantage because Archons are very expensive. " +
-                    "Be careful to not waste you global healing, you will need it to outheal the Archons Storm."
+                Info = "Against Artanis, you can go mass Mutas into Guardians. You have a tempo advantage, as Archons are very expensive. " +
+                    "Don't waste your global healing — it’s essential for outhealing Archon Storms."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Dehaka,
-                Info = "Dehaka is a difficult matchup, because you don't have enough damage output to kill Dehaka in time and they can eat your first Biomassed unit." +
-                    "You can try mass Mutas or stack with Swarmhosts. Don't build Queens vs Dehaka (he loves eating psionic units)"
+                Info = "Dehaka is a tough matchup because you don’t have enough damage to kill him quickly, and he can eat your first Biomassed unit. " +
+                    "You can try mass Mutas or stack with Swarmhosts. Avoid building Queens, as Dehaka loves eating psionic units."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Fenix,
-                Info = "Adepts win vs Mutas, but Fenix is also low on damage output, so Swarmhosts with Ravager support is an option. "
+                Info = "Adepts beat Mutas, but Fenix is also low on damage output, so Swarmhosts supported by Ravagers are a viable option."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Horner,
-                Info = "H&H has nothing to deal with mass Mutas (Mines do less splash to Air and can be distracted by a couple Roaches/Ravagers). "
+                Info = "Han & Horner have little to deal with mass Mutas. Their Widow Mines do reduced splash to air and can be distracted with a few Roaches or Ravagers."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Karax,
-                Info = "Mutas win vs Karax, but it is very close. Don't overpush, so they cannot stack at the Cannon/Nexus and be fast on the Vipers and a couple Leviathans to tank. All Biomass on Mutas."
+                Info = "Mutas beat Karax, but it’s a close match. Don’t overextend, or they’ll stack up at the Cannons/Nexus. " +
+                    "Be quick to get Vipers and a couple of Leviathans to tank. All Biomass should go on Mutas."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Kerrigan,
-                Info = "Kerrigan has troubles to kill Roaches and cannot deal with Guardians late game. All Biomass on Roaches (or Vipers if they try Mutas)."
+                Info = "Kerrigan struggles to kill Roaches and can’t handle Guardians in the late game. All Biomass on Roaches, or on Vipers if they go for Mutas."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Mengsk,
-                Info = "Mengsk is a difficult matchup, your best bet is heavy Mutas. Once they have Thors out you can chain abduct them with Vipers to give the Mutas more time. "
-                    + "If they go Emperor's Shadow you can try to snipe them with Ravagers. Biomass some Roaches then Mutas only."
+                Info = "Mengsk is a tough matchup. Your best option is heavy Mutas. Once Thors appear, use Vipers to chain Abduct them and buy time for your Mutas. " +
+                    "If they build Emperor’s Shadows, try sniping them with Ravagers. Biomass a few Roaches, then focus Mutas."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Nova,
-                Info = "Vs Nova you can go Ravagers but vs Ravens and Liberators you need Mutas anyhow, so you can hard commit from the get-go. All Biomass on Mutas."
-                    + ""
+                Info = "Against Nova, Ravagers are an option, but if she builds Ravens and Liberators, you’ll need Mutas anyway — so you might as well hard commit early. " +
+                    "All Biomass on Mutas."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Raynor,
-                Info = "Muta opener is your best bet. If they hard commit to groud Bio you can add some Ravagers. All Biomass on Mutas."
+                Info = "A Muta opener is your best bet. If they commit to ground Bio, add some Ravagers. All Biomass on Mutas."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Stetmann,
-                Info = "Vs Stetmann you can open Roach Queen into Ravagers. Brutalisks are very good if they commit to Banelings."
+                Info = "Against Stetmann, start with Roach/Queen into Ravagers. Brutalisks are effective if they focus on Banelings."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Stukov,
-                Info = "Vs Stukov you can open Roach Queen into Mutas. Be fast with Leviathan/Devourer to protect them. Vs Apocalisks you can add a few Overseer to tank the Rockets."
+                Info = "Open with Roach/Queen into Mutas. Get Leviathans and Devourers early to protect them. Against Apocalisks, add a few Overseers to tank rockets."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Swann,
-                Info = "Swann is probably the worst matchup for Abathur. The only thing that can kill the Science Vessels are Mutas, but their Radiation kills them." +
-                    "All Biomass on Mutas and hope the best."
+                Info = "Swann is arguably Abathur’s worst matchup. The only effective counter to Science Vessels is Mutas, but their Radiation ability kills them quickly. " +
+                    "Put all Biomass on Mutas and hope for the best."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Tychus,
-                Info = "Vs Tychus Roach Ravager into Guardians should be your best option. Be careful with early Swarmhosts if you don't have enough damage output in the team, " +
-                    "because they can produce a monster stack for the enemy team."
+                Info = "Against Tychus, go Roach/Ravager into Guardians. Be cautious with early Swarmhosts — if your team lacks damage, they can create a massive enemy stack."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Vorazun,
-                Info = "Roach Ravager is save call, but you can open mass Mutas vs Vorazun. It will be painful when they have enough Corsairs out, " +
-                    "but once you have a Leviathan in front and a couple Vipers you win."
+                Info = "Roach/Ravager is the safe choice, but you can open with mass Mutas. It will get rough once Corsairs arrive, " +
+                    "but once you have a Leviathan in front and a couple of Vipers, you should win."
             },
             new() {
                 Cmdr = Commander.Abathur,
                 Vs = Commander.Zagara,
-                Info = "Roach Ravager into Guardians Vipers with some Brutalsiks. Don't forget to turn off Abduct on the Vipers. All Biomass on Roaches."
+                Info = "Go Roach/Ravager into Guardians and Vipers, with some Brutalisks. Don’t forget to disable Abduct on the Vipers. All Biomass on Roaches."
             }
         ];
+
     }
 
     public static List<CmdrInfo> GetAlarakInfos()
