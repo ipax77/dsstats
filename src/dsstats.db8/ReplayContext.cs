@@ -62,6 +62,7 @@ public class ReplayContext : DbContext
     public int Strftime(string arg, DateTime date) => throw new InvalidOperationException($"{nameof(Strftime)} cannot be called client side.");
 
     public virtual DbSet<StreakInfo> StreakInfos { get; set; } = null!;
+    public DbSet<CmdrInfo> CmdrInfos { get; set; } = null!;
 
     public ReplayContext(DbContextOptions<ReplayContext> options)
     : base(options)
