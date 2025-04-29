@@ -22,6 +22,7 @@ public static class CmdrInfoHelper
 
         List<CmdrInfo> infos = [
             ..GetAbathurInfos(),
+            ..GetAlarakInfos(),
         ];
         context.CmdrInfos.AddRange(infos);
         context.SaveChanges();
