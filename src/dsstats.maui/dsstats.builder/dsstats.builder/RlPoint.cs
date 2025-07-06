@@ -2,6 +2,11 @@ namespace dsstats.builder;
 
 public sealed record RlPoint(int X, int Y)
 {
+    public double DistanceTo(RlPoint other)
+    {
+        return Math.Sqrt(Math.Pow(X - other.X, 2) + Math.Pow(Y - other.Y, 2));
+    }
+
     public static RlPoint Lerp(RlPoint a, RlPoint b, double t)
     {
         return new RlPoint(

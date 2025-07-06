@@ -17,6 +17,46 @@ public class BuildArea
     ];
     private Dictionary<string, HashSet<RlPoint>> units = [];
 
+    public List<InputEvent> GetBuildEvents(ScreenArea screenArea)
+    {
+        // hardcoded unitmap for now
+        Dictionary<string, char> UnitNameBuildMap = new()
+        {
+            { "Zergling", 'q' },
+            { "Baneling", 'w' }
+        };
+
+        List<InputEvent> events = [];
+        var allUnits = units.SelectMany(unit =>
+            unit.Value.Select(pos => new { UnitName = unit.Key, Position = pos }))
+            .ToList();
+
+        if (allUnits.Count == 0)
+        {
+            return events;
+        }
+
+        // NOTE: This is a nearest-neighbor search, which is O(n^2).
+        // For a very large number of units, a more advanced spatial data structure
+        // like a k-d tree or a quadtree would be more performant.
+        var currentPos = GetCenter(); // Start from the center of the build area
+        while (allUnits.Count != 0)
+        {
+            var nearest = allUnits.OrderBy(u => u.Position.DistanceTo(currentPos)).First();
+            allUnits.Remove(nearest);
+            currentPos = nearest.Position;
+
+            var unitChar = UnitNameBuildMap[nearest.UnitName];
+            var screenPos = screenArea.GetScreenPosition(nearest.Position);
+
+            if (screenPos.Y < 15 || screenPos.Y > 1140) continue; // Skip scrolling for now
+
+            events.AddRange(DsBuilder.BuildUnit(unitChar, screenPos.X, screenPos.Y));
+        }
+
+        return events;
+    }
+
     public bool PlaceUnit(string unit, RlPoint position)
     {
         if (!IsPointInsideOrOnEdge(position))
@@ -27,8 +67,37 @@ public class BuildArea
         {
             unitPositions = units[unit] = [];
         }
-        unitPositions.Add(position);
+        unitPositions.Add(NormalizeToTop(position));
         return true;
+    }
+
+    public void PlaceUnits(string unit, string positions, int team)
+    {
+        if (string.IsNullOrEmpty(positions))
+        {
+            return;
+        }
+        if (!units.TryGetValue(unit, out var unitPositions) || unitPositions == null)
+        {
+            unitPositions = units[unit] = [];
+        }
+        var newUnitPositions = GetUnitPositions(positions, team);
+        foreach (var pos in newUnitPositions)
+        {
+            unitPositions.Add(pos);
+        }
+    }
+
+    private List<RlPoint> GetUnitPositions(string unitString, int team)
+    {
+        var stringPoints = unitString.Split(',', StringSplitOptions.RemoveEmptyEntries);
+        List<RlPoint> mapPoints = [];
+        for (int i = 0; i < stringPoints.Length; i += 2)
+        {
+            RlPoint mapPoint = new(int.Parse(stringPoints[i]), int.Parse(stringPoints[i + 1]));
+            mapPoints.Add(NormalizeToTop(mapPoint));
+        }
+        return mapPoints;
     }
 
     public RlPoint NormalizeToTop(RlPoint point)
