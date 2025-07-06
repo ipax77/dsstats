@@ -31,6 +31,12 @@ public class BuildArea
         return true;
     }
 
+    public RlPoint NormalizeToTop(RlPoint point)
+    {
+        var top = polygon[1]; // Top corner is reference
+        return new RlPoint(point.X - top.X, point.Y - top.Y);
+    }
+
     public RlPoint GetCenter()
     {
         int x1 = polygon.Min(m => m.X);

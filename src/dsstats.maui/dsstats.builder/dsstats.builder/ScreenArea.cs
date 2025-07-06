@@ -52,12 +52,26 @@ public class ScreenArea
     }
 
     /// <summary>
-    /// maps the replay unit position to the screen position
+    /// maps the normalized replay unit position to the screen position
     /// </summary>
     /// <param name="buildPoint"></param>
     /// <returns></returns>
-    public RlPoint GetScreenPosition(RlPoint buildPoint)
+    public RlPoint GetScreenPosition(RlPoint normalizedBuildPoint)
     {
-        return RlPoint.Zero;
+        var screenTop = polygon[1];    // Normalized origin
+        var screenRight = polygon[2];  // (17, -17)
+        var screenLeft = polygon[0];   // (-11, -11)
+
+        // Basis vectors (from Top)
+        var xBasis = screenRight - screenTop; // ∆x over 17
+        var yBasis = screenLeft - screenTop;  // ∆y over -11
+
+        // Scale x/y contributions
+        var xComponent = xBasis * (normalizedBuildPoint.X / 17.0);
+        var yComponent = yBasis * (normalizedBuildPoint.Y / -11.0);
+
+        var screenPos = screenTop + xComponent + yComponent;
+
+        return ApplyTransforms(screenPos);
     }
 }
