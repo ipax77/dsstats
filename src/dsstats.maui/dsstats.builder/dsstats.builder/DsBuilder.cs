@@ -1,10 +1,12 @@
+using dsstats.shared;
+
 namespace dsstats.builder;
 
 public static class DsBuilder
 {
     const int DelayMs = 5;
 
-    public static List<InputEvent> BuildArmy(string commander, int screenWidth, int screenHeight, bool dry = true)
+    public static List<InputEvent> BuildArmy(Commander commander, int screenWidth, int screenHeight, bool dry = true)
     {
         List<InputEvent> events = [];
 
@@ -38,6 +40,17 @@ public static class DsBuilder
         return events;
     }
 
+    private static List<InputEvent> GetBuildEvents(SpawnDto spawn, CmdrBuild build, int team, int screenWidth, int screenHeight)
+    {
+        var buildArea = new BuildArea();
+        var screenArea = new ScreenArea(screenWidth, screenHeight);
+        foreach (var unit in spawn.Units)
+        {
+            buildArea.PlaceUnits(unit.Unit.Name, unit.Poss, team);
+        }
+        return buildArea.GetBuildEvents(screenArea, build);
+    }
+
     private static List<InputEvent> BuildTestUnits(int screenWidth, int screenHeight)
     {
         // y < 15 -> need to scroll top
@@ -57,12 +70,13 @@ public static class DsBuilder
         buildArea.PlaceUnits("Baneling", banelings, team);
 
         var screenArea = new ScreenArea(2560, 1440);
-        var events = buildArea.GetBuildEvents(screenArea);
+        var build = new ZergBuild();
+        var events = buildArea.GetBuildEvents(screenArea, build);
 
         return events;
     }
 
-    private static List<InputEvent> ScrollCenter(int key = 0x31)
+    public static List<InputEvent> ScrollCenter(int key = 0x31)
     {
         List<InputEvent> events = [];
         events.Add(new(InputType.KeyPress, 0, 0, key, DelayMs));
@@ -82,7 +96,7 @@ public static class DsBuilder
         return events;
     }
 
-    private static List<InputEvent> ScrollY(int offsetY, RlPoint center)
+    public static List<InputEvent> ScrollY(int offsetY, RlPoint center)
     {
         List<InputEvent> events = [];
         events.Add(new(InputType.MouseMove, center.X, center.Y, 0, DelayMs));
@@ -97,8 +111,8 @@ public static class DsBuilder
             events.Add(new(InputType.MouseMoveRelative, 0, delta, 0, 1, false, false, false, true));
             remaining -= Math.Abs(delta);
         }
-
         events.Add(new(InputType.MouseMove, center.X, center.Y, 0, DelayMs));
+
         return events;
     }
 

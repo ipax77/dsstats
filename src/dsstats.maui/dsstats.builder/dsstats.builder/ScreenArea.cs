@@ -5,11 +5,10 @@ namespace dsstats.builder;
 /// </summary>
 public class ScreenArea
 {
-    private readonly int screenWidth = 2560;
-    private readonly int screenHeight = 1440;
+    public readonly int screenWidth = 2560;
+    public readonly int screenHeight = 1440;
     private readonly float _scaleX;
-    private readonly float _scaleY;
-    private int _cameraYOffset = 0;
+    public readonly float _scaleY;
     private readonly Homography homography;
 
     private List<RlPoint> polygon =
@@ -40,12 +39,7 @@ public class ScreenArea
 
     private RlPoint ApplyTransforms(RlPoint point)
     {
-        return new RlPoint((int)(point.X * _scaleX), (int)(point.Y * _scaleY) + _cameraYOffset);
-    }
-
-    public void SetCameraYOffset(int offsetY)
-    {
-        _cameraYOffset = offsetY;
+        return new RlPoint((int)(point.X * _scaleX), (int)(point.Y * _scaleY));
     }
 
     public RlPoint GetCenter()

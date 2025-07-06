@@ -17,18 +17,13 @@ public class BuildArea
     ];
     private Dictionary<string, HashSet<RlPoint>> units = [];
 
-    public List<InputEvent> GetBuildEvents(ScreenArea screenArea)
+    public List<InputEvent> GetBuildEvents(ScreenArea screenArea, CmdrBuild build)
     {
-        // hardcoded unitmap for now
-        Dictionary<string, char> UnitNameBuildMap = new()
-        {
-            { "Zergling", 'q' },
-            { "Baneling", 'w' }
-        };
-
         List<InputEvent> events = [];
         var allUnits = units.SelectMany(unit =>
-            unit.Value.Select(pos => new { UnitName = unit.Key, Position = pos }))
+            unit.Value
+                .OrderBy(o => o.X).ThenBy(t => t.Y)
+                .Select(pos => new BuildUnit(unit.Key, pos)))
             .ToList();
 
         if (allUnits.Count == 0)
@@ -36,22 +31,65 @@ public class BuildArea
             return events;
         }
 
-        // NOTE: This is a nearest-neighbor search, which is O(n^2).
-        // For a very large number of units, a more advanced spatial data structure
-        // like a k-d tree or a quadtree would be more performant.
-        var currentPos = GetCenter(); // Start from the center of the build area
-        while (allUnits.Count != 0)
+        List<BuildUnit> topUnits = [];
+        List<BuildUnit> centerUnits = [];
+        List<BuildUnit> bottomUnits = [];
+
+        foreach (var unit in allUnits)
         {
-            var nearest = allUnits.OrderBy(u => u.Position.DistanceTo(currentPos)).First();
-            allUnits.Remove(nearest);
-            currentPos = nearest.Position;
 
-            var unitChar = UnitNameBuildMap[nearest.UnitName];
-            var screenPos = screenArea.GetScreenPosition(nearest.Position);
+            var screenPos = screenArea.GetScreenPosition(unit.Pos);
+            if (screenPos.Y <= 15)
+            {
+                topUnits.Add(new(unit.UnitName, screenPos));
+            }
+            else if (screenPos.Y >= 1140)
+            {
+                bottomUnits.Add(new(unit.UnitName, screenPos));
+            }
+            else
+            {
+                centerUnits.Add(new(unit.UnitName, screenPos));
+            }
+        }
 
-            if (screenPos.Y < 15 || screenPos.Y > 1140) continue; // Skip scrolling for now
-
-            events.AddRange(DsBuilder.BuildUnit(unitChar, screenPos.X, screenPos.Y));
+        foreach (var centerUnit in centerUnits)
+        {
+            var unitChar = build.GetUnitChar(centerUnit.UnitName);
+            if (unitChar is null)
+            {
+                continue;
+            }
+            events.AddRange(DsBuilder.BuildUnit(unitChar.Value, centerUnit.Pos.X, centerUnit.Pos.Y));
+        }
+        if (topUnits.Count > 0)
+        {
+            events.AddRange(DsBuilder.ScrollY(Convert.ToInt32(250 * screenArea._scaleY), screenArea.GetCenter()));
+            foreach (var topUnit in topUnits)
+            {
+                var unitChar = build.GetUnitChar(topUnit.UnitName);
+                if (unitChar is null)
+                {
+                    continue;
+                }
+                events.AddRange(DsBuilder.BuildUnit(unitChar.Value, topUnit.Pos.X, topUnit.Pos.Y + Convert.ToInt32(125 * screenArea._scaleY)));
+            }
+        }
+        if (bottomUnits.Count > 0)
+        {
+            Console.WriteLine($"bottom units: {bottomUnits.Count}");
+            events.AddRange(DsBuilder.ScrollCenter());
+            events.Add(new(InputType.KeyPress, 0, 0, 0x51, 5)); // Build Menu
+            events.AddRange(DsBuilder.ScrollY(Convert.ToInt32(-500 * screenArea._scaleY), screenArea.GetCenter()));
+            foreach (var bottomUnit in bottomUnits)
+            {
+                var unitChar = build.GetUnitChar(bottomUnit.UnitName);
+                if (unitChar is null)
+                {
+                    continue;
+                }
+                events.AddRange(DsBuilder.BuildUnit(unitChar.Value, bottomUnit.Pos.X, bottomUnit.Pos.Y - Convert.ToInt32(300 * screenArea._scaleY)));
+            }
         }
 
         return events;
@@ -173,3 +211,4 @@ public class BuildArea
     }
 }
 
+internal sealed record BuildUnit(string UnitName, RlPoint Pos);
