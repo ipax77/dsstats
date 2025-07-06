@@ -10,6 +10,7 @@ public class ScreenArea
     private readonly float _scaleX;
     private readonly float _scaleY;
     private int _cameraYOffset = 0;
+    private readonly Homography homography;
 
     private List<RlPoint> polygon =
     [
@@ -19,12 +20,22 @@ public class ScreenArea
         new RlPoint(1468, 1423),    // Bottom
     ];
 
+
     public ScreenArea(int screenWidth, int screenHeight)
     {
         _scaleX = screenWidth / 2560f;
         _scaleY = screenHeight / 1440f;
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
+
+        var buildPoints = new[]
+        {
+            (new RlPoint(0, 0), polygon[1]),         // Top
+            (new RlPoint(17, -17), polygon[2]),      // Right
+            (new RlPoint(6, -28), polygon[3]),       // Bottom
+            (new RlPoint(-11, -11), polygon[0]),    // Left
+        };
+        homography = new Homography(buildPoints);
     }
 
     private RlPoint ApplyTransforms(RlPoint point)
@@ -43,12 +54,11 @@ public class ScreenArea
             .Select(s => ApplyTransforms(s))
             .ToList();
 
-        int x1 = transformedPolygon.Min(m => m.X);
-        int y1 = transformedPolygon.Min(m => m.Y);
-        int x2 = transformedPolygon.Max(m => m.X);
-        int y2 = transformedPolygon.Max(m => m.Y);
+        int sumX = transformedPolygon.Sum(p => p.X);
+        int sumY = transformedPolygon.Sum(p => p.Y);
+        int count = transformedPolygon.Count;
 
-        return new(x1 + ((x2 - x1) / 2), y1 + ((y2 - y1) / 2));
+        return new(sumX / count, sumY / count);
     }
 
     /// <summary>
@@ -56,22 +66,9 @@ public class ScreenArea
     /// </summary>
     /// <param name="buildPoint"></param>
     /// <returns></returns>
+
     public RlPoint GetScreenPosition(RlPoint normalizedBuildPoint)
     {
-        var screenTop = polygon[1];    // Normalized origin
-        var screenRight = polygon[2];  // (17, -17)
-        var screenLeft = polygon[0];   // (-11, -11)
-
-        // Basis vectors (from Top)
-        var xBasis = screenRight - screenTop; // ∆x over 17
-        var yBasis = screenLeft - screenTop;  // ∆y over -11
-
-        // Scale x/y contributions
-        var xComponent = xBasis * (normalizedBuildPoint.X / 17.0);
-        var yComponent = yBasis * (normalizedBuildPoint.Y / -11.0);
-
-        var screenPos = screenTop + xComponent + yComponent;
-
-        return ApplyTransforms(screenPos);
+        return ApplyTransforms(homography.Transform(normalizedBuildPoint));
     }
 }
