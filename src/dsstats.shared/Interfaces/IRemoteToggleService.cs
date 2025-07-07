@@ -9,4 +9,5 @@ public interface IRemoteToggleService
     bool FromServer { get; }
     bool IsMaui { get; }
     string Culture { get; }
+    void Build(SpawnDto spawn, Commander commander, int team);
 }

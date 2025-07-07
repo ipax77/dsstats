@@ -1,0 +1,66 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IJSRuntime JSRuntime
+@inject IRemoteToggleService RemoteToggleService
+
+<div class="modal" id="buildmodal" tabindex="-1" aria-labelledby="buildmodalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="buildmodalLabel">Prepare to Start Build</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h6>⚠️ Please follow these steps before continuing:</h6>
+                <ol>
+                    <li><strong>Close all other applications.</strong></li>
+                    <li>Launch the <strong>Direct Strike Tutorial</strong> map in StarCraft II.</li>
+                    <li>
+                        Assign hotkeys:
+                        <ul>
+                            <li>Set Team 1's worker (top player) to hotkey <strong>1</strong></li>
+                            <li>Set Team 2's worker (bottom player) to hotkey <strong>2</strong></li>
+                        </ul>
+                    </li>
+                    <li><strong>Do not move the workers!</strong> They must stay centered for accurate unit placement.</li>
+                    <li>In <strong>dsstats</strong>, load the replay and select the desired build.</li>
+                    <li>Click the <strong>Build</strong> button (below) and <strong>switch back to StarCraft II immediately</strong>.</li>
+                    <li><strong>Don't touch your mouse or keyboard</strong> until the build is done.</li>
+                    <li>Ensure no other application is in focus during the build process.</li>
+                </ol>
+                <hr />
+                <p><strong>How It Works:</strong> The builder reads your replay, calculates unit placements, and simulates input to recreate the build exactly.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" @onclick="StartBuild">Start Build</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    SpawnDto spawn = new();
+    Commander commander = Commander.None;
+    int team = 0;
+
+    private void StartBuild()
+    {
+        RemoteToggleService.Build(spawn, commander, team);
+    }
+
+
+    public void Show(SpawnDto spawn, Commander commander, int team)
+    {
+        this.spawn = spawn;
+        this.commander = commander;
+        this.team = team;
+        JSRuntime.InvokeVoidAsync("openModalById", "buildmodal");
+    }
+
+    public void Hide()
+    {
+        JSRuntime.InvokeVoidAsync("closeModalById", "buildmodal");
+    }
+}

@@ -25,6 +25,7 @@ public static class DsBuilder
 
             // setup
             events.AddRange(EnterString("Infinite"));
+            events.AddRange(EnterString($"Tier"));
             events.AddRange(EnterString("Clear"));
             events.AddRange(EnterString($"Enemy {commander}"));
 
