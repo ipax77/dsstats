@@ -26,7 +26,7 @@ public static class DsBuilder
             // setup
             events.AddRange(EnterString("Infinite"));
             events.AddRange(EnterString($"Tier"));
-            events.AddRange(EnterString("Clear"));
+            // events.AddRange(EnterString("Clear"));
         }
         int team = 1;
         var screenArea = new ScreenArea(team, screenWidth, screenHeight);
@@ -68,7 +68,7 @@ public static class DsBuilder
         // setup
         events.AddRange(EnterString("Infinite"));
         events.AddRange(EnterString("Tier"));
-        events.AddRange(EnterString("Clear"));
+        // events.AddRange(EnterString("Clear"));
         events.AddRange(RepickMenu.PickCommander(commander, team, screenArea));
 
         // build

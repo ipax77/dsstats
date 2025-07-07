@@ -68,7 +68,8 @@ public static class RepickMenu
         if (!dry)
         {
             var center = screenArea.GetCenter();
-            events.Add(new(InputType.MouseClick, center.X, center.Y, 0, 100));
+            events.Add(new(InputType.MouseMove, center.X, center.Y, 0, 200));
+            events.Add(new(InputType.MouseClick, center.X, center.Y, 0, 200));
             events.Add(new(InputType.KeyPress, 0, 0, worker, 200, false, false, true));
         }
         return events;
