@@ -26,11 +26,7 @@ A tool to automatically build units in the Direct Strike Tutorial map (StarCraft
 * Simulates precise keyboard and mouse inputs to replicate builds
 
 ## TODO
-* top map build area corners
-* check terran build
-* check protoss build
-* build hidden units (Lurker, Widowmine)
-* ability/upgrades
+* big unit placement
 * test other screen resolutions
-* team 2 build / test
+* ability/upgrades
 * Commanders builds
