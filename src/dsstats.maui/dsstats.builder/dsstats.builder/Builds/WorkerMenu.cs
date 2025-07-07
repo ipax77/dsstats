@@ -1,3 +1,5 @@
+using dsstats.shared;
+
 namespace dsstats.builder;
 
 public class WorkerMenu
@@ -8,17 +10,16 @@ public class WorkerMenu
     // Column access row3: Z/Y X C V B
     private readonly char[,] grid = new char[3, 5]
     {
-            { 'Q', 'W', 'E', 'R', 'T' },
-            { 'A', 'S', 'D', 'F', 'G' },
-            { 'Z', 'X', 'C', 'V', 'B' }
+            { 'q', 'w', 'e', 'r', 't' },
+            { 'a', 's', 's', 'f', 'g' },
+            { 'z', 'x', 'c', 'v', 'b' }
     };
     private RlPoint topLeft = new(2062, 1135);
     private RlPoint bottomRight = new(2510, 1400);
 
-    public InputEvent? ToggleBuildMenu(char c, ScreenArea screenArea)
+    public List<InputEvent> ToggleBuildMenu(char c, ScreenArea screenArea)
     {
-        c = char.ToUpper(c);
-        if (c == 'Y') c = 'Z';
+        if (c == 'y') c = 'z';
         int row = -1, col = -1;
         for (int r = 0; r < 3; r++)
         {
@@ -35,7 +36,7 @@ public class WorkerMenu
         }
 
         if (row == -1 || col == -1)
-            return null;
+            return [];
 
         // Calculate grid cell dimensions
         int cellWidth = (bottomRight.X - topLeft.X) / 5;
@@ -46,6 +47,9 @@ public class WorkerMenu
         int y = topLeft.Y + row * cellHeight + cellHeight / 2;
         RlPoint screenPoint = new(x, y);
         var relativeScreenPoint = screenArea.ApplyTransforms(screenPoint);
-        return new InputEvent(InputType.MouseRightClick, relativeScreenPoint.X, relativeScreenPoint.Y, 0, 10);
+        var center = screenArea.GetCenter();
+        var toggleEvent = new InputEvent(InputType.MouseRightClick, relativeScreenPoint.X, relativeScreenPoint.Y, 0, 20);
+        var moveEvent = new InputEvent(InputType.MouseRightClick, center.X, center.Y, 0, 200);
+        return [toggleEvent, moveEvent];
     }
 }

@@ -27,14 +27,14 @@ public static class DsBuilder
             events.AddRange(EnterString("Infinite"));
             events.AddRange(EnterString($"Tier"));
             events.AddRange(EnterString("Clear"));
-            events.AddRange(EnterString($"Enemy {commander}"));
-
-
         }
+        int team = 1;
+        var screenArea = new ScreenArea(team, screenWidth, screenHeight);
+        events.AddRange(RepickMenu.PickCommander(Commander.Terran, team, screenArea, dry));
 
-        events.Add(new(InputType.KeyPress, 0, 0, 0x51, DelayMs));
+        // events.Add(new(InputType.KeyPress, 0, 0, 0x51, DelayMs));
         // build zerglings
-        events.AddRange(BuildTestUnits(screenWidth, screenHeight));
+        // events.AddRange(BuildTestUnits(screenWidth, screenHeight));
 
         return events;
     }

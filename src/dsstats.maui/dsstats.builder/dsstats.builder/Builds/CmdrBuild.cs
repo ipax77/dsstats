@@ -1,5 +1,3 @@
-using dsstats.shared;
-
 namespace dsstats.builder;
 
 public abstract class CmdrBuild
@@ -32,7 +30,7 @@ public abstract class CmdrBuild
                     var toggleEvent = WorkerMenu.ToggleBuildMenu(buildOption.Key, screenArea);
                     if (toggleEvent != null)
                     {
-                        events.Add(toggleEvent);
+                        events.AddRange(toggleEvent);
                         var otherToggleUnit = UnitMap.FirstOrDefault(f => f.Value.Key == buildOption.Key && f.Key != unitName);
                         if (!string.IsNullOrEmpty(otherToggleUnit.Key))
                         {
@@ -66,20 +64,6 @@ public abstract class CmdrBuild
         return AbilityMap.TryGetValue(abilityName, out var buildOption)
             ? buildOption.Key
             : null;
-    }
-}
-
-public static class CmdrBuildFactory
-{
-    public static CmdrBuild? Create(Commander commander)
-    {
-        return commander switch
-        {
-            Commander.Protoss => new ProtossBuild(),
-            Commander.Terran => new TerranBuild(),
-            Commander.Zerg => new ZergBuild(),
-            _ => null
-        };
     }
 }
 
