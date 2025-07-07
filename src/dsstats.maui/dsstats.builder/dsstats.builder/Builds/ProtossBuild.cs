@@ -4,65 +4,66 @@ public class ProtossBuild : CmdrBuild
 {
     public ProtossBuild()
     {
-        UnitMap = new Dictionary<string, char>
+        UnitMap = new Dictionary<string, BuildOption>
         {
             // Q-menu units
-            { "Zealot", 'q' },
-            { "Stalker", 'w' },
-            { "Adept", 'e' },
-            { "Sentry", 'r' },
-            { "HighTemplar", 't' },
-            { "DarkTemplar", 'a' },
-            { "Immortal", 's' },
-            { "Colossus", 'd' },
-            { "Disruptor", 'f' },
-            { "Archon", 'g' },
-            { "Phoenix", 'z' },
-            { "VoidRay", 'x' },
-            { "Oracle", 'c' },
-            { "Tempest", 'v' },
-            { "Carrier", 'b' },
-            { "Mothership", 'n' },
+            { "Zealot", new('q') },
+            { "Stalker", new('w') },
+            { "Adept", new('e') },
+            { "Sentry", new('r') },
+            { "HighTemplar", new('t') },
+            { "DarkTemplar", new('a') },
+            { "Immortal", new('s') },
+            { "Colossus", new('d') },
+            { "Disruptor", new('f') },
+            { "Archon", new('g') },
+            { "Phoenix", new('z') },
+            { "VoidRay", new('x') },
+            { "Oracle", new('c') },
+            { "Tempest", new('v') },
+            { "Carrier", new('b') },
+            { "Mothership", new('n') },
         };
 
-        AbilityMap = new Dictionary<string, char>
+        AbilityMap = new Dictionary<string, BuildOption>
         {
             // W-menu: abilities and tech
-            { "Charge", 'q' },
-            { "Blink", 'w' },
-            { "ResonatingGlaives", 'e' },
-            { "GuardianShield", 'r' },
-            { "PsionicStorm", 't' },
-            { "ShadowStride", 'a' },
-            { "Barrier", 's' },
-            { "ExtendedThermalLance", 'd' },
-            { "PurificationNova", 'f' },
-            { "GravitonBeam", 'g' },
-            { "FluxVanes", 'z' },
-            { "Revelation", 'x' },
-            { "TectonicDestabilizers", 'c' },
-            { "InterceptorLaunchSpeed", 'v' },
-            { "MassRecall", 'b' },
+            { "Charge", new('q') },
+            { "Blink", new('w') },
+            { "ResonatingGlaives", new('e') },
+            { "GuardianShield", new('r') },
+            { "PsionicStorm", new('t') },
+            { "ShadowStride", new('a') },
+            { "Barrier", new('s') },
+            { "ExtendedThermalLance", new('d') },
+            { "PurificationNova", new('f') },
+            { "GravitonBeam", new('g') },
+            { "FluxVanes", new('z') },
+            { "Revelation", new('x') },
+            { "TectonicDestabilizers", new('c') },
+            { "InterceptorLaunchSpeed", new('v') },
+            { "MassRecall", new('b') },
         };
 
-        UpgradeMap = new Dictionary<string, char>
+        UpgradeMap = new Dictionary<string, BuildOption>
         {
             // Forge + Cyber Core + Fleet Beacon
-            { "GroundWeaponsLevel1", 'a' },
-            { "GroundWeaponsLevel2", 'a' },
-            { "GroundWeaponsLevel3", 'a' },
-            { "GroundArmorLevel1", 's' },
-            { "GroundArmorLevel2", 's' },
-            { "GroundArmorLevel3", 's' },
-            { "ShieldsLevel1", 'd' },
-            { "ShieldsLevel2", 'd' },
-            { "ShieldsLevel3", 'd' },
-            { "AirWeaponsLevel1", 'f' },
-            { "AirWeaponsLevel2", 'f' },
-            { "AirWeaponsLevel3", 'f' },
-            { "AirArmorLevel1", 'g' },
-            { "AirArmorLevel2", 'g' },
-            { "AirArmorLevel3", 'g' },
+            { "GroundWeaponsLevel1", new('a') },
+            { "GroundWeaponsLevel2", new('a') },
+            { "GroundWeaponsLevel3", new('a') },
+            { "GroundArmorLevel1", new('s') },
+            { "GroundArmorLevel2", new('s') },
+            { "GroundArmorLevel3", new('s') },
+            { "ShieldsLevel1", new('d') },
+            { "ShieldsLevel2", new('d') },
+            { "ShieldsLevel3", new('d') },
+            { "AirWeaponsLevel1", new('f') },
+            { "AirWeaponsLevel2", new('f') },
+            { "AirWeaponsLevel3", new('f') },
+            { "AirArmorLevel1", new('g') },
+            { "AirArmorLevel2", new('g') },
+            { "AirArmorLevel3", new('g') },
         };
+        CreateActiveUnits();
     }
 }

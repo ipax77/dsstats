@@ -55,24 +55,15 @@ public class BuildArea
 
         foreach (var centerUnit in centerUnits)
         {
-            var unitChar = build.GetUnitChar(centerUnit.UnitName);
-            if (unitChar is null)
-            {
-                continue;
-            }
-            events.AddRange(DsBuilder.BuildUnit(unitChar.Value, centerUnit.Pos.X, centerUnit.Pos.Y));
+            events.AddRange(build.GetBuildEvents(centerUnit.UnitName, centerUnit.Pos, screenArea));
         }
         if (topUnits.Count > 0)
         {
             events.AddRange(DsBuilder.ScrollY(Convert.ToInt32(250 * screenArea._scaleY), screenArea.GetCenter()));
             foreach (var topUnit in topUnits)
             {
-                var unitChar = build.GetUnitChar(topUnit.UnitName);
-                if (unitChar is null)
-                {
-                    continue;
-                }
-                events.AddRange(DsBuilder.BuildUnit(unitChar.Value, topUnit.Pos.X, topUnit.Pos.Y + Convert.ToInt32(125 * screenArea._scaleY)));
+                events.AddRange(build.GetBuildEvents(topUnit.UnitName,
+                    topUnit.Pos with { Y = topUnit.Pos.Y + Convert.ToInt32(125 * screenArea._scaleY) }, screenArea));
             }
         }
         if (bottomUnits.Count > 0)
@@ -83,12 +74,8 @@ public class BuildArea
             events.AddRange(DsBuilder.ScrollY(Convert.ToInt32(-500 * screenArea._scaleY), screenArea.GetCenter()));
             foreach (var bottomUnit in bottomUnits)
             {
-                var unitChar = build.GetUnitChar(bottomUnit.UnitName);
-                if (unitChar is null)
-                {
-                    continue;
-                }
-                events.AddRange(DsBuilder.BuildUnit(unitChar.Value, bottomUnit.Pos.X, bottomUnit.Pos.Y - Convert.ToInt32(300 * screenArea._scaleY)));
+                events.AddRange(build.GetBuildEvents(bottomUnit.UnitName,
+                    bottomUnit.Pos with { Y = bottomUnit.Pos.Y - Convert.ToInt32(300 * screenArea._scaleY) }, screenArea));
             }
         }
 

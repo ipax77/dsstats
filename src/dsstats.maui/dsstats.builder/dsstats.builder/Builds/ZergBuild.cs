@@ -4,57 +4,59 @@ public class ZergBuild : CmdrBuild
 {
     public ZergBuild()
     {
-        UnitMap = new Dictionary<string, char>
+        UnitMap = new Dictionary<string, BuildOption>
             {
-                { "Zergling", 'q' },
-                { "Baneling", 'w' },
-                { "Roach", 'e' },
-                { "Queen", 'r' },
-                { "Overseer", 't' },
-                { "Hydralisk", 'a' },
-                { "Mutalisk", 's' },
-                { "Corruptor", 'd' },
-                { "Infestor", 'f' },
-                { "Swarmhost", 'g' },
-                { "Viper", 'z' },
-                { "Ultralisk", 'x' },
-                { "Broodloard", 'c' },
+                { "Zergling", new('q') },
+                { "Baneling", new('w') },
+                { "Roach", new('e') },
+                { "Queen", new('r') },
+                { "Overseer", new('t') },
+                { "Hydralisk", new('a', true, true) },
+                { "Lurker", new('a', true) },
+                { "Mutalisk", new('s') },
+                { "Corruptor", new('d') },
+                { "Infestor", new('f') },
+                { "Swarmhost", new('g') },
+                { "Viper", new('z') },
+                { "Ultralisk", new('x') },
+                { "Broodloard", new('c') },
             };
 
-        AbilityMap = new Dictionary<string, char>
+        AbilityMap = new Dictionary<string, BuildOption>
             {
-                { "MetabolikBoost", 'q' },
-                { "AdrenalGlands", 'w' },
-                { "CentrifugalHooks", 'e' },
-                { "GlialReconstitution", 'r' },
-                { "TunnelingClaws", 't' },
-                { "GroovedSpines", 'a' },
-                { "SeismicSpines", 's' },
-                { "AdaptiveTalons", 'd' },
-                { "NeuralParasite", 'g' },
-                { "ChitinousPlating", 'z' },
-                { "AnabolicSynthesis", 'x' },
-                { "MuscularAugments", 'c' },
-                { "PneumatizedCarapace", 'v' },
+                { "MetabolikBoost", new('q') },
+                { "AdrenalGlands", new('w') },
+                { "CentrifugalHooks", new('e') },
+                { "GlialReconstitution", new('r') },
+                { "TunnelingClaws", new('t') },
+                { "GroovedSpines", new('a') },
+                { "SeismicSpines", new('s') },
+                { "AdaptiveTalons", new('d') },
+                { "NeuralParasite", new('g') },
+                { "ChitinousPlating", new('z') },
+                { "AnabolicSynthesis", new('x') },
+                { "MuscularAugments", new('c') },
+                { "PneumatizedCarapace", new('v') },
             };
 
-        UpgradeMap = new Dictionary<string, char>
+        UpgradeMap = new Dictionary<string, BuildOption>
             {
-                { "MeleeAttacksLevel1", 'a' },
-                { "MeleeAttacksLevel2", 'a' },
-                { "MeleeAttacksLevel3", 'a' },
-                { "GroundCarapaceLevel1", 's' },
-                { "GroundCarapaceLevel2", 's' },
-                { "GroundCarapaceLevel3", 's' },
-                { "MissileAttacksLevel1", 'd' },
-                { "MissileAttacksLevel2", 'd' },
-                { "MissileAttacksLevel3", 'd' },
-                { "FlyerAttacksLevel1", 'f' },
-                { "FlyerAttacksLevel2", 'f' },
-                { "FlyerAttacksLevel3", 'f' },
-                { "FlyerCarapaceLevel1", 'g' },
-                { "FlyerCarapaceLevel2", 'g' },
-                { "FlyerCarapaceLevel3", 'g' },
+                { "MeleeAttacksLevel1", new('a') },
+                { "MeleeAttacksLevel2", new('a') },
+                { "MeleeAttacksLevel3", new('a') },
+                { "GroundCarapaceLevel1", new('s') },
+                { "GroundCarapaceLevel2", new('s') },
+                { "GroundCarapaceLevel3", new('s') },
+                { "MissileAttacksLevel1", new('d') },
+                { "MissileAttacksLevel2", new('d') },
+                { "MissileAttacksLevel3", new('d') },
+                { "FlyerAttacksLevel1", new('f') },
+                { "FlyerAttacksLevel2", new('f') },
+                { "FlyerAttacksLevel3", new('f') },
+                { "FlyerCarapaceLevel1", new('g') },
+                { "FlyerCarapaceLevel2", new('g') },
+                { "FlyerCarapaceLevel3", new('g') },
             };
+        CreateActiveUnits();
     }
 }

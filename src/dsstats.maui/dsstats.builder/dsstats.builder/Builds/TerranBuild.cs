@@ -4,62 +4,63 @@ public class TerranBuild : CmdrBuild
 {
     public TerranBuild()
     {
-        UnitMap = new Dictionary<string, char>
+        UnitMap = new Dictionary<string, BuildOption>
         {
             // Q-menu
-            { "Marine", 'q' },
-            { "Marauder", 'w' },
-            { "Reaper", 'e' },
-            { "Ghost", 'r' },
-            { "Hellion", 't' },
-            { "Hellbat", 'a' },
-            { "SiegeTank", 's' },
-            { "WidowMine", 'd' },
-            { "Cyclone", 'f' },
-            { "Thor", 'g' },
-            { "Viking", 'z' },
-            { "Medivac", 'x' },
-            { "Banshee", 'c' },
-            { "Raven", 'v' },
-            { "Battlecruiser", 'b' },
+            { "Marine", new('q') },
+            { "Marauder", new('w') },
+            { "Reaper", new('e') },
+            { "Ghost", new('r') },
+            { "Hellion", new('t') },
+            { "Hellbat", new('a') },
+            { "SiegeTank", new('s') },
+            { "WidowMine", new('d') },
+            { "Cyclone", new('f') },
+            { "Thor", new('g') },
+            { "Viking", new('z') },
+            { "Medivac", new('x') },
+            { "Banshee", new('c') },
+            { "Raven", new('v') },
+            { "Battlecruiser", new('b') },
         };
 
-        AbilityMap = new Dictionary<string, char>
+        AbilityMap = new Dictionary<string, BuildOption>
         {
             // W-menu (upgrades & abilities)
-            { "Stimpack", 'q' },
-            { "ConcussiveShells", 'w' },
-            { "CloakingField", 'e' },
-            { "DrillingClaws", 'r' },
-            { "InfernalPreigniter", 't' }, // Hellion upgrade
-            { "SmartServos", 'a' },        // Viking/Thor transform speed
-            { "HighImpactPayload", 's' },  // Thor mode toggle
-            { "HyperflightRotors", 'd' },  // Banshee speed
-            { "AdvancedBallistics", 'f' }, // Raven range
-            { "WeaponRefit", 'g' },        // Battlecruiser Yamato
+            { "Stimpack", new('q') },
+            { "ConcussiveShells", new('w') },
+            { "CloakingField", new('e') },
+            { "DrillingClaws", new('r') },
+            { "InfernalPreigniter", new('t') }, // Hellion upgrade
+            { "SmartServos", new('a') },        // Viking/Thor transform speed
+            { "HighImpactPayload", new('s') },  // Thor mode toggle
+            { "HyperflightRotors", new('d') },  // Banshee speed
+            { "AdvancedBallistics", new('f') }, // Raven range
+            { "WeaponRefit", new('g') },        // Battlecruiser Yamato
         };
 
-        UpgradeMap = new Dictionary<string, char>
+        UpgradeMap = new Dictionary<string, BuildOption>
         {
             // Main armory upgrades
-            { "InfantryWeaponsLevel1", 'a' },
-            { "InfantryWeaponsLevel2", 'a' },
-            { "InfantryWeaponsLevel3", 'a' },
-            { "InfantryArmorLevel1", 's' },
-            { "InfantryArmorLevel2", 's' },
-            { "InfantryArmorLevel3", 's' },
-            { "VehicleWeaponsLevel1", 'd' },
-            { "VehicleWeaponsLevel2", 'd' },
-            { "VehicleWeaponsLevel3", 'd' },
-            { "ShipWeaponsLevel1", 'f' },
-            { "ShipWeaponsLevel2", 'f' },
-            { "ShipWeaponsLevel3", 'f' },
-            { "VehiclePlatingLevel1", 'g' },
-            { "VehiclePlatingLevel2", 'g' },
-            { "VehiclePlatingLevel3", 'g' },
-            { "ShipPlatingLevel1", 'h' },
-            { "ShipPlatingLevel2", 'h' },
-            { "ShipPlatingLevel3", 'h' },
+            { "InfantryWeaponsLevel1", new('a') },
+            { "InfantryWeaponsLevel2", new('a') },
+            { "InfantryWeaponsLevel3", new('a') },
+            { "InfantryArmorLevel1", new('s') },
+            { "InfantryArmorLevel2", new('s') },
+            { "InfantryArmorLevel3", new('s') },
+            { "VehicleWeaponsLevel1", new('d') },
+            { "VehicleWeaponsLevel2", new('d') },
+            { "VehicleWeaponsLevel3", new('d') },
+            { "ShipWeaponsLevel1", new('f') },
+            { "ShipWeaponsLevel2", new('f') },
+            { "ShipWeaponsLevel3", new('f') },
+            { "VehiclePlatingLevel1", new('g') },
+            { "VehiclePlatingLevel2", new('g') },
+            { "VehiclePlatingLevel3", new('g') },
+            { "ShipPlatingLevel1", new('h') },
+            { "ShipPlatingLevel2", new('h') },
+            { "ShipPlatingLevel3", new('h') },
         };
+        CreateActiveUnits();
     }
 }

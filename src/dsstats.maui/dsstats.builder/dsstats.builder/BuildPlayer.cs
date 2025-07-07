@@ -85,6 +85,12 @@ public static class BuildPlayer
             {
                 User32Wrapper.SimulateRelativeMouseMove(e.X, e.Y);
             }
+            else if (e.Type == InputType.MouseRightClick)
+            {
+                User32Wrapper.SetCursorPos(e.X, e.Y);
+                User32Wrapper.mouse_event(User32Wrapper.MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, UIntPtr.Zero);
+                User32Wrapper.mouse_event(User32Wrapper.MOUSEEVENTF_RIGHTUP, 0, 0, 0, UIntPtr.Zero);
+            }
         }
         if (shiftCurrentlyDown)
             User32Wrapper.keybd_event(User32Wrapper.VK_SHIFT, 0, User32Wrapper.KEYEVENTF_KEYUP, UIntPtr.Zero);

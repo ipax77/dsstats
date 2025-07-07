@@ -78,6 +78,8 @@ public static class User32Wrapper
     public const uint MOUSEEVENTF_LEFTUP = 0x0004;
     public const uint MOUSEEVENTF_MIDDLEDOWN = 0x0020;
     public const uint MOUSEEVENTF_MIDDLEUP = 0x0040;
+    public const uint MOUSEEVENTF_RIGHTDOWN = 0x0008;
+    public const uint MOUSEEVENTF_RIGHTUP = 0x0010;
 
     // Keyboard event constants
     public const uint KEYEVENTF_KEYUP = 0x0002;

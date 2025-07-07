@@ -37,7 +37,7 @@ public class ScreenArea
         homography = new Homography(buildPoints);
     }
 
-    private RlPoint ApplyTransforms(RlPoint point)
+    public RlPoint ApplyTransforms(RlPoint point)
     {
         return new RlPoint((int)(point.X * _scaleX), (int)(point.Y * _scaleY));
     }

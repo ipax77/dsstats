@@ -9,5 +9,6 @@ public enum InputType
     MouseClick = 1,
     MouseMove = 2,
     KeyPress = 3,
-    MouseMoveRelative = 4
+    MouseMoveRelative = 4,
+    MouseRightClick = 5,
 }
