@@ -49,7 +49,7 @@ public class WorkerMenu
         var relativeScreenPoint = screenArea.ApplyTransforms(screenPoint);
         var center = screenArea.GetCenter();
         var toggleEvent = new InputEvent(InputType.MouseRightClick, relativeScreenPoint.X, relativeScreenPoint.Y, 0, 20);
-        var moveEvent = new InputEvent(InputType.MouseRightClick, center.X, center.Y, 0, 200);
+        var moveEvent = new InputEvent(InputType.MouseMove, center.X, center.Y, 0, 200);
         return [toggleEvent, moveEvent];
     }
 }
