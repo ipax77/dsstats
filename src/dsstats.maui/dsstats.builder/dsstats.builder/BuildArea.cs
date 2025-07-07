@@ -24,9 +24,11 @@ public class BuildArea
         new RlPoint(171, 146),   // Bottom
     ];
     private Dictionary<string, HashSet<RlPoint>> units = [];
+    private int team = 0;
 
     public BuildArea(int team)
     {
+        this.team = team;
         polygon = team == 1 ? polygon1 : polygon2;
     }
 
@@ -38,6 +40,7 @@ public class BuildArea
                 .OrderBy(o => o.X).ThenBy(t => t.Y)
                 .Select(pos => new BuildUnit(unit.Key, pos)))
             .ToList();
+        int worker = team == 1 ? 0x31 : 0x32;
 
         if (allUnits.Count == 0)
         {
@@ -82,7 +85,7 @@ public class BuildArea
         if (bottomUnits.Count > 0)
         {
             Console.WriteLine($"bottom units: {bottomUnits.Count}");
-            events.AddRange(DsBuilder.ScrollCenter());
+            events.AddRange(DsBuilder.ScrollCenter(worker));
             events.Add(new(InputType.KeyPress, 0, 0, 0x51, 5)); // Build Menu
             events.AddRange(DsBuilder.ScrollY(Convert.ToInt32(-500 * screenArea._scaleY), screenArea.GetCenter()));
             foreach (var bottomUnit in bottomUnits)

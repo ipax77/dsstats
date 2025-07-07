@@ -28,10 +28,14 @@ public class ScreenArea
         new RlPoint(1469, 1503),    // Bottom
     ];
 
+    private RlPoint center = RlPoint.Zero;
+    private RlPoint center2 = new(1278, 581);
+    private RlPoint center1 = new(1410, 470);
 
     public ScreenArea(int team, int screenWidth, int screenHeight)
     {
         polygon = team == 1 ? polygon1 : polygon2;
+        center = team == 1 ? center1 : center2;
         _scaleX = screenWidth / 2560f;
         _scaleY = screenHeight / 1440f;
         this.screenWidth = screenWidth;
@@ -54,15 +58,7 @@ public class ScreenArea
 
     public RlPoint GetCenter()
     {
-        var transformedPolygon = polygon
-            .Select(s => ApplyTransforms(s))
-            .ToList();
-
-        int sumX = transformedPolygon.Sum(p => p.X);
-        int sumY = transformedPolygon.Sum(p => p.Y);
-        int count = transformedPolygon.Count;
-
-        return new(sumX / count, sumY / count);
+        return ApplyTransforms(center);
     }
 
     /// <summary>

@@ -29,9 +29,7 @@ public static class DsBuilder
             events.AddRange(EnterString("Clear"));
             events.AddRange(EnterString($"Enemy {commander}"));
 
-            // rebind worker
-            events.Add(new(InputType.MouseClick, screenWidth / 2, screenHeight / 2, 0, DelayMs)); // TODO
-            events.Add(new(InputType.KeyPress, 0, 0, 0x32, DelayMs, false, false, true));
+
         }
 
         events.Add(new(InputType.KeyPress, 0, 0, 0x51, DelayMs));
@@ -46,6 +44,8 @@ public static class DsBuilder
         Thread.Sleep(2500);
         int screenWidth = User32Wrapper.GetSystemMetrics(User32Wrapper.SM_CXSCREEN);
         int screenHeight = User32Wrapper.GetSystemMetrics(User32Wrapper.SM_CYSCREEN);
+        var screenArea = new ScreenArea(team, screenWidth, screenHeight);
+
         var build = CmdrBuildFactory.Create(commander);
         if (build is null)
         {
@@ -67,20 +67,21 @@ public static class DsBuilder
 
         // setup
         events.AddRange(EnterString("Infinite"));
+        events.AddRange(EnterString("Tier"));
         events.AddRange(EnterString("Clear"));
-        events.AddRange(EnterString($"Enemy {commander}"));
+        events.AddRange(RepickMenu.PickCommander(commander, team, screenArea));
 
         // build
         events.Add(new(InputType.KeyPress, 0, 0, 0x51, DelayMs));
 
-        events.AddRange(GetBuildEvents(spawn, build, team, screenWidth, screenHeight));
+        events.AddRange(GetBuildEvents(spawn, build, team, screenArea));
         BuildPlayer.ReplayInput(events);
     }
 
-    private static List<InputEvent> GetBuildEvents(SpawnDto spawn, CmdrBuild build, int team, int screenWidth, int screenHeight)
+    private static List<InputEvent> GetBuildEvents(SpawnDto spawn, CmdrBuild build, int team, ScreenArea screenArea)
     {
         var buildArea = new BuildArea(team);
-        var screenArea = new ScreenArea(team, screenWidth, screenHeight);
+
         foreach (var unit in spawn.Units)
         {
             buildArea.PlaceUnits(unit.Unit.Name, unit.Poss, team);
@@ -153,7 +154,7 @@ public static class DsBuilder
         return events;
     }
 
-    private static List<InputEvent> EnterString(string msg)
+    public static List<InputEvent> EnterString(string msg)
     {
         List<InputEvent> events = [];
         events.Add(new(InputType.KeyPress, 0, 0, User32Wrapper.VK_RETURN, DelayMs));

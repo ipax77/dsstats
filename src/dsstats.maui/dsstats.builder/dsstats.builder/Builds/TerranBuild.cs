@@ -23,7 +23,7 @@ public class TerranBuild : CmdrBuild
             { "WidowMine", new('z', true) },
             { "Liberator", new('x') },
             { "Thor", new('c', true, true) },
-            { "ThorExplosive", new('c', true, true) },
+            { "ThorExplosive", new('c', true) },
             { "Battlecruiser", new('v') },
         };
 

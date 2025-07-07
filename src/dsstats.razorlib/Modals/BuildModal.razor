@@ -1,8 +1,10 @@
-﻿@using Microsoft.JSInterop
+﻿@using Blazored.Toast.Services
+@using Microsoft.JSInterop
 @using dsstats.shared
 @using dsstats.shared.Interfaces
 @inject IJSRuntime JSRuntime
 @inject IRemoteToggleService RemoteToggleService
+@inject IToastService ToastService
 
 <div class="modal" id="buildmodal" tabindex="-1" aria-labelledby="buildmodalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -45,9 +47,19 @@
     Commander commander = Commander.None;
     int team = 0;
 
-    private void StartBuild()
+    private async void StartBuild()
     {
-        RemoteToggleService.Build(spawn, commander, team);
+        try
+        {
+            await Task.Run(() =>
+            {
+                RemoteToggleService.Build(spawn, commander, team);
+            });
+        }
+        finally
+        {
+            ToastService.ShowInfo("Build completed.");
+        }
     }
 
 
