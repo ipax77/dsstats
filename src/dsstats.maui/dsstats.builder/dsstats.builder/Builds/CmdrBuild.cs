@@ -83,4 +83,4 @@ public static class CmdrBuildFactory
     }
 }
 
-public sealed record BuildOption(char Key, bool RequiresToggle = false, bool IsActive = false);
+public sealed record BuildOption(char Key, bool RequiresToggle = false, bool IsActive = false, bool IsAbility = false);

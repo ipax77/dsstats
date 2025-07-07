@@ -16,10 +16,10 @@ public class ZergBuild : CmdrBuild
                 { "Mutalisk", new('s') },
                 { "Corruptor", new('d') },
                 { "Infestor", new('f') },
-                { "Swarm Host", new('g') },
+                { "SwarmHost", new('g') },
                 { "Viper", new('z') },
                 { "Ultralisk", new('x') },
-                { "Brood Lord", new('c') },
+                { "BroodLord", new('c') },
             };
 
         AbilityMap = new Dictionary<string, BuildOption>

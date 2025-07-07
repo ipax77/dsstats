@@ -11,7 +11,8 @@ public class ScreenArea
     public readonly float _scaleY;
     private readonly Homography homography;
 
-    private List<RlPoint> polygon =
+    private List<RlPoint> polygon = [];
+    private List<RlPoint> polygon1 =
     [
         new RlPoint(485, 437),   // Left
         new RlPoint(1124, -110),   // Top
@@ -19,9 +20,18 @@ public class ScreenArea
         new RlPoint(1468, 1423),    // Bottom
     ];
 
+    private List<RlPoint> polygon2 =
+    [
+        new RlPoint(482, 498),   // Left
+        new RlPoint(1128, -50),   // Top
+        new RlPoint(2114, 828),  // Right
+        new RlPoint(1469, 1503),    // Bottom
+    ];
 
-    public ScreenArea(int screenWidth, int screenHeight)
+
+    public ScreenArea(int team, int screenWidth, int screenHeight)
     {
+        polygon = team == 1 ? polygon1 : polygon2;
         _scaleX = screenWidth / 2560f;
         _scaleY = screenHeight / 1440f;
         this.screenWidth = screenWidth;

@@ -80,7 +80,7 @@ public static class DsBuilder
     private static List<InputEvent> GetBuildEvents(SpawnDto spawn, CmdrBuild build, int team, int screenWidth, int screenHeight)
     {
         var buildArea = new BuildArea(team);
-        var screenArea = new ScreenArea(screenWidth, screenHeight);
+        var screenArea = new ScreenArea(team, screenWidth, screenHeight);
         foreach (var unit in spawn.Units)
         {
             buildArea.PlaceUnits(unit.Unit.Name, unit.Poss, team);
@@ -106,7 +106,7 @@ public static class DsBuilder
         buildArea.PlaceUnits("Zergling", swarmlings, team);
         buildArea.PlaceUnits("Baneling", banelings, team);
 
-        var screenArea = new ScreenArea(2560, 1440);
+        var screenArea = new ScreenArea(team, 2560, 1440);
         var build = new ZergBuild();
         var events = buildArea.GetBuildEvents(screenArea, build);
 

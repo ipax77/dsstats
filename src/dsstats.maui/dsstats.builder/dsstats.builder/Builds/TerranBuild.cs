@@ -11,32 +11,37 @@ public class TerranBuild : CmdrBuild
             { "Marauder", new('w') },
             { "Reaper", new('e') },
             { "Ghost", new('r') },
-            { "Hellion", new('t') },
-            { "Hellbat", new('a') },
-            { "SiegeTank", new('s') },
-            { "WidowMine", new('d') },
-            { "Cyclone", new('f') },
-            { "Thor", new('g') },
-            { "Viking", new('z') },
-            { "Medivac", new('x') },
-            { "Banshee", new('c') },
-            { "Raven", new('v') },
-            { "Battlecruiser", new('b') },
+            { "Hellion", new('t', true, true) },
+            { "Hellbat", new('t', true) },
+            { "Medivac", new('a') },
+            { "Banshee", new('s') },
+            { "Viking", new('d', true, true) },
+            { "VikingLanded", new('d', true) },
+            { "Raven", new('f') },
+            { "Tank", new('g') },
+            { "Cyclone", new('z', true, true) },
+            { "WidowMine", new('z', true) },
+            { "Liberator", new('x') },
+            { "Thor", new('c', true, true) },
+            { "ThorExplosive", new('c', true, true) },
+            { "Battlecruiser", new('v') },
         };
 
         AbilityMap = new Dictionary<string, BuildOption>
         {
             // W-menu (upgrades & abilities)
-            { "Stimpack", new('q') },
+            { "CombatShield", new('q') },
             { "ConcussiveShells", new('w') },
-            { "CloakingField", new('e') },
-            { "DrillingClaws", new('r') },
-            { "InfernalPreigniter", new('t') }, // Hellion upgrade
-            { "SmartServos", new('a') },        // Viking/Thor transform speed
-            { "HighImpactPayload", new('s') },  // Thor mode toggle
-            { "HyperflightRotors", new('d') },  // Banshee speed
-            { "AdvancedBallistics", new('f') }, // Raven range
-            { "WeaponRefit", new('g') },        // Battlecruiser Yamato
+            { "Stimpack", new('e') },
+            { "PersonalCloaking", new('r') },
+            { "InfernalPre-Igniter", new('a') },
+            { "CaduceusReactor", new('s') },
+            { "CloakingField", new('d') },
+            { "SmartServos", new('f') },
+            { "Mag-FieldAccelerator", new('z') },
+            { "DrillingClaws", new('x') },
+            { "AdvancedBallistics", new('c') },     
+            { "WeaponRefit", new('v') },     
         };
 
         UpgradeMap = new Dictionary<string, BuildOption>
