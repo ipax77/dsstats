@@ -40,9 +40,45 @@ public static class DsBuilder
         return events;
     }
 
+    public static void Build(SpawnDto spawn, Commander commander, int team)
+    {
+        Thread.Sleep(2500);
+        int screenWidth = User32Wrapper.GetSystemMetrics(User32Wrapper.SM_CXSCREEN);
+        int screenHeight = User32Wrapper.GetSystemMetrics(User32Wrapper.SM_CYSCREEN);
+        var build = CmdrBuildFactory.Create(commander);
+        if (build is null)
+        {
+            return;
+        }
+        int workerKey = team == 1 ? 0x31 : 0x32;
+        List<InputEvent> events = [];
+
+        // zoom out
+        events.Add(new(InputType.KeyPress, 0, 0, User32Wrapper.VK_PRIOR, DelayMs));
+        events.Add(new(InputType.KeyPress, 0, 0, User32Wrapper.VK_PRIOR, DelayMs));
+        events.Add(new(InputType.KeyPress, 0, 0, User32Wrapper.VK_PRIOR, DelayMs));
+        events.Add(new(InputType.KeyPress, 0, 0, User32Wrapper.VK_PRIOR, DelayMs));
+        events.Add(new(InputType.KeyPress, 0, 0, User32Wrapper.VK_PRIOR, DelayMs));
+
+        // center worker
+        events.Add(new(InputType.KeyPress, 0, 0, workerKey, DelayMs));
+        events.AddRange(ScrollCenter(workerKey));
+
+        // setup
+        events.AddRange(EnterString("Infinite"));
+        events.AddRange(EnterString("Clear"));
+        events.AddRange(EnterString($"Enemy {commander}"));
+
+        // build
+        events.Add(new(InputType.KeyPress, 0, 0, 0x51, DelayMs));
+
+        events.AddRange(GetBuildEvents(spawn, build, team, screenWidth, screenHeight));
+        BuildPlayer.ReplayInput(events);
+    }
+
     private static List<InputEvent> GetBuildEvents(SpawnDto spawn, CmdrBuild build, int team, int screenWidth, int screenHeight)
     {
-        var buildArea = new BuildArea();
+        var buildArea = new BuildArea(team);
         var screenArea = new ScreenArea(screenWidth, screenHeight);
         foreach (var unit in spawn.Units)
         {
@@ -65,7 +101,7 @@ public static class DsBuilder
 
         HashSet<RlPoint> rlPoints = [];
 
-        var buildArea = new BuildArea();
+        var buildArea = new BuildArea(team);
         buildArea.PlaceUnits("Zergling", swarmlings, team);
         buildArea.PlaceUnits("Baneling", banelings, team);
 

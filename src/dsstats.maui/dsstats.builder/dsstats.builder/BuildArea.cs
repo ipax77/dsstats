@@ -8,14 +8,27 @@ namespace dsstats.builder;
 /// </summary>
 public class BuildArea
 {
-    private List<RlPoint> polygon =
+    private List<RlPoint> polygon = [];
+    private List<RlPoint> polygon2 =
     [
         new RlPoint(73, 82),   // Left
         new RlPoint(84, 93),   // Top
         new RlPoint(101, 76),  // Right
         new RlPoint(90, 65),    // Bottom
     ];
+    private List<RlPoint> polygon1 =
+    [
+        new RlPoint(154, 163),   // Left
+        new RlPoint(165, 174),    // Top
+        new RlPoint(182, 157),  // Right
+        new RlPoint(171, 146),   // Bottom
+    ];
     private Dictionary<string, HashSet<RlPoint>> units = [];
+
+    public BuildArea(int team)
+    {
+        polygon = team == 1 ? polygon1 : polygon2;
+    }
 
     public List<InputEvent> GetBuildEvents(ScreenArea screenArea, CmdrBuild build)
     {
