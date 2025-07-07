@@ -31,10 +31,13 @@ public abstract class CmdrBuild
                     if (toggleEvent != null)
                     {
                         events.AddRange(toggleEvent);
-                        var otherToggleUnit = UnitMap.FirstOrDefault(f => f.Value.Key == buildOption.Key && f.Key != unitName);
-                        if (!string.IsNullOrEmpty(otherToggleUnit.Key))
+                        var otherToggleUnits = UnitMap.Where(f => f.Value.Key == buildOption.Key && f.Key != unitName);
+                        foreach (var otherUnit in otherToggleUnits)
                         {
-                            activeUnits[otherToggleUnit.Key] = false;
+                            if (activeUnits.ContainsKey(otherUnit.Key))
+                            {
+                                activeUnits[otherUnit.Key] = false;
+                            }
                         }
                         activeUnits[unitName] = true;
                     }
