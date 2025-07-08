@@ -48,8 +48,9 @@ public class WorkerMenu
         RlPoint screenPoint = new(x, y);
         var relativeScreenPoint = screenArea.ApplyTransforms(screenPoint);
         var center = screenArea.GetCenter();
+        var moveEvent1 = new InputEvent(InputType.MouseMove, relativeScreenPoint.X, relativeScreenPoint.Y, 0, 200);
         var toggleEvent = new InputEvent(InputType.MouseRightClick, relativeScreenPoint.X, relativeScreenPoint.Y, 0, 20);
-        var moveEvent = new InputEvent(InputType.MouseMove, center.X, center.Y, 0, 200);
-        return [toggleEvent, moveEvent];
+        var moveEvent2 = new InputEvent(InputType.MouseMove, center.X, center.Y, 0, 200);
+        return [moveEvent1, toggleEvent, moveEvent2];
     }
 }

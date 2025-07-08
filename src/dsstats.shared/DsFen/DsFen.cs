@@ -170,13 +170,14 @@ public static class DsFen
                         var spawnUnit = spawn.Units.FirstOrDefault(u => u.Unit.Name == unitName);
                         if (spawnUnit == null)
                         {
-                            spawnUnit = new SpawnUnitDto { Unit = new UnitDto { Name = unitName }, Poss = "" };
+                            spawnUnit = new SpawnUnitDto { Count = 0, Unit = new UnitDto { Name = unitName }, Poss = "" };
                             spawn.Units.Add(spawnUnit);
                         }
 
                         if (!string.IsNullOrEmpty(spawnUnit.Poss))
                             spawnUnit.Poss += ",";
                         spawnUnit.Poss += $"{absPos.x},{absPos.y}";
+                        spawnUnit.Count++;
                     }
 
                     x++;
