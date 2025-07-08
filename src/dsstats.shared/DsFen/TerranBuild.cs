@@ -19,7 +19,7 @@ public class TerranBuild : CmdrBuild
             { "Viking", new('d', true, true, true) },
             { "VikingLanded", new('d', false, true) },
             { "Raven", new('f', true) },
-            { "Tank", new('g') },
+            { "SiegeTank", new('g') },
             { "Cyclone", new('z', true, true) },
             { "WidowMine", new('z', true) },
             { "Liberator", new('x', true) },

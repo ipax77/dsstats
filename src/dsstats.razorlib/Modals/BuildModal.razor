@@ -115,6 +115,7 @@
         this.team = team;
         fen = DsFen.GetFen(spawn, commander, team);
         JSRuntime.InvokeVoidAsync("openModalById", "buildmodal");
+        InvokeAsync(() => StateHasChanged());
     }
 
     public void Hide()
