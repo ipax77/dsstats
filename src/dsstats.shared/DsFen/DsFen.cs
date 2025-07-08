@@ -1,6 +1,6 @@
 ﻿namespace dsstats.shared.DsFen;
 
-public static class DsFen
+public static partial class DsFen
 {
     private static readonly List<(int x, int y)> polygon2 =
     [
@@ -50,10 +50,12 @@ public static class DsFen
             }
         }
 
-        if (groundUnits.Count == 0 && airUnits.Count == 0)
-            return string.Empty;
-
         var allPoints = groundUnits.Keys.Concat(airUnits.Keys).ToList();
+        if (!allPoints.Any())
+        {
+            return $"{team}:{cmdr};0,0;|";
+        }
+
         int minX = allPoints.Min(p => p.x);
         int maxX = allPoints.Max(p => p.x);
         int minY = allPoints.Min(p => p.y);
@@ -97,7 +99,7 @@ public static class DsFen
         var groundFen = EncodeLayer(groundUnits);
         var airFen = EncodeLayer(airUnits);
 
-        return $"{team}:{cmdr};{groundFen}|{airFen}";
+        return $"{team}:{cmdr};{minX},{minY};{groundFen}|{airFen}";
     }
 
     public static void ApplyFen(string fen, SpawnDto spawn, out Commander cmdr, out int team)
@@ -108,39 +110,45 @@ public static class DsFen
         if (string.IsNullOrWhiteSpace(fen))
             return;
 
-        // Split metadata and layers
         var parts = fen.Split(';');
-        if (parts.Length != 2)
-            return;
+        if (parts.Length < 2) return;
 
-        var header = parts[0]; // e.g., "2:Zerg"
-        var layers = parts[1].Split('|');
-
+        var header = parts[0];
         var headerParts = header.Split(':');
-        if (headerParts.Length != 2)
-            return;
-
-        if (!int.TryParse(headerParts[0], out team))
-            return;
-
-        if (!Enum.TryParse(headerParts[1], out cmdr))
-            return;
+        if (headerParts.Length != 2) return;
+        if (!int.TryParse(headerParts[0], out team)) return;
+        if (!Enum.TryParse(headerParts[1], out cmdr)) return;
 
         var build = CmdrBuildFactory.Create(cmdr);
-        if (build == null)
-            return;
-
+        if (build == null) return;
+        
         spawn.Units.Clear();
         var polygon = team == 1 ? polygon1 : polygon2;
+
+        int minX = 0, minY = 0;
+        string[] layers;
+
+        if (parts.Length == 3) // New format: team:cmdr;minX,minY;ground|air
+        {
+            var originParts = parts[1].Split(',');
+            if (originParts.Length != 2) return;
+            if (!int.TryParse(originParts[0], out minX)) return;
+            if (!int.TryParse(originParts[1], out minY)) return;
+            layers = parts[2].Split('|');
+        }
+        else // Old format: team:cmdr;ground|air
+        {
+            layers = parts[1].Split('|');
+        }
 
         string groundLayer = layers.Length > 0 ? layers[0] : "";
         string airLayer = layers.Length > 1 ? layers[1] : "";
 
-        ParseLayer(groundLayer, build, isAir: false, spawn, polygon);
-        ParseLayer(airLayer, build, isAir: true, spawn, polygon);
+        ParseLayer(groundLayer, build, isAir: false, spawn, polygon, minX, minY);
+        ParseLayer(airLayer, build, isAir: true, spawn, polygon, minX, minY);
     }
 
-    private static void ParseLayer(string layer, CmdrBuild build, bool isAir, SpawnDto spawn, List<(int x, int y)> polygon)
+    private static void ParseLayer(string layer, CmdrBuild build, bool isAir, SpawnDto spawn, List<(int x, int y)> polygon, int minX, int minY)
     {
         if (string.IsNullOrWhiteSpace(layer))
             return;
@@ -150,21 +158,29 @@ public static class DsFen
         foreach (var row in rows)
         {
             int x = 0;
-            foreach (char ch in row)
+            for (int i = 0; i < row.Length; i++)
             {
-                if (char.IsDigit(ch))
+                if (char.IsDigit(row[i]))
                 {
-                    x += ch - '0';
+                    string numStr = "";
+                    while (i < row.Length && char.IsDigit(row[i]))
+                    {
+                        numStr += row[i];
+                        i++;
+                    }
+                    i--; 
+                    x += int.Parse(numStr);
                 }
                 else
                 {
+                    char ch = row[i];
                     bool isUpper = char.IsUpper(ch);
                     char key = char.ToLower(ch);
 
                     string? unitName = build.GetUnitNameFromKey(key, isAir, isUpper);
                     if (unitName != null)
                     {
-                        var normPos = (x, y);
+                        var normPos = (x + minX, y + minY);
                         var absPos = DenormalizeFromTop(normPos, polygon);
 
                         var spawnUnit = spawn.Units.FirstOrDefault(u => u.Unit.Name == unitName);
@@ -179,11 +195,9 @@ public static class DsFen
                         spawnUnit.Poss += $"{absPos.x},{absPos.y}";
                         spawnUnit.Count++;
                     }
-
                     x++;
                 }
             }
-
             y++;
         }
     }
@@ -210,7 +224,7 @@ public static class DsFen
         return points;
     }
 
-    private static (int x, int y) NormalizeToTop((int x, int y) point, List<(int x, int y)> polygon)
+    internal static (int x, int y) NormalizeToTop((int x, int y) point, List<(int x, int y)> polygon)
     {
         var top = polygon[1]; // Top corner is reference
         return new(point.x - top.x, point.y - top.y);

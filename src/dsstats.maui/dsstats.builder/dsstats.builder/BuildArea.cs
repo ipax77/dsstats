@@ -139,7 +139,7 @@ public class BuildArea
         for (int i = 0; i < stringPoints.Length; i += 2)
         {
             RlPoint mapPoint = new(int.Parse(stringPoints[i]), int.Parse(stringPoints[i + 1]));
-            if (IsPointInPolygon(mapPoint, polygon))
+            if (IsPointInsideOrOnEdge(mapPoint))
             {
                 mapPoints.Add(NormalizeToTop(mapPoint));
             }
