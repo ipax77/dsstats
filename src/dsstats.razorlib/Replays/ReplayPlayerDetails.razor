@@ -3,6 +3,7 @@
 @using dsstats.shared
 @using dsstats.razorlib.Services
 @using dsstats.shared.Interfaces
+@using static dsstats.razorlib.Replays.ReplayPlayersDetailContainer
 @inject IDsDataService dsDataService
 @inject IRemoteToggleService remoteToggleService
 
@@ -91,11 +92,11 @@
                     </h5>
                 </div>
             }
-            @if (remoteToggleService.IsMaui && Spawn != null)
+            @if (Spawn != null)
             {
                 <div class="col-auto">
                     <button type="button" class="btn btn-sm btn-outline-light"
-                            @onclick="e => buildModal?.Show(Spawn, Player.Race, Player.Team)">
+                            @onclick="e => OnBuildRequest.InvokeAsync(new DsBuildInfo() { Spawn = Spawn, Commander = Player.Race, Team = Player.Team })">
                         Build
                     </button>
                 </div>
@@ -127,8 +128,6 @@
     </div>
 </div>
 
-<BuildModal @ref="buildModal" />
-
 @code {
     [Parameter, EditorRequired]
     public Breakpoint Breakpoint { get; set; }
@@ -142,13 +141,15 @@
     [Parameter, EditorRequired]
     public Lazy<Task<IJSObjectReference>> moduleTask { get; set; } = default!;
 
+    [Parameter]
+    public EventCallback<DsBuildInfo> OnBuildRequest { get; set; }
+
     bool IsWinner;
     bool isLoading;
 
     SpawnDto? Spawn = null;
     SpawnInfo spawnInfo = new();
     ListBuildUnit? highlightUnit = null;
-    BuildModal? buildModal;
 
     bool showMap = false;
     bool showUpgrades = false;
