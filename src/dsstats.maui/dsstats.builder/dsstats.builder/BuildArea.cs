@@ -1,3 +1,5 @@
+using dsstats.shared.DsFen;
+
 namespace dsstats.builder;
 
 /// <summary>
@@ -50,6 +52,7 @@ public class BuildArea
         List<BuildUnit> topUnits = [];
         List<BuildUnit> centerUnits = [];
         List<BuildUnit> bottomUnits = [];
+        WorkerMenu workerMenu = new();
 
         foreach (var unit in allUnits)
         {
@@ -71,7 +74,7 @@ public class BuildArea
 
         foreach (var centerUnit in centerUnits)
         {
-            events.AddRange(build.GetBuildEvents(centerUnit.UnitName, centerUnit.Pos, screenArea));
+            events.AddRange(build.GetBuildEvents(centerUnit.UnitName, centerUnit.Pos, screenArea, workerMenu));
         }
         if (topUnits.Count > 0)
         {
@@ -79,7 +82,7 @@ public class BuildArea
             foreach (var topUnit in topUnits)
             {
                 events.AddRange(build.GetBuildEvents(topUnit.UnitName,
-                    topUnit.Pos with { Y = topUnit.Pos.Y + Convert.ToInt32(125 * screenArea._scaleY) }, screenArea));
+                    topUnit.Pos with { Y = topUnit.Pos.Y + Convert.ToInt32(125 * screenArea._scaleY) }, screenArea, workerMenu));
             }
         }
         if (bottomUnits.Count > 0)
@@ -91,7 +94,7 @@ public class BuildArea
             foreach (var bottomUnit in bottomUnits)
             {
                 events.AddRange(build.GetBuildEvents(bottomUnit.UnitName,
-                    bottomUnit.Pos with { Y = bottomUnit.Pos.Y - Convert.ToInt32(300 * screenArea._scaleY) }, screenArea));
+                    bottomUnit.Pos with { Y = bottomUnit.Pos.Y - Convert.ToInt32(300 * screenArea._scaleY) }, screenArea, workerMenu));
             }
         }
 
@@ -136,7 +139,10 @@ public class BuildArea
         for (int i = 0; i < stringPoints.Length; i += 2)
         {
             RlPoint mapPoint = new(int.Parse(stringPoints[i]), int.Parse(stringPoints[i + 1]));
-            mapPoints.Add(NormalizeToTop(mapPoint));
+            if (IsPointInPolygon(mapPoint, polygon))
+            {
+                mapPoints.Add(NormalizeToTop(mapPoint));
+            }
         }
         return mapPoints;
     }
@@ -155,6 +161,134 @@ public class BuildArea
         int y2 = polygon.Max(m => m.Y);
 
         return new(x1 + ((x2 - x1) / 2), y1 + ((y2 - y1) / 2));
+    }
+
+    public string ToFenString(CmdrBuild build)
+    {
+        var groundUnits = new Dictionary<RlPoint, char>();
+        var airUnits = new Dictionary<RlPoint, char>();
+
+        foreach (var kv in units)
+        {
+            string unitName = kv.Key;
+            var buildOption = build.GetUnitBuildOption(unitName);
+            if (buildOption == null) continue;
+
+            char key = buildOption.RequiresToggle && !buildOption.IsActive
+                ? char.ToUpper(buildOption.Key)
+                : buildOption.Key;
+
+            foreach (var pos in kv.Value)
+            {
+                if (buildOption.IsAir)
+                    airUnits[pos] = key;
+                else
+                    groundUnits[pos] = key;
+            }
+        }
+
+        if (groundUnits.Count == 0 && airUnits.Count == 0)
+            return "";
+
+        // Determine grid bounds (combined for both layers)
+        var allPoints = groundUnits.Keys.Concat(airUnits.Keys).ToList();
+        int minX = allPoints.Min(p => p.X);
+        int maxX = allPoints.Max(p => p.X);
+        int minY = allPoints.Min(p => p.Y);
+        int maxY = allPoints.Max(p => p.Y);
+
+        string EncodeLayer(Dictionary<RlPoint, char> layer)
+        {
+            var rows = new List<string>();
+            for (int y = minY; y <= maxY; y++)
+            {
+                string row = "";
+                int emptyCount = 0;
+
+                for (int x = minX; x <= maxX; x++)
+                {
+                    var pt = new RlPoint(x, y);
+                    if (layer.TryGetValue(pt, out char key))
+                    {
+                        if (emptyCount > 0)
+                        {
+                            row += emptyCount.ToString();
+                            emptyCount = 0;
+                        }
+                        row += key;
+                    }
+                    else
+                    {
+                        emptyCount++;
+                    }
+                }
+
+                if (emptyCount > 0)
+                    row += emptyCount.ToString();
+
+                rows.Add(row);
+            }
+
+            return string.Join("/", rows);
+        }
+
+        var groundFen = EncodeLayer(groundUnits);
+        var airFen = EncodeLayer(airUnits);
+
+        return $"{groundFen}|{airFen}";
+    }
+
+    public void FromFenString(string fen, CmdrBuild build)
+    {
+        if (string.IsNullOrWhiteSpace(fen))
+            return;
+
+        // Split into ground and air layers
+        var layers = fen.Split('|');
+        string groundLayer = layers.Length > 0 ? layers[0] : "";
+        string airLayer = layers.Length > 1 ? layers[1] : "";
+
+        ParseLayer(groundLayer, build, isAir: false);
+        if (!string.IsNullOrWhiteSpace(airLayer))
+            ParseLayer(airLayer, build, isAir: true);
+    }
+
+    private void ParseLayer(string fenLayer, CmdrBuild build, bool isAir)
+    {
+        if (string.IsNullOrWhiteSpace(fenLayer))
+            return;
+
+        int y = 0;
+        var rows = fenLayer.Split('/');
+        foreach (var row in rows)
+        {
+            int x = 0;
+            foreach (char ch in row)
+            {
+                if (char.IsDigit(ch))
+                {
+                    x += ch - '0';
+                }
+                else
+                {
+                    bool isUpper = char.IsUpper(ch);
+                    char key = char.ToLower(ch);
+
+                    var unitName = build.GetUnitNameFromKey(key, isAir, isUpper);
+                    if (unitName != null)
+                    {
+                        if (!units.TryGetValue(unitName, out var unitPositions))
+                            unitPositions = units[unitName] = [];
+
+                        unitPositions.Add(new RlPoint(x, y)); // normalized pos
+                    }
+
+                    x++;
+                }
+            }
+
+            y++;
+        }
     }
 
     private bool IsPointInsideOrOnEdge(RlPoint p)

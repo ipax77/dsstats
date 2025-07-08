@@ -87,9 +87,18 @@ class Program
                     from rp in r.ReplayPlayers
                     from s in rp.Spawns
                     from su in s.Units
-                    where r.GameTime > minDate && rp.Team == 1 && rp.Race == Commander.Zerg && s.Breakpoint == Breakpoint.All
+                    where r.GameTime > minDate && rp.Team == 2 && rp.Race == Commander.Terran && s.Breakpoint == Breakpoint.All
+                        && su.Unit.Name == "Thor"
                     select su.Poss;
-        var posString = query.ToList();
+        var posString = query
+            .OrderByDescending(o => o.Length)
+            .Take(4)
+            .ToList();
+
+        foreach (var pos in posString)
+        {
+            Console.WriteLine(pos);
+        }
 
         var allCoords = new List<(int x, int y)>();
 

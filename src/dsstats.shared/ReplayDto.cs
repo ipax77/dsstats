@@ -82,7 +82,7 @@ public record SpawnDto
 public record SpawnUnitDto
 {
     public byte Count { get; init; }
-    public string Poss { get; init; } = null!;
+    public string Poss { get; set; } = null!;
     public UnitDto Unit { get; init; } = null!;
 }
 

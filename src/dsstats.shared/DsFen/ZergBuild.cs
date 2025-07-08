@@ -1,4 +1,4 @@
-namespace dsstats.builder;
+﻿namespace dsstats.shared.DsFen;
 
 public class ZergBuild : CmdrBuild
 {
@@ -10,16 +10,16 @@ public class ZergBuild : CmdrBuild
                 { "Baneling", new('w') },
                 { "Roach", new('e') },
                 { "Queen", new('r') },
-                { "Overseer", new('t') },
-                { "Hydralisk", new('a', true, true) },
-                { "Lurker", new('a', true) },
-                { "Mutalisk", new('s') },
-                { "Corruptor", new('d') },
+                { "Overseer", new('t', true) },
+                { "Hydralisk", new('a', false, true, true) },
+                { "Lurker", new('a', false, true) },
+                { "Mutalisk", new('s', true) },
+                { "Corruptor", new('d', true) },
                 { "Infestor", new('f') },
                 { "SwarmHost", new('g') },
-                { "Viper", new('z') },
+                { "Viper", new('z', true) },
                 { "Ultralisk", new('x') },
-                { "BroodLord", new('c') },
+                { "BroodLord", new('c', true) },
             };
 
         AbilityMap = new Dictionary<string, BuildOption>

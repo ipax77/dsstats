@@ -1,4 +1,5 @@
-namespace dsstats.builder;
+﻿namespace dsstats.shared.DsFen;
+
 
 public class TerranBuild : CmdrBuild
 {
@@ -11,20 +12,20 @@ public class TerranBuild : CmdrBuild
             { "Marauder", new('w') },
             { "Reaper", new('e') },
             { "Ghost", new('r') },
-            { "Hellion", new('t', true, true) },
-            { "Hellbat", new('t', true) },
-            { "Medivac", new('a') },
+            { "Hellion", new('t', false, true, true) },
+            { "Hellbat", new('t', false, true) },
+            { "Medivac", new('a', true) },
             { "Banshee", new('s') },
-            { "Viking", new('d', true, true) },
-            { "VikingLanded", new('d', true) },
-            { "Raven", new('f') },
+            { "Viking", new('d', true, true, true) },
+            { "VikingLanded", new('d', false, true) },
+            { "Raven", new('f', true) },
             { "Tank", new('g') },
             { "Cyclone", new('z', true, true) },
             { "WidowMine", new('z', true) },
-            { "Liberator", new('x') },
+            { "Liberator", new('x', true) },
             { "Thor", new('c', true, true) },
             { "ThorExplosive", new('c', true) },
-            { "Battlecruiser", new('v') },
+            { "Battlecruiser", new('v', true) },
         };
 
         AbilityMap = new Dictionary<string, BuildOption>
@@ -40,8 +41,8 @@ public class TerranBuild : CmdrBuild
             { "SmartServos", new('f') },
             { "Mag-FieldAccelerator", new('z') },
             { "DrillingClaws", new('x') },
-            { "AdvancedBallistics", new('c') },     
-            { "WeaponRefit", new('v') },     
+            { "AdvancedBallistics", new('c') },
+            { "WeaponRefit", new('v') },
         };
 
         UpgradeMap = new Dictionary<string, BuildOption>

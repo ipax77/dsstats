@@ -1,6 +1,7 @@
 ﻿@using Blazored.Toast.Services
 @using Microsoft.JSInterop
 @using dsstats.shared
+@using dsstats.shared.DsFen
 @using dsstats.shared.Interfaces
 @inject IJSRuntime JSRuntime
 @inject IRemoteToggleService RemoteToggleService
@@ -32,7 +33,11 @@
                     <li>Ensure no other application is in focus during the build process.</li>
                 </ol>
                 <hr />
-                <p><strong>How It Works:</strong> The builder reads your replay, calculates unit placements, and simulates input to recreate the build exactly.</p>
+                <div>
+                    <label for="fenInput" class="form-label"><strong>Modify FEN (optional):</strong></label>
+                    <textarea id="fenInput" class="form-control" rows="4" @bind="fen"></textarea>
+                    <button class="btn btn-outline-primary mt-2" @onclick="ApplyFen">Apply FEN</button>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -46,6 +51,7 @@
     SpawnDto spawn = new();
     Commander commander = Commander.None;
     int team = 0;
+    string fen = string.Empty;
 
     private async void StartBuild()
     {
@@ -62,12 +68,30 @@
         }
     }
 
+    private void ApplyFen()
+    {
+        try
+        {
+            var newSpawn = new SpawnDto();
+            DsFen.ApplyFen(fen, newSpawn, out var parsedCommander, out var parsedTeam);
+            spawn = newSpawn;
+            commander = parsedCommander;
+            team = parsedTeam;
+
+            ToastService.ShowSuccess("FEN applied successfully.");
+        }
+        catch
+        {
+            ToastService.ShowError("Failed to apply FEN.");
+        }
+    }
 
     public void Show(SpawnDto spawn, Commander commander, int team)
     {
         this.spawn = spawn;
         this.commander = commander;
         this.team = team;
+        fen = DsFen.GetFen(spawn, commander, team);
         JSRuntime.InvokeVoidAsync("openModalById", "buildmodal");
     }
 

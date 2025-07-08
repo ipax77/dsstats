@@ -1,4 +1,4 @@
-namespace dsstats.builder;
+﻿namespace dsstats.shared.DsFen;
 
 public class ProtossBuild : CmdrBuild
 {
@@ -11,19 +11,19 @@ public class ProtossBuild : CmdrBuild
             { "Stalker", new('w') },
             { "Sentry", new('e') },
             { "Adept", new('r') },
-            { "Observer", new('t', true, true) },
-            { "Oracle", new('t', true) },
+            { "Observer", new('t', true, true, true) },
+            { "Oracle", new('t', true, true) },
             { "DarkTemplar", new('a') },
             { "Disruptor", new('s') },
-            { "Phenix", new('d') },
+            { "Phenix", new('d', true) },
             { "HighTemplar", new('f', true, true) },
             { "Archon", new('f', true) },
             { "Immortal", new('g') },
-            { "VoidRay", new('z') },
-            { "Colossus", new('x') },
-            { "Tempest", new('c') },
-            { "Carrier", new('v') },
-            { "Mothership", new('t', IsAbility: true) },
+            { "VoidRay", new('z', true) },
+            { "Colossus", new('x', true) },
+            { "Tempest", new('c', true) },
+            { "Carrier", new('v', true) },
+            { "Mothership", new('t', true, IsAbility: true) },
         };
 
         AbilityMap = new Dictionary<string, BuildOption>
