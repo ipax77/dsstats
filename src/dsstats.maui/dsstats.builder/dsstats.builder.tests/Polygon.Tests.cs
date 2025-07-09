@@ -1,3 +1,5 @@
+using dsstats.shared.DsFen;
+
 namespace dsstats.builder.tests;
 
 [TestClass]
@@ -62,6 +64,34 @@ public sealed class PolygonTests
     public void CanGetAllPoint()
     {
         var polygon = new Polygon(new(165, 174), new(182, 157), new(171, 146), new(154, 163));
+        var points = polygon.GetAllPointsInsideOrOnEdge();
+        Assert.AreEqual(403, points.Count());
+    }
+
+    [TestMethod]
+    public void Team2CanNormalizePoint()
+    {
+        var polygon = new Polygon(new(84, 93), new(101, 76), new(90, 65), new(73, 82));
+        DsPoint point = new(73, 82);
+        var normalizedPoint = polygon.GetNormalizedPoint(point);
+        Assert.AreEqual(0, normalizedPoint.X);
+        Assert.AreEqual(0, normalizedPoint.Y);
+    }
+
+    [TestMethod]
+    public void Team2CanDeNormalizePoint()
+    {
+        var polygon = new Polygon(new(84, 93), new(101, 76), new(90, 65), new(73, 82));
+        DsPoint normalizedPoint = new(0, 0);
+        var point = polygon.GetDeNormalizedPoint(normalizedPoint);
+        Assert.AreEqual(73, point.X, $"({normalizedPoint.X},{normalizedPoint.Y}) => ({point.X},{point.Y})");
+        Assert.AreEqual(82, point.Y, $"({normalizedPoint.X},{normalizedPoint.Y}) => ({point.X},{point.Y})");
+    }
+
+    [TestMethod]
+    public void Team2CanGetAllPoint()
+    {
+        var polygon = new Polygon(new(84, 93), new(101, 76), new(90, 65), new(73, 82));
         var points = polygon.GetAllPointsInsideOrOnEdge();
         Assert.AreEqual(403, points.Count());
     }

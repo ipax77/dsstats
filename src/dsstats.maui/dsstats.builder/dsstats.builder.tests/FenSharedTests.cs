@@ -59,23 +59,29 @@ public sealed class FenSharedTests
                 new() { Unit = new() { Name = "Marine" }, Poss = "160,160,161,160,163,160,165,159,167,154" },
             }
         };
-        var positions = spawn.Units.First().Poss.Split(',').Select(int.Parse).OrderBy(o => o).ToList();
+        var points = DsFen.GetPoints(spawn.Units.First().Poss).OrderBy(o => o.X).ThenBy(o => o.Y).ToList();
+        var polygon = DsFen.polygon1;
+        foreach (var point in points)
+        {
+            Assert.IsTrue(polygon.IsPointInside(point), $"Point {point} is not inside the polygon.");
+        }
+
         string fen = DsFen.GetFen(spawn, cmdr, team);
         Assert.IsNotNull(fen);
         Assert.IsTrue(fen.Length > 10);
 
-        var reSpawn = new SpawnDto();
+        SpawnDto reSpawn = new SpawnDto();
         DsFen.ApplyFen(fen, reSpawn, out cmdr, out team);
         Assert.AreEqual(Commander.Terran, cmdr);
         Assert.AreEqual(1, team);
         Assert.IsNotNull(reSpawn.Units);
         Assert.IsTrue(reSpawn.Units.Count > 0);
-        var rePositions = reSpawn.Units.First().Poss.Split(',').Select(int.Parse).OrderBy(o => o).ToList();
-        Assert.AreEqual(positions.Count, rePositions.Count);
-        // for (int i = 0; i < positions.Count; i++)
-        // {
-        //     Assert.AreEqual(positions[i], rePositions[i]);
-        // }
+        var rePoints = DsFen.GetPoints(reSpawn.Units.First().Poss).OrderBy(o => o.X).ThenBy(o => o.Y).ToList();
+        Assert.AreEqual(points.Count, rePoints.Count);
+        for (int i = 0; i < points.Count; i++)
+        {
+            Assert.AreEqual(points[i], rePoints[i]);
+        }
     }
 
 }

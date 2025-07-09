@@ -1,5 +1,5 @@
-
-namespace dsstats.builder;
+﻿
+namespace dsstats.shared.DsFen;
 
 /// <summary>
 /// representing a 45° rotated rectangle as build area
