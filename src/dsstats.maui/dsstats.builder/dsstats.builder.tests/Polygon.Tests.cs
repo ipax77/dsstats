@@ -27,6 +27,16 @@ public sealed class PolygonTests
     }
 
     [TestMethod]
+    public void CanNormalizePoint2()
+    {
+        var polygon = new Polygon(new(165, 174), new(182, 157), new(171, 146), new(154, 163));
+        DsPoint point = new(160, 160);
+        var normalizedPoint = polygon.GetNormalizedPoint(point);
+        Assert.IsTrue(normalizedPoint.X >= 0, $"({normalizedPoint.X},{normalizedPoint.Y})");
+        Assert.IsTrue(normalizedPoint.Y >= 0, $"({normalizedPoint.X},{normalizedPoint.Y})");
+    }
+
+    [TestMethod]
     public void CanDeNormalizePoint()
     {
         var polygon = new Polygon(new(165, 174), new(182, 157), new(171, 146), new(154, 163));
