@@ -40,7 +40,7 @@ public static class DsBuilder
         return events;
     }
 
-    public static void Build(SpawnDto spawn, Commander commander, int team)
+    public static void Build(SpawnDto spawn, Commander commander, int team, bool dry = false)
     {
         Thread.Sleep(2500);
         var build = CmdrBuildFactory.Create(commander);
@@ -53,35 +53,16 @@ public static class DsBuilder
         int screenHeight = User32Wrapper.GetSystemMetrics(User32Wrapper.SM_CYSCREEN);
         var screenArea = new ScreenArea(team, screenWidth, screenHeight);
 
-        var events = Setup(commander, team, screenArea);
+        List<InputEvent> events = [];
+        if (!dry)
+        {
+            events.AddRange(Setup(commander, team, screenArea));
+        }
 
         // build
         events.Add(new(InputType.KeyPress, 0, 0, 0x51, DelayMs));
 
         events.AddRange(GetBuildEvents(spawn, build, team, screenArea));
-        BuildPlayer.ReplayInput(events);
-    }
-
-    public static void Build(string fen, Commander commander, int team)
-    {
-        Thread.Sleep(2500);
-        var build = CmdrBuildFactory.Create(commander);
-
-        if (build is null)
-        {
-            return;
-        }
-        int screenWidth = User32Wrapper.GetSystemMetrics(User32Wrapper.SM_CXSCREEN);
-        int screenHeight = User32Wrapper.GetSystemMetrics(User32Wrapper.SM_CYSCREEN);
-        var screenArea = new ScreenArea(team, screenWidth, screenHeight);
-
-        var events = Setup(commander, team, screenArea);
-
-        // build
-        events.Add(new(InputType.KeyPress, 0, 0, 0x51, DelayMs));
-        var buildArea = new BuildArea(team);
-        buildArea.FromFenString(fen, build);
-        events.AddRange(buildArea.GetBuildEvents(screenArea, build));
         BuildPlayer.ReplayInput(events);
     }
 
@@ -133,9 +114,6 @@ public static class DsBuilder
         var build = new TerranBuild();
         var buildArea = new BuildArea(team);
         buildArea.PlaceUnits("Thor", swarmlings, team);
-
-        var fen = buildArea.ToFenString(build);
-        Console.WriteLine(fen);
 
         var screenArea = new ScreenArea(team, 2560, 1440);
         var events = buildArea.GetBuildEvents(screenArea, build);

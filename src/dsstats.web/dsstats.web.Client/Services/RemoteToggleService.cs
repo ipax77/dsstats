@@ -1,4 +1,5 @@
-﻿using dsstats.shared.Interfaces;
+﻿using dsstats.shared;
+using dsstats.shared.Interfaces;
 
 namespace dsstats.web.Client.Services;
 
@@ -28,5 +29,10 @@ public class RemoteToggleService : IRemoteToggleService
     public void SetFromServer(bool fromServer)
     {
 
+    }
+
+    public void Build(SpawnDto spawn, Commander commander, int team)
+    {
+        throw new NotImplementedException();
     }
 }

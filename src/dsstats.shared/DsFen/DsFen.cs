@@ -16,16 +16,16 @@ public static partial class DsFen
         new (182, 157),  // Right
         new (171, 146),   // Bottom
     ];
+    private const double CenterX = 128.0;
+    private const double CenterY = 120.0;
 
     public static string GetFen(SpawnDto spawn, Commander cmdr, int team)
     {
         var build = CmdrBuildFactory.Create(cmdr);
-        if (build == null)
-        {
-            return string.Empty;
-        }
+        if (build == null) return string.Empty;
 
         var polygon = team == 1 ? polygon1 : polygon2;
+        var origin = polygon[3]; // Bottom point is origin
 
         var groundUnits = new Dictionary<(int x, int y), char>();
         var airUnits = new Dictionary<(int x, int y), char>();
@@ -33,63 +33,58 @@ public static partial class DsFen
         foreach (var unit in spawn.Units)
         {
             var buildOption = build.GetUnitBuildOption(unit.Unit.Name);
-            if (buildOption == null)
-                continue;
+            if (buildOption == null) continue;
 
             char key = buildOption.RequiresToggle && !buildOption.IsActive
                 ? char.ToUpper(buildOption.Key)
                 : buildOption.Key;
 
-            var points = GetPoints(unit.Poss).Select(s => NormalizeToTop(s, polygon));
-            foreach (var point in points)
+            var points = GetPoints(unit.Poss);
+            foreach (var p in points)
             {
+                if (!IsPointInsideOrOnEdge(p, team))
+                {
+                    continue;
+                }
+                var grid = RotateNeg45Int(p);
                 if (buildOption.IsAir)
-                    airUnits[point] = key;
+                    airUnits[grid] = key;
                 else
-                    groundUnits[point] = key;
+                    groundUnits[grid] = key;
             }
         }
 
-        var allPoints = groundUnits.Keys.Concat(airUnits.Keys).ToList();
-        if (!allPoints.Any())
-        {
-            return $"{team}:{cmdr};0,0;|";
-        }
-
-        int minX = allPoints.Min(p => p.x);
-        int maxX = allPoints.Max(p => p.x);
-        int minY = allPoints.Min(p => p.y);
-        int maxY = allPoints.Max(p => p.y);
-
         string EncodeLayer(Dictionary<(int x, int y), char> layer)
         {
+            if (layer.Count == 0) return "";
+
+            int minX = layer.Keys.Min(p => p.x);
+            int maxX = layer.Keys.Max(p => p.x);
+            int minY = layer.Keys.Min(p => p.y);
+            int maxY = layer.Keys.Max(p => p.y);
+
             var rows = new List<string>();
             for (int y = minY; y <= maxY; y++)
             {
                 string row = "";
-                int emptyCount = 0;
-
+                int empty = 0;
                 for (int x = minX; x <= maxX; x++)
                 {
-                    var pt = (x, y);
-                    if (layer.TryGetValue(pt, out char key))
+                    if (layer.TryGetValue((x, y), out char key))
                     {
-                        if (emptyCount > 0)
+                        if (empty > 0)
                         {
-                            row += emptyCount.ToString();
-                            emptyCount = 0;
+                            row += empty;
+                            empty = 0;
                         }
                         row += key;
                     }
                     else
                     {
-                        emptyCount++;
+                        empty++;
                     }
                 }
-
-                if (emptyCount > 0)
-                    row += emptyCount.ToString();
-
+                if (empty > 0) row += empty;
                 rows.Add(row);
             }
 
@@ -99,77 +94,57 @@ public static partial class DsFen
         var groundFen = EncodeLayer(groundUnits);
         var airFen = EncodeLayer(airUnits);
 
-        return $"{team}:{cmdr};{minX},{minY};{groundFen}|{airFen}";
+        return $"{team}:{cmdr};{groundFen}|{airFen}";
     }
 
     public static void ApplyFen(string fen, SpawnDto spawn, out Commander cmdr, out int team)
     {
         cmdr = Commander.None;
         team = 0;
+        spawn.Units.Clear();
 
-        if (string.IsNullOrWhiteSpace(fen))
-            return;
+        if (string.IsNullOrWhiteSpace(fen)) return;
 
         var parts = fen.Split(';');
         if (parts.Length < 2) return;
 
-        var header = parts[0];
-        var headerParts = header.Split(':');
+        var headerParts = parts[0].Split(':');
         if (headerParts.Length != 2) return;
         if (!int.TryParse(headerParts[0], out team)) return;
         if (!Enum.TryParse(headerParts[1], out cmdr)) return;
 
         var build = CmdrBuildFactory.Create(cmdr);
         if (build == null) return;
-        
-        spawn.Units.Clear();
+
         var polygon = team == 1 ? polygon1 : polygon2;
+        var origin = polygon[3];
 
-        int minX = 0, minY = 0;
-        string[] layers;
-
-        if (parts.Length == 3) // New format: team:cmdr;minX,minY;ground|air
-        {
-            var originParts = parts[1].Split(',');
-            if (originParts.Length != 2) return;
-            if (!int.TryParse(originParts[0], out minX)) return;
-            if (!int.TryParse(originParts[1], out minY)) return;
-            layers = parts[2].Split('|');
-        }
-        else // Old format: team:cmdr;ground|air
-        {
-            layers = parts[1].Split('|');
-        }
-
+        var layers = parts[1].Split('|');
         string groundLayer = layers.Length > 0 ? layers[0] : "";
         string airLayer = layers.Length > 1 ? layers[1] : "";
 
-        ParseLayer(groundLayer, build, isAir: false, spawn, polygon, minX, minY);
-        ParseLayer(airLayer, build, isAir: true, spawn, polygon, minX, minY);
+        ParseLayer(groundLayer, build, false, spawn, origin);
+        ParseLayer(airLayer, build, true, spawn, origin);
     }
 
-    private static void ParseLayer(string layer, CmdrBuild build, bool isAir, SpawnDto spawn, List<(int x, int y)> polygon, int minX, int minY)
+    private static void ParseLayer(string layer, CmdrBuild build, bool isAir, SpawnDto spawn, (int x, int y) origin)
     {
-        if (string.IsNullOrWhiteSpace(layer))
-            return;
+        if (string.IsNullOrWhiteSpace(layer)) return;
 
-        int y = 0;
         var rows = layer.Split('/');
-        foreach (var row in rows)
+        for (int y = 0; y < rows.Length; y++)
         {
             int x = 0;
+            var row = rows[y];
             for (int i = 0; i < row.Length; i++)
             {
                 if (char.IsDigit(row[i]))
                 {
-                    string numStr = "";
+                    string num = "";
                     while (i < row.Length && char.IsDigit(row[i]))
-                    {
-                        numStr += row[i];
-                        i++;
-                    }
-                    i--; 
-                    x += int.Parse(numStr);
+                        num += row[i++];
+                    i--;
+                    x += int.Parse(num);
                 }
                 else
                 {
@@ -177,37 +152,57 @@ public static partial class DsFen
                     bool isUpper = char.IsUpper(ch);
                     char key = char.ToLower(ch);
 
-                    string? unitName = build.GetUnitNameFromKey(key, isAir, isUpper);
-                    if (unitName != null)
+                    var name = build.GetUnitNameFromKey(key, isAir, isUpper);
+                    if (name != null)
                     {
-                        var normPos = (x + minX, y + minY);
-                        var absPos = DenormalizeFromTop(normPos, polygon);
+                        var gridPos = (x, y);
+                        var world = RotatePos45Int(gridPos);
 
-                        var spawnUnit = spawn.Units.FirstOrDefault(u => u.Unit.Name == unitName);
-                        if (spawnUnit == null)
+                        var unit = spawn.Units.FirstOrDefault(u => u.Unit.Name == name);
+                        if (unit == null)
                         {
-                            spawnUnit = new SpawnUnitDto { Count = 0, Unit = new UnitDto { Name = unitName }, Poss = "" };
-                            spawn.Units.Add(spawnUnit);
+                            unit = new SpawnUnitDto { Unit = new UnitDto { Name = name }, Poss = "", Count = 0 };
+                            spawn.Units.Add(unit);
                         }
 
-                        if (!string.IsNullOrEmpty(spawnUnit.Poss))
-                            spawnUnit.Poss += ",";
-                        spawnUnit.Poss += $"{absPos.x},{absPos.y}";
-                        spawnUnit.Count++;
+                        if (!string.IsNullOrEmpty(unit.Poss))
+                            unit.Poss += ",";
+                        unit.Poss += $"{world.x},{world.y}";
+                        unit.Count++;
                     }
+
                     x++;
                 }
             }
-            y++;
         }
     }
 
-    private static (int x, int y) DenormalizeFromTop((int x, int y) normPos, List<(int x, int y)> polygon)
+    private static (double x, double y) Rotate((int x, int y) pt, double angleDeg)
     {
-        var top = polygon[1]; // Top corner is reference
-        return (normPos.x + top.x, normPos.y + top.y);
+        double angleRad = angleDeg * Math.PI / 180.0;
+        double cos = Math.Cos(angleRad);
+        double sin = Math.Sin(angleRad);
+
+        double dx = pt.x - CenterX;
+        double dy = pt.y - CenterY;
+
+        double x = cos * dx - sin * dy + CenterX;
+        double y = sin * dx + cos * dy + CenterY;
+
+        return (x, y);
     }
 
+    private static (int x, int y) RotateNeg45Int((int x, int y) pt)
+    {
+        var rotated = Rotate(pt, -45);
+        return ((int)Math.Round(rotated.x), (int)Math.Round(rotated.y));
+    }
+
+    private static (int x, int y) RotatePos45Int((int x, int y) pt)
+    {
+        var rotated = Rotate(pt, +45);
+        return ((int)Math.Round(rotated.x), (int)Math.Round(rotated.y));
+    }
 
     private static List<(int x, int y)> GetPoints(string possString)
     {
@@ -224,9 +219,60 @@ public static partial class DsFen
         return points;
     }
 
-    internal static (int x, int y) NormalizeToTop((int x, int y) point, List<(int x, int y)> polygon)
+    private static bool IsPointInsideOrOnEdge((int x, int y) p, int team)
     {
-        var top = polygon[1]; // Top corner is reference
-        return new(point.x - top.x, point.y - top.y);
+        var polygon = team == 1 ? polygon1 : polygon2;
+        if (IsPointInPolygon(p, polygon))
+            return true;
+
+        for (int i = 0; i < polygon.Count; i++)
+        {
+            if (IsOnEdge(p, polygon[i], polygon[(i + 1) % polygon.Count]))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsPointInPolygon((int x, int y) p, List<(int x, int y)> polygon)
+    {
+        int wn = 0; // winding number
+        int n = polygon.Count;
+
+        for (int i = 0; i < n; i++)
+        {
+            (int x, int y) pi = polygon[i];
+            (int x, int y) pj = polygon[(i + 1) % n];
+
+            if (pi.y <= p.y)
+            {
+                if (pj.y > p.y && IsLeft(pi, pj, p) > 0)
+                    wn++;
+            }
+            else
+            {
+                if (pj.y <= p.y && IsLeft(pi, pj, p) < 0)
+                    wn--;
+            }
+        }
+
+        return wn != 0;
+    }
+
+    private static double IsLeft((int x, int y) p0, (int x, int y) p1, (int x, int y) p2)
+    {
+        return (p1.x - p0.x) * (p2.y - p0.y) - (p2.x - p0.x) * (p1.y - p0.y);
+    }
+
+    private static bool IsOnEdge((int x, int y) p, (int x, int y) a, (int x, int y) b)
+    {
+        double cross = (p.y - a.y) * (b.x - a.x) - (p.x - a.x) * (b.y - a.y);
+        if (Math.Abs(cross) > 1e-6) return false;
+
+        double dot = (p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y);
+        if (dot < 0) return false;
+
+        double lenSq = (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
+        return dot <= lenSq;
     }
 }
