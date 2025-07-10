@@ -4,6 +4,8 @@ public static partial class DsFen
 {
     public static readonly Polygon polygon2 = new Polygon(new(84, 93), new(101, 76), new(90, 65), new(73, 82));
     public static readonly Polygon polygon1 = new Polygon(new(165, 174), new(182, 157), new(171, 146), new(154, 163));
+    public static PolygonNormalizer normalizer1 = new(polygon1.GetAllPointsInsideOrOnEdge().ToList(), 24, 16);
+    public static PolygonNormalizer normalizer2 = new(polygon2.GetAllPointsInsideOrOnEdge().ToList(), 24, 16);
 
     public static string GetFen(SpawnDto spawn, Commander cmdr, int team)
     {
@@ -13,6 +15,7 @@ public static partial class DsFen
             return string.Empty;
         }
         var polygon = team == 1 ? polygon1 : polygon2;
+        var normalizer = team == 1 ? normalizer1 : normalizer2;
 
         DsFenGrid grid = new()
         {
@@ -35,7 +38,12 @@ public static partial class DsFen
                 {
                     continue;
                 }
-                spawnUnits.Add(polygon.GetNormalizedPoint(point));
+                var normalizedPoint = normalizer.GetNormalizedPoint(point);
+                if (normalizedPoint is null)
+                {
+                    continue;
+                }
+                spawnUnits.Add(normalizedPoint);
             }
         }
         return DsFenBuilder.GetFenString(grid);
@@ -51,7 +59,8 @@ public static partial class DsFen
         {
             return;
         }
-        var polygon = team == 1 ? polygon1 : polygon2;
+        var normalizer = team == 1 ? normalizer1 : normalizer2;
+
         foreach (var ent in grid.Units)
         {
             var unitName = build.GetUnitNameFromKey(ent.Key.Key, ent.Key.IsAir, ent.Key.RequiresToggle);
@@ -62,7 +71,7 @@ public static partial class DsFen
             var spawnUnit = new SpawnUnitDto()
             {
                 Unit = new() { Name = unitName },
-                Poss = string.Join(",", ent.Value.Select(s => polygon.GetDeNormalizedPoint(s)).Select(t => $"{t.X},{t.Y}"))
+                Poss = string.Join(",", ent.Value.Select(s => normalizer.GetDeNormalizedPoint(s)).Select(t => t == null ? "" : $"{t.X},{t.Y}"))
             };
             spawn.Units.Add(spawnUnit);
         }

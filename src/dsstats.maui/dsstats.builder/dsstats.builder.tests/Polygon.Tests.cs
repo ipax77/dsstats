@@ -117,5 +117,22 @@ public sealed class PolygonTests
         var points = polygon.GetAllPointsInsideOrOnEdge();
         Assert.AreEqual(403, points.Count());
     }
+
+    [TestMethod]
+    public void CanNormalizeAllPoint()
+    {
+        var polygon = new Polygon(new(84, 93), new(101, 76), new(90, 65), new(73, 82));
+        var points = polygon.GetAllPointsInsideOrOnEdge();
+        HashSet<DsDPoint> normalizedPoints = [];
+        foreach (var point in points.OrderBy(o => o.X).ThenBy(o => o.Y))
+        {
+            var normalizedPoint = polygon.GetNormalizedDoublePoint(point);
+            Assert.IsFalse(normalizedPoints.Contains(normalizedPoint), $"Duplicate normalized point: ({normalizedPoint.X},{normalizedPoint.Y})");
+            normalizedPoints.Add(normalizedPoint);
+            Console.WriteLine($"({point.X},{point.Y}) => ({normalizedPoint.X},{normalizedPoint.Y})");
+            Assert.IsTrue(normalizedPoint.X >= 0, $"({normalizedPoint.X},{normalizedPoint.Y})");
+            Assert.IsTrue(normalizedPoint.Y >= 0, $"({normalizedPoint.X},{normalizedPoint.Y})");
+        }
+    }
 }
 

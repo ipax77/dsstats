@@ -20,7 +20,7 @@ public sealed class Polygon
     // new DsPoint(84, 93),   // Top
     // new DsPoint(101, 76),  // Right
     // new DsPoint(90, 65),    // Bottom
-    const double InvSqrt2 = 1.0 / 1.41421356237; // ≈ 1/√2
+    private readonly double InvSqrt2 = 1.0 / Math.Sqrt(2); // ≈ 1/√2
 
     public Polygon(DsPoint top, DsPoint right, DsPoint bottom, DsPoint left)
     {
@@ -101,6 +101,27 @@ public sealed class Polygon
         return new DsPoint((int)Math.Round(xOrig), (int)Math.Round(yOrig));
     }
 
+    public DsDPoint GetNormalizedDoublePoint(DsPoint p)
+    {
+        double xRot = (p.X - p.Y) * InvSqrt2;
+        double yRot = (p.X + p.Y) * InvSqrt2;
+
+        return new DsDPoint(xRot - _minX, yRot - _minY);
+    }
+
+    public DsDPoint GetDeNormalizedDoublePoint(DsPoint p)
+    {
+        // Convert back to rotated space
+        double xRot = p.X + _minX;
+        double yRot = p.Y + _minY;
+
+        // Inverse rotation of +45° is -45°
+        double xOrig = (xRot + yRot) * InvSqrt2;
+        double yOrig = (yRot - xRot) * InvSqrt2;
+
+        return new DsDPoint(xOrig, yOrig);
+    }
+
     public bool IsPointInside(DsPoint p)
     {
         return _allPoints.Contains(p);
@@ -143,4 +164,6 @@ public sealed class Polygon
     }
 }
 
+
 public sealed record DsPoint(int X, int Y);
+public sealed record DsDPoint(double X, double Y);
