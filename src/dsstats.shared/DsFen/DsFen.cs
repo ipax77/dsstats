@@ -4,8 +4,8 @@ public static partial class DsFen
 {
     public static readonly Polygon polygon2 = new Polygon(new(84, 93), new(101, 76), new(90, 65), new(73, 82));
     public static readonly Polygon polygon1 = new Polygon(new(165, 174), new(182, 157), new(171, 146), new(154, 163));
-    public static PolygonNormalizer normalizer1 = new(polygon1.GetAllPointsInsideOrOnEdge().ToList(), 24, 16);
-    public static PolygonNormalizer normalizer2 = new(polygon2.GetAllPointsInsideOrOnEdge().ToList(), 24, 16);
+    public static PolygonNormalizer normalizer1 = new(polygon1.GetAllPointsInsideOrOnEdge().ToList(), 25, 17);
+    public static PolygonNormalizer normalizer2 = new(polygon2.GetAllPointsInsideOrOnEdge().ToList(), 25, 17);
 
     public static string GetFen(SpawnDto spawn, Commander cmdr, int team)
     {

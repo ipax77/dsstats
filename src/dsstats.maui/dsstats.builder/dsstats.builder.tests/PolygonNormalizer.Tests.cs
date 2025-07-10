@@ -10,7 +10,7 @@ public class PolygonNormalizerTests
     {
         var polygon = new Polygon(new(165, 174), new(182, 157), new(171, 146), new(154, 163));
         var points = polygon.GetAllPointsInsideOrOnEdge().ToList();
-        var normalizer = new PolygonNormalizer(points, 24, 16);
+        var normalizer = new PolygonNormalizer(points, 25, 17);
         foreach (var original in points)
         {
             var normalized = normalizer.GetNormalizedPoint(original);
@@ -28,7 +28,7 @@ public class PolygonNormalizerTests
     {
         var polygon = new Polygon(new(165, 174), new(182, 157), new(171, 146), new(154, 163));
         var points = polygon.GetAllPointsInsideOrOnEdge().ToList();
-        var normalizer = new PolygonNormalizer(points, 24, 16);
+        var normalizer = new PolygonNormalizer(points, 25, 17);
         DsPoint testPoint = new(160, 160);
         var normalized = normalizer.GetNormalizedPoint(testPoint);
         Assert.IsNotNull(normalized, $"Normalized point should not be null for {testPoint}");
@@ -43,7 +43,7 @@ public class PolygonNormalizerTests
     {
         var polygon = new Polygon(new(165, 174), new(182, 157), new(171, 146), new(154, 163));
         var points = polygon.GetAllPointsInsideOrOnEdge().ToList();
-        var normalizer = new PolygonNormalizer(points, 24, 16);
+        var normalizer = new PolygonNormalizer(points, 25, 17);
         DsPoint testPoint = new(163, 160);
         var normalized = normalizer.GetNormalizedPoint(testPoint);
         Assert.IsNotNull(normalized, $"Normalized point should not be null for {testPoint}");
