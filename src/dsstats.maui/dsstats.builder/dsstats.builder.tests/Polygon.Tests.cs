@@ -8,12 +8,24 @@ public sealed class PolygonTests
     [TestMethod]
     public void CanNormalizePolygon()
     {
-        var polygon = new Polygon(new(165, 174), new(182, 157), new(171, 146), new(154, 163));
+        var polygon = new Polygon(new(165, 174), new(182, 157), new(171, 146), new(154, 163)); // top, right, bottom, left
         var normalizedPolygon = polygon.GetNormalizedPolygon();
-        var vertices = normalizedPolygon.GetVertices();
-        var bottomLeft = vertices[3];
-        Assert.AreEqual(0, bottomLeft.X);
-        Assert.AreEqual(0, bottomLeft.Y);
+        var vertices = normalizedPolygon.GetVertices(); //  _left, _top, _right, _bottom
+        var normalizedBottomLeft = vertices[0];
+        var normalizedTopLeft = vertices[1];
+        var normalizedTopRight = vertices[2];
+        var normalizedBottomRight = vertices[3];
+        Assert.AreEqual(0, normalizedBottomLeft.X, $"({normalizedBottomLeft.X},{normalizedBottomLeft.Y})");
+        Assert.AreEqual(0, normalizedBottomLeft.Y, $"({normalizedBottomLeft.X},{normalizedBottomLeft.Y})");
+
+        Assert.AreEqual(0, normalizedTopLeft.X, $"({normalizedTopLeft.X},{normalizedTopLeft.Y})");
+        Assert.AreEqual(16, normalizedTopLeft.Y, $"({normalizedTopLeft.X},{normalizedTopLeft.Y})");
+
+        Assert.AreEqual(24, normalizedTopRight.X, $"({normalizedTopRight.X},{normalizedTopRight.Y})");
+        Assert.AreEqual(16, normalizedTopRight.Y, $"({normalizedTopRight.X},{normalizedTopRight.Y})");
+
+        Assert.AreEqual(24, normalizedBottomRight.X, $"({normalizedBottomRight.X},{normalizedBottomRight.Y})");
+        Assert.AreEqual(0, normalizedBottomRight.Y, $"({normalizedBottomRight.X},{normalizedBottomRight.Y})");
     }
 
     [TestMethod]

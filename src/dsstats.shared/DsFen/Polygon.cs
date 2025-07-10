@@ -13,11 +13,15 @@ public sealed class Polygon
     private readonly DsPoint _left;
     private readonly List<DsPoint> _vertices;
     private readonly HashSet<DsPoint> _allPoints;
+    private double _minX;
+    private double _minY;
 
     // new DsPoint(73, 82),   // Left
     // new DsPoint(84, 93),   // Top
     // new DsPoint(101, 76),  // Right
     // new DsPoint(90, 65),    // Bottom
+    const double InvSqrt2 = 1.0 / 1.41421356237; // ≈ 1/√2
+
     public Polygon(DsPoint top, DsPoint right, DsPoint bottom, DsPoint left)
     {
         _top = top;
@@ -25,6 +29,15 @@ public sealed class Polygon
         _bottom = bottom;
         _left = left;
         _vertices = new List<DsPoint> { _left, _top, _right, _bottom };
+        var rotated = _vertices.Select(p =>
+        {
+            double x = (p.X - p.Y) * InvSqrt2;
+            double y = (p.X + p.Y) * InvSqrt2;
+            return new { X = x, Y = y };
+        }).ToList();
+
+        _minX = rotated.Min(p => p.X);
+        _minY = rotated.Min(p => p.Y);
         _allPoints = GetAllPointsInsideOrOnEdge().ToHashSet();
     }
 
@@ -39,62 +52,53 @@ public sealed class Polygon
     /// <returns></returns>
     public Polygon GetNormalizedPolygon()
     {
-        const double InvSqrt2 = 1.0 / 1.41421356237; // ≈ 1/√2
 
-        // Step 1: Rotate all vertices by -45°
+
+        // Step 1: Rotate all vertices by +45°
         var rotated = _vertices.Select(p =>
         {
-            double x = (p.X + p.Y) * InvSqrt2;
-            double y = (p.Y - p.X) * InvSqrt2;
+            double x = (p.X - p.Y) * InvSqrt2;
+            double y = (p.X + p.Y) * InvSqrt2;
             return new { X = x, Y = y };
         }).ToList();
 
-        double minX = rotated.Min(p => p.X);
-        double minY = rotated.Min(p => p.Y);
+        _minX = rotated.Min(p => p.X);
+        _minY = rotated.Min(p => p.Y);
 
         var normalized = rotated
-            .Select(p => new DsPoint((int)Math.Round(p.X - minX), (int)Math.Round(p.Y - minY)))
+            .Select(p => new DsPoint((int)Math.Round(p.X - _minX), (int)Math.Round(p.Y - _minY)))
             .ToList();
 
-        return new Polygon(normalized[1], normalized[2], normalized[3], normalized[0]);
+        var bottomLeft = normalized[0];
+        var topLeft = normalized[1];
+        var topRight = normalized[2];
+        var bottomRight = normalized[3];
+
+        return new Polygon(topLeft, topRight, bottomRight, bottomLeft);
     }
 
     public DsPoint GetNormalizedPoint(DsPoint p)
     {
-        const double InvSqrt2 = 1.0 / 1.41421356237;
+        double xRot = (p.X - p.Y) * InvSqrt2;
+        double yRot = (p.X + p.Y) * InvSqrt2;
 
-        // Rotate input point
-        double rotatedX = (p.X + p.Y) * InvSqrt2;
-        double rotatedY = (p.Y - p.X) * InvSqrt2;
+        int xNorm = (int)Math.Round(xRot - _minX);
+        int yNorm = (int)Math.Round(yRot - _minY);
 
-        // Rotate the _left reference point (this becomes (0, 0) after normalization)
-        double baseX = (_left.X + _left.Y) * InvSqrt2;
-        double baseY = (_left.Y - _left.X) * InvSqrt2;
-
-        // Normalize relative to _left
-        double normX = rotatedX - baseX;
-        double normY = rotatedY - baseY;
-
-        return new DsPoint((int)Math.Round(normX), (int)Math.Round(normY));
+        return new DsPoint(xNorm, yNorm);
     }
 
     public DsPoint GetDeNormalizedPoint(DsPoint p)
     {
-        const double InvSqrt2 = 1.0 / 1.41421356237;
+        // Convert back to rotated space
+        double xRot = p.X + _minX;
+        double yRot = p.Y + _minY;
 
-        // Step 1: Rotate _left by -45° to get the normalization origin
-        double baseX = (_left.X + _left.Y) * InvSqrt2;
-        double baseY = (_left.Y - _left.X) * InvSqrt2;
+        // Inverse rotation of +45° is -45°
+        double xOrig = (xRot + yRot) * InvSqrt2;
+        double yOrig = (yRot - xRot) * InvSqrt2;
 
-        // Step 2: Denormalize (add the offset back)
-        double rotatedX = p.X + baseX;
-        double rotatedY = p.Y + baseY;
-
-        // Step 3: Rotate by +45° to get the original coordinates
-        double originalX = (rotatedX - rotatedY) * InvSqrt2;
-        double originalY = (rotatedX + rotatedY) * InvSqrt2;
-
-        return new DsPoint((int)Math.Round(originalX), (int)Math.Round(originalY));
+        return new DsPoint((int)Math.Round(xOrig), (int)Math.Round(yOrig));
     }
 
     public bool IsPointInside(DsPoint p)
