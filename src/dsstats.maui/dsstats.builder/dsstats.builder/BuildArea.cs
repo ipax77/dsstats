@@ -47,7 +47,6 @@ public class BuildArea
         if (allUnits.Count == 0)
             return events;
 
-        var workerMenu = new WorkerMenu();
         float yScale = screenArea._scaleY;
         int workerKey = team == 1 ? 0x31 : 0x32;
 
@@ -80,12 +79,12 @@ public class BuildArea
             switch (region.Region)
             {
                 case UnitRegion.Center:
-                    events.AddRange(BuildRegionEvents(region.Units, build, screenArea, workerMenu));
+                    events.AddRange(BuildRegionEvents(region.Units, build, screenArea));
                     break;
 
                 case UnitRegion.Top:
                     events.AddRange(DsBuilder.ScrollY((int)(250 * yScale), screenArea.GetCenter()));
-                    events.AddRange(BuildRegionEvents(region.Units, build, screenArea, workerMenu, yOffset: +125));
+                    events.AddRange(BuildRegionEvents(region.Units, build, screenArea, yOffset: +125));
                     break;
 
                 case UnitRegion.Bottom:
@@ -93,7 +92,7 @@ public class BuildArea
                     events.AddRange(DsBuilder.ScrollCenter(workerKey));
                     events.Add(new InputEvent(InputType.KeyPress, 0, 0, 0x51, 5)); // Build Menu
                     events.AddRange(DsBuilder.ScrollY((int)(-500 * yScale), screenArea.GetCenter()));
-                    events.AddRange(BuildRegionEvents(region.Units, build, screenArea, workerMenu, yOffset: -300));
+                    events.AddRange(BuildRegionEvents(region.Units, build, screenArea, yOffset: -300));
                     break;
             }
         }
@@ -105,7 +104,6 @@ public class BuildArea
         List<PlacedUnit> units,
         CmdrBuild build,
         ScreenArea screenArea,
-        WorkerMenu workerMenu,
         int yOffset = 0)
     {
         int offsetPixels = yOffset != 0 ? (int)(yOffset * screenArea._scaleY) : 0;
@@ -124,7 +122,7 @@ public class BuildArea
             remaining.Remove(next);
 
             var adjustedPos = next.Pos with { Y = next.Pos.Y + offsetPixels };
-            events.AddRange(build.GetBuildEvents(next.UnitName, adjustedPos, screenArea, workerMenu, next.BuildOption));
+            events.AddRange(build.GetBuildEvents(next.UnitName, adjustedPos, screenArea, next.BuildOption));
 
             cursor = next.Pos;
         }

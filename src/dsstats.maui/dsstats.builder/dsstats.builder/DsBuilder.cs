@@ -72,11 +72,6 @@ public static class DsBuilder
 
     public static void Build(DsBuildRequest buildRequest, bool dry = false)
     {
-        if (buildRequest.Mirror)
-        {
-            BuildMirror(buildRequest.Spawn, buildRequest.Commander, buildRequest.Team, dry);
-            return;
-        }
         Thread.Sleep(2500);
         var build = CmdrBuildFactory.Create(buildRequest.Commander);
 
@@ -98,6 +93,32 @@ public static class DsBuilder
         events.Add(new(InputType.KeyPress, 0, 0, 0x51, DelayMs));
 
         events.AddRange(GetBuildEvents(buildRequest.Spawn, build, buildRequest.Team, screenArea));
+
+
+        // upgrades
+        int workerKey = buildRequest.Team == 1 ? 0x31 : 0x32;
+        List<PlayerUpgradeDto> upgrades = new(buildRequest.Upgrades);
+        events.Add(new(InputType.KeyPress, 0, 0, workerKey, DelayMs));
+        events.Add(new(InputType.KeyPress, 0, 0, 0x57, DelayMs));
+        foreach (var upgrade in buildRequest.Upgrades)
+        {
+            var upgradeChar = build.GetAbilityChar(upgrade.Upgrade.Name);
+            if (upgradeChar is not null)
+            {
+                events.Add(new InputEvent(InputType.KeyPress, 0, 0, upgradeChar.Value, DelayMs));
+                upgrades.Remove(upgrade);
+            }
+        }
+        events.Add(new(InputType.KeyPress, 0, 0, workerKey, DelayMs));
+        foreach (var upgrade in upgrades)
+        {
+            var upgradeChar = build.GetUpgradeChar(upgrade.Upgrade.Name);
+            if (upgradeChar is not null)
+            {
+                events.Add(new InputEvent(InputType.KeyPress, 0, 0, upgradeChar.Value, DelayMs));
+            }
+        }
+
         BuildPlayer.ReplayInput(events);
     }
 

@@ -8,7 +8,6 @@ public static class CmdrBuildExtensions
         string unitName,
         RlPoint screenPos,
         ScreenArea screenArea,
-        WorkerMenu workerMenu,
         BuildOption buildOption)
     {
         List<InputEvent> events = [];
@@ -17,7 +16,7 @@ public static class CmdrBuildExtensions
         {
             if (build.activeUnits.TryGetValue(unitName, out var isActive) && !isActive)
             {
-                var toggleEvent = workerMenu.ToggleBuildMenu(buildOption.Key, screenArea);
+                var toggleEvent = WorkerMenu.ToggleBuildMenu(buildOption.Key, screenArea);
                 if (toggleEvent != null)
                 {
                     events.AddRange(toggleEvent);
@@ -53,6 +52,5 @@ public static class CmdrBuildExtensions
 
         return events;
     }
-
 }
 
