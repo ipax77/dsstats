@@ -1,4 +1,5 @@
 ﻿using dsstats.shared;
+using dsstats.shared.DsFen;
 using dsstats.shared.Interfaces;
 
 namespace dsstats.db8services;
@@ -16,7 +17,7 @@ public class RemoteToggleService : IRemoteToggleService
     public event EventHandler? FromServerChanged = null;
     public event EventHandler? CultureChanged = null;
 
-    public void Build(SpawnDto spawn, Commander commander, int team)
+    public void Build(DsBuildRequest buildRequest)
     {
         throw new NotImplementedException();
     }
