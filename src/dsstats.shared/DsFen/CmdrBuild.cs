@@ -62,7 +62,7 @@ public abstract class CmdrBuild
     }
 }
 
-public sealed record BuildOption(char Key, bool IsAir = false, bool RequiresToggle = false, bool IsActive = false, bool IsAbility = false);
+public sealed record BuildOption(char Key, int UnitSize = 1, bool IsAir = false, bool RequiresToggle = false, bool IsActive = false, bool IsAbility = false);
 
 public static class CmdrBuildFactory
 {

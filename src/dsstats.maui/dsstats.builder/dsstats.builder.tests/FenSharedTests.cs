@@ -68,4 +68,18 @@ public sealed class FenSharedTests
         }
     }
 
+    [TestMethod]
+    public void CanApplyComplexFenString()
+    {
+        string fen = "q1q22/1qqw2g1w1q1e4q1qqqq1q/w1qq3g1g5eq8/12qqw1g8/1qq14g2qq3/1g3qq18/1w2g2eq16/3g3w1qq14/11qq12/13qq10/13w1qq8/16qqq6/15g1g1qq4/2g2e18q/13w11/21g3/24w|25/25/1d23/25/19f5/4d17d2/25/25/25/25/25/25/25/25/25/25/25 1 2";
+        Commander cmdr = Commander.None;
+        int team = 0;
+        SpawnDto reSpawn = new SpawnDto();
+        DsFen.ApplyFen(fen, reSpawn, out cmdr, out team);
+        Assert.AreEqual(Commander.Terran, cmdr);
+        Assert.AreEqual(1, team);
+        Assert.IsNotNull(reSpawn.Units);
+        Assert.IsTrue(reSpawn.Units.Count > 0);
+    }
+    // 
 }

@@ -1,3 +1,5 @@
+using System.Drawing;
+
 namespace dsstats.builder;
 
 /// <summary>
@@ -10,6 +12,7 @@ public class ScreenArea
     private readonly float _scaleX;
     public readonly float _scaleY;
     private readonly Homography homography;
+    public int _team = 0;
 
     private List<RlPoint> polygon = [];
     private List<RlPoint> polygon1 =
@@ -40,6 +43,7 @@ public class ScreenArea
         _scaleY = screenHeight / 1440f;
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
+        _team = team;
 
         var buildPoints = new[]
         {
@@ -67,8 +71,19 @@ public class ScreenArea
     /// <param name="buildPoint"></param>
     /// <returns></returns>
 
-    public RlPoint GetScreenPosition(RlPoint normalizedBuildPoint)
+    public RlPoint GetScreenPosition(RlPoint normalizedBuildPoint, int footprintSize = 1)
     {
-        return ApplyTransforms(homography.Transform(normalizedBuildPoint));
+        if (footprintSize == 1 || _team == 1)
+        {
+            return ApplyTransforms(homography.Transform(normalizedBuildPoint));
+        }
+        else
+        {
+            int offset = footprintSize / 2;
+            var bottomLeftPoint = new RlPoint(normalizedBuildPoint.X - offset, normalizedBuildPoint.Y - offset);
+
+            // Map using homography
+            return ApplyTransforms(homography.Transform(bottomLeftPoint));
+        }
     }
 }

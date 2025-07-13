@@ -6,17 +6,11 @@ public static class CmdrBuildExtensions
     public static List<InputEvent> GetBuildEvents(
         this CmdrBuild build,
         string unitName,
-        RlPoint pos,
+        RlPoint screenPos,
         ScreenArea screenArea,
-        WorkerMenu workerMenu)
+        WorkerMenu workerMenu,
+        BuildOption buildOption)
     {
-        var buildOption = build.GetUnitBuildOption(unitName);
-        if (buildOption is null)
-        {
-            return [];
-        }
-
-        var unitMap = build.GetUnitMap();
         List<InputEvent> events = [];
 
         if (buildOption.RequiresToggle)
@@ -28,7 +22,8 @@ public static class CmdrBuildExtensions
                 {
                     events.AddRange(toggleEvent);
 
-                    foreach (var other in unitMap.Where(f => f.Value.Key == buildOption.Key && f.Key != unitName))
+                    foreach (var other in build.GetUnitMap()
+                                               .Where(f => f.Value.Key == buildOption.Key && f.Key != unitName))
                     {
                         if (build.activeUnits.ContainsKey(other.Key))
                         {
@@ -41,8 +36,23 @@ public static class CmdrBuildExtensions
             }
         }
 
-        events.AddRange(DsBuilder.BuildUnit(buildOption.Key, pos.X, pos.Y));
+        if (buildOption.IsAbility)
+        {
+            var worker = screenArea._team == 1 ? 0x31 : 0x32;
+
+            events.Add(new InputEvent(InputType.KeyPress, 0, 0, worker, 10));
+            events.Add(new InputEvent(InputType.KeyPress, 0, 0, 0x57, 10)); // W key for ability
+            events.AddRange(DsBuilder.BuildUnit(buildOption.Key, screenPos.X, screenPos.Y));
+            events.Add(new InputEvent(InputType.KeyPress, 0, 0, worker, 10));
+            events.Add(new InputEvent(InputType.KeyPress, 0, 0, 0x51, 10)); // Q key for build menu
+        }
+        else
+        {
+            events.AddRange(DsBuilder.BuildUnit(buildOption.Key, screenPos.X, screenPos.Y));
+        }
+
         return events;
     }
+
 }
 

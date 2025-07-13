@@ -4,7 +4,14 @@ public sealed record RlPoint(int X, int Y)
 {
     public double DistanceTo(RlPoint other)
     {
-        return Math.Sqrt(Math.Pow(X - other.X, 2) + Math.Pow(Y - other.Y, 2));
+        return Math.Sqrt(DistanceSquaredTo(other));
+    }
+
+    public int DistanceSquaredTo(RlPoint other)
+    {
+        int dx = X - other.X;
+        int dy = Y - other.Y;
+        return dx * dx + dy * dy;
     }
 
     public static RlPoint Lerp(RlPoint a, RlPoint b, double t)

@@ -34,68 +34,99 @@ public class BuildArea
         polygon = team == 1 ? polygon1 : polygon2;
     }
 
-    public List<InputEvent> GetBuildEvents(ScreenArea screenArea, CmdrBuild build)
+    public List<InputEvent> GetBuildEvents(ScreenArea screenArea, CmdrBuild build, bool mirror = false)
     {
-        List<InputEvent> events = [];
-        var allUnits = units.SelectMany(unit =>
-            unit.Value
+        var events = new List<InputEvent>();
+
+        var allUnits = units
+            .SelectMany(unit => unit.Value
                 .OrderBy(o => o.X).ThenBy(t => t.Y)
-                .Select(pos => new BuildUnit(unit.Key, pos)))
+                .Select(pos => new { unit.Key, Pos = pos }))
             .ToList();
-        int worker = team == 1 ? 0x31 : 0x32;
 
         if (allUnits.Count == 0)
-        {
             return events;
+
+        var workerMenu = new WorkerMenu();
+        float yScale = screenArea._scaleY;
+        int workerKey = team == 1 ? 0x31 : 0x32;
+
+        var groupedUnits = allUnits
+            .Select(u =>
+            {
+                var buildOption = build.GetUnitBuildOption(u.Key);
+                if (buildOption is null)
+                    return null;
+
+                var pos = mirror ? new RlPoint(u.Pos.X, -u.Pos.Y) : u.Pos;
+
+                var screenPos = screenArea.GetScreenPosition(pos, buildOption.UnitSize);
+
+                var region = screenPos.Y <= 15 * yScale
+                    ? UnitRegion.Top
+                    : screenPos.Y >= 1140 * yScale
+                        ? UnitRegion.Bottom
+                        : UnitRegion.Center;
+
+                return new { Region = region, Unit = new PlacedUnit(u.Key, screenPos, buildOption) };
+            })
+            .Where(x => x != null)
+            .GroupBy(x => x!.Region)
+            .Select(g => new BuildRegion(g.Key, g.Select(x => x!.Unit).ToList()))
+            .ToList();
+
+        foreach (var region in groupedUnits.OrderBy(o => o.Region))
+        {
+            switch (region.Region)
+            {
+                case UnitRegion.Center:
+                    events.AddRange(BuildRegionEvents(region.Units, build, screenArea, workerMenu));
+                    break;
+
+                case UnitRegion.Top:
+                    events.AddRange(DsBuilder.ScrollY((int)(250 * yScale), screenArea.GetCenter()));
+                    events.AddRange(BuildRegionEvents(region.Units, build, screenArea, workerMenu, yOffset: +125));
+                    break;
+
+                case UnitRegion.Bottom:
+                    Console.WriteLine($"bottom units: {region.Units.Count}");
+                    events.AddRange(DsBuilder.ScrollCenter(workerKey));
+                    events.Add(new InputEvent(InputType.KeyPress, 0, 0, 0x51, 5)); // Build Menu
+                    events.AddRange(DsBuilder.ScrollY((int)(-500 * yScale), screenArea.GetCenter()));
+                    events.AddRange(BuildRegionEvents(region.Units, build, screenArea, workerMenu, yOffset: -300));
+                    break;
+            }
         }
 
-        List<BuildUnit> topUnits = [];
-        List<BuildUnit> centerUnits = [];
-        List<BuildUnit> bottomUnits = [];
-        WorkerMenu workerMenu = new();
+        return events;
+    }
 
-        foreach (var unit in allUnits)
-        {
+    private static List<InputEvent> BuildRegionEvents(
+        List<PlacedUnit> units,
+        CmdrBuild build,
+        ScreenArea screenArea,
+        WorkerMenu workerMenu,
+        int yOffset = 0)
+    {
+        int offsetPixels = yOffset != 0 ? (int)(yOffset * screenArea._scaleY) : 0;
 
-            var screenPos = screenArea.GetScreenPosition(unit.Pos);
-            if (screenPos.Y <= 15)
-            {
-                topUnits.Add(new(unit.UnitName, screenPos));
-            }
-            else if (screenPos.Y >= 1140)
-            {
-                bottomUnits.Add(new(unit.UnitName, screenPos));
-            }
-            else
-            {
-                centerUnits.Add(new(unit.UnitName, screenPos));
-            }
-        }
+        var remaining = new List<PlacedUnit>(units);
+        List<InputEvent> events = [];
 
-        foreach (var centerUnit in centerUnits)
+        // Start from the unit closest to screen center
+        RlPoint cursor = screenArea.GetCenter();
+        while (remaining.Count > 0)
         {
-            events.AddRange(build.GetBuildEvents(centerUnit.UnitName, centerUnit.Pos, screenArea, workerMenu));
-        }
-        if (topUnits.Count > 0)
-        {
-            events.AddRange(DsBuilder.ScrollY(Convert.ToInt32(250 * screenArea._scaleY), screenArea.GetCenter()));
-            foreach (var topUnit in topUnits)
-            {
-                events.AddRange(build.GetBuildEvents(topUnit.UnitName,
-                    topUnit.Pos with { Y = topUnit.Pos.Y + Convert.ToInt32(125 * screenArea._scaleY) }, screenArea, workerMenu));
-            }
-        }
-        if (bottomUnits.Count > 0)
-        {
-            Console.WriteLine($"bottom units: {bottomUnits.Count}");
-            events.AddRange(DsBuilder.ScrollCenter(worker));
-            events.Add(new(InputType.KeyPress, 0, 0, 0x51, 5)); // Build Menu
-            events.AddRange(DsBuilder.ScrollY(Convert.ToInt32(-500 * screenArea._scaleY), screenArea.GetCenter()));
-            foreach (var bottomUnit in bottomUnits)
-            {
-                events.AddRange(build.GetBuildEvents(bottomUnit.UnitName,
-                    bottomUnit.Pos with { Y = bottomUnit.Pos.Y - Convert.ToInt32(300 * screenArea._scaleY) }, screenArea, workerMenu));
-            }
+            var next = remaining
+                .OrderBy(u => cursor.DistanceSquaredTo(u.Pos))
+                .First();
+
+            remaining.Remove(next);
+
+            var adjustedPos = next.Pos with { Y = next.Pos.Y + offsetPixels };
+            events.AddRange(build.GetBuildEvents(next.UnitName, adjustedPos, screenArea, workerMenu, next.BuildOption));
+
+            cursor = next.Pos;
         }
 
         return events;
@@ -218,6 +249,16 @@ public class BuildArea
         double lenSq = (b.X - a.X) * (b.X - a.X) + (b.Y - a.Y) * (b.Y - a.Y);
         return dot <= lenSq;
     }
+    private enum UnitRegion
+    {
+        Center = 0,
+        Top = 1,
+        Bottom = 2
+    }
+
+    private record PlacedUnit(string UnitName, RlPoint Pos, BuildOption BuildOption);
+
+    private record BuildRegion(UnitRegion Region, List<PlacedUnit> Units);
 }
 
-internal sealed record BuildUnit(string UnitName, RlPoint Pos);
+internal sealed record BuildUnit(string UnitName, RlPoint Pos, BuildOption BuildOption);
