@@ -33,6 +33,30 @@ public abstract class CmdrBuild
             : null;
     }
 
+    public string? GetUpgradeName(char key)
+    {
+        foreach (var kv in UpgradeMap)
+        {
+            if (char.ToLower(kv.Value.Key) == char.ToLower(key))
+            {
+                return kv.Key;
+            }
+        }
+        return null;
+    }
+
+    public string? GetAbilityName(char key)
+    {
+        foreach (var kv in AbilityMap)
+        {
+            if (char.ToLower(kv.Value.Key) == char.ToLower(key))
+            {
+                return kv.Key;
+            }
+        }
+        return null;
+    }
+
     public string? GetUnitNameFromKey(char key, bool isAir, bool isToggled)
     {
         foreach (var kv in UnitMap)

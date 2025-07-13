@@ -40,7 +40,7 @@ public static class DsBuilder
         return events;
     }
 
-    public static void BuildMirror(SpawnDto spawn, Commander commander, int originalTeam, bool dry = false)
+    private static void BuildMirror(SpawnDto spawn, Commander commander, int originalTeam, bool dry = false)
     {
         // Determine the mirror team
         int mirrorTeam = originalTeam == 1 ? 2 : 1;
@@ -70,10 +70,15 @@ public static class DsBuilder
     }
 
 
-    public static void Build(SpawnDto spawn, Commander commander, int team, bool dry = false)
+    public static void Build(DsBuildRequest buildRequest, bool dry = false)
     {
+        if (buildRequest.Mirror)
+        {
+            BuildMirror(buildRequest.Spawn, buildRequest.Commander, buildRequest.Team, dry);
+            return;
+        }
         Thread.Sleep(2500);
-        var build = CmdrBuildFactory.Create(commander);
+        var build = CmdrBuildFactory.Create(buildRequest.Commander);
 
         if (build is null)
         {
@@ -81,18 +86,18 @@ public static class DsBuilder
         }
         int screenWidth = User32Wrapper.GetSystemMetrics(User32Wrapper.SM_CXSCREEN);
         int screenHeight = User32Wrapper.GetSystemMetrics(User32Wrapper.SM_CYSCREEN);
-        var screenArea = new ScreenArea(team, screenWidth, screenHeight);
+        var screenArea = new ScreenArea(buildRequest.Team, screenWidth, screenHeight);
 
         List<InputEvent> events = [];
         if (!dry)
         {
-            events.AddRange(Setup(commander, team, screenArea));
+            events.AddRange(Setup(buildRequest.Commander, buildRequest.Team, screenArea));
         }
 
         // build
         events.Add(new(InputType.KeyPress, 0, 0, 0x51, DelayMs));
 
-        events.AddRange(GetBuildEvents(spawn, build, team, screenArea));
+        events.AddRange(GetBuildEvents(buildRequest.Spawn, build, buildRequest.Team, screenArea));
         BuildPlayer.ReplayInput(events);
     }
 

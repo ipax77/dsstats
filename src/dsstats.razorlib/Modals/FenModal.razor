@@ -32,12 +32,19 @@
     int team = 0;
     string fen = string.Empty;
 
-    public void Show(SpawnDto spawn, Commander commander, int team)
+    public void Show(SpawnDto spawn, List<PlayerUpgradeDto> playerUpgrades, Commander commander, int team)
     {
         this.spawn = spawn;
         this.commander = commander;
         this.team = team;
-        fen = DsFen.GetFen(spawn, commander, team);
+        DsBuildRequest buildRequest = new()
+        {
+            Spawn = spawn,
+            Commander = commander,
+            Team = team,
+            Upgrades = playerUpgrades
+        };
+        fen = DsFen.GetFen(buildRequest);
         JSRuntime.InvokeVoidAsync("openModalById", "fenmodal");
     }
 

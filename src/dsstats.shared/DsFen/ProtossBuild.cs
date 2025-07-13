@@ -23,7 +23,7 @@ public class ProtossBuild : CmdrBuild
             { "Colossus", new('x', 2, true) },
             { "Tempest", new('c', 3, true) },
             { "Carrier", new('v', 3, true) },
-            { "Mothership", new('t', 4, true, IsAbility: true) },
+            { "Mothership", new('t', 3, true, IsAbility: true) },
         };
 
         AbilityMap = new Dictionary<string, BuildOption>

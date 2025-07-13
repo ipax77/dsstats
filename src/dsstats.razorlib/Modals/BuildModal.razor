@@ -73,6 +73,7 @@
     SpawnDto spawn = new();
     Commander commander = Commander.None;
     int team = 0;
+    bool mirror = false;
     string fen = string.Empty;
 
     private async void StartBuild()
@@ -81,7 +82,13 @@
         {
             await Task.Run(() =>
             {
-                RemoteToggleService.Build(spawn, commander, team);
+                RemoteToggleService.Build(new()
+                {
+                    Commander = commander,
+                    Team = team,
+                    Spawn = spawn,
+                    Mirror = mirror,
+                });
             });
         }
         finally
@@ -94,11 +101,11 @@
     {
         try
         {
-            var newSpawn = new SpawnDto();
-            DsFen.ApplyFen(fen, newSpawn, out var parsedCommander, out var parsedTeam);
-            spawn = newSpawn;
-            commander = parsedCommander;
-            team = parsedTeam;
+            DsBuildRequest buildRequest = new();
+            DsFen.ApplyFen(fen, out buildRequest);
+            spawn = buildRequest.Spawn;
+            commander = buildRequest.Commander;
+            team = buildRequest.Team;
 
             ToastService.ShowSuccess("FEN applied successfully.");
         }
@@ -108,12 +115,20 @@
         }
     }
 
-    public void Show(SpawnDto spawn, Commander commander, int team)
+    public void Show(SpawnDto spawn, List<PlayerUpgradeDto> playerUpgrades, Commander commander, int team)
     {
         this.spawn = spawn;
         this.commander = commander;
         this.team = team;
-        fen = DsFen.GetFen(spawn, commander, team);
+        DsBuildRequest buildRequest = new()
+        {
+            Commander = commander,
+            Team = team,
+            Spawn = spawn,
+            Upgrades = playerUpgrades,
+            Mirror = mirror
+        };
+        fen = DsFen.GetFen(buildRequest);
         JSRuntime.InvokeVoidAsync("openModalById", "buildmodal");
         InvokeAsync(() => StateHasChanged());
     }

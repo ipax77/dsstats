@@ -74,9 +74,12 @@ public static class DsFenBuilder
 
         var groundFen = EncodeBoard(groundBoard);
         var airFen = EncodeBoard(airBoard);
+        var upgrades = new string(grid.Upgrades?.ToArray() ?? []);
+        var abilities = new string(grid.Abilities?.ToArray() ?? []);
 
-        return $"{groundFen}|{airFen} {grid.Team} {(int)grid.Commander}";
+        return $"{groundFen}|{airFen} {grid.Team} {(int)grid.Commander} {upgrades} {abilities}";
     }
+
 
     public static DsFenGrid GetGridFromString(string fen)
     {
@@ -84,7 +87,7 @@ public static class DsFenBuilder
         const int Height = 17;
 
         var parts = fen.Split(' ');
-        if (parts.Length != 3)
+        if (parts.Length < 3)
             throw new ArgumentException("Invalid FEN string: missing metadata");
 
         var layers = parts[0].Split('|');
@@ -145,6 +148,7 @@ public static class DsFenBuilder
 
         if (!int.TryParse(parts[1], out int team))
             throw new ArgumentException("Invalid team value");
+
         if (!int.TryParse(parts[2], out int commanderVal))
             throw new ArgumentException("Invalid commander");
 
@@ -152,14 +156,18 @@ public static class DsFenBuilder
             ? (Commander)commanderVal
             : Commander.None;
 
+        var upgrades = parts.Length > 3 ? parts[3].ToCharArray().ToList() : [];
+        var abilities = parts.Length > 4 ? parts[4].ToCharArray().ToList() : [];
+
         return new DsFenGrid
         {
             Units = units,
             Team = team,
-            Commander = commander
+            Commander = commander,
+            Upgrades = upgrades,
+            Abilities = abilities
         };
     }
-
 
 }
 
@@ -170,4 +178,7 @@ public record DsFenGrid
     public int Team { get; init; }
     public Commander Commander { get; init; }
     public Dictionary<BuildOption, List<DsPoint>> Units { get; init; } = new();
+    public List<char> Upgrades { get; init; } = [];
+    public List<char> Abilities { get; init; } = [];
+
 }

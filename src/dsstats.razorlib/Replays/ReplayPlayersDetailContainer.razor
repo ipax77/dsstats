@@ -91,7 +91,7 @@
 
     public void RequestBuild(DsBuildInfo dsBuildInfo)
     {
-        buildModal?.Show(dsBuildInfo.Spawn, dsBuildInfo.Commander, dsBuildInfo.Team);
+        buildModal?.Show(dsBuildInfo.Spawn, dsBuildInfo.Upgrades, dsBuildInfo.Commander, dsBuildInfo.Team);
     }
 
     public void Dispose()
@@ -110,8 +110,9 @@
 
     public record DsBuildInfo
     {
-        public SpawnDto Spawn { get; set; } = new();
         public Commander Commander { get; set; } = Commander.None;
         public int Team { get; set; } = 0;
+        public SpawnDto Spawn { get; set; } = new();
+        public List<PlayerUpgradeDto> Upgrades { get; set; } = [];
     }
 }

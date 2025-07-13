@@ -7,23 +7,23 @@ public static partial class DsFen
     public static PolygonNormalizer normalizer1 = new(polygon1.GetAllPointsInsideOrOnEdge().ToList(), 25, 17);
     public static PolygonNormalizer normalizer2 = new(polygon2.GetAllPointsInsideOrOnEdge().ToList(), 25, 17);
 
-    public static string GetFen(SpawnDto spawn, Commander cmdr, int team)
+    public static string GetFen(DsBuildRequest buildRequest)
     {
-        var build = CmdrBuildFactory.Create(cmdr);
+        var build = CmdrBuildFactory.Create(buildRequest.Commander);
         if (build is null)
         {
             return string.Empty;
         }
-        var polygon = team == 1 ? polygon1 : polygon2;
-        var normalizer = team == 1 ? normalizer1 : normalizer2;
+        var polygon = buildRequest.Team == 1 ? polygon1 : polygon2;
+        var normalizer = buildRequest.Team == 1 ? normalizer1 : normalizer2;
 
         DsFenGrid grid = new()
         {
-            Team = team,
-            Commander = cmdr,
+            Team = buildRequest.Team,
+            Commander = buildRequest.Commander,
             Units = new Dictionary<BuildOption, List<DsPoint>>()
         };
-        foreach (var unit in spawn.Units)
+        foreach (var unit in buildRequest.Spawn.Units)
         {
             var buildOption = build.GetUnitBuildOption(unit.Unit.Name);
             if (buildOption is null)
@@ -46,20 +46,35 @@ public static partial class DsFen
                 spawnUnits.Add(normalizedPoint);
             }
         }
+        foreach (var upgrade in buildRequest.Upgrades.Where(x => x.Gameloop <= buildRequest.Spawn.Gameloop))
+        {
+            var upgradeChar = build.GetUpgradeChar(upgrade.Upgrade.Name);
+            if (upgradeChar is not null)
+            {
+                grid.Upgrades.Add(upgradeChar.Value);
+                continue;
+            }
+            var abilityChar = build.GetAbilityChar(upgrade.Upgrade.Name);
+            if (abilityChar is not null)
+            {
+                grid.Abilities.Add(abilityChar.Value);
+            }
+        }
         return DsFenBuilder.GetFenString(grid);
     }
 
-    public static void ApplyFen(string fen, SpawnDto spawn, out Commander cmdr, out int team)
+    public static void ApplyFen(string fen, out DsBuildRequest buildRequest)
     {
         var grid = DsFenBuilder.GetGridFromString(fen);
-        cmdr = grid.Commander;
-        team = grid.Team;
-        var build = CmdrBuildFactory.Create(cmdr);
+        buildRequest = new DsBuildRequest();
+        buildRequest.Commander = grid.Commander;
+        buildRequest.Team = grid.Team;
+        var build = CmdrBuildFactory.Create(buildRequest.Commander);
         if (build is null)
         {
             return;
         }
-        var normalizer = team == 1 ? normalizer1 : normalizer2;
+        var normalizer = buildRequest.Team == 1 ? normalizer1 : normalizer2;
 
         foreach (var ent in grid.Units)
         {
@@ -73,7 +88,25 @@ public static partial class DsFen
                 Unit = new() { Name = unitName },
                 Poss = string.Join(",", ent.Value.Select(s => normalizer.GetDeNormalizedPoint(s)).Select(t => t == null ? "" : $"{t.X},{t.Y}"))
             };
-            spawn.Units.Add(spawnUnit);
+            buildRequest.Spawn.Units.Add(spawnUnit);
+        }
+
+        foreach (var upgrade in grid.Upgrades)
+        {
+            var upgradeName = build.GetUpgradeName(upgrade);
+            if (upgradeName is not null)
+            {
+                buildRequest.Upgrades.Add(new PlayerUpgradeDto() { Upgrade = new() { Name = upgradeName } });
+            }
+        }
+
+        foreach (var ability in grid.Abilities)
+        {
+            var abilityName = build.GetAbilityName(ability);
+            if (abilityName is not null)
+            {
+                buildRequest.Upgrades.Add(new PlayerUpgradeDto() { Upgrade = new() { Name = abilityName } });
+            }
         }
     }
 

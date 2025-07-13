@@ -96,7 +96,7 @@
             {
                 <div class="col-auto">
                     <button type="button" class="btn btn-sm btn-outline-light"
-                            @onclick="e => OnBuildRequest.InvokeAsync(new DsBuildInfo() { Spawn = Spawn, Commander = Player.Race, Team = Player.Team })">
+                            @onclick="e => OnBuildRequest.InvokeAsync(new DsBuildInfo() { Spawn = Spawn, Upgrades = Player.Upgrades.ToList(), Commander = Player.Race, Team = Player.Team })">
                         Build
                     </button>
                 </div>
