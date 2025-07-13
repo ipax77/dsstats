@@ -62,7 +62,10 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" disabled="@isCountingDown">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="StartCountdownAndBuild" disabled="@isCountingDown">
+                        @(!isCountingDown ? "Start Build" : $"Starting in {countdownSeconds}...")
+                    </button>
                 </div>
             </div>
         }
@@ -75,8 +78,10 @@
     int team = 0;
     bool mirror = false;
     string fen = string.Empty;
+    int countdownSeconds = 0;
+    bool isCountingDown = false;
 
-    private async void StartBuild()
+    private async Task StartBuild()
     {
         try
         {
@@ -114,6 +119,25 @@
             ToastService.ShowError("Failed to apply FEN.");
         }
     }
+
+    private async Task StartCountdownAndBuild()
+    {
+        countdownSeconds = 5;
+        isCountingDown = true;
+
+        while (countdownSeconds > 0)
+        {
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(1000);
+            countdownSeconds--;
+        }
+
+        isCountingDown = false;
+        await InvokeAsync(StateHasChanged);
+
+        await StartBuild(); // Now run build after countdown
+    }
+
 
     public void Show(SpawnDto spawn, List<PlayerUpgradeDto> playerUpgrades, Commander commander, int team)
     {
