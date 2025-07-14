@@ -1,4 +1,6 @@
 ﻿@using Blazored.Toast.Services
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.Extensions.Logging
 @using Microsoft.JSInterop
 @using dsstats.shared
 @using dsstats.shared.DsFen
@@ -36,14 +38,23 @@
                     </ol>
                     <hr />
                     <div>
+                        <EditForm EditContext="editContext" FormName="mirrorForm">
+                            <label for="mirrorCheckbox" class="form-label"><strong>Mirror Build:</strong></label>
+                            <InputCheckbox @bind-Value="buildRequest.Mirror" class="form-check-input" id="mirrorCheckbox" />
+                        </EditForm>
+                    </div>
+                    <div>
                         <label for="fenInput" class="form-label"><strong>Modify FEN (optional):</strong></label>
                         <textarea id="fenInput" class="form-control" rows="4" @bind="fen"></textarea>
                         <button class="btn btn-outline-primary mt-2" @onclick="ApplyFen">Apply FEN</button>
                     </div>
+                    <div>
+                        <TimerComponent @ref="timerComponent" Title="Build starting in:" TimerOut="StartBuild" />
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" @onclick="StartBuild">Start Build</button>
+                    <button type="button" class="btn btn-secondary" @onclick="StopTimer">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="StartTimerPl" disabled="@starting">Start Build</button>
                 </div>
             </div>
         }
@@ -61,8 +72,9 @@
                         <textarea id="fenInput" disabled class="form-control" rows="4" @bind="fen"></textarea>
                     </div>
                 </div>
+
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 </div>
             </div>
         }
@@ -70,30 +82,45 @@
 </div>
 
 @code {
-    SpawnDto spawn = new();
-    Commander commander = Commander.None;
-    int team = 0;
-    bool mirror = false;
+    DsBuildRequest buildRequest = new();
     string fen = string.Empty;
+    TimerComponent? timerComponent;
+    bool starting = false;
+    EditContext editContext = null!;
 
-    private async void StartBuild()
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        editContext = new EditContext(buildRequest);
+    }
+
+    private void StartTimerPl()
+    {
+        starting = true;
+        timerComponent?.Start(5);
+    }
+
+    private void StopTimer()
+    {
+        timerComponent?.Stop();
+        starting = false;
+        ToastService.ShowInfo("Build cancelled.");
+        Hide();
+    }
+
+    private async Task StartBuild()
     {
         try
         {
             await Task.Run(() =>
             {
-                RemoteToggleService.Build(new()
-                {
-                    Commander = commander,
-                    Team = team,
-                    Spawn = spawn,
-                    Mirror = mirror,
-                });
+                RemoteToggleService.Build(buildRequest);
             });
         }
         finally
         {
             ToastService.ShowInfo("Build completed.");
+            starting = false;
         }
     }
 
@@ -101,12 +128,13 @@
     {
         try
         {
-            DsBuildRequest buildRequest = new();
-            DsFen.ApplyFen(fen, out buildRequest);
-            spawn = buildRequest.Spawn;
-            commander = buildRequest.Commander;
-            team = buildRequest.Team;
-
+            buildRequest.Clear();
+            DsBuildRequest fenBuildRequest = new();
+            DsFen.ApplyFen(fen, out fenBuildRequest);
+            buildRequest.Commander = fenBuildRequest.Commander;
+            buildRequest.Spawn = fenBuildRequest.Spawn;
+            buildRequest.Upgrades = fenBuildRequest.Upgrades;
+            buildRequest.Team = fenBuildRequest.Team;
             ToastService.ShowSuccess("FEN applied successfully.");
         }
         catch
@@ -117,17 +145,11 @@
 
     public void Show(SpawnDto spawn, List<PlayerUpgradeDto> playerUpgrades, Commander commander, int team)
     {
-        this.spawn = spawn;
-        this.commander = commander;
-        this.team = team;
-        DsBuildRequest buildRequest = new()
-        {
-            Commander = commander,
-            Team = team,
-            Spawn = spawn,
-            Upgrades = playerUpgrades,
-            Mirror = mirror
-        };
+        buildRequest.Spawn = spawn;
+        buildRequest.Upgrades = playerUpgrades;
+        buildRequest.Commander = commander;
+        buildRequest.Team = team;
+        buildRequest.Mirror = false;
         fen = DsFen.GetFen(buildRequest);
         JSRuntime.InvokeVoidAsync("openModalById", "buildmodal");
         InvokeAsync(() => StateHasChanged());

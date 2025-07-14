@@ -7,4 +7,12 @@ public record DsBuildRequest
     public List<PlayerUpgradeDto> Upgrades { get; set; } = [];
     public SpawnDto Spawn { get; set; } = new();
     public bool Mirror { get; set; } = false;
+    public void Clear()
+    {
+        Commander = Commander.None;
+        Team = 0;
+        Upgrades.Clear();
+        Spawn = new();
+        Mirror = false;
+    }
 }
