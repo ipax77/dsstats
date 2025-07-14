@@ -7,7 +7,6 @@
 @inject IJSRuntime JSRuntime
 @inject IRemoteToggleService RemoteToggleService
 @inject IToastService ToastService
-@inject ILogger<BuildModal> Logger
 
 <div class="modal" id="buildmodal" tabindex="-1" aria-labelledby="buildmodalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -15,7 +14,7 @@
         {
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="buildmodalLabel">Prepare to Start Build <b>EXPERIMENTAL</b></h5>
+                    <h5 class="modal-title" id="buildmodalLabel">Prepare to Start Build <b>!EXPERIMENTAL!</b></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -42,10 +41,13 @@
                         <textarea id="fenInput" class="form-control" rows="4" @bind="fen"></textarea>
                         <button class="btn btn-outline-primary mt-2" @onclick="ApplyFen">Apply FEN</button>
                     </div>
+                    <div>
+                        <TimerComponent @ref="timerComponent" Title="Build starting in:" TimerOut="StartBuild" />
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" @onclick="StartBuild">Start Build</button>
+                    <button type="button" class="btn btn-secondary" @onclick="StopTimer">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="StartTimerPl" disabled="@starting">Start Build</button>
                 </div>
             </div>
         }
@@ -63,11 +65,9 @@
                         <textarea id="fenInput" disabled class="form-control" rows="4" @bind="fen"></textarea>
                     </div>
                 </div>
+
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" disabled="@isCountingDown">Cancel</button>
-                    <button type="button" class="btn btn-primary" @onclick="@(async () => await StartCountdownAndBuild())" disabled="@isCountingDown">
-                        @(!isCountingDown ? "Start Build" : $"Starting in {countdownSeconds}...")
-                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 </div>
             </div>
         }
@@ -78,8 +78,22 @@
     DsBuildRequest buildRequest = new();
     bool mirror = false;
     string fen = string.Empty;
-    int countdownSeconds = 0;
-    bool isCountingDown = false;
+    TimerComponent? timerComponent;
+    bool starting = false;
+
+    private void StartTimerPl()
+    {
+        starting = true;
+        timerComponent?.Start(5);
+    }
+
+    private void StopTimer()
+    {
+        timerComponent?.Stop();
+        starting = false;
+        ToastService.ShowInfo("Build cancelled.");
+        Hide();
+    }
 
     private async Task StartBuild()
     {
@@ -94,6 +108,7 @@
         finally
         {
             ToastService.ShowInfo("Build completed.");
+            starting = false;
         }
     }
 
@@ -110,26 +125,6 @@
             ToastService.ShowError("Failed to apply FEN.");
         }
     }
-
-    private async Task StartCountdownAndBuild()
-    {
-        countdownSeconds = 5;
-        isCountingDown = true;
-        Logger.LogWarning($"Countdown: {countdownSeconds}");
-        for (int i = 0; i < 5; i++)
-        {
-            await Task.Delay(1000);
-            countdownSeconds--;
-            Logger.LogWarning($"Countdown: {countdownSeconds}");
-            await InvokeAsync(StateHasChanged);
-        }
-
-        isCountingDown = false;
-        await InvokeAsync(StateHasChanged);
-
-        await StartBuild(); // Now run build after countdown
-    }
-
 
     public void Show(SpawnDto spawn, List<PlayerUpgradeDto> playerUpgrades, Commander commander, int team)
     {
