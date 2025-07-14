@@ -1,4 +1,5 @@
 ﻿@using Blazored.Toast.Services
+@using Microsoft.Extensions.Logging
 @using Microsoft.JSInterop
 @using dsstats.shared
 @using dsstats.shared.DsFen
@@ -6,6 +7,7 @@
 @inject IJSRuntime JSRuntime
 @inject IRemoteToggleService RemoteToggleService
 @inject IToastService ToastService
+@inject ILogger<BuildModal> Logger
 
 <div class="modal" id="buildmodal" tabindex="-1" aria-labelledby="buildmodalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -63,7 +65,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" disabled="@isCountingDown">Cancel</button>
-                    <button type="button" class="btn btn-primary" @onclick="StartCountdownAndBuild" disabled="@isCountingDown">
+                    <button type="button" class="btn btn-primary" @onclick="@(async () => await StartCountdownAndBuild())" disabled="@isCountingDown">
                         @(!isCountingDown ? "Start Build" : $"Starting in {countdownSeconds}...")
                     </button>
                 </div>
@@ -73,9 +75,7 @@
 </div>
 
 @code {
-    SpawnDto spawn = new();
-    Commander commander = Commander.None;
-    int team = 0;
+    DsBuildRequest buildRequest = new();
     bool mirror = false;
     string fen = string.Empty;
     int countdownSeconds = 0;
@@ -87,13 +87,8 @@
         {
             await Task.Run(() =>
             {
-                RemoteToggleService.Build(new()
-                {
-                    Commander = commander,
-                    Team = team,
-                    Spawn = spawn,
-                    Mirror = mirror,
-                });
+                buildRequest.Mirror = mirror;
+                RemoteToggleService.Build(buildRequest);
             });
         }
         finally
@@ -106,12 +101,8 @@
     {
         try
         {
-            DsBuildRequest buildRequest = new();
+            buildRequest.Clear();
             DsFen.ApplyFen(fen, out buildRequest);
-            spawn = buildRequest.Spawn;
-            commander = buildRequest.Commander;
-            team = buildRequest.Team;
-
             ToastService.ShowSuccess("FEN applied successfully.");
         }
         catch
@@ -124,12 +115,13 @@
     {
         countdownSeconds = 5;
         isCountingDown = true;
-
-        while (countdownSeconds > 0)
+        Logger.LogWarning($"Countdown: {countdownSeconds}");
+        for (int i = 0; i < 5; i++)
         {
-            await InvokeAsync(StateHasChanged);
             await Task.Delay(1000);
             countdownSeconds--;
+            Logger.LogWarning($"Countdown: {countdownSeconds}");
+            await InvokeAsync(StateHasChanged);
         }
 
         isCountingDown = false;
@@ -141,10 +133,7 @@
 
     public void Show(SpawnDto spawn, List<PlayerUpgradeDto> playerUpgrades, Commander commander, int team)
     {
-        this.spawn = spawn;
-        this.commander = commander;
-        this.team = team;
-        DsBuildRequest buildRequest = new()
+        buildRequest = new()
         {
             Commander = commander,
             Team = team,

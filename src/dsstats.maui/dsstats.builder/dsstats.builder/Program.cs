@@ -8,7 +8,7 @@ class Program
     static void Main(string[] args)
     {
         Thread.Sleep(1000);
-        BuildMany();
+        BuildWithUpgrades();
     }
 
     private static void BuildFen()
@@ -45,14 +45,23 @@ class Program
     {
         DsBuildRequest buildRequest = new()
         {
-            Commander = shared.Commander.Protoss,
+            Commander = Commander.Protoss,
             Team = 1,
+            Spawn = new()
+            {
+                Units = new List<SpawnUnitDto>()
+               {
+                   new () {
+                       Count = 1,
+                       Poss = "160,160",
+                       Unit = new UnitDto { Name = "Zealot" }
+                    }
+               }
+            },
             Upgrades = new List<PlayerUpgradeDto>
             {
                 new PlayerUpgradeDto { Upgrade = new UpgradeDto { Name = "Charge" }, Gameloop = 0 },
                 new PlayerUpgradeDto { Upgrade = new UpgradeDto { Name = "ProtossGroundWeaponsLevel1" }, Gameloop = 0 },
-                new PlayerUpgradeDto { Upgrade = new UpgradeDto { Name = "ProtossGroundWeaponsLevel2" }, Gameloop = 0 },
-                new PlayerUpgradeDto { Upgrade = new UpgradeDto { Name = "ProtossGroundWeaponsLevel3" }, Gameloop = 0 },
             }
         };
         DsBuilder.Build(buildRequest);
