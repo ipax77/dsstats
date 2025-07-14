@@ -57,7 +57,7 @@ public class BuildArea
                 if (buildOption is null)
                     return null;
 
-                var pos = mirror ? new RlPoint(u.Pos.X, -u.Pos.Y) : u.Pos;
+                var pos = mirror ? MirrorPoint(u.Pos) : u.Pos;
 
                 var screenPos = screenArea.GetScreenPosition(pos, buildOption.UnitSize);
 
@@ -190,6 +190,41 @@ public class BuildArea
         int y2 = polygon.Max(m => m.Y);
 
         return new(x1 + ((x2 - x1) / 2), y1 + ((y2 - y1) / 2));
+    }
+
+    public RlPoint MirrorPoint(RlPoint p)
+    {
+        // Line points
+        double x1 = -5.5, y1 = -5.5;
+        double x2 = 11.5, y2 = -22.5;
+
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+
+        double px = p.X;
+        double py = p.Y;
+
+        // Vector from A to P
+        double apx = px - x1;
+        double apy = py - y1;
+
+        // Dot product of AP and AB
+        double ab_dot_ap = apx * dx + apy * dy;
+        double ab_len_squared = dx * dx + dy * dy;
+
+        // Projection scalar (2 * projection for reflection)
+        double scalar = 2.0 * ab_dot_ap / ab_len_squared;
+
+        // Projection vector scaled
+        double projX = scalar * dx;
+        double projY = scalar * dy;
+
+        // Reflection = 2 * projection - original vector
+        double rx = x1 + projX - apx;
+        double ry = y1 + projY - apy;
+
+        // Round to nearest int
+        return new RlPoint((int)Math.Round(rx), (int)Math.Round(ry));
     }
 
     private bool IsPointInsideOrOnEdge(RlPoint p)

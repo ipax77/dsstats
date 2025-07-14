@@ -92,7 +92,7 @@
                     </h5>
                 </div>
             }
-            @if (Spawn != null)
+            @if (Spawn != null && Player.Race != Commander.None && (int)Player.Race <= 3)
             {
                 <div class="col-auto">
                     <button type="button" class="btn btn-sm btn-outline-light"

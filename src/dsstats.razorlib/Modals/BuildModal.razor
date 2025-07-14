@@ -1,4 +1,5 @@
 ﻿@using Blazored.Toast.Services
+@using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.Extensions.Logging
 @using Microsoft.JSInterop
 @using dsstats.shared
@@ -14,7 +15,7 @@
         {
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="buildmodalLabel">Prepare to Start Build <b>!EXPERIMENTAL!</b></h5>
+                    <h5 class="modal-title" id="buildmodalLabel">Prepare to Start Build <b>EXPERIMENTAL</b></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -36,6 +37,12 @@
                         <li>Ensure no other application is in focus during the build process.</li>
                     </ol>
                     <hr />
+                    <div>
+                        <EditForm EditContext="editContext" FormName="mirrorForm">
+                            <label for="mirrorCheckbox" class="form-label"><strong>Mirror Build:</strong></label>
+                            <InputCheckbox @bind-Value="buildRequest.Mirror" class="form-check-input" id="mirrorCheckbox" />
+                        </EditForm>
+                    </div>
                     <div>
                         <label for="fenInput" class="form-label"><strong>Modify FEN (optional):</strong></label>
                         <textarea id="fenInput" class="form-control" rows="4" @bind="fen"></textarea>
@@ -76,10 +83,16 @@
 
 @code {
     DsBuildRequest buildRequest = new();
-    bool mirror = false;
     string fen = string.Empty;
     TimerComponent? timerComponent;
     bool starting = false;
+    EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        editContext = new EditContext(buildRequest);
+    }
 
     private void StartTimerPl()
     {
@@ -101,7 +114,6 @@
         {
             await Task.Run(() =>
             {
-                buildRequest.Mirror = mirror;
                 RemoteToggleService.Build(buildRequest);
             });
         }
@@ -117,7 +129,12 @@
         try
         {
             buildRequest.Clear();
-            DsFen.ApplyFen(fen, out buildRequest);
+            DsBuildRequest fenBuildRequest = new();
+            DsFen.ApplyFen(fen, out fenBuildRequest);
+            buildRequest.Commander = fenBuildRequest.Commander;
+            buildRequest.Spawn = fenBuildRequest.Spawn;
+            buildRequest.Upgrades = fenBuildRequest.Upgrades;
+            buildRequest.Team = fenBuildRequest.Team;
             ToastService.ShowSuccess("FEN applied successfully.");
         }
         catch
@@ -128,14 +145,11 @@
 
     public void Show(SpawnDto spawn, List<PlayerUpgradeDto> playerUpgrades, Commander commander, int team)
     {
-        buildRequest = new()
-        {
-            Commander = commander,
-            Team = team,
-            Spawn = spawn,
-            Upgrades = playerUpgrades,
-            Mirror = mirror
-        };
+        buildRequest.Spawn = spawn;
+        buildRequest.Upgrades = playerUpgrades;
+        buildRequest.Commander = commander;
+        buildRequest.Team = team;
+        buildRequest.Mirror = false;
         fen = DsFen.GetFen(buildRequest);
         JSRuntime.InvokeVoidAsync("openModalById", "buildmodal");
         InvokeAsync(() => StateHasChanged());

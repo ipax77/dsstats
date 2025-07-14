@@ -40,39 +40,14 @@ public static class DsBuilder
         return events;
     }
 
-    private static void BuildMirror(SpawnDto spawn, Commander commander, int originalTeam, bool dry = false)
-    {
-        // Determine the mirror team
-        int mirrorTeam = originalTeam == 1 ? 2 : 1;
-
-        Thread.Sleep(2500);
-
-        var build = CmdrBuildFactory.Create(commander);
-        if (build is null)
-            return;
-
-        int screenWidth = User32Wrapper.GetSystemMetrics(User32Wrapper.SM_CXSCREEN);
-        int screenHeight = User32Wrapper.GetSystemMetrics(User32Wrapper.SM_CYSCREEN);
-        var screenArea = new ScreenArea(mirrorTeam, screenWidth, screenHeight);
-
-        List<InputEvent> events = [];
-
-        if (!dry)
-        {
-            events.AddRange(Setup(commander, mirrorTeam, screenArea));
-        }
-
-        // build
-        events.Add(new(InputType.KeyPress, 0, 0, 0x51, DelayMs));
-
-        events.AddRange(GetBuildEvents(spawn, build, mirrorTeam, screenArea, true));
-        BuildPlayer.ReplayInput(events);
-    }
-
-
     public static void Build(DsBuildRequest buildRequest, bool dry = false)
     {
         Thread.Sleep(500);
+        int team = buildRequest.Team;
+        if (buildRequest.Mirror)
+        {
+            team = team == 1 ? 2 : 1;
+        }
         var build = CmdrBuildFactory.Create(buildRequest.Commander);
 
         if (build is null)
@@ -81,18 +56,18 @@ public static class DsBuilder
         }
         int screenWidth = User32Wrapper.GetSystemMetrics(User32Wrapper.SM_CXSCREEN);
         int screenHeight = User32Wrapper.GetSystemMetrics(User32Wrapper.SM_CYSCREEN);
-        var screenArea = new ScreenArea(buildRequest.Team, screenWidth, screenHeight);
+        var screenArea = new ScreenArea(team, screenWidth, screenHeight);
 
         List<InputEvent> events = [];
         if (!dry)
         {
-            events.AddRange(Setup(buildRequest.Commander, buildRequest.Team, screenArea));
+            events.AddRange(Setup(buildRequest.Commander, team, screenArea));
         }
 
         // build
         events.Add(new(InputType.KeyPress, 0, 0, 0x51, DelayMs));
 
-        events.AddRange(GetBuildEvents(buildRequest.Spawn, build, buildRequest.Team, screenArea));
+        events.AddRange(GetBuildEvents(buildRequest.Spawn, build, team, screenArea, buildRequest.Mirror));
 
 
         // upgrades
@@ -150,11 +125,16 @@ public static class DsBuilder
 
     private static List<InputEvent> GetBuildEvents(SpawnDto spawn, CmdrBuild build, int team, ScreenArea screenArea, bool mirror = false)
     {
-        var buildArea = new BuildArea(team);
+        int buildTeam = team;
+        if (mirror)
+        {
+            buildTeam = team == 1 ? 2 : 1;
+        }
+        var buildArea = new BuildArea(buildTeam);
 
         foreach (var unit in spawn.Units)
         {
-            buildArea.PlaceUnits(unit.Unit.Name, unit.Poss, team);
+            buildArea.PlaceUnits(unit.Unit.Name, unit.Poss, buildTeam);
         }
         return buildArea.GetBuildEvents(screenArea, build, mirror);
     }
