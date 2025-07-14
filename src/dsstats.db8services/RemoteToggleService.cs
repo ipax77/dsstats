@@ -1,4 +1,6 @@
-﻿using dsstats.shared.Interfaces;
+﻿using dsstats.shared;
+using dsstats.shared.DsFen;
+using dsstats.shared.Interfaces;
 
 namespace dsstats.db8services;
 
@@ -14,6 +16,11 @@ public class RemoteToggleService : IRemoteToggleService
 #pragma warning disable CS0414 // dummy for server side, only useful for maui
     public event EventHandler? FromServerChanged = null;
     public event EventHandler? CultureChanged = null;
+
+    public void Build(DsBuildRequest buildRequest)
+    {
+        throw new NotImplementedException();
+    }
 
     public void SetCulture(string culture)
     {

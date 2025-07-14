@@ -82,22 +82,47 @@ class Program
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-        var playerService = scope.ServiceProvider.GetRequiredService<IPlayerService>();
+        var minDate = new DateTime(2023, 1, 1);
+        var query = from r in context.Replays
+                    from rp in r.ReplayPlayers
+                    from s in rp.Spawns
+                    from su in s.Units
+                    where r.GameTime > minDate && rp.Team == 2 && rp.Race == Commander.Terran && s.Breakpoint == Breakpoint.All
+                        && su.Unit.Name == "Thor"
+                    select su.Poss;
+        var posString = query
+            .OrderByDescending(o => o.Length)
+            .Take(4)
+            .ToList();
 
-        //var result = playerService.GetPlayerPlayerIdSummary(new(226401, 1, 2), RatingType.Cmdr, RatingCalcType.Dsstats)
-        //    .GetAwaiter().GetResult();
+        foreach (var pos in posString)
+        {
+            Console.WriteLine(pos);
+        }
 
-        //PlayerDetailRequest request = new()
-        //{
-        //    RequestNames = new("PAX", 226401, 2, 1),
-        //    TimePeriod = TimePeriod.Patch2_71,
-        //    RatingType = RatingType.Cmdr,
-        //};
+        var allCoords = new List<(int x, int y)>();
 
-        //var details = playerService.GetPlayerIdPlayerDetails(request).GetAwaiter().GetResult();
+        foreach (var poss in posString)
+        {
+            var nums = poss
+                .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(int.Parse)
+                .ToList();
 
-        var r = playerService.GetPlayerIdPlayerRatingDetails(new(226401, 1, 2), RatingType.Cmdr, RatingCalcType.Dsstats)
-            .GetAwaiter().GetResult();
+            for (int i = 0; i < nums.Count - 1; i += 2)
+            {
+                allCoords.Add((nums[i], nums[i + 1]));
+            }
+        }
+
+        int xMin = allCoords.Min(p => p.x);
+        int xMax = allCoords.Max(p => p.x);
+        int yMin = allCoords.Min(p => p.y);
+        int yMax = allCoords.Max(p => p.y);
+
+        // Output results
+        Console.WriteLine($"xMin: {xMin}, xMax: {xMax}");
+        Console.WriteLine($"yMin: {yMin}, yMax: {yMax}");
 
         Console.ReadLine();
     }
@@ -106,22 +131,22 @@ class Program
     {
         DateTime fromDate = new DateTime(2023, 07, 01);
         var group = from r in context.Replays
-                  from rp in r.ReplayPlayers
-                  join rr in context.ReplayRatings on r.ReplayId equals rr.ReplayId
-                  join rpr in context.RepPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
-                  where r.GameTime > fromDate
-                   && r.Duration > 300
-                   && rr.RatingType == RatingType.Cmdr
-                  group new { rp, rr, rpr, r } by rp.Race into g
-                  select new AvgResult()
-                  {
-                      Commander = g.Key,
-                      Count = g.Count(),
-                      AvgRating = Math.Round(g.Average(a => a.rpr.Rating), 2),
-                      AvgGain = Math.Round(g.Average(a => a.rpr.RatingChange), 2),
-                      Wins = g.Sum(s => s.rp.PlayerResult == PlayerResult.Win ? 1 : 0),
-                      Replays = g.Select(s => s.r.ReplayId).Distinct().Count()
-                  };
+                    from rp in r.ReplayPlayers
+                    join rr in context.ReplayRatings on r.ReplayId equals rr.ReplayId
+                    join rpr in context.RepPlayerRatings on rp.ReplayPlayerId equals rpr.ReplayPlayerId
+                    where r.GameTime > fromDate
+                     && r.Duration > 300
+                     && rr.RatingType == RatingType.Cmdr
+                    group new { rp, rr, rpr, r } by rp.Race into g
+                    select new AvgResult()
+                    {
+                        Commander = g.Key,
+                        Count = g.Count(),
+                        AvgRating = Math.Round(g.Average(a => a.rpr.Rating), 2),
+                        AvgGain = Math.Round(g.Average(a => a.rpr.RatingChange), 2),
+                        Wins = g.Sum(s => s.rp.PlayerResult == PlayerResult.Win ? 1 : 0),
+                        Replays = g.Select(s => s.r.ReplayId).Distinct().Count()
+                    };
 
         var data = await group.ToListAsync();
         data = data.Where(x => (int)x.Commander > 3).ToList();

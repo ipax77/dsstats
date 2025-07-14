@@ -1,8 +1,11 @@
 @using Microsoft.JSInterop
+@using dsstats.razorlib.Modals
 @using dsstats.shared
 @using dsstats.razorlib.Services
 @using dsstats.shared.Interfaces
+@using static dsstats.razorlib.Replays.ReplayPlayersDetailContainer
 @inject IDsDataService dsDataService
+@inject IRemoteToggleService remoteToggleService
 
 <div class="card w-auto">
     <div class="card-header bgchart">
@@ -74,7 +77,7 @@
                 <div class="col-auto">
                     <h5>
                         <span class="badge border border-info">
-                            ArmyValue <span class="text-warning">@HelperService.GetBigNumberString(armyValue)</span>
+                            Value <span class="text-warning">@HelperService.GetBigNumberString(armyValue)</span>
                         </span>
                     </h5>
                 </div>
@@ -84,9 +87,18 @@
                 <div class="col-auto">
                     <h5>
                         <span class="badge border border-info">
-                            ArmyLife <span class="text-warning">@HelperService.GetBigNumberString(armyLife)</span>
+                            Life <span class="text-warning">@HelperService.GetBigNumberString(armyLife)</span>
                         </span>
                     </h5>
+                </div>
+            }
+            @if (Spawn != null && Player.Race != Commander.None && (int)Player.Race <= 3)
+            {
+                <div class="col-auto">
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            @onclick="e => OnBuildRequest.InvokeAsync(new DsBuildInfo() { Spawn = Spawn, Upgrades = Player.Upgrades.ToList(), Commander = Player.Race, Team = Player.Team })">
+                        Build
+                    </button>
                 </div>
             }
         </div>
@@ -129,6 +141,9 @@
     [Parameter, EditorRequired]
     public Lazy<Task<IJSObjectReference>> moduleTask { get; set; } = default!;
 
+    [Parameter]
+    public EventCallback<DsBuildInfo> OnBuildRequest { get; set; }
+
     bool IsWinner;
     bool isLoading;
 
@@ -168,10 +183,10 @@
         if (Spawn is not null)
         {
             spawnInfo = await dsDataService.GetSpawnInfo(new SpawnRequest()
-                {
-                    Units = Spawn.Units.Select(s => s.Unit).ToList(),
-                    Commander = Player.Race
-                });
+            {
+                Units = Spawn.Units.Select(s => s.Unit).ToList(),
+                Commander = Player.Race
+            });
             SetInfos(Spawn, spawnInfo);
         }
         replayPlayerChartMap?.Update(Spawn, spawnInfo, Player.Team);
@@ -199,12 +214,12 @@
                 spawnArmyValue += buildUnit.Cost * spawnUnit.Count;
                 spawnArmyLife += (buildUnit.Life + buildUnit.Shields) * spawnUnit.Count;
                 spawnUnits.Add(new()
-                    {
-                        Name = buildUnit.Name,
-                        ChartName = spawnUnit.Unit.Name,
-                        Count = spawnUnit.Count,
-                        Color = HelperService.GetUnitColor(buildUnit.Color)
-                    });
+                {
+                    Name = buildUnit.Name,
+                    ChartName = spawnUnit.Unit.Name,
+                    Count = spawnUnit.Count,
+                    Color = HelperService.GetUnitColor(buildUnit.Color)
+                });
             }
             else
             {

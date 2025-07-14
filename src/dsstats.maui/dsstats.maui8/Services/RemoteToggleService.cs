@@ -1,4 +1,6 @@
 ﻿
+using dsstats.builder;
+using dsstats.shared.DsFen;
 using dsstats.shared.Interfaces;
 
 namespace dsstats.maui8.Services;
@@ -35,5 +37,10 @@ public class RemoteToggleService : IRemoteToggleService
     {
         _culture = culture;
         OnCultureChanged(new());
+    }
+
+    public void Build(DsBuildRequest buildRequest)
+    {
+        DsBuilder.Build(buildRequest);
     }
 }

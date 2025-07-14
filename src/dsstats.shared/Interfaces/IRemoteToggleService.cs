@@ -1,4 +1,6 @@
-﻿namespace dsstats.shared.Interfaces;
+﻿using dsstats.shared.DsFen;
+
+namespace dsstats.shared.Interfaces;
 
 public interface IRemoteToggleService
 {
@@ -9,4 +11,5 @@ public interface IRemoteToggleService
     bool FromServer { get; }
     bool IsMaui { get; }
     string Culture { get; }
+    void Build(DsBuildRequest buildRequest);
 }

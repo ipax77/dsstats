@@ -1,0 +1,162 @@
+﻿@using Blazored.Toast.Services
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.Extensions.Logging
+@using Microsoft.JSInterop
+@using dsstats.shared
+@using dsstats.shared.DsFen
+@using dsstats.shared.Interfaces
+@inject IJSRuntime JSRuntime
+@inject IRemoteToggleService RemoteToggleService
+@inject IToastService ToastService
+
+<div class="modal" id="buildmodal" tabindex="-1" aria-labelledby="buildmodalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        @if (RemoteToggleService.IsMaui)
+        {
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="buildmodalLabel">Prepare to Start Build <b>EXPERIMENTAL</b></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>⚠️ Please follow these steps before continuing:</h6>
+                    <ol>
+                        <li><strong>Close all other applications.</strong></li>
+                        <li>Launch the <strong>Direct Strike Tutorial</strong> map in StarCraft II.</li>
+                        <li>
+                            Assign hotkeys:
+                            <ul>
+                                <li>Set Team 1's worker (top player) to hotkey <strong>1</strong></li>
+                                <li>Set Team 2's worker (bottom player) to hotkey <strong>2</strong></li>
+                            </ul>
+                        </li>
+                        <li><strong>Do not move the workers!</strong> They must stay centered for accurate unit placement.</li>
+                        <li>In <strong>dsstats</strong>, load the replay and select the desired build.</li>
+                        <li>Click the <strong>Build</strong> button (below) and <strong>switch back to StarCraft II immediately</strong>.</li>
+                        <li><strong>Don't touch your mouse or keyboard</strong> until the build is done.</li>
+                        <li>Ensure no other application is in focus during the build process.</li>
+                    </ol>
+                    <hr />
+                    <div>
+                        <EditForm EditContext="editContext" FormName="mirrorForm">
+                            <label for="mirrorCheckbox" class="form-label"><strong>Mirror Build:</strong></label>
+                            <InputCheckbox @bind-Value="buildRequest.Mirror" class="form-check-input" id="mirrorCheckbox" />
+                        </EditForm>
+                    </div>
+                    <div>
+                        <label for="fenInput" class="form-label"><strong>Modify FEN (optional):</strong></label>
+                        <textarea id="fenInput" class="form-control" rows="4" @bind="fen"></textarea>
+                        <button class="btn btn-outline-primary mt-2" @onclick="ApplyFen">Apply FEN</button>
+                    </div>
+                    <div>
+                        <TimerComponent @ref="timerComponent" Title="Build starting in:" TimerOut="StartBuild" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="StopTimer">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="StartTimerPl" disabled="@starting">Start Build</button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="buildmodalLabel">DS FEN String</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    You can use this string to build the units in the Direct Strike Tutorial Map using the sc2dsstats app.
+                    <div>
+                        <label for="fenInput" class="form-label"><strong>FEN:</strong></label>
+                        <textarea id="fenInput" disabled class="form-control" rows="4" @bind="fen"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    DsBuildRequest buildRequest = new();
+    string fen = string.Empty;
+    TimerComponent? timerComponent;
+    bool starting = false;
+    EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        editContext = new EditContext(buildRequest);
+    }
+
+    private void StartTimerPl()
+    {
+        starting = true;
+        timerComponent?.Start(5);
+    }
+
+    private void StopTimer()
+    {
+        timerComponent?.Stop();
+        starting = false;
+        ToastService.ShowInfo("Build cancelled.");
+        Hide();
+    }
+
+    private async Task StartBuild()
+    {
+        try
+        {
+            await Task.Run(() =>
+            {
+                RemoteToggleService.Build(buildRequest);
+            });
+        }
+        finally
+        {
+            ToastService.ShowInfo("Build completed.");
+            starting = false;
+        }
+    }
+
+    private void ApplyFen()
+    {
+        try
+        {
+            buildRequest.Clear();
+            DsBuildRequest fenBuildRequest = new();
+            DsFen.ApplyFen(fen, out fenBuildRequest);
+            buildRequest.Commander = fenBuildRequest.Commander;
+            buildRequest.Spawn = fenBuildRequest.Spawn;
+            buildRequest.Upgrades = fenBuildRequest.Upgrades;
+            buildRequest.Team = fenBuildRequest.Team;
+            ToastService.ShowSuccess("FEN applied successfully.");
+        }
+        catch
+        {
+            ToastService.ShowError("Failed to apply FEN.");
+        }
+    }
+
+    public void Show(SpawnDto spawn, List<PlayerUpgradeDto> playerUpgrades, Commander commander, int team)
+    {
+        buildRequest.Spawn = spawn;
+        buildRequest.Upgrades = playerUpgrades;
+        buildRequest.Commander = commander;
+        buildRequest.Team = team;
+        buildRequest.Mirror = false;
+        fen = DsFen.GetFen(buildRequest);
+        JSRuntime.InvokeVoidAsync("openModalById", "buildmodal");
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Hide()
+    {
+        JSRuntime.InvokeVoidAsync("closeModalById", "buildmodal");
+    }
+}

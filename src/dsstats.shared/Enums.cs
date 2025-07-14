@@ -1,6 +1,4 @@
-﻿using System.Diagnostics.Tracing;
-
-namespace dsstats.shared;
+﻿namespace dsstats.shared;
 
 public enum GameMode
 {
