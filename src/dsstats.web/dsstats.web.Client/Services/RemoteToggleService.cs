@@ -1,4 +1,5 @@
 ﻿using dsstats.shared;
+using dsstats.shared.DsFen;
 using dsstats.shared.Interfaces;
 
 namespace dsstats.web.Client.Services;
@@ -31,7 +32,7 @@ public class RemoteToggleService : IRemoteToggleService
 
     }
 
-    public void Build(SpawnDto spawn, Commander commander, int team)
+    public void Build(DsBuildRequest request)
     {
         throw new NotImplementedException();
     }
