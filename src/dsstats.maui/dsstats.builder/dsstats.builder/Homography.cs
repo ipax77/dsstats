@@ -53,4 +53,31 @@ public class Homography
 
         return new RlPoint((int)screenX, (int)screenY);
     }
+
+    public RlPoint TransformToTopLeft(RlPoint p)
+    {
+        double adjustedX = p.X - 0.5;
+        double adjustedY = p.Y + 0.5;
+
+        double denom = H[2, 0] * adjustedX + H[2, 1] * adjustedY + H[2, 2];
+
+        double screenX = (H[0, 0] * adjustedX + H[0, 1] * adjustedY + H[0, 2]) / denom;
+        double screenY = (H[1, 0] * adjustedX + H[1, 1] * adjustedY + H[1, 2]) / denom;
+
+        return new RlPoint((int)screenX, (int)screenY);
+    }
+
+    public RlPoint TransformToBottomRight(RlPoint p)
+    {
+        double adjustedX = p.X + 0.5;
+        double adjustedY = p.Y - 0.5;
+
+        double denom = H[2, 0] * adjustedX + H[2, 1] * adjustedY + H[2, 2];
+
+        double screenX = (H[0, 0] * adjustedX + H[0, 1] * adjustedY + H[0, 2]) / denom;
+        double screenY = (H[1, 0] * adjustedX + H[1, 1] * adjustedY + H[1, 2]) / denom;
+
+        return new RlPoint((int)screenX, (int)screenY);
+    }
+
 }
