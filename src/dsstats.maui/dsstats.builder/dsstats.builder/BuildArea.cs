@@ -42,14 +42,17 @@ public class BuildArea
     {
         var events = new List<InputEvent>();
 
-        var allUnits = units
-            .SelectMany(unit => unit.Value
-                .OrderBy(o => o.X).ThenBy(t => t.Y)
-                .Select(pos => new { unit.Key, Pos = pos }))
-            .ToList();
+        //var allUnits = units
+        //    .SelectMany(unit => unit.Value
+        //        .OrderBy(o => o.X).ThenBy(t => t.Y)
+        //        .Select(pos => new { unit.Key, Pos = pos }))
+        //    .ToList();
+        var allUnits = GetBuildUnits(build, team);
 
         if (allUnits.Count == 0)
             return events;
+
+        allUnits = FixUnitPositions(allUnits);
 
         float yScale = screenArea._scaleY;
         int workerKey = team == 1 ? 0x31 : 0x32;
@@ -57,13 +60,9 @@ public class BuildArea
         var groupedUnits = allUnits
             .Select(u =>
             {
-                var buildOption = build.GetUnitBuildOption(u.Key);
-                if (buildOption is null)
-                    return null;
-
                 var pos = mirror ? MirrorPoint(u.Pos) : u.Pos;
 
-                var screenPos = screenArea.GetScreenPosition(pos, buildOption.UnitSize);
+                var screenPos = screenArea.GetScreenPosition(pos, u.BuildOption.UnitSize);
 
                 var region = screenPos.Y <= 15 * yScale
                     ? UnitRegion.Top
@@ -71,7 +70,7 @@ public class BuildArea
                         ? UnitRegion.Bottom
                         : UnitRegion.Center;
 
-                return new { Region = region, Unit = new PlacedUnit(u.Key, screenPos, buildOption) };
+                return new { Region = region, Unit = new PlacedUnit(u.UnitName, screenPos, u.BuildOption) };
             })
             .Where(x => x != null)
             .GroupBy(x => x!.Region)
