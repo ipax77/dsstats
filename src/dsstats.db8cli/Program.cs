@@ -87,20 +87,13 @@ class Program
                     from rp in r.ReplayPlayers
                     from s in rp.Spawns
                     from su in s.Units
-                    where r.GameTime > minDate && rp.Team == 2 && rp.Race == Commander.Terran && s.Breakpoint == Breakpoint.All
-                        && su.Unit.Name == "Thor"
+                    where r.GameTime > minDate && r.GameMode == GameMode.Commanders && rp.Team == 1 && rp.Race == Commander.Horner && s.Breakpoint == Breakpoint.All
+                        && su.Unit.Name == "AssaultGalleon"
                     select su.Poss;
         var posString = query
-            .OrderByDescending(o => o.Length)
-            .Take(4)
             .ToList();
 
-        foreach (var pos in posString)
-        {
-            Console.WriteLine(pos);
-        }
-
-        var allCoords = new List<(int x, int y)>();
+        var allCoords = new HashSet<(int x, int y)>();
 
         foreach (var poss in posString)
         {
@@ -123,6 +116,11 @@ class Program
         // Output results
         Console.WriteLine($"xMin: {xMin}, xMax: {xMax}");
         Console.WriteLine($"yMin: {yMin}, yMax: {yMax}");
+
+        foreach (var pos in allCoords.OrderBy(o => o.x).ThenBy(o => o.y))
+        {
+            Console.WriteLine($"{pos.x},{pos.y}");
+        }
 
         Console.ReadLine();
     }

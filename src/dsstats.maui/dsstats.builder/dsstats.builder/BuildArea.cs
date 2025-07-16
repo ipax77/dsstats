@@ -18,6 +18,10 @@ public class BuildArea
         new RlPoint(101, 76),  // Right
         new RlPoint(90, 65),    // Bottom
     ];
+    // (154, 163)
+    // (165, 174)
+    // (182, 157)
+    // (171, 146)
     private List<RlPoint> polygon1 =
     [
         new RlPoint(154, 163),   // Left
@@ -289,9 +293,163 @@ public class BuildArea
         Bottom = 2
     }
 
-    private record PlacedUnit(string UnitName, RlPoint Pos, BuildOption BuildOption);
+    public List<BuildUnit> GetBuildUnits(CmdrBuild build, int team)
+    {
+        List<BuildUnit> buildUnits = [];
+        foreach (var ent in units)
+        {
+            var buildOption = build.GetUnitBuildOption(ent.Key);
+            if (buildOption is null)
+            {
+                continue;
+            }
+            foreach (var pos in ent.Value)
+            {
+                buildUnits.Add(new(ent.Key, pos, buildOption));
+            }
+        }
+        return buildUnits;
+    }
 
+    public List<BuildUnit> FixUnitPositions(List<BuildUnit> buildUnits)
+    {
+        List<RlPoint> polygon = new()
+        {
+            new RlPoint(0, 0),
+            new RlPoint(17, -17),
+            new RlPoint(6, -28),
+            new RlPoint(-11, -11),
+        };
+
+        Dictionary<RlPoint, bool> airMap = GetPointsInPolygon(polygon);
+        Dictionary<RlPoint, bool> groundMap = new(airMap);
+
+        List<BuildUnit> result = [];
+
+        foreach (var unit in buildUnits
+            .OrderBy(u => u.BuildOption.UnitSize)
+             .ThenBy(u => u.Pos.X)
+             .ThenBy(u => u.Pos.Y))
+        {
+            var map = unit.BuildOption.IsAir ? airMap : groundMap;
+            if (TryPlaceUnit(unit, map, out var placedPos))
+            {
+                var replacedUnit = unit with { Pos = placedPos };
+                result.Add(replacedUnit);
+            }
+        }
+
+        return result;
+    }
+
+    private bool TryPlaceUnit(
+        BuildUnit unit,
+        Dictionary<RlPoint, bool> occupancyMap,
+        out RlPoint placedPosition)
+    {
+        var size = unit.BuildOption.UnitSize;
+        var start = unit.Pos;
+        var polygonSet = new HashSet<RlPoint>(occupancyMap.Keys);
+        var visited = new HashSet<RlPoint>();
+        var queue = new Queue<RlPoint>();
+        queue.Enqueue(start);
+        visited.Add(start);
+
+        // Directions to explore (4-neighborhood)
+        var directions = new List<RlPoint>
+    {
+        new(1, 0), new(-1, 0), new(0, 1), new(0, -1)
+    };
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            var footprint = GetFootprint(current, size);
+
+            // Check if all tiles in the footprint are inside the polygon and unoccupied
+            if (footprint.All(p => polygonSet.Contains(p) && !occupancyMap[p]))
+            {
+                foreach (var p in footprint)
+                {
+                    occupancyMap[p] = true;
+                }
+
+                placedPosition = current;
+                return true;
+            }
+
+            // Expand to neighbors
+            foreach (var dir in directions)
+            {
+                var neighbor = new RlPoint(current.X + dir.X, current.Y + dir.Y);
+                if (!visited.Contains(neighbor) && polygonSet.Contains(neighbor))
+                {
+                    visited.Add(neighbor);
+                    queue.Enqueue(neighbor);
+                }
+            }
+        }
+
+        placedPosition = RlPoint.Zero;
+        return false;
+    }
+
+
+    private List<RlPoint> GetFootprint(RlPoint center, int size)
+    {
+        // Assumes center is bottom-right corner of the central 2x2 square for even sizes
+        List<RlPoint> footprint = [];
+        int half = size / 2;
+
+        for (int dx = -half + 1; dx <= half; dx++)
+        {
+            for (int dy = -half + 1; dy <= half; dy++)
+            {
+                footprint.Add(new RlPoint(center.X + dx, center.Y + dy));
+            }
+        }
+
+        return footprint;
+    }
+
+    public static Dictionary<RlPoint, bool> GetPointsInPolygon(List<RlPoint> polygon)
+    {
+        var dict = new Dictionary<RlPoint, bool>();
+
+        // Compute bounding box
+        int minX = int.MaxValue, maxX = int.MinValue;
+        int minY = int.MaxValue, maxY = int.MinValue;
+        foreach (var pt in polygon)
+        {
+            minX = Math.Min(minX, pt.X);
+            maxX = Math.Max(maxX, pt.X);
+            minY = Math.Min(minY, pt.Y);
+            maxY = Math.Max(maxY, pt.Y);
+        }
+
+        // Check each integer point within the bounding box
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                var point = new RlPoint(x, y);
+                if (IsPointInPolygon(point, polygon))
+                {
+                    dict[point] = false;
+                }
+                for (int i = 0; i < polygon.Count; i++)
+                {
+                    if (IsOnEdge(point, polygon[i], polygon[(i + 1) % polygon.Count]))
+                        dict[point] = false;
+                }
+            }
+        }
+
+        return dict;
+    }
+
+    private record PlacedUnit(string UnitName, RlPoint Pos, BuildOption BuildOption);
     private record BuildRegion(UnitRegion Region, List<PlacedUnit> Units);
 }
 
-internal sealed record BuildUnit(string UnitName, RlPoint Pos, BuildOption BuildOption);
+public sealed record BuildUnit(string UnitName, RlPoint Pos, BuildOption BuildOption);
