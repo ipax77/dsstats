@@ -23,6 +23,74 @@ public sealed class OccupiedTests
     };
 
     [TestMethod]
+    public void Footprint_1x1_Centered()
+    {
+        var buildArea = new BuildArea(1);
+        var center = new RlPoint(0, 0);
+        var footprint = buildArea.GetFootprint(center, 1);
+
+        var expected = new List<RlPoint>
+        {
+            new RlPoint(0, 0)
+        };
+
+        CollectionAssert.AreEquivalent(expected, footprint);
+    }
+
+    [TestMethod]
+    public void Footprint_2x2_BottomRightCorner()
+    {
+        var buildArea = new BuildArea(1);
+        var center = new RlPoint(0, 0); // bottom-right of 2x2
+        var footprint = buildArea.GetFootprint(center, 2);
+
+        var expected = new List<RlPoint>
+        {
+            new RlPoint(-1, 0),
+            new RlPoint(-1, 1),
+            new RlPoint(0, 0),
+            new RlPoint(0, 1)
+        };
+
+        CollectionAssert.AreEquivalent(expected, footprint);
+    }
+
+    [TestMethod]
+    public void Footprint_3x3_Centered()
+    {
+        var buildArea = new BuildArea(1);
+        var center = new RlPoint(0, 0);
+        var footprint = buildArea.GetFootprint(center, 3);
+
+        var expected = new List<RlPoint>
+        {
+            new RlPoint(-1, -1), new RlPoint(0, -1), new RlPoint(1, -1),
+            new RlPoint(-1,  0), new RlPoint(0,  0), new RlPoint(1,  0),
+            new RlPoint(-1,  1), new RlPoint(0,  1), new RlPoint(1,  1),
+        };
+
+        CollectionAssert.AreEquivalent(expected, footprint);
+    }
+
+    [TestMethod]
+    public void Footprint_4x4_BottomRightOfCentral2x2()
+    {
+        var buildArea = new BuildArea(1);
+        var center = new RlPoint(0, 0); // bottom-right of central 2x2
+        var footprint = buildArea.GetFootprint(center, 4);
+
+        var expected = new List<RlPoint>
+        {
+            new RlPoint(-2, 2), new RlPoint(-2, 1), new RlPoint(-2, 0), new RlPoint(-2, -1),
+            new RlPoint(-1, 2), new RlPoint(-1, 1), new RlPoint(-1, 0), new RlPoint(-1, -1),
+            new RlPoint(0, 2), new RlPoint(0, 1), new RlPoint( 0, 0), new RlPoint(0, -1),
+            new RlPoint(1, 2), new RlPoint(1, 1), new RlPoint( 1, 0), new RlPoint( 1, -1),
+        };
+
+        CollectionAssert.AreEquivalent(expected, footprint);
+    }
+
+    [TestMethod]
     public void CanRepositionUnits()
     {
         int team = 1;

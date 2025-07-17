@@ -333,8 +333,8 @@ public class BuildArea
             var map = unit.BuildOption.IsAir ? airMap : groundMap;
             if (TryPlaceUnit(unit, map, out var placedPos))
             {
-                var replacedUnit = unit with { Pos = placedPos };
-                result.Add(replacedUnit);
+                var placedUnit = unit with { Pos = placedPos };
+                result.Add(placedUnit);
             }
         }
 
@@ -348,7 +348,6 @@ public class BuildArea
     {
         var size = unit.BuildOption.UnitSize;
         var start = unit.Pos;
-        var polygonSet = new HashSet<RlPoint>(occupancyMap.Keys);
         var visited = new HashSet<RlPoint>();
         var queue = new Queue<RlPoint>();
         queue.Enqueue(start);
@@ -356,9 +355,10 @@ public class BuildArea
 
         // Directions to explore (4-neighborhood)
         var directions = new List<RlPoint>
-    {
-        new(1, 0), new(-1, 0), new(0, 1), new(0, -1)
-    };
+        {
+            new(1, 1), new(1, -1), new(-1, 1), new(-1, -1),
+            new(1, 0), new(-1, 0), new(0, 1), new(0, -1)
+        };
 
         while (queue.Count > 0)
         {
@@ -366,7 +366,7 @@ public class BuildArea
             var footprint = GetFootprint(current, size);
 
             // Check if all tiles in the footprint are inside the polygon and unoccupied
-            if (footprint.All(p => polygonSet.Contains(p) && !occupancyMap[p]))
+            if (footprint.All(p => occupancyMap.ContainsKey(p) && !occupancyMap[p]))
             {
                 foreach (var p in footprint)
                 {
@@ -381,7 +381,7 @@ public class BuildArea
             foreach (var dir in directions)
             {
                 var neighbor = new RlPoint(current.X + dir.X, current.Y + dir.Y);
-                if (!visited.Contains(neighbor) && polygonSet.Contains(neighbor))
+                if (!visited.Contains(neighbor) && occupancyMap.ContainsKey(neighbor))
                 {
                     visited.Add(neighbor);
                     queue.Enqueue(neighbor);
@@ -394,22 +394,50 @@ public class BuildArea
     }
 
 
-    private List<RlPoint> GetFootprint(RlPoint center, int size)
+    public List<RlPoint> GetFootprint(RlPoint center, int size)
     {
-        // Assumes center is bottom-right corner of the central 2x2 square for even sizes
-        List<RlPoint> footprint = [];
-        int half = size / 2;
-
-        for (int dx = -half + 1; dx <= half; dx++)
+        return size switch
         {
-            for (int dy = -half + 1; dy <= half; dy++)
-            {
-                footprint.Add(new RlPoint(center.X + dx, center.Y + dy));
-            }
-        }
-
-        return footprint;
+            1 => [center],
+            2 => [
+                center,
+                new(center.X - 1, center.Y),
+                new(center.X - 1, center.Y + 1),
+                new(center.X, center.Y + 1),
+            ],
+            3 => [
+                center,
+                new(center.X - 1, center.Y),
+                new(center.X - 1, center.Y + 1),
+                new(center.X, center.Y + 1),
+                new(center.X + 1, center.Y + 1),
+                new(center.X + 1, center.Y),
+                new(center.X + 1, center.Y - 1),
+                new(center.X, center.Y - 1),
+                new(center.X - 1, center.Y - 1),
+            ],
+            4 => [
+                center,
+                new(center.X - 1, center.Y),
+                new(center.X - 1, center.Y + 1),
+                new(center.X, center.Y + 1),
+                new(center.X + 1, center.Y + 1),
+                new(center.X + 1, center.Y),
+                new(center.X + 1, center.Y - 1),
+                new(center.X, center.Y - 1),
+                new(center.X - 1, center.Y - 1),
+                new(center.X - 2, center.Y - 1),
+                new(center.X - 2, center.Y),
+                new(center.X - 2, center.Y + 1),
+                new(center.X - 2, center.Y + 2),
+                new(center.X - 1, center.Y + 2),
+                new(center.X, center.Y + 2),
+                new(center.X + 1, center.Y + 2),
+            ],
+            _ => []
+        };
     }
+
 
     public static Dictionary<RlPoint, bool> GetPointsInPolygon(List<RlPoint> polygon)
     {
