@@ -8,15 +8,16 @@ public class DecodeService(ILogger<DecodeService> logger,
                            IServiceScopeFactory scopeFactory)
 {
     public EventHandler<DecodeEventArgs>? DecodeFinished;
+    public EventHandler<DecodeRawEventArgs>? DecodeRawFinished;
 
     private void OnDecodeFinished(DecodeEventArgs e)
     {
         DecodeFinished?.Invoke(this, e);
     }
 
-    private void OnRawDecodeFinished(DecodeEventArgs e)
+    private void OnRawDecodeRawFinished(DecodeRawEventArgs e)
     {
-        DecodeFinished?.Invoke(this, e);
+        DecodeRawFinished?.Invoke(this, e);
     }
 
     public async Task SaveReplays(Guid guid, List<IFormFile> files)
@@ -89,15 +90,11 @@ public class DecodeService(ILogger<DecodeService> logger,
         }
     }
 
-    public async Task ConsumeRawDecodeResult(Guid guid, List<string> replays)
+    public async Task ConsumeRawDecodeResult(Guid guid, List<ChallengeResponse> challengeResponses)
     {
-        List<ChallengeResponse> challengeResponses = [];
         try
         {
-            if (replays.Count > 0)
-            {
-                
-            }
+
         }
         catch (Exception ex)
         {
@@ -105,10 +102,10 @@ public class DecodeService(ILogger<DecodeService> logger,
         }
         finally
         {
-            OnDecodeFinished(new()
+            OnRawDecodeRawFinished(new()
             {
                 Guid = guid,
-                IhReplays = [],
+                ChallengeResponses = challengeResponses,
             });
         }
     }
