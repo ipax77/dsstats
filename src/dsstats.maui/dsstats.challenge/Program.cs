@@ -13,7 +13,8 @@ class Program
         var replayFile = @"C:\data\ds\challengetest.json";
         var sc2Replay = JsonSerializer.Deserialize<Sc2Replay>(File.ReadAllText(replayFile));
         ArgumentNullException.ThrowIfNull(sc2Replay);
-        ChallengeService.GetData(sc2Replay);
+        var response = ChallengeService.GetChallengeResponse(sc2Replay);
+        Console.WriteLine(response);
         // Debug();
     }
 
@@ -53,7 +54,8 @@ class Program
         // var p2 = dsReplay.Players.FirstOrDefault(f => f.GamePos == 4);
         // ArgumentNullException.ThrowIfNull(p2, "player 4 not found.");
 
-        ChallengeService.GetData(sc2Replay);
+        var response = ChallengeService.GetChallengeResponse(sc2Replay);
+        Console.WriteLine(response);
 
         cts.Dispose();
         decoder.Dispose();

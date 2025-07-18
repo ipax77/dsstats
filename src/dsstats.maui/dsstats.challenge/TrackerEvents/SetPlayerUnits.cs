@@ -31,10 +31,11 @@ public static partial class Parse
             if (!playersByPos.TryGetValue(bornEvent.ControlPlayerId, out var player))
                 continue;
 
-            if (bornEvent.Gameloop < 1440 && bornEvent.UnitTypeName.StartsWith("Worker"))
+            if (bornEvent.UnitTypeName.StartsWith("Worker"))
             {
                 player.Race = bornEvent.UnitTypeName[6..];
                 player.RaceInGameSelected = true;
+                continue;
             }
 
             if (DoSkipUnit(bornEvent.UnitTypeName))

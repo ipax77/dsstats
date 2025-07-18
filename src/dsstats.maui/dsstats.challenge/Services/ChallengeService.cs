@@ -1,13 +1,28 @@
 
 using System.Security.Cryptography;
 using dsstats.shared;
+using dsstats.shared.DsFen;
 using s2protocol.NET;
 
 namespace dsstats.challenge.Services;
 
 public partial class ChallengeService
 {
-    public static void GetData(Sc2Replay sc2Replay)
+    public static ChallengeResponse GetChallengeResponse(Sc2Replay sc2Replay)
+    {
+        try
+        {
+            return GetData(sc2Replay);
+        }
+        catch (Exception ex)
+        {
+            return new()
+            {
+                Error = ex.Message
+            };
+        }
+    }
+    private static ChallengeResponse GetData(Sc2Replay sc2Replay)
     {
         var enemyMessage = sc2Replay.ChatMessages?
             .OrderBy(o => o.Gameloop)
@@ -32,6 +47,8 @@ public partial class ChallengeService
 
         var p1 = dsReplay.Players.FirstOrDefault(f => f.GamePos == 1);
         ArgumentNullException.ThrowIfNull(p1, "player 1 not found.");
+        var p2 = dsReplay.Players.FirstOrDefault(f => f.GamePos == 4);
+        ArgumentNullException.ThrowIfNull(p2, "player 2 not found.");
 
         var clearMessage = sc2Replay.ChatMessages?
             .LastOrDefault(f => f.Message.Equals("clear battle", StringComparison.OrdinalIgnoreCase))?.Gameloop ?? 0;
@@ -55,12 +72,36 @@ public partial class ChallengeService
         ValidateNoChanges(replayDto);
 
         var replayPlayer = replayDto.ReplayPlayers.FirstOrDefault(f => f.GamePos == 1);
+        var challengePlayer = replayDto.ReplayPlayers.FirstOrDefault(f => f.GamePos == 4);
         ArgumentNullException.ThrowIfNull(replayPlayer);
+        ArgumentNullException.ThrowIfNull(challengePlayer);
         var victory = replayPlayer.Upgrades.FirstOrDefault(f => f.Upgrade.Name.Equals("PlayerStateVictory", StringComparison.OrdinalIgnoreCase));
 
         ArgumentNullException.ThrowIfNull(victory, "No victory found.");
-        var timeTillVictory = TimeSpan.FromSeconds((victory.Gameloop - firstSpawn) / 22.4);
-        Console.WriteLine(timeTillVictory.ToString(@"hh\:mm\:ss"));
+        var timeTillVictory = Convert.ToInt32((victory.Gameloop - firstSpawn) / 22.4);
+
+        var challengeFen = DsFen.GetFen(new()
+        {
+            Commander = challengePlayer.Race,
+            Team = 2,
+            Upgrades = challengePlayer.Upgrades.ToList(),
+            Spawn = challengePlayer.Spawns.First(),
+        });
+        var playerFen = DsFen.GetFen(new()
+        {
+            Commander = replayPlayer.Race,
+            Team = 1,
+            Upgrades = replayPlayer.Upgrades.ToList(),
+            Spawn = replayPlayer.Spawns.First(),
+        });
+        return new()
+        {
+            Commander = replayPlayer.Race,
+            TimeTillVictory = timeTillVictory,
+            ChallengeFen = challengeFen,
+            PlayerFen = playerFen,
+            RequestName = new RequestNames(replayPlayer.Name, replayPlayer.Player.ToonId, replayPlayer.Player.RegionId, replayPlayer.Player.RealmId)
+        };
     }
 
     private static void ValidateNoChanges(ReplayDto replayDto)

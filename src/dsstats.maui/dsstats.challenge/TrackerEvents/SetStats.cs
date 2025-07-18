@@ -9,7 +9,9 @@ public static partial class Parse
         foreach (var player in replay.Players)
         {
             var playerUnits = player.Units.Where(x => x.UnitType == UnitType.Spawn).OrderBy(x => x.Gameloop).ToList();
-            var playerStats = statEvents.Where(x => x.PlayerId == player.Pos && x.MineralsCollectionRate > 0).ToList();
+            var playerStats = player.GamePos == 4 ?
+                statEvents.Where(x => x.PlayerId == 1 && x.MineralsCollectionRate > 0).ToList()
+                : statEvents.Where(x => x.PlayerId == player.Pos && x.MineralsCollectionRate > 0).ToList();
 
             if (playerUnits.Count == 0)
             {
