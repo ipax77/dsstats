@@ -24,3 +24,8 @@ public static class SynergyResponseExtensions
             : Math.Round(synergyEnt.Wins * 100.0 / synergyEnt.Count, 2);
     }
 }
+
+public record GroupSynergyResponse : SynergyResponse
+{
+    public List<Commander> Group { get; set; } = [];
+}

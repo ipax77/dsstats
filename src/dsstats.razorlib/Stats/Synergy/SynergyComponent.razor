@@ -31,6 +31,16 @@
             }
         </div>
     </div>
+    <div class="col-auto">
+        @if (groupSynergyActive)
+        {
+            <button type="button" class="btn btn-outline-danger" @onclick="RemoveGroupSynergy">Remove Group Synergy</button>
+        }
+        else if (CmdrSelects.Values.Count(v => v) > 1)
+        {
+            <button type="button" class="btn btn-outline-success" @onclick="SetGroupSynergy">Set Group Synergy</button>
+        }
+    </div>
 </div>
 <div class="mt-2 bgchart d-inline-block p-1" style="max-width: 42vw; min-width: 800px;">
     <p class="text-warning">
@@ -43,7 +53,11 @@
 <div class="mt-2">
     @if (response != null)
     {
-        <SynergyTable Response="response"></SynergyTable>
+        @if (response is GroupSynergyResponse groupSynergyResponse)
+        {
+            <h3 class="p-1 bgchart2 d-inline-block">Group Synergy for @string.Join(", ", groupSynergyResponse.Group)</h3>
+        }
+        <SynergyTable @ref="synergyTable" Response="response"></SynergyTable>
     }
 </div>
 
@@ -52,10 +66,13 @@
     SemaphoreSlim ss = new(1, 1);
 
     SynergyResponse? response = null;
+    SynergyResponse? orgResponse = null;
     SynergyChart? synergyChart;
     CmdrCheckSelectComponent? cmdrCheckSelectComponent;
+    SynergyTable? synergyTable;
 
     Dictionary<Commander, bool> CmdrSelects = null!;
+    bool groupSynergyActive = false;
 
     protected override void OnInitialized()
     {
@@ -85,7 +102,6 @@
             IsLoading = true;
             await InvokeAsync(() => StateHasChanged());
             response = await synergyService.GetSynergy(Request, cts.Token);
-
             synergyChart?.PrepareData(Request, response, CmdrSelects);
             cmdrCheckSelectComponent?.SetParameters(Request.RatingType == RatingType.Std || Request.RatingType == RatingType.StdTE, false);
 
@@ -101,6 +117,7 @@
 
     private void CmdrSelected(KeyValuePair<Commander, bool> cmdrSelect)
     {
+        RemoveGroupSynergy();
         synergyChart?.AddRemoveDatasets(CmdrSelects);
         OnRequestChanged.InvokeAsync();
     }
@@ -111,9 +128,35 @@
         {
             CmdrSelects[ent] = false;
         }
+        RemoveGroupSynergy();
         synergyChart?.AddRemoveDatasets(CmdrSelects);
         StateHasChanged();
         OnRequestChanged.InvokeAsync();
+    }
+
+    private void SetGroupSynergy()
+    {
+        var selectedCommanders = CmdrSelects.Where(kv => kv.Value).Select(kv => kv.Key).ToList();
+        if (selectedCommanders.Count > 1 && response != null)
+        {
+            var groupSynergy = GroupSynergy.GetGroupSynergy(response, selectedCommanders);
+            orgResponse = response;
+            response = groupSynergy;
+            synergyTable?.Update(response);
+            synergyChart?.AddGroupSynergy(groupSynergy);
+            groupSynergyActive = true;
+        }
+    }
+
+    private void RemoveGroupSynergy()
+    {
+        if (groupSynergyActive && orgResponse != null)
+        {
+            response = orgResponse;
+            synergyTable?.Update(response);
+            synergyChart?.RemoveGroupSynergy();
+            groupSynergyActive = false;
+        }
     }
 
     public void Dispose()

@@ -72,6 +72,28 @@
         }
     }
 
+    public void AddGroupSynergy(GroupSynergyResponse groupSynergyResponse)
+    {
+        var dataset = GetDataset(groupSynergyResponse, Commander.None);
+        if (dataset is RadarDataset radarDataset)
+        {
+            radarDataset.Label = "Group Synergy";
+            radarDataset.BackgroundColor = "#f1f3f530";
+            radarDataset.BorderColor = "#b2b3b4";
+            chartConfig.AddDataset(radarDataset);
+        }
+    }
+
+    public void RemoveGroupSynergy()
+    {
+        var dataset = chartConfig.Data.Datasets
+            .FirstOrDefault(d => d is RadarDataset radar && radar.Label == "Group Synergy");
+        if (dataset != null)
+        {
+            chartConfig.RemoveDataset(dataset);
+        }
+    }
+
     private IndexableOption<string> GetTitle(StatsRequest request)
     {
         var title = $"Synergy - {GetTimeInfo(request)}";
@@ -149,7 +171,7 @@
         var ents = response.Entities.Where(x => x.Commander == cmdr).OrderBy(o => o.Teammate).ToList();
 
         List<Commander> cmdrs;
-        if ((int)cmdr <= 3)
+        if ((int)cmdr != 0 && (int)cmdr <= 3)
         {
             cmdrs = Data.GetCommanders(Data.CmdrGet.Std);
         }
@@ -203,7 +225,7 @@
         {
             if (!keepDatasets.ContainsKey(cmdr))
             {
-                addDatasets.Add(GetDataset(Response, cmdr));   
+                addDatasets.Add(GetDataset(Response, cmdr));
             }
         }
 
@@ -216,60 +238,60 @@
     private ChartJsConfig GetChartConfig()
     {
         return new()
+        {
+            Type = ChartType.radar,
+            Options = new ChartJsOptions()
             {
-                Type = ChartType.radar,
-                Options = new ChartJsOptions()
+                Responsive = true,
+                MaintainAspectRatio = true,
+                Plugins = new Plugins()
                 {
-                    Responsive = true,
-                    MaintainAspectRatio = true,
-                    Plugins = new Plugins()
+                    Legend = new Legend()
                     {
-                        Legend = new Legend()
+                        Position = "right",
+                        Labels = new Labels()
                         {
-                            Position = "right",
-                            Labels = new Labels()
-                            {
-                                Color = "#f2f2f2",
-                            }
+                            Color = "#f2f2f2",
+                        }
+                    },
+                    Title = new Title()
+                    {
+                        Display = true,
+                        Font = new Font()
+                        {
+                            Size = 20,
                         },
-                        Title = new Title()
+                        Text = new IndexableOption<string>("Synergy"),
+                        Color = "#f2f2f2"
+                    }
+                },
+                Scales = new ChartJsOptionsScales()
+                {
+                    R = new LinearRadialAxis()
+                    {
+                        AngleLines = new AngleLines()
+                        {
+                            Display = true,
+                            Color = "#f2f2f233"
+                        },
+                        Grid = new ChartJsGrid()
+                        {
+                            Display = true,
+                            Color = "#f2f2f233"
+                        },
+                        PointLabels = new PointLabels()
                         {
                             Display = true,
                             Font = new Font()
                             {
-                                Size = 20,
+                                Size = 12
                             },
-                            Text = new IndexableOption<string>("Synergy"),
                             Color = "#f2f2f2"
-                        }
-                    },
-                    Scales = new ChartJsOptionsScales()
-                    {
-                        R = new LinearRadialAxis()
-                        {
-                            AngleLines = new AngleLines()
-                            {
-                                Display = true,
-                                Color = "#f2f2f233"
-                            },
-                            Grid = new ChartJsGrid()
-                            {
-                                Display = true,
-                                Color = "#f2f2f233"
-                            },
-                            PointLabels = new PointLabels()
-                            {
-                                Display = true,
-                                Font = new Font()
-                                {
-                                    Size = 12
-                                },
-                                Color = "#f2f2f2"
-                            },
-                            BeginAtZero = true
-                        }
+                        },
+                        BeginAtZero = true
                     }
                 }
-            };
+            }
+        };
     }
 }
