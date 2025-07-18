@@ -106,6 +106,12 @@
         }
     };
 
+    public void Update(SynergyResponse response)
+    {
+        Response = response;
+        InvokeAsync(StateHasChanged);
+    }
+
     private void SetOrder(MouseEventArgs e, string property)
     {
         var exOrder = tableOrders.FirstOrDefault(f => f.Property == property);
