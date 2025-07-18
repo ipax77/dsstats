@@ -11,7 +11,7 @@ public static partial class Parse
             var playerUnits = player.Units.Where(x => x.UnitType == UnitType.Spawn).OrderBy(x => x.Gameloop).ToList();
             var playerStats = statEvents.Where(x => x.PlayerId == player.Pos && x.MineralsCollectionRate > 0).ToList();
 
-            if (!playerUnits.Any())
+            if (playerUnits.Count == 0)
             {
                 continue;
             }
