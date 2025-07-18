@@ -244,6 +244,20 @@ public class BuildArea
         return false;
     }
 
+    private static bool IsPointInsideOrOnEdge(RlPoint p, List<RlPoint> polygon)
+    {
+        if (IsPointInPolygon(p, polygon))
+            return true;
+
+        for (int i = 0; i < polygon.Count; i++)
+        {
+            if (IsOnEdge(p, polygon[i], polygon[(i + 1) % polygon.Count]))
+                return true;
+        }
+
+        return false;
+    }
+
     private static bool IsPointInPolygon(RlPoint p, List<RlPoint> polygon)
     {
         int wn = 0; // winding number
@@ -460,14 +474,9 @@ public class BuildArea
             for (int x = minX; x <= maxX; x++)
             {
                 var point = new RlPoint(x, y);
-                if (IsPointInPolygon(point, polygon))
+                if (IsPointInsideOrOnEdge(point, polygon))
                 {
                     dict[point] = false;
-                }
-                for (int i = 0; i < polygon.Count; i++)
-                {
-                    if (IsOnEdge(point, polygon[i], polygon[(i + 1) % polygon.Count]))
-                        dict[point] = false;
                 }
             }
         }
