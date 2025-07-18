@@ -1,3 +1,4 @@
+using dsstats.challenge.Services;
 using dsstats.shared;
 using Microsoft.Extensions.Options;
 using pax.dsstats.parser;
@@ -15,6 +16,7 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
 {
 
     private readonly SemaphoreSlim ss = new(1, 1);
+    private readonly SemaphoreSlim ssRaw = new(1, 1);
     private readonly SemaphoreSlim fileSemaphore = new SemaphoreSlim(1, 1);
     private ReplayDecoder? replayDecoder;
     public static readonly string assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
@@ -22,6 +24,7 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
     private ConcurrentBag<string> excludeReplays = [];
 
     public EventHandler<DecodeEventArgs>? DecodeFinished;
+    public EventHandler<DecodeRawEventArgs>? DecodeRawFinished;
 
     private async void OnDecodeFinished(DecodeEventArgs e)
     {
@@ -38,7 +41,32 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
         DecodeFinished?.Invoke(this, e);
     }
 
+    private async void OnDecodeRawFinished(DecodeRawEventArgs e)
+    {
+        var httpClient = httpClientFactory.CreateClient("callback");
+        try
+        {
+            var result = await httpClient.PostAsJsonAsync($"/api8/v1/upload/raw/{e.Guid}", e.ChallengeResponses);
+            result.EnsureSuccessStatusCode();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed reporting decoderesult: {error}", ex.Message);
+        }
+        DecodeRawFinished?.Invoke(this, e);
+    }
+
     public async Task<int> SaveReplays(Guid guid, List<IFormFile> files)
+    {
+        return await SaveReplays(guid, files, "todo");
+    }
+
+    public async Task<int> SaveReplaysRaw(Guid guid, List<IFormFile> files)
+    {
+        return await SaveReplays(guid, files, "todo_raw");
+    }
+
+    private async Task<int> SaveReplays(Guid guid, List<IFormFile> files, string subfolder)
     {
         int filesSaved = 0;
 
@@ -56,7 +84,12 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
                     }
 
                     var destinationFile = Path.Combine(decodeSettings.Value.ReplayFolders.Done, $"{fileHash}.SC2Replay");
-                    var todoFile = Path.Combine(decodeSettings.Value.ReplayFolders.ToDo, $"{guid}_{fileHash}.SC2Replay");
+                    var todoFolder = Path.Combine(decodeSettings.Value.ReplayFolders.ToDo, subfolder);
+                    if (!Directory.Exists(todoFolder))
+                    {
+                        Directory.CreateDirectory(todoFolder);
+                    }
+                    var todoFile = Path.Combine(todoFolder, $"{guid}_{fileHash}.SC2Replay");
 
                     if (File.Exists(destinationFile))
                     {
@@ -83,7 +116,14 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
                 }
             }
 
-            _ = Decode();
+            if (subfolder == "todo")
+            {
+                _ = Decode();
+            }
+            else
+            {
+                _ = DecodeRaw();
+            }
         }
         catch (Exception ex)
         {
@@ -105,7 +145,7 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
 
         try
         {
-            var replayPaths = Directory.GetFiles(Path.Combine(decodeSettings.Value.ReplayFolders.ToDo), "*SC2Replay");
+            var replayPaths = Directory.GetFiles(Path.Combine(decodeSettings.Value.ReplayFolders.ToDo, "todo"), "*SC2Replay");
             replayPaths = replayPaths.Except(excludeReplays).ToArray();
 
             if (replayPaths.Length == 0)
@@ -194,6 +234,86 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
                 {
                     Guid = ent.Key,
                     IhReplays = [.. ent.Value],
+                    Error = error,
+                });
+            }
+            Interlocked.Decrement(ref queueCount);
+        }
+    }
+
+    public async Task DecodeRaw()
+    {
+        Interlocked.Increment(ref queueCount);
+        await ssRaw.WaitAsync();
+        ConcurrentDictionary<Guid, ConcurrentBag<ChallengeResponse>> challengeResponses = [];
+        string? error = null;
+
+        try
+        {
+            var replayPaths = Directory.GetFiles(Path.Combine(decodeSettings.Value.ReplayFolders.ToDoRaw), "*SC2Replay");
+            replayPaths = replayPaths.Except(excludeReplays).ToArray();
+
+            if (replayPaths.Length == 0)
+            {
+                error = "No replays found.";
+                return;
+            }
+
+            if (replayDecoder is null)
+            {
+                replayDecoder = new(assemblyPath);
+            }
+
+            var options = new ReplayDecoderOptions()
+            {
+                Initdata = true,
+                Details = true,
+                Metadata = true,
+                TrackerEvents = true,
+            };
+
+            await foreach (var result in
+                replayDecoder.DecodeParallelWithErrorReport(replayPaths, decodeSettings.Value.Threads, options))
+            {
+                if (result.Sc2Replay is null)
+                {
+                    Error(result);
+                    error = "failed decoding replays.";
+                    continue;
+                }
+                var challengeResponse = ChallengeService.GetChallengeResponse(result.Sc2Replay);
+
+                var destination = Path.Combine(decodeSettings.Value.ReplayFolders.Done, Path.GetFileName(result.ReplayPath));
+                await fileSemaphore.WaitAsync();
+                try
+                {
+                    if (!File.Exists(destination))
+                    {
+                        File.Move(result.ReplayPath, destination);
+                        var groupId = GetGroupIdFromFilename(result.ReplayPath);
+                        challengeResponses.AddOrUpdate(groupId, [challengeResponse], (k, v) => { v.Add(challengeResponse); return v; });
+                    }
+                }
+                finally
+                {
+                    fileSemaphore.Release();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed decoding replays: {error}", ex.Message);
+            error = "failed decoding replays.";
+        }
+        finally
+        {
+            ssRaw.Release();
+            foreach (var ent in challengeResponses)
+            {
+                OnDecodeRawFinished(new()
+                {
+                    Guid = ent.Key,
+                    ChallengeResponses = [.. ent.Value],
                     Error = error,
                 });
             }
@@ -326,6 +446,13 @@ public class DecodeEventArgs : EventArgs
 {
     public Guid Guid { get; set; }
     public List<IhReplay> IhReplays { get; set; } = [];
+    public string? Error { get; set; }
+}
+
+public class DecodeRawEventArgs : EventArgs
+{
+    public Guid Guid { get; set; }
+    public List<ChallengeResponse> ChallengeResponses { get; set; } = [];
     public string? Error { get; set; }
 }
 

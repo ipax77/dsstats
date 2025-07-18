@@ -1,5 +1,4 @@
-﻿using dsstats.db8services.Import;
-using dsstats.shared;
+﻿using dsstats.shared;
 using dsstats.shared.Interfaces;
 
 namespace dsstats.api.Services;
@@ -11,6 +10,11 @@ public class DecodeService(ILogger<DecodeService> logger,
     public EventHandler<DecodeEventArgs>? DecodeFinished;
 
     private void OnDecodeFinished(DecodeEventArgs e)
+    {
+        DecodeFinished?.Invoke(this, e);
+    }
+
+    private void OnRawDecodeFinished(DecodeEventArgs e)
     {
         DecodeFinished?.Invoke(this, e);
     }
@@ -62,6 +66,52 @@ public class DecodeService(ILogger<DecodeService> logger,
             });
         }
     }
+
+    public async Task SaveRawReplays(Guid guid, List<IFormFile> files)
+    {
+        var httpClient = httpClientFactory.CreateClient("decode");
+        try
+        {
+            var formData = new MultipartFormDataContent();
+
+            foreach (var file in files)
+            {
+                var fileContent = new StreamContent(file.OpenReadStream());
+                formData.Add(fileContent, "files", file.FileName);
+            }
+
+            var result = await httpClient.PostAsync($"/api/v1/decode/upload/raw/{guid}", formData);
+            result.EnsureSuccessStatusCode();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed saving raw replays: {error}", ex.Message);
+        }
+    }
+
+    public async Task ConsumeRawDecodeResult(Guid guid, List<string> replays)
+    {
+        List<ChallengeResponse> challengeResponses = [];
+        try
+        {
+            if (replays.Count > 0)
+            {
+                
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("failed importing decode result: {error}", ex.Message);
+        }
+        finally
+        {
+            OnDecodeFinished(new()
+            {
+                Guid = guid,
+                IhReplays = [],
+            });
+        }
+    }
 }
 
 public class DecodeEventArgs : EventArgs
@@ -71,3 +121,9 @@ public class DecodeEventArgs : EventArgs
     public string? Error { get; set; }
 }
 
+public class DecodeRawEventArgs : EventArgs
+{
+    public Guid Guid { get; set; }
+    public List<ChallengeResponse> ChallengeResponses { get; set; } = [];
+    public string? Error { get; set; }
+}

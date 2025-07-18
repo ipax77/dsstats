@@ -1,3 +1,4 @@
+
 using Microsoft.AspNetCore.Mvc;
 
 namespace dsstats.decode;
@@ -14,6 +15,26 @@ public class DecodeController(DecodeService decodeService, ILogger<DecodeControl
         if (Guid.TryParse(guid, out var fileGuid))
         {
             var queueCount = await decodeService.SaveReplays(fileGuid, files);
+            if (queueCount >= 0)
+            {
+                return Ok(queueCount);
+            }
+            else
+            {
+                return StatusCode(500);
+            }
+        }
+        return BadRequest();
+    }
+
+    [HttpPost]
+    [RequestSizeLimit(15728640)]
+    [Route("upload/raw/{guid}")]
+    public async Task<ActionResult<int>> UploadReplayRaw(string guid, [FromForm] List<IFormFile> files)
+    {
+        if (Guid.TryParse(guid, out var fileGuid))
+        {
+            var queueCount = await decodeService.SaveReplaysRaw(fileGuid, files);
             if (queueCount >= 0)
             {
                 return Ok(queueCount);
