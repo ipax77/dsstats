@@ -59,6 +59,7 @@ builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
 builder.Services.AddScoped<IFaqService, FaqService>();
+builder.Services.AddScoped<IChallengeDbService, ChallengeDbService>();
 
 
 await builder.Build().RunAsync();

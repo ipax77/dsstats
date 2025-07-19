@@ -60,6 +60,7 @@ builder.Services.AddScoped<IUnitmapService, UnitmapService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IDsDataService, DsDataService>();
 builder.Services.AddScoped<IFaqService, FaqService>();
+builder.Services.AddScoped<IChallengeDbService, ChallengeDbService>();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

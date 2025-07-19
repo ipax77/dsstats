@@ -1,4 +1,5 @@
-﻿using dsstats.shared;
+﻿using dsstats.db8.Challenge;
+using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -58,6 +59,8 @@ public class ReplayContext : DbContext
     public virtual DbSet<IhSession> IhSessions { get; set; } = null!;
     public virtual DbSet<IhSessionPlayer> IhSessionPlayers { get; set; } = null!;
     public virtual DbSet<DsPickBan> DsPickBans { get; set; } = null!;
+    public virtual DbSet<SpChallenge> SpChallenges { get; set; } = null!;
+    public virtual DbSet<SpChallengeSubmission> SpChallengeSubmissions { get; set; } = null!;
     public int Week(DateTime date) => throw new InvalidOperationException($"{nameof(Week)} cannot be called client side.");
     public int Strftime(string arg, DateTime date) => throw new InvalidOperationException($"{nameof(Strftime)} cannot be called client side.");
 
