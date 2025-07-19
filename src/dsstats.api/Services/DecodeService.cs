@@ -94,7 +94,30 @@ public class DecodeService(ILogger<DecodeService> logger,
     {
         try
         {
+            using var scope = scopeFactory.CreateScope();
+            var challengeDbService = scope.ServiceProvider.GetRequiredService<IChallengeDbService>();
+            var activeChallenge = await challengeDbService.GetActiveChallenge();
 
+            if (activeChallenge == null)
+            {
+                logger.LogWarning("No active challenge found for guid: {guid}", guid);
+                return;
+            }
+            foreach (var response in challengeResponses)
+            {
+                if (!string.IsNullOrEmpty(response.Error))
+                {
+                    OnRawDecodeRawFinished(new()
+                    {
+                        Guid = guid,
+                        Error = response.Error,
+                    });
+                }
+                else
+                {
+                    await challengeDbService.SaveSubmission(response, activeChallenge.SpChallengeId);
+                }
+            }
         }
         catch (Exception ex)
         {

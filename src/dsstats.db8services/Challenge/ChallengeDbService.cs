@@ -1,6 +1,7 @@
 ﻿using dsstats.db8;
 using dsstats.db8.Challenge;
 using dsstats.shared;
+using dsstats.shared.DsFen;
 using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -61,8 +62,26 @@ public class ChallengeDbService(ReplayContext context, IImportService importServ
 
     public async Task<bool> SaveSubmission(ChallengeResponse response, int spChallengeId)
     {
+        var challenge = await context.SpChallenges
+            .FirstOrDefaultAsync(c => c.SpChallengeId == spChallengeId);
+
+        if (challenge == null)
+        {
+            return false;
+        }
+
+        DsBuildRequest challengeRequest = new();
+        DsBuildRequest playerChallengeRequest = new();
+
+        DsFen.ApplyFen(challenge.Fen, out challengeRequest);
+        DsFen.ApplyFen(response.ChallengeFen, out playerChallengeRequest);
+        if (!FenIsReasonable(challengeRequest, playerChallengeRequest))
+        {
+            return false;
+        }
+
         var playerId = await importService
-            .GetPlayerIdAsync(new(response.RequestName.ToonId, response.RequestName.RealmId, response.RequestName.ToonId), response.RequestName.Name);
+        .GetPlayerIdAsync(new(response.RequestName.ToonId, response.RequestName.RealmId, response.RequestName.ToonId), response.RequestName.Name);
         var submission = await context.SpChallengeSubmissions
             .FirstOrDefaultAsync(s => s.SpChallengeId == spChallengeId && s.PlayerId == playerId)
 ;
@@ -89,6 +108,20 @@ public class ChallengeDbService(ReplayContext context, IImportService importServ
             submission.Time = response.TimeTillVictory;
         }
         await context.SaveChangesAsync();
+        return true;
+    }
+
+    private bool FenIsReasonable(DsBuildRequest challengeRequest, DsBuildRequest playerChallengeRequest)
+    {
+        foreach (var unit in challengeRequest.Spawn.Units)
+        {
+            var playerUnit = playerChallengeRequest.Spawn.Units
+                .FirstOrDefault(u => u.Unit.Name == unit.Unit.Name);
+            if (playerUnit == null || playerUnit.Count != unit.Count)
+            {
+                return false;
+            }
+        }
         return true;
     }
 

@@ -46,7 +46,7 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
         var httpClient = httpClientFactory.CreateClient("callback");
         try
         {
-            var result = await httpClient.PostAsJsonAsync($"/api8/v1/upload/raw/{e.Guid}", e.ChallengeResponses);
+            var result = await httpClient.PostAsJsonAsync($"/api8/v1/upload/decoderawresult/{e.Guid}", e.ChallengeResponses);
             result.EnsureSuccessStatusCode();
         }
         catch (Exception ex)
@@ -58,15 +58,15 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
 
     public async Task<int> SaveReplays(Guid guid, List<IFormFile> files)
     {
-        return await SaveReplays(guid, files, "todo");
+        return await SaveReplays(guid, files, decodeSettings.Value.ReplayFolders.ToDo);
     }
 
     public async Task<int> SaveReplaysRaw(Guid guid, List<IFormFile> files)
     {
-        return await SaveReplays(guid, files, "todo_raw");
+        return await SaveReplays(guid, files, decodeSettings.Value.ReplayFolders.ToDoRaw);
     }
 
-    private async Task<int> SaveReplays(Guid guid, List<IFormFile> files, string subfolder)
+    private async Task<int> SaveReplays(Guid guid, List<IFormFile> files, string folder)
     {
         int filesSaved = 0;
 
@@ -84,7 +84,7 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
                     }
 
                     var destinationFile = Path.Combine(decodeSettings.Value.ReplayFolders.Done, $"{fileHash}.SC2Replay");
-                    var todoFolder = Path.Combine(decodeSettings.Value.ReplayFolders.ToDo, subfolder);
+                    var todoFolder = folder;
                     if (!Directory.Exists(todoFolder))
                     {
                         Directory.CreateDirectory(todoFolder);
@@ -100,8 +100,11 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
                     try
                     {
                         var tmpFile = todoFile + ".tmp";
-                        using var fileStream = File.Create(tmpFile);
-                        await formFile.CopyToAsync(fileStream);
+                        using (var fileStream = File.Create(tmpFile))
+                        {
+                            await formFile.CopyToAsync(fileStream);
+                            fileStream.Close();
+                        }
                         File.Move(tmpFile, todoFile);
                         filesSaved++;
                     }
@@ -116,13 +119,13 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
                 }
             }
 
-            if (subfolder == "todo")
+            if (folder.EndsWith("raw"))
             {
-                _ = Decode();
+                _ = DecodeRaw();
             }
             else
             {
-                _ = DecodeRaw();
+                _ = Decode();
             }
         }
         catch (Exception ex)
