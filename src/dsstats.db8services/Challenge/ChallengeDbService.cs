@@ -22,6 +22,8 @@ public class ChallengeDbService(ReplayContext context, IImportService importServ
                 Base64Image = c.Base64Image,
                 Time = c.Time,
                 Active = c.Active,
+                ArmyValue = c.ArmyValue,
+                Desc = c.Desc,
                 CreatedAt = c.CreatedAt
             })
             .FirstOrDefaultAsync();

@@ -17,6 +17,9 @@ public class SpChallenge
     public bool Active { get; set; }
     [Precision(0)]
     public DateTime CreatedAt { get; set; }
+    public int ArmyValue { get; set; }
+    [MaxLength(1000)]
+    public string Desc { get; set; } = string.Empty;
     public ICollection<SpChallengeSubmission> SpChallengeSubmissions { get; set; } = [];
 }
 

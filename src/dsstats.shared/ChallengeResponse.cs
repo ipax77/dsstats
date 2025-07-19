@@ -20,6 +20,8 @@ public record ChallengeDto
     public string Base64Image { get; set; } = string.Empty;
     public int Time { get; set; }
     public bool Active { get; set; }
+    public int ArmyValue { get; set; }
+    public string Desc { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
 }
 

@@ -103,7 +103,7 @@ public static partial class DsFen
 
         foreach (var ent in grid.Units)
         {
-            var unitName = build.GetUnitNameFromKey(ent.Key.Key, ent.Key.IsAir, ent.Key.RequiresToggle);
+            var unitName = build.GetUnitNameFromKey(ent.Key.Key, ent.Key.IsAir);
             if (string.IsNullOrEmpty(unitName))
             {
                 continue;
