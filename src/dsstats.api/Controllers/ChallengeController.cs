@@ -60,11 +60,4 @@ public class ChallengeController(IChallengeDbService challengeDbService) : Contr
 
         return Ok();
     }
-
-    [HttpPost("finish")]
-    public async Task<ActionResult> FinishChallenge(CancellationToken token)
-    {
-        await challengeDbService.FinishChallenge(token);
-        return Ok("Challenge evaluation complete.");
-    }
 }

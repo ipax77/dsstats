@@ -6,6 +6,7 @@ using dsstats.auth;
 using dsstats.db8;
 using dsstats.db8.AutoMapper;
 using dsstats.db8services;
+using dsstats.db8services.Challenge;
 using dsstats.db8services.DsData;
 using dsstats.db8services.Import;
 using dsstats.pickban;
@@ -141,6 +142,7 @@ builder.Services.AddScoped<IDsDataService, DsDataService>();
 builder.Services.AddScoped<IFaqService, FaqService>();
 builder.Services.AddScoped<IIhRepository, IhRepository>();
 builder.Services.AddScoped<BestMatchupService>();
+builder.Services.AddScoped<IChallengeDbService, ChallengeDbService>();
 
 builder.Services.AddScoped<ComboRatings>();
 

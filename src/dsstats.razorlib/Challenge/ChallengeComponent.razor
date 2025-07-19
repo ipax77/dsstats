@@ -1,0 +1,143 @@
+﻿@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IChallengeDbService ChallengeDbService
+
+<h2>🔥 Direct Strike Single Player Challenge</h2>
+
+@if (activeChallenge == null)
+{
+    <p>Loading challenge...</p>
+}
+else
+{
+    <div class="row">
+        <div class="col-lg-7 col-md-12">
+            <div class="card p-4 mb-4 shadow rounded bgchart2">
+                <h3>Current Challenge</h3>
+                <p><strong>Commander:</strong> @activeChallenge.Commander</p>
+                <p><strong>Game Mode:</strong> @activeChallenge.GameMode</p>
+                <p><strong>Created At:</strong> @activeChallenge.CreatedAt.ToLocalTime().ToString("g")</p>
+
+                <img src="data:image/png;base64,@activeChallenge.Base64Image" class="img-fluid mb-2" width="600" alt="Challenge Image" />
+
+                <div>
+                    <label for="fenstring" class="form-label">FEN String:</label>
+                    <textarea id="fenstring" class="form-input" type="text" cols="3" disabled value="@activeChallenge.Fen" style="width: 500px !important;" />
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5 col-md-12">
+            <div class="card d-inline-block p-4 mb-4 shadow rounded bgchart2">
+                <h4>📖 How to Play</h4>
+                <ol>
+                    <li>Load the Direct Strike Tutorial Map and make the Base invulnerable with the chat command 'Base'</li>
+                    <li>Use the FEN string to build the enemy army using the dsstats app.</li>
+                    <li>You can choose <strong>Protoss, Terran or Zerg</strong> to build your own army.</li>
+                    <li>Your army must match the <strong>same army value</strong> as the enemy.</li>
+                    <li>Once both armies are built, clear the battlefield with the chat command "Clear Battle" and make the base vulnerable with 'Base'.</li>
+                    <li>The timer starts with the next spawn after it.</li>
+                    <li>No upgrades or further unit building is allowed after that point.</li>
+                    <li>You are allowed to micro your units and use scan on cooldown.</li>
+                    <li><strong>Your goal:</strong> Win as fast as possible!</li>
+                </ol>
+
+                <h5 class="mt-4">🏆 Scoring</h5>
+                <ul>
+                    <li>+1 point for participating</li>
+                    <li>+10 points for 1st place (fastest win)</li>
+                    <li>+7 points for 2nd place</li>
+                    <li>+5 points for 3rd place</li>
+                </ul>
+
+                <p class="text-muted mt-3"><small>This challenge is updated regularly. Be sure to check back for new battles!</small></p>
+            </div>
+        </div>
+    </div>
+    <div class="mb-5">
+        <h4>📝 Submissions</h4>
+        @if (submissions.Count == 0)
+        {
+            <p>No submissions yet. Be the first!</p>
+        }
+        else
+        {
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Commander</th>
+                        <th>Time</th>
+                        <th>Submitted</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sub in submissions.OrderBy(s => s.Time))
+                    {
+                        <tr>
+                            <td>@sub.PlayerName</td>
+                            <td>@sub.Commander</td>
+                            <td>@sub.Time sec</td>
+                            <td>@sub.Submitted.ToLocalTime().ToString("g")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <div>
+        <h4>🏆 Leaderboard</h4>
+        @if (rankings.Count == 0)
+        {
+            <p>No rankings available yet.</p>
+        }
+        else
+        {
+            <table class="table table-bordered table-hover">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Total Points</th>
+                        <th>Wins</th>
+                        <th>2nd</th>
+                        <th>3rd</th>
+                        <th>Subs</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var player in rankings.Select((r, i) => (Rank: i + 1, r)))
+                    {
+                        <tr>
+                            <td>@player.Rank</td>
+                            <td>@player.r.PlayerName</td>
+                            <td>@player.r.TotalPoints</td>
+                            <td>@player.r.Wins</td>
+                            <td>@player.r.Seconds</td>
+                            <td>@player.r.Thirds</td>
+                            <td>@player.r.Submissions</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+}
+
+@code {
+    private ChallengeDto? activeChallenge;
+    private List<ChallengeSubmissionListDto> submissions = new();
+    private List<PlayerRankingDto> rankings = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        activeChallenge = await ChallengeDbService.GetActiveChallenge();
+
+        if (activeChallenge != null)
+        {
+            submissions = await ChallengeDbService.GetChallengeSubmissions(activeChallenge.SpChallengeId);
+        }
+
+        rankings = await ChallengeDbService.GetOverallPlayerRanking();
+    }
+}
