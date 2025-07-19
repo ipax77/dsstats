@@ -9,10 +9,20 @@ public static partial class DsFen
 
     public static string GetFen(DsBuildRequest buildRequest)
     {
+        var grid = GetFenGrid(buildRequest);
+        if (grid is null)
+        {
+            return string.Empty;
+        }
+        return DsFenBuilder.GetFenString(grid);
+    }
+
+    private static DsFenGrid? GetFenGrid(DsBuildRequest buildRequest)
+    {
         var build = CmdrBuildFactory.Create(buildRequest.Commander);
         if (build is null)
         {
-            return string.Empty;
+            return null;
         }
         var polygon = buildRequest.Team == 1 ? polygon1 : polygon2;
         var normalizer = buildRequest.Team == 1 ? normalizer1 : normalizer2;
@@ -60,7 +70,22 @@ public static partial class DsFen
                 grid.Abilities.Add(abilityChar.Value);
             }
         }
-        return DsFenBuilder.GetFenString(grid);
+        return grid;
+    }
+
+    public static string GetMirrorFen(DsBuildRequest buildRequest)
+    {
+        var originalGrid = GetFenGrid(buildRequest);
+        if (originalGrid is null)
+        {
+            return string.Empty;
+        }
+        var mirrorGrid = DsFenBuilder.GetMirrorGrid(originalGrid);
+        if (mirrorGrid is null)
+        {
+            return string.Empty;
+        }
+        return DsFenBuilder.GetFenString(mirrorGrid);
     }
 
     public static void ApplyFen(string fen, out DsBuildRequest buildRequest)

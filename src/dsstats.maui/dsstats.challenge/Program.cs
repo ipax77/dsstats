@@ -10,17 +10,17 @@ class Program
     public static readonly string assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty;
     static void Main(string[] args)
     {
-        var replayFile = @"C:\data\ds\challengetest.json";
-        var sc2Replay = JsonSerializer.Deserialize<Sc2Replay>(File.ReadAllText(replayFile));
-        ArgumentNullException.ThrowIfNull(sc2Replay);
-        var response = ChallengeService.GetChallengeResponse(sc2Replay);
-        Console.WriteLine(response);
-        // Debug();
+        // var replayFile = @"C:\data\ds\challengetest.json";
+        // var sc2Replay = JsonSerializer.Deserialize<Sc2Replay>(File.ReadAllText(replayFile));
+        // ArgumentNullException.ThrowIfNull(sc2Replay);
+        // var response = ChallengeService.GetChallengeResponse(sc2Replay);
+        // Console.WriteLine(response);
+        Debug();
     }
 
     private static void Debug()
     {
-        string replayFile = @"C:\Users\pax77\Documents\StarCraft II\Accounts\107095918\2-S2-1-226401\Replays\Multiplayer\Direct Strike (8649).SC2Replay";
+        string replayFile = @"C:\Users\pax77\Documents\StarCraft II\Accounts\107095918\2-S2-1-226401\Replays\Multiplayer\Direct Strike (8657).SC2Replay";
         if (!File.Exists(replayFile))
         {
             throw new FileNotFoundException();

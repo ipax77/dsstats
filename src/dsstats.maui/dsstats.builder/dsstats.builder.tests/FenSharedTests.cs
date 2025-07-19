@@ -125,4 +125,18 @@ public sealed class FenSharedTests
 
         Assert.AreEqual(fen, newFen);
     }
+
+    [TestMethod]
+    public void FenMirror()
+    {
+        var fenString = "25/25/25/16A8/3a1A19/25/9a1A13/11a13/1g11e11/15a9/17a2r4/19a5/e20a3/6a18/2r11a10/e10a9A2a/ea2a1A1aa6a5A1a|25/25/25/25/25/9t15/25/25/25/25/25/21d3/s1d22/25/14s1d8/11s13/s3s8t2s8 1 3 ddss as";
+        var buildRequest = new DsBuildRequest();
+        DsFen.ApplyFen(fenString, out buildRequest);
+        var mirrorFen = DsFen.GetMirrorFen(buildRequest);
+        var mirrorRequest = new DsBuildRequest();
+        DsFen.ApplyFen(mirrorFen, out mirrorRequest);
+        Assert.AreEqual(buildRequest.Commander, mirrorRequest.Commander);
+        var reverseMirrorFen = DsFen.GetMirrorFen(mirrorRequest);
+        // Assert.AreEqual(fenString, reverseMirrorFen);
+    }
 }
