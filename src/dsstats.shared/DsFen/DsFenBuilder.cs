@@ -19,13 +19,13 @@ public static class DsFenBuilder
                 airBoard[y, x] = ' ';
             }
 
-        foreach (var kvp in grid.Units)
+        foreach (var kvp in grid.Units.OrderBy(kvp => kvp.Key.ToString()))
         {
             char symbol = kvp.Key.Key;
             if (kvp.Key.RequiresToggle && !kvp.Key.IsActive)
                 symbol = char.ToUpper(symbol);
 
-            foreach (var point in kvp.Value)
+            foreach (var point in kvp.Value.OrderBy(p => (p.Y, p.X)))
             {
                 if (point.X < 0 || point.X >= Width || point.Y < 0 || point.Y >= Height)
                     continue;
@@ -74,8 +74,8 @@ public static class DsFenBuilder
 
         var groundFen = EncodeBoard(groundBoard);
         var airFen = EncodeBoard(airBoard);
-        var upgrades = new string(grid.Upgrades?.ToArray() ?? []);
-        var abilities = new string(grid.Abilities?.ToArray() ?? []);
+        var upgrades = new string(grid.Upgrades?.OrderBy(c => c).ToArray() ?? []);
+        var abilities = new string(grid.Abilities?.OrderBy(c => c).ToArray() ?? []);
 
         return $"{groundFen}|{airFen} {grid.Team} {(int)grid.Commander} {upgrades} {abilities}";
     }
@@ -169,6 +169,33 @@ public static class DsFenBuilder
         };
     }
 
+    public static DsFenGrid GetMirrorGrid(DsFenGrid originalGrid)
+    {
+
+        var mirroredUnits = new Dictionary<BuildOption, List<DsPoint>>();
+
+        foreach (var kvp in originalGrid.Units)
+        {
+            var buildOption = kvp.Key;
+            var mirroredPoints = kvp.Value.Select(p =>
+            {
+                // Mirror vertically around the middle horizontal line
+                int mirroredY = (Height - 1) - p.Y;
+                return new DsPoint(p.X, mirroredY);
+            }).ToList();
+
+            mirroredUnits[buildOption] = mirroredPoints;
+        }
+
+        return new DsFenGrid
+        {
+            Units = mirroredUnits,
+            Team = originalGrid.Team,
+            Commander = originalGrid.Commander,
+            Upgrades = originalGrid.Upgrades,
+            Abilities = originalGrid.Abilities
+        };
+    }
 }
 
 

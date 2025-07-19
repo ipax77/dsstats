@@ -57,21 +57,20 @@ public abstract class CmdrBuild
         return null;
     }
 
-    public string? GetUnitNameFromKey(char key, bool isAir, bool isToggled)
+    public string? GetUnitNameFromKey(char key, bool isAir)
     {
+        bool requiresToggle = char.IsUpper(key);
+        key = char.ToLower(key);
         foreach (var kv in UnitMap)
         {
             var opt = kv.Value;
-            if (char.ToLower(opt.Key) != key)
+            if (opt.Key != key)
                 continue;
 
             if (opt.IsAir != isAir)
                 continue;
 
-            if (opt.RequiresToggle && isToggled != !opt.IsActive)
-                continue;
-
-            if (!opt.RequiresToggle && isToggled == true)
+            if (requiresToggle && opt.IsActive)
                 continue;
 
             return kv.Key;

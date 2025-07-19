@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\dsstats.shared\dsstats.shared.csproj" />
     <ProjectReference Include="..\dsstats.maui\pax.dsstats.parser\pax.dsstats.parser.csproj" />
+    <ProjectReference Include="..\dsstats.maui\dsstats.challenge\dsstats.challenge.csproj" />
   </ItemGroup>
 
   <ItemGroup>

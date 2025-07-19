@@ -59,4 +59,30 @@ public class UploadController(UploadService uploadService,
         }
         return BadRequest();
     }
+
+    [HttpPost]
+    [RequestSizeLimit(15728640)]
+    [Route("uploadchallengereplays/{guid}")]
+    [EnableRateLimiting("fixed")]
+    public async Task<ActionResult<int>> UploadChallengeReplays(string guid, [FromForm] List<IFormFile> files)
+    {
+        if (Guid.TryParse(guid, out var fileGuid))
+        {
+            await decodeService.SaveRawReplays(fileGuid, files);
+            return Ok();
+        }
+        return BadRequest();
+    }
+
+    [HttpPost]
+    [Route("decoderawresult/{guid}")]
+    public async Task<ActionResult> DecodeRawResult(string guid, [FromBody] List<ChallengeResponse> challengeResponses)
+    {
+        if (Guid.TryParse(guid, out var groupId))
+        {
+            await decodeService.ConsumeRawDecodeResult(groupId, challengeResponses);
+            return Ok();
+        }
+        return BadRequest();
+    }
 }

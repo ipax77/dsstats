@@ -73,18 +73,13 @@ public class ScreenArea
 
     public RlPoint GetScreenPosition(RlPoint normalizedBuildPoint, int footprintSize = 1)
     {
-        if (footprintSize != 2 || _team == 1)
+        if (footprintSize % 2 == 0) // even-sized unit
         {
-            return ApplyTransforms(homography.Transform(normalizedBuildPoint));
+            return ApplyTransforms(homography.TransformToTopLeft(normalizedBuildPoint));
         }
         else
         {
             return ApplyTransforms(homography.Transform(normalizedBuildPoint));
-            //int offset = footprintSize / 2;
-            //var bottomLeftPoint = new RlPoint(normalizedBuildPoint.X - offset, normalizedBuildPoint.Y - offset);
-
-            //// Map using homography
-            //return ApplyTransforms(homography.Transform(bottomLeftPoint));
         }
     }
 }

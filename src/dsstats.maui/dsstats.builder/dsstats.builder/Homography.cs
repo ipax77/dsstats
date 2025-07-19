@@ -44,12 +44,34 @@ public class Homography
 
     public RlPoint Transform(RlPoint p)
     {
-        var x = p.X;
-        var y = p.Y;
-        var denom = H[2, 0] * x + H[2, 1] * y + H[2, 2];
+        return TransformWithOffset(p.X, p.Y);
+    }
 
-        var screenX = (H[0, 0] * x + H[0, 1] * y + H[0, 2]) / denom;
-        var screenY = (H[1, 0] * x + H[1, 1] * y + H[1, 2]) / denom;
+    public RlPoint TransformToTopLeft(RlPoint p)
+    {
+        return TransformWithOffset(p.X - 0.5, p.Y + 0.5);
+    }
+
+    public RlPoint TransformToTopRight(RlPoint p)
+    {
+        return TransformWithOffset(p.X + 0.5, p.Y + 0.5);
+    }
+
+    public RlPoint TransformToBottomLeft(RlPoint p)
+    {
+        return TransformWithOffset(p.X - 0.5, p.Y - 0.5);
+    }
+
+    public RlPoint TransformToBottomRight(RlPoint p)
+    {
+        return TransformWithOffset(p.X + 0.5, p.Y - 0.5);
+    }
+
+    public RlPoint TransformWithOffset(double x, double y)
+    {
+        double denom = H[2, 0] * x + H[2, 1] * y + H[2, 2];
+        double screenX = (H[0, 0] * x + H[0, 1] * y + H[0, 2]) / denom;
+        double screenY = (H[1, 0] * x + H[1, 1] * y + H[1, 2]) / denom;
 
         return new RlPoint((int)screenX, (int)screenY);
     }
