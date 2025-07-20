@@ -26,6 +26,7 @@
     }
     <button type="button" class="btn btn-outline-success" @onclick="e => dsstatsService.ScanForNewReplays()">@Loc["Scan"]</button>
     <button type="button" class="btn btn-outline-info" @onclick="Upload">@Loc["Upload"]</button>
+    <button type="button" class="btn btn-outline-light" @onclick="e => buildModal?.Show(new SpawnDto(), [], Commander.None, 0)">@Loc["Build"]</button>
 </div>
 <div class="row justify-content-between">
     <div class="col-auto">
@@ -106,3 +107,5 @@
 <div style="height: 50px; width: 50px; position: relative;">
     <dsstats.razorlib.Players.Profile.AnnotationChartComponent OnAnnotationsRegistered="AnnotationsRegistered" />
 </div>
+
+<dsstats.razorlib.Modals.BuildModal @ref="buildModal" />

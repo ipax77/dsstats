@@ -406,4 +406,10 @@
   <data name="NoBatchImport" xml:space="preserve">
     <value>Konservativer Wiederholungsimport (etwas langsamer, aber robuster)</value>
   </data>
+  <data name="Build" xml:space="preserve">
+    <value>Zusammenstellung</value>
+  </data>
+  <data name="FENempty" xml:space="preserve">
+    <value>FEN-Zeichenkette ist leer. Bitte wenden Sie eine gültige FEN an, bevor Sie die Zusammenstellung starten.</value>
+  </data>
 </root>

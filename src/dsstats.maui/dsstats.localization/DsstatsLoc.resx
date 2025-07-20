@@ -406,4 +406,10 @@
   <data name="NoBatchImport" xml:space="preserve">
     <value>Conservative Replay Import (slightly slower, but more robust)</value>
   </data>
+  <data name="Build" xml:space="preserve">
+    <value>Build</value>
+  </data>
+  <data name="FENempty" xml:space="preserve">
+    <value>FEN string is empty. Please apply a valid FEN before starting the build.</value>
+  </data>
 </root>

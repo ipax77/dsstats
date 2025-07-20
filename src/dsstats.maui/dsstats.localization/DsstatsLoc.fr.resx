@@ -406,4 +406,10 @@
   <data name="NoBatchImport" xml:space="preserve">
     <value>Importation de rediffusions conservatrice (légèrement plus lente, mais plus robuste)</value>
   </data>
+  <data name="Build" xml:space="preserve">
+    <value>Composition</value>
+  </data>
+  <data name="FENempty" xml:space="preserve">
+    <value>La chaîne FEN est vide. Veuillez appliquer un FEN valide avant de commencer la composition.</value>
+  </data>
 </root>
