@@ -2,6 +2,7 @@
 @using dsstats.razorlib.Modals
 @using dsstats.shared
 @using dsstats.razorlib.Services
+@using dsstats.shared.DsFen
 @using dsstats.shared.Interfaces
 @using static dsstats.razorlib.Replays.ReplayPlayersDetailContainer
 @inject IDsDataService dsDataService
@@ -92,7 +93,7 @@
                     </h5>
                 </div>
             }
-            @if (Spawn != null && Player.Race != Commander.None && (int)Player.Race <= 3)
+            @if (Spawn != null && CmdrBuildFactory.IsSupported(Player.Race))
             {
                 <div class="col-auto">
                     <button type="button" class="btn btn-sm btn-outline-light"

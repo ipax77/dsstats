@@ -1,4 +1,6 @@
-﻿namespace dsstats.shared.DsFen;
+﻿using System.Collections.Frozen;
+
+namespace dsstats.shared.DsFen;
 
 public abstract class CmdrBuild
 {
@@ -89,6 +91,14 @@ public sealed record BuildOption(char Key, int UnitSize = 1, bool IsAir = false,
 
 public static class CmdrBuildFactory
 {
+    private static readonly HashSet<Commander> SupportedCommanders = new()
+    {
+        Commander.Protoss,
+        Commander.Terran,
+        Commander.Zerg,
+        Commander.Abathur
+    };
+
     public static CmdrBuild? Create(Commander commander)
     {
         return commander switch
@@ -96,7 +106,14 @@ public static class CmdrBuildFactory
             Commander.Protoss => new ProtossBuild(),
             Commander.Terran => new TerranBuild(),
             Commander.Zerg => new ZergBuild(),
+
+            Commander.Abathur => new AbathurBuild(),
             _ => null
         };
+    }
+
+    public static bool IsSupported(Commander commander)
+    {
+        return SupportedCommanders.Contains(commander);
     }
 }
