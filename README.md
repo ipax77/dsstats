@@ -30,7 +30,13 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v2.0.9</summary>
+<details open="open"><summary>v2.0.10</summary>
+
+>- DsBuilds - fix unit placement / add Abathur
+
+</details>
+
+<details><summary>v2.0.9</summary>
 
 >- dotnet update to 8.0.17
 >- DsBuilds - build units in the Direct Strike Tutorial map based on replay data
