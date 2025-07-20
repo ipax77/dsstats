@@ -87,7 +87,7 @@ public class ChallengeDbService(ReplayContext context, IImportService importServ
         var submission = await context.SpChallengeSubmissions
             .FirstOrDefaultAsync(s => s.SpChallengeId == spChallengeId && s.PlayerId == playerId)
 ;
-        if (submission == null)
+        if (submission == null || submission.Commander == response.Commander)
         {
             submission = new SpChallengeSubmission
             {
