@@ -1,6 +1,7 @@
 ﻿using Blazored.Toast.Services;
 using dsstats.db8services;
 using dsstats.maui8.Services;
+using dsstats.razorlib.Modals;
 using dsstats.razorlib.Players.Profile;
 using dsstats.razorlib.Replays;
 using dsstats.shared;
@@ -39,6 +40,7 @@ public partial class Home : ComponentBase, IDisposable
     ReplayComponent? replayComponent;
     bool DEBUG = false;
     bool isChartAnnotationPluginRegistered;
+    BuildModal? buildModal;
 
     protected override void OnInitialized()
     {

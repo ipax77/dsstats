@@ -96,6 +96,11 @@
 
     private void StartTimerPl()
     {
+        if (string.IsNullOrEmpty(fen))
+        {
+            ToastService.ShowError("FEN string is empty. Please apply a valid FEN before starting the build.");
+            return;
+        }
         starting = true;
         timerComponent?.Start(5);
     }

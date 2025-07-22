@@ -406,4 +406,10 @@
   <data name="NoBatchImport" xml:space="preserve">
     <value>Importación de repeticiones conservadora (ligeramente más lenta, pero más robusta)</value>
   </data>
+  <data name="Build" xml:space="preserve">
+    <value>Composición</value>
+  </data>
+  <data name="FENempty" xml:space="preserve">
+    <value>La cadena FEN está vacía. Por favor, aplique un FEN válido antes de comenzar la composición.</value>
+  </data>
 </root>

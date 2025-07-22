@@ -406,4 +406,10 @@
   <data name="NoBatchImport" xml:space="preserve">
     <value>Консервативний імпорт повторів (трохи повільніше, але надійніше)</value>
   </data>
+  <data name="Build" xml:space="preserve">
+    <value>Композиція</value>
+  </data>
+  <data name="FENempty" xml:space="preserve">
+    <value>Рядок FEN порожній. Будь ласка, застосуйте дійсний FEN перед початком компоновки.</value>
+  </data>
 </root>

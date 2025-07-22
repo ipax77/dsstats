@@ -26,6 +26,11 @@ public partial class ImportService
             await Init();
         }
 
+        if (!IsMaui)
+        {
+            replayDtos = replayDtos.Where(x => x.GameMode != GameMode.Tutorial).ToList();
+        }
+
         Dictionary<PlayerId, string> playerInfos = new();
 
         for (int i = 0; i < replayDtos.Count; i++)
