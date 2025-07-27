@@ -102,11 +102,13 @@ public partial class ImportService
 
         string? error = null;
         int dups = 0;
+        HashSet<string> duplicates = [];
         await importSs.WaitAsync();
         try
         {
-            dups = await HandleDuplicates(replays, context);
-
+            var dupResult = await HandleDuplicates(replays, context);
+            dups = dupResult.Duplicates;
+            duplicates = dupResult.ReplayPaths;
             if (replays.Count > 0)
             {
                 DateTime import = DateTime.UtcNow;
@@ -132,7 +134,10 @@ public partial class ImportService
         {
             Imported = replays.Count,
             Duplicates = dups,
-            Error = error
+            Error = error,
+            DetailErrors = duplicates
+                .Select(s => new KeyValuePair<string, string>(s, "Duplicate replay found."))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
         };
     }
 }

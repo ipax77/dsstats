@@ -6,7 +6,7 @@ namespace dsstats.db8services.Import;
 
 public partial class ImportService
 {
-    private async Task<int> HandleDuplicates(List<Replay> replays, ReplayContext context)
+    private async Task<DupReport> HandleDuplicates(List<Replay> replays, ReplayContext context)
     {
         var replayHashes = replays.Select(s => s.ReplayHash).ToList();
         var dupReplays = await context.Replays
@@ -37,10 +37,29 @@ public partial class ImportService
 
             dupReplays.AddRange(lsDupReplays);
         }
+        else
+        {
+            var dupHashes = dupReplays
+                .Select(s => s.ReplayHash)
+                .ToHashSet();
+            foreach (var replay in replays.ToArray())
+            {
+                if (dupHashes.Contains(replay.ReplayHash))
+                {
+                    replays.Remove(replay);
+                }
+            }
+
+            return new()
+            {
+                Duplicates = dupReplays.Count,
+                ReplayPaths = dupReplays.Select(s => s.FileName).ToHashSet()
+            };
+        }
 
         if (dupReplays.Count == 0)
         {
-            return 0;
+            return new();
         }
 
         int dupsHandled = 0;
@@ -74,7 +93,7 @@ public partial class ImportService
             }
         }
         await context.SaveChangesAsync();
-        return dupsHandled;
+        return new() { Duplicates = dupsHandled };
     }
 
     private async Task<bool> HandleDuplicate(Replay dbReplay, Replay importReplay, ReplayContext context)
@@ -147,4 +166,10 @@ public partial class ImportService
             throw;
         }
     }
+}
+
+internal record DupReport
+{
+    public int Duplicates { get; init; }
+    public HashSet<string> ReplayPaths { get; init; } = [];
 }

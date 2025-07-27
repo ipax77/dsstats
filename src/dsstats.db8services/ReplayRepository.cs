@@ -73,15 +73,7 @@ public class ReplayRepository : IReplayRepository
         dbReplay.Imported = DateTime.UtcNow;
         context.Replays.Add(dbReplay);
 
-        try
-        {
-            await context.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            logger.LogError("failed saving replay: {error}", ex.Message);
-            throw;
-        }
+        await context.SaveChangesAsync();
     }
 
     private ICollection<SpawnUnit> GetMapedSpawnUnits(Spawn spawn, Commander commander)
