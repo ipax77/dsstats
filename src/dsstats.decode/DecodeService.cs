@@ -4,7 +4,6 @@ using Microsoft.Extensions.Options;
 using pax.dsstats.parser;
 using s2protocol.NET;
 using System.Collections.Concurrent;
-using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
@@ -19,7 +18,6 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
     private readonly SemaphoreSlim ssRaw = new(1, 1);
     private readonly SemaphoreSlim fileSemaphore = new SemaphoreSlim(1, 1);
     private ReplayDecoder? replayDecoder;
-    public static readonly string assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
     private int queueCount = 0;
     private ConcurrentBag<string> excludeReplays = [];
 
@@ -159,7 +157,7 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
 
             if (replayDecoder is null)
             {
-                replayDecoder = new(assemblyPath);
+                replayDecoder = new();
             }
 
             var options = new ReplayDecoderOptions()
@@ -264,7 +262,7 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
 
             if (replayDecoder is null)
             {
-                replayDecoder = new(assemblyPath);
+                replayDecoder = new();
             }
 
             var options = new ReplayDecoderOptions()

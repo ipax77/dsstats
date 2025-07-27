@@ -6,10 +6,6 @@
     <ProjectReference Include="..\dsstats.maui\dsstats.challenge\dsstats.challenge.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="IronPython.StdLib" Version="2.7.12" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
