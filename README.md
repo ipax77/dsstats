@@ -30,7 +30,14 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v2.0.10</summary>
+<details open="open"><summary>v2.1.0</summary>
+
+>- s2protocol.NET v0.9 - IronPython dependecies removed
+>- add dsBuild for Alarak
+
+</details>
+
+<details><summary>v2.0.10</summary>
 
 >- DsBuilds - fix unit placement / add Abathur
 
