@@ -1333,7 +1333,7 @@ public static class Data
 
     public const string ReplayBlobDir = "/data/ds/replayblobs";
     public const string MysqlFilesDir = "/data/mysqlfiles";
-    public const string WasmVersion = "2.0.9";
+    public const string WasmVersion = "2.1.0";
 }
 
 public class LatestReplayEventArgs : EventArgs

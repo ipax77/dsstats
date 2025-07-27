@@ -28,10 +28,10 @@ public abstract class CmdrBuild
             : null;
     }
 
-    public virtual char? GetAbilityChar(string abilityName)
+    public virtual BuildOption? GetAbilityBuildOption(string abilityName)
     {
         return AbilityMap.TryGetValue(abilityName, out var buildOption)
-            ? buildOption.Key
+            ? buildOption
             : null;
     }
 
@@ -96,7 +96,8 @@ public static class CmdrBuildFactory
         Commander.Protoss,
         Commander.Terran,
         Commander.Zerg,
-        Commander.Abathur
+        Commander.Abathur,
+        Commander.Alarak,
     };
 
     public static CmdrBuild? Create(Commander commander)
@@ -108,6 +109,7 @@ public static class CmdrBuildFactory
             Commander.Zerg => new ZergBuild(),
 
             Commander.Abathur => new AbathurBuild(),
+            Commander.Alarak => new AlarakBuild(),
             _ => null
         };
     }

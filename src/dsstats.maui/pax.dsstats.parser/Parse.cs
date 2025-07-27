@@ -106,7 +106,7 @@ public static partial class Parse
             throw new ArgumentNullException(nameof(assemblyPath));
         }
 
-        ReplayDecoder decoder = new(assemblyPath);
+        ReplayDecoder decoder = new();
 
         ReplayDecoderOptions options = new ReplayDecoderOptions()
         {

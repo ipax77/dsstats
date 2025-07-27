@@ -77,11 +77,22 @@ public static class DsBuilder
         events.Add(new(InputType.KeyPress, 0, 0, 0x57, 100));
         foreach (var upgrade in buildRequest.Upgrades)
         {
-            var upgradeChar = build.GetAbilityChar(upgrade.Upgrade.Name);
-            if (upgradeChar is not null
-                && User32Wrapper.TryMapCharToKey(upgradeChar.Value, out var code, out var shift))
+            var buildOption = build.GetAbilityBuildOption(upgrade.Upgrade.Name);
+            if (buildOption is not null
+                && User32Wrapper.TryMapCharToKey(buildOption.Key, out var code, out var shift))
             {
-                events.Add(new InputEvent(InputType.KeyPress, 0, 0, code, 200));
+                if (buildOption.IsAbility)
+                {
+                    events.Add(new(InputType.KeyPress, 0, 0, workerKey, 100));
+                    events.Add(new(InputType.KeyPress, 0, 0, 0x51, 100));
+                    events.Add(new(InputType.KeyPress, 0, 0, code, 100));
+                    events.Add(new(InputType.KeyPress, 0, 0, workerKey, 100));
+                    events.Add(new(InputType.KeyPress, 0, 0, 0x57, 100));
+                }
+                else
+                {
+                    events.Add(new InputEvent(InputType.KeyPress, 0, 0, code, 200));
+                }
                 upgrades.Remove(upgrade);
             }
         }

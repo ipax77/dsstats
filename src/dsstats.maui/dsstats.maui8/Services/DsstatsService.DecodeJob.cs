@@ -4,7 +4,6 @@ using dsstats.shared.Interfaces;
 using pax.dsstats.parser;
 using s2protocol.NET;
 using System.Collections.Concurrent;
-using System.Reflection;
 using System.Security.Cryptography;
 
 namespace dsstats.maui8.Services;
@@ -177,6 +176,18 @@ public partial class DsstatsService
                         {
                             errorReplays.AddRange(replaysToSave);
                         }
+
+                        foreach (var detailError in result.DetailErrors)
+                        {
+                            OnDecodeStateChanged(new()
+                            {
+                                DecodeError = new()
+                                {
+                                    ReplayPath = detailError.Key,
+                                    Error = detailError.Value
+                                }
+                            });
+                        }
                     }
                 }
             }
@@ -257,8 +268,7 @@ public partial class DsstatsService
     {
         if (decoder == null)
         {
-            var _assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
-            decoder = new ReplayDecoder(_assemblyPath);
+            decoder = new ReplayDecoder();
         }
         return decoder;
     }

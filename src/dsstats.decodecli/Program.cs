@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
 using pax.dsstats.parser;
@@ -9,7 +8,6 @@ namespace dsstats.decodecli;
 
 class Program
 {
-    public static readonly string assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
     static readonly string replayFolder = "/data/ds/decode/input";
     static readonly string outputFolder = "/data/ds/decode/output";
     static readonly string errorFolder = "/data/ds/decode/error";
@@ -37,7 +35,7 @@ class Program
 
         Stopwatch sw = Stopwatch.StartNew();
 
-        ReplayDecoder decoder = new(assemblyPath);
+        ReplayDecoder decoder = new();
 
         ReplayDecoderOptions options = new ReplayDecoderOptions()
         {
