@@ -64,7 +64,7 @@ public static partial class DsFen
                 grid.Upgrades.Add(upgradeChar.Value);
                 continue;
             }
-            var abilityChar = build.GetAbilityChar(upgrade.Upgrade.Name);
+            var abilityChar = build.GetAbilityBuildOption(upgrade.Upgrade.Name)?.Key;
             if (abilityChar is not null)
             {
                 grid.Abilities.Add(abilityChar.Value);
