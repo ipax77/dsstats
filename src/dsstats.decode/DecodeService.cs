@@ -146,7 +146,7 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
 
         try
         {
-            var replayPaths = Directory.GetFiles(Path.Combine(decodeSettings.Value.ReplayFolders.ToDo, "todo"), "*SC2Replay");
+            var replayPaths = Directory.GetFiles(decodeSettings.Value.ReplayFolders.ToDo, "*SC2Replay");
             replayPaths = replayPaths.Except(excludeReplays).ToArray();
 
             if (replayPaths.Length == 0)
