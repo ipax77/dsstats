@@ -22,7 +22,7 @@ public partial class RatingsSaveService
         bool append = replayRatingId > 0;
 
         List<ArcadeReplayRatingCsv> replayRatings = new();
-        List<ArcadeReplayDsPlayerRatingCsv> replayPlayerRatings = new();
+        // List<ArcadeReplayDsPlayerRatingCsv> replayPlayerRatings = new();
         for (int i = 0; i < ratings.Count; i++)
         {
             var rating = ratings[i];
@@ -36,23 +36,23 @@ public partial class RatingsSaveService
                 ArcadeReplayId = rating.ReplayId,
                 AvgRating = Convert.ToInt32(rating.RepPlayerRatings.Average(a => a.Rating))
             });
-            foreach (var rp in rating.RepPlayerRatings)
-            {
-                replayPlayerRatingId++;
+            //foreach (var rp in rating.RepPlayerRatings)
+            //{
+            //    replayPlayerRatingId++;
 
-                replayPlayerRatings.Add(new()
-                {
-                    ArcadeReplayDsPlayerRatingId = replayPlayerRatingId,
-                    GamePos = rp.GamePos,
-                    Rating = MathF.Round(rp.Rating, 2),
-                    RatingChange = MathF.Round(rp.RatingChange, 2),
-                    Games = rp.Games,
-                    Consistency = MathF.Round(rp.Consistency, 2),
-                    Confidence = MathF.Round(rp.Confidence, 2),
-                    ArcadeReplayDsPlayerId = rp.ReplayPlayerId,
-                    ArcadeReplayRatingId = replayRatingId
-                });
-            }
+            //    replayPlayerRatings.Add(new()
+            //    {
+            //        ArcadeReplayDsPlayerRatingId = replayPlayerRatingId,
+            //        GamePos = rp.GamePos,
+            //        Rating = MathF.Round(rp.Rating, 2),
+            //        RatingChange = MathF.Round(rp.RatingChange, 2),
+            //        Games = rp.Games,
+            //        Consistency = MathF.Round(rp.Consistency, 2),
+            //        Confidence = MathF.Round(rp.Confidence, 2),
+            //        ArcadeReplayDsPlayerId = rp.ReplayPlayerId,
+            //        ArcadeReplayRatingId = replayRatingId
+            //    });
+            //}
         }
 
         var replayRatingCsv = GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayRatings));
@@ -67,13 +67,13 @@ public partial class RatingsSaveService
         });
         await csv1.WriteRecordsAsync(replayRatings);
 
-        using var stream2 = File.Open(replayPlayerRatingCsv, fileMode);
-        using var writer2 = new StreamWriter(stream2);
-        using var csv2 = new CsvWriter(writer2, new CsvConfiguration(CultureInfo.InvariantCulture)
-        {
-            HasHeaderRecord = false
-        });
-        await csv2.WriteRecordsAsync(replayPlayerRatings);
+        //using var stream2 = File.Open(replayPlayerRatingCsv, fileMode);
+        //using var writer2 = new StreamWriter(stream2);
+        //using var csv2 = new CsvWriter(writer2, new CsvConfiguration(CultureInfo.InvariantCulture)
+        //{
+        //    HasHeaderRecord = false
+        //});
+        // await csv2.WriteRecordsAsync(replayPlayerRatings);
 
         return (replayRatingId, replayPlayerRatingId);
     }
@@ -98,8 +98,8 @@ public partial class RatingsSaveService
         await FixArcadeForeignKey(connectionString);
         await Csv2Mysql(GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayRatings)),
                 nameof(ReplayContext.ArcadeReplayRatings), connectionString);
-        await Csv2Mysql(GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayDsPlayerRatings)),
-                nameof(ReplayContext.ArcadeReplayDsPlayerRatings), connectionString);
+        //await Csv2Mysql(GetFileName(RatingCalcType.Arcade, nameof(ReplayContext.ArcadeReplayDsPlayerRatings)),
+        //        nameof(ReplayContext.ArcadeReplayDsPlayerRatings), connectionString);
 
         await SetArcadePlayerRatingsPos(connectionString);
         await SetArcadeRatingChange(context, connectionString);
