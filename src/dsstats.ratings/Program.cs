@@ -236,9 +236,6 @@ class Program
                 .Take(take)
                 .ToList();
         }
-
-        var json = JsonSerializer.Serialize(lsDups, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText("/data/ds/lsdups.json", json);
     }
 
     private static void CheckLastSpawnHashDuplicates(ServiceProvider serviceProvider)
