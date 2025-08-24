@@ -35,6 +35,19 @@ public class UploadController(UploadService uploadService,
     }
 
     [HttpPost]
+    [RequestSizeLimit(1024000000)]
+    [Route("ImportPwaReplays")]
+    public async Task<ActionResult> ImportPwaReplays([FromBody] UploadDto uploadDto)
+    {
+        var success = await uploadService.Upload(uploadDto);
+        if (success)
+        {
+            return Ok();
+        }
+        return BadRequest();
+    }
+
+    [HttpPost]
     [RequestSizeLimit(15728640)]
     [Route("uploadreplays/{guid}")]
     [EnableRateLimiting("fixed")]

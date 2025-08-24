@@ -4,6 +4,7 @@ using dsstats.db8.Extensions;
 using dsstats.shared;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace dsstats.db8services.Import;
 
@@ -35,8 +36,14 @@ public partial class ImportService
 
         for (int i = 0; i < replayDtos.Count; i++)
         {
-            AdjustReplay(replayDtos[i]);
-            foreach (var rp in replayDtos[i].ReplayPlayers)
+            var replay = replayDtos[i];
+            AdjustReplay(replay);
+            if (!string.IsNullOrEmpty(replay.CompatHash))
+            {
+                var hash = MD5.HashData(Encoding.UTF8.GetBytes(replay.CompatHash));
+                replay.ReplayHash = Convert.ToHexString(hash).ToLowerInvariant();
+            }
+            foreach (var rp in replay.ReplayPlayers)
             {
                 var playerId = new PlayerId(rp.Player.ToonId, rp.Player.RealmId, rp.Player.RegionId);
                 if (!playerInfos.ContainsKey(playerId))

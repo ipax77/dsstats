@@ -10,8 +10,10 @@ public class AutoMapperProfile : Profile
         CreateMap<Player, PlayerDto>(MemberList.Destination);
         CreateMap<PlayerDto, Player>(MemberList.Source);
 
-        CreateMap<Replay, ReplayDto>(MemberList.Destination);
-        CreateMap<ReplayDto, Replay>(MemberList.Source);
+        CreateMap<Replay, ReplayDto>(MemberList.Destination)
+            .ForMember(x => x.CompatHash, opt => opt.Ignore());
+        CreateMap<ReplayDto, Replay>(MemberList.Source)
+            .ForSourceMember(x => x.CompatHash, opt => opt.DoNotValidate());
 
         CreateMap<ReplayPlayer, ReplayPlayerDto>(MemberList.Destination)
             .ForMember(x => x.MmrChange, opt => opt.Ignore());
