@@ -35,7 +35,8 @@ builder.Services.AddCors(options =>
                                              "https://dsstats-dev.pax77.org",
                                              "https://localhost:7257",
                                              "https://localhost:7227",
-                                             "http://localhost:5123")
+                                             "http://localhost:5123",
+                                             "https://localhost:7039")
                           .AllowAnyHeader()
                           .AllowAnyMethod();
                       });
