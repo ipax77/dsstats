@@ -178,7 +178,7 @@ public partial class CrawlerService
             }
             else
             {
-                return rateLimitRemaining * 1000;
+                return rateLimitReset * 1000;
             }
         }
         else
