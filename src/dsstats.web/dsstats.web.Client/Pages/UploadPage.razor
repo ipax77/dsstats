@@ -9,12 +9,14 @@
 
 <PageTitle>dsstats - upload</PageTitle>
 
-<div class="container">
+<div class="container py-4 bgchart">
     <h4>Upload Replays</h4>
 
     <p>You can upload one replay here:</p>
     <dsstats.razorlib.Ih.IhUploadComp Guid="guid" OnDecodeRequested="DecodeRequested" />
-    <small class="text-info bgchart2 p-1">By uploading replays you agree, that the replay data can be used for player and commander stats on this website.</small>
+    <small class="text-info bgchart2 p-1">
+        By uploading replays you agree that the replay data can be used for player and commander stats on this website.
+    </small>
 
     <div>
         @if (decoding)
@@ -41,13 +43,11 @@
         }
         @if (!string.IsNullOrEmpty(errorMessage))
         {
-            <p class="text-danger">
-                @errorMessage
-            </p>
+            <p class="text-danger">@errorMessage</p>
         }
     </div>
 
-    <div class="mt-3 bgchart p-2 rounded" style="max-width: 500px;">
+    <div class="mt-4 bgchart p-2 rounded" style="max-width: 500px;">
         <p>
             To upload all your replays you can use the free Windows desktop application:
             <div>
@@ -69,7 +69,24 @@
             </a>
         </div>
     </div>
+
+    <div class="mt-4 card shadow-sm border-0 bgchart2" style="max-width: 600px;">
+        <div class="card-body">
+            <h5 class="card-title">💡 Try the new PWA!</h5>
+            <p class="card-text">
+                You can now use the <strong>dsstats PWA (Progressive Web App)</strong> directly in your browser to
+                <strong>decode and upload replays</strong> without installing anything.
+            </p>
+            <p class="card-text">
+                The PWA works offline, stores replays in your browser, and can be installed on your desktop or mobile device.
+            </p>
+            <a href="https://dsstats-dev.pax77.org" target="_blank" class="btn btn-primary">
+                <i class="bi bi-box-arrow-up-right me-1"></i> Open dsstats PWA
+            </a>
+        </div>
+    </div>
 </div>
+
 
 @code {
     Guid guid = Guid.NewGuid();
