@@ -23,7 +23,7 @@ public static class Tourney
 
         replays = replays.Select(s => s.Replace("\\", "/")).ToHashSet();
 
-        ReplayDecoder decoder = new(Program.assemblyPath);
+        ReplayDecoder decoder = new();
 
         ReplayDecoderOptions options = new()
         {
