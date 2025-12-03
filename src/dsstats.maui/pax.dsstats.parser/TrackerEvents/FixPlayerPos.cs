@@ -46,7 +46,74 @@ public static partial class Parse
                 }
                 return;
             }
-            
+
+            throw new ArgumentNullException(nameof(setupEvents));
+        }
+    }
+
+    private static void FixPlayerPosNg2(DsReplay replay, ICollection<SPlayerSetupEvent> setupEvents)
+    {
+        var dict = GetPlayerDict(setupEvents, replay);
+        var revDict = dict.ToDictionary(k => k.Value.Pos, v => v.Key);
+        foreach (var player in replay.Players)
+        {
+            if (revDict.TryGetValue(player.Pos, out int pos))
+            {
+                player.Pos = pos;
+            }
+        }
+    }
+
+    private static Dictionary<int, DsPlayer> GetPlayerDict(ICollection<SPlayerSetupEvent> setupEvents,
+                                                       DsReplay replay)
+    {
+
+        var playerIds = setupEvents.Select(x => x.PlayerId).OrderBy(o => o).ToList();
+        var playerPos = replay.Players.Select(s => s.Pos).OrderBy(o => o).ToList();
+        var playerMetadataIds = replay.Players.Select(s => s.MetadataPlayerId).OrderBy(o => o).ToList();
+
+        if (playerIds.SequenceEqual(playerPos))
+        {
+            return replay.Players.ToDictionary(k => k.Pos, v => v);
+        }
+        else if (playerIds.SequenceEqual(playerMetadataIds))
+        {
+            return replay.Players.ToDictionary(k => k.MetadataPlayerId, v => v);
+        }
+        else
+        {
+            // try workingsetSlotIds + 1
+            var workingsetSlotIdsIncremented = replay.Players.Select(s => s.WorkingsetSlot + 1).OrderBy(o => o).ToList();
+            if (playerIds.SequenceEqual(workingsetSlotIdsIncremented))
+            {
+                return replay.Players.ToDictionary(k => k.WorkingsetSlot + 1, v => v);
+
+            }
+
+            // try workingsetSlotIds
+            var workingsetSlotIds = replay.Players.Select(s => s.WorkingsetSlot).OrderBy(o => o).ToList();
+            if (playerIds.SequenceEqual(workingsetSlotIds))
+            {
+                return replay.Players.ToDictionary(k => k.WorkingsetSlot, v => v);
+            }
+
+            // try workingsetSlotIds with 0 + 1
+            var workingsetSlotIdsWithZeroToOne = GetZeroToOneAdjustedWorkingsetSlotIds(replay.Players);
+            if (playerIds.SequenceEqual(workingsetSlotIdsWithZeroToOne))
+            {
+                return replay.Players.ToDictionary(k => k.WorkingsetSlot == 0 ? 1 : k.WorkingsetSlot, v => v);
+            }
+
+            // 2 player by order
+            if (playerIds.Count == 2 && playerPos.Count == 2)
+            {
+                return new Dictionary<int, DsPlayer>
+                {
+                    { playerIds[0], replay.Players[0] },
+                    { playerIds[1], replay.Players[1] }
+                };
+            }
+
             throw new ArgumentNullException(nameof(setupEvents));
         }
     }

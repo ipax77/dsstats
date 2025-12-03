@@ -105,8 +105,8 @@ builder.Services.AddHttpClient("sc2arcardeClient")
 builder.Services.AddHttpClient("decode")
     .ConfigureHttpClient(options =>
     {
-        // options.BaseAddress = new Uri("http://localhost:5240");
-        options.BaseAddress = new Uri(builder.Configuration["ServerConfig:DecodeUrl"] ?? "");
+        options.BaseAddress = builder.Environment.IsDevelopment() ? new Uri("http://localhost:5240") 
+            : new Uri(builder.Configuration["ServerConfig:DecodeUrl"] ?? "");
     });
 
 builder.Services.AddSingleton<IRatingService, RatingService>();

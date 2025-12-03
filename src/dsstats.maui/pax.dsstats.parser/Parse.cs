@@ -186,6 +186,7 @@ public static partial class Parse
 
             replay.Players[metaPlayer.PlayerID - 1].APM = metaPlayer.APM;
             replay.Players[metaPlayer.PlayerID - 1].SelectedRace = metaPlayer.SelectedRace;
+            replay.Players[metaPlayer.PlayerID - 1].MetadataPlayerId = metaPlayer.PlayerID;
         }
     }
 

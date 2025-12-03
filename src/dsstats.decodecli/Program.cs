@@ -19,7 +19,21 @@ class Program
     {
         if (args.Length > 0)
         {
-            await Tourney.CreateTourneyJsons(args[0]);
+            var file = args[0];
+            if (!File.Exists(file))
+            {
+                throw new FileNotFoundException(file);
+            }
+            var decoder1 = new ReplayDecoder();
+            var sc2Replay = await decoder1.DecodeAsync(file);
+            ArgumentNullException.ThrowIfNull(sc2Replay);
+            var dsReplay = Parse.GetDsReplay(sc2Replay);
+            ArgumentNullException.ThrowIfNull(dsReplay);
+            using var md51 = MD5.Create();
+            var replayDto = Parse.GetReplayDto(dsReplay, md51);
+            ArgumentNullException.ThrowIfNull(replayDto);
+            var json = JsonSerializer.Serialize(replayDto);
+            Console.WriteLine(json);
             return;
         }
 

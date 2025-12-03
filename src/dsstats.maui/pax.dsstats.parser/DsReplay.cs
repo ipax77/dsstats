@@ -58,6 +58,7 @@ public record DsPlayer
     public int Income { get; set; }
     public int Kills { get; set; }
     public int UpgradesSpent { get; set; }
+    public int MetadataPlayerId { get; set; }
     public List<int> TierUpgrades { get; set; } = new List<int>();
     public List<DsUnit> Units { get; set; } = new List<DsUnit>();
     public List<DsRefinery> Refineries { get; set; } = new List<DsRefinery>();
