@@ -63,13 +63,21 @@ public class TimedHostedService : BackgroundService
             if (nowTime.Hour == 3)
             {
                 await replayRepository.FixDsstatsPlayerNames();
-                var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
-                await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-6), token);
 
-                bool arcadeRecalc = nowTime.DayOfWeek == DayOfWeek.Friday;
-                await ratingService.ProduceRatings(shared.RatingCalcType.Arcade, arcadeRecalc);
+                try
+                {
+                    var crawlerService = scope.ServiceProvider.GetRequiredService<CrawlerService>();
+                    await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-6), token);
 
-                await replayRepository.FixArcadePlayerNames();
+                    bool arcadeRecalc = nowTime.DayOfWeek == DayOfWeek.Friday;
+                    await ratingService.ProduceRatings(shared.RatingCalcType.Arcade, arcadeRecalc);
+                    await replayRepository.FixArcadePlayerNames();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError("CrawlerService failed: {error}", ex.Message);
+                }
+
                 await ratingService.ProduceRatings(shared.RatingCalcType.Combo, true);
 
                 var ihService = scope.ServiceProvider.GetRequiredService<IIhService>();
