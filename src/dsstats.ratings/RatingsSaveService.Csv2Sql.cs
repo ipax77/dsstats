@@ -26,7 +26,7 @@ public partial class RatingsSaveService
             await connection.OpenAsync();
 
             var command = connection.CreateCommand();
-            command.CommandTimeout = 420;
+            command.CommandTimeout = 840;
 
             command.CommandText = @$"
 DROP TABLE IF EXISTS {tempTable};
@@ -66,7 +66,7 @@ SET FOREIGN_KEY_CHECKS = 1;";
             await connection.OpenAsync();
 
             var command = connection.CreateCommand();
-            command.CommandTimeout = 360;
+            command.CommandTimeout = 840;
 
             command.CommandText = @$"
 SET FOREIGN_KEY_CHECKS = 0;
@@ -93,7 +93,7 @@ SET FOREIGN_KEY_CHECKS = 1;";
             await connection.OpenAsync();
 
             var command = connection.CreateCommand();
-            command.CommandTimeout = 420;
+            command.CommandTimeout = 840;
 
             command.CommandText = @$"ALTER TABLE {nameof(ReplayContext.PlayerRatingChanges)} DROP FOREIGN KEY FK_PlayerRatingChanges_PlayerRatings_PlayerRatingId;
 ALTER TABLE {nameof(ReplayContext.PlayerRatingChanges)} ADD CONSTRAINT FK_PlayerRatingChanges_PlayerRatings_PlayerRatingId
@@ -115,7 +115,7 @@ FOREIGN KEY (PlayerRatingId) REFERENCES {nameof(ReplayContext.PlayerRatings)} (P
             await connection.OpenAsync();
 
             var command = connection.CreateCommand();
-            command.CommandTimeout = 360;
+            command.CommandTimeout = 840;
 
             command.CommandText = @$"ALTER TABLE {nameof(ReplayContext.ArcadePlayerRatingChanges)} DROP FOREIGN KEY `FK_ArcadePlayerRatingChanges_ArcadePlayerRatings_ArcadePlayerRa~`;
 ALTER TABLE {nameof(ReplayContext.ArcadePlayerRatingChanges)} ADD CONSTRAINT `FK_ArcadePlayerRatingChanges_ArcadePlayerRatings_ArcadePlayerRa~`
@@ -137,7 +137,7 @@ FOREIGN KEY (ArcadePlayerRatingId) REFERENCES {nameof(ReplayContext.ArcadePlayer
             await connection.OpenAsync();
 
             var command = connection.CreateCommand();
-            command.CommandTimeout = 420;
+            command.CommandTimeout = 840;
 
             command.CommandText = @$"ALTER TABLE {nameof(ReplayContext.RepPlayerRatings)} DROP INDEX `IX_RepPlayerRatings_ReplayPlayerId`;
 ALTER TABLE {nameof(ReplayContext.RepPlayerRatings)} DROP INDEX `IX_RepPlayerRatings_ReplayRatingInfoId`;
@@ -159,7 +159,7 @@ ALTER TABLE {nameof(ReplayContext.RepPlayerRatings)} DROP INDEX `IX_RepPlayerRat
             await connection.OpenAsync();
 
             var command = connection.CreateCommand();
-            command.CommandTimeout = 420;
+            command.CommandTimeout = 840;
 
             command.CommandText = @$"CREATE UNIQUE INDEX `IX_RepPlayerRatings_ReplayPlayerId` ON {nameof(ReplayContext.RepPlayerRatings)} ({nameof(RepPlayerRating.ReplayPlayerId)});
 CREATE INDEX `IX_RepPlayerRatings_ReplayRatingInfoId` ON {nameof(ReplayContext.RepPlayerRatings)} ({nameof(RepPlayerRating.ReplayRatingInfoId)});";
