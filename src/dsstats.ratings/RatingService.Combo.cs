@@ -19,6 +19,8 @@ public partial class RatingService
         var context = scope.ServiceProvider.GetRequiredService<ReplayContext>();
         var ratingSaveService = scope.ServiceProvider.GetRequiredService<IRatingsSaveService>();
         var comboRatings = scope.ServiceProvider.GetRequiredService<ComboRatings>();
+
+        context.Database.SetCommandTimeout(840);
         
         await CleanupComboPreRatings(context);
 

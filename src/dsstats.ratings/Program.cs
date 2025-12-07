@@ -43,9 +43,11 @@ class Program
         {
             options.UseMySql(mySqlConnectionString, ServerVersion.AutoDetect(mySqlConnectionString), p =>
             {
-                p.CommandTimeout(600);
+                p.CommandTimeout(30);
                 p.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
             });
+            options.EnableDetailedErrors();
+            options.EnableSensitiveDataLogging();
         });
 
         services.AddAutoMapper(typeof(AutoMapperProfile));

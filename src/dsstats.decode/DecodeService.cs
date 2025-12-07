@@ -336,7 +336,7 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
         }
     }
 
-    private ReplayMetadata GetMetaData(Sc2Replay replay)
+    public static ReplayMetadata GetMetaData(Sc2Replay replay)
     {
         List<ReplayMetadataPlayer> players = [];
 
