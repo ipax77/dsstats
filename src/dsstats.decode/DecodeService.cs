@@ -146,8 +146,10 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
 
         try
         {
-            var replayPaths = Directory.GetFiles(decodeSettings.Value.ReplayFolders.ToDo, "*SC2Replay");
-            replayPaths = replayPaths.Except(excludeReplays).ToArray();
+            var replayPaths = Directory.GetFiles(decodeSettings.Value.ReplayFolders.ToDo, "*SC2Replay")
+                .Where(f => !File.Exists(f + ".tmp"))
+                .Where(f => !excludeReplays.Contains(f))
+                .ToArray();
 
             if (replayPaths.Length == 0)
             {
@@ -251,8 +253,10 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
 
         try
         {
-            var replayPaths = Directory.GetFiles(Path.Combine(decodeSettings.Value.ReplayFolders.ToDoRaw), "*SC2Replay");
-            replayPaths = replayPaths.Except(excludeReplays).ToArray();
+            var replayPaths = Directory.GetFiles(Path.Combine(decodeSettings.Value.ReplayFolders.ToDoRaw), "*SC2Replay")
+                .Where(f => !File.Exists(f + ".tmp"))
+                .Where(f => !excludeReplays.Contains(f))
+                .ToArray();
 
             if (replayPaths.Length == 0)
             {
@@ -336,7 +340,7 @@ public partial class DecodeService(IOptions<DecodeSettings> decodeSettings,
         }
     }
 
-    private ReplayMetadata GetMetaData(Sc2Replay replay)
+    public static ReplayMetadata GetMetaData(Sc2Replay replay)
     {
         List<ReplayMetadataPlayer> players = [];
 
