@@ -9,7 +9,7 @@ public sealed class ParseTests
     [TestMethod]
     public async Task CanDecodeReplay()
     {
-        var path = "/data/ds/testreplays/Direct Strike TE (4545).SC2Replay";
+        var path = "/data/ds/testreplays/Direct Strike TE (4622).SC2Replay";
         var decoder = new ReplayDecoder();
         var options = new ReplayDecoderOptions()
         {
@@ -30,7 +30,7 @@ public sealed class ParseTests
     [TestMethod]
     public async Task CanDecodeReplay2()
     {
-        List<string> paths = ["/data/ds/testreplays/Direct Strike TE (4545).SC2Replay"];
+        List<string> paths = ["/data/ds/testreplays/Direct Strike TE (4622).SC2Replay"];
         var decoder = new ReplayDecoder();
         var options = new ReplayDecoderOptions()
         {

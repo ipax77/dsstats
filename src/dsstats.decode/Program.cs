@@ -8,6 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 builder.Services.Configure<DecodeSettings>(builder.Configuration.GetSection("DecodeSettings"));
+builder.Services.AddSingleton<IReplayQueue, ReplayQueue>();
+builder.Services.AddHostedService<ReplayDecoderWorker>();
 builder.Services.AddSingleton<DecodeService>();
 
 builder.Services.AddHttpClient("callback")

@@ -15,4 +15,5 @@ public record ReplayFolders
     public string ToDoRaw { get; set; } = string.Empty;
     public string Done { get; set; } = string.Empty;
     public string Error { get; set; } = string.Empty;
+    public string Temp { get; set; } = string.Empty;
 }
