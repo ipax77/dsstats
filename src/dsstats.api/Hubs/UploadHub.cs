@@ -25,7 +25,7 @@ public class UploadHub(IServiceScopeFactory scopeFactory) : Hub
 
         decodeService.DecodeFinished += decodeEventHandler;
 
-        var timeoutTask = Task.Delay(20000);
+        var timeoutTask = Task.Delay(25000);
 
         var completedTask = await Task.WhenAny(completionSource.Task, timeoutTask);
 
@@ -67,7 +67,7 @@ public class UploadHub(IServiceScopeFactory scopeFactory) : Hub
 
         decodeService.DecodeRawFinished += decodeEventHandler;
 
-        var timeoutTask = Task.Delay(20000);
+        var timeoutTask = Task.Delay(25000);
 
         var completedTask = await Task.WhenAny(completionSource.Task, timeoutTask);
 

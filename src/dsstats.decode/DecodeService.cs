@@ -43,7 +43,7 @@ public partial class DecodeService(
             logger.LogInformation("Saved uploaded replay to temp: {path}", tempPath);
 
             // Prepare job
-            var job = new ReplayJob(Guid.NewGuid(), tempPath, "", inHouse);
+            var job = new ReplayJob(guid, tempPath, "", inHouse);
             
             // Try enqueue
             if (!replayQueue.TryEnqueue(job))
@@ -53,7 +53,7 @@ public partial class DecodeService(
             }
         }
 
-        return replayQueue.QueueLength;
+        return 1;
     }
 
     public static ReplayMetadata GetMetaData(Sc2Replay replay)
