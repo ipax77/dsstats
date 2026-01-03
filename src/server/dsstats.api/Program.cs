@@ -26,19 +26,6 @@ if (builder.Environment.IsProduction())
 }
 builder.Services.AddLogging(l => l.AddSimpleConsole(o => o.TimestampFormat = "yyyy-MM-dd HH:mm:ss: "));
 
-builder.Services.AddHttpLogging(logging =>
-{
-    // Log everything for debugging; you can prune this later
-    logging.LoggingFields = HttpLoggingFields.All;
-
-    // If your Replay Blob is huge, increase the log limit (default is 32KB)
-    // Note: Don't do this in production for long!
-    logging.RequestBodyLogLimit = 4096;
-
-    // Add custom headers you want to track
-    logging.RequestHeaders.Add("Authorization");
-});
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins,
@@ -132,7 +119,6 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpLogging();
 app.UseForwardedHeaders();
 // app.UseHttpsRedirection();
 
