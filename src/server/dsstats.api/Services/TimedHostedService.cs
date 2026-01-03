@@ -38,15 +38,14 @@ public class TimedHostedService(IServiceScopeFactory scopeFactory, ILogger<Timed
             DateTime nowTime = DateTime.UtcNow;
 
             using var scope = scopeFactory.CreateAsyncScope();
-            var transitionService = scope.ServiceProvider.GetRequiredService<TransitionService>();
+            var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 
-            if (nowTime.Hour == 6)
+            if (nowTime.Hour == 3)
             {
-                await transitionService.ImportReplays();
+                await ratingService.CreateRatings();
             }
             else
             {
-                var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
                 await ratingService.ContinueRatings();
             }
         }
