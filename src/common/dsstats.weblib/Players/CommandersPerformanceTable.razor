@@ -1,0 +1,191 @@
+﻿@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IPlayerService PlayerService
+@implements IDisposable
+
+<div class="card bgchart2">
+    <div class="card-header bgchart2">
+        <h3 class="text-warning">Commanders Performance</h3>
+        <select class="form-select form-select-sm" @bind="Request.TimePeriod" @bind:after="LoadAvgGains">
+            @foreach (var timePeriod in Data.GetBasicTimePeriods())
+            {
+                <option value="@timePeriod">@Data.GetTimePeriodInfo(timePeriod).Name</option>
+            }
+        </select>
+    </div>
+    <div class="card-body bgchart">
+        <table class="tptable">
+            <thead class="user-select-none">
+                <tr>
+                    <th class="pointer" @onclick="() => SortBy(nameof(PlayerCmdrAvgGain.Commander))">
+                        Commander
+                        @GetSortIcon(nameof(PlayerCmdrAvgGain.Commander))
+                    </th>
+                    <th class="pointer" @onclick="() => SortBy(nameof(PlayerCmdrAvgGain.Count))">
+                        Games
+                        @GetSortIcon(nameof(PlayerCmdrAvgGain.Count))
+                    </th>
+                    <th class="pointer" @onclick="() => SortBy(nameof(PlayerCmdrAvgGain.Wins))">
+                        Winrate
+                        @GetSortIcon(nameof(PlayerCmdrAvgGain.Wins))
+                    </th>
+                    <th class="pointer" @onclick="() => SortBy(nameof(PlayerCmdrAvgGain.AvgGain))">
+                        AvgGain
+                        @GetSortIcon(nameof(PlayerCmdrAvgGain.AvgGain))
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (SortedStats != null)
+                {
+                    @foreach (var gain in SortedStats)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex">
+                                    <div class="preload-@(gain.Commander.ToString().ToLower())" alt="@gain.Commander" style="width: 30px; height: 30px;"></div>
+                                    <div class="ms-1">@gain.Commander</div>
+                                </div>
+                            </td>
+                            <td>@gain.Count</td>
+                            <td>@((gain.Count == 0 ? 0 : gain.Wins / (double)gain.Count).ToString("P2"))</td>
+                            <td>
+                                <span class="@(gain.AvgGain < 0 ? "text-danger" : "text-success")">@gain.AvgGain.ToString("N2")</span>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public PlayerStatsRequest Request { get; set; } = new();
+
+    [Parameter, EditorRequired]
+    public RatingDetails Details { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public ToonIdDto ToonId { get; set; }
+
+    [Parameter]
+    public EventCallback<PlayerStatsRequest> RequestChanged { get; set; }
+
+    CmdrAvgGainResponse? AvgGainResponse;
+    CancellationTokenSource cts = new();
+
+    private string? currentSortColumn = nameof(PlayerCmdrAvgGain.Count);
+    private bool isDescending = true;
+
+    private IEnumerable<PlayerCmdrAvgGain> PlayerCmdrAvgGains =>
+        (AvgGainResponse?.AvgGains as IEnumerable<PlayerCmdrAvgGain>) ?? Enumerable.Empty<PlayerCmdrAvgGain>();
+
+    private IEnumerable<PlayerCmdrAvgGain> SortedStats => ApplySorting(PlayerCmdrAvgGains);
+
+    protected override void OnParametersSet()
+    {
+        // ... (existing logic remains)
+        AvgGainResponse = Details.AvgGainResponses.FirstOrDefault(f => f.TimePeriod == Request.TimePeriod);
+
+        if (AvgGainResponse is null && Request.TimePeriod != TimePeriod.AllTime)
+        {
+            Task.Run(LoadAvgGains);
+        }
+    }
+
+    private void SortBy(string columnName)
+    {
+        if (currentSortColumn == columnName)
+        {
+            // Toggle direction if the same column is clicked
+            isDescending = !isDescending;
+        }
+        else
+        {
+            // New column clicked, set new column and default to descending
+            currentSortColumn = columnName;
+            isDescending = true;
+        }
+    }
+
+    private IEnumerable<PlayerCmdrAvgGain> ApplySorting(IEnumerable<PlayerCmdrAvgGain> stats)
+    {
+        if (currentSortColumn == null || !stats.Any())
+        {
+            // Default sort by Count descending if no specific column is set (initial state)
+            return stats.OrderByDescending(s => s.Count);
+        }
+
+        IOrderedEnumerable<PlayerCmdrAvgGain>? ordered = null;
+
+        // Use switch on the column name to apply the correct sorting
+        switch (currentSortColumn)
+        {
+            case nameof(PlayerCmdrAvgGain.Commander):
+                ordered = isDescending
+                    ? stats.OrderByDescending(s => s.Commander.ToString())
+                    : stats.OrderBy(s => s.Commander.ToString());
+                break;
+            case nameof(PlayerCmdrAvgGain.Count):
+                ordered = isDescending
+                    ? stats.OrderByDescending(s => s.Count)
+                    : stats.OrderBy(s => s.Count);
+                break;
+            case nameof(PlayerCmdrAvgGain.Wins):
+                ordered = isDescending
+                    ? stats.OrderByDescending(s => s.Count == 0 ? 0 : s.Wins / (double)s.Count)
+                    : stats.OrderBy(s => s.Count == 0 ? 0 : s.Wins / (double)s.Count);
+                break;
+            case nameof(PlayerCmdrAvgGain.AvgGain):
+                ordered = isDescending
+                    ? stats.OrderByDescending(s => s.AvgGain)
+                    : stats.OrderBy(s => s.AvgGain);
+                break;
+            default:
+                return stats.OrderByDescending(s => s.Count);
+        }
+
+        return ordered ?? stats;
+    }
+
+    private MarkupString GetSortIcon(string columnName)
+    {
+        if (currentSortColumn != columnName)
+        {
+            return (MarkupString)""; // No icon if not the current sort column
+        }
+
+        // Use Bootstrap Icons (bi) for direction indicators
+        return isDescending
+            ? (MarkupString)"<span class='bi bi-arrow-down-short ms-1'></span>"
+            : (MarkupString)"<span class='bi bi-arrow-up-short ms-1'></span>";
+    }
+
+    private async Task LoadAvgGains()
+    {
+        // ... (existing logic remains)
+        AvgGainResponse = Details.AvgGainResponses.FirstOrDefault(f => f.TimePeriod == Request.TimePeriod);
+
+        if (AvgGainResponse is null)
+        {
+            AvgGainResponse = await PlayerService.GetCommandersPerformance(Request with { ToonId = ToonId }, cts.Token);
+
+            if (AvgGainResponse != null)
+            {
+                Details.AvgGainResponses.Add(AvgGainResponse);
+            }
+        }
+
+        await RequestChanged.InvokeAsync(Request);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

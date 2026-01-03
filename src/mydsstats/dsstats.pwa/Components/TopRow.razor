@@ -1,0 +1,67 @@
+@using dsstats.pwa.Services
+@inject DecodeService DecodeService
+@implements IDisposable
+
+<div class="top-row d-flex flex-wrap align-items-center gap-2 px-4 py-3 bg-dark text-light">
+	@if (decodeInfo != null)
+	{
+		@if (decodeInfo.Total > 0)
+		{
+			<span class="badge bg-secondary">@decodeInfo.Done / @decodeInfo.Total</span>
+			<span class="badge bg-danger">Errors: @decodeInfo.Error</span>
+			<span class="badge bg-light text-dark">Elapsed: @decodeInfo.Elapsed.ToString(@"hh\:mm\:ss")</span>
+			<span class="badge bg-light text-dark">ETA: @decodeInfo.Eta.ToString(@"hh\:mm\:ss")</span>
+		} else
+		{
+			<span class="badge bg-secondary">@decodeInfo.Done</span>
+			<span class="badge bg-danger">Errors: @decodeInfo.Error</span>
+			<span class="badge bg-light text-dark">Elapsed: @decodeInfo.Elapsed.ToString(@"hh\:mm\:ss")</span>
+		}
+
+		@if (decodeInfo.UploadStatus == UploadStatus.Uploading)
+		{
+			<div class="d-flex align-items-center">
+				<div class="spinner-border spinner-border-sm text-success me-1" role="status">
+					<span class="visually-hidden">Uploading...</span>
+				</div>
+				<span>Uploading...</span>
+			</div>
+		}
+		else if (decodeInfo.UploadStatus == UploadStatus.UploadSuccess)
+		{
+			<span class="d-flex align-items-center text-success">
+				<i class="bi bi-check-circle-fill me-1"></i> Upload Successful
+			</span>
+		}
+		else if (decodeInfo.UploadStatus == UploadStatus.UploadError)
+		{
+			<span class="d-flex align-items-center text-danger">
+				<i class="bi bi-x-circle me-1"></i> Upload Failed
+			</span>
+		}
+	}
+	else
+	{
+		<span class="badge bg-success">Ready</span>
+	}
+</div>
+
+@code {
+	private DecodeInfoEventArgs? decodeInfo;
+
+	protected override void OnInitialized()
+	{
+		DecodeService.DecodeStateChanged += OnDecodeStateChanged;
+	}
+
+	private void OnDecodeStateChanged(object? sender, DecodeInfoEventArgs e)
+	{
+		decodeInfo = e;
+		InvokeAsync(StateHasChanged);
+	}
+
+	public void Dispose()
+	{
+		DecodeService.DecodeStateChanged -= OnDecodeStateChanged;
+	}
+}

@@ -1,0 +1,28 @@
+﻿@using dsstats.shared.Units
+@using dsstats.shared
+
+<div class="card mb-3 shadow-sm">
+    <div class="card-body bgchart">
+        <h2 class="card-title mb-1">@Unit.Name</h2>
+
+        <div class="small text-muted mb-3">
+            Commander: <strong>@Unit.Commander</strong>
+            &nbsp;|&nbsp;
+            Tier: <strong>@Unit.Tier</strong>
+            &nbsp;|&nbsp;
+            Cost: <strong>@Unit.Cost</strong>
+        </div>
+
+        <div>
+            @foreach (var t in Unit.UnitType.GetUnitTypes())
+            {
+                <span class="badge bg-secondary me-1">@t</span>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public DsUnitDto Unit { get; set; } = default!;
+}

@@ -1,0 +1,8 @@
+﻿@using dsstats.shared
+@using pax.BlazorChartJs
+
+<ChartComponent ChartJsConfig="chartJsConfig" OnEventTriggered="ChartEventTriggered">
+</ChartComponent>
+<span class="bi bi-x-lg pointer text-danger" style="position: absolute; top: 0; right: 0; padding: 10px; z-index: 1000;"
+      @onclick="e => OnCloseRequest.InvokeAsync()"></span>
+

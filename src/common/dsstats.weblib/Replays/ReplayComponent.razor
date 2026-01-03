@@ -1,0 +1,253 @@
+﻿@using dsstats.shared
+
+<div class="card border-light mb-3 d-inline-block" style="width: fit-content !important;">
+	<div class="card-header bgchart2">
+
+		<!-- Desktop Layout -->
+		<div class="row fw-bold isdesktop">
+			@if (IsScrollable)
+			{
+				<div class="col-auto d-flex">
+					<span class="bi bi-arrow-left pointer me-2"
+						  @onclick="e => Scroll(true)"></span>
+					<span class="bi bi-arrow-right pointer"
+						  @onclick="e => Scroll(false)"></span>
+				</div>
+			}
+
+			<div class="col-2">
+				@ReplayDetails.Replay.Gametime.ToString("yyyy-MM-dd")
+			</div>
+			<div class="col-2">
+				@ReplayDetails.Replay.GameMode
+			</div>
+			<div class="col-2">
+				@TimeSpan.FromSeconds(ReplayDetails.Replay.Duration).ToString(@"hh\:mm\:ss")
+			</div>
+			<div class="col-2">
+				@Data.GetRegionString(ReplayDetails.Replay.RegionId)
+			</div>
+
+			<div class="col-auto ms-auto me-3">
+				<button type="button" class="btn btn-sm btn-outline-light"
+						@onclick="() => _replayHelper.ShowChart = !_replayHelper.ShowChart">
+					Middle Chart
+				</button>
+			</div>
+
+			@if (IsCloseable)
+			{
+				<div class="col-auto text-danger pointer">
+					<i class="bi bi-x-lg" @onclick="Close"></i>
+				</div>
+			}
+		</div>
+
+		<!-- Mobile Layout -->
+		<div class="ismobile fw-bold">
+			<div class="d-flex justify-content-between align-items-center mb-2">
+				@if (IsScrollable)
+				{
+					<div class="d-flex">
+						<span class="bi bi-arrow-left pointer me-2"
+							  @onclick="e => Scroll(true)"></span>
+						<span class="bi bi-arrow-right pointer"
+							  @onclick="e => Scroll(false)"></span>
+					</div>
+				}
+
+				@if (IsCloseable)
+				{
+					<div class="text-danger pointer">
+						<i class="bi bi-x-lg" @onclick="Close"></i>
+					</div>
+				}
+			</div>
+
+			<div class="text-center">
+				<div>@ReplayDetails.Replay.Gametime.ToString("yyyy-MM-dd")</div>
+				<div>@ReplayDetails.Replay.GameMode</div>
+				<div>@TimeSpan.FromSeconds(ReplayDetails.Replay.Duration).ToString(@"hh\:mm\:ss")</div>
+			</div>
+		</div>
+
+	</div>
+
+	<div class="card-body bgchart">
+		@if (_replayHelper.ShowChart)
+		{
+			<div class="d-flex">
+				<div class="bgchart"
+					 style="position: relative; width: 70vw; min-width: 500px; max-width: 1000px; height: calc(70vw * 0.5); min-height: 250px; max-height: 500px;">
+					<ReplayMiddleChart @ref="replayMiddleChart" Replay="ReplayDetails.Replay" OnCloseRequest="() => _replayHelper.ShowChart = false" />
+				</div>
+				<div class="ms-2">
+					<form name="charttoggles">
+						<fieldset>
+							@if (ReplayDetails.Replay.Players.Any(a => a.TierUpgrades.Count > 0))
+							{
+								<div class="form-check form-switch">
+									<label class="form-check-label" style="user-select: none;">
+										Tier Upgrades
+										<input type="checkbox" class="form-check-input" @bind="showTierUps" @bind:after="@(() => replayMiddleChart?.AddTierUpgradeAnnotations(showTierUps))" />
+									</label>
+
+								</div>
+							}
+							@if (ReplayDetails.Replay.Players.Any(a => a.Refineries.Count > 0))
+							{
+								<div class="form-check form-switch">
+									<label class="form-check-label" style="user-select: none;">
+										Refineries
+										<input type="checkbox" class="form-check-input" @bind="showRefineries" @bind:after="@(() => replayMiddleChart?.AddGasAnnotations(showRefineries))" />
+									</label>
+								</div>
+							}
+							@if (ReplayDetails.Replay.Players.Any(a => a.Duration < ReplayDetails.Replay.Duration - 90))
+							{
+								<div class="form-check form-switch">
+									<label class="form-check-label" style="user-select: none;">
+										Leavers
+										<input type="checkbox" class="form-check-input" @bind="showLeavers" @bind:after="@(() => replayMiddleChart?.AddLeaverAnnotations(showLeavers))" />
+									</label>
+								</div>
+							}
+						</fieldset>
+					</form>
+				</div>
+			</div>
+		}
+		@{
+			var middleInfo = _replayHelper.GetMiddleInfo();
+		}
+		<div>
+		</div>
+		<div class="row g-3">
+			<div class="col-auto">
+				<div class="row justify-content-start" style="font-size: 1.1rem;">
+					<div class="col-auto">
+						<span class="badge @(ReplayDetails.Replay.WinnerTeam == 1 ? "text-bg-success" : "text-bg-danger")">
+							Team 1 @(ReplayDetails.Replay.WinnerTeam == 1 ? "- Winner" : "")
+						</span>
+					</div>
+					@if (ReplayDetails.Replay.Cannon > 0)
+					{
+						<div class="col-auto">
+							<span class="badge text-bg-dark">
+								Cannon down at @TimeSpan.FromSeconds(ReplayDetails.Replay.Cannon).ToString(@"hh\:mm\:ss")
+							</span>
+						</div>
+					}
+					<div class="col-auto">
+						<span class="badge text-bg-dark pointer" @onclick="() => _replayHelper.ShowChart = !_replayHelper.ShowChart">
+							Middle Control @middleInfo.Item1
+						</span>
+					</div>
+				</div>
+				<ReplayTeamTableComponent TeamId="1" Players="ReplayDetails.Replay.Players.Where(x => x.TeamId == 1).OrderBy(o => o.GamePos).ToList()"
+										  ReplayHelper="_replayHelper" RequestBuild="RequestBuild" RequestStats="RequestPlayerStats" />
+			</div>
+			<div class="col-auto">
+				<div class="row justify-content-start" style="font-size: 1.1rem;">
+					<div class="col-auto">
+						<span class="badge @(ReplayDetails.Replay.WinnerTeam == 2 ? "text-bg-success" : "text-bg-danger")">
+							Team 2 @(ReplayDetails.Replay.WinnerTeam == 2 ? "- Winner" : "")
+						</span>
+					</div>
+					@if (ReplayDetails.Replay.Bunker > 0)
+					{
+						<div class="col-auto">
+							<span class="badge text-bg-dark">
+								Bunker down at @TimeSpan.FromSeconds(ReplayDetails.Replay.Bunker).ToString(@"hh\:mm\:ss")
+							</span>
+						</div>
+					}
+					<div class="col-auto">
+						<span class="badge text-bg-dark pointer" @onclick="() => _replayHelper.ShowChart = !_replayHelper.ShowChart">
+							Middle Control @middleInfo.Item2
+						</span>
+					</div>
+				</div>
+				<ReplayTeamTableComponent TeamId="2" Players="ReplayDetails.Replay.Players.Where(x => x.TeamId == 2).OrderBy(o => o.GamePos).ToList()"
+										  ReplayHelper="_replayHelper" RequestBuild="RequestBuild" RequestStats="RequestPlayerStats" />
+			</div>
+		</div>
+		<div style="max-width: 800px;">
+			<div class="row align-items-center">
+				<div class="col-auto d-flex align-items-center">
+					<label for="breakpointSelect" class="form-label text-light me-2 mb-0">Breakpoint:</label>
+					<select id="breakpointSelect" class="form-select text-light bgchart" aria-label="Breakpoint" @bind="_replayHelper.Breakpoint">
+						@foreach (var breakpoint in _replayHelper.GetBreakpoints())
+						{
+							<option value="@breakpoint">@GetBreakpointString(breakpoint)</option>
+						}
+					</select>
+				</div>
+				@if (_replayHelper.HasRating)
+				{
+					<div class="col-auto d-flex align-items-center">
+						<label for="ratingSelect" class="form-label text-light me-2">Rating Type:</label>
+						<select id="ratingSelect" class="form-select text-light bgchart" disabled="@OperatingSystem.IsWindows()" aria-label="Rating Type" @bind="_replayHelper.RatingType">
+							@foreach (var rating in _replayHelper.GetRatingTypes())
+							{
+								<option value="@rating">@rating.ToString()</option>
+							}
+						</select>
+					</div>
+					<div class="col-auto d-flex align-items-center">
+						@{
+							var expToWin = _replayHelper.GetExp2Win();
+						}
+						ExpToWin:
+						<span class="@expToWin.Item1 ms-2">@expToWin.Item2</span>
+					</div>
+				}
+				@if (OperatingSystem.IsWindows())
+				{
+					<div class="col-auto">
+						<button type="button" class="btn btn-sm btn-outline-warning"
+								@onclick="() => OnRatingUpdateRequest.InvokeAsync()">
+							Update Ratings
+						</button>
+					</div>
+					<div class="col-auto">
+						<button type="button" class="btn btn-sm btn-outline-light"
+								@onclick="() => _replayHelper.ShowFileName = !_replayHelper.ShowFileName">
+							@(_replayHelper.ShowFileName ? "Hide" : "Show") File Name
+						</button>
+					</div>
+				}
+			</div>
+			@if (_replayHelper.ShowFileName)
+			{
+				<div class="w-100">
+					<input type="text" class="form-control" disabled @bind-value="@ReplayDetails.Replay.FileName" />
+				</div>
+			}
+
+		</div>
+		<div>
+			<div class="row">
+				@foreach (var player in _replayHelper.ActiveBuilds)
+				{
+					<ReplayBuildComponent @key="player.GamePos" Player="player"
+										  ReplayHelper="_replayHelper"
+										  moduleTask="moduleTask" />
+				}
+			</div>
+		</div>
+
+	</div>
+	<div class="card-footer bgchart2">
+		<div class="row">
+			@if (IsCloseable)
+			{
+				<div class="col-auto">
+					<button class="btn btn-sm btn-danger" @onclick="Close">Close</button>
+				</div>
+			}
+		</div>
+	</div>
+</div>
+
+

@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <Target Name="RunWebpack" BeforeTargets="Build">
+    <Message Text="Running npm install and webpack build..." Importance="high" />
+    <Exec Command="npm install" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)" />
+  </Target>
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\common\dsstats.shared\dsstats.shared.csproj" />
+  </ItemGroup>
+
+</Project>

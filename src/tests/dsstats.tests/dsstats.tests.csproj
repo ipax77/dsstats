@@ -1,0 +1,85 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="MSTest" Version="4.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="testdata\Direct Strike %28711%29.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\Direct Strike %28711%29.SC2Replay">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\Direct Strike %288601%29.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\Direct Strike %288601%29.SC2Replay">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\Direct Strike %288602%29.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\Direct Strike %288602%29.SC2Replay">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\Direct Strike %288603%29.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\Direct Strike %288603%29.SC2Replay">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\Direct Strike %288607%29.SC2Replay">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\Direct Strike %288608%29.SC2Replay">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\Direct Strike %288609%29.SC2Replay">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\Direct Strike TE %281022%29.SC2Replay">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+	<None Update="testdata\Direct Strike TE %283%29.SC2Replay">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
+	<None Update="testdata\Direct Strike TE %284545%29.SC2Replay">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
+	<None Update="testdata\Direct Strike TE %245463%29.SC2Replay">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
+	<None Update="testdata\Direct Strike %289181%29.SC2Replay">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
+  <None Update="testdata\Direct Strike TE %281787%29.SC2Replay">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
+	<None Update="testdata\calcdtos.json">
+	<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\server\dsstats.db\dsstats.db.csproj" />
+    <ProjectReference Include="..\..\common\dsstats.parser\dsstats.parser.csproj" />
+    <ProjectReference Include="..\..\common\dsstats.shared\dsstats.shared.csproj" />
+    <ProjectReference Include="..\..\server\dsstats.migrations.mysql\dsstats.migrations.mysql.csproj" />
+    <ProjectReference Include="..\..\server\dsstats.migrations.sqlite\dsstats.migrations.sqlite.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,209 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using dsstats.shared
+@inject IJSRuntime JSRuntime
+
+<div class="modal" id="@modalId" aria-hidden="true" aria-labelledby="@modalId" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bgchart2">
+                <h5 class="modal-title">Replay Filter</h5>
+                <button type="button" class="btn-close" @onclick="Close"></button>
+            </div>
+
+            <div class="modal-body bgchart">
+                <EditForm EditContext="@editContext" FormName="ReplaysFilterForm" OnValidSubmit="@OnSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <!-- Player Count -->
+                    <div class="mb-3">
+                        <label class="form-label">Player Count</label>
+                        <InputSelect class="form-select" @bind-Value="filter.Playercount">
+                            <option value="0">-- Any --</option>
+                            @for (int i = 1; i <= 6; i++)
+                            {
+                                <option value="@i">@i</option>
+							}
+						</InputSelect>
+                    </div>
+
+                    <!-- Tournament Edition -->
+                    <div class="form-check mb-3">
+                        <InputCheckbox class="form-check-input" @bind-Value="filter.TournamentEdition" />
+                        <label class="form-check-label">Tournament Edition</label>
+                    </div>
+
+                    <!-- Game Modes -->
+                    <div class="mb-3">
+                        <label class="form-label">Game Modes</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var gm in Enum.GetValues<GameMode>())
+                            {
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input"
+                                           checked="@filter.GameModes.Contains(gm)"
+                                           @onchange="() => ToggleGameMode(gm)" />
+                                    <label class="form-check-label">@gm.ToString()</label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Position Filters -->
+                    <div class="mb-3">
+                        <label class="form-label">Position Filters</label>
+                        <div>
+                            @foreach (var pos in filter.PosFilters)
+                            {
+                                <div class="card p-3 mb-3 border-secondary">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong>Position @pos.GamePos</strong>
+                                        <button type="button" class="btn btn-sm btn-danger" @onclick="@(() => RemovePosFilter(pos))">Remove</button>
+                                    </div>
+
+                                    <div class="mt-2">
+                                        <label>Player Name or ID</label>
+                                        <InputText class="form-control" @bind-Value="pos.PlayerNameOrId" />
+                                    </div>
+
+                                    <div class="mt-2">
+                                        <label>Commander</label>
+                                        <InputSelect class="form-select" @bind-Value="pos.Commander">
+                                            <option value="">-- Any --</option>
+                                            @foreach (var cmd in Enum.GetValues<Commander>())
+                                            {
+                                                <option value="@cmd">@cmd</option>
+											}
+										</InputSelect>
+                                    </div>
+
+                                    <div class="mt-2">
+                                        <label>Opponent Commander</label>
+                                        <InputSelect class="form-select" @bind-Value="pos.OppCommander">
+                                            <option value="">-- Any --</option>
+                                            @foreach (var cmd in Enum.GetValues<Commander>())
+                                            {
+                                                <option value="@cmd">@cmd</option>
+                                            }
+                                        </InputSelect>
+                                    </div>
+
+                                    <!-- Unit Filters -->
+                                    <div class="mt-3">
+                                        <h6>Unit Filters</h6>
+                                        @foreach (var unit in pos.UnitFilters)
+                                        {
+                                            <div class="card p-2 mb-2 border-light">
+                                                <div class="row g-2 align-items-center">
+                                                    <div class="col-md-3">
+                                                        <label>Breakpoint</label>
+                                                        <InputSelect class="form-select" @bind-Value="unit.Breakpoint">
+                                                            @foreach (var bp in Enum.GetValues<Breakpoint>())
+                                                            {
+                                                                <option value="@bp">@bp</option>
+                                                            }
+                                                        </InputSelect>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label>Unit Name</label>
+                                                        <InputText class="form-control" @bind-Value="unit.Name" />
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label>Count</label>
+                                                        <InputNumber class="form-control" @bind-Value="unit.Count" />
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label>Min</label>
+                                                        <InputCheckbox class="form-check-input" @bind-Value="unit.Min" />
+                                                    </div>
+                                                    <div class="col-md-2 text-end">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                                @onclick="@(() => pos.UnitFilters.Remove(unit))">
+                                                            X
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                        <button type="button" class="btn btn-sm btn-outline-primary" @onclick="@(() => AddUnitFilter(pos))">+ Add Unit Filter</button>
+                                    </div>
+                                </div>
+                            }
+                            <button type="button" class="btn btn-outline-primary" @onclick="AddPosFilter">+ Add Position Filter</button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 bgchart2">
+                        <button type="button" class="btn btn-secondary" @onclick="Close">Cancel</button>
+                        <button type="submit" class="btn btn-success">Apply</button>
+                        <button type="button" class="btn btn-warning" @onclick="ResetFilter">Reset</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string modalId = "replayFilterModal";
+    public ReplaysFilter filter = new();
+    private EditContext editContext = null!;
+
+    [Parameter] public EventCallback<ReplaysFilter?> OnRequest { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(filter);
+    }
+
+    public void Show()
+    {
+        InvokeAsync(StateHasChanged);
+        JSRuntime.InvokeVoidAsync("openModalById", modalId);
+    }
+
+    public void Close()
+    {
+        JSRuntime.InvokeVoidAsync("closeModalById", modalId);
+        OnClose.InvokeAsync();
+    }
+
+    private void ToggleGameMode(GameMode gm)
+    {
+        if (filter.GameModes.Contains(gm))
+            filter.GameModes.Remove(gm);
+        else
+            filter.GameModes.Add(gm);
+    }
+
+    private void AddPosFilter()
+    {
+        filter.PosFilters.Add(new ReplaysPosFilter { GamePos = filter.PosFilters.Count + 1 });
+    }
+
+    private void RemovePosFilter(ReplaysPosFilter pos)
+    {
+        filter.PosFilters.Remove(pos);
+    }
+
+    private void AddUnitFilter(ReplaysPosFilter pos)
+    {
+        pos.UnitFilters.Add(new ReplaysPosUnitFilter());
+    }
+
+    private void ResetFilter()
+    {
+        filter.Reset();
+        editContext = new EditContext(filter);
+        OnRequest.InvokeAsync(null);
+        Close();
+    }
+
+    private async Task OnSubmit()
+    {
+        await OnRequest.InvokeAsync(filter);
+        Close();
+    }
+}

@@ -1,0 +1,53 @@
+﻿@using dsstats.shared
+@using dsstats.shared.Units
+
+<div class="card bg-transparent mb-2 shadow-sm">
+	<div class="card-header pointer bg-success"
+		 data-bs-toggle="collapse"
+		 data-bs-target="#@id">
+		<strong>Upgrade @Upgrade.Upgrade</strong>
+		<span class="text-muted ms-2 small">(@Upgrade.Commander)</span>
+	</div>
+
+	<div id="@id" class="collapse show">
+		<div class="card-body bgchart">
+
+			<table class="table table-sm">
+				@if (Upgrade.Cost > 0)
+				{
+					<tr>
+						<th>Cost</th>
+						<td>@Upgrade.Cost</td>
+					</tr>
+				}
+
+				@if (Upgrade.RequiredTier > 0)
+				{
+					<tr>
+						<th>Required Tier</th>
+						<td>@Upgrade.RequiredTier</td>
+					</tr>
+				}
+			</table>
+
+			@if (!string.IsNullOrWhiteSpace(Upgrade.Description))
+			{
+				<div class="mt-2">
+					<strong>Description</strong>
+					<div class="border rounded p-2">
+						@Upgrade.Description
+					</div>
+				</div>
+			}
+
+		</div>
+	</div>
+
+</div>
+
+@code {
+	[Parameter]
+	public DsUpgradeDto Upgrade { get; set; } = new();
+
+	string id = Guid.NewGuid().ToString();
+}

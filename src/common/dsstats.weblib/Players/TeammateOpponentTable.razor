@@ -1,0 +1,145 @@
+﻿@using dsstats.shared
+
+<div class="card bgchart2">
+	<div class="card-header bgchart2">
+		<div class="row justify-content-between align-items-center">
+			<div class="col-auto">
+				<h3 class="text-warning fw-bold">@Title</h3>
+			</div>
+			<div class="col-auto">
+				<h5>AvgRating @AvgRating.ToString("N0")</h5>
+			</div>
+		</div>
+		<small>With their winrate and the players AvgGain</small>
+	</div>
+	<div class="card-body bgchart" style="max-height: 400px; overflow-y: auto;">
+		<div class="table-responsive">
+			<table class="tptable">
+				<thead class="user-select-none">
+					<tr>
+						<th class="pointer" @onclick="() => SortBy(nameof(OtherPlayerStats.Player.Name))">
+							Name
+							@GetSortIcon(nameof(OtherPlayerStats.Player.Name))
+						</th>
+						<th class="pointer" @onclick="() => SortBy(nameof(OtherPlayerStats.Count))">
+							Games
+							@GetSortIcon(nameof(OtherPlayerStats.Count))
+						</th>
+						<th class="pointer" @onclick="() => SortBy(nameof(OtherPlayerStats.Wins))">
+							Winrate
+							@GetSortIcon(nameof(OtherPlayerStats.Wins))
+						</th>
+						<th class="pointer" @onclick="() => SortBy(nameof(OtherPlayerStats.AvgGain))">
+							AvgGain
+							@GetSortIcon(nameof(OtherPlayerStats.AvgGain))
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					@if (Stats != null)
+					{
+						@foreach (var stat in SortedStats)
+						{
+							var wr = stat.Count == 0 ? 0.0 : stat.Wins / (double)stat.Count;
+							<tr>
+								<td>
+									@stat.Player.Name
+								</td>
+								<td>@stat.Count</td>
+								<td class="@(wr < 0.5 ? "text-danger" : "text-success")">
+									@wr.ToString("P2")
+								</td>
+								<td class="@(stat.AvgGain < 0 ? "text-danger" : "text-success")">
+									@stat.AvgGain.ToString("N2")
+								</td>
+							</tr>
+						}
+					}
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+@code {
+	[Parameter, EditorRequired]
+	public IEnumerable<OtherPlayerStats> Stats { get; set; } = Enumerable.Empty<OtherPlayerStats>();
+
+	[Parameter, EditorRequired]
+	public string Title { get; set; } = string.Empty;
+
+	[Parameter, EditorRequired]
+	public int AvgRating { get; set; }
+
+	private string? currentSortColumn = nameof(OtherPlayerStats.Count);
+	private bool isDescending = true;
+
+	private IEnumerable<OtherPlayerStats> SortedStats => ApplySorting(Stats);
+
+	private void SortBy(string columnName)
+	{
+		if (currentSortColumn == columnName)
+		{
+			// Toggle direction if the same column is clicked
+			isDescending = !isDescending;
+		}
+		else
+		{
+			// New column clicked, set new column and default to descending
+			currentSortColumn = columnName;
+			isDescending = true;
+		}
+	}
+
+	private IEnumerable<OtherPlayerStats> ApplySorting(IEnumerable<OtherPlayerStats> stats)
+	{
+		if (currentSortColumn == null || !stats.Any())
+		{
+			return stats;
+		}
+
+		IOrderedEnumerable<OtherPlayerStats>? ordered = null;
+
+		// Use switch on the column name to apply the correct sorting
+		switch (currentSortColumn)
+		{
+			case nameof(OtherPlayerStats.Player.Name):
+				ordered = isDescending
+					? stats.OrderByDescending(s => s.Player.Name)
+					: stats.OrderBy(s => s.Player.Name);
+				break;
+			case nameof(OtherPlayerStats.Count):
+				ordered = isDescending
+					? stats.OrderByDescending(s => s.Count)
+					: stats.OrderBy(s => s.Count);
+				break;
+			case nameof(OtherPlayerStats.Wins):
+				ordered = isDescending
+					? stats.OrderByDescending(s => s.Count == 0 ? 0 : s.Wins / (double)s.Count)
+					: stats.OrderBy(s => s.Count == 0 ? 0 : s.Wins / (double)s.Count);
+				break;
+			case nameof(OtherPlayerStats.AvgGain):
+				ordered = isDescending
+					? stats.OrderByDescending(s => s.AvgGain)
+					: stats.OrderBy(s => s.AvgGain);
+				break;
+			default:
+				return stats; // Return unsorted if column is unknown
+		}
+
+		return ordered ?? stats;
+	}
+
+	private MarkupString GetSortIcon(string columnName)
+	{
+		if (currentSortColumn != columnName)
+		{
+			return (MarkupString)""; // No icon if not the current sort column
+		}
+
+		// Use Bootstrap Icons (bi) for direction indicators
+		return isDescending
+			? (MarkupString)"<span class='bi bi-arrow-down-short ms-1'></span>"
+			: (MarkupString)"<span class='bi bi-arrow-up-short ms-1'></span>";
+	}
+}

@@ -1,0 +1,11 @@
+<Solution>
+  <Project Path="../common/dsstats.localization/dsstats.localization.csproj" />
+  <Project Path="../common/dsstats.parser/dsstats.parser.csproj" />
+  <Project Path="../common/dsstats.shared/dsstats.shared.csproj" />
+  <Project Path="../common/dsstats.weblib/dsstats.weblib.csproj" />
+  <Project Path="../server/dsstats.apiServices/dsstats.apiServices.csproj" />
+  <Project Path="../server/dsstats.db/dsstats.db.csproj" />
+  <Project Path="../server/dsstats.dbServices/dsstats.dbServices.csproj" />
+  <Project Path="../server/dsstats.migrations.sqlite/dsstats.migrations.sqlite.csproj" />
+  <Project Path="dsstats.maui/dsstats.maui.csproj" />
+</Solution>

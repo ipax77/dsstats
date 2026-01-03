@@ -1,0 +1,95 @@
+﻿@using dsstats.shared
+@using dsstats.shared.Units
+
+<div class="card bg-transparent mb-2">
+
+	<div class="card-header pointer bg-danger"
+		 data-bs-toggle="collapse"
+		 data-bs-target="#@id">
+		<strong>Weapon @Weapon.Name</strong>
+	</div>
+
+	<div id="@id" class="collapse show">
+		<div class="card-body bgchart">
+
+			<table class="table table-sm">
+
+				<tr>
+					<th>Damage</th>
+					<td>@Weapon.Damage</td>
+				</tr>
+
+				@if (Weapon.DamagePerUpgrade != 0)
+				{
+					<tr>
+						<th>Damage per Upgrade</th>
+						<td>@Weapon.DamagePerUpgrade</td>
+					</tr>
+				}
+
+				<tr>
+					<th>Range</th>
+					<td>@Weapon.Range</td>
+				</tr>
+
+				<tr>
+					<th>Attack Speed</th>
+					<td>@Weapon.AttackSpeed</td>
+				</tr>
+
+				@if (Weapon.Attacks != 1)
+				{
+					<tr>
+						<th>Attacks</th>
+						<td>@Weapon.Attacks</td>
+					</tr>
+				}
+
+				@if (Weapon.CanTarget != WeaponTarget.None)
+				{
+					<tr>
+						<th>Targets</th>
+						<td>@Weapon.CanTarget</td>
+					</tr>
+				}
+
+			</table>
+
+			@* BONUS DAMAGE *@
+			@if (Weapon.BonusDamages?.Count > 0)
+			{
+				<div class="mt-2">
+					<strong>Bonus Damage</strong>
+					<div class="table-responsive">
+						<table class="tptable table-sm table-bordered mt-1">
+							<thead>
+								<tr>
+									<th>Against</th>
+									<th>Bonus</th>
+									<th>Upgrade</th>
+								</tr>
+							</thead>
+							<tbody>
+								@foreach (var b in Weapon.BonusDamages)
+								{
+									<tr>
+										<td>@string.Join(", ", b.UnitType.GetUnitTypes())</td>
+										<td>@b.Damage</td>
+										<td>@(b.PerUpgrade != 0 ? b.PerUpgrade : "-")</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			}
+		</div>
+	</div>
+</div>
+
+@code {
+	[Parameter, EditorRequired]
+	public DsWeaponDto Weapon { get; set; } = default!;
+
+	string id = Guid.NewGuid().ToString();
+}

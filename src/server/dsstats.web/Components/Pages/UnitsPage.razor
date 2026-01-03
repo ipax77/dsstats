@@ -1,0 +1,59 @@
+﻿@page "/units"
+@using System.Collections.Frozen
+@using dsstats.shared
+@using dsstats.shared.Units
+@using dsstats.shared.Extensions
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+
+<PageTitle>dsstats - units</PageTitle>
+
+<dsstats.weblib.Builds.DsUnitComponent Request="request" OnRequestChanged="RequestChanged" />
+
+@code {
+    [SupplyParameterFromQuery]
+    public int? Cmd { get; set; }
+    [SupplyParameterFromQuery]
+    public int? Uid { get; set; }
+
+    DsUnitsRequest request = new();
+
+    private static readonly FrozenDictionary<string, string> paramMap = new Dictionary<string, string>
+    {
+        { nameof(DsUnitsRequest.Commander), "Cmd" },
+        { nameof(DsUnitsRequest.UnitId), "Uid" },
+    }.ToFrozenDictionary();
+
+    protected override void OnInitialized()
+    {
+        InitRequest();
+        base.OnInitialized();
+    }
+
+    private void InitRequest()
+    {
+        request = new DsUnitsRequest
+        {
+            Commander = EnumExtensions.ParseEnumOrDefault(Cmd, Commander.None),
+            UnitId = Uid ?? 0,
+        };
+    }
+
+    private void RequestChanged(DsUnitsRequest newRequest)
+    {
+        var queryDic = new Dictionary<string, object?>();
+        if (newRequest.Commander != Commander.None)
+        {
+            queryDic.Add(paramMap[nameof(newRequest.Commander)], (int)newRequest.Commander);
+        }
+        if (newRequest.UnitId != 0)
+        {
+            queryDic.Add(paramMap[nameof(newRequest.UnitId)], newRequest.UnitId);
+        }
+
+
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters(
+                new Dictionary<string, object?>(queryDic)));
+    }
+}

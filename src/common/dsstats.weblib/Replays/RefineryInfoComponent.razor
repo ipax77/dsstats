@@ -1,0 +1,87 @@
+﻿@using dsstats.shared
+
+<div class="col-auto mb-2">
+    <div class="table-responsive border rounded p-1">
+        <table class="tptable w-auto">
+            <thead>
+                <tr>
+                    <th>GasTime</th>
+                    <th>Value <img src="_content/dsstats.weblib/images/pax_mins.png" alt="minerals" /></th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int total = 0;
+                }
+                @foreach (var ent in GetRefineries())
+                {
+                    total += ent.Value;
+                    <tr>
+                        <td>@ent.Key</td>
+                        <td>@ent.Value</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2">
+                        <span class="fw-bold">Total: @total.ToString("N0") / <span class="text-warning">@GasIncomePercentageFromTeamIncome(total)</span></span>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public ReplayPlayerDto Player { get; set; } = default!;
+
+    List<KeyValuePair<string, int>> GetRefineries()
+    {
+        if (Player.Refineries.Count == 0)
+        {
+            return new();
+        }
+
+        List<KeyValuePair<string, int>> refineryTimes = new();
+
+        for (int i = 0; i < Player.Refineries.Count; i++)
+        {
+            var refTimeInt = Player.Refineries[i];
+            refineryTimes.Add(
+                new(TimeSpan.FromSeconds(refTimeInt).ToString(@"hh\:mm\:ss"), GetRefValue(i, refTimeInt, Player.Duration))
+            );
+
+        }
+        return refineryTimes;
+    }
+
+    private static int GetRefValue(int i, int refTime, int duration)
+    {
+        int refCost = i switch
+        {
+            0 => 150,
+            1 => 225,
+            2 => 300,
+            3 => 375,
+            _ => 150
+        };
+
+        var refDuration = duration - Convert.ToInt32(refTime / 22.4);
+        return Convert.ToInt32(refDuration * 0.5) - refCost;
+    }
+
+    private string GasIncomePercentageFromTeamIncome(int total)
+    {
+        var income = Player.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint.All)?.Income ?? 0;
+        if (income == 0)
+        {
+            return "0.0%";
+        }
+        var per = total / (double)income;
+        return per.ToString("P1");
+    }
+
+}

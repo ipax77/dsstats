@@ -1,0 +1,251 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.shared
+@using pax.BlazorChartJs
+@inject IJSRuntime JSRuntime
+
+<ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="EventTriggered" />
+
+@code {
+	[Parameter, EditorRequired]
+	public WinrateResponse Response { get; set; } = default!;
+
+	[Parameter, EditorRequired]
+	public StatsRequest Request { get; set; } = default!;
+
+	IconsChartJsConfig chartJsConfig = null!;
+	ChartComponent? chartComponent;
+
+	bool chartReady;
+	bool iconsReady;
+	bool dataReady;
+	private readonly string mainColor = "#3F5FFA";
+	private int iconX = 30;
+	private int iconY = 30;
+
+	protected override void OnInitialized()
+	{
+		chartJsConfig = GetChartConfig();
+		base.OnInitialized();
+	}
+
+	private void EventTriggered(ChartJsEvent chartJsEvent)
+	{
+		if (chartJsEvent is ChartJsInitEvent)
+		{
+			chartReady = true;
+
+			if (!iconsReady)
+			{
+				_ = LoadIcons();
+			}
+			if (!dataReady)
+			{
+				PrepareData(Response, Request);
+			}
+		}
+	}
+
+	private async Task LoadIcons()
+	{
+		await JSRuntime.InvokeVoidAsync("registerImagePlugin", iconX, iconY);
+		await JSRuntime.InvokeVoidAsync("increaseChartHeight", chartJsConfig.ChartJsConfigGuid, iconY);
+		iconsReady = true;
+	}
+
+	public void PrepareData(WinrateResponse response, StatsRequest request)
+	{
+		if (!chartReady)
+		{
+			return;
+		}
+
+		Response = response;
+		Request = request;
+
+		if (chartJsConfig.Data.Datasets.Count > 0)
+		{
+			chartJsConfig.RemoveDatasets(chartJsConfig.Data.Datasets);
+		}
+
+		if (chartJsConfig.Options?.Plugins?.Title != null
+			&& chartJsConfig.Options?.Scales?.Y?.Title != null)
+		{
+			chartJsConfig.Options.Plugins.Title.Text = GetTitle(request);
+			chartJsConfig.Options!.Scales!.Y!.Title!.Text = GetYAxisDesc(request);
+			chartJsConfig.UpdateChartOptions();
+		}
+
+		chartJsConfig.SetLabels(response.WinrateEnts.Select(s => s.Commander.ToString()).ToList());
+
+		chartJsConfig.AddDataset(GetAvgGainDataset(response, request));
+
+		dataReady = true;
+		SetIcons(response);
+		// JSRuntime.InvokeVoidAsync("setDatalabelsFormatter", chartJsConfig.ChartJsConfigGuid);
+	}
+
+
+	private ChartJsDataset GetAvgGainDataset(WinrateResponse response, StatsRequest request)
+	{
+		var barDataset = new BarDataset()
+		{
+			Label = "Average Rating Gain",
+			Data = GetData(response),
+			BackgroundColor = new IndexableOption<string>(response.WinrateEnts.Select(s => $"{Data.CmdrColor[s.Commander]}33").ToList()),
+			BorderColor = new IndexableOption<string>(response.WinrateEnts.Select(s => Data.CmdrColor[s.Commander]).ToList()),
+			BorderWidth = new IndexableOption<double>(2),
+			// Stack = "Stack 0"
+		};
+
+		return barDataset;
+	}
+
+	private IndexableOption<string> GetYAxisDesc(StatsRequest request)
+	{
+		var text = "Average Rating Gain";
+		return text;
+	}
+
+	private IndexableOption<string> GetTitle(StatsRequest request)
+	{
+		string title = "Average Rating Gain";
+		title += $" - {GetTimeInfo(request)}";
+
+		if (request.Interest != Commander.None)
+		{
+			title = $"{request.Interest}'s " + title;
+		}
+
+		return title;
+	}
+
+	private string GetTimeInfo(StatsRequest request)
+	{
+		var timeInfo = Data.GetTimePeriodInfo(request.TimePeriod);
+		return $"{timeInfo.Start.ToString("yyyy-MM-dd")} - {timeInfo.End.ToString("yyyy-MM-dd")}";
+	}
+
+	private List<object> GetData(WinrateResponse response)
+	{
+		return response.WinrateEnts.Select(s => s.AvgPerformance).Cast<object>().ToList();
+	}
+
+	private void SetIcons(WinrateResponse response)
+	{
+		if (chartJsConfig.Options?.Plugins != null
+			&& chartJsConfig.Options?.Plugins is IconsPlugins iconPlugins)
+		{
+			var icons = response.WinrateEnts.Select(s => new ChartIconsConfig()
+			{
+				XWidth = iconX,
+				YWidth = iconY,
+				YOffset = 0,
+				ImageSrc = $"_content/dsstats.weblib/images/{s.Commander.ToString().ToLower()}-min.png",
+				Cmdr = s.Commander.ToString().ToLower()
+			}).ToList();
+
+			// iconPlugins.BarIcons = icons;
+			chartJsConfig.Options.Plugins.BarIcons = icons;
+			chartJsConfig.UpdateChartOptions();
+		}
+	}
+
+	private IconsChartJsConfig GetChartConfig()
+	{
+		return new IconsChartJsConfig()
+		{
+			Type = ChartType.bar,
+			Options = new IconsChartJsOptions()
+			{
+				MaintainAspectRatio = true,
+				Responsive = true,
+				Plugins = new IconsPlugins()
+				{
+					Title = new()
+					{
+						Display = true,
+						Text = new IndexableOption<string>("Winrate"),
+						Color = "white",
+						Font = new()
+						{
+							Size = 16,
+						}
+					},
+					Datalabels = new()
+					{
+						Display = "auto",
+						Color = "#0a050c",
+						BackgroundColor = "#cdc7ce",
+						BorderColor = "#491756",
+						BorderRadius = 4,
+						BorderWidth = 1,
+						Anchor = "end",
+						Align = "start",
+						Clip = true
+					},
+					Legend = new Legend()
+					{
+						Display = false,
+						Labels = new Labels()
+						{
+							Padding = 0,
+							BoxHeight = 0,
+							BoxWidth = 0
+						}
+					}
+				},
+				Scales = new()
+				{
+					X = new LinearAxis()
+					{
+						// Stacked = true,
+						Ticks = new ChartJsAxisTick()
+						{
+							Color = mainColor
+						},
+						Grid = new ChartJsGrid()
+						{
+							Display = true,
+							Color = "rgba(113, 116, 143, 0.25)",
+							TickColor = "rgba(113, 116, 143, 0.75)",
+							Z = -1
+						},
+						Border = new ChartJsAxisBorder()
+						{
+							Display = true,
+							Color = "rgba(113, 116, 143)",
+							Dash = new List<double>() { 2, 4 }
+						}
+					},
+					Y = new LinearAxis()
+					{
+						// Stacked = true
+						Title = new Title()
+						{
+							Display = true,
+							Text = new IndexableOption<string>("Average rating gain"),
+							Color = mainColor
+						},
+						Ticks = new ChartJsAxisTick()
+						{
+							Color = mainColor
+						},
+						Grid = new ChartJsGrid()
+						{
+							Display = true,
+							Color = "rgba(113, 116, 143, 0.25)",
+							TickColor = "rgba(113, 116, 143, 0.75)",
+							Z = -1
+						},
+						Border = new ChartJsAxisBorder()
+						{
+							Display = true,
+							Color = "rgba(113, 116, 143)",
+							Dash = new List<double>() { 2, 4 }
+						}
+					}
+				}
+			}
+		};
+	}
+}

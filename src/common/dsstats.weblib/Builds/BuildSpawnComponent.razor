@@ -1,0 +1,195 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using dsstats.weblib.Replays
+@inject IReplayRepository ReplayRepository
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+
+<div class="row bgchart p-1">
+	@foreach (var info in buildSpawn.SpawnInfos)
+	{
+		<div class="col-lg-6">
+			<div class="d-flex">
+				<div class="preload-@(info.Player.Race.ToString().ToLower())"></div>
+				@info.Player.Name
+				@if (isLoading)
+				{
+					<div class="spinner-border" role="status">
+						<span class="visually-hidden">Loading...</span>
+					</div>
+				}
+			</div>
+			<div style="height: 450px; width: 380px;">
+				<BuildChart @ref="info.BuildChart" Spawn="info.Spawn" Team="info.Player.TeamId" Cmdr="info.Player.Race" moduleTask="moduleTask" />
+			</div>
+		</div>
+	}
+</div>
+
+@code {
+	[Parameter, EditorRequired]
+	public BuildsRequest Request { get; set; }
+
+	[Parameter, EditorRequired]
+	public string ReplayHash { get; set; } = string.Empty;
+
+	bool isLoading;
+
+	ReplayDetails? replayDetails;
+	BuildSpawn buildSpawn = new()
+	{
+		SpawnInfos = [
+			new(),
+			new(),
+		]
+	};
+
+	SemaphoreSlim ss = new(1, 1);
+
+	private Lazy<Task<IJSObjectReference>> moduleTask = null!;
+
+	protected override async Task OnInitializedAsync()
+	{
+		moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
+				"import", "./_content/dsstats.weblib/js/annotationChart.js?v=0.5").AsTask());
+		await LoadData();
+		await base.OnInitializedAsync();
+	}
+
+	public void Update(string replayHash, BuildsRequest request)
+	{
+		ReplayHash = replayHash;
+		Request = request;
+		replayDetails = null;
+		InvokeAsync(StateHasChanged);
+		_ = LoadData();
+	}
+
+	private async Task LoadData()
+	{
+		if (string.IsNullOrEmpty(ReplayHash))
+		{
+			return;
+		}
+		await ss.WaitAsync();
+		try
+		{
+			isLoading = true;
+			await InvokeAsync(StateHasChanged);
+			replayDetails = await ReplayRepository.GetReplayDetails(ReplayHash);
+			var mybuildSpawn = GetBuildSpawn(replayDetails);
+			buildSpawn.Update(mybuildSpawn);
+		}
+		finally
+		{
+			ss.Release();
+			isLoading = false;
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+
+	private BuildSpawn? GetBuildSpawn(ReplayDetails? replay)
+	{
+		if (replay == null)
+		{
+			return null;
+		}
+		var players = replay.Replay.Players.Where(x => x.Race == Request.Interest);
+		var player = Request.Versus == Commander.None ? players.FirstOrDefault() :
+			players.Where(x => replay.Replay.Players.FirstOrDefault(f => f.GamePos == GetOppPos(x.GamePos))?.Race == Request.Versus).FirstOrDefault();
+		if (player == null)
+		{
+			return null;
+		}
+		var oppPlayer = replay.Replay.Players.FirstOrDefault(f => f.GamePos == GetOppPos(player.GamePos));
+		if (oppPlayer == null)
+		{
+			return null;
+		}
+		var playerSpawn = player.Spawns.FirstOrDefault(f => f.Breakpoint == Request.Breakpoint || f.Breakpoint == Breakpoint.All);
+		var oppSpawn = oppPlayer.Spawns.FirstOrDefault(f => f.Breakpoint == Request.Breakpoint || f.Breakpoint == Breakpoint.All);
+		if (playerSpawn == null || oppSpawn == null)
+		{
+			return null;
+		}
+
+		var buildSpawn = new BuildSpawn()
+		{
+			SpawnInfos = [
+					new() {
+						Player = player,
+						Spawn = playerSpawn
+					},
+					new() {
+						Player = oppPlayer,
+						Spawn = oppSpawn,
+					}
+				]
+		};
+
+		if (player.TeamId == 2)
+		{
+			buildSpawn.SpawnInfos.Reverse();
+		}
+
+		return buildSpawn;
+	}
+
+	private int GetOppPos(int pos)
+	{
+		return pos switch
+		{
+			1 => 4,
+			2 => 5,
+			3 => 6,
+			4 => 1,
+			5 => 2,
+			6 => 3,
+			_ => 0
+		};
+	}
+
+	private class BuildSpawn
+	{
+		public List<BuildSpawnInfo> SpawnInfos { get; set; } = [];
+
+		public void Update(BuildSpawn? buildSpawn)
+		{
+			if (buildSpawn == null || buildSpawn.SpawnInfos.Count != SpawnInfos.Count)
+			{
+				foreach (var info in SpawnInfos)
+				{
+					info.Update(new());
+				}
+			}
+			else
+			{
+				for (int i = 0; i < buildSpawn.SpawnInfos.Count; i++)
+				{
+					SpawnInfos[i].Update(buildSpawn.SpawnInfos[i]);
+				}
+			}
+		}
+	}
+
+	private class BuildSpawnInfo
+	{
+		public ReplayPlayerDto Player { get; set; } = new();
+		public SpawnDto Spawn { get; set; } = new();
+		public BuildChart? BuildChart { get; set; }
+
+		public void Update(BuildSpawnInfo spawnInfo)
+		{
+			Player = spawnInfo.Player;
+			Spawn = spawnInfo.Spawn;
+			BuildChart?.Update(Spawn, Player.TeamId);
+		}
+	}
+
+	public void Dispose()
+	{
+		ss.Dispose();
+	}
+}

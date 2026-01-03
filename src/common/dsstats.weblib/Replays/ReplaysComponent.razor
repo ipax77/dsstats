@@ -1,0 +1,254 @@
+﻿@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.JSInterop
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using dsstats.weblib.Players
+@inject IReplayRepository ReplayRepository
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<div>
+	<div style="max-width: 1060px;">
+		<ReplaysRequestComponent Request="ReplaysRequest" ReplaysCount="replaysCount" IsLoading="isLoading" OnRequestChanged="Reload" />
+	</div>
+	<div class="table-responsive" style="max-height: 76vh; max-width: 1060px; overflow-x: auto; overflow-y: auto;">
+		<table class="tptable">
+			<colgroup>
+				<col width="12%" />
+				<col width="20%" />
+				<col width="10%" />
+				<col width="17.5%" />
+				<col width="17.5%" />
+				<col width="6%" />
+				<col width="5%" />
+				<col width="12%" />
+			</colgroup>
+			<CascadingValue Value="ReplaysRequest.TableOrders">
+				<thead class="user-select-none">
+					<tr>
+						<th scope="col" class="pointer" @onclick="@(e => SortList(e, "GameTime"))">
+							<SortArrow Column="GameTime">Gametime</SortArrow>
+						</th>
+						<th scope="col" class="pointer" @onclick="@(e => SortList(e, "GameMode"))">
+							<SortArrow Column="GameMode">GameMode</SortArrow>
+						</th>
+						<th scope="col" class="pointer" @onclick="@(e => SortList(e, "Duration"))">
+							<SortArrow Column="Duration">Duration</SortArrow>
+						</th>
+						<th scope="col">
+							<SortArrow Column="Team1">Team1</SortArrow>
+						</th>
+						<th scope="col">
+							<SortArrow Column="Team2">Team2</SortArrow>
+						</th>
+						<th scope="col">
+							<SortArrow Column="Exp2Win">Exp2Win</SortArrow>
+						</th>
+						<th scope="col">
+							<SortArrow Column="AvgRating">AvgRating</SortArrow>
+						</th>
+						<th scope="col">
+							<SortArrow Column="LeaverType">LeaverType</SortArrow>
+						</th>
+					</tr>
+				</thead>
+			</CascadingValue>
+			@if (replaysCount > 0)
+			{
+				<tbody>
+					<Virtualize @ref="virtualizeComponent" Context="replay" ItemsProvider="LoadReplays" ItemSize="47" SpacerElement="tr">
+						<ItemContent>
+							<tr @key="replay" class="pointer" style="height: 47px; @(lastReplaysHash == replay.ReplayHash ? "background-color: #343a40;" : "")"
+								id="@replay.ReplayHash" @onclick="() => LoadReplay(replay.ReplayHash)">
+								<td>@replay.Gametime.ToString("yyyy-MM-dd")</td>
+								<td>@replay.GameMode</td>
+								<td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+								<td>
+									<ReplayTeamComponent Replay="replay" TeamNumber="1" />
+								</td>
+								<td>
+									<ReplayTeamComponent Replay="replay" TeamNumber="2" />
+								</td>
+								<td class="@(replay.Exp2Win >= 0.5 ? "text-success" : "text-danger")">@replay.Exp2Win?.ToString("p0")</td>
+								<td>@replay.AvgRating</td>
+								<td>@replay.LeaverType</td>
+							</tr>
+						</ItemContent>
+						<Placeholder>
+							<tr>
+								<td colspan="100" style="height: 47px;">Loading ...</td>
+							</tr>
+						</Placeholder>
+						<EmptyContent>
+							<tr>
+								<td colspan="100" style="height: 47px;">No replays found.</td>
+							</tr>
+						</EmptyContent>
+					</Virtualize>
+				</tbody>
+			}
+		</table>
+	</div>
+</div>
+
+<ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnClose="CloseReplay" />
+<PlayerModal @ref="playerModal" OnClose="e => replayModal?.Show(ReplayDetails!)" />
+
+@code {
+	[Parameter, EditorRequired]
+	public ReplaysRequest ReplaysRequest { get; set; } = new();
+
+	[Parameter]
+	public EventCallback<ReplaysRequest> OnRequestChanged { get; set; }
+
+	CancellationTokenSource cts = new();
+
+	int replaysCount;
+
+	Virtualize<ReplayListDto>? virtualizeComponent;
+	ReplayDetails? ReplayDetails = null;
+	string lastReplaysHash = string.Empty;
+	List<ReplayListDto>? latestResponse = null;
+	ReplayModal? replayModal;
+	PlayerModal? playerModal;
+	bool isLoading = true;
+
+	protected override void OnInitialized()
+	{
+		_ = SetCount();
+		base.OnInitialized();
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender && !string.IsNullOrWhiteSpace(ReplaysRequest.ReplayHash))
+		{
+			await LoadReplay(ReplaysRequest.ReplayHash);
+		}
+		await base.OnAfterRenderAsync(firstRender);
+	}
+
+	private async Task SetCount()
+	{
+		replaysCount = await ReplayRepository.GetReplaysCount(ReplaysRequest, cts.Token);
+		isLoading = false;
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task Reload()
+	{
+		isLoading = true;
+		await InvokeAsync(StateHasChanged);
+		replaysCount = await ReplayRepository.GetReplaysCount(ReplaysRequest);
+		ReplaysRequest.Page = 1;
+		if (virtualizeComponent != null)
+		{
+			await InvokeAsync(async () =>
+			{
+				await virtualizeComponent.RefreshDataAsync();
+				isLoading = false;
+				StateHasChanged();
+			});
+		}
+		await OnRequestChanged.InvokeAsync(ReplaysRequest);
+	}
+
+	private async ValueTask<ItemsProviderResult<ReplayListDto>> LoadReplays(ItemsProviderRequest request)
+	{
+		var numReplays = Math.Min(request.Count, replaysCount - request.StartIndex);
+		ReplaysRequest.Skip = request.StartIndex;
+		ReplaysRequest.Take = numReplays;
+		var replays = await ReplayRepository.GetReplays(ReplaysRequest, request.CancellationToken);
+		latestResponse = replays;
+		return new ItemsProviderResult<ReplayListDto>(replays, Math.Min(replaysCount, ReplaysRequest.PageSize));
+	}
+
+	private async Task SortList(MouseEventArgs e, string column)
+	{
+		var exOrder = ReplaysRequest.TableOrders.FirstOrDefault(f => f.Column == column);
+		if (e.ShiftKey)
+		{
+			if (exOrder == null)
+			{
+				ReplaysRequest.TableOrders.Add(new TableOrder()
+				{
+					Column = column
+				});
+			}
+			else
+			{
+				exOrder.Ascending = !exOrder.Ascending;
+			}
+		}
+		else
+		{
+			ReplaysRequest.TableOrders.Clear();
+			ReplaysRequest.TableOrders.Add(new TableOrder()
+			{
+				Column = column,
+				Ascending = exOrder == null ? false : !exOrder.Ascending
+			});
+		}
+		await Reload();
+	}
+
+	private async Task LoadReplay(string replayHash)
+	{
+		ReplayDetails = await ReplayRepository.GetReplayDetails(replayHash);
+		if (ReplayDetails != null)
+		{
+			lastReplaysHash = replayHash;
+			replayModal?.Show(ReplayDetails);
+			ReplaysRequest.ReplayHash = replayHash;
+			await OnRequestChanged.InvokeAsync(ReplaysRequest);
+		}
+	}
+
+	private void CloseReplay()
+	{
+		ReplayDetails = null;
+		ReplaysRequest.ReplayHash = null;
+		OnRequestChanged.InvokeAsync(ReplaysRequest);
+	}
+
+	private async Task LoadNextReplay(bool next)
+	{
+		if (ReplayDetails is null)
+		{
+			return;
+		}
+
+		var items = latestResponse;
+		var item = items?.FirstOrDefault(f => f.ReplayHash == lastReplaysHash);
+
+		if (item is null)
+		{
+			return;
+		}
+
+		int index = items?.IndexOf(item) ?? -1;
+
+		if (index == 0 && !next)
+		{
+			return;
+		}
+
+		if (index == items?.Count - 1 && next)
+		{
+			return;
+		}
+
+		var newindex = next ? index + 1 : index - 1;
+
+		var newElement = items?[newindex];
+
+		await JSRuntime.InvokeVoidAsync("scrollToElementId", newElement?.ReplayHash);
+
+		await LoadReplay(newElement?.ReplayHash ?? "");
+	}
+
+	public void Dispose()
+	{
+		cts.Dispose();
+	}
+}

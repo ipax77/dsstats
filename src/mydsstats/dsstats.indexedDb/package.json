@@ -1,0 +1,27 @@
+{
+  "name": "dsstats10",
+  "version": "1.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest",
+    "build": "webpack"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/node": "^24.2.1",
+    "fake-indexeddb": "^6.0.0",
+    "glob": "^13.0.0",
+    "happy-dom": "^20.0.11",
+    "pako": "^2.1.0",
+    "terser-webpack-plugin": "^5.3.14",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4",
+    "webpack": "^5.103.0",
+    "webpack-cli": "^6.0.1"
+  }
+}

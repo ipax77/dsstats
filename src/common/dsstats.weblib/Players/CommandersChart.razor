@@ -1,0 +1,99 @@
+﻿@using dsstats.shared
+@using pax.BlazorChartJs
+
+<ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="EventTriggered" />
+
+@code {
+    [Parameter, EditorRequired]
+    public RatingDetails RatingDetails { get; set; } = new();
+
+    ChartJsConfig chartConfig = null!;
+    ChartComponent? chartComponent;
+    bool chartReady;
+
+    protected override void OnInitialized()
+    {
+        chartConfig = GetPieChartConfig();
+        base.OnInitialized();
+    }
+
+    private void EventTriggered(ChartJsEvent chartEvent)
+    {
+        if (chartEvent is ChartJsInitEvent initEvent)
+        {
+            chartReady = true;
+            SetupChart(RatingDetails);
+        }
+    }
+
+    public void Update(RatingDetails ratingDetails)
+    {
+        RatingDetails = ratingDetails;
+        SetupChart(ratingDetails);
+    }
+
+    private void SetupChart(RatingDetails ratingDetails)
+    {
+        if (!chartReady)
+        {
+            return;
+        }
+
+        if (chartConfig.Data.Datasets.Count > 0)
+        {
+            chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
+        }
+
+        if (chartConfig.Options?.Plugins?.Title != null)
+        {
+            chartConfig.Options.Plugins.Title.Text = new IndexableOption<string>($"Commanders played - {ratingDetails.RatingType}");
+            chartConfig.UpdateChartOptions();
+        }
+
+        chartConfig.SetLabels(ratingDetails.Commanders.OrderBy(o => o.Count).Select(s => s.Commander.ToString()).ToList());
+        var dataset = GetDataset(ratingDetails.Commanders.OrderBy(o => o.Count).ToList());
+        chartConfig.AddDataset(dataset);
+    }
+
+    private ChartJsDataset GetDataset(List<CommanderCount> data)
+    {
+        return new PieDataset()
+        {
+            Data = data.Select(s => s.Count).Cast<object>().ToList(),
+            BackgroundColor = new IndexableOption<string>(data.Select(s => $"{Data.CmdrColor[s.Commander]}33").ToList()),
+            BorderColor = new IndexableOption<string>(data.Select(s => Data.CmdrColor[s.Commander]).ToList()),
+            BorderWidth = new IndexableOption<double>(1)
+        };
+    }
+
+    private ChartJsConfig GetPieChartConfig()
+    {
+        return new()
+        {
+            Type = ChartType.pie,
+            Options = new ChartJsOptions()
+            {
+                Responsive = true,
+                MaintainAspectRatio = true,
+                Plugins = new Plugins()
+                {
+                    Title = new Title()
+                    {
+                        Display = true,
+                        Text = new IndexableOption<string>("Commanders Played"),
+                        Color = "#f39c22",
+                        Font = new Font()
+                        {
+                            Size = 24,
+                        }
+                    },
+                    Legend = new Legend()
+                    {
+                        Display = true,
+                        Position = "right"
+                    }
+                }
+            }
+        };
+    }
+}

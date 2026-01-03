@@ -1,0 +1,41 @@
+@using Microsoft.AspNetCore.Components.Routing
+<nav class="navbar navbar-expand-lg bg-secondary-subtle">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center" href="#">
+            mydsstats v0.5.1
+            <span class="badge bg-warning text-dark ms-2">BETA</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="#" Match="NavLinkMatch.All">
+                        <span class="bi bi-house-door-fill me-1" aria-hidden="true" /> Home
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="replays">
+                        <span class="bi bi-list-columns me-1" aria-hidden="true" /> Replays
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="decode">
+                        <span class="bi bi-cpu me-1" aria-hidden="true" /> Decode
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="config">
+                        <span class="bi bi-gear me-1" aria-hidden="true" /> Config
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="info">
+                        <span class="bi bi-info-square me-1" aria-hidden="true" /> Info
+                    </NavLink>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

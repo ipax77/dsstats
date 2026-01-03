@@ -1,0 +1,81 @@
+﻿@page "/replays"
+@using System.Collections.Frozen
+@using dsstats.shared
+@using dsstats.shared.Extensions
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+
+<PageTitle>dsstats - replays</PageTitle>
+
+<dsstats.weblib.Replays.ReplaysComponent ReplaysRequest="Request" OnRequestChanged="RequestChanged" />
+
+@code {
+    [SupplyParameterFromQuery]
+    public int? Rt { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Name { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Cmdr { get; set; }
+
+    [SupplyParameterFromQuery]
+    public bool? Link { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Replay { get; set; }
+
+    ReplaysRequest Request = new();
+
+    private static readonly FrozenDictionary<string, string> paramMap = new Dictionary<string, string>
+	{
+		{ nameof(ReplaysRequest.RatingType), "Rt" },
+		{ nameof(ReplaysRequest.Name), "Name" },
+		{ nameof(ReplaysRequest.Commander), "Cmdr" },
+		{ nameof(ReplaysRequest.LinkCommanders), "Link" },
+		{ nameof(ReplaysRequest.ReplayHash), "Replay" }
+	}.ToFrozenDictionary();
+
+	protected override void OnInitialized()
+	{
+		InitRequest();
+		base.OnInitialized();
+	}
+
+	private void InitRequest()
+	{
+		if (Rt.HasValue)
+		{
+			Request.RatingType = (RatingType)Rt.Value;
+		}
+
+		if (!string.IsNullOrWhiteSpace(Name))
+		{
+			Request.Name = Name;
+		}
+
+		if (!string.IsNullOrWhiteSpace(Cmdr))
+		{
+			Request.Commander = Cmdr;
+		}
+
+		if (Link.HasValue)
+		{
+			Request.LinkCommanders = Link.Value;
+		}
+
+		if (!string.IsNullOrWhiteSpace(Replay))
+		{
+			Request.ReplayHash = Replay;
+		}
+	}
+
+	private void RequestChanged(ReplaysRequest newRequest)
+	{
+		var queryDic = newRequest.BuildQueryParams(paramMap);
+
+		NavigationManager.NavigateTo(
+			NavigationManager.GetUriWithQueryParameters(
+				new Dictionary<string, object?>(queryDic)));
+	}
+}

@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <WasmEnableMultiThreading>true</WasmEnableMultiThreading>
+    <WasmHeadlessHost>true</WasmHeadlessHost>
+    <RunAOTCompilation>true</RunAOTCompilation>
+  </PropertyGroup>
+
+  <PropertyGroup>
+	<WasmFingerprintAssets>false</WasmFingerprintAssets>
+  </PropertyGroup>
+	
+  <ItemGroup>
+    <TrimmerRootAssembly Remove="Microsoft.DotNet.HotReload.WebAssembly.Browser" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Remove="Microsoft.DotNet.HotReload.WebAssembly.Browser" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.*" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\pax.BBToast\src\pax.BBToast\pax.BBToast.csproj" />
+    <ProjectReference Include="..\..\common\dsstats.shared\dsstats.shared.csproj" />
+    <ProjectReference Include="..\..\common\dsstats.weblib\dsstats.weblib.csproj" />
+    <ProjectReference Include="..\..\common\dsstats.parser\dsstats.parser.csproj" />
+    <ProjectReference Include="..\dsstats.indexedDb\dsstats.indexedDb.csproj" />
+    <ProjectReference Include="..\..\server\dsstats.apiServices\dsstats.apiServices.csproj" />
+  </ItemGroup>
+
+</Project>

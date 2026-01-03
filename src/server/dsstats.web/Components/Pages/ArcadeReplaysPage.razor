@@ -1,0 +1,54 @@
+﻿@page "/arcadereplays"
+@using System.Collections.Frozen
+@using dsstats.shared
+@using dsstats.shared.Extensions
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>dsstats - SC2Arcade replays</PageTitle>
+
+<dsstats.weblib.Replays.ArcadeReplaysComponent ReplaysRequest="Request" OnRequestChanged="RequestChanged" />
+
+@code {
+	[SupplyParameterFromQuery]
+	public string? Name { get; set; }
+
+	[SupplyParameterFromQuery]
+	public string? Replay { get; set; }
+
+	ArcadeReplaysRequest Request = new();
+
+	private static readonly FrozenDictionary<string, string> ParamMap =
+	new Dictionary<string, string>
+	{
+			{ nameof(ArcadeReplaysRequest.Name), "Name" },
+			{ nameof(ArcadeReplaysRequest.ReplayHash), "Replay" }
+	}.ToFrozenDictionary();
+
+	protected override void OnInitialized()
+	{
+		InitRequest();
+		base.OnInitialized();
+	}
+
+	private void InitRequest()
+	{
+		if (!string.IsNullOrWhiteSpace(Name))
+		{
+			Request.Name = Name;
+		}
+		if (!string.IsNullOrWhiteSpace(Replay))
+		{
+			Request.ReplayHash = Replay;
+		}
+	}
+
+	private void RequestChanged(ArcadeReplaysRequest newRequest)
+	{
+		var queryDic = newRequest.BuildQueryParams(ParamMap);
+
+		NavigationManager.NavigateTo(
+			NavigationManager.GetUriWithQueryParameters(queryDic));
+	}
+}

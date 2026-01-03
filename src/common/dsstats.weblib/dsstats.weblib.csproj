@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="C:\Users\pax77\.nuget\packages\pax.blazorchartjs\0.8.5\contentFiles\any\net8.0\tsconfig.json" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.1" />
+    <PackageReference Include="pax.BlazorChartJs" Version="0.8.6-rc2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\dsstats.shared\dsstats.shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\images\" />
+  </ItemGroup>
+
+</Project>

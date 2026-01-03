@@ -1,0 +1,130 @@
+﻿@page "/config"
+@using dsstats.db
+@using dsstats.maui.Services
+@using dsstats.maui.Components.Pages
+@inherits CultureBaseComponent
+
+<PageTitle>dsstats - config</PageTitle>
+
+<div class="container-fluid">
+	@if (isLoading)
+	{
+		<div class="text-muted">Loading configuration…</div>
+	}
+	else if (mauiConfig != null && editContext != null)
+	{
+		<div class="border rounded bgchart p-3">
+			<EditForm EditContext="editContext" OnValidSubmit="SaveConfig" class="container mt-3">
+				<DataAnnotationsValidator />
+				<ValidationSummary class="alert alert-danger" />
+
+				<!-- General -->
+				<fieldset class="mb-4">
+					<legend class="h5">@Loc["General"]</legend>
+
+					<div class="mb-3">
+						<label class="form-label">@Loc["CPU Cores - used for decoding new replays (available CPU-Cores: {0})", Environment.ProcessorCount]</label>
+						<InputNumber class="form-control"
+									 @bind-Value="mauiConfig.CPUCores" />
+					</div>
+
+					<div class="form-check mb-2">
+						<InputCheckbox class="form-check-input"
+									   @bind-Value="mauiConfig.AutoDecode" />
+						<label class="form-check-label">
+							@Loc["Auto decode - detect new replays and start decoding after each game"]
+						</label>
+					</div>
+
+					<div class="form-check mb-2">
+						<InputCheckbox class="form-check-input"
+									   @bind-Value="mauiConfig.UploadCredential" />
+						<label class="form-check-label">
+							@Loc["Upload Replays to {0}", "dsstats.pax77.org"] <a href="https://dsstats.pax77.org">Link</a>
+						</label>
+					</div>
+
+					<div class="d-inline-block p-2 bgchart border rounded mt-2">
+						<label class="col-form-label">
+							@Loc["Replay Start Name"]
+							<InputText class="form-control" style="max-width: 400px;" @bind-Value="mauiConfig.ReplayStartName"></InputText>
+							<small>@Loc["Replay Start Name desc"]</small>
+						</label>
+					</div>
+				</fieldset>
+
+				<!-- SC2 Profiles -->
+				<fieldset class="mb-4">
+					<legend class="h5">
+						@Loc["SC2Profiles (deactivate the profiles that should not be decoded and uploaded)"]
+					</legend>
+
+					@foreach (var profile in mauiConfig.Sc2Profiles)
+					{
+						<ProfileEditor @key="profile" Profile="profile" OnRemove="RemoveProfile" />
+					}
+
+					<button type="button"
+							class="btn btn-outline-primary"
+							@onclick="AddProfile">
+						@Loc["Add Profile"]
+					</button>
+					<button type="button"
+							class="btn btn-outline-secondary"
+							@onclick="RecreateProfilesFromDisk">
+						@Loc["Recreate Profiles from Disk"]
+					</button>
+				</fieldset>
+
+				<!-- Ignored Replays -->
+				<fieldset class="mb-4">
+					<legend class="h5">
+						@Loc["Replays on Ignore list (skipped during decoding and uploading)"]
+					</legend>
+
+					@if (mauiConfig.IgnoreReplays.Length != 0)
+					{
+						<div class="list-group">
+							@foreach (var replay in mauiConfig.IgnoreReplays)
+							{
+								<div class="list-group-item d-flex justify-content-between align-items-center">
+									<span>@replay</span>
+									<button type="button" class="btn btn-outline-danger btn-sm" @onclick="() => RemoveIgnoredReplay(replay)">
+										@Loc["Remove"]
+									</button>
+								</div>
+							}
+						</div>
+					}
+					else
+					{
+						<div class="text-muted">@Loc["No replays are being ignored."]</div>
+					}
+				</fieldset>
+
+				<!-- Database -->
+				<fieldset class="mb-4">
+					<legend class="h5">Database</legend>
+					<div class="d-flex gap-2">
+						<button type="button" class="btn btn-outline-secondary" @onclick="BackupDatabase">
+							@Loc["Backup"]
+						</button>
+						<button type="button" class="btn btn-outline-danger" @onclick="RestoreDatabase">
+							@Loc["Restore"]
+						</button>
+					</div>
+				</fieldset>
+
+				<!-- Actions -->
+				<div class="d-flex justify-content-end gap-2">
+					<button type="submit" class="btn btn-primary" disabled="@isLoading">
+						@Loc["Save"]
+					</button>
+				</div>
+			</EditForm>
+		</div>
+	}
+</div>
+<div>
+	<p>@FileSystem.Current.AppDataDirectory</p>
+</div>

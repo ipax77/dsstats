@@ -1,0 +1,14 @@
+.icon-slot {
+    width: 1rem;
+    height: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+    .icon-slot i {
+        font-size: 1rem;
+        line-height: 1;
+    }
+

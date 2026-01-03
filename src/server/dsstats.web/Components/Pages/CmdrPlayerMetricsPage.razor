@@ -1,0 +1,17 @@
+﻿@page "/cmdrplayermetrics"
+@using dsstats.shared
+@using dsstats.weblib.Players
+@rendermode InteractiveServer
+
+<PageTitle>Cmdr Player Metrics</PageTitle>
+
+<CmdrPlayerMetricsComponent Request="Request" />
+
+@code {
+	CmdrStrenghtRequest Request = new()
+	{
+		Interest = Commander.Abathur,
+		TimePeriod = TimePeriod.Last90Days,
+		RatingType = RatingType.All
+	};
+}

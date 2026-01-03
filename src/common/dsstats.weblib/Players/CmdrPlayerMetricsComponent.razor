@@ -1,0 +1,156 @@
+﻿@using Microsoft.Extensions.Logging
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using Microsoft.JSInterop
+@inject IPlayerService PlayerService
+@inject IReplayRepository ReplayRepository
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<div class="container-fluid">
+	<div class="d-inline-block bgchart p-2">
+		<CascadingValue Value="Request">
+			<CmdrPlayerMetricsRequestComponent OnRequestChanged="e => RequestChanged()" />
+		</CascadingValue>
+	</div>
+	<div class="row">
+		<div class="col-auto">
+			<div style="height: 30px;">
+				@if (isLoading)
+				{
+					<div class="spinner-border spinner-border-sm text-danger" role="status">
+						<span class="visually-hidden">Loading...</span>
+					</div>
+				}
+			</div>
+			<div class="d-flex bgchart p-1 rounded">
+				<div>
+					<h4>
+						Players who played
+						<span class="text-warning">@Request.Interest </span>
+						and their success
+						<span class="text-light" style="font-size: 1rem;"> (&sum; > @(Request.RatingType == RatingType.CommandersTE ? "1" : "9"))</span>
+					</h4>
+				</div>
+				<div class="ms-auto">
+					&Oslash;
+					<span class="@(avgGain < 0 ? "text-danger" : "text-success")">
+						@avgGain.ToString("N2")
+					</span>
+				</div>
+			</div>
+			<CmdrPlayerMetricsInfoComponent @ref="cmdrPlayerInfoComponent" Response="response" />
+		</div>
+		<div class="col-auto" style="min-width: 700px;">
+			<div class="ms-2 mb-2">
+				<button class="btn btn-sm btn-outline-light bgchart"
+						type="button"
+						id="buildreplaystoggle"
+						data-bs-toggle="collapse"
+						data-bs-target="#buildreplays"
+						aria-expanded="false"
+						aria-controls="buildreplays"
+						@onclick="e => showReplays = !showReplays">
+					<span class="bi @(showReplays ? "bi bi-chevron-double-down" : "bi-chevron-double-up")"></span>
+					Replays
+				</button>
+			</div>
+			<div class="collapse" id="buildreplays">
+				<div class="bgchart p-1 rounded">
+				</div>
+			</div>
+		</div>
+		<div class="col-auto">
+			<div class="ms-2 mt-2 p-2 bgchart text-warning" style="max-width: 1000px;">
+				<p>
+					This table, referred to as 'Player Metrics by Commander', offers valuable insights into the success and impact of players who choose a specific commander.
+				</p>
+				<p>
+					<strong>Strength</strong> is a combined rating from <strong>0 to 100</strong> that reflects a player’s overall
+					performance with this commander. It is based on four factors:
+					winrate, average rating, rating gain, and number of matchups. These values are normalized using a fixed
+					global scale, allowing strength scores to be compared fairly across different commanders.
+				</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+@code {
+	[Parameter, EditorRequired]
+	public CmdrStrenghtRequest Request { get; set; } = default!;
+	[Parameter]
+	public EventCallback<CmdrStrenghtRequest> OnRequestChanged { get; set; }
+
+	bool isLoading = false;
+
+	CmdrStrenghtResponse response = new();
+	double avgGain => response.Items.Count == 0 ? 0 : Math.Round(response.Items.Average(a => a.AvgGain), 2);
+
+	private bool showReplays;
+	CmdrPlayerMetricsInfoComponent? cmdrPlayerInfoComponent;
+	// BuildReplaysComponent? buildReplaysComponent;
+
+	private ReplayDto? interestReplay { get; set; }
+
+	protected override async Task OnInitializedAsync()
+	{
+		// await SetCount(Request);
+		RequestChanged(true);
+		await base.OnInitializedAsync();
+	}
+
+	protected override void OnAfterRender(bool firstRender)
+	{
+		if (firstRender)
+		{
+			JSRuntime.InvokeVoidAsync("enableTooltips");
+		}
+		base.OnAfterRender(firstRender);
+	}
+
+	private async Task LoadPlayerInfos(CmdrStrenghtRequest request)
+	{
+		response = await PlayerService.GetCmdrPlayerInfos(request);
+		cmdrPlayerInfoComponent?.SetStrength(response);
+	}
+
+	private void ShowHideReplays(bool show)
+	{
+		showReplays = show;
+		if (showReplays)
+		{
+			RequestChanged();
+		}
+		else
+		{
+			InvokeAsync(() => StateHasChanged());
+		}
+	}
+
+
+	public async void RequestChanged(bool init = false)
+	{
+		try
+		{
+			isLoading = true;
+			await InvokeAsync(() => StateHasChanged());
+			await LoadPlayerInfos(Request);
+			isLoading = false;
+			await InvokeAsync(() => StateHasChanged());
+			if (!init)
+			{
+				await JSRuntime.InvokeVoidAsync("enableTooltips");
+				await OnRequestChanged.InvokeAsync(Request);
+			}
+		}
+		catch
+		{
+		}
+	}
+
+	public void Dispose()
+	{
+	}
+}

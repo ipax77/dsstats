@@ -1,0 +1,232 @@
+﻿@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using dsstats.weblib.Replays
+@inject IPlayerService PlayerService
+@implements IDisposable
+
+<div class="mb-1" style="max-width: 990px;">
+	<RatingsRequestComponent @ref="ratingsRequestComponent" Count="totalCount" Request="PlayerRequest" OnRequestChanged="Reload" />
+</div>
+<div class="row">
+	<div class="col-auto">
+		<div class="table-responsive" style="max-height: 76vh; max-width: 1060px; overflow-x: auto; overflow-y: auto;">
+			<table class="tptable">
+				<CascadingValue Value="PlayerRequest.Orders">
+					<thead class="user-select-none">
+						<tr>
+							<th class="pointer text-warning" style="width: 50px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Pos))">
+								<SortArrow Column="@nameof(PlayerRatingListItem.Pos)">#</SortArrow>
+							</th>
+							<th class="pointer" style="width: 40px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.RegionId))">
+								<SortArrow Column="@nameof(PlayerRatingListItem.RegionId)"><span class="bi bi-globe"></span></SortArrow>
+							</th>
+							<th class="pointer text-primary" style="width: 200px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Name))">
+								<SortArrow Column="@nameof(PlayerRatingListItem.Name)">Name</SortArrow>
+							</th>
+							<th class="pointer" style="width: 75px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Games))">
+								<SortArrow Column="@nameof(PlayerRatingListItem.Games)">Games</SortArrow>
+							</th>
+							<th class="pointer text-warning" style="width: 150px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Rating))">
+								<SortArrow Column="@nameof(PlayerRatingListItem.Rating)">Rating</SortArrow>
+							</th>
+							<th class="pointer" style="width: 100px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Change))">
+								<SortArrow Column="@nameof(PlayerRatingListItem.Change)">Change</SortArrow>
+							</th>
+							<th class="pointer" style="width: 75px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Wins))">
+								<SortArrow Column="@nameof(PlayerRatingListItem.Wins)">Winrate</SortArrow>
+							</th>
+							<th class="pointer" style="width: 75px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Mvps))">
+								<SortArrow Column="@nameof(PlayerRatingListItem.Mvps)">MVP</SortArrow>
+							</th>
+							<th class="pointer" style="width: 150px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Main))">
+								<SortArrow Column="@nameof(PlayerRatingListItem.Main)">Main</SortArrow>
+							</th>
+							<th class="pointer" style="width: 75px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.MainCount))">
+								<SortArrow Column="@nameof(PlayerRatingListItem.MainCount)">Main %</SortArrow>
+							</th>
+						</tr>
+					</thead>
+				</CascadingValue>
+				@if (totalCount > 0)
+				{
+					<tbody class="text-nowrap">
+						<Virtualize @ref="virtualizeComponent" Context="rating" ItemsProvider="LoadRatings" ItemSize="47" SpacerElement="tr">
+							<ItemContent>
+								<tr @key="rating" class="pointer" style="height: 47px;" @onclick="() => ShowPlayerStats(rating.ToonIdString)">
+									<td class="text-warning">
+										<span class="d-inline-block text-truncate" style="max-width: 200px;">@rating.Pos.ToString("N0")</span>
+									</td>
+									<td>@Data.GetRegionString(rating.RegionId)</td>
+									<td class="text-primary">
+										<span class="d-inline-block text-truncate" style="max-width: 200px;">@rating.Name</span>
+									</td>
+									<td>@Data.GetNumberString(rating.Games)</td>
+									<td class="text-warning">@rating.Rating.ToString("N2")</td>
+									<td class="@(rating.Change < 0 ? "text-danger" : "text-success")">@rating.Change.ToString("N0")</td>
+									<td>@((rating.Games == 0 ? 0 : rating.Wins / (double)rating.Games).ToString("P1"))</td>
+									<td>@((rating.Games == 0 ? 0 : rating.Mvps / (double)rating.Games).ToString("P1"))</td>
+									<td>@rating.Main</td>
+									<td>@((rating.Games == 0 ? 0 : rating.MainCount / (double)rating.Games).ToString("P1"))</td>
+								</tr>
+							</ItemContent>
+							<Placeholder>
+								<tr>
+									<td colspan="100" style="height: 47px;">Loading ...</td>
+								</tr>
+							</Placeholder>
+							<EmptyContent>
+								<tr>
+									<td colspan="100" style="height: 47px;">No replays found.</td>
+								</tr>
+							</EmptyContent>
+						</Virtualize>
+					</tbody>
+				}
+			</table>
+		</div>
+	</div>
+	<div class="col-4 mt-3">
+		<p class="d-inline-flex gap-1">
+			<button class="btn btn-outline-light bgchart" @onclick="e => showRatingDistribution = !showRatingDistribution"
+					type="button"
+					data-bs-toggle="collapse"
+					data-bs-target="#distributionCollapse"
+					aria-expanded="false"
+					aria-controls="distributionCollapse">
+				<span class="@(showRatingDistribution ? "bi bi-chevron-double-up" : "bi bi-chevron-double-down")" aria-hidden="true"></span>
+				@(showRatingDistribution ? "Hide" : "Show") Rating Distribution
+			</button>
+		</p>
+		<div class="collapse" id="distributionCollapse">
+			@if (showRatingDistribution)
+			{
+				<DistributionComponent RatingType="PlayerRequest.RatingType" />
+			}
+		</div>
+	</div>
+</div>
+<PlayerModal @ref="playerModal" OnReplayRequest="e => replayModal?.Show(e)" OnClose="ClosePlayerStats" />
+<ReplayModal @ref="replayModal" OnClose="e => playerModal?.Show(playerStatsResponse!)" />
+
+@code {
+	[Parameter, EditorRequired]
+	public PlayerRatingsRequest PlayerRequest { get; set; } = new();
+
+	[Parameter]
+	public EventCallback<PlayerRatingsRequest> OnRequestChanged { get; set; }
+
+	int totalCount = 0;
+	CancellationTokenSource cts = new();
+	Virtualize<PlayerRatingListItem>? virtualizeComponent;
+	PlayerModal? playerModal;
+	ReplayModal? replayModal;
+	PlayerStatsResponse? playerStatsResponse = null;
+	RatingsRequestComponent? ratingsRequestComponent;
+	bool isLoading = true;
+	bool showRatingDistribution;
+
+	protected override void OnInitialized()
+	{
+		_ = SetCount();
+		base.OnInitialized();
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender && !string.IsNullOrEmpty(PlayerRequest.ToonIdString))
+		{
+			await ShowPlayerStats(PlayerRequest.ToonIdString);
+		}
+		await base.OnAfterRenderAsync(firstRender);
+	}
+
+	private async Task SetCount()
+	{
+		totalCount = await PlayerService.GetRatingsCount(PlayerRequest, cts.Token);
+		isLoading = false;
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task Reload()
+	{
+		ratingsRequestComponent?.SetLoading(true);
+		totalCount = await PlayerService.GetRatingsCount(PlayerRequest);
+		PlayerRequest.Page = 1;
+		if (virtualizeComponent != null)
+		{
+			await InvokeAsync(async () =>
+			{
+				await virtualizeComponent.RefreshDataAsync();
+				StateHasChanged();
+			});
+		}
+		ratingsRequestComponent?.SetLoading(false);
+		await OnRequestChanged.InvokeAsync(PlayerRequest);
+	}
+
+	private async ValueTask<ItemsProviderResult<PlayerRatingListItem>> LoadRatings(ItemsProviderRequest request)
+	{
+		var numReplays = Math.Min(request.Count, totalCount - request.StartIndex);
+		PlayerRequest.Skip = request.StartIndex;
+		PlayerRequest.Take = numReplays;
+		var ratings = await PlayerService.GetRatings(PlayerRequest, request.CancellationToken);
+		return new ItemsProviderResult<PlayerRatingListItem>(ratings, Math.Min(totalCount, PlayerRequest.PageSize));
+	}
+
+	private async Task ShowPlayerStats(string toonIdString)
+	{
+		ratingsRequestComponent?.SetLoading(true);
+		PlayerStatsRequest statsRequest = new()
+		{
+			ToonId = Data.GetToonId(toonIdString) ?? new(),
+			RatingType = PlayerRequest.RatingType
+		};
+		playerStatsResponse = await PlayerService.GetPlayerStats(statsRequest, cts.Token);
+		playerModal?.Show(playerStatsResponse);
+		PlayerRequest.ToonIdString = toonIdString;
+		ratingsRequestComponent?.SetLoading(false);
+		await OnRequestChanged.InvokeAsync(PlayerRequest);
+	}
+
+	private void ClosePlayerStats()
+	{
+		PlayerRequest.ToonIdString = null;
+		OnRequestChanged.InvokeAsync(PlayerRequest);
+	}
+
+	private async Task SortList(MouseEventArgs e, string column)
+	{
+		var exOrder = PlayerRequest.Orders.FirstOrDefault(f => f.Column == column);
+		if (e.ShiftKey)
+		{
+			if (exOrder == null)
+			{
+				PlayerRequest.Orders.Add(new TableOrder()
+				{
+					Column = column
+				});
+			}
+			else
+			{
+				exOrder.Ascending = !exOrder.Ascending;
+			}
+		}
+		else
+		{
+			PlayerRequest.Orders.Clear();
+			PlayerRequest.Orders.Add(new TableOrder()
+			{
+				Column = column,
+				Ascending = exOrder == null ? false : !exOrder.Ascending
+			});
+		}
+		await Reload();
+	}
+
+	public void Dispose()
+	{
+		cts.Cancel();
+		cts.Dispose();
+	}
+}

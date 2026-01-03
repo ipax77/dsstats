@@ -1,0 +1,400 @@
+﻿@page "/"
+@using Microsoft.Extensions.Localization
+@using dsstats.db
+@using dsstats.localization
+@using dsstats.maui.Services
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using dsstats.weblib.Players
+@using dsstats.weblib.Replays
+@inherits CultureBaseComponent
+@inject IReplayRepository ReplayRepository
+@inject ImportState ImportState
+@inject SessionProgress SessionProgress
+@inject IPlayerService PlayerService
+@implements IDisposable
+
+<div class="container-fluid">
+
+	<div class="bgchart border rounded p-3 mb-3">
+
+		<div class="mb-2 text-muted">
+			@Loc["Decode game replays into match statistics and ratings"]
+		</div>
+
+		<div class="d-flex align-items-start gap-3">
+
+			<div>
+				@if (ImportState.IsRunning)
+				{
+					<button type="button"
+							class="btn btn-danger"
+							@onclick="CancelImport">
+						@Loc["Decoding in Progress… (Stop)"]
+					</button>
+				}
+				else
+				{
+					<button type="button"
+							class="btn btn-danger"
+							@onclick="StartImportAsync">
+						@Loc["Decode Replays"]
+					</button>
+
+					<div class="small text-muted mt-1">
+						@Loc["Scans your replay folder and decodes all new games"]
+					</div>
+				}
+			</div>
+
+			<button type="button"
+					class="btn btn-outline-light align-self-start"
+					@onclick="e => DsstatsService.Upload(ImportState)">
+				@Loc["Upload Replays"]
+			</button>
+
+		</div>
+	</div>
+
+	@if (replayDetails == null)
+	{
+		<div class="bgchart rounded p-3 mb-3">
+			<h4 class="text-warning mb-1">
+				@Loc["No replays decoded yet"]
+			</h4>
+			<div class="text-muted">
+				@Loc["Click 'Decode Replays' above to scan your replay folder and generate statistics."]
+			</div>
+		</div>
+	}
+
+	<div class="row mt-3">
+		<div class="col-auto">
+			@if (replayDetails != null)
+			{
+				<div class="bgchart rounded p-2 d-inline-block">
+					<div class="d-flex align-items-center gap-2">
+
+						<div class="icon-slot">
+							<div class="spinner-border spinner-border-sm @(loadingRatings ? "" : "d-none")"
+								 role="status">
+								<span class="visually-hidden">Loading...</span>
+							</div>
+
+							<i class="bi bi-camera-reels @(loadingRatings ? "d-none" : "")"></i>
+						</div>
+
+						<h4 class="text-warning mb-0">
+							@(replayDetails.ReplayHash == latestReplayHash ? Loc["Latest Replay"] : Loc["Recent Replay"])
+						</h4>
+
+					</div>
+				</div>
+				<div>
+					<ReplayComponent @ref="replayComponent" ReplayDetails="replayDetails"
+									 IsScrollable="true"
+									 IsCloseable="false"
+									 OnPlayerRequest="e => playerModal?.Show(e)"
+									 OnScrollRequest="e => ScrollReplay(e)"
+									 OnRatingUpdateRequest="UpdateRatings" />
+				</div>
+			}
+		</div>
+		<div class="col-auto">
+			@if (sessionReplayResult.TotalDuration > 0)
+			{
+				<div class="bgchart rounded p-2 d-inline-block">
+					<h4 class="text-warning">@Loc["Session Progress"]</h4>
+				</div>
+				<div class="card">
+					<div class="card-header bgchart2">
+						<div class="d-flex flex-column gap-1 small">
+
+							<!-- First row -->
+							<div class="d-flex flex-wrap gap-3">
+								<div class="text-nowrap">
+									<strong>Games:</strong>
+									@sessionReplayResult.Replays.Count.ToString("N0")
+								</div>
+
+								<div class="text-nowrap">
+									<strong>Time:</strong>
+									@TimeSpan.FromSeconds(sessionReplayResult.TotalDuration).ToString(@"hh\:mm\:ss")
+								</div>
+							</div>
+
+							<!-- Second row -->
+							<div class="d-flex flex-wrap gap-3">
+								<div class="text-nowrap">
+									<strong>Winrate:</strong>
+									@sessionReplayResult.Winrate.ToString("P1")
+								</div>
+
+								<div class="text-nowrap">
+									<strong>Rating:</strong>
+									<span class="@(sessionReplayResult.TotalGain < 0 ? "text-danger" : "text-success")">
+										@sessionReplayResult.TotalGain.ToString("N2")
+									</span>
+								</div>
+							</div>
+
+						</div>
+					</div>
+
+					<div class="card-body bgchart">
+						<div class="table-responsive" style="max-height: 500px;">
+							<table class="tptable">
+								<thead>
+									<tr>
+										<th>GameMode</th>
+										<th>Duration</th>
+										<th>Rating</th>
+									</tr>
+								</thead>
+								<tbody>
+									@foreach (var replay in sessionReplayResult.Replays)
+									{
+										<tr class="pointer" @onclick="() => LoadReplay(replay.ReplayHash)">
+											<td>@replay.GameMode</td>
+											<td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+											<td>
+												<span class="@(replay.RatingGain < 0 ? "text-danger" : "text-success")">
+													@replay.RatingGain.ToString("N2")
+												</span>
+											</td>
+										</tr>
+									}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			}
+		</div>
+	</div>
+	<div>
+		@if (profiles.Count == 0)
+		{
+			<p class="bgchart p-3">
+				@Loc["No SC2 profiles configured. Please add a profile in the settings to decode and upload replays."]
+				<a href="config">@Loc["Settings"]</a>
+			</p>
+		}
+		else
+		{
+			<h3>@Loc["Players"]</h3>
+			<div class="row mt-3">
+				@foreach (var profile in profiles)
+				{
+					<div class="col-auto mb-3">
+						<ProfileCard Profile="profile" OnStatsRequest="e => ShowStats(e)" />
+					</div>
+				}
+			</div>
+		}
+	</div>
+</div>
+<PlayerModal @ref="playerModal" />
+
+@code {
+	ReplayDetails? replayDetails;
+	ReplayComponent? replayComponent;
+	PlayerModal? playerModal;
+	SemaphoreSlim loadSs = new(1, 1);
+	string latestReplayHash = string.Empty;
+	bool loadingRatings;
+	string? StatusMessage;
+	List<Sc2Profile> profiles = [];
+
+	SessionReplayResult sessionReplayResult = new([], 0, 0, 0);
+
+	protected override void OnInitialized()
+	{
+		ImportState.OnFinished += OnImportStateFinished;
+		base.OnInitialized();
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			sessionReplayResult = SessionProgress.GetSessionReplays();
+			var config = await DsstatsService.GetConfig();
+			profiles = config.Sc2Profiles.Where(x => x.Active)
+				.OrderBy(o => o.Name)
+					.ThenBy(t => t.ToonId.Region)
+				.ToList();
+			await LoadLatestReplay();
+		}
+	}
+
+	private async void OnImportStateFinished()
+	{
+		_ = LoadLatestReplay();
+	}
+
+	private async Task LoadLatestReplay()
+	{
+		await loadSs.WaitAsync();
+		try
+		{
+			replayDetails = await ReplayRepository.GetLatestReplay();
+			if (replayDetails is null)
+			{
+				return;
+			}
+			await InvokeAsync(StateHasChanged);
+			latestReplayHash = replayDetails.ReplayHash;
+			replayComponent?.Update(replayDetails);
+
+			var gameTimeUtc = DateTime.SpecifyKind(replayDetails.Replay.Gametime, DateTimeKind.Utc);
+			var timeSinceGame = DateTimeOffset.UtcNow - (DateTimeOffset)gameTimeUtc;
+			bool isRecent = timeSinceGame.TotalMinutes >= 0 && timeSinceGame.TotalMinutes <= 20;
+
+			if (isRecent)
+			{
+				loadingRatings = true;
+				await InvokeAsync(StateHasChanged);
+				await Task.Delay(5000);
+				var rating = await SessionProgress.AddSessionReplay(replayDetails);
+				if (rating != null)
+				{
+					replayDetails.ReplayRatings = [rating];
+					replayComponent?.Update(replayDetails);
+					sessionReplayResult = SessionProgress.GetSessionReplays();
+				}
+				loadingRatings = false;
+				await InvokeAsync(StateHasChanged);
+			}
+			await InvokeAsync(StateHasChanged);
+		}
+		finally
+		{
+			loadSs.Release();
+		}
+	}
+
+	private async Task LoadReplay(string replayHash)
+	{
+		await loadSs.WaitAsync();
+		try
+		{
+			var newDetails = await ReplayRepository.GetReplayDetails(replayHash);
+			if (newDetails is null)
+			{
+				return;
+			}
+			replayDetails = newDetails;
+			replayComponent?.Update(replayDetails);
+			await InvokeAsync(StateHasChanged);
+		}
+		finally
+		{
+			loadSs.Release();
+		}
+	}
+
+	private async Task ScrollReplay(bool left)
+	{
+		if (replayDetails is null)
+		{
+			return;
+		}
+		await loadSs.WaitAsync();
+		try
+		{
+			var nextDetails = await ReplayRepository.GetNextReplay(!left, replayDetails.ReplayHash);
+			if (nextDetails is null)
+			{
+				return;
+			}
+			replayDetails = nextDetails;
+			replayComponent?.Update(replayDetails);
+			await InvokeAsync(StateHasChanged);
+		}
+		finally
+		{
+			loadSs.Release();
+		}
+	}
+
+	private async Task UpdateRatings()
+	{
+		await loadSs.WaitAsync();
+		try
+		{
+			if (replayDetails == null)
+			{
+				return;
+			}
+
+			var rating = await SessionProgress.UpdateRating(replayDetails.ReplayHash);
+			if (rating is null)
+			{
+				return;
+			}
+			replayDetails.ReplayRatings = [rating];
+			replayComponent?.Update(replayDetails);
+			UpdateSession();
+		}
+		finally
+		{
+			loadSs.Release();
+		}
+	}
+
+	private void UpdateSession()
+	{
+		sessionReplayResult = SessionProgress.GetSessionReplays();
+		InvokeAsync(StateHasChanged);
+	}
+
+	private async Task StartImportAsync()
+	{
+		if (ImportState.IsRunning)
+			return;
+
+		StatusMessage = null;
+
+		try
+		{
+			await DsstatsService.StartImportAsync(ImportState);
+			StatusMessage = "Import completed.";
+		}
+		catch (OperationCanceledException)
+		{
+			StatusMessage = "Import cancelled.";
+		}
+		catch (Exception ex)
+		{
+			StatusMessage = $"Import failed: {ex.Message}";
+		}
+	}
+
+	private void CancelImport()
+	{
+		ImportState.Cancel();
+	}
+
+	private async Task ShowStats(ToonIdDto toonId)
+	{
+		PlayerStatsRequest request = new()
+		{
+			ToonId = toonId,
+			Player = new(),
+			RatingType = RatingType.All,
+		};
+		var stats = await PlayerService.GetPlayerStats(request);
+		playerModal?.Show(stats);
+	}
+
+	protected override void Dispose(bool disposing)
+	{
+		if (disposing)
+		{
+			loadSs.Dispose();
+		}
+
+		base.Dispose(disposing);
+	}
+}

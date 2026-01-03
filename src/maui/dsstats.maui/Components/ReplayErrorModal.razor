@@ -1,0 +1,97 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.maui.Services
+@using dsstats.maui.Services.Models
+@inject IJSRuntime JSRuntime
+@inject DsstatsService DsstatsService
+
+<div class="modal" id="@modalId" aria-hidden="true" aria-labelledby="@modalId" tabindex="-1">
+	<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen">
+		<div class="modal-content">
+			<div class="modal-body">
+				<div class="table-responsive">
+					<table class="table table-sm table-striped">
+						<thead>
+							<tr>
+								<th>Replay Path</th>
+								<th>Error</th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody>
+							@foreach (var error in replayErrors)
+							{
+								<tr>
+									<td>@error.Path</td>
+									<td>@error.Error</td>
+									<td>
+										<button type="button" class="btn btn-sm btn-outline-warning"
+												@onclick="() => Ignore(error)">
+											Ignore
+										</button>
+									</td>
+								</tr>
+							}
+						</tbody>
+						<tfoot>
+							<tr>
+								<td colspan="100">
+									<button type="button" class="btn btn-sm btn-outline-warning"
+											@onclick="IgnoreAll">
+										Ignore All
+									</button>
+								</td>
+							</tr>
+						</tfoot>
+					</table>
+				</div>
+			</div>
+			<div class="modal-footer bgchart2">
+				<button type="button" class="btn btn-secondary" @onclick="Close">Close</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+@code {
+	private string modalId = "replayErrorsModal";
+
+	List<ReplayError> replayErrors = [];
+
+	public void Show()
+	{
+		replayErrors = DsstatsService.GetReplayErrors();
+		InvokeAsync(StateHasChanged);
+		JSRuntime.InvokeVoidAsync("openModalById", modalId);
+	}
+
+	public void Close()
+	{
+		replayErrors.Clear();
+		JSRuntime.InvokeVoidAsync("closeModalById", modalId);
+	}
+
+	private async Task Ignore(ReplayError error)
+	{
+		var config = await DsstatsService.GetConfig();
+		if (config.IgnoreReplays.Contains(error.Path))
+		{
+			return;
+		}
+		config.IgnoreReplays = [error.Path, .. config.IgnoreReplays];
+		await DsstatsService.SaveConfig(config);
+		replayErrors.Remove(error);
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task IgnoreAll()
+	{
+		var config = await DsstatsService.GetConfig();
+		var current = config.IgnoreReplays.ToList();
+		current.AddRange(replayErrors.Select(s => s.Path).ToList());
+
+		config.IgnoreReplays = current.ToHashSet().OrderBy(o => o).ToArray();
+		await DsstatsService.SaveConfig(config);
+		replayErrors.Clear();
+		await InvokeAsync(StateHasChanged);
+	}
+}

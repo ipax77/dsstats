@@ -1,0 +1,243 @@
+﻿@using System.Globalization
+@using Microsoft.Extensions.Localization
+@using dsstats.localization
+@using dsstats.maui.Services
+@using dsstats.maui.Services.Models
+@inject DsstatsService DsstatsService
+@inject ImportState ImportState
+@inject IStringLocalizer<DsstatsLoc> Loc
+@implements IDisposable
+
+<div class="top-row px-1 bgchart">
+	<div class="card mb-3">
+		<div class="card-body py-2">
+
+			<!-- METRICS ROW -->
+			<div class="row align-items-center g-3 text-center">
+
+				<div class="col-auto pointer" @onclick="GetDecodeStatus">
+					<span class="badge bg-success fw-bold fs-6">
+						@Loc["Replays"] @decodeStatus?.TotalInDb.ToString("N0")
+					</span>
+				</div>
+
+				<div class="col-auto pointer" @onclick="StartImportAsync">
+					<span class="badge bg-warning fw-bold fs-6">
+						@Loc["New Replays"] @decodeStatus?.NewInFolders.ToString("N0")
+					</span>
+				</div>
+
+				@if (Progress.Total > 0)
+				{
+					<div class="col-auto">
+						<div class="fw-semibold">Decoded</div>
+						<div>@Progress.Decoded.ToString("N0") (@Progress.Imported.ToString("N0")) / @Progress.Discovered.ToString("N0")</div>
+					</div>
+
+					<div class="col-auto pointer" @onclick="() => replayErrorModal?.Show()">
+						<div class="fw-semibold">@Loc["Errors"]</div>
+						<div class="text-danger">@Progress.Errors.ToString("N0")</div>
+					</div>
+
+					<div class="col-auto">
+						<div class="fw-semibold">Elapsed</div>
+						<div>@Progress.Elapsed.ToString(@"hh\:mm\:ss")</div>
+					</div>
+
+					<div class="col-auto">
+						<div class="fw-semibold">ETA</div>
+						<div>
+							@(EstimatedRemaining is null
+													? "—"
+													: EstimatedRemaining.Value.ToString(@"hh\:mm\:ss"))
+						</div>
+					</div>
+					@if (ImportState.IsRunning)
+					{
+						<div class="col-auto">
+							<button class="btn btn-sm btn-outline-danger"
+									@onclick="CancelImport">
+								@Loc["Cancel"]
+							</button>
+						</div>
+					}
+				}
+				@if (ImportState.Progress.UploadStatus != UploadStatus.None)
+				{
+					<div class="col-auto">
+						<div class="fw-semibold">Upload</div>
+						<span class="badge @GetUploadBadgeClass(Progress.UploadStatus)">
+							@Progress.UploadStatus
+						</span>
+					</div>
+				}
+				<div class="ms-auto col-auto">
+					<form name="cultureselect">
+						<fieldset>
+							<label class="form-label">
+								<select class="form-select" required @bind="currentCulture" @bind:after="@(() => SetCulture(currentCulture))">
+									<option value="iv" disabled>Language</option>
+									@foreach (var culture in DsstatsService.GetSupportedCultures())
+									{
+										<option value="@culture">@culture.NativeName</option>
+									}
+								</select>
+							</label>
+						</fieldset>
+					</form>
+				</div>
+			</div>
+
+			<!-- PROGRESS BAR ROW -->
+			@if (ImportState.IsRunning && Progress.Discovered > 0)
+			{
+				<div class="row mt-2">
+					<div class="col-12">
+						<div class="progress" style="height: 1.25rem;">
+							<div class="progress-bar"
+								 role="progressbar"
+								 style="width: @((Progress.Decoded * 100.0 / (double)Progress.Discovered)
+												.ToString(CultureInfo.InvariantCulture))%">
+								@Progress.Imported.ToString("N0") / @Progress.Discovered.ToString("N0")
+							</div>
+						</div>
+					</div>
+				</div>
+			}
+
+			@if (!string.IsNullOrWhiteSpace(Progress.Message))
+			{
+				<div class="mt-2 text-muted small">
+					@Progress.Message
+				</div>
+			}
+
+		</div>
+	</div>
+</div>
+
+<ReplayErrorModal @ref="replayErrorModal" />
+
+@code {
+	private string? StatusMessage;
+
+	private ImportProgress Progress => ImportState.Progress;
+	private DecodeStatus? decodeStatus => ImportState.DecodeStatus;
+	ReplayErrorModal? replayErrorModal;
+	string currentCulture = "iv";
+
+	protected override void OnInitialized()
+	{
+		// Defensive: ensure clean state if page is recreated
+		ImportState.OnChange += OnImportStateChanged;
+		_ = GetDecodeStatus();
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			var config = await DsstatsService.GetConfig();
+			currentCulture = config.Culture ?? "en";
+			await SetCulture(currentCulture, true);
+		}
+		await base.OnAfterRenderAsync(firstRender);
+	}
+
+	private async void OnImportStateChanged()
+	{
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task GetDecodeStatus()
+	{
+		var status = await DsstatsService.GetDecodeStatus(default, true);
+		ImportState.SetDecodeStatus(status);
+	}
+
+	private async Task StartImportAsync()
+	{
+		if (ImportState.IsRunning)
+			return;
+
+		StatusMessage = null;
+
+		try
+		{
+			await DsstatsService.StartImportAsync(ImportState);
+			StatusMessage = "Import completed.";
+		}
+		catch (OperationCanceledException)
+		{
+			StatusMessage = "Import cancelled.";
+		}
+		catch (Exception ex)
+		{
+			StatusMessage = $"Import failed: {ex.Message}";
+		}
+	}
+
+	private void CancelImport()
+	{
+		ImportState.Cancel();
+	}
+
+	private async Task Upload()
+	{
+		var result = await DsstatsService.Upload(ImportState);
+		StatusMessage = result.Success ? "Upload successful" : result.Error;
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private string GetUploadBadgeClass(UploadStatus status) =>
+	status switch
+	{
+		UploadStatus.None => "bg-secondary",
+		UploadStatus.Uploading => "bg-info",
+		UploadStatus.Success => "bg-success",
+		UploadStatus.Forbidden => "bg-warning text-dark",
+		UploadStatus.Failed => "bg-danger",
+		_ => "bg-secondary"
+	};
+
+	private TimeSpan? EstimatedRemaining
+	{
+		get
+		{
+			if (!ImportState.IsRunning ||
+				Progress.Imported == 0 ||
+				Progress.Discovered == 0)
+				return null;
+
+			var elapsedSeconds = Progress.Elapsed.TotalSeconds;
+			if (elapsedSeconds <= 0)
+				return null;
+
+			var rate = Progress.Imported / elapsedSeconds; // items per second
+			if (rate <= 0)
+				return null;
+
+			var remaining = Progress.Discovered - Progress.Imported;
+			return TimeSpan.FromSeconds(remaining / rate);
+		}
+	}
+
+	private async Task SetCulture(string culture, bool dry = false)
+	{
+		if (!dry)
+		{
+			var config = await DsstatsService.GetConfig();
+			config.Culture = culture;
+			await DsstatsService.SaveConfig(config);
+		}
+
+		CultureInfo cultureInfo = new CultureInfo(culture);
+		CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+		CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+	}
+
+	public void Dispose()
+	{
+		ImportState.OnChange -= OnImportStateChanged;
+	}
+}

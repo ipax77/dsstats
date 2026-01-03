@@ -1,3 +1,0 @@
-[mysqld]
-secure-file-priv=/data/mysqlfiles
-

@@ -1,0 +1,225 @@
+﻿@page "/decode"
+@using dsstats.indexedDb.Services
+@using dsstats.parser
+@using dsstats.pwa.Services
+@using dsstats.shared
+@using pax.BBToast
+@using s2protocol.NET
+@inject ILogger<DecodePage> Logger
+@inject IndexedDbService dbService
+@inject DecodeService DecodeService
+@inject IToastService ToastService
+@implements IDisposable
+
+<PageTitle>mydsstats - Decode</PageTitle>
+
+<div class="container py-4 bgchart rounded">
+	<div class="row">
+		<div class="col-lg-8">
+			<h2 class="fw-bold mb-3">Decode Your Replays</h2>
+			<p class="text-muted mb-4">
+				Select one <strong>Direct Strike replay files</strong> to decode.
+				Your decoded matches will be stored locally in your browser’s IndexedDB for quick access.
+			</p>
+
+			<!-- File Upload -->
+			<div class="card border-0 shadow-sm mb-4 bgchart2">
+				<div class="card-body text-center py-5">
+					<i class="bi bi-cloud-arrow-up display-4 text-primary mb-3"></i>
+					<h5 class="mb-3">Upload Replay Files</h5>
+					<InputFile OnChange="LoadFiles" multiple class="form-control" />
+					<p class="small text-muted mt-2">Drag & drop supported — or use file picker.</p>
+				</div>
+			</div>
+
+			<!-- Decode Controls -->
+			<div class="row text-center g-3 mb-4">
+				<!-- Decode -->
+				<div class="col-md-4">
+					<div>
+						<button class="btn btn-primary w-100" @onclick="DecodeFilesJob">
+							<i class="bi bi-folder-symlink me-2"></i> Decode Folder
+						</button>
+						<select id="breakpointSelect" class="form-select text-light bgchart" aria-label="Breakpoint" @bind="regionId">
+							<option value="0">Select Region ..</option>
+							<option value="1">NA</option>
+							<option value="2">EU</option>
+							<option value="3">AS</option>
+							<option value="4">CH</option>
+						</select>
+					</div>
+					<p class="small text-muted mt-2">
+						Opens a folder picker and decodes all Direct Strike Replays in batches of 100.
+						Already decoded replays will be skipped automatically, so you can Cancel and Restart at any time.
+					</p>
+				</div>
+
+				<!-- Upload -->
+				<div class="col-md-4">
+					<button class="btn btn-warning w-100" @onclick="() => DecodeService.Upload(dbService)">
+						<i class="bi bi-cloud-upload me-2"></i> Upload
+					</button>
+					<p class="small text-muted mt-2">
+						Upload decoded replays to <a href="https://dsstats.pax77.org"><strong>dsstats.pax77.org</strong></a>
+						for global stats and player ratings.
+					</p>
+				</div>
+
+				<!-- Cancel -->
+				@if (isLoading || DecodeService.Decoding)
+				{
+					<div class="col-md-4">
+						<button class="btn btn-danger w-100" @onclick="() => DecodeService.Cancel()">
+							<i class="bi bi-x-circle me-2"></i> Cancel
+						</button>
+						<p class="small text-muted mt-2">
+							Stop the current decoding process.
+						</p>
+					</div>
+				}
+			</div>
+
+			<!-- Status -->
+			<div class="mb-4">
+				@if (isLoading || DecodeService.Decoding)
+				{
+					<div class="d-flex align-items-center">
+						<div class="spinner-border text-primary me-3" role="status">
+							<span class="visually-hidden">Loading...</span>
+						</div>
+						<span class="fw-semibold">Decoding in progress...</span>
+					</div>
+				}
+
+				else
+				{
+					<p class="text-muted fst-italic">No replay selected yet.</p>
+				}
+			</div>
+
+			<!-- Stats -->
+			<div class="text-end text-muted small">
+				Decoded: <span class="fw-bold">@replaysDecoded</span>
+			</div>
+		</div>
+		<div class="col-lg-4">
+			<!-- Saved Directories -->
+			@if (dirHandleKeys?.Count > 0)
+			{
+				<div class="card border-0 shadow-sm mb-4 bgchart2">
+					<div class="card-body">
+						<h5 class="fw-bold mb-3">
+							<i class="bi bi-folder2-open me-2"></i>
+							Saved Replay Folders
+						</h5>
+
+						<p class="text-muted small mb-3">
+							These folders were previously authorized. You can decode them again or remove the saved handle.
+						</p>
+
+						<ul class="list-group">
+							@foreach (var key in dirHandleKeys)
+							{
+								<li class="list-group-item d-flex justify-content-between align-items-center bgchart text-light">
+									<span class="text-break">@key</span>
+									<div>
+										<button class="btn btn-sm btn-primary me-2"
+												@onclick="() => DecodeDirHandleJob(key)">
+											<i class="bi bi-play-fill me-1"></i> Decode
+										</button>
+
+										<button class="btn btn-sm btn-danger"
+												@onclick="() => DeleteDirHandle(key)">
+											<i class="bi bi-trash me-1"></i> Delete
+										</button>
+									</div>
+								</li>
+							}
+						</ul>
+					</div>
+				</div>
+			}
+		</div>
+	</div>
+</div>
+<div class="mb-5">
+	@if (replay != null)
+	{
+		<dsstats.weblib.Replays.ReplayComponent ReplayDetails="new() { Replay = replay }" />
+	}
+</div>
+
+@code {
+	private bool isLoading;
+	private long maxFileSize = 2 * 1024 * 1024;
+	private int maxAllowedFiles = 1;
+	private ReplayDto? replay = null;
+	private int replaysDecoded = 0;
+	private int regionId = 0;
+	private List<string> dirHandleKeys = [];
+
+	DecodeInfoEventArgs? decodeInfoEventArgs;
+
+	protected override void OnInitialized()
+	{
+		DecodeService.DecodeStateChanged += DecodeStateChanged;
+		_ = LoadDirHandles();
+		base.OnInitialized();
+	}
+
+	private async Task LoadDirHandles()
+	{
+		dirHandleKeys = await dbService.GetAllDirectoryHandles();
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task DeleteDirHandle(string key)
+	{
+		await dbService.DeleteDirectoryHandle(key);
+		await LoadDirHandles();
+	}
+
+	private void DecodeStateChanged(object? sender, DecodeInfoEventArgs e)
+	{
+		decodeInfoEventArgs = e;
+		InvokeAsync(StateHasChanged);
+	}
+
+	private async Task LoadFiles(InputFileChangeEventArgs e)
+	{
+		isLoading = true;
+		await InvokeAsync(StateHasChanged);
+		foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
+		{
+			await using MemoryStream memoryStream = new();
+			await file.OpenReadStream(maxFileSize).CopyToAsync(memoryStream);
+			memoryStream.Position = 0;
+			replay = await DecodeService.DecodeFromStream(memoryStream, file.Name);
+			await InvokeAsync(StateHasChanged);
+		}
+		isLoading = false;
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task DecodeFilesJob()
+	{
+		if (regionId == 0)
+		{
+			ToastService.ShowError("Please select a Region first!", smallTitle: "The region info is necessary to be able to store replays from different regions with the same file name.");
+			return;
+		}
+		await DecodeService.DecodeFromDirectory(regionId);
+		ToastService.ShowSuccess("Decode job finished.");
+	}
+
+	private async Task DecodeDirHandleJob(string key)
+	{
+		await DecodeService.DecodeFromDirectory(regionId, key);
+		ToastService.ShowSuccess("Decode job finished.");
+	}
+
+	public void Dispose()
+	{
+		DecodeService.DecodeStateChanged -= DecodeStateChanged;
+	}
+}

@@ -1,0 +1,344 @@
+﻿@using System.Threading
+@using System.Globalization
+@using Microsoft.JSInterop
+@using dsstats.shared;
+@using dsstats.shared.Interfaces;
+@using dsstats.weblib.Replays
+@inject IBuildsService BuildsService
+@inject IReplayRepository ReplayRepository
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<div class="container-fluid">
+	<div class="mb-2">
+		<BuildsRequestComponent Request="Request" OnRequestChanged="() => LoadData()" />
+	</div>
+
+	<div class="row justify-content-center">
+		<div class="col-xl-auto d-none d-xl-block">
+			<CommanderSelectComponent Request="Request" OnRequestChanged="() => LoadData()" />
+		</div>
+		<div class="col-lg-5 col-md-12 col-sm-12 bgchart border rounded p-2">
+			<h4>
+				Stats and Average Unit count for <span class="text-warning">@Request.Interest</span>
+				@if (Request.Versus != Commander.None)
+				{
+					<span class="text-danger"> vs </span>
+
+					<span class="text-warning">@Request.Versus</span>
+				}
+				@if (isLoading)
+				{
+					<div class="spinner-border" role="status">
+						<span class="visually-hidden">Loading...</span>
+					</div>
+				}
+			</h4>
+			<div class="row g-3 mb-2">
+				<div class="col-sm-4 col-md-3 col-lg-2">
+					<div class="card h-100 border-0 shadow-sm">
+						<div class="card-body bgchart2 text-center">
+							<div class="text-muted small mb-1">Games</div>
+							<h3 class="mb-0 text-nowrap text-primary">@response.Stats.Count.ToString("N0")</h3>
+						</div>
+					</div>
+				</div>
+				<div class="col-sm-4 col-md-3 col-lg-2">
+					<div class="card h-100 border-0 shadow-sm">
+						<div class="card-body bgchart2 text-center">
+							<div class="text-muted small mb-1">Winrate</div>
+							<h3 class="mb-0 text-nowrap" style="color: @GetWinrateColor(response.Stats.Winrate)">
+								@response.Stats.Winrate.ToString("F1")%
+							</h3>
+						</div>
+					</div>
+				</div>
+				<div class="col-sm-4 col-md-3 col-lg-2">
+					<div class="card h-100 border-0 shadow-sm">
+						<div class="card-body bgchart2 text-center">
+							<div class="text-muted small mb-1">Avg Gain</div>
+							<h3 class="mb-0 text-nowrap text-success">@response.Stats.AvgGain.ToString("F2")</h3>
+						</div>
+					</div>
+				</div>
+				<div class="col-sm-4 col-md-3 col-lg-2">
+					<div class="card h-100 border-0 shadow-sm">
+						<div class="card-body bgchart2 text-center">
+							<div class="text-muted small mb-1">Duration</div>
+							<h3 class="mb-0 text-nowrap text-secondary">@FormatDuration(response.Stats.Duration)</h3>
+						</div>
+					</div>
+				</div>
+				<div class="col-sm-4 col-md-3 col-lg-2">
+					<div class="card h-100 border-0 shadow-sm">
+						<div class="card-body bgchart2 text-center">
+							<div class="text-muted small mb-1">Gas</div>
+							<h3 class="mb-0 text-nowrap text-warning">@response.Stats.Gas.ToString("F2")</h3>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Build Composition -->
+			@if (response.Units.Count > 0)
+			{
+				<div class="card border-0 shadow-sm">
+					<div class="card-header bgchart2 border-0 py-3">
+						<h5 class="mb-0 fw-bold">Build Composition</h5>
+					</div>
+					<div class="card-body p-0">
+						<div class="table-responsive">
+							<table class="tptable">
+								<thead>
+									<tr>
+										<th class="border-0 ps-4">Unit</th>
+										<th class="border-0 text-end">Count</th>
+										<th class="border-0 text-end">Total Cost</th>
+										<th class="border-0 text-end">Total Life</th>
+										<th class="border-0 pe-4" style="width: 40%;">Distribution</th>
+									</tr>
+								</thead>
+								<tbody>
+									@{
+										var maxCount = response.Units.Max(u => u.Count);
+										var totalCost = response.Units.Sum(u => u.Cost);
+									}
+									@foreach (var unit in response.Units.OrderByDescending(u => u.Count))
+									{
+										var percentage = maxCount > 0 ? (unit.Count / maxCount * 100) : 0;
+										var costPercentage = (int)(totalCost > 0 ? (unit.Cost / totalCost * 100) : 0);
+
+										<tr>
+											<td class="ps-4 fw-semibold">@unit.Name</td>
+											<td class="text-end">@unit.Count.ToString("F1")</td>
+											<td class="text-end">@unit.Cost.ToString("N0")</td>
+											<td class="text-end">@unit.Life.ToString("N0")</td>
+											<td class="pe-4">
+												<div class="d-flex align-items-center gap-2">
+													<div class="progress" role="progressbar" style="width: 150px;"
+														 aria-label="Count Percentage"
+														 aria-valuenow="@percentage.ToString("F0", CultureInfo.InvariantCulture)"
+														 aria-valuemin="0"
+														 aria-valuemax="100">
+														<div class="progress-bar" style="width: @percentage.ToString(CultureInfo.InvariantCulture)%;"></div>
+													</div>
+													<small class="text-muted" style="min-width: 45px;">@costPercentage.ToString("F1")%</small>
+												</div>
+											</td>
+										</tr>
+									}
+								</tbody>
+								<tfoot>
+									<tr>
+										<td class="ps-4 fw-bold">Total</td>
+										<td class="text-end fw-bold">@response.Units.Sum(u => u.Count).ToString("F1")</td>
+										<td class="text-end fw-bold">@totalCost.ToString("N0")</td>
+										<td class="text-end fw-bold">@response.Units.Sum(u => u.Life).ToString("N0")</td>
+										<td class="pe-4"></td>
+									</tr>
+								</tfoot>
+							</table>
+						</div>
+					</div>
+				</div>
+
+				<!-- Unit Cost Breakdown -->
+				<div class="row g-3 mt-3">
+					<div class="col-lg-6">
+						<div class="card border-0 shadow-sm h-100">
+							<div class="card-header bgchart2 border-0 py-3">
+								<h6 class="mb-0 fw-bold">Cost Distribution</h6>
+							</div>
+							<div class="card-body bgchart">
+								@foreach (var unit in response.Units.OrderByDescending(u => u.Cost).Take(5))
+								{
+									var costPct = totalCost > 0 ? (unit.Cost / totalCost * 100) : 0;
+									<div class="mb-3">
+										<div class="d-flex justify-content-between mb-1">
+											<span class="small fw-semibold">@unit.Name</span>
+											<span class="small text-muted">@unit.Cost.ToString("N0")</span>
+										</div>
+										<div class="progress" style="height: 8px;">
+											<div class="progress-bar bg-success"
+												 style="width: @costPct.ToString(CultureInfo.InvariantCulture)%"
+												 role="progressbar"
+												 aria-valuenow="@costPct.ToString("F0", CultureInfo.InvariantCulture)"
+												 aria-valuemin="0"
+												 aria-valuemax="100">
+											</div>
+										</div>
+									</div>
+								}
+							</div>
+						</div>
+					</div>
+					<div class="col-lg-6">
+						<div class="card border-0 shadow-sm h-100">
+							<div class="card-header bgchart2 border-0 py-3">
+								<h6 class="mb-0 fw-bold">Life Pool Distribution</h6>
+							</div>
+							<div class="card-body bgchart">
+								@{
+									var totalLife = response.Units.Sum(u => u.Life);
+								}
+								@foreach (var unit in response.Units.OrderByDescending(u => u.Life).Take(5))
+								{
+									var lifePct = totalLife > 0 ? (unit.Life / totalLife * 100) : 0;
+									<div class="mb-3">
+										<div class="d-flex justify-content-between mb-1">
+											<span class="small fw-semibold">@unit.Name</span>
+											<span class="small text-muted">@unit.Life.ToString("N0")</span>
+										</div>
+										<div class="progress" style="height: 8px;">
+											<div class="progress-bar bg-danger"
+												 style="width: @lifePct.ToString(CultureInfo.InvariantCulture)%"
+												 role="progressbar"
+												 aria-valuenow="@lifePct.ToString("F0", CultureInfo.InvariantCulture)"
+												 aria-valuemin="0"
+												 aria-valuemax="100">
+											</div>
+										</div>
+									</div>
+								}
+							</div>
+						</div>
+					</div>
+				</div>
+			}
+			else
+			{
+				<div class="alert alert-info mt-4" role="alert">
+					<i class="bi bi-info-circle me-2"></i>
+					No unit data available for the selected criteria.
+				</div>
+			}
+		</div>
+		<div class="col-lg-5 col-md-12 col-sm-12">
+			<button class="btn btn-sm btn-outline-light bgchart" type="button" @onclick="ShowSpawn">
+				<span class="bi @(showSpawns ? "bi-chevron-double-up" : "bi-chevron-double-down")"></span>
+				@(showSpawns ? "Hide" : "Show") Sample Build
+			</button>
+			<div class="@(showSpawns ? "" : "d-none")">
+				<BuildSpawnComponent @ref="buildSpawnComponent" Request="Request" ReplayHash="@replayHash" />
+			</div>
+			<h4>Recent Replays</h4>
+			<div class="table-responsive">
+				<table class="tptable">
+					<thead class="user-select-none">
+						<tr>
+							<th style="width: 120px;">Gametime</th>
+							<th style="width: 100px;">GameMode</th>
+							<th style="width: 100px;">Duration</th>
+							<th style="width: 200px;">Team1</th>
+							<th style="width: 200px;">Team2</th>
+							<th style="width: 100px;">Exp2Win</th>
+							<th style="width: 120px;">AvgRating</th>
+						</tr>
+					</thead>
+					<tbody>
+						@foreach (var replay in response.Replays)
+						{
+							<tr class="pointer text-nowrap" style="height: 47px;"
+								id="@replay.ReplayHash" @onclick="() => LoadReplay(replay.ReplayHash)">
+								<td>@replay.Gametime.ToString("yyyy-MM-dd")</td>
+								<td>@replay.GameMode</td>
+								<td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+								<td>
+									<ReplayTeamComponent Replay="replay" TeamNumber="1" />
+								</td>
+								<td>
+									<ReplayTeamComponent Replay="replay" TeamNumber="2" />
+								</td>
+								<td>@replay.Exp2Win?.ToString("p")</td>
+								<td>@replay.AvgRating</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+
+@code {
+	[Parameter, EditorRequired]
+	public BuildsRequest Request { get; set; } = default!;
+
+	[Parameter]
+	public EventCallback<BuildsRequest> OnRequestChanged { get; set; }
+
+	BuildsResponse response = new();
+	bool isLoading = false;
+	CancellationTokenSource cts = new();
+
+	BuildSpawnComponent? buildSpawnComponent;
+	bool showSpawns;
+	string replayHash = string.Empty;
+
+	private Lazy<Task<IJSObjectReference>> moduleTask = null!;
+
+	protected override async Task OnInitializedAsync()
+	{
+		moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
+			"import", "./_content/dsstats.weblib/js/annotationChart.js?v=0.5").AsTask());
+		await LoadData(true);
+		await base.OnInitializedAsync();
+	}
+
+	private async Task LoadData(bool dry = false)
+	{
+		isLoading = true;
+		await InvokeAsync(StateHasChanged);
+		response = await BuildsService.GetBuildResponse(Request);
+		isLoading = false;
+		await InvokeAsync(StateHasChanged);
+		replayHash = response.Replays.FirstOrDefault()?.ReplayHash ?? string.Empty;
+		buildSpawnComponent?.Update(response.Replays.FirstOrDefault()?.ReplayHash ?? string.Empty, Request);
+		if (!dry)
+		{
+			await OnRequestChanged.InvokeAsync(Request);
+		}
+	}
+
+	private string GetWinrateColor(double winrate)
+	{
+		if (winrate >= 60) return "#198754"; // success green
+		if (winrate >= 50) return "#0d6efd"; // primary blue
+		if (winrate >= 40) return "#fd7e14"; // warning orange
+		return "#dc3545"; // danger red
+	}
+
+	private string FormatDuration(double seconds)
+	{
+		var ts = TimeSpan.FromSeconds(seconds);
+		if (ts.TotalHours >= 1)
+			return $"{ts.Hours}h {ts.Minutes}m";
+		return $"{ts.Minutes}:{ts.Seconds}";
+	}
+
+	private void LoadReplay(string replayHash)
+	{
+		this.replayHash = replayHash;
+		if (!showSpawns)
+		{
+			showSpawns = true;
+		}
+		buildSpawnComponent?.Update(replayHash, Request);
+	}
+
+	private void ShowSpawn()
+	{
+		replayHash = response?.Replays.FirstOrDefault()?.ReplayHash ?? string.Empty;
+		showSpawns = !showSpawns;
+		if (showSpawns)
+		{
+			buildSpawnComponent?.Update(replayHash, Request);
+		}
+	}
+
+	public void Dispose()
+	{
+		cts.Cancel();
+		cts.Dispose();
+	}
+}

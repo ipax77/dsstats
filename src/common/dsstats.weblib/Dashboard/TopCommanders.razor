@@ -1,0 +1,94 @@
+﻿@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IStatsService StatsService
+
+<div class="table-responsive">
+	<table class="tptable" aria-busy="@isLoading">
+		<colgroup>
+			<col width="150px;" />
+			<col width="105px;" />
+			<col width="105px;" />
+			<col width="100px;" />
+		</colgroup>
+		<thead class="user-select-none">
+			<tr>
+				<th>Commander</th>
+				<th>AvgGain</th>
+				<th>Winrate</th>
+				<th>Matchups</th>
+			</tr>
+		</thead>
+		<tbody role="status">
+			@if (isLoading)
+			{
+				@for (int i = 0; i < 7; i++)
+				{
+					<tr class="placeholder-wave">
+						<td><span class="placeholder w-100"></span></td>
+						<td><span class="placeholder w-100 bg-warning"></span></td>
+						<td><span class="placeholder w-100"></span></td>
+						<td><span class="placeholder w-100"></span></td>
+					</tr>
+				}
+			}
+			else
+			{
+				@foreach (var ent in response.WinrateEnts.Take(7))
+				{
+					<tr>
+						<td>
+							<div class="d-flex">
+								<div class="preload-@(ent.Commander.ToString().ToLower())"></div>
+								<div class="align-self-center ms-1">@ent.Commander</div>
+							</div>
+						</td>
+						<td class="text-warning">@ent.AvgPerformance.ToString("N2")</td>
+						<td>@((ent.Count == 0 ? 0 : ent.Wins / (double)ent.Count).ToString("P2"))</td>
+						<td>@ent.Count.ToString("N0")</td>
+					</tr>
+				}
+			}
+		</tbody>
+
+	</table>
+</div>
+
+@code {
+	[Parameter, EditorRequired]
+	public RatingType RatingType { get; set; }
+
+	bool isLoading = true;
+	WinrateResponse response = new();
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			await LoadData();
+			isLoading = false;
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+
+	private async Task LoadData()
+	{
+		StatsRequest request = new()
+		{
+			Type = StatsType.Winrate,
+			TimePeriod = TimePeriod.Last90Days,
+			RatingType = RatingType,
+		};
+		try
+		{
+			response = await StatsService.GetStatsAsync<WinrateResponse>(StatsType.Winrate, request);
+		}
+		catch
+		{
+			// ignore errors
+		}
+		finally
+		{
+			isLoading = false;
+		}
+	}
+}

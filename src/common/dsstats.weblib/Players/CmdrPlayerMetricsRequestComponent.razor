@@ -1,0 +1,119 @@
+@using Microsoft.AspNetCore.Components.Forms
+@using dsstats.shared;
+@implements IDisposable
+
+<EditForm EditContext="editContext" FormName="CmdrInfoRequestForm">
+    <div class="row">
+        <div class="col-auto">
+            <label class="form-label">
+                Rating Type
+                <span class="bi bi-info-circle pointer ms-2"
+                      onclick="window.location.href='https://github.com/ipax77/dsstats/wiki/Mmr-calculation#rating-types'"></span>
+                <InputSelect class="form-select text-light bgchart" @bind-Value="Request.RatingType">
+                    @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+                    {
+                        <option value="@ratingType">@ratingType</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Time Period
+                <InputSelect class="form-select text-light bgchart" @bind-Value="Request.TimePeriod">
+                    @foreach (TimePeriod time in Enum.GetValues<TimePeriod>())
+                    {
+                        <option value="@time">@time</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto">
+            <label class="form-label">
+                Commander
+                <InputSelect class="form-select text-light bgchart" @bind-Value="Request.Interest">
+                    @if (Request.RatingType == RatingType.Standard || Request.RatingType == RatingType.StandardTE)
+                    {
+                        @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                        {
+                            @if ((int)cmdr > 3)
+                            {
+                                continue;
+                            }
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                    else if (Request.RatingType == RatingType.Commanders || Request.RatingType == RatingType.CommandersTE)
+                    {
+                        @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                        {
+                            @if (cmdr == Commander.Protoss || cmdr == Commander.Terran || cmdr == Commander.Zerg)
+                            {
+                                continue;
+                            }
+                            <option value="@cmdr">@cmdr</option>
+                        }
+                    }
+                    else if (Request.RatingType == RatingType.All)
+                    {
+                        @foreach (Commander cmdr in Enum.GetValues(typeof(Commander)))
+                        {
+                            <option value="@cmdr">@cmdr</option>
+                        }
+					}  
+                </InputSelect>
+            </label>
+        </div>
+        <div class="col-auto align-self-center">
+            <div class="form-check form-switch">
+                <label class="form-check-label">
+                    Uploaders
+                    <InputCheckbox class="form-check-input" @bind-Value="Request.Uploaders"></InputCheckbox>
+                </label>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+
+@code {
+    [CascadingParameter]
+    public CmdrStrenghtRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback OnRequestChanged { get; set; }
+
+    EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new(Request);
+        editContext.OnFieldChanged += FieldChanged;
+        base.OnInitialized();
+    }
+
+    private void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        if (e.FieldIdentifier.FieldName == nameof(CmdrStrenghtRequest.RatingType))
+        {
+            if (Request.RatingType == RatingType.Commanders)
+            {
+                Request.Interest = Commander.Abathur;
+            }
+            else if (Request.RatingType == RatingType.Standard)
+            {
+                Request.Interest = Commander.Protoss;
+            }
+            else
+            {
+                Request.Interest = Commander.None;
+            }
+        }
+        OnRequestChanged.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+    }
+}

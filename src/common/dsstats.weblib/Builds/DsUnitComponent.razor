@@ -1,0 +1,228 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using dsstats.shared
+@using dsstats.shared.Units
+@using dsstats.shared.Interfaces
+@inject IBuildsService BuildsService
+@implements IDisposable
+
+<div class="container-fluid">
+	<div class="border rounded p-3 bgchart d-inline-block mb-1">
+		<EditForm EditContext="editContext">
+			<div class="row">
+				<div class="col-1 align-self-center">
+					@if (isLoading)
+					{
+						<div class="spinner-border" role="status">
+							<span class="visually-hidden">Loading...</span>
+						</div>
+					}
+				</div>
+				<div class="col-6">
+					<label for="search" class="col-form-label">Search</label>
+					<InputText id="Search" class="form-control" @bind-Value="Request.Search" />
+				</div>
+				<div class="col-4">
+					<label for="cmdrselect" class="col-form-label">Commander</label>
+					<InputSelect id="cmdrselect" class="form-select" @bind-Value="Request.Commander">
+						<option value="@Commander.None">All</option>
+						@foreach (Commander type in Enum.GetValues(typeof(Commander)))
+						{
+							<option value="@type">@type</option>
+						}
+					</InputSelect>
+				</div>
+				<div class="col-1 align-self-center">
+					<i class="bi bi-x-lg text-danger pointer" @onclick="Clear"></i>
+				</div>
+			</div>
+		</EditForm>
+	</div>
+	<div class="unit-list">
+
+		<div class="table-responsive" style="height: 75vh; max-width: 900px;">
+			<table class="tptable">
+				<CascadingValue Value="orders">
+					<thead style="user-select: none;">
+						<tr>
+							<th class="pointer" @onclick="e => SortList(e, nameof(DsUnitListDto.Name))">
+								<SortArrow Column="@nameof(DsUnitListDto.Name)">Name</SortArrow>
+							</th>
+							<th class="pointer" @onclick="e => SortList(e, nameof(DsUnitListDto.Commander))">
+								<SortArrow Column="@nameof(DsUnitListDto.Commander)">Commander</SortArrow>
+							</th>
+							<th class="pointer" @onclick="e => SortList(e, nameof(DsUnitListDto.Life))">
+								<SortArrow Column="@nameof(DsUnitListDto.Life)">Life</SortArrow>
+							</th>
+							<th class="pointer" @onclick="e => SortList(e, nameof(DsUnitListDto.Cost))">
+								<SortArrow Column="@nameof(DsUnitListDto.Cost)">Cost</SortArrow>
+							</th>
+							<th class="pointer" @onclick="e => SortList(e, nameof(DsUnitListDto.UnitType))">
+								<SortArrow Column="@nameof(DsUnitListDto.UnitType)">Type</SortArrow>
+							</th>
+						</tr>
+					</thead>
+				</CascadingValue>
+				<tbody>
+					@foreach (var u in GetSortedList())
+					{
+						<tr class="pointer" @onclick="() => LoadUnit(u.DsUnitId)">
+							<td>@u.Name</td>
+							<td>@u.Commander</td>
+							<td>@u.Life</td>
+							<td>@u.Cost</td>
+							<td>@u.UnitType</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+<DsUnitModal @ref="dsUnitModal" OnClose="CloseUnit" />
+
+@code {
+	[Parameter, EditorRequired]
+	public DsUnitsRequest Request { get; set; } = default!;
+
+	[Parameter]
+	public EventCallback<DsUnitsRequest> OnRequestChanged { get; set; }
+
+	List<DsUnitListDto> dsUnits = [];
+	bool isLoading = false;
+
+	DsUnitDto? interestUnit = null;
+	List<TableOrder> orders = [
+		new() {
+			Column = nameof(DsUnitListDto.Commander),
+			Ascending = true
+		},
+		new() {
+			Column = nameof(DsUnitListDto.Name),
+			Ascending = true
+		}
+	];
+
+	DsUnitModal? dsUnitModal;
+	EditContext editContext = null!;
+
+	protected override async Task OnInitializedAsync()
+	{
+		editContext = new(Request);
+		editContext.OnFieldChanged += FieldChanged;
+		await LoadUnits(true);
+		if (Request.UnitId > 0)
+		{
+			await LoadUnit(Request.UnitId, true);
+		}
+		await base.OnInitializedAsync();
+	}
+
+	private void FieldChanged(object? sender, FieldChangedEventArgs e)
+	{
+		_ = LoadUnits();
+	}
+
+	private void Clear()
+	{
+		Request.Search = null;
+		Request.Commander = Commander.None;
+		_ = LoadUnits();
+	}
+
+	private async Task LoadUnits(bool dry = false)
+	{
+		isLoading = true;
+		await InvokeAsync(StateHasChanged);
+		dsUnits = await BuildsService.GetUnits(Request);
+		isLoading = false;
+		await InvokeAsync(StateHasChanged);
+		if (!dry)
+		{
+			await OnRequestChanged.InvokeAsync(Request);
+		}
+	}
+
+	private async Task LoadUnit(int unitId, bool dry = false)
+	{
+		interestUnit = await BuildsService.GetUnit(unitId);
+		dsUnitModal?.Show(interestUnit);
+		Request.UnitId = unitId;
+		if (!dry)
+		{
+			await OnRequestChanged.InvokeAsync(Request);
+		}
+	}
+
+	private void CloseUnit()
+	{
+		interestUnit = null;
+		Request.UnitId = 0;
+		OnRequestChanged.InvokeAsync(Request);
+	}
+
+	private async Task SortList(MouseEventArgs e, string column)
+	{
+		var exOrder = orders.FirstOrDefault(f => f.Column == column);
+		if (e.ShiftKey)
+		{
+			if (exOrder == null)
+			{
+				orders.Add(new TableOrder()
+				{
+					Column = column
+				});
+			}
+			else
+			{
+				exOrder.Ascending = !exOrder.Ascending;
+			}
+		}
+		else
+		{
+			orders.Clear();
+			orders.Add(new TableOrder()
+			{
+				Column = column,
+				Ascending = exOrder == null ? false : !exOrder.Ascending
+			});
+		}
+	}
+
+	private List<DsUnitListDto> GetSortedList()
+	{
+		if (orders.Count == 0)
+		{
+			return dsUnits.OrderBy(o => o.Name).ToList();
+		}
+
+		IOrderedEnumerable<DsUnitListDto>? list = null;
+		foreach (var order in orders)
+		{
+			var prop = typeof(DsUnitListDto).GetProperty(order.Column);
+			if (prop == null)
+			{
+				continue;
+			}
+			if (list == null)
+			{
+				list = order.Ascending ? dsUnits.OrderBy(o => prop.GetValue(o, null)) : dsUnits.OrderByDescending(o => prop.GetValue(o, null));
+			}
+			else
+			{
+				list = order.Ascending ? list.ThenBy(o => prop.GetValue(o, null)) : list.ThenByDescending(o => prop.GetValue(o, null));
+			}
+		}
+
+		if (list == null)
+		{
+			return dsUnits.OrderBy(o => o.Name).ToList();
+		}
+		return list.ToList();
+	}
+
+	public void Dispose()
+	{
+		editContext.OnFieldChanged -= FieldChanged;
+	}
+}

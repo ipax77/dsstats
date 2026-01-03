@@ -1,0 +1,70 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.shared
+@inject IJSRuntime JSRuntime
+
+<div class="modal" id="@modalId" aria-hidden="true" aria-labelledby="@modalId" tabindex="-1">
+	<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen">
+		<div class="modal-content">
+			<div class="modal-body" style="background: url('/_content/dsstats.weblib/images/bgbing_soft.jpg') repeat center center fixed;">
+				@if (_unit != null)
+				{
+					<div class="row rounded p-2 bgchart">
+						<div class="col-sm-12 col-md-4 col-lg-3">
+							<i class="bi bi-x-lg pointer text-danger" @onclick="Close"></i>
+							<DsUnitHeader Unit="_unit" />
+							<DsUnitStats Unit="_unit" />
+						</div>
+						<div class="col-sm-12 col-md-8 col-lg-9">
+							<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3">
+								@foreach (var weapon in _unit.Weapons)
+								{
+									<div class="col">
+										<DsUnitWeapon Weapon="weapon" />
+									</div>
+								}
+								@foreach (var ability in _unit.Abilities)
+								{
+									<div class="col">
+										<DsUnitAbility Ability="ability" />
+									</div>
+								}
+								@foreach (var upgrade in _unit.Upgrades)
+								{
+									<div class="col">
+										<DsUnitUpgrade Upgrade="upgrade" />
+									</div>
+								}
+							</div>
+						</div>
+					</div>
+				}
+			</div>
+			<div class="modal-footer bgchart2">
+				<button type="button" class="btn btn-secondary" @onclick="Close">Close</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+@code {
+	private string modalId = "dsUnitModal";
+
+	private DsUnitDto? _unit;
+
+	[Parameter]
+	public EventCallback OnClose { get; set; }
+
+	public void Show(DsUnitDto dsUnit)
+	{
+		_unit = dsUnit;
+		InvokeAsync(StateHasChanged);
+		JSRuntime.InvokeVoidAsync("openModalById", modalId);
+	}
+
+	public void Close()
+	{
+		JSRuntime.InvokeVoidAsync("closeModalById", modalId);
+		OnClose.InvokeAsync();
+		_unit = null;
+	}
+}

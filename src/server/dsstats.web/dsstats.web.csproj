@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\common\dsstats.parser\dsstats.parser.csproj" />
+    <ProjectReference Include="..\..\common\dsstats.shared\dsstats.shared.csproj" />
+    <ProjectReference Include="..\..\common\dsstats.weblib\dsstats.weblib.csproj" />
+    <ProjectReference Include="..\dsstats.apiServices\dsstats.apiServices.csproj" />
+  </ItemGroup>
+
+</Project>

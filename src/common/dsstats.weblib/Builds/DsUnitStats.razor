@@ -1,0 +1,48 @@
+﻿@using dsstats.shared.Units
+@using dsstats.shared
+
+<div class="card mb-3">
+    <div class="card-header bgchart2">Stats</div>
+    <div class="card-body bgchart">
+        <table class="table table-sm">
+
+            <tr><th>Life</th><td>@Unit.Life</td></tr>
+            <tr><th>Armor</th><td>@Unit.Armor</td></tr>
+            <tr><th>Speed</th><td>@Unit.Speed</td></tr>
+
+            @* SHIELDS *@
+            @if (Unit.Shields > 0)
+            {
+                <tr><th>Shields</th><td>@Unit.Shields</td></tr>
+            }
+            @if (Unit.ShieldArmor > 0)
+            {
+                <tr><th>Shield Armor</th><td>@Unit.ShieldArmor</td></tr>
+            }
+
+            @* ENERGY *@
+            @if (Unit.StartingEnergy > 0 || Unit.MaxEnergy > 0)
+            {
+                <tr><th>Energy</th><td>@Unit.StartingEnergy / @Unit.MaxEnergy</td></tr>
+            }
+            @if (Unit.EnergyRegen > 0)
+            {
+                <tr><th>Energy Regen</th><td>@Unit.EnergyRegen</td></tr>
+            }
+
+            @* HEALTH REGEN *@
+            @if (Unit.HealthRegen > 0)
+            {
+                <tr><th>Health Regen</th><td>@Unit.HealthRegen</td></tr>
+            }
+
+            <tr><th>Movement</th><td>@Unit.MovementType</td></tr>
+
+        </table>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public DsUnitDto Unit { get; set; } = default!;
+}

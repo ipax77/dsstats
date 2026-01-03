@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.decode.cli", "dsstats.decode.cli.csproj", "{22295170-2723-5C10-202C-B0FFA5027BDC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{22295170-2723-5C10-202C-B0FFA5027BDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22295170-2723-5C10-202C-B0FFA5027BDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22295170-2723-5C10-202C-B0FFA5027BDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22295170-2723-5C10-202C-B0FFA5027BDC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FB7C7E9A-9003-463A-970A-33989F9A5974}
+	EndGlobalSection
+EndGlobal

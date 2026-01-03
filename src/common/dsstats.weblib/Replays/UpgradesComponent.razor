@@ -1,0 +1,38 @@
+﻿@using dsstats.shared
+
+<div class="col-auto">
+    <div class="table-responsive border rounded p-1">
+        <table class="tptable w-auto">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Upgrade</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var upgrade in GetUpgrades())
+                {
+                    <tr>
+                        <td>@upgrade.Value</td>
+                        <td>@upgrade.Key</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public ReplayPlayerDto Player { get; set; } = default!;
+
+    List<KeyValuePair<string, string>> GetUpgrades()
+    {
+        return Player.Upgrades
+            .OrderBy(o => o.Gameloop)
+            .Select(s => new KeyValuePair<string, string>(s.Name, TimeSpan.FromSeconds(s.Gameloop).ToString(@"hh\:mm\:ss")))
+            .ToList();
+    }
+}

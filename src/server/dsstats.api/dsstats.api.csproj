@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\common\dsstats.shared\dsstats.shared.csproj" />
+    <ProjectReference Include="..\dsstats.dbServices\dsstats.dbServices.csproj" />
+    <ProjectReference Include="..\dsstats.db\dsstats.db.csproj" />
+    <ProjectReference Include="..\dsstats.migrations.mysql\dsstats.migrations.mysql.csproj" />
+    <ProjectReference Include="..\dsstats.ratings\dsstats.ratings.csproj" />
+    <ProjectReference Include="..\sc2arcade.crawler\sc2arcade.crawler.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,237 @@
+.pointer {
+    cursor: pointer;
+}
+
+.bgchart {
+    background-color: #080808E6;
+}
+
+.bgchart2 {
+    background-color: #0f1a29E6;
+}
+
+.tableFixHead {
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+.tptable {
+    background-color: #080808E6;
+    width: auto;
+    min-width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+    .tptable thead th {
+        position: sticky;
+        top: 0;
+        background-color: #080808;
+    }
+
+    .tptable thead tr th {
+        padding: 4px 8px;
+        white-space: nowrap;
+        user-select: none;
+    }
+
+    .tptable td {
+        padding: 7px 8px;
+    }
+
+    .tptable tbody tr:hover {
+        background-color: #12243aE6;
+    }
+
+    .tptable tbody tr:nth-child(odd) {
+        background-color: #0f1a29E6;
+    }
+
+    .tptable tbody tr:nth-child(odd):hover {
+        background-color: #12243aE6;
+    }
+
+.preload-terran {
+    background-image: url("/_content/dsstats.weblib/images/terran-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-protoss {
+    background-image: url("/_content/dsstats.weblib/images/protoss-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-zerg {
+    background-image: url("/_content/dsstats.weblib/images/zerg-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-abathur {
+    background-image: url("/_content/dsstats.weblib/images/abathur-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-alarak {
+    background-image: url("/_content/dsstats.weblib/images/alarak-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-artanis {
+    background-image: url("/_content/dsstats.weblib/images/artanis-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-dehaka {
+    background-image: url("/_content/dsstats.weblib/images/dehaka-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-fenix {
+    background-image: url("/_content/dsstats.weblib/images/fenix-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-horner {
+    background-image: url("/_content/dsstats.weblib/images/horner-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-karax {
+    background-image: url("/_content/dsstats.weblib/images/karax-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-kerrigan {
+    background-image: url("/_content/dsstats.weblib/images/kerrigan-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-mengsk {
+    background-image: url("/_content/dsstats.weblib/images/mengsk-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-nova {
+    background-image: url("/_content/dsstats.weblib/images/nova-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-raynor {
+    background-image: url("/_content/dsstats.weblib/images/raynor-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-stetmann {
+    background-image: url("/_content/dsstats.weblib/images/stetmann-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-stukov {
+    background-image: url("/_content/dsstats.weblib/images/stukov-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-swann {
+    background-image: url("/_content/dsstats.weblib/images/swann-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-tychus {
+    background-image: url("/_content/dsstats.weblib/images/tychus-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-vorazun {
+    background-image: url("/_content/dsstats.weblib/images/vorazun-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-zagara {
+    background-image: url("/_content/dsstats.weblib/images/zagara-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.preload-zeratul {
+    background-image: url("/_content/dsstats.weblib/images/zeratul-min.png");
+    background-repeat: no-repeat;
+    height: 30px;
+    width: 30px;
+    background-size: cover;
+}
+
+.ismobile {
+    display: none;
+}
+
+.isdesktop {
+}
+
+@media only screen and (max-width: 1275px) {
+    .ismobile {
+        display: block;
+    }
+
+    .isdesktop {
+        display: none;
+    }
+}

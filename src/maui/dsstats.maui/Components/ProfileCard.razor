@@ -1,0 +1,28 @@
+﻿@using dsstats.db
+@using dsstats.shared
+
+<div class="card">
+	<div class="card-header bgchart2">
+		@Profile.Name
+	</div>
+	<div class="card-body bgchart">
+		@Data.GetRegionString(Profile.ToonId.Region)
+	</div>
+	<div class="card-footer bgchart2">
+		<div class="text-end mt-1">
+			<span class="text-decoration-none pointer" 
+				@onclick="() => OnStatsRequest.InvokeAsync(new() { Id = Profile.ToonId.Id, Realm = Profile.ToonId.Realm, Region = Profile.ToonId.Region })">
+				View stats →
+			</span>
+		</div>
+	</div>
+</div>
+
+
+@code {
+	[Parameter, EditorRequired]
+	public Sc2Profile Profile { get; set; } = default!;
+
+	[Parameter]
+	public EventCallback<ToonIdDto> OnStatsRequest { get; set; }
+}

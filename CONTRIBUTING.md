@@ -16,16 +16,6 @@ To get an overview of the project, read the [README](README.md). Here are some r
 - [Contributing](https://gist.github.com/MarcDiethelm/7303312)
 
 
-## Getting started
-
-There are two main projects in this repository:
-- .NET MAUI Blazor app (Windows only) [Set up guid](https://learn.microsoft.com/en-us/aspnet/core/blazor/hybrid/tutorials/maui?view=aspnetcore-7.0&pivots=windows)
-    * [sc2dsstats.maui](./src/sc2dsstats.maui)
-- Hosted Blazor WebAssembly
-    * [pax.dsstats.web](./src/pax.dsstats.web)
-
-These projects share most of the other libraries. While the MAUI app should run out of the box you need a local mysql db set up for the Hosted Blazor WebAssembly project.
-
 ## Pull requests (PR)
 
 - Please file an issue before you start.

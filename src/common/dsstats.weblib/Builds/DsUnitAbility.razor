@@ -1,0 +1,85 @@
+﻿@using dsstats.shared
+@using dsstats.shared.Units
+
+<div class="card bg-transparent mb-2">
+
+	<div class="card-header pointer bg-primary"
+		 data-bs-toggle="collapse"
+		 data-bs-target="#@id">
+		<strong>Ability @Ability.Name</strong>
+		<span class="text-muted ms-2 small">(@Ability.AbilityTarget)</span>
+	</div>
+
+	<div id="@id" class="collapse show">
+		<div class="card-body bgchart">
+
+			<table class="table table-sm">
+				@if (!string.IsNullOrWhiteSpace(Ability.Requirements))
+				{
+					<tr>
+						<th>Requirements</th>
+						<td>@Ability.Requirements</td>
+					</tr>
+				}
+
+				@if (Ability.Cooldown > 0)
+				{
+					<tr>
+						<th>Cooldown</th>
+						<td>@Ability.Cooldown s</td>
+					</tr>
+				}
+
+				@if (Ability.GlobalTimer)
+				{
+					<tr>
+						<th>Global Timer</th>
+						<td>Yes</td>
+					</tr>
+				}
+
+				@if (Ability.EnergyCost > 0)
+				{
+					<tr>
+						<th>Energy Cost</th>
+						<td>@Ability.EnergyCost</td>
+					</tr>
+				}
+
+				@if (Ability.CastRange > 0)
+				{
+					<tr>
+						<th>Cast Range</th>
+						<td>@Ability.CastRange</td>
+					</tr>
+				}
+
+				@if (Ability.AoeRadius > 0)
+				{
+					<tr>
+						<th>AoE Radius</th>
+						<td>@Ability.AoeRadius</td>
+					</tr>
+				}
+			</table>
+
+			@if (!string.IsNullOrWhiteSpace(Ability.Description))
+			{
+				<div class="mt-2">
+					<strong>Description</strong>
+					<div class="border rounded p-2">
+						@Ability.Description
+					</div>
+				</div>
+			}
+
+		</div>
+	</div>
+</div>
+
+@code {
+	[Parameter, EditorRequired]
+	public DsAbilityDto Ability { get; set; } = default!;
+
+	private string id = Guid.NewGuid().ToString();
+}

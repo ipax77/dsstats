@@ -1,0 +1,9 @@
+﻿@page "/replays"
+@using dsstats.shared
+@using dsstats.weblib.Replays
+
+<ReplaysComponent ReplaysRequest="request" />
+
+@code {
+	ReplaysRequest request = new();
+}

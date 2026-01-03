@@ -1,0 +1,63 @@
+﻿@page "/ratings"
+@using System.Collections.Frozen
+@using dsstats.shared
+@using dsstats.shared.Extensions
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+
+<PageTitle>dsstats - ratings</PageTitle>
+
+<dsstats.weblib.Players.RatingsComponent PlayerRequest="Request" OnRequestChanged="RequestChanged" />
+
+@code {
+	[SupplyParameterFromQuery]
+	public int? Rt { get; set; }
+
+	[SupplyParameterFromQuery]
+	public string? Name { get; set; }
+
+	[SupplyParameterFromQuery]
+	public int? Region { get; set; }
+
+	[SupplyParameterFromQuery]
+	public string? Player { get; set; }
+
+	PlayerRatingsRequest Request = new();
+
+	private static readonly FrozenDictionary<string, string> ParamMap =
+	new Dictionary<string, string>
+	{
+			{ nameof(PlayerRatingsRequest.RatingType), "Rt" },
+			{ nameof(PlayerRatingsRequest.Name), "Name" },
+			{ nameof(PlayerRatingsRequest.RegionId), "Region" },
+			{ nameof(PlayerRatingsRequest.ToonIdString), "Player" },
+	}.ToFrozenDictionary();
+
+	protected override void OnInitialized()
+	{
+		InitRequest();
+	}
+
+	private void InitRequest()
+	{
+		if (Rt.HasValue)
+			Request.RatingType = (RatingType)Rt.Value;
+
+		if (!string.IsNullOrWhiteSpace(Name))
+			Request.Name = Name!;
+
+		if (Region.HasValue)
+			Request.RegionId = Region.Value;
+
+		if (!string.IsNullOrEmpty(Player))
+			Request.ToonIdString = Player;
+	}
+
+	private void RequestChanged(PlayerRatingsRequest request)
+	{
+		var queryDic = request.BuildQueryParams(ParamMap);
+
+		NavigationManager.NavigateTo(
+			NavigationManager.GetUriWithQueryParameters(queryDic));
+	}
+}

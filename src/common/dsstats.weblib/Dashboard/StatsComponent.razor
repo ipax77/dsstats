@@ -1,0 +1,184 @@
+﻿@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IDashboardStatsService DashboardStatsService
+
+<div class="p-2">
+    <h3 class="mt-2 fw-bold text-warning d-inline-block p-2 bgchart border border-dark rounded">Stats past 90 days</h3>
+    @if (response == null)
+    {
+        <!-- Loading Skeleton -->
+        <div class="row g-3 mb-4">
+            @for (int i = 0; i < 4; i++)
+            {
+                <div class="col-12 col-sm-6 col-xl-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body bgchart d-flex align-items-center">
+                            <div class="placeholder-glow flex-shrink-0 me-3">
+                                <div class="placeholder rounded-3" style="width: 56px; height: 56px;"></div>
+                            </div>
+                            <div class="flex-grow-1 placeholder-glow">
+                                <div class="placeholder col-7 mb-2"></div>
+                                <div class="placeholder col-10" style="height: 28px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <!-- Loaded Content -->
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card shadow-sm hover-lift">
+                    <div class="card-body bgchart d-flex align-items-center">
+                        <div class="stat-icon rounded-3 flex-shrink-0 me-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="text-muted small fw-medium mb-1">Total Games</div>
+                            <div class="fs-3 fw-bold">@response.Total.ToString("N0")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card shadow-sm hover-lift">
+                    <div class="card-body bgchart d-flex align-items-center">
+                        <div class="stat-icon rounded-3 flex-shrink-0 me-3" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="text-muted small fw-medium mb-1">
+                                <a href="https://sc2arcade.com/">SC2 Arcade</a>
+                            </div>
+                            <div class="fs-3 fw-bold">@response.SC2Arcade.ToString("N0")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card shadow-sm hover-lift">
+                    <div class="card-body bgchart d-flex align-items-center">
+                        <div class="stat-icon rounded-3 flex-shrink-0 me-3" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="text-muted small fw-medium mb-1">
+                                <a href="replays">dsstats</a>
+                            </div>
+                            <div class="fs-3 fw-bold">@response.Dsstats.ToString("N0")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="card shadow-sm hover-lift">
+                    <div class="card-body bgchart d-flex align-items-center">
+                        <div class="stat-icon rounded-3 flex-shrink-0 me-3" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="text-muted small fw-medium mb-1">Uploads</div>
+                            <div class="fs-3 fw-bold">@response.Uploads.ToString("N0")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+@*         @if (response.GameModes.Count > 0)
+        {
+            <div class="card shadow-sm">
+                <div class="card-body bgchart">
+                    <h5 class="card-title mb-4">Game Modes</h5>
+                    <div class="row g-3">
+                        @foreach (var mode in response.GameModes)
+                        {
+                            <div class="col-12 col-sm-6 col-lg-3">
+                                <div class="border rounded-2 p-3 h-100 hover-border">
+                                    <div class="small fw-semibold text-secondary mb-2">@mode.GameMode.ToString()</div>
+                                    <div class="fs-4 fw-bold mb-3">@mode.Count.ToString("N0")</div>
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar" role="progressbar" style="width: @(GetPercentage(mode.Count, response.Total))%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);" aria-valuenow="@GetPercentage(mode.Count, response.Total)" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        } *@
+    }
+</div>
+
+<style>
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .hover-lift:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+
+    .hover-border {
+        transition: border-color 0.2s ease;
+    }
+
+        .hover-border:hover {
+            border-color: #667eea !important;
+        }
+</style>
+
+@code {
+    DashboardStatsResponse? response;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadData();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task LoadData()
+    {
+        response = await DashboardStatsService.GetDashboardStatsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private double GetPercentage(int value, int total)
+    {
+        if (total == 0) return 0;
+        return Math.Round((double)value / total * 100, 1);
+    }
+}

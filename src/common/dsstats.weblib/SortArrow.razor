@@ -1,0 +1,40 @@
+@using dsstats.shared;
+
+<div class="d-flex justify-content-start">
+    @ChildContent
+    @if (tableOrder != null)
+    {
+        @if (tableOrder.Ascending)
+        {
+            <span style="width: 1.2rem;" class="bi bi-arrow-up-short text-muted"></span>
+        }
+        else
+        {
+            <span style="width: 1.2rem;" class="bi bi-arrow-down-short text-muted"></span>
+        }
+        @if (sortNumber >= 1)
+        {
+            <div class="position-relative"><span class="sortnumber">@(sortNumber + 1)</span></div>
+        }
+    }
+    else
+    {
+        <span class="" style="width: 1.2rem;"></span>
+    }
+</div>
+
+
+@code {
+    [CascadingParameter]
+    public List<TableOrder> TableOrders { get; set; } = null!;
+
+    [Parameter]
+    [EditorRequired]
+    public string Column { get; set; } = null!;
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private TableOrder? tableOrder => TableOrders.FirstOrDefault(f => f.Column == Column);
+    private int sortNumber => tableOrder == null ? 0 : TableOrders.IndexOf(tableOrder);
+}

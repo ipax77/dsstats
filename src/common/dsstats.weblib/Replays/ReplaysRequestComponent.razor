@@ -1,0 +1,239 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using dsstats.shared
+@implements IDisposable
+
+<div class="bgchart rounded p-2 mb-2">
+	<EditForm EditContext="editContext" FormName="ReplaysRequestForm">
+		<div class="row align-items-end">
+			<div class="col-auto align-self-center">
+				@if (Request.Filter == null)
+				{
+					<i class="ms-2 text-warning bi bi-filter-circle pointer" @onclick="() => replayFiliterModal?.Show()"></i>
+				}
+				else
+				{
+					<i class="ms-2 text-warning bi bi-filter-circle-fill pointer" @onclick="() => replayFiliterModal?.Show()"></i>
+				}
+			</div>
+			<div class="col-3">
+				<label for="commanders" class="form-label">Commanders</label>
+				<div class="input-group">
+					<InputText class="form-control" id="commanders" placeholder="Kerrigan Zagara" @bind-Value="Request.Commander" />
+					<button class="btn btn-outline-secondary" type="button" @onclick="() => ClearCommanders()">
+						<i class="bi bi-x-lg"></i>
+					</button>
+				</div>
+			</div>
+			<div class="col-1 text-center">
+				<InputCheckbox class="btn-check" autocomplete="off" id="link" @bind-Value="Request.LinkCommanders" />
+				<label class="btn btn-sm btn-outline-light" for="link"><i class="bi bi-link"></i></label>
+			</div>
+			<div class="col-3">
+				<label for="name" class="form-label">Names</label>
+				<div class="input-group">
+					<InputText class="form-control" id="name" placeholder="Feralan PAX" @bind-Value="Request.Name" />
+					<button class="btn btn-outline-secondary" type="button" @onclick="() => ClearNames()">
+						<i class="bi bi-x-lg"></i>
+					</button>
+				</div>
+			</div>
+			<div class="col-auto">
+				<button class="btn btn-sm btn-outline-secondary ms-1" type="button" @onclick="Reset">
+					<i class="bi bi-x-circle"></i> Clear All
+				</button>
+			</div>
+			<div class="ms-auto col-auto">
+				@if (IsLoading)
+				{
+					<div class="spinner-border text-danger" role="status">
+						<span class="visually-hidden">Loading...</span>
+					</div>
+				}
+				else
+				{
+					<small class="text-muted">
+						Total: # @ReplaysCount.ToString("N0")
+						<span class="bi bi-arrow-repeat pointer ms-2" @onclick="e => OnRequestChanged.InvokeAsync()" title="Reload"></span>
+					</small>
+				}
+			</div>
+		</div>
+		<!-- Pagination Controls -->
+		<div class="row mt-3 align-items-center">
+			<div class="col-auto">
+				<label for="pageSize" class="form-label mb-0 me-2">Page Size:</label>
+			</div>
+			<div class="col-auto">
+				<select class="form-select form-select-sm" id="pageSize" @bind="Request.PageSize" @bind:after="OnPageSizeChanged">
+					<option value="10">10</option>
+					<option value="100">100</option>
+					<option value="1000">1.000</option>
+					<option value="10000">10.000</option>
+					<option value="20000">20.000</option>
+				</select>
+			</div>
+			<div class="col">
+				<nav aria-label="Page navigation">
+					<ul class="pagination pagination-sm mb-0">
+						<li class="page-item @(Request.Page <= 1 ? "disabled" : "")">
+							<button class="page-link" type="button" @onclick="FirstPage" disabled="@(Request.Page <= 1)">
+								<i class="bi bi-chevron-bar-left"></i>
+							</button>
+						</li>
+						<li class="page-item @(Request.Page <= 1 ? "disabled" : "")">
+							<button class="page-link" type="button" @onclick="PreviousPage" disabled="@(Request.Page <= 1)">
+								<i class="bi bi-chevron-left"></i>
+							</button>
+						</li>
+
+						@foreach (var pageNum in GetPageNumbers())
+						{
+							<li class="page-item @(pageNum == Request.Page ? "active" : "")">
+								<button class="page-link" type="button" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+							</li>
+						}
+
+						<li class="page-item @(Request.Page >= TotalPages ? "disabled" : "")">
+							<button class="page-link" type="button" @onclick="NextPage" disabled="@(Request.Page >= TotalPages)">
+								<i class="bi bi-chevron-right"></i>
+							</button>
+						</li>
+						<li class="page-item @(Request.Page >= TotalPages ? "disabled" : "")">
+							<button class="page-link" type="button" @onclick="LastPage" disabled="@(Request.Page >= TotalPages)">
+								<i class="bi bi-chevron-bar-right"></i>
+							</button>
+						</li>
+					</ul>
+				</nav>
+			</div>
+			<div class="col-auto">
+				<small class="text-muted">
+					Page @Request.Page of @TotalPages
+				</small>
+			</div>
+		</div>
+	</EditForm>
+</div>
+
+<ReplayFiliterModal @ref="replayFiliterModal" OnRequest="FilterRequest" />
+
+@code {
+	[Parameter, EditorRequired]
+	public ReplaysRequest Request { get; set; } = default!;
+
+	[Parameter, EditorRequired]
+	public int ReplaysCount { get; set; }
+
+	[Parameter, EditorRequired]
+	public bool IsLoading { get; set; }
+
+	[Parameter]
+	public EventCallback OnRequestChanged { get; set; }
+
+	ReplayFiliterModal? replayFiliterModal;
+	EditContext editContext = null!;
+
+	private int TotalPages => Request.PageSize > 0 ? (int)Math.Ceiling((double)ReplaysCount / Request.PageSize) : 1;
+
+	protected override void OnInitialized()
+	{
+		editContext = new(Request);
+		editContext.OnFieldChanged += FieldChanged;
+		base.OnInitialized();
+	}
+
+	private void FieldChanged(object? sender, FieldChangedEventArgs e)
+	{
+		OnRequestChanged.InvokeAsync();
+	}
+
+	private void ClearCommanders()
+	{
+		Request.Commander = string.Empty;
+		OnRequestChanged.InvokeAsync();
+	}
+
+	private void ClearNames()
+	{
+		Request.Name = string.Empty;
+		OnRequestChanged.InvokeAsync();
+	}
+
+	private void Reset()
+	{
+		Request.Commander = string.Empty;
+		Request.Name = string.Empty;
+		Request.LinkCommanders = false;
+		replayFiliterModal?.filter.Reset();
+		Request.Filter = null;
+		OnRequestChanged.InvokeAsync();
+	}
+
+	private void OnPageSizeChanged()
+	{
+		Request.Page = 1;
+		OnRequestChanged.InvokeAsync();
+	}
+
+	private void FirstPage()
+	{
+		Request.Page = 1;
+		OnRequestChanged.InvokeAsync();
+	}
+
+	private void PreviousPage()
+	{
+		if (Request.Page > 1)
+		{
+			Request.Page--;
+			OnRequestChanged.InvokeAsync();
+		}
+	}
+
+	private void NextPage()
+	{
+		if (Request.Page < TotalPages)
+		{
+			Request.Page++;
+			OnRequestChanged.InvokeAsync();
+		}
+	}
+
+	private void LastPage()
+	{
+		Request.Page = TotalPages;
+		OnRequestChanged.InvokeAsync();
+	}
+
+	private void GoToPage(int page)
+	{
+		Request.Page = page;
+		OnRequestChanged.InvokeAsync();
+	}
+
+	private IEnumerable<int> GetPageNumbers()
+	{
+		var maxPagesToShow = 5;
+		var startPage = Math.Max(1, Request.Page - maxPagesToShow / 2);
+		var endPage = Math.Min(TotalPages, startPage + maxPagesToShow - 1);
+
+		// Adjust start if we're near the end
+		if (endPage - startPage < maxPagesToShow - 1)
+		{
+			startPage = Math.Max(1, endPage - maxPagesToShow + 1);
+		}
+
+		return Enumerable.Range(startPage, endPage - startPage + 1);
+	}
+
+	private void FilterRequest(ReplaysFilter? filter)
+	{
+		Request.Filter = filter;
+		OnRequestChanged.InvokeAsync();
+	}
+
+	public void Dispose()
+	{
+		editContext.OnFieldChanged -= FieldChanged;
+	}
+}

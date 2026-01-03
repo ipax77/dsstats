@@ -1,0 +1,341 @@
+﻿@using System.Threading
+@using Microsoft.Extensions.Options
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using dsstats.weblib.Replays
+@inject IPlayerService PlayerService
+@inject IReplayRepository ReplayRepository
+@inject IOptions<HostOptions> HostOptions
+@implements IDisposable
+
+<div class="card">
+	<div class="card-header bgchart2">
+		<div class="row justify-content-start align-items-center">
+			<div class="col-auto">
+				<span class="bi bi-x-lg text-danger pointer" @onclick="() => OnClose.InvokeAsync()"></span>
+			</div>
+			<div class="col-auto">
+				<span class="border rounded p-1">@Data.GetRegionString(Response.RegionId)</span>
+			</div>
+			<div class="col-auto card-title text-warning fw-bold">
+				<h3 class="mt-3">@Response.Name Details</h3>
+			</div>
+			<div class="col-auto">
+				<label for="typeSelect" class="form-label">Rating Type</label>
+				<select id="typeSelect" class="form-select" @bind="Request.RatingType" @bind:after="LoadDetails">
+					@foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+					{
+						<option value="@ratingType">@ratingType</option>
+					}
+				</select>
+			</div>
+		</div>
+	</div>
+	<div class="card-body bgchart">
+		@if (HostOptions.Value.Kind != HostAppKind.BlazorWasmPwa)
+		{
+			<div class="row mb-2">
+				@foreach (var rating in Response.Ratings.OrderBy(o => o.RatingType))
+				{
+					<div class="col-auto card bgchart2">
+						<div class="card-header">
+							<div class="card-title fw-bold">@rating.RatingType</div>
+						</div>
+						<div class="card-body bgchart">
+							<div class="d-flex justify-content-center">
+								<div>
+									<span class="text-danger small">#@rating.Pos</span>
+								</div>
+								<div class="ms-1">
+									<span class="text-warning fw-bold" style="font-size: 1.4rem;">
+										@rating.Rating.ToString("N2")
+									</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				}
+			</div>
+		}
+		@if (details != null && details.PercentileMaxRank > 0)
+		{
+			var rank = Response.Ratings.FirstOrDefault(f => f.RatingType == Request.RatingType)?.Pos ?? 0;
+			var ratio = rank / (double)details.PercentileMaxRank;
+			<h3>Better than @((1.0 - ratio).ToString("P2")) of <span class="text-warning">@Request.RatingType</span> players.</h3>
+		}
+
+		<div class="row mt-2">
+			<div class="card col-auto bgchart2">
+				<div class="card-header bgchart2">
+					<div class="card-title text-warning fw-bold">Game Modes Played</div>
+				</div>
+				<div class="card-body bgchart2">
+					<table class="tptable">
+						<thead>
+							<tr>
+								<th>Mode</th>
+								<th>Count</th>
+							</tr>
+						</thead>
+						<tbody>
+							@if (details != null)
+							{
+								@foreach (var gameMode in details.GameModes.OrderBy(o => o.GameMode))
+								{
+									<tr>
+										<td>@gameMode.GameMode</td>
+										<td class="text-end">@gameMode.Count</td>
+									</tr>
+								}
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<div class="card col-auto bgchart2">
+				@{
+					var currentRating = Response.Ratings.FirstOrDefault(f => f.RatingType == Request.RatingType);
+				}
+				<div class="card-header bgchart2">
+					<div class="card-title fw-bold">
+						<span class="text-warning">Rating Info</span> @Request.RatingType
+					</div>
+				</div>
+				<div class="card-body bgchart">
+					<table class="tptable">
+						@if (currentRating != null)
+						{
+							<tbody>
+								<tr>
+									<th>Games</th>
+									<td>@currentRating.Games</td>
+								</tr>
+								<tr>
+									<th>Main</th>
+									<td>@currentRating.Main</td>
+								</tr>
+								<tr>
+									<th>Winrate</th>
+									<td>@((currentRating.Games == 0 ? 0 : currentRating.Wins / (double)currentRating.Games).ToString("P2"))</td>
+								</tr>
+								<tr>
+									<th>Mvp</th>
+									<td>@((currentRating.Games == 0 ? 0 : currentRating.Mvps / (double)currentRating.Games).ToString("P2"))</td>
+								</tr>
+								<tr>
+									<th>Main %</th>
+									<td>@((currentRating.Games == 0 ? 0 : currentRating.MainCount / (double)currentRating.Games).ToString("P2"))</td>
+								</tr>
+								<tr>
+									<th>Consistency</th>
+									<td>@currentRating.Cons.ToString("N2")</td>
+								</tr>
+								<tr>
+									<th>Confidence</th>
+									<td>@currentRating.Conf.ToString("N2")</td>
+								</tr>
+								<tr>
+									<th>Change</th>
+									<td>@currentRating.Change.ToString("N0")</td>
+								</tr>
+							</tbody>
+						}
+					</table>
+				</div>
+			</div>
+			@if (details != null)
+			{
+				<div class="col-auto">
+					<div class="bgchart border rounded p-2" style="max-width: 350px;">
+						@if (details.LongestWinStreak.Count > 0)
+						{
+							<p>Longest win streak <span class="text-warning">@details.LongestWinStreak.Count</span> from @details.LongestWinStreak.StartDate.ToString("yyyy-MM-dd") to @details.LongestWinStreak.EndDate.ToString("yyyy-MM-dd")</p>
+						}
+						@if (details.LongestLoseStreak.Count > 0)
+						{
+							<p>Longest lose streak <span class="text-warning">@details.LongestLoseStreak.Count</span> form @details.LongestLoseStreak.StartDate.ToString("yyyy-MM-dd") to @details.LongestLoseStreak.EndDate.ToString("yyyy-MM-dd")</p>
+						}
+						@if (details.TopRating.Rating > 0)
+						{
+							<p>Top rating <span class="text-warning">@details.TopRating.Rating.ToString("N2")</span> on @details.TopRating.DateAchieved.ToString("yyyy-MM-dd")</p>
+						}
+					</div>
+				</div>
+			}
+		</div>
+		@if (details != null)
+		{
+			<div class="row mb-2">
+				<div class="col-auto">
+					<div class="bgchart p-1 border border-secondary rounded"
+						 style="position: relative; width: 12.5vw; min-width: 700px; max-width: 850px; height: 12.5vw; min-height: 500px; max-height: 750px;">
+						<CommandersChart @ref="commandersChart" RatingDetails="details" />
+					</div>
+				</div>
+				@if (HostOptions.Value.Kind != HostAppKind.BlazorWasmPwa)
+				{
+					<div class="col-auto bgchart p-1 border border-secondary rounded"
+						 style="position: relative; width: 50vw; min-width: 700px; max-width: 800px; height: calc(70vw * 0.5); min-height: 400px; max-height: 500px;">
+						<RatingsChart @ref="ratingsChart" RatingDetails="details" />
+					</div>
+				}
+			</div>
+			<div class="row mb-2">
+				<div class="col-auto card bgchart2">
+					<div class="card-header bgchart2">
+						<h3 class="text-warning fw-bold">Recent Replays</h3>
+					</div>
+					<div class="card-body bgchart">
+						<table class="tptable">
+							<thead class="user-select-none">
+								<tr>
+									<th style="width: 120px;">Gametime</th>
+									<th style="width: 100px;">GameMode</th>
+									<th style="width: 100px;">Duration</th>
+									<th style="width: 200px;">Team1</th>
+									<th style="width: 200px;">Team2</th>
+									<th style="width: 100px;">Exp2Win</th>
+									<th style="width: 120px;">AvgRating</th>
+									<th style="width: 120px;">LeaverType</th>
+								</tr>
+							</thead>
+							<tbody>
+								@foreach (var replay in details.Replays)
+								{
+									<tr class="pointer" style="height: 47px;"
+										id="@replay.ReplayHash" @onclick="() => LoadReplay(replay.ReplayHash)">
+										<td>@replay.Gametime.ToString("yyyy-MM-dd")</td>
+										<td>@replay.GameMode</td>
+										<td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+										<td>
+											<ReplayTeamComponent Replay="replay" TeamNumber="1" />
+										</td>
+										<td>
+											<ReplayTeamComponent Replay="replay" TeamNumber="2" />
+										</td>
+										<td>@replay.Exp2Win?.ToString("p")</td>
+										<td>@replay.AvgRating</td>
+										<td>@replay.LeaverType</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div class="col-auto">
+					<CommandersPerformanceTable @bind-Request="Request"
+												Details="details"
+												ToonId="Response.ToonId" />
+				</div>
+			</div>
+			<div class="row mb-2">
+				<div class="col-auto">
+					<TeammateOpponentTable Title="Teammates" Stats="details.TeammateStats" AvgRating="details.AvgTeammateRating" />
+				</div>
+				<div class="col-auto">
+					<TeammateOpponentTable Title="Opponents" Stats="details.OpponentStats" AvgRating="details.AvgOpponentRating" />
+				</div>
+				<div class="col-auto card bgchart2">
+					<div class="card-header bgchart2">
+						<h3 class="text-warning fw-bold">Game Positions</h3>
+					</div>
+					<div class="card-body bgchart">
+						<table class="tptable">
+							<thead class="user-select-none">
+								<tr>
+									<th>#</th>
+									<th>Picks</th>
+									<th>Winrate</th>
+								</tr>
+							</thead>
+							<tbody>
+								@{
+									var total = details.PosStats.Sum(s => s.Count);
+								}
+								@foreach (var position in details.PosStats.OrderBy(o => o.GamePos))
+								{
+									<tr>
+										<td>@position.GamePos</td>
+										<td>@(position.Count == 0 ? "" : (position.Count / (double)total).ToString("P2"))</td>
+										<td>@((position.Count == 0 ? 0 : position.Wins / (double)position.Count).ToString("P2"))</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		}
+	</div>
+</div>
+
+@code {
+	[Parameter, EditorRequired]
+	public PlayerStatsResponse Response { get; set; } = null!;
+
+	[Parameter]
+	public EventCallback<ReplayDetails> OnReplayRequest { get; set; }
+
+	[Parameter]
+	public EventCallback OnClose { get; set; }
+
+	PlayerStatsRequest Request = new();
+	RatingDetails? details;
+
+	CancellationTokenSource cts = new();
+	CommandersChart? commandersChart;
+	RatingsChart? ratingsChart;
+	CmdrAvgGainResponse? avgGainResponse;
+
+	protected override void OnParametersSet()
+	{
+		Request.RatingType = Response.RatingDetails.FirstOrDefault()?.RatingType ?? RatingType.All;
+		Request.TimePeriod = TimePeriod.Last90Days;
+		details = Response.RatingDetails.FirstOrDefault(f => f.RatingType == Request.RatingType);
+		avgGainResponse = details?.AvgGainResponses.FirstOrDefault(f => f.TimePeriod == Request.TimePeriod);
+	}
+
+	protected override async Task OnInitializedAsync()
+	{
+		if (HostOptions.Value.Kind == HostAppKind.BlazorWasmPwa)
+		{
+			Request.RatingType = RatingType.All;
+			Request.TimePeriod = TimePeriod.Last90Days;
+		}
+		details = Response.RatingDetails.FirstOrDefault(f => f.RatingType == Request.RatingType);
+		avgGainResponse = details?.AvgGainResponses.FirstOrDefault(f => f.TimePeriod == Request.TimePeriod);
+		await base.OnInitializedAsync();
+	}
+
+	private async Task LoadDetails()
+	{
+		details = Response.RatingDetails.FirstOrDefault(f => f.RatingType == Request.RatingType);
+		if (details == null)
+		{
+			var ratingDetails = await PlayerService.GetRatingDetails(Request with { ToonId = Response.ToonId }, cts.Token);
+			Response.RatingDetails.Add(ratingDetails);
+			details = ratingDetails;
+		}
+		if (details != null)
+		{
+			commandersChart?.Update(details);
+			ratingsChart?.Update(details);
+		}
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task LoadReplay(string replayHash)
+	{
+		var replayDetails = await ReplayRepository.GetReplayDetails(replayHash);
+		if (replayDetails != null)
+		{
+			await OnReplayRequest.InvokeAsync(replayDetails);
+		}
+	}
+
+	public void Dispose()
+	{
+		cts.Cancel();
+		cts.Dispose();
+	}
+}

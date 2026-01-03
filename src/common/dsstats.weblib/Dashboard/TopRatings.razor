@@ -1,0 +1,94 @@
+﻿@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IPlayerService PlayerService
+
+<div class="table-responsive">
+	<table class="tptable" aria-busy="@isLoading">
+		<colgroup>
+			<col width="48px;" />
+			<col width="200px;" />
+			<col width="82px;" />
+			<col width="84px;" />
+			<col width="95px;" />
+			<col width="95px;" />
+		</colgroup>
+		<thead class="user-select-none">
+			<tr>
+				<th><i class="bi bi-globe"></i></th>
+				<th>Name</th>
+				<th>Rating</th>
+				<th>Games</th>
+				<th>Main</th>
+				<th>Winrate</th>
+			</tr>
+		</thead>
+		<tbody role="status">
+			@if (isLoading)
+			{
+				@for (int i = 0; i < 7; i++)
+				{
+					<tr class="placeholder-wave">
+						<td><span class="placeholder w-100"></span></td>
+						<td><span class="placeholder w-100 bg-primary"></span></td>
+						<td><span class="placeholder w-100 bg-warning"></span></td>
+						<td><span class="placeholder w-100"></span></td>
+						<td><span class="placeholder w-100"></span></td>
+						<td><span class="placeholder w-100"></span></td>
+					</tr>
+				}
+			}
+			else
+			{
+				@foreach (var rating in playerRatings)
+				{
+					<tr>
+						<td>@Data.GetRegionString(rating.RegionId)</td>
+						<td>
+							<div class="d-inline-block text-truncate text-primary" style="width:150px">
+								@rating.Name
+							</div>
+						</td>
+						<td class="text-warning">@rating.Rating.ToString("N0")</td>
+						<td>@rating.Games.ToString("N0")</td>
+						<td>@rating.Main</td>
+						<td>@((rating.Games == 0 ? 0 : rating.Wins / (double)rating.Games).ToString("P2"))</td>
+					</tr>
+				}
+			}
+		</tbody>
+
+	</table>
+</div>
+
+@code {
+	[Parameter, EditorRequired]
+	public RatingType RatingType { get; set;  }
+
+	bool isLoading = true;
+
+	List<PlayerRatingListItem> playerRatings = [];
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			await LoadData();
+			isLoading = false;
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+
+	private async Task LoadData()
+	{
+		PlayerRatingsRequest request = new()
+		{
+			RatingType = RatingType,
+			IsActive = true,
+			Page = 1,
+			PageSize = 7,
+			Skip = 0,
+			Take = 7
+		};
+		playerRatings = await PlayerService.GetRatings(request);
+	}
+}

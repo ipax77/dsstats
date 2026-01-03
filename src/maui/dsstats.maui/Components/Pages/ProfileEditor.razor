@@ -1,0 +1,29 @@
+@using dsstats.db
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Name</label>
+                <InputText class="form-control" @bind-Value="Profile.Name" />
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Folder</label>
+                <InputText class="form-control" @bind-Value="Profile.Folder" />
+            </div>
+            <div class="col-md-2">
+                <div class="form-check mt-4">
+                    <InputCheckbox class="form-check-input" @bind-Value="Profile.Active" />
+                    <label class="form-check-label">Active</label>
+                </div>
+            </div>
+            <div class="col-md-1 text-end">
+                <button type="button" class="btn btn-outline-danger" @onclick="OnRemoveClicked">
+                    Remove
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

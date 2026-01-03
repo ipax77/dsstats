@@ -1,0 +1,91 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using dsstats.shared
+
+<div class="border rounded p-2 bgchart">
+	<EditForm EditContext="editContext">
+		<div class="d-flex g-3">
+			<!-- Interest column -->
+			<div class="col-auto">
+				<h6 class="fw-bold">Commander</h6>
+				<div class="btn-group-vertical">
+					@foreach (var value in Enum.GetValues<Commander>())
+					{
+						@if (value == Commander.None)
+						{
+							<span style="height: 2.1rem;"></span>
+
+						}
+						else
+						{
+							<button type="button"
+									class="btn btn-sm @(Request.Interest == value ? "btn-light" : "btn-outline-light") mb-1"
+									@onclick="@(() => SetInterest(value))">
+								<div class="d-flex">
+									<div class="preload-@(value.ToString().ToLower()) me-1" style="background-size: 70%; background-position:center;"></div>
+									<div class="align-self-center">@value</div>
+								</div>
+							</button>
+						}
+					}
+				</div>
+			</div>
+
+			<!-- Versus column -->
+			<div class="col-auto">
+				<h6 class="fw-bold">VS.</h6>
+				<div class="btn-group-vertical">
+					@foreach (var value in Enum.GetValues<Commander>())
+					{
+						<button type="button"
+								class="btn btn-sm @(Request.Versus == value ? "btn-light" : "btn-outline-light") mb-1"
+								@onclick="@(() => SetVersus(value))">
+							<div class="d-flex">
+								<div class="preload-@(value.ToString().ToLower()) me-1" style="background-size: 70%; background-position:center;"></div>
+								<div class="align-self-center">@value</div>
+							</div>
+						</button>
+					}
+				</div>
+			</div>
+		</div>
+	</EditForm>
+</div>
+
+@code {
+	[Parameter, EditorRequired]
+	public BuildsRequest Request { get; set; } = default!;
+
+	[Parameter]
+	public EventCallback OnRequestChanged { get; set; }
+
+	private EditContext editContext = null!;
+
+	protected override void OnInitialized()
+	{
+		editContext = new(Request);
+		editContext.OnFieldChanged += FieldChanged;
+		base.OnInitialized();
+	}
+
+	private void SetInterest(Commander cmd)
+	{
+		Request.Interest = cmd;
+		editContext.NotifyFieldChanged(FieldIdentifier.Create(() => Request.Interest));
+	}
+
+	private void SetVersus(Commander cmd)
+	{
+		Request.Versus = cmd;
+		editContext.NotifyFieldChanged(FieldIdentifier.Create(() => Request.Versus));
+	}
+
+	private void FieldChanged(object? sender, FieldChangedEventArgs e)
+	{
+		OnRequestChanged.InvokeAsync();
+	}
+
+	public void Dispose()
+	{
+		editContext.OnFieldChanged -= FieldChanged;
+	}
+}

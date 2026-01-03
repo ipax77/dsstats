@@ -1,0 +1,113 @@
+﻿@using dsstats.shared
+<table class="tptable">
+	<thead class="user-select-none">
+		<tr>
+			<th>#</th>
+			<th><i class="bi bi-arrow-down-up"></i></th>
+			<th>Player</th>
+			@if (ReplayHelper.HasRating)
+			{
+				<th>Rating</th>
+				<th>Games</th>
+			}
+			<th>APM</th>
+			<th>Cmdr</th>
+			<th>Income</th>
+			<th>Army</th>
+			<th>Kills</th>
+			<th>Build</th>
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var player in Players)
+		{
+			var ratingInfo = GetPlayerRatingInfo(player);
+			var spawn = ReplayHelper.GetSpawn(player);
+			var trStyle = ReplayHelper.GetPlayerTableRowStyle(player);
+			var isActive = ReplayHelper.ActiveBuilds.Contains(player);
+			<tr class="pointer" @onclick="() => RequestBuild.InvokeAsync(player.Player.ToonId)" style="@trStyle">
+				<td>@player.GamePos</td>
+				<td class="text-nowrap">
+					<span class="p-1 bgchart2 rounded-1 @ratingInfo.ColorClass">@ratingInfo.Change</span>
+				</td>
+				<td @onclick:stopPropagation @onclick="() => RequestStats.InvokeAsync(player.Player)">
+					<span class="d-inline-block text-truncate text-decoration-underline" style="width: 100px;">@player.Name</span>
+				</td>
+				@if (ReplayHelper.HasRating)
+				{
+					<td>@ratingInfo.Rating</td>
+					<td>@ratingInfo.Games</td>
+				}
+				<td>@player.Apm</td>
+				<td>
+					<div class="preload-@(player.Race.ToString().ToLower())" alt="@player.Race" style="width: 30px; height: 30px;"></div>
+				</td>
+				<td>@ReplayHelper.GetNumberString(spawn?.Income)</td>
+				<td>@ReplayHelper.GetNumberString(spawn?.ArmyValue)</td>
+				<td>@ReplayHelper.GetNumberString(spawn?.KilledValue)</td>
+				<td>
+					<input id="@player.Player.ToonId.Id" type="checkbox" checked="@isActive" @onclick:stopPropagation @onclick="() => RequestBuild.InvokeAsync(player.Player.ToonId)" class="form-check-input" />
+				</td>
+			</tr>
+		}
+	</tbody>
+	@if (Players.Count > 0)
+	{
+		<tfoot>
+			<tr style="border-top: 1px solid grey;">
+				<td colspan="3" class="text-end fw-bold">&Oslash;</td>
+				@if (ReplayHelper.HasRating)
+				{
+					<td>@ReplayHelper.GetAvgRating(TeamId)</td>
+					<td></td>
+				}
+				<td>@Players.Average(a => a.Apm).ToString("N0")</td>
+				<td></td>
+				<td>@ReplayHelper.GetAvgIncome(Players)</td>
+				<td>@ReplayHelper.GetAvgArmy(Players)</td>
+				<td>@ReplayHelper.GetAvgKills(Players)</td>
+			</tr>
+		</tfoot>
+	}
+</table>
+
+@code {
+	[Parameter, EditorRequired]
+	public int TeamId { get; set; }
+
+	[Parameter, EditorRequired]
+	public List<ReplayPlayerDto> Players { get; set; } = [];
+
+	[Parameter, EditorRequired]
+	public ReplayHelper ReplayHelper { get; set; } = null!;
+
+	[Parameter]
+	public EventCallback<ToonIdDto> RequestBuild { get; set; }
+
+	[Parameter]
+	public EventCallback<PlayerDto> RequestStats { get; set; }
+
+	private PlayerRatingInfo GetPlayerRatingInfo(ReplayPlayerDto player)
+	{
+		PlayerRatingInfo info = new();
+		var rating = ReplayHelper.GetRating(player);
+		if (rating != null)
+		{
+			var change = rating.RatingDelta;
+			info.ColorClass = change <= 0 ? "bi-arrow-down text-danger" : "bi-arrow-up text-success";
+			info.Change = change.ToString("N1");
+			info.Rating = rating.RatingBefore.ToString("N0");
+			info.Games = ReplayHelper.GetNumberString(rating.Games);
+		}
+
+		return info;
+	}
+
+	internal sealed class PlayerRatingInfo
+	{
+		public string ColorClass { get; set; } = string.Empty;
+		public string Change { get; set; } = string.Empty;
+		public string Rating { get; set; } = string.Empty;
+		public string Games { get; set; } = string.Empty;
+	}
+}

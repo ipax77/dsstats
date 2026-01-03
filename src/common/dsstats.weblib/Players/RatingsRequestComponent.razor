@@ -1,0 +1,225 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using dsstats.shared
+@implements IDisposable
+
+<div class="bgchart border rounded p-2">
+	<EditForm EditContext="editContext" FormName="StatsRequest">
+		<div class="row">
+			<div class="col-1 align-self-center">
+				@if (isLoading)
+				{
+					<div class="spinner-border ms-2" role="status">
+						<span class="visually-hidden">Loading...</span>
+					</div>
+				}
+				else
+				{
+					<span class="bi bi-person-lines-fill ms-2"></span>
+					<span class="badge bg-dark"># @Data.GetNumberString(Count)</span>
+				}
+			</div>
+			<div class="col-3">
+				<label for="namesearch" class="col-form-label">Name</label>
+				<div class="input-group">
+					<InputText id="namesearch" class="form-control border-end-0 border" @bind-Value="Request.Name" />
+					<span class="input-group-text pointer">
+						<i class="bi bi-search"></i>
+					</span>
+					<span class="input-group-text pointer" @onclick="ClearSearch">
+						<i class="bi bi-x-lg text-danger"></i>
+					</span>
+				</div>
+
+			</div>
+			<div class="col-3">
+				<label for="ratingselect" class="col-form-label">Rating Type</label>
+				<InputSelect id="ratingselect" class="form-select" @bind-Value="Request.RatingType">
+					@foreach (RatingType type in Enum.GetValues(typeof(RatingType)))
+					{
+						<option value="@type">@type</option>
+					}
+				</InputSelect>
+			</div>
+			<div class="col-3">
+				<div class="row mt-3 align-items-center">
+					<div class="col-auto">
+						<label for="pageSize" class="form-label mb-0 me-2">Region:</label>
+					</div>
+					<div class="col-auto">
+						<select class="form-select form-select-sm" id="pageSize" @bind="Request.RegionId" @bind:after="() => OnRequestChanged.InvokeAsync()">
+							<option value="0">All</option>
+							<option value="1">NA</option>
+							<option value="2">EU</option>
+							<option value="3">KR</option>
+							<option value="4">TW</option>
+							<option value="5">CN</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-check form-switch mt-2">
+					<InputCheckbox class="form-check-input" role="switch" id="flexSwitchCheckDefault" @bind-Value="Request.IsActive" />
+					<label class="form-check-label" for="flexSwitchCheckDefault">Active</label>
+				</div>
+			</div>
+		</div>
+		<!-- Pagination Controls -->
+		<div class="row mt-3 align-items-center">
+			<div class="col-auto">
+				<label for="pageSize" class="form-label mb-0 me-2">Page Size:</label>
+			</div>
+			<div class="col-auto">
+				<select class="form-select form-select-sm" id="pageSize" @bind="Request.PageSize" @bind:after="OnPageSizeChanged">
+					<option value="10">10</option>
+					<option value="100">100</option>
+					<option value="1000">1.000</option>
+					<option value="10000">10.000</option>
+					<option value="20000">20.000</option>
+				</select>
+			</div>
+			<div class="col">
+				<nav aria-label="Page navigation">
+					<ul class="pagination pagination-sm mb-0">
+						<li class="page-item @(Request.Page <= 1 ? "disabled" : "")">
+							<button class="page-link" type="button" @onclick="FirstPage" disabled="@(Request.Page <= 1)">
+								<i class="bi bi-chevron-bar-left"></i>
+							</button>
+						</li>
+						<li class="page-item @(Request.Page <= 1 ? "disabled" : "")">
+							<button class="page-link" type="button" @onclick="PreviousPage" disabled="@(Request.Page <= 1)">
+								<i class="bi bi-chevron-left"></i>
+							</button>
+						</li>
+
+						@foreach (var pageNum in GetPageNumbers())
+						{
+							<li class="page-item @(pageNum == Request.Page ? "active" : "")">
+								<button class="page-link" type="button" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+							</li>
+						}
+
+						<li class="page-item @(Request.Page >= TotalPages ? "disabled" : "")">
+							<button class="page-link" type="button" @onclick="NextPage" disabled="@(Request.Page >= TotalPages)">
+								<i class="bi bi-chevron-right"></i>
+							</button>
+						</li>
+						<li class="page-item @(Request.Page >= TotalPages ? "disabled" : "")">
+							<button class="page-link" type="button" @onclick="LastPage" disabled="@(Request.Page >= TotalPages)">
+								<i class="bi bi-chevron-bar-right"></i>
+							</button>
+						</li>
+					</ul>
+				</nav>
+			</div>
+			<div class="col-auto">
+				<small class="text-muted">
+					Page @Request.Page of @TotalPages
+				</small>
+			</div>
+		</div>
+	</EditForm>
+</div>
+
+@code {
+	[Parameter, EditorRequired]
+	public PlayerRatingsRequest Request { get; set; } = default!;
+
+	[Parameter, EditorRequired]
+	public int Count { get; set; }
+
+	[Parameter]
+	public EventCallback OnRequestChanged { get; set; }
+
+	EditContext editContext = null!;
+	bool isLoading;
+
+	private int TotalPages => Request.PageSize > 0 ? (int)Math.Ceiling((double)Count / Request.PageSize) : 1;
+
+	protected override void OnInitialized()
+	{
+		editContext = new(Request);
+		editContext.OnFieldChanged += FieldChanged;
+		base.OnInitialized();
+	}
+
+	private void FieldChanged(object? sender, FieldChangedEventArgs e)
+	{
+		if (!isLoading)
+		{
+			OnRequestChanged.InvokeAsync();
+		}
+	}
+
+	private void ClearSearch()
+	{
+		Request.Name = string.Empty;
+		OnRequestChanged.InvokeAsync();
+	}
+
+	public void SetLoading(bool loading)
+	{
+		isLoading = loading;
+		InvokeAsync(StateHasChanged);
+	}
+
+	private void OnPageSizeChanged()
+	{
+		Request.Page = 1;
+		OnRequestChanged.InvokeAsync();
+	}
+
+	private void FirstPage()
+	{
+		Request.Page = 1;
+		OnRequestChanged.InvokeAsync();
+	}
+
+	private void PreviousPage()
+	{
+		if (Request.Page > 1)
+		{
+			Request.Page--;
+			OnRequestChanged.InvokeAsync();
+		}
+	}
+
+	private void NextPage()
+	{
+		if (Request.Page < TotalPages)
+		{
+			Request.Page++;
+			OnRequestChanged.InvokeAsync();
+		}
+	}
+
+	private void LastPage()
+	{
+		Request.Page = TotalPages;
+		OnRequestChanged.InvokeAsync();
+	}
+
+	private void GoToPage(int page)
+	{
+		Request.Page = page;
+		OnRequestChanged.InvokeAsync();
+	}
+
+	private IEnumerable<int> GetPageNumbers()
+	{
+		var maxPagesToShow = 5;
+		var startPage = Math.Max(1, Request.Page - maxPagesToShow / 2);
+		var endPage = Math.Min(TotalPages, startPage + maxPagesToShow - 1);
+
+		// Adjust start if we're near the end
+		if (endPage - startPage < maxPagesToShow - 1)
+		{
+			startPage = Math.Max(1, endPage - maxPagesToShow + 1);
+		}
+
+		return Enumerable.Range(startPage, endPage - startPage + 1);
+	}
+
+	public void Dispose()
+	{
+		editContext.OnFieldChanged -= FieldChanged;
+	}
+}

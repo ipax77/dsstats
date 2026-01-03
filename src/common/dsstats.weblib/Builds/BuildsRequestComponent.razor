@@ -1,0 +1,126 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using dsstats.shared;
+@implements IDisposable
+
+<div class="border rounded p-2 bgchart">
+	<EditForm EditContext="editContext">
+		<div class="row g-3">
+			<div class="col-auto">
+				<label for="ratingType" class="form-label">Rating Type</label>
+				<InputSelect id="ratingType" @bind-Value="Request.RatingType" class="form-select">
+					@foreach (var value in Enum.GetValues<RatingType>())
+					{
+						<option value="@value">@value</option>
+					}
+				</InputSelect>
+			</div>
+
+			<div class="col-auto">
+				<label for="timePeriod" class="form-label">Time Period</label>
+				<InputSelect id="timePeriod" @bind-Value="Request.TimePeriod" class="form-select">
+					@foreach (var value in Enum.GetValues<TimePeriod>())
+					{
+						<option value="@value">@value</option>
+					}
+				</InputSelect>
+			</div>
+
+			<div class="col-auto">
+				<label for="interest" class="form-label">Commander</label>
+				<InputSelect id="interest" @bind-Value="Request.Interest" class="form-select">
+					@foreach (var value in Enum.GetValues<Commander>())
+					{
+						<option value="@value">@value</option>
+					}
+				</InputSelect>
+			</div>
+
+			<div class="col-auto">
+				<label for="versus" class="form-label">Versus</label>
+				<InputSelect id="versus" @bind-Value="Request.Versus" class="form-select">
+					@foreach (var value in Enum.GetValues<Commander>())
+					{
+						<option value="@value">@value</option>
+					}
+				</InputSelect>
+			</div>
+
+			<div class="col-auto">
+				<label for="breakpoint" class="form-label">Breakpoint</label>
+				<InputSelect id="breakpoint" @bind-Value="Request.Breakpoint" class="form-select">
+					@foreach (var value in Enum.GetValues<Breakpoint>())
+					{
+						<option value="@value">@value</option>
+					}
+				</InputSelect>
+			</div>
+
+			<div class="col-auto">
+				<label for="fromRating" class="form-label">From Rating: @Request.FromRating</label>
+				<input type="range" id="fromRating" @bind="Request.FromRating" @bind:event="oninput"
+					   class="form-range" min="@Data.MinBuildRating" max="@Data.MaxBuildRating" step="50" />
+			</div>
+
+			<div class="col-auto">
+				<label for="toRating" class="form-label">To Rating: @Request.ToRating @(Request.ToRating == Data.MaxBuildRating ? "+" : "")</label>
+				<input type="range" id="toRating" @bind="Request.ToRating" @bind:event="oninput"
+					   class="form-range" min="@Data.MinBuildRating" max="@Data.MaxBuildRating" step="50" />
+			</div>
+
+			<div class="col-auto">
+				<button type="button" class="btn btn-sm btn-outline-warning"
+						@onclick="SetRating">
+					Set Rating
+				</button>
+				<div class="form-check mt-4">
+					<InputCheckbox id="withLeavers" @bind-Value="Request.WithLeavers" class="form-check-input" />
+					<label for="withLeavers" class="form-check-label">
+						With Leavers
+					</label>
+				</div>
+			</div>
+		</div>
+	</EditForm>
+</div>
+
+@code {
+	[Parameter, EditorRequired]
+	public BuildsRequest Request { get; set; } = default!;
+
+	[Parameter]
+	public EventCallback OnRequestChanged { get; set; }
+
+	EditContext editContext = null!;
+
+	protected override void OnInitialized()
+	{
+		editContext = new(Request);
+		editContext.OnFieldChanged += FieldChanged;
+		base.OnInitialized();
+	}
+
+	private void FieldChanged(object? sender, FieldChangedEventArgs e)
+	{
+		if (Request.FromRating > Request.ToRating)
+		{
+			(Request.FromRating, Request.ToRating) =
+				(Request.ToRating, Request.FromRating);
+		}
+		OnRequestChanged.InvokeAsync();
+	}
+
+	private void SetRating()
+	{
+		if (Request.FromRating > Request.ToRating)
+		{
+			(Request.FromRating, Request.ToRating) =
+				(Request.ToRating, Request.FromRating);
+		}
+		OnRequestChanged.InvokeAsync();
+	}
+
+	public void Dispose()
+	{
+		editContext.OnFieldChanged -= FieldChanged;
+	}
+}

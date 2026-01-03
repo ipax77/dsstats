@@ -1,0 +1,86 @@
+@page "/config"
+@using dsstats.pwa.Services
+@using dsstats.shared
+@inject PwaConfigService PwaConfigService
+@inject BackupService BackupService
+
+<PageTitle>mydsstats - Configuration</PageTitle>
+
+<div class="container py-4 bgchart">
+	<div class="row">
+		<div class="col-lg-6 mx-auto">
+			<h2 class="fw-bold mb-3 text-center">App Configuration</h2>
+			<p class="text-muted text-center mb-4">
+				Adjust your preferences for decoding performance and upload behavior.
+			</p>
+
+			@if (config != null)
+			{
+				<div class="card shadow-sm border-0 p-4 mb-4 bgchart2">
+					<!-- CPU Cores -->
+					<div class="mb-3">
+						<label for="cpuCores" class="form-label fw-semibold">CPU Cores</label>
+						<input id="cpuCores" type="number" class="form-control" @bind="config.CPUCores" />
+						<small class="text-muted">Number of cores used during replay decoding (default: 1).</small>
+					</div>
+
+					<!-- Upload Anonymously -->
+					<div class="form-check mb-3">
+						<input id="uploadCredential" type="checkbox" class="form-check-input" @bind="config.UploadCredential" />
+						<label for="uploadCredential" class="form-check-label fw-semibold">Upload Anonymously</label>
+						<small class="text-muted d-block">When checked, your replays will be uploaded without linking to your account.</small>
+					</div>
+
+					<!-- Replay Start Name -->
+					<div class="mb-3">
+						<label for="replayStartName" class="form-label fw-semibold">Replay Start Name</label>
+						<input id="replayStartName" type="text" class="form-control" @bind="config.ReplayStartName" />
+						<small class="text-muted">Optional prefix to filter replays by filename when decoding from a directory.</small>
+					</div>
+
+					<!-- Save Button -->
+					<div class="text-center mt-4">
+						<div class="btn-group" role="group" aria-label="Config Buttons">
+							<button type="button" class="btn btn-primary btn-lg px-4" @onclick="SaveChanges">
+								<i class="bi bi-save me-2"></i> Save Changes
+							</button>
+							<button type="button" class="btn btn-warning btn-lg" @onclick="() => BackupService.BackupToFileAsync()">
+								<i class="bi bi-floppy"></i> Backup Database
+							</button>
+							<button type="button" class="btn btn-danger btn-lg" @onclick="() => BackupService.RestoreFromFileAsync()">
+								<i class="bi bi-floppy"></i> Restore Database
+							</button>
+						</div>
+					</div>
+				</div>
+			}
+			else
+			{
+				<div class="text-center py-5">
+					<div class="spinner-border text-primary" role="status">
+						<span class="visually-hidden">Loading...</span>
+					</div>
+					<p class="text-muted mt-3">Loading configuration...</p>
+				</div>
+			}
+		</div>
+	</div>
+</div>
+
+
+@code {
+	private PwaConfig? config;
+
+	protected override async Task OnInitializedAsync()
+	{
+		config = await PwaConfigService.GetConfig();
+	}
+
+	private async Task SaveChanges()
+	{
+		if (config != null)
+		{
+			await PwaConfigService.SaveConfig(config);
+		}
+	}
+}

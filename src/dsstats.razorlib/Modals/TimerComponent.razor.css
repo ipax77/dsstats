@@ -1,9 +1,0 @@
-﻿.clock {
-    color: var(--color-tone-1);
-    font-family: sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-grow: 1;
-    overflow: hidden;
-}

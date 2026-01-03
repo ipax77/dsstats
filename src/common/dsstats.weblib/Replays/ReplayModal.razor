@@ -1,0 +1,48 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.shared
+@inject IJSRuntime JSRuntime
+
+<div class="modal" id="@modalId" aria-hidden="true" aria-labelledby="@modalId" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-body" style="background: url('/_content/dsstats.weblib/images/bgbing_soft.jpg') repeat center center fixed;">
+                @if (ReplayDetails != null)
+                {
+                    <ReplayComponent ReplayDetails="ReplayDetails" IsScrollable="IsScrollable" IsCloseable="true" OnPlayerRequest="OnPlayerRequest" OnClose="Close" />
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string modalId = "replayModal";
+
+    private ReplayDetails? ReplayDetails = null;
+
+    [Parameter]
+    public bool IsScrollable { get; set; }
+
+    [Parameter]
+    public bool IsCloseable { get; set; }
+
+    [Parameter]
+    public EventCallback<PlayerStatsResponse> OnPlayerRequest { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    public void Show(ReplayDetails replayDetails)
+    {
+        ReplayDetails = replayDetails;
+        InvokeAsync(StateHasChanged);
+        JSRuntime.InvokeVoidAsync("openModalById", modalId);
+    }
+
+    public void Close()
+    {
+        JSRuntime.InvokeVoidAsync("closeModalById", modalId);
+        OnClose.InvokeAsync();
+        ReplayDetails = null;
+    }
+}
