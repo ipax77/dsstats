@@ -48,11 +48,7 @@ namespace dsstats.maui
 
             builder.Services.AddHttpClient("api", httpClient =>
             {
-#if DEBUG
-                httpClient.BaseAddress = new Uri("http://localhost:5279");
-#else
                 httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
-#endif
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
             }).ConfigurePrimaryHttpMessageHandler(() =>
                 new HttpClientHandler
