@@ -33,6 +33,7 @@ public sealed record RatingDetails
     public int AvgOpponentRating { get; set; }
     public StreakPlayerStats LongestWinStreak { get; set; } = new();
     public StreakPlayerStats LongestLoseStreak { get; set; } = new();
+    public StreakPlayerStats? CurrentStreak { get; set; } = new();
     public TopRating TopRating { get; set; } = new();
 }
 

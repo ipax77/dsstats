@@ -155,6 +155,17 @@
 						{
 							<p>Longest lose streak <span class="text-warning">@details.LongestLoseStreak.Count</span> form @details.LongestLoseStreak.StartDate.ToString("yyyy-MM-dd") to @details.LongestLoseStreak.EndDate.ToString("yyyy-MM-dd")</p>
 						}
+						@if (details.CurrentStreak != null)
+						{
+							@if (details.CurrentStreak.Count > 0)
+							{
+								<p>Current Streak <span class="text-success">@details.CurrentStreak.Count wins since @details.CurrentStreak.StartDate.ToString("yyyy-MM-dd")</span></p>
+							}
+							else
+							{
+								<p>Current Streak <span class="text-danger">@(details.CurrentStreak.Count * -1) loses since @details.CurrentStreak.StartDate.ToString("yyyy-MM-dd")</span></p>
+							}
+						}
 						@if (details.TopRating.Rating > 0)
 						{
 							<p>Top rating <span class="text-warning">@details.TopRating.Rating.ToString("N2")</span> on @details.TopRating.DateAchieved.ToString("yyyy-MM-dd")</p>

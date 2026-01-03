@@ -254,20 +254,17 @@ public partial class PlayerService
         {
             if (s.OnWinStreak)
             {
+                // Continue win streak
                 s.CurrentWin.Count++;
                 s.CurrentWin.EndDate = ctx.Replay.Gametime;
             }
             else
             {
-                // switching to win streak
+                // Switching from lose to win streak
+                // Only update BestLose if current lose streak was longer
                 if (s.CurrentLose.Count > s.BestLose.Count)
                 {
-                    s.BestLose = new StreakPlayerStats
-                    {
-                        Count = s.CurrentLose.Count,
-                        StartDate = s.CurrentLose.StartDate,
-                        EndDate = ctx.Replay.Gametime
-                    };
+                    s.BestLose = s.CurrentLose with { EndDate = ctx.Replay.Gametime };
                 }
                 s.CurrentWin = new StreakPlayerStats
                 {
@@ -282,20 +279,17 @@ public partial class PlayerService
         {
             if (!s.OnWinStreak)
             {
+                // Continue lose streak
                 s.CurrentLose.Count++;
                 s.CurrentLose.EndDate = ctx.Replay.Gametime;
             }
             else
             {
-                // switching to lose streak
+                // Switching from win to lose streak
+                // Only update BestWin if current win streak was longer
                 if (s.CurrentWin.Count > s.BestWin.Count)
                 {
-                    s.BestWin = new StreakPlayerStats
-                    {
-                        Count = s.CurrentWin.Count,
-                        StartDate = s.CurrentWin.StartDate,
-                        EndDate = ctx.Replay.Gametime
-                    };
+                    s.BestWin = s.CurrentWin with { EndDate = ctx.Replay.Gametime };
                 }
                 s.CurrentLose = new StreakPlayerStats
                 {
@@ -367,6 +361,7 @@ public partial class PlayerService
             AvgOpponentRating = s.OpponentRatingsCount == 0 ? 0 : (int)(s.OpponentRatings / s.OpponentRatingsCount),
             LongestWinStreak = s.BestWin.Count >= s.CurrentWin.Count ? s.BestWin : s.CurrentWin,
             LongestLoseStreak = s.BestLose.Count >= s.CurrentLose.Count ? s.BestLose : s.CurrentLose,
+            CurrentStreak = s.OnWinStreak ? s.CurrentWin : s.CurrentLose with { Count = s.CurrentLose.Count * -1 },
             TopRating = s.TopRating
         };
 
