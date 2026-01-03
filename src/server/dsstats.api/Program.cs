@@ -30,11 +30,15 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: MyAllowSpecificOrigins,
                       policy =>
                       {
-                          var allowedOrigins = new List<string>
+                          var allowedOrigins = new HashSet<string>
                           {
                               "https://dsstats.pax77.org",
                               "https://dsstats-dev.pax77.org",
-                              "https://mydsstats.pax77.org"
+                              "https://mydsstats.pax77.org",
+                              "https://localhost:7257",
+                              "https://localhost:7227",
+                              "http://localhost:5123",
+                              "https://localhost:7039"
                           };
 
                           if (builder.Environment.IsDevelopment())
