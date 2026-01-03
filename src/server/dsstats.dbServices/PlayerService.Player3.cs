@@ -88,7 +88,8 @@ public partial class PlayerService
             Exp2Win = rating?.ExpectedWinProbability,
             AvgRating = rating?.AvgRating,
             LeaverType = rating?.LeaverType ?? LeaverType.None,
-            PlayerPos = ctx.SelfPlayer?.GamePos ?? 0
+            PlayerPos = ctx.SelfPlayer?.GamePos ?? 0,
+            PlayerGain = ctx.SelfRating?.RatingDelta ?? 0
         };
 
         s.LastReplays.Add(dto);

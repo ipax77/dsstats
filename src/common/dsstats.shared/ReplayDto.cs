@@ -94,6 +94,7 @@ public class ReplayListDto
     public int? AvgRating { get; init; }
     public LeaverType LeaverType { get; init; }
     public int PlayerPos { get; set; }
+    public double PlayerGain { get; set; }
 }
 
 public static class ReplayDtoExtensions

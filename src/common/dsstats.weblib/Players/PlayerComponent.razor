@@ -203,8 +203,9 @@
 									<th style="width: 120px;">Gametime</th>
 									<th style="width: 100px;">GameMode</th>
 									<th style="width: 100px;">Duration</th>
-									<th style="width: 200px;">Team1</th>
-									<th style="width: 200px;">Team2</th>
+									<th style="width: 150px;">Team1</th>
+									<th style="width: 150px;">Team2</th>
+									<th style="width: 100px;">Rating</th>
 									<th style="width: 100px;">Exp2Win</th>
 									<th style="width: 120px;">AvgRating</th>
 									<th style="width: 120px;">LeaverType</th>
@@ -223,6 +224,11 @@
 										</td>
 										<td>
 											<ReplayTeamComponent Replay="replay" TeamNumber="2" />
+										</td>
+										<td>
+											<span class="@(replay.PlayerGain < 0 ? "text-danger" : "text-success")">
+												@replay.PlayerGain.ToString("N2")
+											</span>
 										</td>
 										<td>@replay.Exp2Win?.ToString("p")</td>
 										<td>@replay.AvgRating</td>
