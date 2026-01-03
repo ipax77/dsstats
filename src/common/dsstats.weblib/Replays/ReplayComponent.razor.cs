@@ -121,6 +121,8 @@ public class ReplayHelper
     public ReplayHelper(ReplayDetails replayDetails)
     {
         _replayDetails = replayDetails;
+        IsTE = _replayDetails.Replay.Title.Contains("TE");
+        RatingType = GetDefaultRating();
         maxKills = _replayDetails.Replay.Players
             .SelectMany(p => p.Spawns)
             .Where(s => s.Breakpoint == Breakpoint.All)
@@ -137,8 +139,29 @@ public class ReplayHelper
     public bool ShowChart { get; set; }
     public bool ShowFileName { get; set; }
     public bool HasRating { get; set; }
+    public bool IsTE { get; set; }
     public HashSet<ReplayPlayerDto> ActiveBuilds { get; set; } = [];
 
+    private RatingType GetDefaultRating()
+    {
+        var availableTypes = GetRatingTypes();
+        if (availableTypes.Count <= 1)
+        {
+            return RatingType.All;
+        }
+        var defaultType = _replayDetails.Replay.GameMode switch
+        {
+            GameMode.Standard => IsTE ? RatingType.StandardTE : RatingType.Standard,
+            GameMode.Commanders => IsTE ? RatingType.CommandersTE : RatingType.Commanders,
+            GameMode.CommandersHeroic => RatingType.Commanders,
+            _ => RatingType.All
+        };
+        if (_replayDetails.ReplayRatings.Any(a => a.RatingType == defaultType))
+        {
+            return defaultType;
+        }
+        return RatingType.All;
+    }
 
     public ReplayPlayerRatingDto? GetRating(ReplayPlayerDto replayPlayer)
     {

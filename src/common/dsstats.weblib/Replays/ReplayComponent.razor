@@ -19,7 +19,7 @@
 				@ReplayDetails.Replay.Gametime.ToString("yyyy-MM-dd")
 			</div>
 			<div class="col-2">
-				@ReplayDetails.Replay.GameMode
+				@ReplayDetails.Replay.GameMode @(_replayHelper.IsTE ? "TE" : "")
 			</div>
 			<div class="col-2">
 				@TimeSpan.FromSeconds(ReplayDetails.Replay.Duration).ToString(@"hh\:mm\:ss")
