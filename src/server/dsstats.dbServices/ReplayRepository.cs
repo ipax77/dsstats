@@ -127,11 +127,18 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
         using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
         try
         {
+            int skip = ((request.Page - 1) * request.PageSize) + request.Skip;
+            int take = request.Take;
+            if (skip < 0 ||take <= 0)
+            {
+                return [];
+            }
+
             IQueryable<ReplayList> query = GetReplaysQueriable(request, context, false);
             IOrderedQueryable<ReplayList> ordered = GetOrderedReplays(query, request);
             List<ReplayList> list = await ordered
-                .Skip(((request.Page - 1) * request.PageSize) + request.Skip)
-                .Take(request.Take)
+                .Skip(skip)
+                .Take(take)
                 .ToListAsync(token);
 
             return list.Select(s => s.GetDto()).ToList();

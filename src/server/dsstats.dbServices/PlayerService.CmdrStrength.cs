@@ -20,7 +20,6 @@ public partial class PlayerService
                 return response;
             }
             var timeInfo = Data.GetTimePeriodInfo(request.TimePeriod);
-            var noEnd = timeInfo.End > DateTime.Today.AddDays(-2);
 
             int limit = 10 * 2;
             if (request.RatingType == RatingType.CommandersTE || request.RatingType == RatingType.StandardTE)
@@ -41,7 +40,7 @@ public partial class PlayerService
                           && rr.RatingType == request.RatingType
                           && rp.Race == request.Interest
                           && rr.Replay!.Gametime >= timeInfo.Start
-                          && (noEnd || rr.Replay.Gametime < timeInfo.End)
+                          && (!timeInfo.HasEnd || rr.Replay.Gametime < timeInfo.End)
                           && tm.ReplayPlayerId != rp.ReplayPlayerId
                         group new { pr.Player, rp, rpr } by new { rp.Player!.ToonId } into g
                         where g.Count() >= limit

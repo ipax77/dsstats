@@ -3,8 +3,6 @@ using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 
 namespace dsstats.dbServices;
 
@@ -18,7 +16,6 @@ public partial class PlayerService
         var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
         var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
 
-        Stopwatch sw = Stopwatch.StartNew();
         int playerId = importService.GetPlayerId(request.ToonId);
         RatingType ratingType = request.RatingType;
 
@@ -56,10 +53,6 @@ public partial class PlayerService
         }
 
         ratingDetails.PercentileMaxRank = await GetPercentileMaxRank(ratingType);
-
-        sw.Stop();
-        logger.LogWarning("GetPlayerDetailsNg {PlayerId} {RatingType} {Count} replays in {ElapsedMilliseconds} ms",
-            playerId, ratingType, replays.Count, sw.ElapsedMilliseconds);
 
         return ratingDetails;
     }

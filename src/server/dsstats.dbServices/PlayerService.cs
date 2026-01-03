@@ -35,6 +35,13 @@ public partial class PlayerService(IServiceScopeFactory scopeFactory, IMemoryCac
         }
         try
         {
+            int skip = ((request.Page - 1) * request.PageSize) + request.Skip;
+            int take = request.Take;
+            if (skip < 0 || take <= 0)
+            {
+                return [];
+            }
+
             using var scope = scopeFactory.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
             var query = GetRatingsQueryable(request, context);
@@ -42,8 +49,8 @@ public partial class PlayerService(IServiceScopeFactory scopeFactory, IMemoryCac
 
             var rawData = await ordered
                 .AsNoTracking()
-                .Skip(((request.Page - 1) * request.PageSize) + request.Skip)
-                .Take(request.Take)
+                .Skip(skip)
+                .Take(take)
                 .ToListAsync(token);
             return rawData.Select(s => s.ToPlayerRatingListItem()).ToList();
         }
