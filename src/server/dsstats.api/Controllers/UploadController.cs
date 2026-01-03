@@ -16,7 +16,7 @@ public class UploadController(UploadService uploadService, ILogger<UploadControl
     [Route("ImportReplays")]
     public async Task<ActionResult> ImportReplays([FromBody] UploadDto uploadDto)
     {
-        logger.LogInformation("indahouse");
+        logger.LogWarning("indahouse");
         var success = await uploadService.ProcessUploadAsync(uploadDto);
         if (success)
         {
