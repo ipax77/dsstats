@@ -8,7 +8,7 @@ using dsstats.dbServices.Builds;
 using dsstats.dbServices.Stats;
 using dsstats.ratings;
 using dsstats.shared.Interfaces;
-using dsstats.shared.Units;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using sc2arcade.crawler;
@@ -115,6 +115,13 @@ if (app.Environment.IsDevelopment())
 }
 
 // app.UseHttpsRedirection();
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost
+});
 
 app.UseRateLimiter();
 app.UseCors(MyAllowSpecificOrigins);
