@@ -4,6 +4,7 @@ using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace dsstats.ratings;
 
@@ -12,6 +13,8 @@ public partial class RatingService
     public async Task ContinueRatings()
     {
         await ratingLock.WaitAsync();
+        Stopwatch sw = Stopwatch.StartNew();
+        int count = 0;
         try
         {
             using var scope = scopeFactory.CreateAsyncScope();
@@ -29,25 +32,32 @@ public partial class RatingService
                 return;
             }
 
-            var replays = await GetReplayCalcDtos(latest.Gametime, 1000);
-            var playerRatingsStore = await PlayerRatingsStore.LoadFromDatabaseAsync(replays, context);
-            List<ReplayRating> replayRatingsToInsert = [];
-
-            foreach (var replay in replays)
+            var replays = await GetContinueReplayCalcDtos(latest.Gametime, 1000);
+            count = replays.Count;
+            if (count > 0)
             {
-                var ratingTypes = GetRatingTypes(replay);
-                foreach (var ratingType in ratingTypes)
+                var playerRatingsStore = await PlayerRatingsStore.LoadFromDatabaseAsync(replays, context);
+                List<ReplayRating> replayRatingsToInsert = [];
+
+                foreach (var replay in replays)
                 {
-                    var replayRating = ProcessReplay(replay, ratingType, playerRatingsStore);
-                    if (replayRating != null)
+                    var ratingTypes = GetRatingTypes(replay);
+                    foreach (var ratingType in ratingTypes)
                     {
-                        replayRatingsToInsert.Add(replayRating);
+                        var replayRating = ProcessReplay(replay, ratingType, playerRatingsStore);
+                        if (replayRating != null)
+                        {
+                            replayRatingsToInsert.Add(replayRating);
+                        }
                     }
                 }
+                if (replayRatingsToInsert.Count > 0)
+                {
+                    await context.AddRangeAsync(replayRatingsToInsert);
+                    await context.SaveChangesAsync();
+                    await ContinuePlayerRatings(playerRatingsStore.GetAll(), context);
+                }
             }
-            await context.AddRangeAsync(replayRatingsToInsert);
-            await context.SaveChangesAsync();
-            await ContinuePlayerRatings(playerRatingsStore.GetAll(), context);
         }
         catch (Exception ex)
         {
@@ -57,6 +67,8 @@ public partial class RatingService
         {
             ratingLock.Release();
         }
+        sw.Stop();
+        logger.LogWarning("continue ratings completed in {time} ms ({count})", sw.ElapsedMilliseconds, count);
     }
 
     private static async Task ContinuePlayerRatings(

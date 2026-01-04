@@ -239,12 +239,15 @@ public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<I
         return ratingTypes.ToHashSet();
     }
 
-    private async Task<List<ReplayCalcDto>> GetReplayCalcDtos(DateTime fromTime, int take)
+    private async Task<List<ReplayCalcDto>> GetContinueReplayCalcDtos(DateTime fromTime, int take)
     {
         using var scope = scopeFactory.CreateAsyncScope();
         using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
         return await context.Replays
+            .Include(i => i.Players)
+            .Include(i => i.Ratings)
             .Where(x => fromTime == DateTime.MinValue || (x.Gametime >= fromTime))
+            .Where(x => x.Ratings.Count == 0)
             .ToReplayCalcDtos()
             .Take(take)
             .ToListAsync();
@@ -311,6 +314,7 @@ public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<I
     private static async Task<List<ReplayCalcDto>> GetReplayCalcDtos(List<int> replayIds, DsstatsContext context)
     {
         return await context.Replays
+            .Include(i => i.Players)
             .Where(x => replayIds.Contains(x.ReplayId))
             .ToReplayCalcDtos()
             .ToListAsync();

@@ -100,7 +100,7 @@ partial class Program
 
         // ImportTestReplays(importService);
         // ImportManyReplays(importService, 1000).Wait();
-        ratingService.CreateRatings().Wait();
+        // ratingService.CreateRatings().Wait();
         // ratingService.ContinueRatings().Wait();
 
         // ImportArcadeReplays(serviceProvider, latestImportedArcade).Wait();
@@ -116,6 +116,7 @@ partial class Program
         // CheckDups(serviceProvider).Wait();
         // CheckHash(serviceProvider).Wait();
         // FixHashes(serviceProvider).Wait();
+        CreateImportJobs(serviceProvider).Wait();
 
         Console.WriteLine("Replay saved.");
         Console.ReadLine();
@@ -826,6 +827,30 @@ partial class Program
             return;
         }
         context.Replays.Remove(replay);
+        await context.SaveChangesAsync();
+    }
+
+    public static async Task CreateImportJobs(ServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context  = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+
+        var blobDir = "/data/ds/replayblobs";
+        var files = Directory.GetFiles(blobDir, "*.blob", SearchOption.AllDirectories);
+        Console.WriteLine($"found {files.Length} blob files");
+        List<UploadJob> jobs = [];
+        foreach (var file in files)
+        {
+            UploadJob job = new()
+            {
+                BlobFilePath = file,
+                CreatedAt = DateTime.UtcNow,
+                FinishedAt = null,
+                PlayerIds = []
+            };
+            jobs.Add(job);
+        }
+        context.UploadJobs.AddRange(jobs);
         await context.SaveChangesAsync();
     }
 }
