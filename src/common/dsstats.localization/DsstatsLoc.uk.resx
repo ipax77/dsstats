@@ -457,4 +457,10 @@
   <data name="Click 'Decode Replays' above to scan your replay folder and generate statistics." xml:space="preserve">
     <value>Натисніть «Декодувати повтори» вище, щоб просканувати папку з повторами та створити статистику.</value>
   </data>
+  <data name="Upload Replays?" xml:space="preserve">
+    <value>Завантажити повтори?</value>
+  </data>
+  <data name="UploadAsk" xml:space="preserve">
+    <value>Бажаєте завантажити повтори на dsstats.pax77.org? Ви можете змінити це пізніше в налаштуваннях.</value>
+  </data>
 </root>

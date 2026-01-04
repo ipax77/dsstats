@@ -457,4 +457,10 @@
   <data name="Click 'Decode Replays' above to scan your replay folder and generate statistics." xml:space="preserve">
     <value>Haga clic arriba en "Decodificar repeticiones" para escanear su carpeta de repeticiones y generar estadísticas.</value>
   </data>
+  <data name="Upload Replays?" xml:space="preserve">
+    <value>¿Subir repeticiones?</value>
+  </data>
+  <data name="UploadAsk" xml:space="preserve">
+    <value>¿Desea subir las repeticiones a dsstats.pax77.org? Puede cambiar esto más tarde en la configuración.</value>
+  </data>
 </root>

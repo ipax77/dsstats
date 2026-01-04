@@ -38,7 +38,7 @@ public sealed partial class DsstatsService(IServiceScopeFactory scopeFactory, IH
         {
             decodeStatus ??= await GetDecodeStatus();
             await DecodeAndImportAsync(decodeStatus, progress, importState.Token);
-            await Upload(importState, importState.Token);
+            await StartUpload(importState, importState.Token);
         }
         finally
         {

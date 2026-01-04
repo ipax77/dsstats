@@ -457,4 +457,10 @@
   <data name="Click 'Decode Replays' above to scan your replay folder and generate statistics." xml:space="preserve">
     <value>Click 'Decode Replays' above to scan your replay folder and generate statistics.</value>
   </data>
+  <data name="Upload Replays?" xml:space="preserve">
+    <value>Upload Replays?</value>
+  </data>
+  <data name="UploadAsk" xml:space="preserve">
+    <value>Do you want to upload replays to dsstats.pax77.org? You can change this later in the configuration.</value>
+  </data>
 </root>

@@ -97,7 +97,7 @@
 							<div class="progress-bar"
 								 role="progressbar"
 								 style="width: @((Progress.Decoded * 100.0 / (double)Progress.Discovered)
-												.ToString(CultureInfo.InvariantCulture))%">
+															.ToString(CultureInfo.InvariantCulture))%">
 								@Progress.Imported.ToString("N0") / @Progress.Discovered.ToString("N0")
 							</div>
 						</div>
@@ -130,6 +130,7 @@
 	{
 		// Defensive: ensure clean state if page is recreated
 		ImportState.OnChange += OnImportStateChanged;
+		ImportState.OnFinished += AskForUpload;
 		_ = GetDecodeStatus();
 	}
 
@@ -200,6 +201,42 @@
 		_ => "bg-secondary"
 	};
 
+	private async void AskForUpload()
+	{
+		if (ImportState.Progress.UploadStatus != UploadStatus.Forbidden)
+		{
+			return;
+		}
+		var config = await DsstatsService.GetConfig();
+		var uploadAskTime = config.UploadAskTime;
+		if (uploadAskTime != DateTime.MinValue && DateTime.UtcNow - uploadAskTime < TimeSpan.FromDays(30))
+		{
+			return;
+		}
+		var currentPage = Application.Current?.Windows.FirstOrDefault()?.Page;
+		if (currentPage == null)
+		{
+			return;
+		}
+		var confirmed = await currentPage.DisplayAlertAsync(
+			Loc["Upload Replays?"],
+			Loc["UploadAsk"],
+			Loc["Yes"],
+			Loc["No"]);
+
+		config.UploadAskTime = DateTime.UtcNow;
+		if (confirmed)
+		{
+			config.UploadCredential = true;
+			await DsstatsService.SaveConfig(config);
+			await Upload();
+		}
+		else
+		{
+			await DsstatsService.SaveConfig(config);
+		}
+	}
+
 	private TimeSpan? EstimatedRemaining
 	{
 		get
@@ -239,5 +276,6 @@
 	public void Dispose()
 	{
 		ImportState.OnChange -= OnImportStateChanged;
+		ImportState.OnFinished -= AskForUpload;
 	}
 }

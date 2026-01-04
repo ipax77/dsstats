@@ -457,4 +457,10 @@
   <data name="Click 'Decode Replays' above to scan your replay folder and generate statistics." xml:space="preserve">
     <value>Klicken Sie oben auf „Replays dekodieren“, um Ihren Replay-Ordner zu scannen und Statistiken zu erstellen.</value>
   </data>
+  <data name="Upload Replays?" xml:space="preserve">
+    <value>Replays hochladen?</value>
+  </data>
+  <data name="UploadAsk" xml:space="preserve">
+    <value>Möchten Sie Replays auf dsstats.pax77.org hochladen? Sie können dies später in der Konfiguration ändern.</value>
+  </data>
 </root>

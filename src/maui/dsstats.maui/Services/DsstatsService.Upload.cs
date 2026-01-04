@@ -14,6 +14,16 @@ public partial class DsstatsService
 {
     public async Task<UploadResult> Upload(ImportState importState, CancellationToken token = default)
     {
+        importState.SetRunning(true);
+        var result = await StartUpload(importState, token);
+        importState.SetRunning(false);
+        importState.Complete();
+        importState.SetStatus(ImportStatus.Completed);
+        return result;
+    }
+
+    private async Task<UploadResult> StartUpload(ImportState importState, CancellationToken token = default)
+    {
         var config = await GetConfig();
         if (!config.UploadCredential)
         {
