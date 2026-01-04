@@ -8,6 +8,7 @@ namespace dsstats.maui.Services;
 public partial class DsstatsService
 {
     public event EventHandler? CultureChanged;
+    private readonly SemaphoreSlim configSemaphore = new(1, 1);
 
     private void OnCultureChanged()
     {
@@ -16,86 +17,102 @@ public partial class DsstatsService
 
     public async Task<MauiConfig> GetConfig()
     {
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
-
-        var config = await context.MauiConfig
-            .Include(i => i.Sc2Profiles)
-            .AsNoTracking()
-            .OrderBy(o => o.MauiConfigId)
-            .FirstOrDefaultAsync();
-
-        if (config is null)
+        await configSemaphore.WaitAsync();
+        try
         {
-            config = new();
-            config.Sc2Profiles = GetInitialNamesAndFolders();
-            context.MauiConfig.Add(config);
-            await context.SaveChangesAsync();
+            using var scope = scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+
+            var config = await context.MauiConfig
+                .Include(i => i.Sc2Profiles)
+                .AsNoTracking()
+                .OrderBy(o => o.MauiConfigId)
+                .FirstOrDefaultAsync();
+
+            if (config is null)
+            {
+                config = new();
+                config.Sc2Profiles = GetInitialNamesAndFolders();
+                context.MauiConfig.Add(config);
+                await context.SaveChangesAsync();
+            }
+            return config;
         }
-        return config;
+        finally
+        {
+            configSemaphore.Release();
+        }
     }
 
     public async Task SaveConfig(MauiConfig config)
     {
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
-
-        var dbConfig = await context.MauiConfig
-            .Include(c => c.Sc2Profiles)
-            .FirstOrDefaultAsync();
-
-        if (dbConfig is null)
+        await configSemaphore.WaitAsync();
+        try
         {
-            context.MauiConfig.Add(config);
+            using var scope = scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+
+            var dbConfig = await context.MauiConfig
+                .Include(c => c.Sc2Profiles)
+                .FirstOrDefaultAsync();
+
+            if (dbConfig is null)
+            {
+                context.MauiConfig.Add(config);
+                await context.SaveChangesAsync();
+                return;
+            }
+
+            bool cultureChanged = dbConfig.Culture != config.Culture;
+
+            context.Entry(dbConfig).CurrentValues.SetValues(config);
+
+            // Remove deleted profiles
+            foreach (var existing in dbConfig.Sc2Profiles.ToList())
+            {
+                bool stillPresent = config.Sc2Profiles.Any(p =>
+                    p.ToonId.Region == existing.ToonId.Region &&
+                    p.ToonId.Realm == existing.ToonId.Realm &&
+                    p.ToonId.Id == existing.ToonId.Id);
+
+                if (!stillPresent)
+                {
+                    context.Sc2Profiles.Remove(existing);
+                }
+            }
+
+            // Add or update profiles
+            foreach (var profile in config.Sc2Profiles)
+            {
+                var existing = dbConfig.Sc2Profiles.FirstOrDefault(p =>
+                    p.ToonId.Region == profile.ToonId.Region &&
+                    p.ToonId.Realm == profile.ToonId.Realm &&
+                    p.ToonId.Id == profile.ToonId.Id);
+
+                if (existing == null)
+                {
+                    dbConfig.Sc2Profiles.Add(profile);
+                }
+                else
+                {
+                    context.Entry(existing).CurrentValues.SetValues(profile);
+
+                    // Owned type must be updated explicitly
+                    context.Entry(existing).Reference(p => p.ToonId)
+                        .CurrentValue = profile.ToonId;
+                }
+            }
+
             await context.SaveChangesAsync();
-            return;
-        }
 
-        bool cultureChanged = dbConfig.Culture != config.Culture;
-
-        context.Entry(dbConfig).CurrentValues.SetValues(config);
-
-        // Remove deleted profiles
-        foreach (var existing in dbConfig.Sc2Profiles.ToList())
-        {
-            bool stillPresent = config.Sc2Profiles.Any(p =>
-                p.ToonId.Region == existing.ToonId.Region &&
-                p.ToonId.Realm == existing.ToonId.Realm &&
-                p.ToonId.Id == existing.ToonId.Id);
-
-            if (!stillPresent)
+            if (cultureChanged)
             {
-                context.Sc2Profiles.Remove(existing);
+                OnCultureChanged();
             }
         }
-
-        // Add or update profiles
-        foreach (var profile in config.Sc2Profiles)
+        finally
         {
-            var existing = dbConfig.Sc2Profiles.FirstOrDefault(p =>
-                p.ToonId.Region == profile.ToonId.Region &&
-                p.ToonId.Realm == profile.ToonId.Realm &&
-                p.ToonId.Id == profile.ToonId.Id);
-
-            if (existing == null)
-            {
-                dbConfig.Sc2Profiles.Add(profile);
-            }
-            else
-            {
-                context.Entry(existing).CurrentValues.SetValues(profile);
-
-                // Owned type must be updated explicitly
-                context.Entry(existing).Reference(p => p.ToonId)
-                    .CurrentValue = profile.ToonId;
-            }
-        }
-
-        await context.SaveChangesAsync();
-
-        if (cultureChanged)
-        {
-            OnCultureChanged();
+            configSemaphore.Release();
         }
     }
 
