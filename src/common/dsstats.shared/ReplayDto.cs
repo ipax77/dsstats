@@ -156,7 +156,7 @@ public static class ReplayDtoExtensions
         return (team1, team2);
     }
 
-    public static string ComputeHash(this ReplayDto replay)
+    public static string ComputeHashOld(this ReplayDto replay)
     {
         var sb = new StringBuilder();
         sb.Append(replay.Title);
@@ -173,6 +173,51 @@ public static class ReplayDtoExtensions
         }
         var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString()));
         return Convert.ToHexString(hashBytes);
+    }
+
+    public static string ComputeHash(this ReplayDto replay, int timeBucketMinutes = 2)
+    {
+        var sb = new StringBuilder();
+
+        sb.Append("TITLE:");
+        sb.Append(replay.Title ?? "∅");
+
+        sb.Append("|TIME:");
+        sb.Append(timeBucketMinutes);
+        sb.Append('|');
+        sb.Append(RoundDownToMinutes(replay.Gametime, timeBucketMinutes).ToString("o"));
+
+        sb.Append("|PLAYERS:");
+
+        foreach (var player in replay.Players
+            .OrderBy(p => p.GamePos)
+            .ThenBy(p => p.Player?.ToonId.Id)
+            .ThenBy(p => p.Player?.ToonId.Region)
+            .ThenBy(p => p.Player?.ToonId.Realm))
+        {
+            sb.Append('|');
+            sb.Append(player.Player?.ToonId.Region);
+            sb.Append(':');
+            sb.Append(player.Player?.ToonId.Realm);
+            sb.Append(':');
+            sb.Append(player.Player?.ToonId.Id);
+        }
+
+        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString()));
+        return Convert.ToHexString(hashBytes);
+    }
+
+    public static DateTime RoundDownToMinutes(DateTime value, int minutes = 2)
+    {
+        if (minutes <= 0)
+            throw new ArgumentOutOfRangeException(nameof(minutes));
+
+        value = value.ToUniversalTime();
+
+        long bucketTicks = TimeSpan.FromMinutes(minutes).Ticks;
+        long roundedTicks = (value.Ticks / bucketTicks) * bucketTicks;
+
+        return new DateTime(roundedTicks, DateTimeKind.Utc);
     }
 
     public static (int, int) GetMiddleIncome2(this ReplayDto replay, int targetGameloop)

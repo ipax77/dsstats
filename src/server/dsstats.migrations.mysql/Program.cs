@@ -115,8 +115,10 @@ partial class Program
 
         // CheckDups(serviceProvider).Wait();
         // CheckHash(serviceProvider).Wait();
-        // FixHashes(serviceProvider).Wait();
-        CreateImportJobs(serviceProvider).Wait();
+        FixHashes(serviceProvider).Wait();
+        // CheckHash2(serviceProvider).Wait();
+        
+        // CreateImportJobs(serviceProvider).Wait();
 
         Console.WriteLine("Replay saved.");
         Console.ReadLine();
@@ -724,6 +726,27 @@ partial class Program
 
     }
 
+    private static async Task CheckHash2(ServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
+        // var dbHash = "296CFCE5497CA9A4CFAD7E4FFAE704F0F7C1EA0CF5E0F0F0E6BA5FE9D86C5048";
+        List<string> dbHashes = ["29ED835863CEC4A672C44BD29286CE57EA17E8CAC0A5501335AA9609A0CF446C", "BF5CC5D93FB31C29EC301BB026DA2421ABC8D88D299716F5F509FE844BF7AB9B"];
+        List<string> calcHashes = [];
+        foreach (var dbHash in dbHashes)
+        {
+            var replay = await GetMinimalReplayDto(dbHash, context);
+            if (replay is null)
+            {
+                continue;
+            }
+            var calcHash = replay.ComputeHash();
+            calcHashes.Add(calcHash);
+        }
+        Console.WriteLine(string.Join(", ", calcHashes));
+    }
+
     private static async Task FixHashes(ServiceProvider serviceProvider)
     {
         using var scope = serviceProvider.CreateScope();
@@ -731,7 +754,7 @@ partial class Program
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
 
         var replayHashes = await context.Replays.OrderBy(o => o.Gametime)
-            // .Where(x => x.Gametime >= new DateTime(2024, 2, 6))
+            .Where(x => x.Imported >= new DateTime(2026, 1, 1))
             .Select(s => s.ReplayHash)
             .ToListAsync();
 
@@ -780,7 +803,23 @@ partial class Program
                 }
             }
         }
-        Console.WriteLine($"Hashes fixed: {diff}, Deletel: {deleted}");
+        Console.WriteLine($"Hashes fixed: {diff}, Deleted: {deleted}");
+    }
+
+    private async Task SetUploader(ReplayDto keepReplay, ReplayDto deleteReplay, DsstatsContext context)
+    {
+        foreach (var player in keepReplay.Players.Where(x => !x.IsUploader))
+        {
+            var deletePlayer = deleteReplay.Players.FirstOrDefault(f => 
+                   f.IsUploader
+                && f.Player.ToonId.Id == player.Player.ToonId.Id
+                && f.Player.ToonId.Region == player.Player.ToonId.Region
+                && f.Player.ToonId.Realm == player.Player.ToonId.Realm);
+            if (deletePlayer != null)
+            {
+                
+            }
+        }
     }
 
     private static async Task<ReplayDto?> GetMinimalReplayDto(string replayHash, DsstatsContext context)
@@ -796,6 +835,7 @@ partial class Program
                 Players = s.Players.Select(t => new ReplayPlayerDto()
                 {
                     GamePos = t.GamePos,
+                    IsUploader = t.IsUploader,
                     Player = new PlayerDto()
                     {
                         ToonId = new()
@@ -833,7 +873,7 @@ partial class Program
     public static async Task CreateImportJobs(ServiceProvider serviceProvider)
     {
         using var scope = serviceProvider.CreateScope();
-        var context  = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
 
         var blobDir = "/data/ds/replayblobs";
         var files = Directory.GetFiles(blobDir, "*.blob", SearchOption.AllDirectories);
