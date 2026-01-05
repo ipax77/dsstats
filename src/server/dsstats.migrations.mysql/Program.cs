@@ -117,7 +117,7 @@ partial class Program
         // CheckHash(serviceProvider).Wait();
         FixHashes(serviceProvider).Wait();
         // CheckHash2(serviceProvider).Wait();
-        
+
         // CreateImportJobs(serviceProvider).Wait();
 
         Console.WriteLine("Replay saved.");
@@ -768,16 +768,16 @@ partial class Program
             {
                 Console.WriteLine($"{progress}/{replayHashes.Count} ({diff}/{deleted})");
             }
-            var minimalReplay = await GetMinimalReplayDto(replayHash, context);
+            var minimalReplay = await GetMinimalReplay(replayHash, context);
             if (minimalReplay is null)
             {
                 continue;
             }
-            var computedHash = minimalReplay.ComputeHash();
+            var computedHash = GetMinimalReplayDto(minimalReplay).ComputeHash();
             if (!computedHash.Equals(replayHash))
             {
                 diff++;
-                var existing = await GetMinimalReplayDto(computedHash, context);
+                var existing = await GetMinimalReplay(computedHash, context);
                 if (existing is null)
                 {
                     // change hash
@@ -790,6 +790,7 @@ partial class Program
                     if ((existing.Duration < minimalReplay.Duration)
                         || (existing.Version == "v2" && minimalReplay.Version != "v2"))
                     {
+                        await SetUploader(minimalReplay, existing, context);
                         await DeleteReplay(computedHash, context);
                         await context.Replays
                         .Where(x => x.ReplayHash == replayHash)
@@ -797,6 +798,7 @@ partial class Program
                     }
                     else
                     {
+                        await SetUploader(existing, minimalReplay, context);
                         await DeleteReplay(replayHash, context);
                     }
                     deleted++;
@@ -806,18 +808,25 @@ partial class Program
         Console.WriteLine($"Hashes fixed: {diff}, Deleted: {deleted}");
     }
 
-    private async Task SetUploader(ReplayDto keepReplay, ReplayDto deleteReplay, DsstatsContext context)
+    private static async Task SetUploader(Replay keepReplay, Replay deleteReplay, DsstatsContext context)
     {
         foreach (var player in keepReplay.Players.Where(x => !x.IsUploader))
         {
-            var deletePlayer = deleteReplay.Players.FirstOrDefault(f => 
-                   f.IsUploader
-                && f.Player.ToonId.Id == player.Player.ToonId.Id
+            var deletePlayers = deleteReplay.Players.Where(x => x.IsUploader).ToList();
+            if (deletePlayers.Count == 0)
+            {
+                return;
+            }
+            var deletePlayer = deletePlayers.FirstOrDefault(f =>
+                   f.Player!.ToonId.Id == player.Player!.ToonId.Id
                 && f.Player.ToonId.Region == player.Player.ToonId.Region
                 && f.Player.ToonId.Realm == player.Player.ToonId.Realm);
             if (deletePlayer != null)
             {
-                
+                player.IsUploader = true;
+                await context.ReplayPlayers
+                    .Where(x => x.ReplayPlayerId == player.ReplayPlayerId)
+                    .ExecuteUpdateAsync(e => e.SetProperty(p => p.IsUploader, true));
             }
         }
     }
@@ -850,6 +859,64 @@ partial class Program
             .FirstOrDefaultAsync();
     }
 
+    private static async Task<Replay?> GetMinimalReplay(string replayHash, DsstatsContext context)
+    {
+        return await context.Replays
+            .Include(i => i.Players)
+                .ThenInclude(i => i.Player)
+            .AsNoTracking()
+            .Where(x => x.ReplayHash == replayHash)
+            .Select(s => new Replay()
+            {
+                ReplayId = s.ReplayId,
+                Title = s.Title,
+                Version = s.Version,
+                Gametime = s.Gametime,
+                Duration = s.Duration,
+                Players = s.Players.Select(t => new ReplayPlayer()
+                {
+                    ReplayPlayerId = t.ReplayPlayerId,
+                    GamePos = t.GamePos,
+                    IsUploader = t.IsUploader,
+                    Player = new Player()
+                    {
+                        ToonId = new()
+                        {
+                            Id = t.Player!.ToonId.Id,
+                            Realm = t.Player!.ToonId.Realm,
+                            Region = t.Player!.ToonId.Region
+                        }
+                    }
+                }).ToList()
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    private static ReplayDto GetMinimalReplayDto(Replay replay)
+    {
+        return new()
+        {
+            Title = replay.Title,
+            Version = replay.Version,
+            Gametime = replay.Gametime,
+            Duration = replay.Duration,
+            Players = replay.Players.Select(t => new ReplayPlayerDto()
+            {
+                GamePos = t.GamePos,
+                IsUploader = t.IsUploader,
+                Player = new PlayerDto()
+                {
+                    ToonId = new()
+                    {
+                        Id = t.Player!.ToonId.Id,
+                        Realm = t.Player!.ToonId.Realm,
+                        Region = t.Player!.ToonId.Region
+                    }
+                }
+            }).ToList()
+        };
+    }
+
     private static async Task DeleteReplay(string replayHash, DsstatsContext context)
     {
         var replay = await context.Replays
@@ -876,7 +943,9 @@ partial class Program
         var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
 
         var blobDir = "/data/ds/replayblobs";
-        var files = Directory.GetFiles(blobDir, "*.blob", SearchOption.AllDirectories);
+        var blobFiles = Directory.GetFiles(blobDir, "*.blob", SearchOption.AllDirectories);
+        var gzFiles = Directory.GetFiles(blobDir, "*.json.gz", SearchOption.AllDirectories);
+        var files = blobFiles.Concat(gzFiles).ToArray();
         Console.WriteLine($"found {files.Length} blob files");
         List<UploadJob> jobs = [];
         foreach (var file in files)

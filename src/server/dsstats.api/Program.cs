@@ -81,6 +81,7 @@ builder.Services.AddSingleton<IRatingService, RatingService>();
 builder.Services.AddScoped<IDashboardStatsService, DashboardStatsService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();
+builder.Services.AddScoped<TransitionService>();
 
 builder.Services.AddScoped<IStatsProvider, WinrateStatsProvider>();
 builder.Services.AddScoped<IStatsService, StatsService>();
@@ -104,8 +105,8 @@ using var scope = app.Services.CreateScope();
 using var dbContext = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
 dbContext.Database.Migrate();
 
-//var transitionService = scope.ServiceProvider.GetRequiredService<TransitionService>();
-//transitionService.FixHashes().Wait();
+var transitionService = scope.ServiceProvider.GetRequiredService<TransitionService>();
+transitionService.FixHashes().Wait();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

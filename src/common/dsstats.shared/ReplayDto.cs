@@ -185,7 +185,7 @@ public static class ReplayDtoExtensions
         sb.Append("|TIME:");
         sb.Append(timeBucketMinutes);
         sb.Append('|');
-        sb.Append(RoundDownToMinutes(replay.Gametime, timeBucketMinutes).ToString("o"));
+        sb.Append(RoundToNearestMinutes(replay.Gametime, timeBucketMinutes).ToString("o"));
 
         sb.Append("|PLAYERS:");
 
@@ -207,18 +207,17 @@ public static class ReplayDtoExtensions
         return Convert.ToHexString(hashBytes);
     }
 
-    public static DateTime RoundDownToMinutes(DateTime value, int minutes = 2)
+    public static DateTime RoundToNearestMinutes(DateTime value, int minutes = 2)
     {
-        if (minutes <= 0)
-            throw new ArgumentOutOfRangeException(nameof(minutes));
-
         value = value.ToUniversalTime();
 
         long bucketTicks = TimeSpan.FromMinutes(minutes).Ticks;
-        long roundedTicks = (value.Ticks / bucketTicks) * bucketTicks;
+        long roundedTicks =
+            (value.Ticks + bucketTicks / 2) / bucketTicks * bucketTicks;
 
         return new DateTime(roundedTicks, DateTimeKind.Utc);
     }
+
 
     public static (int, int) GetMiddleIncome2(this ReplayDto replay, int targetGameloop)
     {
