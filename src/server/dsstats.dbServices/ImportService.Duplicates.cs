@@ -10,11 +10,21 @@ public partial class ImportService
     {
         var dedupedReplays = replays
             .GroupBy(r => r.ReplayHash)
-            .Select(g => g.OrderByDescending(r => r.Duration).First())
+            .Select(g =>
+            {
+                var keeper = g.OrderByDescending(r => r.Duration).First();
+                // Merge IsUploader info from all duplicates in this batch
+                foreach (var duplicate in g.Where(x => x != keeper))
+                {
+                    SetUploaders(keeper, duplicate);
+                }
+                return keeper;
+            })
             .ToList();
 
         var importReplayHashes = dedupedReplays.Select(s => s.ReplayHash).ToHashSet();
         var dbReplays = await context.Replays
+            .Include(i => i.Players)
             .Where(x => importReplayHashes.Contains(x.ReplayHash))
             .ToDictionaryAsync(k => k.ReplayHash, v => v);
 
@@ -26,12 +36,14 @@ public partial class ImportService
             {
                 if (replay.Duration > dbReplay.Duration)
                 {
+                    SetUploaders(replay, dbReplay);
                     await DeleteReplay(dbReplay.ReplayHash, context);
                     result.ReplaysToImport.Add(replay);
                     result.Replaced++;
                 }
                 else
                 {
+                    SetUploaders(dbReplay, replay);
                     result.Duplicates++;
                 }
             }
@@ -44,6 +56,23 @@ public partial class ImportService
         return result;
     }
 
+    private static void SetUploaders(Replay keepReplay, Replay dupReplay)
+    {
+        var dupPlayers = dupReplay.Players.Where(x => x.IsUploader).ToList();
+        if (dupPlayers.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var replayPlayer in keepReplay.Players.Where(x => !x.IsUploader))
+        {
+            var dupPlayer = dupPlayers.FirstOrDefault(f => f.PlayerId == replayPlayer.PlayerId);
+            if (dupPlayer is not null)
+            {
+                replayPlayer.IsUploader = true;
+            }
+        }
+    }
 
     private static async Task DeleteReplay(string replayHash, DsstatsContext context)
     {
