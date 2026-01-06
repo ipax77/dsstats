@@ -145,7 +145,7 @@ public class TransitionService(DsstatsContext context,
         };
     }
 
-    private static async Task DeleteReplay(string replayHash, DsstatsContext context)
+    private async Task DeleteReplay(string replayHash, DsstatsContext context)
     {
         var replay = await context.Replays
             .Include(i => i.Ratings)
@@ -163,5 +163,6 @@ public class TransitionService(DsstatsContext context,
         }
         context.Replays.Remove(replay);
         await context.SaveChangesAsync();
+        logger.LogWarning($"Deleted replay {replayHash}");
     }
 }
