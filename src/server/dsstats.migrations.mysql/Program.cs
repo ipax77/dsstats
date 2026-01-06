@@ -728,21 +728,28 @@ partial class Program
 
     private static async Task CheckHash2(ServiceProvider serviceProvider)
     {
+        var testPath = "/data/ds/hashtests";
+
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        // var dbHash = "296CFCE5497CA9A4CFAD7E4FFAE704F0F7C1EA0CF5E0F0F0E6BA5FE9D86C5048";
-        List<string> dbHashes = ["4431968D8E08A6A9971A3B75D6CA27062A081E4A08D3A8E597B2664E3A329A13", "07670D57B17BF4C06ADB67A03743260236C13245E5DABE833F21A5DCE5A0AC0C"];
+        List<string> dbHashes = ["B28B6663BBD971AC9DCEC57C5F61E515A425794886B6F15A01C168AB96C36BC1", "2888F673C478CB948603C84178FC327C5C1176DDCC09D6D7DDB19FBDADFFB67B"];
+        // List<string> dbHashes = ["E7570F8064A720C353A5074A03A45562AD4ECF5170119169846B7D4E22AD30E0"];
         List<string> calcHashes = [];
         foreach (var dbHash in dbHashes)
         {
-            var replay = await GetMinimalReplayDto(dbHash, context);
-            if (replay is null)
+            var minReplay = await GetMinimalReplayDto(dbHash, context);
+            if (minReplay is null)
             {
                 continue;
             }
-            var calcHash = replay.ComputeHash();
+            var calcHash = minReplay.ComputeCandidateHash();
             calcHashes.Add(calcHash);
+            var json = JsonSerializer.Serialize(minReplay, new JsonSerializerOptions() { WriteIndented = true });
+            var path = Path.Combine(testPath, dbHash + ".json");
+            File.WriteAllText(path, json);
+            var gameTime = minReplay.Gametime.Ticks;
+            Console.WriteLine(gameTime);
         }
         Console.WriteLine(string.Join(", ", calcHashes));
     }
@@ -844,7 +851,9 @@ partial class Program
                 Players = s.Players.Select(t => new ReplayPlayerDto()
                 {
                     GamePos = t.GamePos,
+                    Name = t.Name,
                     IsUploader = t.IsUploader,
+                    Race = t.Race,
                     Player = new PlayerDto()
                     {
                         ToonId = new()
@@ -877,7 +886,9 @@ partial class Program
                 {
                     ReplayPlayerId = t.ReplayPlayerId,
                     GamePos = t.GamePos,
+                    Name = t.Name,
                     IsUploader = t.IsUploader,
+                    Race = t.Race,
                     Player = new Player()
                     {
                         ToonId = new()
@@ -903,7 +914,9 @@ partial class Program
             Players = replay.Players.Select(t => new ReplayPlayerDto()
             {
                 GamePos = t.GamePos,
+                Name = t.Name,
                 IsUploader = t.IsUploader,
+                Race = t.Race,
                 Player = new PlayerDto()
                 {
                     ToonId = new()

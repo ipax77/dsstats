@@ -85,6 +85,19 @@ public class ReplayHashTests
     }
 
     [TestMethod]
+    public void ComputeCandidateHash_Symmetry()
+    {
+        var t1 = new DateTime(2026, 1, 6, 5, 21, 1);
+        var t2 = new DateTime(2026, 1, 6, 5, 20, 58);
+
+        var h1 = GetTestReplay(t1).ComputeCandidateHash();
+        var h2 = GetTestReplay(t2).ComputeCandidateHash();
+
+        Assert.AreEqual(h1, h2);
+    }
+
+
+    [TestMethod]
     public void ReplayHash_DeepGametimeSensitivity()
     {
         DateTime gametime = new(2024, 1, 1, 12, 0, 0);

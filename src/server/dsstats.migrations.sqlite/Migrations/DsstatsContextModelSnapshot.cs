@@ -408,6 +408,8 @@ namespace dsstats.migrations.sqlite.Migrations
 
                     b.HasKey("ReplayId");
 
+                    b.HasIndex("CompatHash");
+
                     b.HasIndex("Gametime");
 
                     b.HasIndex("ReplayHash")
