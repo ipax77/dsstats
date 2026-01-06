@@ -59,7 +59,7 @@ public class ReplayHashTests
         };
     }
 
-    public static string ComputeHash(ReplayDto replay, int timeBucketMinutes = 4)
+    public static string ComputeHash(ReplayDto replay, int timeBucketMinutes = 3)
     {
         var sb = new StringBuilder();
 
@@ -85,13 +85,15 @@ public class ReplayHashTests
             sb.Append(player.Player?.ToonId.Realm);
             sb.Append(':');
             sb.Append(player.Player?.ToonId.Id);
+            sb.Append('|');
+            sb.Append(player.Race);
         }
 
         var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString()));
         return Convert.ToHexString(hashBytes);
     }
 
-    public static DateTime RoundToNearestMinutes(DateTime value, int minutes = 2)
+    public static DateTime RoundToNearestMinutes(DateTime value, int minutes)
     {
         value = value.ToUniversalTime();
 
@@ -120,8 +122,7 @@ public class ReplayHashTests
         gametime = gametime.AddSeconds(offset);
         var replay1 = GetTestReplay(gametime);
         var referenceHash = ComputeHash(replay1);
-
-        for (int i = 0; i < 120; i++)
+        for (int i = 0; i < 89; i++)
         {
             gametime = gametime.AddSeconds(1);
             var replayN = GetTestReplay(gametime);
@@ -134,13 +135,13 @@ public class ReplayHashTests
     public void ReplayHash_DeepGametimeSensitivity()
     {
         DateTime gametime = new(2024, 1, 1, 12, 0, 0);
-        for (int i = 0; i < 120; i++)
+        for (int i = 0; i < 89; i++)
         {
             var currentGametime = gametime.AddSeconds(i);
-            var replay1 = GetTestReplay(gametime);
+            var replay1 = GetTestReplay(currentGametime);
             var referenceHash = ComputeHash(replay1);
 
-            for (int j = 0; j < 120; j++)
+            for (int j = 0; j < 89; j++)
             {
                 currentGametime = currentGametime.AddSeconds(1);
                 var replayN = GetTestReplay(currentGametime);
@@ -165,7 +166,7 @@ public class ReplayHashTests
     public void ReplayHash_DeepDiffGametimeSensitivity()
     {
         DateTime referenceGametime = new(2024, 1, 1, 12, 0, 0);
-        for (int i = 10; i > 3; i--)
+        for (int i = 10; i > 2; i--)
         {
             var diffGametime = referenceGametime.AddMinutes(i);
             var replay1 = GetTestReplay(referenceGametime);
@@ -181,18 +182,18 @@ public class ReplayHashTests
     {
         DateTime referenceGametime = new(2024, 1, 1, 12, 0, 0);
 
-        for (int i = 0; i < 120; i++)
+        for (int i = 0; i < 89; i++)
         {
-            var currentReferenceGametime = referenceGametime.AddSeconds(1);
+            var currentReferenceGametime = referenceGametime.AddSeconds(i);
 
-            for (int j = 10; j > 3; j--)
+            for (int j = 500; j > 179; j--)
             {
-                var diffGametime = currentReferenceGametime.AddMinutes(j);
+                var diffGametime = currentReferenceGametime.AddSeconds(j);
                 var replay1 = GetTestReplay(currentReferenceGametime);
                 var replay2 = GetTestReplay(diffGametime);
                 var referenceHash = ComputeHash(replay1);
                 var referenceN = ComputeHash(replay2);
-                Assert.AreNotEqual(referenceHash, referenceN, $"Hashes should be different for gametime difference of {i}/{j} minutes.");
+                Assert.AreNotEqual(referenceHash, referenceN, $"Hashes should be different for gametime difference of {i}/{j} seconds.");
             }
         }
     }
