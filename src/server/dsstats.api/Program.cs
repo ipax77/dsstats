@@ -108,8 +108,6 @@ dbContext.Database.Migrate();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
-    importService.CheckDuplicateCandidates().Wait();
     app.MapOpenApi();
 }
 
