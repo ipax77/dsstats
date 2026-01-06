@@ -1,11 +1,6 @@
 ﻿using dsstats.db;
-using dsstats.db.Old;
-using dsstats.dbServices;
 using dsstats.shared;
-using dsstats.shared.Arcade;
-using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System.Diagnostics;
 
 namespace dsstats.api.Services;
 
@@ -14,7 +9,8 @@ public class TransitionService(DsstatsContext context,
 {
     public async Task FixHashes()
     {
-        var replayHashes = await context.Replays.OrderBy(o => o.Gametime)
+        var replayHashes = await context.Replays
+            .OrderBy(o => o.Gametime)
             .Select(s => s.ReplayHash)
             .ToListAsync();
 
@@ -101,7 +97,6 @@ public class TransitionService(DsstatsContext context,
             .Select(s => new Replay()
             {
                 ReplayId = s.ReplayId,
-                Title = s.Title,
                 Version = s.Version,
                 Gametime = s.Gametime,
                 Duration = s.Duration,
@@ -110,6 +105,7 @@ public class TransitionService(DsstatsContext context,
                     ReplayPlayerId = t.ReplayPlayerId,
                     GamePos = t.GamePos,
                     IsUploader = t.IsUploader,
+                    Race = t.Race,
                     Player = new Player()
                     {
                         ToonId = new()
