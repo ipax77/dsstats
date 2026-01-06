@@ -1,4 +1,5 @@
 ﻿
+using dsstats.dbServices;
 using dsstats.shared.Interfaces;
 
 namespace dsstats.api.Services;
@@ -42,6 +43,8 @@ public class TimedHostedService(IServiceScopeFactory scopeFactory, ILogger<Timed
 
             if (nowTime.Hour == 3)
             {
+                var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
+                await importService.CheckDuplicateCandidates();
                 await ratingService.CreateRatings();
             }
             else

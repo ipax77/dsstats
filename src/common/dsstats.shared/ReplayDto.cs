@@ -222,6 +222,34 @@ public static class ReplayDtoExtensions
         return new DateTime(roundedTicks, DateTimeKind.Utc);
     }
 
+    public static string ComputeCandidateHash(this ReplayDto replay)
+    {
+        var sb = new StringBuilder();
+
+        sb.Append((int)replay.GameMode);
+        sb.Append('|');
+        sb.Append(replay.RegionId);
+        sb.Append("|PLAYERS:");
+
+        foreach (var player in replay.Players
+            .OrderBy(p => p.GamePos)
+            .ThenBy(p => p.Player?.ToonId.Id)
+            .ThenBy(p => p.Player?.ToonId.Region)
+            .ThenBy(p => p.Player?.ToonId.Realm))
+        {
+            sb.Append('|');
+            sb.Append(player.Name);
+            sb.Append('|');
+            sb.Append(player.Player?.ToonId.Region);
+            sb.Append(':');
+            sb.Append(player.Player?.ToonId.Realm);
+            sb.Append(':');
+            sb.Append(player.Player?.ToonId.Id);
+        }
+
+        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString()));
+        return Convert.ToHexString(hashBytes);
+    }
 
     public static (int, int) GetMiddleIncome2(this ReplayDto replay, int targetGameloop)
     {

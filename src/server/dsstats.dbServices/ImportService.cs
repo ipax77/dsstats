@@ -19,6 +19,7 @@ public interface IImportService
     int GetPlayerId(ToonIdDto toonId);
     string GetPlayerName(ToonIdDto toonId);
     int GetOrCreatePlayerId(string name, int region, int realm, int id, DsstatsContext context);
+    Task CheckDuplicateCandidates();
 }
 public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<ImportService> logger) : IImportService
 {
@@ -67,6 +68,7 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
             using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
             var replayEntity = replayDto.ToEntity();
             replayEntity.ReplayHash = replayDto.ComputeHash();
+            replayEntity.CompatHash = replayDto.ComputeCandidateHash();
 
             foreach (var rp in replayEntity.Players)
             {

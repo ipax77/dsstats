@@ -105,9 +105,6 @@ using var scope = app.Services.CreateScope();
 using var dbContext = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
 dbContext.Database.Migrate();
 
-//var transitionService = scope.ServiceProvider.GetRequiredService<TransitionService>();
-//transitionService.FixHashes().Wait();
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

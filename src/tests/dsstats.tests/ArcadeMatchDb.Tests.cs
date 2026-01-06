@@ -378,7 +378,7 @@ public class ArcadeMatchDb
                 var replay1 = CreateReplay(1, startingPlayerId: 1);
                 var replay2 = CreateReplay(2, startingPlayerId: 1); // Same players!
                 replay1.Gametime = new DateTime(2021, 2, 1, 12, 0, 0);
-                replay2.Gametime = new DateTime(2021, 2, 1, 12, 1, 0); // 1 minute later
+                replay2.Gametime = new DateTime(2021, 2, 1, 12, 4, 0); // 4 minute later
 
                 await importService.InsertReplays([replay1, replay2]);
 
