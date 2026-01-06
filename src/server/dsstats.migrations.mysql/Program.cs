@@ -32,8 +32,8 @@ partial class Program
         var oldConnectionString = config.GetProperty("ProdConnectionString").GetString();
 
         var dsstatsConfig = json.GetProperty("dsstats");
-        // var prodConnectionString = dsstatsConfig.GetProperty("ConnectionString").GetString();
-        // connectionString = prodConnectionString ?? "";
+        var prodConnectionString = dsstatsConfig.GetProperty("ConnectionString").GetString();
+        connectionString = prodConnectionString ?? "";
         // Console.WriteLine(connectionString);
 
         var services = new ServiceCollection();
@@ -115,8 +115,8 @@ partial class Program
 
         // CheckDups(serviceProvider).Wait();
         // CheckHash(serviceProvider).Wait();
-        FixHashes(serviceProvider).Wait();
-        // CheckHash2(serviceProvider).Wait();
+        // FixHashes(serviceProvider).Wait();
+        CheckHash2(serviceProvider).Wait();
 
         // CreateImportJobs(serviceProvider).Wait();
 
@@ -732,7 +732,7 @@ partial class Program
         var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
         // var dbHash = "296CFCE5497CA9A4CFAD7E4FFAE704F0F7C1EA0CF5E0F0F0E6BA5FE9D86C5048";
-        List<string> dbHashes = ["29ED835863CEC4A672C44BD29286CE57EA17E8CAC0A5501335AA9609A0CF446C", "BF5CC5D93FB31C29EC301BB026DA2421ABC8D88D299716F5F509FE844BF7AB9B"];
+        List<string> dbHashes = ["4431968D8E08A6A9971A3B75D6CA27062A081E4A08D3A8E597B2664E3A329A13", "07670D57B17BF4C06ADB67A03743260236C13245E5DABE833F21A5DCE5A0AC0C"];
         List<string> calcHashes = [];
         foreach (var dbHash in dbHashes)
         {
