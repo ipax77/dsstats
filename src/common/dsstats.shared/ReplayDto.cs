@@ -175,17 +175,17 @@ public static class ReplayDtoExtensions
         return Convert.ToHexString(hashBytes);
     }
 
-    public static string ComputeHash(this ReplayDto replay, int timeBucketMinutes = 2)
+    public static string ComputeHash(this ReplayDto replay, int timeBucketMinutes = 3)
     {
         var sb = new StringBuilder();
 
         sb.Append("TITLE:");
-        sb.Append(replay.Title ?? "∅");
+        sb.Append(replay.Title);
 
         sb.Append("|TIME:");
         sb.Append(timeBucketMinutes);
         sb.Append('|');
-        sb.Append(RoundToNearestMinutes(replay.Gametime, timeBucketMinutes).ToString("o"));
+        sb.Append(FloorToBucketMinutes(replay.Gametime, timeBucketMinutes).ToString("o"));
 
         sb.Append("|PLAYERS:");
 
@@ -201,19 +201,23 @@ public static class ReplayDtoExtensions
             sb.Append(player.Player?.ToonId.Realm);
             sb.Append(':');
             sb.Append(player.Player?.ToonId.Id);
+            sb.Append('|');
+            sb.Append((int)player.Race);
         }
 
         var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString()));
         return Convert.ToHexString(hashBytes);
     }
 
-    public static DateTime RoundToNearestMinutes(DateTime value, int minutes = 2)
+    public static DateTime FloorToBucketMinutes(DateTime value, int minutes)
     {
-        value = value.ToUniversalTime();
+        value = value.Kind == DateTimeKind.Unspecified
+        ? DateTime.SpecifyKind(value, DateTimeKind.Utc)
+        : value.ToUniversalTime();
 
         long bucketTicks = TimeSpan.FromMinutes(minutes).Ticks;
         long roundedTicks =
-            (value.Ticks + bucketTicks / 2) / bucketTicks * bucketTicks;
+            value.Ticks / bucketTicks * bucketTicks;
 
         return new DateTime(roundedTicks, DateTimeKind.Utc);
     }

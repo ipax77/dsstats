@@ -1,6 +1,4 @@
 ﻿using dsstats.shared;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace dsstats.tests;
 
@@ -59,51 +57,6 @@ public class ReplayHashTests
         };
     }
 
-    public static string ComputeHash(ReplayDto replay, int timeBucketMinutes = 3)
-    {
-        var sb = new StringBuilder();
-
-        sb.Append("TITLE:");
-        sb.Append(replay.Title);
-
-        sb.Append("|TIME:");
-        sb.Append(timeBucketMinutes);
-        sb.Append('|');
-        sb.Append(RoundToNearestMinutes(replay.Gametime, timeBucketMinutes).ToString("o"));
-
-        sb.Append("|PLAYERS:");
-
-        foreach (var player in replay.Players
-            .OrderBy(p => p.GamePos)
-            .ThenBy(p => p.Player?.ToonId.Id)
-            .ThenBy(p => p.Player?.ToonId.Region)
-            .ThenBy(p => p.Player?.ToonId.Realm))
-        {
-            sb.Append('|');
-            sb.Append(player.Player?.ToonId.Region);
-            sb.Append(':');
-            sb.Append(player.Player?.ToonId.Realm);
-            sb.Append(':');
-            sb.Append(player.Player?.ToonId.Id);
-            sb.Append('|');
-            sb.Append(player.Race);
-        }
-
-        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString()));
-        return Convert.ToHexString(hashBytes);
-    }
-
-    public static DateTime RoundToNearestMinutes(DateTime value, int minutes)
-    {
-        value = value.ToUniversalTime();
-
-        long bucketTicks = TimeSpan.FromMinutes(minutes).Ticks;
-        long roundedTicks =
-            value.Ticks / bucketTicks * bucketTicks;
-
-        return new DateTime(roundedTicks, DateTimeKind.Utc);
-    }
-
     [TestMethod]
     [DataRow(55)]
     [DataRow(56)]
@@ -121,12 +74,12 @@ public class ReplayHashTests
         DateTime gametime = new(2024, 1, 1, 12, 0, 0);
         gametime = gametime.AddSeconds(offset);
         var replay1 = GetTestReplay(gametime);
-        var referenceHash = ComputeHash(replay1);
+        var referenceHash = replay1.ComputeHash();
         for (int i = 0; i < 89; i++)
         {
             gametime = gametime.AddSeconds(1);
             var replayN = GetTestReplay(gametime);
-            var referenceN = ComputeHash(replayN);
+            var referenceN = replayN.ComputeHash();
             Assert.AreEqual(referenceHash, referenceN, $"Hashes should be equal for gametime offset of {i + 1} seconds.");
         }
     }
@@ -139,13 +92,13 @@ public class ReplayHashTests
         {
             var currentGametime = gametime.AddSeconds(i);
             var replay1 = GetTestReplay(currentGametime);
-            var referenceHash = ComputeHash(replay1);
+            var referenceHash = replay1.ComputeHash();
 
             for (int j = 0; j < 89; j++)
             {
                 currentGametime = currentGametime.AddSeconds(1);
                 var replayN = GetTestReplay(currentGametime);
-                var referenceN = ComputeHash(replayN);
+                var referenceN = replayN.ComputeHash();
                 Assert.AreEqual(referenceHash, referenceN, $"Hashes should be equal for gametime offset of {i + 1}/{j + 1} seconds.");
             }
         }
@@ -157,8 +110,8 @@ public class ReplayHashTests
         var replay1 = GetTestReplay(new DateTime(2024, 1, 1, 12, 0, 0));
         var replay2 = GetTestReplay(new DateTime(2024, 1, 1, 12, 10, 0));
 
-        var referenceHash = ComputeHash(replay1);
-        var referenceN = ComputeHash(replay2);
+        var referenceHash = replay1.ComputeHash();
+        var referenceN = replay2.ComputeHash();
         Assert.AreNotEqual(referenceHash, referenceN, $"Hashes should be different for gametime difference of 10 minutes.");
     }
 
@@ -171,8 +124,8 @@ public class ReplayHashTests
             var diffGametime = referenceGametime.AddMinutes(i);
             var replay1 = GetTestReplay(referenceGametime);
             var replay2 = GetTestReplay(diffGametime);
-            var referenceHash = ComputeHash(replay1);
-            var referenceN = ComputeHash(replay2);
+            var referenceHash = replay1.ComputeHash();
+            var referenceN = replay2.ComputeHash();
             Assert.AreNotEqual(referenceHash, referenceN, $"Hashes should be different for gametime difference of {i} minutes.");
         }
     }
@@ -191,8 +144,8 @@ public class ReplayHashTests
                 var diffGametime = currentReferenceGametime.AddSeconds(j);
                 var replay1 = GetTestReplay(currentReferenceGametime);
                 var replay2 = GetTestReplay(diffGametime);
-                var referenceHash = ComputeHash(replay1);
-                var referenceN = ComputeHash(replay2);
+                var referenceHash = replay1.ComputeHash();
+                var referenceN = replay2.ComputeHash();
                 Assert.AreNotEqual(referenceHash, referenceN, $"Hashes should be different for gametime difference of {i}/{j} seconds.");
             }
         }
