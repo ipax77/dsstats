@@ -20,6 +20,7 @@ public interface IImportService
     string GetPlayerName(ToonIdDto toonId);
     int GetOrCreatePlayerId(string name, int region, int realm, int id, DsstatsContext context);
     Task CheckDuplicateCandidates();
+    Task FixPlayerNames();
 }
 public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<ImportService> logger) : IImportService
 {
@@ -197,7 +198,6 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
             playerSs.Release();
         }
     }
-
 
     public int GetOrCreateUnitId(string name, DsstatsContext context)
     {
