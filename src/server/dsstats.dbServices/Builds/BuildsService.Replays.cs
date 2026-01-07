@@ -20,6 +20,8 @@ public partial class BuildsService
         var noDuration = minDuration == 0;
         var noMinRating = request.FromRating <= Data.MinBuildRating;
         var noMaxRating = request.ToRating >= Data.MaxBuildRating;
+        var playerIds = request.Players.Select(s => s.PlayerId).ToHashSet();
+        var noPlayers = playerIds.Count == 0;
 
         var replays = from r in context.Replays
                       where r.Gametime >= timeInfo.Start
@@ -31,8 +33,9 @@ public partial class BuildsService
                       from rpr in rr.ReplayPlayerRatings
                       where rpr.ReplayPlayer!.Race == request.Interest
                         && (noOpp || rpr.ReplayPlayer.OppRace == request.Versus)
-                        && (noMinRating || rpr.RatingBefore >= request.FromRating)
-                        && (noMaxRating || rpr.RatingBefore <= request.ToRating)
+                        && (!noPlayers || noMinRating || rpr.RatingBefore >= request.FromRating)
+                        && (!noPlayers || noMaxRating || rpr.RatingBefore <= request.ToRating)
+                        && (noPlayers || playerIds.Contains(rpr.PlayerId))
                     select new ReplayList()
                     {
                         ReplayHash = r.ReplayHash,

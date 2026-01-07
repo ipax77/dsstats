@@ -1,0 +1,274 @@
+﻿@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.JSInterop
+@using System.Threading.Tasks
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IPlayerService PlayerService
+@inject IJSRuntime JSRuntime
+
+<div class="modal" id="@modalId" aria-hidden="true" aria-labelledby="@modalId" tabindex="-1">
+	<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h3 class="text-warning">Select Players</h3>
+			</div>
+			<div class="modal-body">
+				<div class="mb-1" style="max-width: 990px;">
+					<RatingsRequestComponent @ref="ratingsRequestComponent" Count="totalCount" Request="PlayerRequest" OnRequestChanged="Reload" />
+				</div>
+				<div class="mb-2">
+					<h4>Selected Players</h4>
+					<div class="row mb-2">
+						@foreach (var player in Request.Players.ToArray())
+						{
+							<div class="col-auto">
+								<span class="badge bg-primary" style="font-size: 1.1rem;">
+									@player.Name
+									<span class="text-warning">@Data.GetRegionString(player.ToonId.Region)</span>
+									<i class="bi bi-x-lg pointer text-danger" @onclick="() => RemovePlayer(player)"></i>
+								</span>
+							</div>
+						}
+					</div>
+					<div class="btn-group">
+						<button type="button" class="btn btn-sm btn-outline-warning" @onclick="() => Request.Players.Clear()">
+							Remove All
+						</button>
+						<button type="button" class="btn btn-sm btn-outline-light" @onclick="Change">
+							Show Build
+						</button>
+					</div>
+				</div>
+				<div class="table-responsive" style="max-height: 50vh; max-width: 1060px; overflow-x: auto; overflow-y: auto;">
+					<table class="tptable">
+						<CascadingValue Value="PlayerRequest.Orders">
+							<thead class="user-select-none">
+								<tr>
+									<th class="pointer text-warning" style="width: 50px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Pos))">
+										<SortArrow Column="@nameof(PlayerRatingListItem.Pos)">#</SortArrow>
+									</th>
+									<th class="pointer" style="width: 40px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.RegionId))">
+										<SortArrow Column="@nameof(PlayerRatingListItem.RegionId)"><span class="bi bi-globe"></span></SortArrow>
+									</th>
+									<th class="pointer text-primary" style="width: 200px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Name))">
+										<SortArrow Column="@nameof(PlayerRatingListItem.Name)">Name</SortArrow>
+									</th>
+									<th class="pointer" style="width: 75px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Games))">
+										<SortArrow Column="@nameof(PlayerRatingListItem.Games)">Games</SortArrow>
+									</th>
+									<th class="pointer text-warning" style="width: 150px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Rating))">
+										<SortArrow Column="@nameof(PlayerRatingListItem.Rating)">Rating</SortArrow>
+									</th>
+									<th class="pointer" style="width: 100px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Change))">
+										<SortArrow Column="@nameof(PlayerRatingListItem.Change)">Change</SortArrow>
+									</th>
+									<th class="pointer" style="width: 75px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Wins))">
+										<SortArrow Column="@nameof(PlayerRatingListItem.Wins)">Winrate</SortArrow>
+									</th>
+									<th class="pointer" style="width: 75px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Mvps))">
+										<SortArrow Column="@nameof(PlayerRatingListItem.Mvps)">MVP</SortArrow>
+									</th>
+									<th class="pointer" style="width: 150px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.Main))">
+										<SortArrow Column="@nameof(PlayerRatingListItem.Main)">Main</SortArrow>
+									</th>
+									<th class="pointer" style="width: 75px;" @onclick="e => SortList(e, nameof(PlayerRatingListItem.MainCount))">
+										<SortArrow Column="@nameof(PlayerRatingListItem.MainCount)">Main %</SortArrow>
+									</th>
+								</tr>
+							</thead>
+						</CascadingValue>
+						@if (totalCount > 0)
+						{
+							<tbody class="text-nowrap">
+								<Virtualize @ref="virtualizeComponent" Context="rating" ItemsProvider="LoadRatings" ItemSize="47" SpacerElement="tr">
+									<ItemContent>
+										<tr @key="rating" class="pointer @GetRowClass(rating)" style="height: 47px;" @onclick="() => AddOrRemovePlayer(rating)">
+											<td class="text-warning">
+												<span class="d-inline-block text-truncate" style="max-width: 200px;">@rating.Pos.ToString("N0")</span>
+											</td>
+											<td>@Data.GetRegionString(rating.RegionId)</td>
+											<td class="text-primary">
+												<span class="d-inline-block text-truncate" style="max-width: 200px;">@rating.Name</span>
+											</td>
+											<td>@Data.GetNumberString(rating.Games)</td>
+											<td class="text-warning">@rating.Rating.ToString("N2")</td>
+											<td class="@(rating.Change < 0 ? "text-danger" : "text-success")">@rating.Change.ToString("N0")</td>
+											<td>@((rating.Games == 0 ? 0 : rating.Wins / (double)rating.Games).ToString("P1"))</td>
+											<td>@((rating.Games == 0 ? 0 : rating.Mvps / (double)rating.Games).ToString("P1"))</td>
+											<td>@rating.Main</td>
+											<td>@((rating.Games == 0 ? 0 : rating.MainCount / (double)rating.Games).ToString("P1"))</td>
+										</tr>
+									</ItemContent>
+									<Placeholder>
+										<tr>
+											<td colspan="100" style="height: 47px;">Loading ...</td>
+										</tr>
+									</Placeholder>
+									<EmptyContent>
+										<tr>
+											<td colspan="100" style="height: 47px;">No replays found.</td>
+										</tr>
+									</EmptyContent>
+								</Virtualize>
+							</tbody>
+						}
+					</table>
+				</div>
+			</div>
+		</div>
+		<div class="modal-footer bgchart2">
+			<button type="button" class="btn btn-warning" @onclick="Clear">Clear</button>
+			<button type="button" class="btn btn-secondary" @onclick="Close">Close</button>
+		</div>
+	</div>
+</div>
+
+@code {
+	private string modalId = "playerSelectModal";
+
+	private BuildsRequest Request = new();
+	private PlayerRatingsRequest PlayerRequest = new();
+
+	int totalCount = 0;
+	Virtualize<PlayerRatingListItem>? virtualizeComponent;
+	PlayerStatsResponse? playerStatsResponse = null;
+	RatingsRequestComponent? ratingsRequestComponent;
+
+	[Parameter]
+	public EventCallback OnClose { get; set; }
+
+	[Parameter]
+	public EventCallback OnChanged { get; set; }
+
+	public async Task Show(BuildsRequest request)
+	{
+		Request = request;
+		PlayerRequest.RatingType = Request.RatingType;
+		PlayerRequest.Page = 1;
+		await Reload();
+		await InvokeAsync(StateHasChanged);
+		await JSRuntime.InvokeVoidAsync("openModalById", modalId);
+	}
+
+	public void Close()
+	{
+		JSRuntime.InvokeVoidAsync("closeModalById", modalId);
+		OnClose.InvokeAsync();
+	}
+
+	public void Change()
+	{
+		OnChanged.InvokeAsync();
+		Close();
+	}
+
+	private void AddOrRemovePlayer(PlayerRatingListItem rating)
+	{
+		var toonId = Data.GetToonId(rating.ToonIdString);
+		if (toonId is null)
+		{
+			return;
+		}
+		var existing = Request.Players.FirstOrDefault(f => f.ToonId == toonId);
+		if (existing != null)
+		{
+			Request.Players.Remove(existing);
+		}
+		else
+		{
+			Request.Players.Add(new()
+			{
+				PlayerId = rating.PlayerId,
+				Name = rating.Name,
+				ToonId = toonId
+			});
+		}
+	}
+
+	private void Clear()
+	{
+		Request.Players.Clear();
+		OnChanged.InvokeAsync();
+	}
+
+	private void RemovePlayer(PlayerDto player)
+	{
+		var existing = Request.Players.FirstOrDefault(f => f.ToonId == player.ToonId);
+		if (existing is null)
+		{
+			return;
+		}
+		Request.Players.Remove(existing);
+	}
+
+	private string GetRowClass(PlayerRatingListItem rating)
+	{
+		var toonId = Data.GetToonId(rating.ToonIdString);
+		if (toonId is null)
+		{
+			return string.Empty;
+		}
+		var existing = Request.Players.FirstOrDefault(f => f.ToonId == toonId) != null;
+		return existing ? "table-light" : string.Empty;
+	}
+
+	private async Task SetCount()
+	{
+		totalCount = await PlayerService.GetRatingsCount(PlayerRequest);
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task Reload()
+	{
+		ratingsRequestComponent?.SetLoading(true);
+		totalCount = await PlayerService.GetRatingsCount(PlayerRequest);
+		PlayerRequest.Page = 1;
+		if (virtualizeComponent != null)
+		{
+			await InvokeAsync(async () =>
+			{
+				await virtualizeComponent.RefreshDataAsync();
+				StateHasChanged();
+			});
+		}
+		ratingsRequestComponent?.SetLoading(false);
+	}
+
+	private async ValueTask<ItemsProviderResult<PlayerRatingListItem>> LoadRatings(ItemsProviderRequest request)
+	{
+		var numReplays = Math.Min(request.Count, totalCount - request.StartIndex);
+		PlayerRequest.Skip = request.StartIndex;
+		PlayerRequest.Take = numReplays;
+		var ratings = await PlayerService.GetRatings(PlayerRequest, request.CancellationToken);
+		return new ItemsProviderResult<PlayerRatingListItem>(ratings, Math.Min(totalCount, PlayerRequest.PageSize));
+	}
+
+	private async Task SortList(MouseEventArgs e, string column)
+	{
+		var exOrder = PlayerRequest.Orders.FirstOrDefault(f => f.Column == column);
+		if (e.ShiftKey)
+		{
+			if (exOrder == null)
+			{
+				PlayerRequest.Orders.Add(new TableOrder()
+				{
+					Column = column
+				});
+			}
+			else
+			{
+				exOrder.Ascending = !exOrder.Ascending;
+			}
+		}
+		else
+		{
+			PlayerRequest.Orders.Clear();
+			PlayerRequest.Orders.Add(new TableOrder()
+			{
+				Column = column,
+				Ascending = exOrder == null ? false : !exOrder.Ascending
+			});
+		}
+		await Reload();
+	}
+}

@@ -1,5 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Components.Forms
 @using dsstats.shared;
+@using dsstats.weblib.Players
 @implements IDisposable
 
 <div class="border rounded p-2 bgchart">
@@ -55,22 +56,51 @@
 				</InputSelect>
 			</div>
 
-			<div class="col-auto">
-				<label for="fromRating" class="form-label">From Rating: @Request.FromRating</label>
-				<input type="range" id="fromRating" @bind="Request.FromRating" @bind:event="oninput"
-					   class="form-range" min="@Data.MinBuildRating" max="@Data.MaxBuildRating" step="50" />
-			</div>
+			@if (Request.Players.Count > 0)
+			{
+				<div class="col-auto">
+					<div class="row">
+						@foreach (var player in Request.Players.ToArray())
+						{
+							<div class="col-auto">
+								<span class="badge bg-primary">
+									@player.Name
+									<span class="text-warning">@Data.GetRegionString(player.ToonId.Region)</span>
+									<i class="bi bi-x-lg text-danger" @onclick="() => RemovePlayers([player])"></i>
+								</span>
+							</div>
+						}
+						<div class="col-auto">
+							<button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemovePlayers(Request.Players)">
+								Remove Players
+							</button>
+						</div>
+					</div>
+				</div>
+			}
+			else
+			{
+				<div class="col-auto">
+					<label for="fromRating" class="form-label">From Rating: @Request.FromRating</label>
+					<input type="range" id="fromRating" @bind="Request.FromRating" @bind:event="oninput"
+						   class="form-range" min="@Data.MinBuildRating" max="@Data.MaxBuildRating" step="50" />
+				</div>
 
-			<div class="col-auto">
-				<label for="toRating" class="form-label">To Rating: @Request.ToRating @(Request.ToRating == Data.MaxBuildRating ? "+" : "")</label>
-				<input type="range" id="toRating" @bind="Request.ToRating" @bind:event="oninput"
-					   class="form-range" min="@Data.MinBuildRating" max="@Data.MaxBuildRating" step="50" />
-			</div>
+				<div class="col-auto">
+					<label for="toRating" class="form-label">To Rating: @Request.ToRating @(Request.ToRating == Data.MaxBuildRating ? "+" : "")</label>
+					<input type="range" id="toRating" @bind="Request.ToRating" @bind:event="oninput"
+						   class="form-range" min="@Data.MinBuildRating" max="@Data.MaxBuildRating" step="50" />
+				</div>
+			}
 
 			<div class="col-auto">
 				<button type="button" class="btn btn-sm btn-outline-warning"
 						@onclick="SetRating">
 					Set Rating
+				</button>
+				<button type="button" class="btn btn-sm btn-outline-light"
+						@onclick="() => playerSelectModal?.Show(Request)">
+					Player Builds
 				</button>
 				<div class="form-check mt-4">
 					<InputCheckbox id="withLeavers" @bind-Value="Request.WithLeavers" class="form-check-input" />
@@ -83,6 +113,8 @@
 	</EditForm>
 </div>
 
+<PlayerSelectModal @ref="playerSelectModal" OnChanged="() => OnRequestChanged.InvokeAsync()" />
+
 @code {
 	[Parameter, EditorRequired]
 	public BuildsRequest Request { get; set; } = default!;
@@ -91,6 +123,7 @@
 	public EventCallback OnRequestChanged { get; set; }
 
 	EditContext editContext = null!;
+	PlayerSelectModal? playerSelectModal;
 
 	protected override void OnInitialized()
 	{
@@ -115,6 +148,20 @@
 		{
 			(Request.FromRating, Request.ToRating) =
 				(Request.ToRating, Request.FromRating);
+		}
+		OnRequestChanged.InvokeAsync();
+	}
+
+	private void RemovePlayers(List<PlayerDto> players)
+	{
+		foreach (var player in players.ToArray())
+		{
+			var existing = Request.Players.FirstOrDefault(f => f.ToonId == player.ToonId);
+			if (existing is null)
+			{
+				return;
+			}
+			Request.Players.Remove(existing);
 		}
 		OnRequestChanged.InvokeAsync();
 	}

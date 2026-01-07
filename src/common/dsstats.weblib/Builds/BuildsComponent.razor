@@ -3,6 +3,7 @@
 @using Microsoft.JSInterop
 @using dsstats.shared;
 @using dsstats.shared.Interfaces;
+@using dsstats.weblib.Players
 @using dsstats.weblib.Replays
 @inject IBuildsService BuildsService
 @inject IReplayRepository ReplayRepository
@@ -274,6 +275,7 @@
 	BuildSpawnComponent? buildSpawnComponent;
 	bool showSpawns;
 	string replayHash = string.Empty;
+
 
 	private Lazy<Task<IJSObjectReference>> moduleTask = null!;
 
