@@ -66,6 +66,12 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
         {
             using var scope = scopeFactory.CreateScope();
             using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+
+            if (!OperatingSystem.IsWindows())
+            {
+                AdjustReplayResult(replayDto);
+            }
+
             var replayEntity = replayDto.ToEntity();
             replayEntity.ReplayHash = replayDto.ComputeHash();
             replayEntity.CompatHash = replayDto.ComputeCandidateHash();
@@ -250,6 +256,11 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
 
         foreach (var replay in replays)
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                AdjustReplayResult(replay);
+            }
+
             var dbReplay = replay.ToEntity();
             dbReplay.ReplayHash = replay.ComputeHash();
 

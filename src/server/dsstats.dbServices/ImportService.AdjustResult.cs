@@ -1,15 +1,24 @@
 ﻿using dsstats.db;
 using dsstats.shared;
+using dsstats.shared.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace dsstats.dbServices;
 
 public partial class ImportService
 {
-    public static void AdjustReplayResult(Replay replay)
+    public static bool AdjustReplayResult(ReplayDto replay)
     {
-        if (replay.WinnerTeam != 0 || replay.Duration < 300 || replay.PlayerCount < 6)
+        if (CheckPlayerStateVictory(replay))
         {
-            return;
+            return true;
+        }
+
+        if (replay.WinnerTeam != 0 || replay.Duration < 300 || replay.Players.Count < 6)
+        {
+            return false;
         }
         var team1KilledObjective = replay.Cannon > 0;
         var team2KilledObjective = replay.Bunker > 0;
@@ -28,10 +37,10 @@ public partial class ImportService
         var team2Kills = team2Spawns.Sum(s => s.KilledValue);
 
         int lastTeamThatControlledMiddle = 0;
-        if (replay.MiddleChanges.Length > 1)
+        if (replay.MiddleChanges.Count > 1)
         {
             var firstTeam = replay.MiddleChanges.First();
-            var firstTeamControll = replay.MiddleChanges.Length % 2 == 0;
+            var firstTeamControll = replay.MiddleChanges.Count % 2 == 0;
             if (firstTeamControll)
             {
                 lastTeamThatControlledMiddle = firstTeam;
@@ -60,64 +69,159 @@ public partial class ImportService
                 ControllingMiddle = lastTeamThatControlledMiddle == 2
             }
         };
-        int winnerTeam = TryDecideWinnerTeam(metrics);
 
-        // decide most likley winner team
+        int winnerTeam = TryDecideWinnerTeam(metrics);
 
         if (winnerTeam > 0)
         {
-            replay.WinnerTeam = winnerTeam;
-            foreach (var player in replay.Players)
+            SetWinnerTeam(winnerTeam, replay);
+            return true;
+        }
+        return false;
+    }
+
+    private static bool CheckPlayerStateVictory(ReplayDto replay)
+    {
+        if (replay.Gametime <= new DateTime(2023, 3, 30))
+        {
+            return false;
+        }
+
+        var victoryPlayer = replay.Players
+            .FirstOrDefault(f => f.Upgrades.Any(a => a.Name == "PlayerStateVictory"));
+
+        if (victoryPlayer == null)
+        {
+            return false;
+        }
+
+        SetWinnerTeam(victoryPlayer.TeamId, replay);
+        return true;
+    }
+
+    private static void SetWinnerTeam(int winnerTeam, ReplayDto replay)
+    {
+        replay.WinnerTeam = winnerTeam;
+
+        foreach (var rp in replay.Players)
+        {
+            if (rp.TeamId == winnerTeam)
             {
-                if (player.TeamId == winnerTeam)
-                {
-                    player.Result = PlayerResult.Win;
-                }
-                else
-                {
-                    player.Result = PlayerResult.Los;
-                }
+                rp.Result = PlayerResult.Win;
+            }
+            else
+            {
+                rp.Result = PlayerResult.Los;
             }
         }
     }
 
     private static int TryDecideWinnerTeam(ReplayResultAdjustMetrics metrics)
     {
-        const double IncomeWeight = 0.1;
-        const double KillsWeight = 0.2;
-        const double ObjectiveWeight = 0.3;
-        const double MiddleWeight = 0.4;
+        double incomeScore = NormalizeRelative(metrics.Team1.Income, metrics.Team2.Income);
+        double killsScore = NormalizeRelative(metrics.Team1.Kills, metrics.Team2.Kills);
 
-        // 2. Define the Certainty Threshold
-        // 0.5 is a tie. 0.6 means one team is 20% stronger than the other.
-        const double WinningThreshold = 0.60;
+        double objectiveScore = NormalizeBinary(
+            metrics.Team1.ObjectiveDestroyed,
+            metrics.Team2.ObjectiveDestroyed);
 
-        // 3. Normalize Metrics (Scale 0 to 1)
-        double nIncome1 = Normalize(metrics.Team1.Income, metrics.Team2.Income);
-        double nArmy1 = Normalize(metrics.Team1.Kills, metrics.Team2.Kills);
-        double nObj1 = Normalize(metrics.Team1.ObjectiveDestroyed ? 1 : 0, metrics.Team2.ObjectiveDestroyed ? 1 : 0);
-        double nMid1 = Normalize(metrics.Team1.ControllingMiddle ? 1 : 0, metrics.Team2.ControllingMiddle ? 1 : 0);
+        double middleScore = NormalizeBinary(
+            metrics.Team1.ControllingMiddle,
+            metrics.Team2.ControllingMiddle);
 
-        // 4. Calculate Weighted Probability for Team 1
-        double team1Probability = (nIncome1 * IncomeWeight) +
-                                  (nArmy1 * KillsWeight) +
-                                  (nObj1 * ObjectiveWeight) +
-                                  (nMid1 * MiddleWeight);
+        const double IncomeWeight = 0.20;
+        const double KillsWeight = 0.15;
+        const double ObjectiveWeight = 0.325;
+        const double MiddleWeight = 0.325;
 
-        // 5. Decision
-        if (team1Probability >= WinningThreshold)
+        double weightedScore =
+            incomeScore * IncomeWeight +
+            killsScore * KillsWeight +
+            objectiveScore * ObjectiveWeight +
+            middleScore * MiddleWeight;
+
+        const double DecisionThreshold = 0.30;
+
+        if (weightedScore >= DecisionThreshold)
             return 1;
-
-        if (team1Probability <= (1.0 - WinningThreshold))
+        if (weightedScore <= -DecisionThreshold)
             return 2;
 
-        return 0; // Result is too close to 0.5 to call
+        return 0;
     }
 
-    private static double Normalize(double val1, double val2)
+    private static double NormalizeRelative(double v1, double v2)
     {
-        if (val1 + val2 == 0) return 0.5; // If both are 0, they are equal
-        return val1 / (val1 + val2);
+        if (v1 == 0 && v2 == 0) return 0;
+
+        double diff = v1 - v2;
+        double sum = Math.Abs(v1) + Math.Abs(v2);
+
+        return diff / sum; // Range: [-1, +1]
+    }
+
+    private static double NormalizeBinary(bool t1, bool t2)
+    {
+        if (t1 == t2) return 0;
+        return t1 ? 0.85 : -0.85;
+    }
+
+    public async Task RealWorldAdjustTest()
+    {
+        using var scope = scopeFactory.CreateScope();
+        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
+
+        var replayHashes = await context.Replays
+            .Where(x => x.Gametime > new DateTime(2025, 1, 1)
+                && x.PlayerCount == 6
+                && x.Duration > 300
+                && x.WinnerTeam > 0)
+            .OrderByDescending(o => o.Gametime)
+            .Select(s => s.ReplayHash)
+            .Skip(1000)
+            .Take(1000)
+            .ToListAsync();
+
+        int noResult = 0;
+        int sameResult = 0;
+        int diffResult = 0;
+
+        foreach (var hash in replayHashes)
+        {
+            var details = await replayRepository.GetReplayDetails(hash);
+            if (details is null)
+            {
+                continue;
+            }
+
+            var replay = details.Replay;
+            int winnerTeam = replay.WinnerTeam;
+
+            replay.WinnerTeam = 0;
+            foreach (var player in replay.Players)
+            {
+                var victoryUpgrade = player.Upgrades.FirstOrDefault(f => f.Name == "PlayerStateVictory");
+                if (victoryUpgrade != null)
+                {
+                    player.Upgrades.Remove(victoryUpgrade);
+                }
+            }
+            var result = AdjustReplayResult(replay);
+            if (!result)
+            {
+                noResult++;
+            }
+            else if (replay.WinnerTeam == winnerTeam)
+            {
+                sameResult++;
+            }
+            else if (replay.WinnerTeam != winnerTeam)
+            {
+                diffResult++;
+            }
+        }
+        logger.LogWarning("Result: None: {no}, Same: {same}, Diff: {diff}", noResult, sameResult, diffResult);
     }
 }
 
@@ -135,3 +239,4 @@ internal sealed record TeamAdjustMetrics
     public bool ObjectiveDestroyed { get; init; }
     public bool ControllingMiddle { get; init; }
 }
+
