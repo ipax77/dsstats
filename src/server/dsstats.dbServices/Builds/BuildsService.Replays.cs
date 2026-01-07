@@ -33,8 +33,8 @@ public partial class BuildsService
                       from rpr in rr.ReplayPlayerRatings
                       where rpr.ReplayPlayer!.Race == request.Interest
                         && (noOpp || rpr.ReplayPlayer.OppRace == request.Versus)
-                        && (noMinRating || rpr.RatingBefore >= request.FromRating)
-                        && (noMaxRating || rpr.RatingBefore <= request.ToRating)
+                        && (!noPlayers || noMinRating || rpr.RatingBefore >= request.FromRating)
+                        && (!noPlayers || noMaxRating || rpr.RatingBefore <= request.ToRating)
                         && (noPlayers || playerIds.Contains(rpr.PlayerId))
                     select new ReplayList()
                     {
