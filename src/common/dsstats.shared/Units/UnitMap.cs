@@ -322,6 +322,8 @@ public static partial class UnitMap
         { "Primal Roach", new("Primal Roach", UnitSize.Medium, UnitType.Ground) },
         { "Primal Ultralisk", new("Primal Ultralisk", UnitSize.Large, UnitType.Ground) },
         { "Primal Zergling", new("Primal Zergling", UnitSize.Small, UnitType.Ground) },
+        { "PurifierAdept", new("Purifier Adept", UnitSize.Small, UnitType.Ground) },
+        { "Purifier Adept", new("Purifier Adept", UnitSize.Small, UnitType.Ground) },
         { "PurifierColossus", new("Purifier Colossus", UnitSize.Large, UnitType.AirAndGround) },
         { "Purifier Colossus", new("Purifier Colossus", UnitSize.Large, UnitType.AirAndGround) },
         { "Purifier Tempest", new("Purifier Tempest", UnitSize.Large, UnitType.Air) },
