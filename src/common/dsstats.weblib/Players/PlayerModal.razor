@@ -8,7 +8,10 @@
             <div class="modal-body" style="background: url('/_content/dsstats.weblib/images/bgbing_soft.jpg') repeat center center fixed;">
                 @if (_response != null)
                 {
-                    <PlayerComponent Response="_response" OnReplayRequest="OnReplayRequest" OnClose="Close" />
+                    <PlayerComponent Response="_response"
+                                     OnReplayRequest="OnReplayRequest"
+                                     OnPlayerRequest="OnPlayerRequest"
+                                     OnClose="Close" />
                 }
             </div>
         </div>
@@ -24,6 +27,9 @@
     public EventCallback<ReplayDetails> OnReplayRequest { get; set; }
 
     [Parameter]
+    public EventCallback<ToonIdDto> OnPlayerRequest { get; set; }
+
+    [Parameter]
     public EventCallback OnClose { get; set; }
 
     public void Show(PlayerStatsResponse response)
@@ -31,6 +37,7 @@
         _response = response;
         InvokeAsync(StateHasChanged);
         JSRuntime.InvokeVoidAsync("openModalById", modalId);
+        JSRuntime.InvokeVoidAsync("scrollModalToTop", modalId);
     }
 
     public void Close()

@@ -254,10 +254,10 @@
 			</div>
 			<div class="row mb-2">
 				<div class="col-auto">
-					<TeammateOpponentTable Title="Teammates" Stats="details.TeammateStats" AvgRating="details.AvgTeammateRating" />
+					<TeammateOpponentTable Title="Teammates" Stats="details.TeammateStats" AvgRating="details.AvgTeammateRating" OnPlayerRequest="OnPlayerRequest" />
 				</div>
 				<div class="col-auto">
-					<TeammateOpponentTable Title="Opponents" Stats="details.OpponentStats" AvgRating="details.AvgOpponentRating" />
+					<TeammateOpponentTable Title="Opponents" Stats="details.OpponentStats" AvgRating="details.AvgOpponentRating" OnPlayerRequest="OnPlayerRequest" />
 				</div>
 				<div class="col-auto card bgchart2">
 					<div class="card-header bgchart2">
@@ -299,6 +299,9 @@
 
 	[Parameter]
 	public EventCallback<ReplayDetails> OnReplayRequest { get; set; }
+
+	[Parameter]
+	public EventCallback<ToonIdDto> OnPlayerRequest { get; set; }
 
 	[Parameter]
 	public EventCallback OnClose { get; set; }

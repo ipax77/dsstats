@@ -23,6 +23,16 @@ function closeModalById(id) {
     }
 }
 
+function scrollModalToTop(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        const modalBody = modal.querySelector('.modal-body');
+        if (modalBody) {
+            modalBody.scrollTop = 0;
+        }
+    }
+};
+
 async function enableTooltips() {
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
     const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
