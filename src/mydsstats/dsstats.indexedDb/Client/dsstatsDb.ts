@@ -181,7 +181,7 @@ export async function exportUnuploadedReplays10(uploadRequest: UploadRequestDto,
             const metas = req.result as { replayHash: string }[];
 
             if (metas.length === 0) {
-                resolve({ hashes: [], payload: new Uint8Array()});
+                resolve({ hashes: [], payload: new Uint8Array() });
                 return;
             }
 
@@ -227,6 +227,7 @@ export async function exportUnuploadedReplays10(uploadRequest: UploadRequestDto,
 
                 resolve({ hashes, payload });
             } catch (err) {
+                console.error("exportUnuploadedReplays10 failed:", err);
                 reject(err);
             }
         };
