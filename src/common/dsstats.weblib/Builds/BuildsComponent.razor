@@ -222,27 +222,34 @@
 			<div class="@(showSpawns ? "" : "d-none")">
 				<BuildSpawnComponent @ref="buildSpawnComponent" Request="Request" ReplayHash="@replayHash" />
 			</div>
-			<h4>Recent Replays</h4>
+			<div class="p-1 bgchart">
+				<h4 class="text-warning">Recent Replays</h4>
+				<small>Click row for sample build | Click <i class="bi bi-list-ul text-primary"></i> for replay details</small>
+			</div>
 			<div class="table-responsive">
 				<table class="tptable">
 					<thead class="user-select-none">
 						<tr>
+							<th style="width: 20px;"></th>
 							<th style="width: 120px;">Gametime</th>
 							<th style="width: 100px;">GameMode</th>
 							<th style="width: 100px;">Duration</th>
 							<th style="width: 200px;">Team1</th>
 							<th style="width: 200px;">Team2</th>
 							<th style="width: 100px;">Exp2Win</th>
-							<th style="width: 120px;">AvgRating</th>
+							<th style="width: 80px;">AvgRating</th>
 						</tr>
 					</thead>
 					<tbody>
 						@foreach (var replay in response.Replays)
 						{
 							<tr class="pointer text-nowrap" style="height: 47px;"
-								id="@replay.ReplayHash" @onclick="() => LoadReplay(replay.ReplayHash)">
+								id="@replay.ReplayHash" @onclick="() => LoadReplayBuild(replay.ReplayHash)">
+								<td @onclick:stopPropagation><i class="bi bi-list-ul text-primary pointer" @onclick="() => LoadReplayDetails(replay.ReplayHash)"></i></td>
 								<td>@replay.Gametime.ToString("yyyy-MM-dd")</td>
-								<td>@replay.GameMode</td>
+								<td>
+									<span class="d-inline-block text-truncate" style="width: 100px;">@replay.GameMode</span>
+								</td>
 								<td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
 								<td>
 									<ReplayTeamComponent Replay="replay" TeamNumber="1" />
@@ -266,6 +273,9 @@
 	</div>
 </div>
 
+<ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnClose="CloseReplay" />
+<PlayerModal @ref="playerModal" OnClose="e => replayModal?.Show(ReplayDetails!)" />
+
 @code {
 	[Parameter, EditorRequired]
 	public BuildsRequest Request { get; set; } = default!;
@@ -280,7 +290,9 @@
 	BuildSpawnComponent? buildSpawnComponent;
 	bool showSpawns;
 	string replayHash = string.Empty;
-
+	ReplayModal? replayModal;
+	PlayerModal? playerModal;
+	ReplayDetails? ReplayDetails = null;
 
 	private Lazy<Task<IJSObjectReference>> moduleTask = null!;
 
@@ -288,7 +300,7 @@
 	{
 		foreach (var player in Request.Players)
 		{
-			
+
 		}
 		moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
 			"import", "./_content/dsstats.weblib/js/annotationChart.js?v=0.5").AsTask());
@@ -327,7 +339,7 @@
 		return $"{ts.Minutes}:{ts.Seconds}";
 	}
 
-	private void LoadReplay(string replayHash)
+	private void LoadReplayBuild(string replayHash)
 	{
 		this.replayHash = replayHash;
 		if (!showSpawns)
@@ -335,6 +347,20 @@
 			showSpawns = true;
 		}
 		buildSpawnComponent?.Update(replayHash, Request);
+	}
+
+	private async Task LoadReplayDetails(string replayHash)
+	{
+		ReplayDetails = await ReplayRepository.GetReplayDetails(replayHash);
+		if (ReplayDetails != null)
+		{
+			replayModal?.Show(ReplayDetails);
+		}
+	}
+
+	private void CloseReplay()
+	{
+		ReplayDetails = null;
 	}
 
 	private void ShowSpawn()
