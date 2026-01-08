@@ -83,7 +83,7 @@
         return (x, y);
     }
 
-    public async void Update(SpawnDto? spawn, int team)
+    public async void Update(SpawnDto? spawn, Commander cmdr, int team)
     {
         if (!chartIsReady)
         {
@@ -99,6 +99,10 @@
         {
             return;
         }
+
+        Team = team;
+        Spawn = spawn;
+        Cmdr = cmdr;
 
         var unitGroups = GetUnits(spawn, team).GroupBy(g => g.Name);
         List<ChartJsDataset> datasets = new();
@@ -149,7 +153,7 @@
         {
             var success = await RegisterPlugin();
             chartIsReady = !success;
-            Update(Spawn, Team);
+            Update(Spawn, Cmdr, Team);
         }
         else if (e is ChartJsLegendHoverEvent hoverEvent)
         {

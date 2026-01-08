@@ -255,6 +255,11 @@
 							</tr>
 						}
 					</tbody>
+					<tfoot>
+						<tr>
+							<td colspan="100" class="text-end"><a class="text-decoration-none" href="@Request.GetReplayLink()">View all replays →</a></td>
+						</tr>
+					</tfoot>
 				</table>
 			</div>
 		</div>
@@ -281,6 +286,10 @@
 
 	protected override async Task OnInitializedAsync()
 	{
+		foreach (var player in Request.Players)
+		{
+			
+		}
 		moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
 			"import", "./_content/dsstats.weblib/js/annotationChart.js?v=0.5").AsTask());
 		await LoadData(true);

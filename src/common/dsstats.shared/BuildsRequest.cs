@@ -1,4 +1,6 @@
-﻿namespace dsstats.shared;
+﻿using System.Text;
+
+namespace dsstats.shared;
 
 public class BuildsRequest
 {
@@ -47,5 +49,33 @@ public static class BuildRequestExtensions
     {
         var playersKey = string.Join("_", request.Players.Select(p => $"{p.PlayerId}"));
         return $"build_{request.RatingType}_{request.TimePeriod}_{request.Interest}_{request.Versus}_{request.FromRating}_{request.ToRating}_{request.Breakpoint}_{request.WithLeavers}_{playersKey}";
+    }
+
+    public static string GetReplayLink(this BuildsRequest request)
+    {
+        var sb = new StringBuilder();
+        sb.Append("replays?");
+
+        // Required: PlayerCmdr
+        sb.Append($"PlayerCmdr={Uri.EscapeDataString(request.Interest.ToString())}");
+
+        // Optional: OppCmdr
+        if (request.Versus != Commander.None)
+        {
+            sb.Append($"&OppCmdr={Uri.EscapeDataString(request.Versus.ToString())}");
+        }
+
+        // Optional: ToonIds
+        if (request.Players.Count > 0)
+        {
+            var toonIds = request.Players
+                .Take(Data.MaxBuildPlayers)
+                .Select(p => Data.GetToonIdString(p.ToonId))
+                .Select(Uri.EscapeDataString);
+
+            sb.Append($"&ToonIds={string.Join("|", toonIds)}");
+        }
+
+        return sb.ToString();
     }
 }

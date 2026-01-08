@@ -10,24 +10,33 @@
 <dsstats.weblib.Replays.ReplaysComponent ReplaysRequest="Request" OnRequestChanged="RequestChanged" />
 
 @code {
-    [SupplyParameterFromQuery]
-    public int? Rt { get; set; }
+	[SupplyParameterFromQuery]
+	public int? Rt { get; set; }
 
-    [SupplyParameterFromQuery]
-    public string? Name { get; set; }
+	[SupplyParameterFromQuery]
+	public string? Name { get; set; }
 
-    [SupplyParameterFromQuery]
-    public string? Cmdr { get; set; }
+	[SupplyParameterFromQuery]
+	public string? Cmdr { get; set; }
 
-    [SupplyParameterFromQuery]
-    public bool? Link { get; set; }
+	[SupplyParameterFromQuery]
+	public bool? Link { get; set; }
 
-    [SupplyParameterFromQuery]
-    public string? Replay { get; set; }
+	[SupplyParameterFromQuery]
+	public string? Replay { get; set; }
 
-    ReplaysRequest Request = new();
+	[SupplyParameterFromQuery]
+	public string? PlayerCmdr { get; set; }
 
-    private static readonly FrozenDictionary<string, string> paramMap = new Dictionary<string, string>
+	[SupplyParameterFromQuery]
+	public string? OppCmdr { get; set; }
+
+	[SupplyParameterFromQuery]
+	public string? ToonIds { get; set; }
+
+	ReplaysRequest Request = new();
+
+	private static readonly FrozenDictionary<string, string> paramMap = new Dictionary<string, string>
 	{
 		{ nameof(ReplaysRequest.RatingType), "Rt" },
 		{ nameof(ReplaysRequest.Name), "Name" },
@@ -68,11 +77,67 @@
 		{
 			Request.ReplayHash = Replay;
 		}
+
+		if (!string.IsNullOrEmpty(PlayerCmdr)
+			&& Enum.TryParse(PlayerCmdr, out Commander playerCmdr))
+		{
+			Commander oppCommander = Commander.None;
+			if (!string.IsNullOrEmpty(OppCmdr)
+				&& Enum.TryParse(OppCmdr, out Commander parsedOpp))
+			{
+				oppCommander = parsedOpp;
+			}
+
+			Request.Filter = new ReplaysFilter
+			{
+				PosFilters =
+		{
+			new ReplaysPosFilter
+			{
+				Commander = playerCmdr,
+				OppCommander = oppCommander
+			}
+		}
+			};
+		}
+
+		if (!string.IsNullOrEmpty(ToonIds))
+		{
+			var toonIds = ToonIds.Split('|', StringSplitOptions.RemoveEmptyEntries)
+				.Take(Data.MaxBuildPlayers)
+				.ToList();
+
+			Commander idPlayerCmdr = Commander.None;
+			Commander idOppCmdr = Commander.None;
+
+			if (Request.Filter != null && Request.Filter.PosFilters.Count == 1)
+			{
+				idPlayerCmdr = Request.Filter.PosFilters[0].Commander;
+				idOppCmdr = Request.Filter.PosFilters[0].OppCommander;
+			}
+
+			// Rebuild a clean filter
+			Request.Filter = new ReplaysFilter();
+
+			Request.Filter.PosFilters.Add(new ReplaysPosFilter
+			{
+				PlayerNameOrId = string.Join('|', toonIds),
+				Commander = idPlayerCmdr,
+				OppCommander = idOppCmdr
+			});
+		}
 	}
 
 	private void RequestChanged(ReplaysRequest newRequest)
 	{
 		var queryDic = newRequest.BuildQueryParams(paramMap);
+
+		if (newRequest.Filter == null || newRequest.Filter.PosFilters.Count == 0)
+		{
+			queryDic["PlayerCmdr"] = null;
+			queryDic["OppCmdr"] = null;
+			queryDic["ToonIds"] = null;
+		}
 
 		NavigationManager.NavigateTo(
 			NavigationManager.GetUriWithQueryParameters(
