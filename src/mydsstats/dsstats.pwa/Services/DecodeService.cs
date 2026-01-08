@@ -100,7 +100,7 @@ public partial class DecodeService
         var config = await pwaConfigService.GetConfig();
         if (config.UploadCredential)
         {
-            await Upload(dbService);
+            await Upload10(dbService);
         }
 
         return replayDto;
@@ -197,7 +197,7 @@ public partial class DecodeService
 
         if (config.UploadCredential)
         {
-            await Upload(dbService);
+            await Upload10(dbService);
         }
     }
 
