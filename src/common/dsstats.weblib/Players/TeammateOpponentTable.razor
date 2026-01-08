@@ -41,7 +41,7 @@
 						@foreach (var stat in SortedStats)
 						{
 							var wr = stat.Count == 0 ? 0.0 : stat.Wins / (double)stat.Count;
-							<tr>
+							<tr @key="@stat.Player.ToonId" class="pointer" @onclick="() => OnPlayerRequest.InvokeAsync(stat.Player.ToonId)">
 								<td>
 									@stat.Player.Name
 								</td>
@@ -70,6 +70,9 @@
 
 	[Parameter, EditorRequired]
 	public int AvgRating { get; set; }
+
+	[Parameter]
+	public EventCallback<ToonIdDto> OnPlayerRequest { get; set; }
 
 	private string? currentSortColumn = nameof(OtherPlayerStats.Count);
 	private bool isDescending = true;

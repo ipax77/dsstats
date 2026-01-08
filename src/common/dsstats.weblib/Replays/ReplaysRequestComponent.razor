@@ -8,11 +8,17 @@
 			<div class="col-auto align-self-center">
 				@if (Request.Filter == null)
 				{
-					<i class="ms-2 text-warning bi bi-filter-circle pointer" @onclick="() => replayFiliterModal?.Show()"></i>
+					<span class="pointer" @onclick="ShowFilter">
+						<i class="ms-2 text-muted bi bi-filter-circle"></i>
+						<span class="ms-1 text-muted">Filter</span>
+					</span>
 				}
 				else
 				{
-					<i class="ms-2 text-warning bi bi-filter-circle-fill pointer" @onclick="() => replayFiliterModal?.Show()"></i>
+					<span class="pointer" @onclick="ShowFilter">
+						<i class="ms-2 text-primary bi bi-filter-circle-fill"></i>
+						<span class="ms-1 text-primary">Filter</span>
+					</span>
 				}
 			</div>
 			<div class="col-3">
@@ -167,6 +173,15 @@
 		replayFiliterModal?.filter.Reset();
 		Request.Filter = null;
 		OnRequestChanged.InvokeAsync();
+	}
+
+	private void ShowFilter()
+	{
+		if (Request.Filter == null)
+		{
+			Request.Filter = new();
+		}
+		replayFiliterModal?.Show(Request.Filter);
 	}
 
 	private void OnPageSizeChanged()

@@ -1,9 +1,13 @@
 ﻿using dsstats.db;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
+using LinqKit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using s2protocol.NET.Models;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace dsstats.dbServices;
 
@@ -129,7 +133,7 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
         {
             int skip = ((request.Page - 1) * request.PageSize) + request.Skip;
             int take = request.Take;
-            if (skip < 0 ||take <= 0)
+            if (skip < 0 || take <= 0)
             {
                 return [];
             }
@@ -270,15 +274,25 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
 
                 if (name is not null && commander is not null)
                 {
-                    query = query.Where(x => x.Players.Any(p => p.Name.Contains(name) && p.Race == commander));
+                    query = from r in query
+                            from rp in r.Players
+                            where rp.Name.Contains(name) && rp.Race == commander
+                            select r;
                 }
                 else if (name is not null)
                 {
-                    query = query.Where(x => x.Players.Any(p => p.Name.Contains(name)));
+                    query = from r in query
+                            from rp in r.Players
+                            where rp.Name.Contains(name)
+                            select r;
+
                 }
                 else if (commander is not null)
                 {
-                    query = query.Where(x => x.Players.Any(p => p.Race == commander));
+                    query = from r in query
+                            from rp in r.Players
+                            where rp.Race == commander
+                            select r;
                 }
             }
         }
@@ -289,7 +303,10 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
                 var names = request.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 foreach (var name in names)
                 {
-                    query = query.Where(x => x.Players.Any(p => p.Name.Contains(name)));
+                    query = from r in query
+                            from rp in r.Players
+                            where rp.Name.Contains(name)
+                            select r;
                 }
             }
 
@@ -300,7 +317,10 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
                 {
                     if (Enum.TryParse<Commander>(cmdr, true, out var commander))
                     {
-                        query = query.Where(x => x.Players.Any(p => p.Race == commander));
+                        query = from r in query
+                                from rp in r.Players
+                                where rp.Race == commander
+                                select r;
                     }
                 }
             }
@@ -340,10 +360,11 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
             foreach (var posFilter in request.Filter.PosFilters)
             {
                 string name = posFilter.PlayerNameOrId.Trim();
-                var toonId = GetPlayerId(name.Replace("%7C", "|"));
+                var toonIds = GetPlayerIds(name.Replace("%7C", "|"));
 
-                if (toonId != null)
+                if (toonIds.Count == 1)
                 {
+                    var toonId = toonIds[0];
                     query = from r in query
                             from rp in r.Players
                             join p in context.Players on rp.PlayerId equals p.PlayerId
@@ -352,6 +373,21 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
                             && (posFilter.OppCommander == Commander.None || rp.OppRace == posFilter.OppCommander)
                             && p.ToonId.Id == toonId.Id && p.ToonId.Realm == toonId.Realm && p.ToonId.Region == toonId.Region
                             select r;
+                }
+                else if (toonIds.Count > 1)
+                {
+                    var predicate = PredicateBuilder.New<ReplayPlayer>(false);
+                    foreach (var t in toonIds)
+                    {
+                        var temp = t; // closure capture
+                        predicate = predicate.Or(rp => (posFilter.Commander == Commander.None || rp.Race == posFilter.Commander)
+                                                      && (posFilter.OppCommander == Commander.None || rp.OppRace == posFilter.OppCommander)
+                                                      && rp.Player!.ToonId.Id == temp.Id
+                                                      && rp.Player.ToonId.Realm == temp.Realm
+                                                      && rp.Player.ToonId.Region == temp.Region);
+                    }
+
+                    query = query.Where(r => r.Players.AsQueryable().Any(predicate));
                 }
                 else
                 {
@@ -386,31 +422,36 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
         return query;
     }
 
-    public static ToonIdDto? GetPlayerId(string? playerIdString)
+    public static List<ToonIdDto> GetPlayerIds(string? playerIdString)
     {
         if (string.IsNullOrWhiteSpace(playerIdString))
         {
-            return null;
+            return [];
         }
-
-        var ents = playerIdString.Split('|', StringSplitOptions.RemoveEmptyEntries);
-        if (ents.Length != 3)
+        List<ToonIdDto> toonIds = [];
+        var toonIdStrings = playerIdString.Split('|', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var toonId in toonIdStrings)
         {
-            return null;
-        }
-
-        if (int.TryParse(ents[0], out int toonId)
-            && int.TryParse(ents[1], out int realmId)
-            && int.TryParse(ents[2], out int regionId))
-        {
-            return new()
+            var ents = toonId.Split('x', StringSplitOptions.RemoveEmptyEntries);
+            if (ents.Length != 3)
             {
-                Id = toonId,
-                Realm = realmId,
-                Region = regionId
-            };
+                continue;
+            }
+
+            if (int.TryParse(ents[0], out int id)
+                && int.TryParse(ents[1], out int regionId)
+                && int.TryParse(ents[2], out int realmId))
+            {
+                toonIds.Add(new()
+                {
+                    Id = id,
+                    Realm = realmId,
+                    Region = regionId
+                });
+            }
+
         }
-        return null;
+        return toonIds;
     }
 }
 

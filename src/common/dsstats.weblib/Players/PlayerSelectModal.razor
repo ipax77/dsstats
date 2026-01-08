@@ -17,7 +17,7 @@
 					<RatingsRequestComponent @ref="ratingsRequestComponent" Count="totalCount" Request="PlayerRequest" OnRequestChanged="Reload" />
 				</div>
 				<div class="mb-2">
-					<h4>Selected Players</h4>
+					<h4>Selected Players <span class="@(Request.Players.Count == 6 ? "text-danger" : "")">(max @Data.MaxBuildPlayers)</span></h4>
 					<div class="row mb-2">
 						@foreach (var player in Request.Players.ToArray())
 						{
@@ -174,7 +174,7 @@
 		{
 			Request.Players.Remove(existing);
 		}
-		else
+		else if (Request.Players.Count < Data.MaxBuildPlayers)
 		{
 			Request.Players.Add(new()
 			{

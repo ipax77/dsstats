@@ -10,96 +10,111 @@
 <dsstats.weblib.Builds.BuildsComponent Request="Request" OnRequestChanged="RequestChanged" />
 
 @code {
-    [SupplyParameterFromQuery]
-    public int? Rt { get; set; }
+	[SupplyParameterFromQuery]
+	public int? Rt { get; set; }
 
-    [SupplyParameterFromQuery]
-    public int? Tp { get; set; }
+	[SupplyParameterFromQuery]
+	public int? Tp { get; set; }
 
-    [SupplyParameterFromQuery]
-    public string? Int { get; set; }
+	[SupplyParameterFromQuery]
+	public string? Int { get; set; }
 
-    [SupplyParameterFromQuery]
-    public string? Vs { get; set; }
+	[SupplyParameterFromQuery]
+	public string? Vs { get; set; }
 
-    [SupplyParameterFromQuery]
-    public int? Bp { get; set; }
+	[SupplyParameterFromQuery]
+	public int? Bp { get; set; }
 
-    [SupplyParameterFromQuery]
-    public int? Fr { get; set; }
+	[SupplyParameterFromQuery]
+	public int? Fr { get; set; }
 
-    [SupplyParameterFromQuery]
-    public int? Tr { get; set; }
+	[SupplyParameterFromQuery]
+	public int? Tr { get; set; }
 
-    // [SupplyParameterFromQuery]
-    // public string? Name { get; set; }
+	[SupplyParameterFromQuery]
+	public string? Players { get; set; }
 
-    BuildsRequest Request = new();
-    private const int RatingStep = 50;
+	BuildsRequest Request = new();
+	private const int RatingStep = 50;
 
-    private static readonly FrozenDictionary<string, string> paramMap = new Dictionary<string, string>
-    {
-        { nameof(BuildsRequest.RatingType), "Rt" },
-        { nameof(BuildsRequest.TimePeriod), "Tp" },
-        { nameof(BuildsRequest.Interest), "Int" },
-        { nameof(BuildsRequest.Versus), "Vs" },
-        { nameof(BuildsRequest.Breakpoint), "Bp" },
-        { nameof(BuildsRequest.FromRating), "Fr" },
-        { nameof(BuildsRequest.ToRating), "Tr" },
+	private static readonly FrozenDictionary<string, string> paramMap = new Dictionary<string, string>
+	{
+		{ nameof(BuildsRequest.RatingType), "Rt" },
+		{ nameof(BuildsRequest.TimePeriod), "Tp" },
+		{ nameof(BuildsRequest.Interest), "Int" },
+		{ nameof(BuildsRequest.Versus), "Vs" },
+		{ nameof(BuildsRequest.Breakpoint), "Bp" },
+		{ nameof(BuildsRequest.FromRating), "Fr" },
+		{ nameof(BuildsRequest.ToRating), "Tr" },
         // { nameof(BuildsRequest.Players), "Name" }
     }.ToFrozenDictionary();
 
-    protected override void OnInitialized()
-    {
-        InitRequest();
-        base.OnInitialized();
-    }
+	protected override void OnInitialized()
+	{
+		InitRequest();
+		base.OnInitialized();
+	}
 
-    private void InitRequest()
-    {
-        Request = new BuildsRequest
-        {
-            RatingType = EnumExtensions.ParseEnumOrDefault(Rt, RatingType.All),
-            TimePeriod = EnumExtensions.ParseEnumOrDefault(Tp, TimePeriod.Last90Days),
-            Interest = EnumExtensions.ParseEnumOrDefault(Int, Commander.Abathur),
-            Versus = EnumExtensions.ParseEnumOrDefault(Vs, Commander.None),
-            Breakpoint = EnumExtensions.ParseEnumOrDefault(Bp, Breakpoint.Min10),
-            FromRating = NormalizeRating(Fr, 2000),
-            ToRating = NormalizeRating(Tr, Data.MaxBuildRating)
-        };
-        if (Request.FromRating > Request.ToRating)
-        {
-            (Request.FromRating, Request.ToRating) =
-                (Request.ToRating, Request.FromRating);
-        }
-    }
+	private void InitRequest()
+	{
+		Request = new BuildsRequest
+		{
+			RatingType = EnumExtensions.ParseEnumOrDefault(Rt, RatingType.All),
+			TimePeriod = EnumExtensions.ParseEnumOrDefault(Tp, TimePeriod.Last90Days),
+			Interest = EnumExtensions.ParseEnumOrDefault(Int, Commander.Abathur),
+			Versus = EnumExtensions.ParseEnumOrDefault(Vs, Commander.None),
+			Breakpoint = EnumExtensions.ParseEnumOrDefault(Bp, Breakpoint.Min10),
+			FromRating = NormalizeRating(Fr, 2000),
+			ToRating = NormalizeRating(Tr, Data.MaxBuildRating)
+		};
+		if (Request.FromRating > Request.ToRating)
+		{
+			(Request.FromRating, Request.ToRating) =
+				(Request.ToRating, Request.FromRating);
+		}
 
-    private static int NormalizeRating(
-    int? value,
-    int defaultValue)
-    {
-        if (!value.HasValue)
-            return defaultValue;
+		if (!string.IsNullOrEmpty(Players))
+		{
+			Request.Players = Data.DecodePlayersFromBase64(Players);
+		}
+	}
 
-        var clamped = Math.Clamp(
-            value.Value,
-            Data.MinBuildRating,
-            Data.MaxBuildRating);
+	private static int NormalizeRating(
+	int? value,
+	int defaultValue)
+	{
+		if (!value.HasValue)
+			return defaultValue;
 
-        // Snap to nearest step
-        var normalized =
-            ((clamped - Data.MinBuildRating) / RatingStep) * RatingStep
-            + Data.MinBuildRating;
+		var clamped = Math.Clamp(
+			value.Value,
+			Data.MinBuildRating,
+			Data.MaxBuildRating);
 
-        return normalized;
-    }
+		// Snap to nearest step
+		var normalized =
+			((clamped - Data.MinBuildRating) / RatingStep) * RatingStep
+			+ Data.MinBuildRating;
 
-    private void RequestChanged(BuildsRequest newRequest)
-    {
-        var queryDic = newRequest.BuildQueryParams(paramMap);
+		return normalized;
+	}
 
-        NavigationManager.NavigateTo(
-            NavigationManager.GetUriWithQueryParameters(
-                new Dictionary<string, object?>(queryDic)));
-    }
+	private void RequestChanged(BuildsRequest newRequest)
+	{
+		var queryDic = newRequest.BuildQueryParams(paramMap);
+
+		if (newRequest.Players.Count > 0)
+		{
+			var players = Data.EncodePlayersToBase64(newRequest.Players);
+			queryDic.Add("Players", players);
+		}
+		else
+		{
+			queryDic.Add("Players", null);
+		}
+
+		NavigationManager.NavigateTo(
+			NavigationManager.GetUriWithQueryParameters(
+				new Dictionary<string, object?>(queryDic)));
+	}
 }

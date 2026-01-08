@@ -106,7 +106,10 @@
 		</div>
 	</div>
 </div>
-<PlayerModal @ref="playerModal" OnReplayRequest="e => replayModal?.Show(e)" OnClose="ClosePlayerStats" />
+<PlayerModal @ref="playerModal"
+			 OnReplayRequest="e => replayModal?.Show(e)"
+			 OnPlayerRequest="e => ShowPlayerStats(Data.GetToonIdString(e))"
+			 OnClose="ClosePlayerStats" />
 <ReplayModal @ref="replayModal" OnClose="e => playerModal?.Show(playerStatsResponse!)" />
 
 @code {
@@ -125,6 +128,8 @@
 	RatingsRequestComponent? ratingsRequestComponent;
 	bool isLoading = true;
 	bool showRatingDistribution;
+	private Queue<(string ToonIdString, PlayerStatsResponse Response)> _playerNavigationQueue = new();
+	private const int MaxNavigationHistory = 3;
 
 	protected override void OnInitialized()
 	{
@@ -177,22 +182,56 @@
 	private async Task ShowPlayerStats(string toonIdString)
 	{
 		ratingsRequestComponent?.SetLoading(true);
+
 		PlayerStatsRequest statsRequest = new()
 		{
 			ToonId = Data.GetToonId(toonIdString) ?? new(),
 			RatingType = PlayerRequest.RatingType
 		};
-		playerStatsResponse = await PlayerService.GetPlayerStats(statsRequest, cts.Token);
-		playerModal?.Show(playerStatsResponse);
+
+		var newResponse = await PlayerService.GetPlayerStats(statsRequest, cts.Token);
+
+		// Push current state to queue if we have one
+		if (playerStatsResponse != null && PlayerRequest.ToonIdString != null)
+		{
+			_playerNavigationQueue.Enqueue((PlayerRequest.ToonIdString, playerStatsResponse));
+
+			// Limit queue size
+			if (_playerNavigationQueue.Count > MaxNavigationHistory)
+			{
+				_playerNavigationQueue.Dequeue(); // Remove oldest
+			}
+		}
+
+		playerStatsResponse = newResponse;
 		PlayerRequest.ToonIdString = toonIdString;
+		playerModal?.Show(playerStatsResponse);
+
 		ratingsRequestComponent?.SetLoading(false);
 		await OnRequestChanged.InvokeAsync(PlayerRequest);
 	}
 
-	private void ClosePlayerStats()
+	private async Task ClosePlayerStats()
 	{
-		PlayerRequest.ToonIdString = null;
-		OnRequestChanged.InvokeAsync(PlayerRequest);
+		if (_playerNavigationQueue.Count > 0)
+		{
+			// Navigate back to previous player
+			var (previousToonId, previousResponse) = _playerNavigationQueue.Dequeue();
+			playerStatsResponse = previousResponse;
+			PlayerRequest.ToonIdString = previousToonId;
+
+			await Task.Delay(100); // Allow modal to close before reopening
+			playerModal?.Show(playerStatsResponse);
+			await OnRequestChanged.InvokeAsync(PlayerRequest);
+		}
+		else
+		{
+			// No more history, fully close
+			PlayerRequest.ToonIdString = null;
+			playerStatsResponse = null;
+			_playerNavigationQueue.Clear();
+			await OnRequestChanged.InvokeAsync(PlayerRequest);
+		}
 	}
 
 	private async Task SortList(MouseEventArgs e, string column)

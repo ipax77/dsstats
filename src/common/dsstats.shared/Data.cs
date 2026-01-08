@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using System.Text.Json;
 
 namespace dsstats.shared;
 
@@ -26,6 +27,29 @@ public static class Data
             Region = int.Parse(parts[1]),
             Realm = int.Parse(parts[2])
         };
+    }
+
+    private static readonly JsonSerializerOptions jsonEncodingOptions = new() { PropertyNameCaseInsensitive = true };
+
+    public static List<PlayerDto> DecodePlayersFromBase64(string base64)
+    {
+        try
+        {
+            byte[] data = Convert.FromBase64String(base64);
+            string json = System.Text.Encoding.UTF8.GetString(data);
+
+            return JsonSerializer.Deserialize<List<PlayerDto>>(json, jsonEncodingOptions) ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public static string EncodePlayersToBase64(IEnumerable<PlayerDto> players)
+    {
+        string json = JsonSerializer.Serialize(players);
+        return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json));
     }
 
     public static string GetRegionString(int regionId)
@@ -194,6 +218,7 @@ public static class Data
 
     public const int MinBuildRating = 500;
     public const int MaxBuildRating = 3000;
+    public const int MaxBuildPlayers = 6;
 }
 
 
