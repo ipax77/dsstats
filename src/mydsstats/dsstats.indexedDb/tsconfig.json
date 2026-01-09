@@ -1,17 +1,19 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ES2020",
+    "target": "ESNext",
+    "module": "ESNext",
     "rootDir": "./Client",
     "outDir": "./wwwroot/js",
     "strict": true,
     "noEmitOnError": true,
     "sourceMap": true,
+    "declaration": false,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "lib": [
-      "ES2020",
-      "DOM"
+      "DOM",
+      "DOM.Iterable",
+      "DOM.AsyncIterable"
     ],
     "moduleResolution": "node"
   },

@@ -430,16 +430,11 @@ export async function getFilteredReplayLists(
     if (filter.skip !== undefined && filter.take !== undefined) {
         return filteredResults.slice(filter.skip, filter.skip + filter.take);
     }
-    for (const result of filteredResults) {
-        const json = JSON.stringify(result, null, 2);
-        console.log(json);
-    }
     return filteredResults;
 }
 
 export async function getFilteredReplayListsCount(filter: ReplayFilter): Promise<number> {
     const filteredResults = await _getFilteredReplayLists(filter);
-    console.log("count: " + filteredResults.length);
     return filteredResults.length;
 }
 

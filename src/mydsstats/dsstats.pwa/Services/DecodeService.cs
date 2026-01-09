@@ -109,6 +109,16 @@ public partial class DecodeService
     public async Task DecodeFromDirectory(int regionId, string? dirKey = null)
     {
         await ss.WaitAsync();
+
+        if (regionId == 0 && dirKey != null)
+        {
+            // Extract last character from dirKey and parse as integer
+            if (dirKey.Length > 0 && char.IsDigit(dirKey[^1]))
+            {
+                regionId = int.Parse(dirKey[^1].ToString());
+            }
+        }
+
         Decoding = true;
         cts = new();
         Stopwatch sw = Stopwatch.StartNew();
@@ -136,10 +146,6 @@ public partial class DecodeService
 
             await Parallel.ForEachAsync(fileInfos, options, async (fileInfo, ct) =>
             {
-                if (existingPaths.Contains(fileInfo.Path))
-                {
-                    return;
-                }
                 var result = await TryDecodeReplay(fileInfo.Path, dbService, ct);
                 if (result.Success)
                 {
