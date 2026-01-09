@@ -142,6 +142,11 @@ export interface FileInfoRecord {
     lastModified: number;
 }
 
+export interface FileInfo {
+    record: FileInfoRecord,
+    file: File
+}
+
 export interface FileContentRecord {
     contentBase64: string;
 }

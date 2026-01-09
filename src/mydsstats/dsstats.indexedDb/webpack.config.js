@@ -13,6 +13,7 @@ const entries = glob.sync('./Client/**/*.ts', { ignore: './Client/tests/**' })
 
 module.exports = {
     mode: 'production',
+    devtool: 'source-map',
     entry: entries,
     output: {
         path: path.resolve(__dirname, 'wwwroot/js'),

@@ -59,21 +59,16 @@ export async function verifyDirectoryPermission(handle: FileSystemDirectoryHandl
 }
 
 export async function getDirectoryHandleFromUser(): Promise<FileSystemDirectoryHandle | null> {
-  if ("showDirectoryPicker" in window) {
-    try {
-      const directoryHandle = await (window as any).showDirectoryPicker();
-      return directoryHandle;
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        // User cancelled the picker
-        return null;
-      }
-      console.error("Error picking directory:", error);
+  if (!("showDirectoryPicker" in window)) {
+    throw new Error("showDirectoryPicker is not supported in this browser. File selection requires a Chromium-based browser.");
+  }
+
+  try {
+    return await (window as any).showDirectoryPicker();
+  } catch (error: any) {
+    if (error?.name === "AbortError") {
       return null;
     }
-  } else {
-    // Fallback for browsers that do not support showDirectoryPicker
-    console.warn("showDirectoryPicker is not supported in this browser.");
-    return null;
+    throw new Error(`Failed to pick directory: ${error?.message ?? error}`);
   }
 }

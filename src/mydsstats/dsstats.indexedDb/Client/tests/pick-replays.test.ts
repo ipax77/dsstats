@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getReplaysFromFolder } from '../pick-replays';
 import * as fileHandleRepository from '../file-handle-repository';
-import { FileInfoRecord } from '../dtos';
 
 // Mock the File System Access API
 const mockFile = (name: string, size: number, lastModified: number): File => ({
@@ -195,12 +194,12 @@ describe('getReplaysFromFolder', () => {
 
             const newReplays = {
                 ...allReplays,
-                'new-replay1.txt': mockFileHandle(
-                    'new-replay1.txt',
+                'replay-new-1.txt': mockFileHandle(
+                    'replay-new-1.txt',
                     mockFile('replay-new-1.txt', 150, Date.now() - 500)
                 ),
-                'new-replay2.txt': mockFileHandle(
-                    'new-replay2.txt',
+                'replay-new-2.txt': mockFileHandle(
+                    'replay-new-2.txt',
                     mockFile('replay-new-2.txt', 150, Date.now() - 200)
                 ),
             };
