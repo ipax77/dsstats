@@ -91,9 +91,8 @@ async function getFilesFromFolderRecursive(
     return out;
 }
 
-
-export async function readFileContentStream(path: string): Promise<ReadableStream<Uint8Array>> {
+export async function readFileContentStream(path: string): Promise<File> {
     const file = fileHandleMap.get(path);
     if (!file) throw new Error(`File not found: ${path}`);
-    return file.stream();
+    return file;
 }
