@@ -31,10 +31,9 @@ builder.Services.AddHttpClient("ApiClient", client =>
 builder.Services.AddHttpClient("api", client =>
 {
     var env = builder.HostEnvironment;
-    client.BaseAddress = new Uri("http://localhost:5279");
-    //client.BaseAddress = env.IsProduction()
-    //    ? new Uri("https://dsstats.pax77.org")
-    //    : new Uri("http://localhost:5279");
+    client.BaseAddress = env.IsProduction()
+        ? new Uri("https://dsstats.pax77.org")
+        : new Uri("http://localhost:5279");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.DefaultRequestHeaders.Authorization = new("DS8upload77");
 });
