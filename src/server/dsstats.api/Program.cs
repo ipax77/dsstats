@@ -41,6 +41,7 @@ builder.Services.AddCors(options =>
                               allowedOrigins.Add("https://localhost:7240");
                               allowedOrigins.Add("http://localhost:5261");
                               allowedOrigins.Add("https://localhost:7039");
+                              allowedOrigins.Add("https://localhost:5066");
                           }
 
                           policy.WithOrigins([.. allowedOrigins])

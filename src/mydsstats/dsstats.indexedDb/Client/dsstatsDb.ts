@@ -217,8 +217,13 @@ export async function exportUnuploadedReplays10(uploadRequest: UploadRequestDto,
                 // Collect
                 const hashes = selected.map((x) => x.hash);
                 const replays = selected.map((x) => x.replay);
+
+                // Create a plain JS object from the .NET proxy object to avoid stack overflow issues
+                // when stringifying an object that contains a .NET proxy.
+                const plainUploadRequest = JSON.parse(JSON.stringify(uploadRequest));
+
                 const request: UploadRequestDto = {
-                    ...uploadRequest,
+                    ...plainUploadRequest,
                     replays
                 };
 

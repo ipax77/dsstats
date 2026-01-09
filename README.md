@@ -19,6 +19,13 @@ The app is distributed via the Microsoft Store to make installation as easy as p
 ![details](/images/playerstats.png)
 ![replay](/images/replay.png)
 
+## Projects
+
+- **[Server](/src/server)** — Backend database and API (https://dsstats.pax77.org).
+- **[Maui](/src/maui)** — .NET MAUI Blazor Hybrid desktop client (Microsoft Store).
+- **[mydsstats](/src/mydsstats)** — Blazor WASM PWA for browser-based replay uploads (https://mydsstats.pax77.org).
+
+
 # Contributing
 
 We really like people helping us with the project. Nevertheless, take your time to read our contributing guidelines [here](./CONTRIBUTING.md).
