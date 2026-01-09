@@ -7,69 +7,6 @@ namespace dsstats.pwa.Services;
 
 public partial class DecodeService
 {
-    private readonly string uploaderController = "api8/v1/Upload";
-
-    public async Task Upload(IndexedDbService dbService)
-    {
-        var config = await pwaConfigService.GetConfig();
-        try
-        {
-            UploadDto uploadDto = new()
-            {
-                AppGuid = config.AppGuid,
-                AppVersion = config.ConfigVersion,
-                RequestNames = [],
-                Base64ReplayBlob = ""
-            };
-
-            var httpClient = httpClientFactory.CreateClient("ApiClient");
-
-            logger.LogInformation("Starting upload of replays...");
-            var exportReplays = await dbService.GetExportReplays(1000);
-            logger.LogInformation("Found {Count} replays to upload.", exportReplays.Hashes.Count);
-
-            if (exportReplays.Hashes.Count == 0)
-            {
-                OnDecodeStateChanged(new DecodeInfoEventArgs
-                {
-                    UploadStatus = UploadStatus.UploadSuccess
-                });
-            }
-            else
-            {
-                OnDecodeStateChanged(new DecodeInfoEventArgs
-                {
-                    UploadStatus = UploadStatus.Uploading
-                });
-            }
-
-            while (exportReplays.Hashes.Count > 0)
-            {
-                var payload = uploadDto with { Base64ReplayBlob = exportReplays.Payload };
-                var uri = new Uri(httpClient.BaseAddress!, $"{uploaderController}/importreplays");
-                var response = await httpClient.PostAsJsonAsync(uri, payload);
-                response.EnsureSuccessStatusCode();
-                logger.LogInformation("Upload Successful");
-                await dbService.MarkReplaysAsUploaded(exportReplays.Hashes);
-                exportReplays = await dbService.GetExportReplays(1000);
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogError("Failed to upload replays: {Message}", ex.Message);
-            OnDecodeStateChanged(new DecodeInfoEventArgs
-            {
-                UploadStatus = UploadStatus.UploadError,
-                Info = $"Failed to upload replays: {ex.Message}"
-            });
-            return;
-        }
-        OnDecodeStateChanged(new DecodeInfoEventArgs
-        {
-            UploadStatus = UploadStatus.UploadSuccess
-        });
-    }
-
     public async Task Upload10(IndexedDbService dbService)
     {
         var config = await pwaConfigService.GetConfig();
@@ -85,7 +22,7 @@ public partial class DecodeService
             var httpClient = httpClientFactory.CreateClient("api");
 
             logger.LogInformation("Starting upload of replays...");
-            var exportResult = await dbService.GetExportReplays10(uploadDto, 250);
+            var exportResult = await dbService.GetExportReplays10(uploadDto, 50);
             logger.LogInformation("Found {Count} replays to upload.", exportResult.Hashes.Count);
 
             if (exportResult.Hashes.Count > 0)
