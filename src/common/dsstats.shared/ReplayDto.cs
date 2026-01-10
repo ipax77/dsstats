@@ -99,6 +99,14 @@ public class ReplayListDto
 
 public static class ReplayDtoExtensions
 {
+    public static bool IsValid(this ReplayDto replayDto)
+    {
+        if (replayDto.Players.Count <= 1) return false;
+        if (replayDto.Players.Any(a => a.Player.ToonId.Id == 0)) return false;
+
+        return true;
+    }
+
     public static (int, int) GetMiddleIncome(this ReplayDto replay, int targetGameloop)
     {
         int team1 = 0;
