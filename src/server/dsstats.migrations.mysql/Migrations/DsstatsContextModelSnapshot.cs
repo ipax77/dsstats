@@ -620,6 +620,8 @@ namespace dsstats.migrations.mysql.Migrations
 
                     b.HasKey("ReplayRatingId");
 
+                    b.HasIndex("IsPreRating");
+
                     b.HasIndex("ReplayId", "RatingType")
                         .IsUnique();
 
