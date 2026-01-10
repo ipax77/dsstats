@@ -263,6 +263,7 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
 
             var dbReplay = replay.ToEntity();
             dbReplay.ReplayHash = replay.ComputeHash();
+            dbReplay.CompatHash = replay.ComputeCandidateHash();
 
             foreach (var player in dbReplay.Players)
             {

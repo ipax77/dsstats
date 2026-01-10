@@ -733,9 +733,10 @@ partial class Program
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        List<string> dbHashes = ["B28B6663BBD971AC9DCEC57C5F61E515A425794886B6F15A01C168AB96C36BC1", "2888F673C478CB948603C84178FC327C5C1176DDCC09D6D7DDB19FBDADFFB67B"];
+        List<string> dbHashes = ["556A167F3F908E44ADB5F9592FE68DD66D4748F095460FF68B28CBB295BE63B4", "9873AED95081571A11EE59050E54B6A79E6B41173D064423A9278A8855F8A569"];
         // List<string> dbHashes = ["E7570F8064A720C353A5074A03A45562AD4ECF5170119169846B7D4E22AD30E0"];
         List<string> calcHashes = [];
+        List<string> calcCompatHashes = [];
         foreach (var dbHash in dbHashes)
         {
             var minReplay = await GetMinimalReplayDto(dbHash, context);
@@ -748,8 +749,6 @@ partial class Program
             var json = JsonSerializer.Serialize(minReplay, new JsonSerializerOptions() { WriteIndented = true });
             var path = Path.Combine(testPath, dbHash + ".json");
             File.WriteAllText(path, json);
-            var gameTime = minReplay.Gametime.Ticks;
-            Console.WriteLine(gameTime);
         }
         Console.WriteLine(string.Join(", ", calcHashes));
     }
