@@ -148,9 +148,13 @@ public class DsstatsContext : DbContext
             entity.HasIndex(x => x.CreatedAt);
         });
 
-        modelBuilder.Entity<ReplayRating>()
-            .HasIndex(x => new { x.ReplayId, x.RatingType })
+        modelBuilder.Entity<ReplayRating>(entity =>
+        {
+            entity.HasIndex(x => new { x.ReplayId, x.RatingType })
             .IsUnique();
+
+            entity.HasIndex(i => i.IsPreRating);
+        });
 
         modelBuilder.Entity<ReplayPlayerRating>()
             .HasIndex(x => new { x.ReplayRatingId, x.ReplayPlayerId, x.RatingType })

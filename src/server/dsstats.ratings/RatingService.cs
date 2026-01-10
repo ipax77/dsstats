@@ -243,10 +243,12 @@ public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<I
     {
         using var scope = scopeFactory.CreateAsyncScope();
         using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        bool noFromTime = fromTime == DateTime.MinValue;
+
         return await context.Replays
             .Include(i => i.Players)
             .Include(i => i.Ratings)
-            .Where(x => fromTime == DateTime.MinValue || (x.Gametime >= fromTime))
+            .Where(x => noFromTime || (x.Gametime >= fromTime))
             .Where(x => x.Ratings.Count == 0)
             .ToReplayCalcDtos()
             .Take(take)
