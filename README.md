@@ -32,6 +32,12 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
+<details open="open"><summary>v3.0.1</summary>
+
+>- Fix maui save config error
+
+</details>
+
 <details open="open"><summary>v3.0.0</summary>
 
 >- Complete rewrite/upgrade to .NET 10
