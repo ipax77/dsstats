@@ -8,7 +8,7 @@
   xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
   IgnorableNamespaces="uap rescap com desktop">
 
-  <Identity Name="29898PhilippHetzner.141231D0ED353" Publisher="CN=592AF738-4E2A-4BF3-87A7-D07953D08DE9" Version="3.0.0.0" />
+  <Identity Name="29898PhilippHetzner.141231D0ED353" Publisher="CN=592AF738-4E2A-4BF3-87A7-D07953D08DE9" Version="3.0.1.0" />
 
   <Properties>
     <DisplayName>$placeholder$</DisplayName>

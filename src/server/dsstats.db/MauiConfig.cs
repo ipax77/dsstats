@@ -1,4 +1,5 @@
 ﻿using dsstats.shared;
+using dsstats.shared.Maui;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
@@ -48,4 +49,32 @@ public static class MauiConfigExtensions
             })
             .ToList();
     }
+
+    public static MauiConfigDto ToDto(this MauiConfig entity) => new()
+    {
+        Version = entity.Version,
+        CPUCores = entity.CPUCores,
+        AutoDecode = entity.AutoDecode,
+        CheckForUpdates = entity.CheckForUpdates,
+        UploadCredential = entity.UploadCredential,
+        ReplayStartName = entity.ReplayStartName,
+        Culture = entity.Culture,
+        UploadAskTime = entity.UploadAskTime,
+        IgnoreReplays = entity.IgnoreReplays,
+        Sc2Profiles = entity.Sc2Profiles
+        .Select(p => p.ToDto()).ToList()
+    };
+
+    public static Sc2ProfileDto ToDto(this Sc2Profile entity) => new()
+    {
+        Name = entity.Name,
+        Folder = entity.Folder,
+        Active = entity.Active,
+        ToonId = new ToonIdDto
+        {
+            Region = entity.ToonId.Region,
+            Realm = entity.ToonId.Realm,
+            Id = entity.ToonId.Id
+        }
+    };
 }

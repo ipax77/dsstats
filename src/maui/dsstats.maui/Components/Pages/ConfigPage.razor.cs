@@ -2,6 +2,7 @@ using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
 using dsstats.db;
 using dsstats.maui.Services;
+using dsstats.shared.Maui;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Routing;
@@ -16,7 +17,7 @@ public partial class ConfigPage : IDisposable
     [Inject]
     private NavigationManager NavigationManager { get; set; } = null!;
 
-    private MauiConfig? mauiConfig;
+    private MauiConfigDto? mauiConfig;
     private EditContext? editContext;
     private bool isLoading;
     private bool hasChanges;
@@ -36,7 +37,7 @@ public partial class ConfigPage : IDisposable
         isLoading = true;
         StateHasChanged();
 
-        mauiConfig = await DsstatsService.GetConfig();
+        mauiConfig = await DsstatsService.GetConfigDto();
         editContext = new EditContext(mauiConfig);
         editContext.OnFieldChanged += FieldChanged;
 
@@ -80,7 +81,7 @@ public partial class ConfigPage : IDisposable
     {
         if (mauiConfig is null) return;
 
-        mauiConfig.Sc2Profiles.Add(new Sc2Profile
+        mauiConfig.Sc2Profiles.Add(new Sc2ProfileDto
         {
             Active = true,
             ToonId = new()
@@ -90,7 +91,7 @@ public partial class ConfigPage : IDisposable
             new FieldIdentifier(mauiConfig, nameof(mauiConfig.Sc2Profiles)));
     }
 
-    private void RemoveProfile(Sc2Profile profile)
+    private void RemoveProfile(Sc2ProfileDto profile)
     {
         if (mauiConfig is null) return;
 
@@ -116,33 +117,7 @@ public partial class ConfigPage : IDisposable
 
         var diskProfiles = DsstatsService.DiscoverProfiles();
 
-        // Remove profiles no longer on disk
-        foreach (var existing in mauiConfig.Sc2Profiles.ToArray())
-        {
-            bool existsOnDisk = diskProfiles.Any(d =>
-                d.ToonId.Region == existing.ToonId.Region &&
-                d.ToonId.Realm == existing.ToonId.Realm &&
-                d.ToonId.Id == existing.ToonId.Id);
-
-            if (!existsOnDisk)
-            {
-                mauiConfig.Sc2Profiles.Remove(existing);
-            }
-        }
-
-        // Add new disk profiles
-        foreach (var diskProfile in diskProfiles)
-        {
-            bool alreadyPresent = mauiConfig.Sc2Profiles.Any(p =>
-                p.ToonId.Region == diskProfile.ToonId.Region &&
-                p.ToonId.Realm == diskProfile.ToonId.Realm &&
-                p.ToonId.Id == diskProfile.ToonId.Id);
-
-            if (!alreadyPresent)
-            {
-                mauiConfig.Sc2Profiles.Add(diskProfile);
-            }
-        }
+        mauiConfig.Sc2Profiles = diskProfiles.Select(s => s.ToDto()).ToList();
 
         editContext?.NotifyFieldChanged(
             new FieldIdentifier(mauiConfig, nameof(mauiConfig.Sc2Profiles)));
@@ -205,7 +180,7 @@ public partial class ConfigPage : IDisposable
             if (success)
             {
                 editContext?.OnFieldChanged -= FieldChanged;
-                mauiConfig = await DsstatsService.GetConfig();
+                mauiConfig = await DsstatsService.GetConfigDto();
                 editContext = new EditContext(mauiConfig);
                 editContext.OnFieldChanged += FieldChanged;
                 await InvokeAsync(StateHasChanged);

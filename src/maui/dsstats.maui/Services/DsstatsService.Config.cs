@@ -1,4 +1,5 @@
 ﻿using dsstats.db;
+using dsstats.shared.Maui;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -44,7 +45,36 @@ public partial class DsstatsService
         }
     }
 
-    public async Task SaveConfig(MauiConfig config)
+    public async Task<MauiConfigDto> GetConfigDto()
+    {
+        await configSemaphore.WaitAsync();
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+
+            var config = await context.MauiConfig
+                .Include(i => i.Sc2Profiles)
+                .AsNoTracking()
+                .OrderBy(o => o.MauiConfigId)
+                .FirstOrDefaultAsync();
+
+            if (config is null)
+            {
+                config = new();
+                config.Sc2Profiles = GetInitialNamesAndFolders();
+                context.MauiConfig.Add(config);
+                await context.SaveChangesAsync();
+            }
+            return config.ToDto();
+        }
+        finally
+        {
+            configSemaphore.Release();
+        }
+    }
+
+    public async Task SaveConfig(MauiConfigDto dto)
     {
         await configSemaphore.WaitAsync();
         try
@@ -56,53 +86,19 @@ public partial class DsstatsService
                 .Include(c => c.Sc2Profiles)
                 .FirstOrDefaultAsync();
 
-            if (dbConfig is null)
+            if (dbConfig == null)
             {
-                context.MauiConfig.Add(config);
+                dbConfig = new MauiConfig();
+                ApplyConfig(dbConfig, dto, context);
+
+                context.MauiConfig.Add(dbConfig);
                 await context.SaveChangesAsync();
                 return;
             }
 
-            bool cultureChanged = dbConfig.Culture != config.Culture;
+            bool cultureChanged = dbConfig.Culture != dto.Culture;
 
-            context.Entry(dbConfig).CurrentValues.SetValues(config);
-
-            // Remove deleted profiles
-            foreach (var existing in dbConfig.Sc2Profiles.ToList())
-            {
-                bool stillPresent = config.Sc2Profiles.Any(p =>
-                    p.ToonId.Region == existing.ToonId.Region &&
-                    p.ToonId.Realm == existing.ToonId.Realm &&
-                    p.ToonId.Id == existing.ToonId.Id);
-
-                if (!stillPresent)
-                {
-                    context.Sc2Profiles.Remove(existing);
-                }
-            }
-
-            // Add or update profiles
-            foreach (var profile in config.Sc2Profiles)
-            {
-                var existing = dbConfig.Sc2Profiles.FirstOrDefault(p =>
-                    p.ToonId.Region == profile.ToonId.Region &&
-                    p.ToonId.Realm == profile.ToonId.Realm &&
-                    p.ToonId.Id == profile.ToonId.Id);
-
-                if (existing == null)
-                {
-                    dbConfig.Sc2Profiles.Add(profile);
-                }
-                else
-                {
-                    context.Entry(existing).CurrentValues.SetValues(profile);
-
-                    // Owned type must be updated explicitly
-                    context.Entry(existing).Reference(p => p.ToonId)
-                        .CurrentValue = profile.ToonId;
-                }
-            }
-
+            ApplyConfig(dbConfig, dto, context);
             await context.SaveChangesAsync();
 
             if (cultureChanged)
@@ -115,6 +111,71 @@ public partial class DsstatsService
             configSemaphore.Release();
         }
     }
+
+
+    private static void ApplyConfig(MauiConfig entity, MauiConfigDto dto, DsstatsContext context)
+    {
+        // Scalar values
+        entity.Version = dto.Version;
+        entity.CPUCores = dto.CPUCores;
+        entity.AutoDecode = dto.AutoDecode;
+        entity.CheckForUpdates = dto.CheckForUpdates;
+        entity.UploadCredential = dto.UploadCredential;
+        entity.ReplayStartName = dto.ReplayStartName;
+        entity.Culture = dto.Culture;
+        entity.UploadAskTime = dto.UploadAskTime;
+        entity.IgnoreReplays = dto.IgnoreReplays;
+
+        // Update profiles: remove missing
+        foreach (var existing in entity.Sc2Profiles.ToList())
+        {
+            bool stillPresent = dto.Sc2Profiles.Any(p =>
+                p.ToonId.Region == existing.ToonId.Region &&
+                p.ToonId.Realm == existing.ToonId.Realm &&
+                p.ToonId.Id == existing.ToonId.Id);
+
+            if (!stillPresent)
+            {
+                context.Sc2Profiles.Remove(existing);
+            }
+        }
+
+        // Add or update
+        foreach (var dtoProfile in dto.Sc2Profiles)
+        {
+            var existing = entity.Sc2Profiles.FirstOrDefault(p =>
+                p.ToonId.Region == dtoProfile.ToonId.Region &&
+                p.ToonId.Realm == dtoProfile.ToonId.Realm &&
+                p.ToonId.Id == dtoProfile.ToonId.Id);
+
+            if (existing == null)
+            {
+                entity.Sc2Profiles.Add(new Sc2Profile
+                {
+                    Name = dtoProfile.Name,
+                    Folder = dtoProfile.Folder,
+                    Active = dtoProfile.Active,
+                    ToonId = new ToonId
+                    {
+                        Region = dtoProfile.ToonId.Region,
+                        Realm = dtoProfile.ToonId.Realm,
+                        Id = dtoProfile.ToonId.Id
+                    }
+                });
+            }
+            else
+            {
+                existing.Name = dtoProfile.Name;
+                existing.Folder = dtoProfile.Folder;
+                existing.Active = dtoProfile.Active;
+
+                existing.ToonId.Region = dtoProfile.ToonId.Region;
+                existing.ToonId.Realm = dtoProfile.ToonId.Realm;
+                existing.ToonId.Id = dtoProfile.ToonId.Id;
+            }
+        }
+    }
+
 
     public static List<CultureInfo> GetSupportedCultures()
     {

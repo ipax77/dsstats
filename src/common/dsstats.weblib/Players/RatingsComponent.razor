@@ -126,7 +126,6 @@
 	ReplayModal? replayModal;
 	PlayerStatsResponse? playerStatsResponse = null;
 	RatingsRequestComponent? ratingsRequestComponent;
-	bool isLoading = true;
 	bool showRatingDistribution;
 	private Queue<(string ToonIdString, PlayerStatsResponse Response)> _playerNavigationQueue = new();
 	private const int MaxNavigationHistory = 3;
@@ -149,7 +148,6 @@
 	private async Task SetCount()
 	{
 		totalCount = await PlayerService.GetRatingsCount(PlayerRequest, cts.Token);
-		isLoading = false;
 		await InvokeAsync(StateHasChanged);
 	}
 
