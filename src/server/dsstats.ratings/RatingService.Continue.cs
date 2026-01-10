@@ -21,18 +21,9 @@ public partial class RatingService
             using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
 
             await ClearPreRatings(context);
+            var fromTime = DateTime.UtcNow.AddHours(-3);
 
-            var latest = await context.Replays
-                .Where(x => x.Ratings.Count > 0)
-                .OrderByDescending(o => o.Gametime)
-                .Select(s => new { s.Gametime, s.ReplayId })
-                .FirstOrDefaultAsync();
-            if (latest is null)
-            {
-                return;
-            }
-
-            var replays = await GetContinueReplayCalcDtos(latest.Gametime, 1000);
+            var replays = await GetContinueReplayCalcDtos(fromTime, 1000);
             count = replays.Count;
             if (count > 0)
             {
@@ -156,15 +147,13 @@ public partial class RatingService
 
     private static async Task ClearPreRatings(DsstatsContext context)
     {
-        var replayRatings = await context.ReplayRatings
-            .Include(i => i.ReplayPlayerRatings)
-            .Where(x => x.IsPreRating)
-            .ToListAsync();
-        if (replayRatings.Count > 0)
-        {
-            context.ReplayRatings.RemoveRange(replayRatings);
-            await context.SaveChangesAsync();
-        }
+        await context.ReplayPlayerRatings
+            .Where(rpr => rpr.ReplayRating!.IsPreRating)
+            .ExecuteDeleteAsync();
+
+        await context.ReplayRatings
+            .Where(rr => rr.IsPreRating)
+            .ExecuteDeleteAsync();
     }
 }
 

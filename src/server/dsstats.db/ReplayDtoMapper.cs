@@ -25,7 +25,9 @@ public static class ReplayDtoMapper
             MiddleChanges = dto.MiddleChanges.ToArray(),
             Players = dto.Players.Select(p => p.ToEntity(dto)).ToList(),
             Imported = DateTime.UtcNow,
-            CompatHash = dto.CompatHash,
+
+            ReplayHash = dto.ComputeHash(),
+            CompatHash = dto.ComputeCandidateHash(),
         };
 
         // Set Replay reference on each player

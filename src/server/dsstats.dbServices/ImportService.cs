@@ -70,12 +70,14 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
 
             if (!OperatingSystem.IsWindows())
             {
+                if (!replayDto.IsValid())
+                {
+                    return;
+                }
                 AdjustReplayResult(replayDto);
             }
 
             var replayEntity = replayDto.ToEntity();
-            replayEntity.ReplayHash = replayDto.ComputeHash();
-            replayEntity.CompatHash = replayDto.ComputeCandidateHash();
 
             foreach (var rp in replayEntity.Players)
             {
@@ -258,12 +260,14 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
         {
             if (!OperatingSystem.IsWindows())
             {
+                if (!replay.IsValid())
+                {
+                    continue;
+                }
                 AdjustReplayResult(replay);
             }
 
             var dbReplay = replay.ToEntity();
-            dbReplay.ReplayHash = replay.ComputeHash();
-            dbReplay.CompatHash = replay.ComputeCandidateHash();
 
             foreach (var player in dbReplay.Players)
             {
