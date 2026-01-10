@@ -206,7 +206,7 @@
 		try
 		{
 			await Task.Delay(4000);
-			var config = await DsstatsService.GetConfig();
+			var config = await DsstatsService.GetConfigDto();
 			var uploadAskTime = config.UploadAskTime;
 
 			if (uploadAskTime != DateTime.MinValue &&
@@ -270,7 +270,7 @@
 	{
 		if (!dry)
 		{
-			var config = await DsstatsService.GetConfig();
+			var config = await DsstatsService.GetConfigDto();
 			config.Culture = culture;
 			await DsstatsService.SaveConfig(config);
 		}

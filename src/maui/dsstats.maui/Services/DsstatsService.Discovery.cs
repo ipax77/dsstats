@@ -1,6 +1,7 @@
 using CommunityToolkit.Maui.Alerts;
 using dsstats.db;
 using dsstats.maui.Services.Models;
+using dsstats.shared.Maui;
 using Microsoft.EntityFrameworkCore;
 
 namespace dsstats.maui.Services;
@@ -15,7 +16,7 @@ public sealed partial class DsstatsService
         HashSet<string> replayPaths = [];
         await Task.Run(async () =>
         {
-            var config = await GetConfig();
+            var config = await GetConfigDto();
 
             if (config.AutoDecode && WatchService is null)
             {
@@ -70,7 +71,7 @@ public sealed partial class DsstatsService
         finally { }
     }
 
-    public void StartWatching(MauiConfig config)
+    public void StartWatching(MauiConfigDto config)
     {
         WatchService?.NewFileDetected -= ReplayDetected;
         WatchService = new(config.Sc2Profiles.Select(s => s.Folder), config.ReplayStartName);

@@ -59,7 +59,7 @@
 						@Loc["SC2Profiles (deactivate the profiles that should not be decoded and uploaded)"]
 					</legend>
 
-					@foreach (var profile in mauiConfig.Sc2Profiles)
+					@foreach (var profile in mauiConfig.Sc2Profiles.OrderBy(o => o.Name).ThenBy(o => o.ToonId.Region))
 					{
 						<ProfileEditor @key="profile" Profile="profile" OnRemove="RemoveProfile" />
 					}
