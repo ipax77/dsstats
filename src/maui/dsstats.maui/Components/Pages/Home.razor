@@ -205,6 +205,7 @@
 	bool loadingRatings;
 	string? StatusMessage;
 	List<Sc2Profile> profiles = [];
+	CancellationTokenSource cts = new();
 
 	SessionReplayResult sessionReplayResult = new([], 0, 0, 0);
 
@@ -224,7 +225,7 @@
 				.OrderBy(o => o.Name)
 					.ThenBy(t => t.ToonId.Region)
 				.ToList();
-			await LoadLatestReplay();
+			await LoadLatestReplay(true);
 		}
 	}
 
@@ -233,7 +234,7 @@
 		_ = LoadLatestReplay();
 	}
 
-	private async Task LoadLatestReplay()
+	private async Task LoadLatestReplay(bool dry = false)
 	{
 		await loadSs.WaitAsync();
 		try
@@ -243,9 +244,14 @@
 			{
 				return;
 			}
-			await InvokeAsync(StateHasChanged);
 			latestReplayHash = replayDetails.ReplayHash;
 			replayComponent?.Update(replayDetails);
+			await InvokeAsync(StateHasChanged);
+
+			if (dry)
+			{
+				return;
+			}
 
 			var gameTimeUtc = DateTime.SpecifyKind(replayDetails.Replay.Gametime, DateTimeKind.Utc);
 			var timeSinceGame = DateTimeOffset.UtcNow - (DateTimeOffset)gameTimeUtc;
@@ -255,7 +261,7 @@
 			{
 				loadingRatings = true;
 				await InvokeAsync(StateHasChanged);
-				await Task.Delay(5000);
+				await Task.Delay(5000, cts.Token);
 				var rating = await SessionProgress.AddSessionReplay(replayDetails);
 				if (rating != null)
 				{
@@ -263,15 +269,14 @@
 					replayComponent?.Update(replayDetails);
 					sessionReplayResult = SessionProgress.GetSessionReplays();
 				}
-				loadingRatings = false;
-				await InvokeAsync(StateHasChanged);
 			}
-			await InvokeAsync(StateHasChanged);
 		}
 		finally
 		{
+			loadingRatings = false;
 			loadSs.Release();
 		}
+		await InvokeAsync(StateHasChanged);
 	}
 
 	private async Task LoadReplay(string replayHash)
@@ -393,6 +398,7 @@
 		if (disposing)
 		{
 			loadSs.Dispose();
+			cts.Dispose();
 		}
 
 		base.Dispose(disposing);
