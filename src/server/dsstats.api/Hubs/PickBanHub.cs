@@ -25,7 +25,7 @@ public class PickBanHub(IPickBanService pickBanService) : Hub
             return;
         }
         await Groups.AddToGroupAsync(Context.ConnectionId, id.ToString());
-        await Clients.OthersInGroup(id.ToString()).SendAsync("user_joined");
+        await Clients.OthersInGroup(id.ToString()).SendAsync("user_joined", state.UserCount);
         await Clients.Caller.SendAsync("state_synced", state);
     }
 

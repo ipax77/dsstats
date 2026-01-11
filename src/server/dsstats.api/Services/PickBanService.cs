@@ -32,6 +32,7 @@ public sealed class PickBanService(IHubContext<PickBanHub> hubContext) : IPickBa
     {
         if (!_sessions.TryGetValue(id, out var state))
             return null;
+        state.UserCount++;
         return state.GetPublicState();
     }
 

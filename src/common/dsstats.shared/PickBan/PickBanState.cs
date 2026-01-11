@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography.X509Certificates;
-
-namespace dsstats.shared.PickBan;
+﻿namespace dsstats.shared.PickBan;
 
 public sealed record PickBanOptions
 {
@@ -15,12 +13,14 @@ public sealed record PickBanState
     public PickBanOptions Options { get; init; } = new();
     public List<PickBanSlot> BanSlots { get; init; } = [];
     public List<PickBanSlot> PickSlots { get; init; } = [];
+    public int UserCount { get; set; }
 
     public static PickBanState Create(PickBanOptions options)
     {
         PickBanState state = new()
         {
             Options = options,
+            UserCount = 1,
         };
 
         for (int i = 0; i < options.Bans; i++)
@@ -87,7 +87,7 @@ public sealed record PickBanSlot
 
 public static class PickBanStateExtensions
 {
-    public static List<Commander> GetAvailableBanCommanders(this PickBanState state, int teamId)
+    public static List<Commander> GetAvailableBanCommanders(this PickBanState state)
     {
         var allCommanders = Enum.GetValues<Commander>().ToHashSet();
 
@@ -109,7 +109,7 @@ public static class PickBanStateExtensions
         return allCommanders.Except(bannedCommanders).ToList();
     }
 
-    public static List<Commander> GetAvailablePickCommanders(this PickBanState state, int teamId)
+    public static List<Commander> GetAvailablePickCommanders(this PickBanState state)
     {
         var allCommanders = Enum.GetValues<Commander>().ToHashSet();
 

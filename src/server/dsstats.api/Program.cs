@@ -78,6 +78,7 @@ builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<IImportService, ImportService>();
 builder.Services.AddSingleton<IRatingService, RatingService>();
+builder.Services.AddSingleton<IPickBanService, PickBanService>();
 
 builder.Services.AddScoped<IDashboardStatsService, DashboardStatsService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
@@ -126,5 +127,6 @@ app.UseResponseCompression();
 app.MapControllers();
 
 app.MapHub<UploadHub>("/hubs/upload");
+app.MapHub<PickBanHub>("/hubs/pickban");
 
 app.Run();

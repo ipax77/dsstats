@@ -1,0 +1,251 @@
+﻿@page "/te/pickban"
+@rendermode InteractiveServer
+@using System.Threading.Tasks
+@using dsstats.shared
+@using dsstats.shared.PickBan
+@using Microsoft.AspNetCore.SignalR.Client
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<PageTitle>dsstats - pickban</PageTitle>
+
+<div class="container-fluid">
+	<h3 class="text-warning">Pick Ban Commanders</h3>
+	@if (Guid == Guid.Empty)
+	{
+		<div class="btn-group">
+			<button type="button" class="btn btn-outline-light" @onclick="CreateStandardPickBan">Standard</button>
+		</div>
+	}
+	else
+	{
+		<div>
+			@if (pickBanState.UserCount <= 1)
+			{
+				<div class="card" style="width: 42rem;">
+					<div class="card-header bgchart2">
+						<h4 class="text-warning">
+							Copy the Url and send it to the opposing team captain
+						</h4>
+					</div>
+					<div class="card-body bgchart">
+						<div class="d-flex">
+							<input class="form-text" id="input" type="text" value="@NavigationManager.Uri" style="min-width: 600px;" />
+						</div>
+					</div>
+					<div class="card-footer bgchart2">
+						<div class="d-flex">
+							<small class="text-white-50">This Page will be available until the next Server reboot.</small>
+							<small class="ms-auto">Visitors: @pickBanState.UserCount</small>
+						</div>
+					</div>
+				</div>
+				<p>Waiting for other team member to join.</p>
+			}
+			else
+			{
+				<div class="bgchart p-3 darker-border-checkbox rounded mt-2" style="width: 600px;">
+					@if (pickBanState.Options.Bans > 0)
+					{
+
+					}
+					<div class="d-flex justify-content-evenly mt-2">
+						<div>
+							<h4>Team 1</h4>
+							@foreach (var slot in pickBanState.PickSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 1))
+							{
+								var id = $"team1Pick{slot.SlotId}";
+								<div>
+									<label for="@id" class="form-label mt-4">#@slot.SlotId</label>
+									<select class="form-select" id="@id" @bind="slot.Commander">
+										@foreach (var cmdr in pickBanState.GetAvailablePickCommanders())
+										{
+											<option value="@cmdr">@cmdr</option>
+										}
+									</select>
+								</div>
+								<div class="ms-2">
+									<button type="button" class="btn btn-danger" @onclick="() => LockPick(new(slot.TeamId, slot.SlotId, slot.Commander, slot.Name))">Lock</button>
+								</div>
+							}
+						</div>
+						<div style="border-left: 6px solid darkred;" />
+						<div>
+							<h4>Team 2</h4>
+							@foreach (var slot in pickBanState.PickSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 2))
+							{
+								var id = $"team2Pick{slot.SlotId}";
+								<div>
+									<label for="@id" class="form-label mt-4">#@slot.SlotId</label>
+									<select class="form-select" id="@id" @bind="slot.Commander">
+										@foreach (var cmdr in pickBanState.GetAvailablePickCommanders())
+										{
+											<option value="@cmdr">@cmdr</option>
+										}
+									</select>
+								</div>
+								<div class="ms-2">
+									<button type="button" class="btn btn-danger" @onclick="() => LockPick(new(slot.TeamId, slot.SlotId, slot.Commander, slot.Name))">Lock</button>
+								</div>
+							}
+						</div>
+					</div>
+				</div>
+			}
+		</div>
+	}
+</div>
+
+@code {
+	[SupplyParameterFromQuery]
+	public string? Id { get; set; }
+
+	Guid Guid;
+
+	PickBanState pickBanState = new();
+
+	private HubConnection? hubConnection;
+	private int teamId = 0;
+
+	protected override async Task OnInitializedAsync()
+	{
+		using var httpClient = HttpClientFactory.CreateClient("api");
+		var uri = httpClient.BaseAddress ?? new Uri("https://dsstats.pax77.org");
+		uri = new Uri(uri, "/hubs/pickban");
+		hubConnection = new HubConnectionBuilder()
+		.WithUrl(uri)
+		.Build();
+
+		hubConnection.On<PickBanState>("state_created", (e) =>
+		{
+			pickBanState = e;
+			InvokeAsync(StateHasChanged);
+		});
+
+		hubConnection.On<PickBanState>("state_synced", (e) =>
+		{
+			pickBanState = e;
+			InvokeAsync(StateHasChanged);
+		});
+
+		hubConnection.On<int>("user_joined", (e) =>
+		{
+			pickBanState.UserCount = e;
+			InvokeAsync(StateHasChanged);
+		});
+
+		hubConnection.On<LockInfo>("ban_locked", (e) =>
+		{
+			var ban = pickBanState.BanSlots.FirstOrDefault(f => f.TeamId == e.TeamId && f.SlotId == e.SlotId);
+			if (ban != null)
+			{
+				ban.Locked = true;
+				InvokeAsync(StateHasChanged);
+			}
+		});
+
+		hubConnection.On<LockInfo>("pick_locked", (e) =>
+		{
+			var pick = pickBanState.PickSlots.FirstOrDefault(f => f.TeamId == e.TeamId && f.SlotId == e.SlotId);
+			if (pick != null)
+			{
+				pick.Locked = true;
+				InvokeAsync(StateHasChanged);
+			}
+		});
+
+		hubConnection.On<PickBanState>("bans_ready", (e) =>
+		{
+			pickBanState = e;
+			InvokeAsync(StateHasChanged);
+		});
+
+		hubConnection.On<PickBanState>("ready", (e) =>
+		{
+			pickBanState = e;
+			InvokeAsync(StateHasChanged);
+		});
+
+		hubConnection.Reconnected += async _ =>
+		{
+			if (Guid != Guid.Empty)
+			{
+				await hubConnection.SendAsync("Rejoin", Guid);
+			}
+		};
+
+		if (Guid.TryParse(Id, out var guid))
+		{
+			Guid = guid;
+			await hubConnection.StartAsync();
+			await hubConnection.SendAsync("Join", Guid);
+		}
+
+		await base.OnInitializedAsync();
+	}
+
+	private async Task CreateStandardPickBan()
+	{
+		if (hubConnection is null)
+		{
+			return;
+		}
+
+		if (hubConnection.State != HubConnectionState.Connected)
+		{
+			await hubConnection.StartAsync();
+		}
+
+		PickBanOptions options = new()
+		{
+			GameMode = GameMode.Standard,
+			Bans = 0,
+			PlayerCount = 6,
+			UseNames = false
+		};
+		Guid = Guid.NewGuid();
+
+		var queryDic = new Dictionary<string, object?>();
+		queryDic.Add("Id", Guid.ToString());
+		NavigationManager.NavigateTo(
+			NavigationManager.GetUriWithQueryParameters(queryDic));
+
+		await hubConnection.SendAsync("Create", Guid, options);
+	}
+
+	private async Task LockBan(BanCommand cmd)
+	{
+		if (hubConnection is null)
+		{
+			return;
+		}
+
+		if (hubConnection.State != HubConnectionState.Connected)
+		{
+			await hubConnection.StartAsync();
+		}
+
+		await hubConnection.SendAsync("Ban", Guid, cmd);
+	}
+
+	private async Task LockPick(PickCommand cmd)
+	{
+		if (hubConnection is null)
+		{
+			return;
+		}
+
+		if (hubConnection.State != HubConnectionState.Connected)
+		{
+			await hubConnection.StartAsync();
+		}
+
+		await hubConnection.SendAsync("Pick", Guid, cmd);
+	}
+
+	public void Dispose()
+	{
+		hubConnection?.DisposeAsync();
+	}
+}
