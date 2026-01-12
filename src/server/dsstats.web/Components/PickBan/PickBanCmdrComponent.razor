@@ -16,7 +16,7 @@
 			<div class="d-flex align-items-center">
 				<div class="preload-@(Slot.Commander.ToString().ToLower())" alt="@Slot.Commander"
 					 style="width: 30px; height: 30px;"></div>
-				<span class="ms-2">@Slot.Commander</span>
+				<span class="ms-2">@(State.Options.UseNames? Slot.Name: Slot.Commander.ToString())</span>
 			</div>
 		}
 		else if (slotState == SlotState.UnknownLocked)
@@ -28,16 +28,27 @@
 		else if (slotState == SlotState.None)
 		{
 			<div class="d-flex">
-				<div style="width: 120px;">
-					<select class="form-select" id="@id" @bind="Slot.Commander">
-						@foreach (var cmdr in State.GetAvailablePickCommanders())
-						{
-							<option value="@cmdr">@cmdr</option>
-						}
-					</select>
-				</div>
+				@if (State.Options.UseNames)
+				{
+					<div style="width: 120px;">
+						<input type="text" class="form-control" id="@id" @bind="Slot.Name" placeholder="Enter name" />
+					</div>
+				}
+				else
+				{
+					<div style="width: 120px;">
+						<select class="form-select" id="@id" @bind="Slot.Commander">
+							@foreach (var cmdr in State.GetAvailablePickCommanders())
+							{
+								<option value="@cmdr">@cmdr</option>
+							}
+						</select>
+					</div>
+				}
 				<div class="ms-2">
-					<button type="button" class="btn btn-danger" @onclick="() => OnPickReady.InvokeAsync(new(Slot.TeamId, Slot.SlotId, Slot.Commander, Slot.Name))">
+					<button type="button" class="btn btn-danger" 
+						disabled="@(!lockable)"
+						@onclick="() => OnPickReady.InvokeAsync(new(Slot.TeamId, Slot.SlotId, Slot.Commander, Slot.Name))">
 						Lock
 					</button>
 				</div>
@@ -60,5 +71,7 @@
 	public EventCallback<PickCommand> OnPickReady { get; set; }
 
 	SlotState slotState => Slot.GetSlotState(TeamId);
+	bool lockable => Slot.Commander != shared.Commander.None || !string.IsNullOrEmpty(Slot.Name);
+
 	Guid id = Guid.NewGuid();
 }

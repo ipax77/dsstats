@@ -123,6 +123,8 @@ public static class PickBanStateExtensions
             allCommanders = allCommanders.Where(x => (int)x == 0 || (int)x > 3).ToHashSet();
         }
 
+        allCommanders = allCommanders.Except(state.BanSlots.Select(s => s.Commander)).ToHashSet();
+
         if (state.Options.UniqueCommanders)
         {
             HashSet<Commander> pickedCommanders = [];

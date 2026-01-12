@@ -18,6 +18,8 @@
 	{
 		<div class="btn-group">
 			<button type="button" class="btn btn-outline-light" @onclick="CreateStandardPickBan">Standard</button>
+			<button type="button" class="btn btn-outline-light" @onclick="CreateCommandersPickBan">Commanders</button>
+			<button type="button" class="btn btn-outline-light" @onclick="CreateNamesPickBan">Names</button>
 		</div>
 	}
 	else
@@ -50,30 +52,57 @@
 				<div class="bgchart p-3 darker-border-checkbox rounded mt-2" style="width: 600px;">
 					@if (pickBanState.Options.Bans > 0)
 					{
-
+						<h3>Bans</h3>
+						<div class="d-flex justify-content-evenly mt-2">
+							<div>
+								<h4>Team 1</h4>
+								@foreach (var slot in pickBanState.BanSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 1))
+								{
+									<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockBan" />
+								}
+							</div>
+							<div style="border-left: 6px solid darkred;" />
+							<div>
+								<h4>Team 2</h4>
+								@foreach (var slot in pickBanState.BanSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 2))
+								{
+									<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockBan" />
+								}
+							</div>
+						</div>
 					}
-					<div class="d-flex justify-content-evenly mt-2">
-						<div>
-							<h4>Team 1</h4>
-							@foreach (var slot in pickBanState.PickSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 1))
-							{
-								<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockPick" />
-							}
+					@if (pickBanState.BansReady())
+					{
+						<h3>Picks</h3>
+						<div class="d-flex justify-content-evenly mt-2">
+							<div>
+								<h4>Team 1</h4>
+								@foreach (var slot in pickBanState.PickSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 1))
+								{
+									<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockPick" />
+								}
+							</div>
+							<div style="border-left: 6px solid darkred;" />
+							<div>
+								<h4>Team 2</h4>
+								@foreach (var slot in pickBanState.PickSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 2))
+								{
+									<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockPick" />
+								}
+							</div>
 						</div>
-						<div style="border-left: 6px solid darkred;" />
-						<div>
-							<h4>Team 2</h4>
-							@foreach (var slot in pickBanState.PickSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 2))
-							{
-								<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockPick" />
-							}
-						</div>
-					</div>
+					}
 				</div>
 			}
 			<div>
 				<p>Visitors: @pickBanState.UserCount</p>
 			</div>
+		</div>
+		<div>
+			@if (pickBanState.IsReady())
+			{
+				<p class="text-warning">PickBan successfully completed.</p>
+			}
 		</div>
 	}
 </div>
@@ -195,10 +224,36 @@
 		};
 		Guid = Guid.NewGuid();
 
-		// var queryDic = new Dictionary<string, object?>();
-		// queryDic.Add("Id", Guid.ToString());
-		// NavigationManager.NavigateTo(
-		// 	NavigationManager.GetUriWithQueryParameters(queryDic));
+		var newUrl = NavigationManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+		{
+			["Id"] = Guid.ToString()
+		});
+		await JSRuntime.InvokeVoidAsync("updateUrlSilently", newUrl);
+
+		await hubConnection.SendAsync("Create", Guid, options);
+	}
+
+	private async Task CreateCommandersPickBan()
+	{
+		if (hubConnection is null)
+		{
+			return;
+		}
+
+		if (hubConnection.State != HubConnectionState.Connected)
+		{
+			await hubConnection.StartAsync();
+		}
+
+		PickBanOptions options = new()
+		{
+			GameMode = GameMode.Commanders,
+			Bans = 1,
+			PlayerCount = 6,
+			UseNames = false,
+			UniqueCommanders = true,
+		};
+		Guid = Guid.NewGuid();
 
 		var newUrl = NavigationManager.GetUriWithQueryParameters(new Dictionary<string, object?>
 		{
@@ -209,7 +264,38 @@
 		await hubConnection.SendAsync("Create", Guid, options);
 	}
 
-	private async Task LockBan(BanCommand cmd)
+	private async Task CreateNamesPickBan()
+	{
+		if (hubConnection is null)
+		{
+			return;
+		}
+
+		if (hubConnection.State != HubConnectionState.Connected)
+		{
+			await hubConnection.StartAsync();
+		}
+
+		PickBanOptions options = new()
+		{
+			GameMode = GameMode.Commanders,
+			Bans = 1,
+			PlayerCount = 6,
+			UseNames = true,
+			UniqueCommanders = true,
+		};
+		Guid = Guid.NewGuid();
+
+		var newUrl = NavigationManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+		{
+			["Id"] = Guid.ToString()
+		});
+		await JSRuntime.InvokeVoidAsync("updateUrlSilently", newUrl);
+
+		await hubConnection.SendAsync("Create", Guid, options);
+	}
+
+	private async Task LockBan(PickCommand cmd)
 	{
 		if (hubConnection is null)
 		{
