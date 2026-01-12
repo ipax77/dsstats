@@ -2,7 +2,7 @@
 
 <div class="d-flex align-items-center mb-2">
 	<div class="me-2">
-		#@(Slot.SlotId + 1)
+		<i class="@numberClass"></i>
 	</div>
 	<div style="min-width: 200px; min-height: 40px;" class="d-flex align-items-center">
 		@if (slotState == SlotState.Forbidden)
@@ -72,6 +72,14 @@
 
 	SlotState slotState => Slot.GetSlotState(TeamId);
 	bool lockable => Slot.Commander != shared.Commander.None || !string.IsNullOrEmpty(Slot.Name);
+
+	string numberClass => Slot.SlotId switch
+	{
+		0 => "bi bi-1-circle",
+		1 => "bi bi-2-circle",
+		2 => "bi bi-3-circle",
+		_ => "bi bi-dash-circle-dotted",
+	};
 
 	Guid id = Guid.NewGuid();
 }

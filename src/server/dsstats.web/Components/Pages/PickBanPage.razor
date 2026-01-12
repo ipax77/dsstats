@@ -13,19 +13,23 @@
 <PageTitle>dsstats - pickban</PageTitle>
 
 <div class="container-fluid">
-	<h3 class="text-warning">Pick Ban Commanders</h3>
+	<div class="d-inline-block p-2 rounded bgchart mb-2">
+		<h3 class="text-warning">Pick/Ban Commanders</h3>
+	</div>
 	@if (Guid == Guid.Empty)
 	{
-		<div class="btn-group">
-			<button type="button" class="btn btn-outline-light" @onclick="CreateStandardPickBan">Standard</button>
-			<button type="button" class="btn btn-outline-light" @onclick="CreateCommandersPickBan">Commanders</button>
-			<button type="button" class="btn btn-outline-light" @onclick="CreateNamesPickBan">Names</button>
+		<div>
+			<div class="btn-group p-2 bgchart border rounded">
+				<button type="button" class="btn btn-outline-light" @onclick="CreateStandardPickBan">Standard</button>
+				<button type="button" class="btn btn-outline-light" @onclick="CreateCommandersPickBan">Commanders</button>
+				<button type="button" class="btn btn-outline-light" @onclick="CreateNamesPickBan">Names</button>
+			</div>
 		</div>
 	}
 	else
 	{
 		<div>
-			@if (pickBanState.UserCount <= 1)
+			@if (!pickBanState.IsReady() && pickBanState.UserCount <= 1)
 			{
 				<div class="card" style="width: 42rem;">
 					<div class="card-header bgchart2">
@@ -49,60 +53,93 @@
 			}
 			else
 			{
-				<div class="bgchart p-3 darker-border-checkbox rounded mt-2" style="width: 600px;">
+				<div class="" style="width: 600px;">
+
 					@if (pickBanState.Options.Bans > 0)
 					{
-						<h3>Bans</h3>
-						<div class="d-flex justify-content-evenly mt-2">
-							<div>
-								<h4>Team 1</h4>
-								@foreach (var slot in pickBanState.BanSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 1))
-								{
-									<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockBan" />
-								}
-							</div>
-							<div style="border-left: 6px solid darkred;" />
-							<div>
-								<h4>Team 2</h4>
-								@foreach (var slot in pickBanState.BanSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 2))
-								{
-									<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockBan" />
-								}
+						<div class="card mb-2 shadow-sm">
+							<div class="card-header fw-bold bgchart2">Bans</div>
+							<div class="card-body bgchart">
+								<div class="row text-center">
+
+									<div class="col">
+										<h5 class="mb-3">Team 1</h5>
+										@foreach (var slot in pickBanState.BanSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 1))
+										{
+											<div class="d-flex align-items-center justify-content-center mb-2">
+												<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockBan" />
+											</div>
+										}
+									</div>
+
+									<div class="col-auto d-flex align-items-center justify-content-center">
+										<span class="vr" style="height:100%;"></span>
+									</div>
+
+									<div class="col">
+										<h5 class="mb-3">Team 2</h5>
+										@foreach (var slot in pickBanState.BanSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 2))
+										{
+											<div class="d-flex align-items-center justify-content-center mb-2">
+												<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockBan" />
+											</div>
+										}
+									</div>
+
+								</div>
 							</div>
 						</div>
 					}
+
 					@if (pickBanState.BansReady())
 					{
-						<h3>Picks</h3>
-						<div class="d-flex justify-content-evenly mt-2">
-							<div>
-								<h4>Team 1</h4>
-								@foreach (var slot in pickBanState.PickSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 1))
-								{
-									<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockPick" />
-								}
-							</div>
-							<div style="border-left: 6px solid darkred;" />
-							<div>
-								<h4>Team 2</h4>
-								@foreach (var slot in pickBanState.PickSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 2))
-								{
-									<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockPick" />
-								}
+						<div class="card mb-2 shadow-sm">
+							<div class="card-header bgchart2 fw-bold">Picks</div>
+							<div class="card-body bgchart">
+								<div class="row text-center">
+
+									<div class="col">
+										<h5 class="mb-3">Team 1</h5>
+										@foreach (var slot in pickBanState.PickSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 1))
+										{
+											<div class="d-flex align-items-center justify-content-center mb-2">
+												<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockPick" />
+											</div>
+										}
+									</div>
+
+									<div class="col-auto d-flex align-items-center justify-content-center">
+										<span class="vr" style="height:100%;"></span>
+									</div>
+
+									<div class="col">
+										<h5 class="mb-3">Team 2</h5>
+										@foreach (var slot in pickBanState.PickSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 2))
+										{
+											<div class="d-flex align-items-center justify-content-center mb-2">
+												<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockPick" />
+											</div>
+										}
+									</div>
+
+								</div>
 							</div>
 						</div>
 					}
+
+					@if (pickBanState.IsReady())
+					{
+						<div class="alert alert-success border-0 shadow-sm">
+							Pick/Ban successfully completed.
+						</div>
+					}
+
 				</div>
+
 			}
 			<div>
 				<p>Visitors: @pickBanState.UserCount</p>
 			</div>
-		</div>
-		<div>
-			@if (pickBanState.IsReady())
-			{
-				<p class="text-warning">PickBan successfully completed.</p>
-			}
 		</div>
 	}
 </div>
