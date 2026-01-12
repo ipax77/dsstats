@@ -4,8 +4,10 @@
 @using dsstats.shared
 @using dsstats.shared.PickBan
 @using Microsoft.AspNetCore.SignalR.Client
+@using dsstats.web.Components.PickBan
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 @implements IDisposable
 
 <PageTitle>dsstats - pickban</PageTitle>
@@ -31,7 +33,7 @@
 					</div>
 					<div class="card-body bgchart">
 						<div class="d-flex">
-							<input class="form-text" id="input" type="text" value="@NavigationManager.Uri" style="min-width: 600px;" />
+							<input class="form-text" id="input" type="text" value="@($"{NavigationManager.Uri}?Id={Guid}")" style="min-width: 600px;" />
 						</div>
 					</div>
 					<div class="card-footer bgchart2">
@@ -55,19 +57,7 @@
 							<h4>Team 1</h4>
 							@foreach (var slot in pickBanState.PickSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 1))
 							{
-								var id = $"team1Pick{slot.SlotId}";
-								<div>
-									<label for="@id" class="form-label mt-4">#@slot.SlotId</label>
-									<select class="form-select" id="@id" @bind="slot.Commander">
-										@foreach (var cmdr in pickBanState.GetAvailablePickCommanders())
-										{
-											<option value="@cmdr">@cmdr</option>
-										}
-									</select>
-								</div>
-								<div class="ms-2">
-									<button type="button" class="btn btn-danger" @onclick="() => LockPick(new(slot.TeamId, slot.SlotId, slot.Commander, slot.Name))">Lock</button>
-								</div>
+								<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockPick" />
 							}
 						</div>
 						<div style="border-left: 6px solid darkred;" />
@@ -75,24 +65,15 @@
 							<h4>Team 2</h4>
 							@foreach (var slot in pickBanState.PickSlots.OrderBy(o => o.SlotId).Where(x => x.TeamId == 2))
 							{
-								var id = $"team2Pick{slot.SlotId}";
-								<div>
-									<label for="@id" class="form-label mt-4">#@slot.SlotId</label>
-									<select class="form-select" id="@id" @bind="slot.Commander">
-										@foreach (var cmdr in pickBanState.GetAvailablePickCommanders())
-										{
-											<option value="@cmdr">@cmdr</option>
-										}
-									</select>
-								</div>
-								<div class="ms-2">
-									<button type="button" class="btn btn-danger" @onclick="() => LockPick(new(slot.TeamId, slot.SlotId, slot.Commander, slot.Name))">Lock</button>
-								</div>
+								<PickBanCmdrComponent State="pickBanState" Slot="slot" TeamId="teamId" OnPickReady="LockPick" />
 							}
 						</div>
 					</div>
 				</div>
 			}
+			<div>
+				<p>Visitors: @pickBanState.UserCount</p>
+			</div>
 		</div>
 	}
 </div>
@@ -175,14 +156,21 @@
 			}
 		};
 
-		if (Guid.TryParse(Id, out var guid))
-		{
-			Guid = guid;
-			await hubConnection.StartAsync();
-			await hubConnection.SendAsync("Join", Guid);
-		}
-
 		await base.OnInitializedAsync();
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			if (Guid.TryParse(Id, out var guid) && hubConnection != null)
+			{
+				Guid = guid;
+				await hubConnection.StartAsync();
+				await hubConnection.SendAsync("Join", Guid);
+			}
+		}
+		await base.OnAfterRenderAsync(firstRender);
 	}
 
 	private async Task CreateStandardPickBan()
@@ -202,14 +190,21 @@
 			GameMode = GameMode.Standard,
 			Bans = 0,
 			PlayerCount = 6,
-			UseNames = false
+			UseNames = false,
+			UniqueCommanders = false,
 		};
 		Guid = Guid.NewGuid();
 
-		var queryDic = new Dictionary<string, object?>();
-		queryDic.Add("Id", Guid.ToString());
-		NavigationManager.NavigateTo(
-			NavigationManager.GetUriWithQueryParameters(queryDic));
+		// var queryDic = new Dictionary<string, object?>();
+		// queryDic.Add("Id", Guid.ToString());
+		// NavigationManager.NavigateTo(
+		// 	NavigationManager.GetUriWithQueryParameters(queryDic));
+
+		var newUrl = NavigationManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+		{
+			["Id"] = Guid.ToString()
+		});
+		await JSRuntime.InvokeVoidAsync("updateUrlSilently", newUrl);
 
 		await hubConnection.SendAsync("Create", Guid, options);
 	}
@@ -225,7 +220,7 @@
 		{
 			await hubConnection.StartAsync();
 		}
-
+		teamId = cmd.TeamId;
 		await hubConnection.SendAsync("Ban", Guid, cmd);
 	}
 
@@ -240,7 +235,7 @@
 		{
 			await hubConnection.StartAsync();
 		}
-
+		teamId = cmd.TeamId;
 		await hubConnection.SendAsync("Pick", Guid, cmd);
 	}
 

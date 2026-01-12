@@ -1,0 +1,64 @@
+﻿@using dsstats.shared.PickBan
+
+<div class="d-flex align-items-center mb-2">
+	<div class="me-2">
+		#@(Slot.SlotId + 1)
+	</div>
+	<div style="min-width: 200px; min-height: 40px;" class="d-flex align-items-center">
+		@if (slotState == SlotState.Forbidden)
+		{
+			<div>
+				<span class="bi bi-ban" style="width: 30px; height: 30px;"></span>
+			</div>
+		}
+		else if (slotState == SlotState.KnownLocked)
+		{
+			<div class="d-flex align-items-center">
+				<div class="preload-@(Slot.Commander.ToString().ToLower())" alt="@Slot.Commander"
+					 style="width: 30px; height: 30px;"></div>
+				<span class="ms-2">@Slot.Commander</span>
+			</div>
+		}
+		else if (slotState == SlotState.UnknownLocked)
+		{
+			<div>
+				<span class="bi bi-question-lg" style="width: 30px; height: 30px;"></span>
+			</div>
+		}
+		else if (slotState == SlotState.None)
+		{
+			<div class="d-flex">
+				<div style="width: 120px;">
+					<select class="form-select" id="@id" @bind="Slot.Commander">
+						@foreach (var cmdr in State.GetAvailablePickCommanders())
+						{
+							<option value="@cmdr">@cmdr</option>
+						}
+					</select>
+				</div>
+				<div class="ms-2">
+					<button type="button" class="btn btn-danger" @onclick="() => OnPickReady.InvokeAsync(new(Slot.TeamId, Slot.SlotId, Slot.Commander, Slot.Name))">
+						Lock
+					</button>
+				</div>
+			</div>
+		}
+	</div>
+</div>
+
+@code {
+	[Parameter, EditorRequired]
+	public PickBanState State { get; set; } = default!;
+
+	[Parameter, EditorRequired]
+	public PickBanSlot Slot { get; set; } = default!;
+
+	[Parameter, EditorRequired]
+	public int TeamId { get; set; }
+
+	[Parameter]
+	public EventCallback<PickCommand> OnPickReady { get; set; }
+
+	SlotState slotState => Slot.GetSlotState(TeamId);
+	Guid id = Guid.NewGuid();
+}

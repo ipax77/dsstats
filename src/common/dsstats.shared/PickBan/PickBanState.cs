@@ -6,6 +6,7 @@ public sealed record PickBanOptions
     public int Bans { get; init; }
     public int PlayerCount { get; init; }
     public bool UseNames { get; init; }
+    public bool UniqueCommanders { get; init; }
 }
 
 public sealed record PickBanState
@@ -101,7 +102,7 @@ public static class PickBanStateExtensions
         }
 
         HashSet<Commander> bannedCommanders = [];
-        foreach (var slot in state.BanSlots.Where(x => x.Commander != Commander.None))
+        foreach (var slot in state.BanSlots.Where(x => x.Locked && x.Commander != Commander.None))
         {
             bannedCommanders.Add(slot.Commander);
         }
@@ -122,13 +123,46 @@ public static class PickBanStateExtensions
             allCommanders = allCommanders.Where(x => (int)x == 0 || (int)x > 3).ToHashSet();
         }
 
-        HashSet<Commander> pickedCommanders = [];
-        foreach (var slot in state.PickSlots.Where(x => x.Commander != Commander.None))
+        if (state.Options.UniqueCommanders)
         {
-            pickedCommanders.Add(slot.Commander);
+            HashSet<Commander> pickedCommanders = [];
+            foreach (var slot in state.PickSlots.Where(x => x.Locked && x.Commander != Commander.None))
+            {
+                pickedCommanders.Add(slot.Commander);
+            }
+            allCommanders = allCommanders.Except(pickedCommanders).ToHashSet();
         }
 
-        return allCommanders.Except(pickedCommanders).ToList();
+        return allCommanders.ToList();
+    }
+
+    public static bool BansReady(this PickBanState state)
+    {
+        return state.Options.Bans == 0 || state.BanSlots.All(a => a.Locked);
+    }
+
+    public static bool IsReady(this PickBanState state)
+    {
+        return state.BansReady() && state.PickSlots.All(a => a.Locked);
+    }
+
+    public static SlotState GetSlotState(this PickBanSlot slot, int teamId)
+    {
+        if (!slot.Locked)
+        {
+            if (teamId > 0 && slot.TeamId != teamId)
+            {
+                return SlotState.Forbidden;
+            }
+            return SlotState.None;
+        }
+
+        if (slot.Commander == Commander.None && string.IsNullOrEmpty(slot.Name))
+        {
+            return SlotState.UnknownLocked;
+        }
+
+        return SlotState.KnownLocked;
     }
 }
 
@@ -150,4 +184,12 @@ public enum PickBanPhase
     Banning,
     Picking,
     Revealed
+}
+
+public enum SlotState
+{
+    None,
+    KnownLocked,
+    UnknownLocked,
+    Forbidden,
 }

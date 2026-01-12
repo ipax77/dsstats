@@ -8,6 +8,7 @@ public interface IPickBanService
 {
     PickBanState? Create(Guid id, PickBanOptions options);
     PickBanState? Join(Guid id);
+    PickBanState? Disconnect(Guid id);
     IPickBanEvent? ApplyBan(Guid id, BanCommand cmd, string userId);
     IPickBanEvent? ApplyPick(Guid id, PickCommand cmd, string userId);
     Task HandleEventAsync(Guid id, IPickBanEvent? evt);
@@ -33,6 +34,14 @@ public sealed class PickBanService(IHubContext<PickBanHub> hubContext) : IPickBa
         if (!_sessions.TryGetValue(id, out var state))
             return null;
         state.UserCount++;
+        return state.GetPublicState();
+    }
+
+    public PickBanState? Disconnect(Guid id)
+    {
+        if (!_sessions.TryGetValue(id, out var state))
+            return null;
+        state.UserCount--;
         return state.GetPublicState();
     }
 
