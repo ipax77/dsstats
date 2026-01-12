@@ -116,7 +116,9 @@ partial class Program
         // CheckDups(serviceProvider).Wait();
         // CheckHash(serviceProvider).Wait();
         // FixHashes(serviceProvider).Wait();
-        CheckHash2(serviceProvider).Wait();
+        //CheckHash2(serviceProvider).Wait();
+        
+        DeleteComputerReplays(serviceProvider).Wait();
 
         // CreateImportJobs(serviceProvider).Wait();
 
@@ -973,5 +975,22 @@ partial class Program
         }
         context.UploadJobs.AddRange(jobs);
         await context.SaveChangesAsync();
+    }
+
+        public static async Task DeleteComputerReplays(ServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+
+        var replays = from r in context.Replays
+                      from rp in r.Players
+                      where rp.Player!.ToonId.Id == 0
+                      select r.ReplayHash;
+        var replayHashes = (await replays.ToListAsync()).ToHashSet();
+        Console.WriteLine(replayHashes.Count);
+        foreach (var hash in replayHashes)
+        {
+            await DeleteReplay(hash, context);
+        }
     }
 }

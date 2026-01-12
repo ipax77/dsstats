@@ -47,6 +47,10 @@ function disableTooltips() {
     })
 }
 
+function updateUrlSilently(url) {
+    history.replaceState(history.state, document.title, url);
+}
+
 function registerImagePlugin(xWidth, yWidth) {
     preloadChartIcons(xWidth, yWidth).then(() => {
         const barIcons = barIconsPlugin();

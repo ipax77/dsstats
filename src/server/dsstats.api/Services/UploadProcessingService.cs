@@ -1,10 +1,8 @@
 ﻿using dsstats.db;
-using dsstats.db.Old;
 using dsstats.dbServices;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
 using System.IO.Compression;
-using System.Reflection.Metadata;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
