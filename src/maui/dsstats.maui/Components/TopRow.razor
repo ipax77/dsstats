@@ -47,9 +47,9 @@
 					<div class="col-auto">
 						<div class="fw-semibold">ETA</div>
 						<div>
-							@(EstimatedRemaining is null
+							@(EstimatedRemaining.Equals(TimeSpan.Zero)
 													? "—"
-													: EstimatedRemaining.Value.ToString(@"hh\:mm\:ss"))
+													: EstimatedRemaining.ToString(@"hh\:mm\:ss"))
 						</div>
 					</div>
 					@if (ImportState.IsRunning)
@@ -244,22 +244,22 @@
 		}
 	}
 
-	private TimeSpan? EstimatedRemaining
+	private TimeSpan EstimatedRemaining
 	{
 		get
 		{
 			if (!ImportState.IsRunning ||
 				Progress.Imported == 0 ||
 				Progress.Discovered == 0)
-				return null;
+				return TimeSpan.Zero;
 
 			var elapsedSeconds = Progress.Elapsed.TotalSeconds;
 			if (elapsedSeconds <= 0)
-				return null;
+				return TimeSpan.Zero;
 
 			var rate = Progress.Imported / elapsedSeconds; // items per second
 			if (rate <= 0)
-				return null;
+				return TimeSpan.Zero;
 
 			var remaining = Progress.Discovered - Progress.Imported;
 			return TimeSpan.FromSeconds(remaining / rate);

@@ -4,6 +4,10 @@
     min-height: 100vh;
 }
 
+main {
+    margin-top: 56px;
+}
+
 #blazor-error-ui {
     color-scheme: light only;
     background: lightyellow;
