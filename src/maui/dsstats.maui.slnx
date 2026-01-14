@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="../common/dsstats.decode/dsstats.decode.csproj" Id="56fa3ddd-65d4-414a-8b0d-851f0daff0f9" />
   <Project Path="../common/dsstats.localization/dsstats.localization.csproj" />
   <Project Path="../common/dsstats.parser/dsstats.parser.csproj" />
   <Project Path="../common/dsstats.shared/dsstats.shared.csproj" />

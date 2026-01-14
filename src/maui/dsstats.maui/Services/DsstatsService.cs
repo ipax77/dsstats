@@ -11,7 +11,10 @@ public sealed partial class DsstatsService(IServiceScopeFactory scopeFactory, IH
         Initdata = true,
         Details = true,
         Metadata = true,
+        GameEvents = false,
+        MessageEvents = false,
         TrackerEvents = true,
+        AttributeEvents = false,
     };
 
     #region Public API
