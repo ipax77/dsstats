@@ -107,6 +107,43 @@ public static class DecodeService
 
         await writer;
     }
+
+    public static async Task DecodeReplaysToWriter(
+        IReadOnlyCollection<string> replayPaths,
+        int threads,
+        ChannelWriter<ReplayResult> writer,
+        CancellationToken token = default)
+    {
+        await Parallel.ForEachAsync(
+            replayPaths,
+            new ParallelOptions { MaxDegreeOfParallelism = threads, CancellationToken = token },
+            async (replayPath, ct) =>
+            {
+                try
+                {
+                    var sc2Replay = await replayDecoder.DecodeAsync(replayPath, replayDecoderOptions, ct);
+                    if (sc2Replay is null)
+                    {
+                        await writer.WriteAsync(new(null, "Failed decoding replay."), ct);
+                        return;
+                    }
+
+                    var replayDto = DsstatsParser.ParseReplay(sc2Replay, false);
+                    if (replayDto is null)
+                    {
+                        await writer.WriteAsync(new(null, "Failed parsing replay."), ct);
+                        return;
+                    }
+
+                    await writer.WriteAsync(new(replayDto, null), ct);
+                }
+                catch (OperationCanceledException) { }
+                catch (Exception ex)
+                {
+                    await writer.WriteAsync(new(null, ex.Message), ct);
+                }
+            });
+    }
 }
 
 public sealed record ReplayResult(ReplayDto? Replay, string? Error);

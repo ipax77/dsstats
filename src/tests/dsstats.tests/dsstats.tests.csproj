@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="MSTest" Version="4.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -66,8 +66,14 @@
 	<None Update="testdata\Direct Strike %289181%29.SC2Replay">
 		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</None>
-  <None Update="testdata\Direct Strike TE %281787%29.SC2Replay">
+    <None Update="testdata\Direct Strike TE %281787%29.SC2Replay">
 		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
+	<None Update="testdata\Direct Strike %284823%29.SC2Replay">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
+	<None Update="testdata\Direct Strike %2826%29.SC2Replay">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</None>
 	<None Update="testdata\calcdtos.json">
 	<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
