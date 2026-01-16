@@ -83,7 +83,7 @@
         return (x, y);
     }
 
-    public async void Update(SpawnDto? spawn, Commander cmdr, int team)
+    public async Task Update(SpawnDto? spawn, Commander cmdr, int team)
     {
         if (!chartIsReady)
         {
@@ -120,7 +120,7 @@
         }
 
         chartConfig.AddDatasets(datasets);
-        var module = await moduleTask.Value.ConfigureAwait(false);
+        var module = await moduleTask.Value;
         await module.InvokeVoidAsync("setChartTooltips", chartConfig.ChartJsConfigGuid);
         await module.InvokeVoidAsync("drawChartBorder", chartConfig.ChartJsConfigGuid);
     }
@@ -153,7 +153,7 @@
         {
             var success = await RegisterPlugin();
             chartIsReady = !success;
-            Update(Spawn, Cmdr, Team);
+            await Update(Spawn, Cmdr, Team);
         }
         else if (e is ChartJsLegendHoverEvent hoverEvent)
         {
@@ -183,7 +183,7 @@
             })).ToList(),
             BorderWidth = 2,
             BorderColor = $"{color}CC",
-            BackgroundColor = $"{color}80",
+            BackgroundColor = $"{color}66",
             HoverBorderColor = $"{color}FF",
             HoverBorderWidth = 4,
         };

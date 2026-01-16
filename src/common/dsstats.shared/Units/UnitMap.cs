@@ -227,9 +227,11 @@ public static partial class UnitMap
         { "Scout", new("Scout", UnitSize.Medium, UnitType.Air) },
         { "Sentinel", new("Sentinel", UnitSize.Small, UnitType.Ground) },
         { "Sentry", new("Sentry", UnitSize.Small, UnitType.Ground) },
+        { "ShadowGuard", new("Shadow Guard", UnitSize.Small, UnitType.Ground) },
         { "Shadow Guard", new("Shadow Guard", UnitSize.Small, UnitType.Ground) },
         { "Siege Breaker", new("Siege Breaker", UnitSize.Medium, UnitType.Ground) },
         { "Siege Drone", new("Siege Drone", UnitSize.Medium, UnitType.Ground) },
+        { "SiegeTank", new("Siege Tank", UnitSize.Medium, UnitType.Ground) },
         { "Siege Tank", new("Siege Tank", UnitSize.Medium, UnitType.Ground) },
         { "Sirius", new("Sirius", UnitSize.Medium, UnitType.Ground) },
         { "SkyFury", new("SkyFury", UnitSize.Medium, UnitType.Air) },
@@ -358,7 +360,8 @@ public static partial class UnitMap
     {
         var unitIndexBuilder = new Dictionary<string, int>();
         var index = 0;
-        foreach (var unitName in _unitInfoMap.Keys.OrderBy(k => k))
+        var unitNames = _unitInfoMap.Values.Select(s => s.Name).ToHashSet();
+        foreach (var unitName in unitNames.OrderBy(k => k))
         {
             unitIndexBuilder[unitName] = index++;
         }

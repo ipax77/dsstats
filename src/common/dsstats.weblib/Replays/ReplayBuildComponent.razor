@@ -108,4 +108,10 @@
         }
         await buildChart.HighlightUnits(name);
     }
+
+    public void Update()
+    {
+        InvokeAsync(StateHasChanged);
+        buildChart?.Update(spawn, Player.Race, Player.TeamId);
+    }
 }

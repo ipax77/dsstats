@@ -145,7 +145,7 @@
 					</div>
 				</div>
 				<ReplayTeamTableComponent TeamId="1" Players="ReplayDetails.Replay.Players.Where(x => x.TeamId == 1).OrderBy(o => o.GamePos).ToList()"
-										  ReplayHelper="_replayHelper" RequestBuild="RequestBuild" RequestStats="RequestPlayerStats" />
+										  ReplayHelper="_replayHelper" RequestBuild="_replayHelper.ToggleBuild" RequestStats="RequestPlayerStats" />
 			</div>
 			<div class="col-auto">
 				<div class="row justify-content-start" style="font-size: 1.1rem;">
@@ -169,17 +169,33 @@
 					</div>
 				</div>
 				<ReplayTeamTableComponent TeamId="2" Players="ReplayDetails.Replay.Players.Where(x => x.TeamId == 2).OrderBy(o => o.GamePos).ToList()"
-										  ReplayHelper="_replayHelper" RequestBuild="RequestBuild" RequestStats="RequestPlayerStats" />
+										  ReplayHelper="_replayHelper" RequestBuild="_replayHelper.ToggleBuild" RequestStats="RequestPlayerStats" />
 			</div>
 		</div>
-		<div style="max-width: 800px;">
+		<div class="mb-1" style="max-width: 800px;">
 			<div class="row align-items-center">
-				<div class="col-auto d-flex align-items-center">
+				<div class="col-auto d-none d-lg-flex align-items-center gap-2">
+					<span class="text-light">Breakpoint:</span>
+					@foreach (var bp in _replayHelper.GetBreakpoints())
+					{
+						var isActive = bp.Value == _replayHelper.Breakpoint;
+						<button type="button"
+								class="btn btn-sm @(isActive ? "btn-info" : "btn-outline-info")"
+								@onclick="() => _replayHelper.SetBreakpoint(bp.Value)">
+							@bp.Label
+						</button>
+					}
+				</div>
+				<div class="col-auto d-flex d-lg-none align-items-center">
 					<label for="breakpointSelect" class="form-label text-light me-2 mb-0">Breakpoint:</label>
-					<select id="breakpointSelect" class="form-select text-light bgchart" aria-label="Breakpoint" @bind="_replayHelper.Breakpoint">
+					<select id="breakpointSelect"
+							class="form-select text-light bgchart"
+							aria-label="Breakpoint"
+							@bind="_replayHelper.Breakpoint"
+							@bind:after="_replayHelper.UpdateBuilds">
 						@foreach (var breakpoint in _replayHelper.GetBreakpoints())
 						{
-							<option value="@breakpoint">@GetBreakpointString(breakpoint)</option>
+							<option value="@breakpoint.Value">@breakpoint.Label</option>
 						}
 					</select>
 				</div>
@@ -228,9 +244,9 @@
 		</div>
 		<div>
 			<div class="row">
-				@foreach (var player in _replayHelper.ActiveBuilds)
+				@foreach (var build in _replayHelper.ActiveBuilds)
 				{
-					<ReplayBuildComponent @key="player.GamePos" Player="player"
+					<ReplayBuildComponent @ref="build.ReplayBuildComponent" @key="build.Player.Player.ToonId" Player="build.Player"
 										  ReplayHelper="_replayHelper"
 										  moduleTask="moduleTask" />
 				}
