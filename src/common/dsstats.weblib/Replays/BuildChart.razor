@@ -168,7 +168,8 @@
     {
         var label = unitInfo.Name;
         var color = UnitMap.GetColor(unitInfo.Name);
-		// var color = UnitMap.GetColor(unitInfo.Name, Cmdr);
+        // var color = UnitMap.GetColor(unitInfo.Name, Cmdr);
+        // var color = UnitMap.ResolveAutoColor(unitInfo.Name);
         var radius = GetRadius(unitInfo);
 
         return new BubbleDataset()
@@ -183,7 +184,7 @@
             })).ToList(),
             BorderWidth = 2,
             BorderColor = $"{color}CC",
-            BackgroundColor = $"{color}66",
+            BackgroundColor = $"{color}80",
             HoverBorderColor = $"{color}FF",
             HoverBorderWidth = 4,
         };
@@ -193,21 +194,18 @@
     {
         var size = unitInfo.Size switch
         {
-            UnitSize.Small => 4,
-            UnitSize.Medium => 13,
-            UnitSize.Large => 17,
+            UnitSize.Small => 8,
+            UnitSize.Medium => 12,
+            UnitSize.Large => 16,
             UnitSize.VeryLarge => 22,
             _ => 12
         };
 
         if (unitInfo.Type == UnitType.Air)
-        {
             size += 2;
-        }   
 
         return size;
     }
-
 
     public CustomChartJsConfig GetBubbleChartConfig()
     {
