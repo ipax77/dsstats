@@ -1,7 +1,7 @@
 ﻿using dsstats.db;
 using dsstats.shared;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace dsstats.dbServices;
 

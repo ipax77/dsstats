@@ -88,7 +88,7 @@ internal static partial class DsstatsReplayMapper
         var lastGameloop = wave.Last().Gameloop;
 
         // Get first stat AFTER last unit gameloop
-        var stat = breakpoint == Breakpoint.All ? player.Stats.LastOrDefault() 
+        var stat = breakpoint == Breakpoint.All ? player.Stats.LastOrDefault()
             : player.Stats.FirstOrDefault(s => s.Gameloop >= lastGameloop);
         if (stat != null)
         {

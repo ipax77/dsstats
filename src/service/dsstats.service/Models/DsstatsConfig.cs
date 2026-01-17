@@ -1,6 +1,6 @@
 ﻿namespace dsstats.service.Models;
 
-internal class DsstatsConfig
+internal sealed class DsstatsConfig
 {
     public string UploadUrl { get; set; } = string.Empty;
     public int StartDelayInMinutes { get; set; }

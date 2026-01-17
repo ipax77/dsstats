@@ -2,7 +2,7 @@
 
 namespace dsstats.service.Models;
 
-internal class AppOptions
+internal sealed class AppOptions
 {
     public int ConfigVersion { get; init; } = 3;
     public Guid AppGuid { get; set; } = Guid.NewGuid();

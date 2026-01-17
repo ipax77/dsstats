@@ -5,9 +5,6 @@ using LinqKit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using s2protocol.NET.Models;
-using System.Linq;
-using System.Linq.Expressions;
 
 namespace dsstats.dbServices;
 

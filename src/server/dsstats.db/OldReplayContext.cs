@@ -26,8 +26,8 @@ public class OldReplayContext : DbContext
 
     public OldReplayContext(DbContextOptions<OldReplayContext> options)
         : base(options)
-            {
-            }
+    {
+    }
 }
 
 public class OldArcadeReplay

@@ -1,16 +1,16 @@
 ﻿using dsstats.db;
 using dsstats.service.Models;
 using dsstats.shared.Upload;
+using Microsoft.EntityFrameworkCore;
 using System.IO.Compression;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 
 namespace dsstats.service.Services;
 
-internal partial class DsstatsService
+internal sealed partial class DsstatsService
 {
     public async Task Upload(AppOptions config, CancellationToken ct)
     {

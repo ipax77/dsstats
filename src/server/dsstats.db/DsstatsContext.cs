@@ -62,7 +62,7 @@ public class DsstatsContext : DbContext
             entity.HasIndex(i => i.ReplayHash).IsUnique();
             entity.HasIndex(i => i.CompatHash);
             entity.HasIndex(i => i.Gametime);
-            entity.HasIndex(i => new { i.Gametime, i.ReplayId } );
+            entity.HasIndex(i => new { i.Gametime, i.ReplayId });
             entity.HasIndex(i => new { i.Gametime, i.Duration, i.WinnerTeam, i.PlayerCount, i.GameMode, i.TE });
         });
 

@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace dsstats.service;
 
-internal class Worker(DsstatsService dsstatsService, IOptions<DsstatsConfig> dsstatsConfig, ILogger<Worker> logger) : BackgroundService
+internal sealed class Worker(DsstatsService dsstatsService, IOptions<DsstatsConfig> dsstatsConfig, ILogger<Worker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

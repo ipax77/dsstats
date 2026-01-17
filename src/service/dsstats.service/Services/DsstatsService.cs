@@ -11,7 +11,7 @@ using System.Threading.Channels;
 
 namespace dsstats.service.Services;
 
-internal partial class DsstatsService(IServiceScopeFactory scopeFactory,
+internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
                                     IHttpClientFactory httpClientFactory,
                                     IOptions<DsstatsConfig> dsstatsConfig,
                                     ILogger<DsstatsService> logger) : IDisposable

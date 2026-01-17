@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace dsstats.service.Services;
 
-internal partial class DsstatsService
+internal sealed partial class DsstatsService
 {
     private readonly SemaphoreSlim configSemaphore = new(1, 1);
     private readonly JsonSerializerOptions jsonSerializerOptions = new() { WriteIndented = true };
