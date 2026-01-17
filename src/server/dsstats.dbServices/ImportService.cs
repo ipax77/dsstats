@@ -83,7 +83,7 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
             {
                 if (rp.Player != null)
                 {
-                    rp.PlayerId = GetOrCreatePlayerId(rp.Player.Name, rp.Player.ToonId.Region, rp.Player.ToonId.Realm, rp.Player.ToonId.Id, context);
+                    rp.PlayerId = GetOrCreatePlayerId(rp.Name, rp.Player.ToonId.Region, rp.Player.ToonId.Realm, rp.Player.ToonId.Id, context);
                     rp.Player = null;
 
                     foreach (var spawn in rp.Spawns)
@@ -247,7 +247,7 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
         foreach (var player in replays.SelectMany(s => s.Players))
         {
             var key = new ToonIdRec(player.Player.ToonId.Region, player.Player.ToonId.Realm, player.Player.ToonId.Id);
-            players[key] = player.Player.Name;
+            players[key] = player.Name;
         }
 
         await CreatePlayerIds(players);
