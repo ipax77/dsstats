@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace dsstats.service;
 
-public class Worker(DsstatsService dsstatsService, IOptions<DsstatsConfig> dsstatsConfig, ILogger<Worker> logger) : BackgroundService
+internal class Worker(DsstatsService dsstatsService, IOptions<DsstatsConfig> dsstatsConfig, ILogger<Worker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -23,7 +23,9 @@ public class Worker(DsstatsService dsstatsService, IOptions<DsstatsConfig> dssta
                 {
                     logger.LogError("Decode process failed: {error}", ex.Message);
                 }
+#pragma warning disable CA5394 // Do not use insecure randomness
                 var delayMinutes = Random.Shared.Next(40, 81);
+#pragma warning restore CA5394 // Do not use insecure randomness
                 await Task.Delay(TimeSpan.FromMinutes(delayMinutes), stoppingToken);
             }
         }

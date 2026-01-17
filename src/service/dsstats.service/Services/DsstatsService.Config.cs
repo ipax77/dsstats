@@ -8,12 +8,12 @@ using System.Text.RegularExpressions;
 
 namespace dsstats.service.Services;
 
-public partial class DsstatsService
+internal partial class DsstatsService
 {
     private readonly SemaphoreSlim configSemaphore = new(1, 1);
     private readonly JsonSerializerOptions jsonSerializerOptions = new() { WriteIndented = true };
 
-    public async Task<AppOptions> GetConfig()
+    internal async Task<AppOptions> GetConfig()
     {
         await configSemaphore.WaitAsync();
         try
@@ -21,7 +21,7 @@ public partial class DsstatsService
             AppOptions? appOptions = null;
             if (File.Exists(configFile))
             {
-                appOptions = JsonSerializer.Deserialize<AppOptions>(File.ReadAllText(configFile));
+                appOptions = JsonSerializer.Deserialize<AppOptions>(await File.ReadAllTextAsync(configFile));
             }
             var folders = GetMyDocumentsPathAllUsers();
             var sc2profiles = GetInitialNamesAndFolders(folders);
@@ -31,7 +31,7 @@ public partial class DsstatsService
                 {
                     Sc2Profiles = sc2profiles
                 };
-                File.WriteAllText(configFile, JsonSerializer.Serialize(appOptions, jsonSerializerOptions));
+                await File.WriteAllTextAsync(configFile, JsonSerializer.Serialize(appOptions, jsonSerializerOptions));
             }
             else
             {
@@ -51,7 +51,7 @@ public partial class DsstatsService
         }
     }
 
-    public static List<string> GetReplayFolders(AppOptions config)
+    internal static List<string> GetReplayFolders(AppOptions config)
     {
         var profiles = config.Sc2Profiles;
 
@@ -66,7 +66,7 @@ public partial class DsstatsService
         return profiles.Select(s => s.Folder).Concat(config.CustomFolders).Distinct().ToList();
     }
 
-    public static List<Sc2ProfileDto> GetInitialNamesAndFolders(List<string> folders)
+    internal static List<Sc2ProfileDto> GetInitialNamesAndFolders(List<string> folders)
     {
         HashSet<Sc2ProfileDto> profiles = [];
         foreach (var folder in folders)
@@ -145,7 +145,7 @@ public partial class DsstatsService
     {
         try
         {
-            if (Path.GetExtension(file).ToLower() != ".lnk")
+            if (!Path.GetExtension(file).Equals(".lnk", StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }
@@ -176,10 +176,10 @@ public partial class DsstatsService
                 char[] linkTarget = fileReader.ReadChars((int)pathLength); // should be unicode safe
                 var link = new string(linkTarget);
 
-                int begin = link.IndexOf("\0\0");
+                int begin = link.IndexOf("\0\0", StringComparison.OrdinalIgnoreCase);
                 if (begin > -1)
                 {
-                    int end = link.IndexOf("\\\\", begin + 2) + 2;
+                    int end = link.IndexOf("\\\\", begin + 2, StringComparison.OrdinalIgnoreCase) + 2;
                     end = link.IndexOf('\0', end) + 1;
 
                     string firstPart = link[..begin];

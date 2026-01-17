@@ -6,14 +6,15 @@ using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading.Channels;
 
 namespace dsstats.service.Services;
 
-public partial class DsstatsService(IServiceScopeFactory scopeFactory,
+internal partial class DsstatsService(IServiceScopeFactory scopeFactory,
                                     IHttpClientFactory httpClientFactory,
                                     IOptions<DsstatsConfig> dsstatsConfig,
-                                    ILogger<DsstatsService> logger)
+                                    ILogger<DsstatsService> logger) : IDisposable
 {
     public static readonly string appFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "dsstats.worker");
@@ -49,7 +50,7 @@ public partial class DsstatsService(IServiceScopeFactory scopeFactory,
 
             await Upload(config, token);
             sw.Stop();
-            logger.LogWarning("{count} replays decoded in {time}.", toDoReplayPaths.Count, sw.Elapsed.ToString(@"mm\:ss"));
+            logger.LogWarning("{count} replays decoded in {time}.", toDoReplayPaths.Count, sw.Elapsed.ToString(@"mm\:ss", CultureInfo.InvariantCulture));
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -153,5 +154,11 @@ public partial class DsstatsService(IServiceScopeFactory scopeFactory,
         return fileInfos
                 .OrderByDescending(o => o.CreationTimeUtc).Select(s => s.FullName)
                 .ToHashSet();
+    }
+
+    public void Dispose()
+    {
+        _dbSemaphore.Dispose();
+        configSemaphore.Dispose();
     }
 }

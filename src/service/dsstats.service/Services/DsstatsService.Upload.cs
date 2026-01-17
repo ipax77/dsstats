@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace dsstats.service.Services;
 
-public partial class DsstatsService
+internal partial class DsstatsService
 {
     public async Task Upload(AppOptions config, CancellationToken ct)
     {
@@ -71,14 +71,14 @@ public partial class DsstatsService
                 {
                     var json = JsonSerializer.Serialize(upload);
 
-                    var content = new ByteArrayContent(CompressBrotli(json));
+                    using var content = new ByteArrayContent(CompressBrotli(json));
 
                     content.Headers.ContentType =
                         new MediaTypeHeaderValue("application/json");
 
                     content.Headers.ContentEncoding.Add("br");
 
-                    var result = await httpClient.PostAsync("api10/Upload", content, ct);
+                    var result = await httpClient.PostAsync(new Uri("api10/Upload"), content, ct);
                     result.EnsureSuccessStatusCode();
                 }
                 else
@@ -90,7 +90,7 @@ public partial class DsstatsService
                 var replayIds = replays.Select(s => s.ReplayId).ToList();
                 await context.Replays
                     .Where(x => replayIds.Contains(x.ReplayId))
-                    .ExecuteUpdateAsync(e => e.SetProperty(p => p.Uploaded, true));
+                    .ExecuteUpdateAsync(e => e.SetProperty(p => p.Uploaded, true), ct);
             }
         }
         catch (OperationCanceledException)
