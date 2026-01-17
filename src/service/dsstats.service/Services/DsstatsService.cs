@@ -19,7 +19,7 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
     public static readonly string appFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "dsstats.worker");
 
-    private static readonly string configFile = Path.Combine(appFolder, "workerconfig3.json");
+    private static readonly string configFile = Path.Combine(appFolder, "workerconfig.json");
     private readonly SemaphoreSlim _dbSemaphore = new(1, 1);
 
     public async Task StartImportAsync(CancellationToken token)
@@ -42,7 +42,7 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
             });
 
             var decodeTask = DecodeService.DecodeReplaysToWriter(toDoReplayPaths, config.CPUCores, channel.Writer, token);
-            var importTask = ImportFromChannelAsync(channel.Reader, token);
+            var importTask = ImportFromChannelAsync(channel.Reader, GetToonIds(config), token);
 
             await decodeTask;
             channel.Writer.TryComplete();
@@ -61,6 +61,7 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
 
     private async Task ImportFromChannelAsync(
     ChannelReader<ReplayResult> reader,
+    List<ToonIdDto> toonIds,
     CancellationToken ct)
     {
         var batch = new List<ReplayDto>(100);
@@ -73,6 +74,7 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
                 {
                     continue;
                 }
+                result.Replay.SetUploader(toonIds);
                 batch.Add(result.Replay);
 
                 if (batch.Count >= 100)

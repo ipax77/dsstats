@@ -55,13 +55,13 @@ internal sealed partial class DsstatsService
                     AppGuid = config.AppGuid,
                     AppVersion = "99.8",
                     RequestNames = config.Sc2Profiles
-                        .Where(x => x.ToonId.Id > 0)
+                        .Where(x => x.PlayerId.ToonId > 0)
                         .Select(s => new RequestNames()
                         {
                             Name = s.Name,
-                            ToonId = s.ToonId.Id,
-                            RegionId = s.ToonId.Region,
-                            RealmId = s.ToonId.Realm,
+                            ToonId = s.PlayerId.ToonId,
+                            RegionId = s.PlayerId.RegionId,
+                            RealmId = s.PlayerId.RealmId,
                         }).ToList(),
                     Replays = replays.Select(s => s.ToDto()).ToList(),
                 };
@@ -78,7 +78,9 @@ internal sealed partial class DsstatsService
 
                     content.Headers.ContentEncoding.Add("br");
 
-                    var result = await httpClient.PostAsync(new Uri("api10/Upload"), content, ct);
+#pragma warning disable CA2234 // Pass system uri objects instead of strings
+                    var result = await httpClient.PostAsync("api10/Upload", content, ct);
+#pragma warning restore CA2234 // Pass system uri objects instead of strings
                     result.EnsureSuccessStatusCode();
                 }
                 else

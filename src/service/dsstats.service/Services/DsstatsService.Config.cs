@@ -1,6 +1,5 @@
 ﻿using dsstats.service.Models;
 using dsstats.shared;
-using dsstats.shared.Maui;
 using Microsoft.Win32;
 using System.Management;
 using System.Text.Json;
@@ -51,24 +50,40 @@ internal sealed partial class DsstatsService
         }
     }
 
-    internal static List<string> GetReplayFolders(AppOptions config)
+    internal static List<ToonIdDto> GetToonIds(AppOptions config)
     {
-        var profiles = config.Sc2Profiles;
-
-        foreach (var profile in config.IgnoreProfiles)
-        {
-            var existing = profiles.FirstOrDefault(f => f.ToonId == profile.ToonId);
-            if (existing != null)
+        return FilterProfiles(config)
+            .Select(s => new ToonIdDto
             {
-                profiles.Remove(existing);
-            }
-        }
-        return profiles.Select(s => s.Folder).Concat(config.CustomFolders).Distinct().ToList();
+                Id = s.PlayerId.ToonId,
+                Realm = s.PlayerId.RealmId,
+                Region = s.PlayerId.RegionId
+            })
+            .ToList();
     }
 
-    internal static List<Sc2ProfileDto> GetInitialNamesAndFolders(List<string> folders)
+    internal static List<string> GetReplayFolders(AppOptions config)
     {
-        HashSet<Sc2ProfileDto> profiles = [];
+        return FilterProfiles(config)
+            .Select(s => s.Folder)
+            .Concat(config.CustomFolders)
+            .Distinct()
+            .ToList();
+    }
+
+    private static IEnumerable<Sc2Profile> FilterProfiles(AppOptions config)
+    {
+        var ignoreIds = config.IgnoreProfiles
+            .Select(p => p.PlayerId)
+            .ToHashSet();
+
+        return config.Sc2Profiles
+            .Where(p => !ignoreIds.Contains(p.PlayerId));
+    }
+
+    internal static List<Sc2Profile> GetInitialNamesAndFolders(List<string> folders)
+    {
+        HashSet<Sc2Profile> profiles = [];
         foreach (var folder in folders)
         {
             var sc2Dir = Path.Combine(folder, "Starcraft II");
@@ -84,7 +99,7 @@ internal sealed partial class DsstatsService
                         continue;
                     }
 
-                    Sc2ProfileDto profile = new() { Active = true };
+                    Sc2Profile profile = new();
 
                     var battlenetString = Path.GetFileName(target);
                     var playerId = GetPlayerIdFromFolder(battlenetString);
@@ -92,7 +107,7 @@ internal sealed partial class DsstatsService
                     {
                         continue;
                     }
-                    profile.ToonId = playerId;
+                    profile.PlayerId = playerId;
 
                     Match m = LinkRx().Match(Path.GetFileName(file));
                     if (m.Success)
@@ -117,7 +132,7 @@ internal sealed partial class DsstatsService
         return profiles.ToList();
     }
 
-    private static ToonIdDto? GetPlayerIdFromFolder(string folder)
+    private static PlayerId? GetPlayerIdFromFolder(string folder)
     {
         Match m = ProfileRx().Match(folder);
         if (m.Success)
@@ -130,12 +145,7 @@ internal sealed partial class DsstatsService
                 && int.TryParse(realm, out int realmId)
                 && int.TryParse(toon, out int toonId))
             {
-                return new()
-                {
-                    Id = toonId,
-                    Region = regionId,
-                    Realm = realmId,
-                };
+                return new(toonId, realmId, regionId);
             }
         }
         return null;
