@@ -21,6 +21,7 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
 
     private static readonly string configFile = Path.Combine(appFolder, "workerconfig.json");
     private readonly SemaphoreSlim _dbSemaphore = new(1, 1);
+    internal readonly Version CurrentVersion = new(3, 0, 0);
 
     public async Task StartImportAsync(CancellationToken token)
     {
