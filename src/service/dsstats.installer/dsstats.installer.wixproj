@@ -2,4 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="..\dsstats.service\dsstats.service.csproj" />
   </ItemGroup>
+  <PropertyGroup>
+    <InstallerPlatform>x64</InstallerPlatform>
+  </PropertyGroup>
 </Project>
