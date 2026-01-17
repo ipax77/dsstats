@@ -83,7 +83,7 @@
         return (x, y);
     }
 
-    public async void Update(SpawnDto? spawn, Commander cmdr, int team)
+    public async Task Update(SpawnDto? spawn, Commander cmdr, int team)
     {
         if (!chartIsReady)
         {
@@ -120,7 +120,7 @@
         }
 
         chartConfig.AddDatasets(datasets);
-        var module = await moduleTask.Value.ConfigureAwait(false);
+        var module = await moduleTask.Value;
         await module.InvokeVoidAsync("setChartTooltips", chartConfig.ChartJsConfigGuid);
         await module.InvokeVoidAsync("drawChartBorder", chartConfig.ChartJsConfigGuid);
     }
@@ -153,7 +153,7 @@
         {
             var success = await RegisterPlugin();
             chartIsReady = !success;
-            Update(Spawn, Cmdr, Team);
+            await Update(Spawn, Cmdr, Team);
         }
         else if (e is ChartJsLegendHoverEvent hoverEvent)
         {
@@ -168,7 +168,8 @@
     {
         var label = unitInfo.Name;
         var color = UnitMap.GetColor(unitInfo.Name);
-		// var color = UnitMap.GetColor(unitInfo.Name, Cmdr);
+        // var color = UnitMap.GetColor(unitInfo.Name, Cmdr);
+        // var color = UnitMap.ResolveAutoColor(unitInfo.Name);
         var radius = GetRadius(unitInfo);
 
         return new BubbleDataset()
@@ -193,21 +194,18 @@
     {
         var size = unitInfo.Size switch
         {
-            UnitSize.Small => 4,
-            UnitSize.Medium => 13,
-            UnitSize.Large => 17,
+            UnitSize.Small => 8,
+            UnitSize.Medium => 12,
+            UnitSize.Large => 16,
             UnitSize.VeryLarge => 22,
             _ => 12
         };
 
         if (unitInfo.Type == UnitType.Air)
-        {
             size += 2;
-        }   
 
         return size;
     }
-
 
     public CustomChartJsConfig GetBubbleChartConfig()
     {

@@ -33,6 +33,44 @@ public static partial class UnitMap
         };
     }
 
+    private static readonly string[] _stdColors = [
+        "#FF6B6B",
+        "#FF9F1C",
+        "#FFCA3A",
+        "#8AC926",
+        "#2EC4B6",
+        "#36A2EB",
+        "#4D96FF",
+        "#9D4EDD",
+        "#C77DFF",
+        "#FF5D8F",
+        "#E06C75",
+        "#F2A541",
+        "#FFD166",
+        "#80ED99",
+        "#3DB2FF",
+        "#4895EF",
+        "#7B2CBF",
+        "#A663CC",
+        "#FF84E8",
+        "#F28482",
+        "#C0392B",
+        "#9B59B6",
+        "#2980B9",
+        "#1ABC9C",
+        "#F1C40F",
+        "#D35400",
+        "#ECF0F1",
+        "#7F8C8D",
+        "#943126",
+        "#5B2C6F",
+        "#21618C",
+        "#0E6655",
+        "#9C640C",
+        "#797D7F",
+        "#515A5A",
+    ];
+
     private static readonly FrozenDictionary<string, UnitInfo> _unitInfoMap = new Dictionary<string, UnitInfo>()
     {
         { "Aberration", new("Aberration", UnitSize.Large, UnitType.Ground) },
@@ -227,9 +265,11 @@ public static partial class UnitMap
         { "Scout", new("Scout", UnitSize.Medium, UnitType.Air) },
         { "Sentinel", new("Sentinel", UnitSize.Small, UnitType.Ground) },
         { "Sentry", new("Sentry", UnitSize.Small, UnitType.Ground) },
+        { "ShadowGuard", new("Shadow Guard", UnitSize.Small, UnitType.Ground) },
         { "Shadow Guard", new("Shadow Guard", UnitSize.Small, UnitType.Ground) },
         { "Siege Breaker", new("Siege Breaker", UnitSize.Medium, UnitType.Ground) },
         { "Siege Drone", new("Siege Drone", UnitSize.Medium, UnitType.Ground) },
+        { "SiegeTank", new("Siege Tank", UnitSize.Medium, UnitType.Ground) },
         { "Siege Tank", new("Siege Tank", UnitSize.Medium, UnitType.Ground) },
         { "Sirius", new("Sirius", UnitSize.Medium, UnitType.Ground) },
         { "SkyFury", new("SkyFury", UnitSize.Medium, UnitType.Air) },
@@ -358,7 +398,8 @@ public static partial class UnitMap
     {
         var unitIndexBuilder = new Dictionary<string, int>();
         var index = 0;
-        foreach (var unitName in _unitInfoMap.Keys.OrderBy(k => k))
+        var unitNames = _unitInfoMap.Values.Select(s => s.Name).ToHashSet();
+        foreach (var unitName in unitNames.OrderBy(k => k))
         {
             unitIndexBuilder[unitName] = index++;
         }
@@ -380,6 +421,11 @@ public static partial class UnitMap
         return _unitInfoMap.ContainsKey(name);
     }
 
+    public static string ResolveAutoColor(string canonical)
+    {
+        var index = Math.Abs(canonical.GetHashCode()) % _stdColors.Length;
+        return _stdColors[index];
+    }
 
     /// <summary>
     /// Gets a unique, stable color for a given unit name.

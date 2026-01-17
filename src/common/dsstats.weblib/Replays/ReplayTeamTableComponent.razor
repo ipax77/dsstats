@@ -24,7 +24,7 @@
 			var ratingInfo = GetPlayerRatingInfo(player);
 			var spawn = ReplayHelper.GetSpawn(player);
 			var trStyle = ReplayHelper.GetPlayerTableRowStyle(player);
-			var isActive = ReplayHelper.ActiveBuilds.Contains(player);
+			var isActive = ReplayHelper.PlayerBuildIsActive(player.Player.ToonId);
 			<tr class="pointer" @onclick="() => RequestBuild.InvokeAsync(player.Player.ToonId)" style="@trStyle">
 				<td>@player.GamePos</td>
 				<td class="text-nowrap">
@@ -35,7 +35,7 @@
 				</td>
 				@if (ReplayHelper.HasRating)
 				{
-					<td>@ratingInfo.Rating</td>
+					<td class="text-warning">@ratingInfo.Rating</td>
 					<td>@ratingInfo.Games</td>
 				}
 				<td>@player.Apm</td>
@@ -58,7 +58,7 @@
 				<td colspan="3" class="text-end fw-bold">&Oslash;</td>
 				@if (ReplayHelper.HasRating)
 				{
-					<td>@ReplayHelper.GetAvgRating(TeamId)</td>
+					<td class="text-warning">@ReplayHelper.GetAvgRating(TeamId)</td>
 					<td></td>
 				}
 				<td>@Players.Average(a => a.Apm).ToString("N0")</td>
