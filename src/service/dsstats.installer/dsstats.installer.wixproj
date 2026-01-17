@@ -1,0 +1,5 @@
+<Project Sdk="WixToolset.Sdk/6.0.2">
+  <ItemGroup>
+    <ProjectReference Include="..\dsstats.service\dsstats.service.csproj" />
+  </ItemGroup>
+</Project>
