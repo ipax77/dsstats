@@ -6,14 +6,22 @@ namespace dsstats.service;
 
 internal sealed class Worker(DsstatsService dsstatsService, IOptions<DsstatsConfig> dsstatsConfig, ILogger<Worker> logger) : BackgroundService
 {
+    private int jobCounter;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
         {
             await Task.Delay(TimeSpan.FromMinutes(dsstatsConfig.Value.StartDelayInMinutes), stoppingToken);
+            await dsstatsService.Update(stoppingToken);
 
             while (!stoppingToken.IsCancellationRequested)
             {
+                jobCounter++;
+                if (jobCounter % 10 == 0)
+                {
+                    await dsstatsService.Update(stoppingToken);
+                }
                 try
                 {
                     await dsstatsService.StartImportAsync(stoppingToken);

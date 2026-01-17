@@ -41,6 +41,12 @@ builder.Services.AddHttpClient("api", httpClient =>
             DecompressionMethods.Brotli,
     });
 
+builder.Services.AddHttpClient("update")
+    .ConfigureHttpClient(options => {
+        options.BaseAddress = new Uri("https://github.com/ipax77/dsstats.service/releases/latest/download/");
+        options.DefaultRequestHeaders.Add("Accept", "application/octet-stream");
+    });
+
 builder.Services.AddSingleton<IImportService, ImportService>();
 builder.Services.AddSingleton<DsstatsService>();
 builder.Services.AddOptions();
