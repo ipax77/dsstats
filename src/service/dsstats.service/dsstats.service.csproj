@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\common\dsstats.decode\dsstats.decode.csproj" />
     <ProjectReference Include="..\..\common\dsstats.parser\dsstats.parser.csproj" />
     <ProjectReference Include="..\..\common\dsstats.shared\dsstats.shared.csproj" />
     <ProjectReference Include="..\..\server\dsstats.dbServices\dsstats.dbServices.csproj" />

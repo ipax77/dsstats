@@ -1,6 +1,7 @@
 using dsstats.db;
 using dsstats.dbServices;
 using dsstats.service;
+using dsstats.service.Models;
 using dsstats.service.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
@@ -10,6 +11,9 @@ builder.Services.AddWindowsService(options =>
 {
     options.ServiceName = "Dsstats Service";
 });
+
+builder.Services.Configure<DsstatsConfig>(
+    builder.Configuration.GetSection("DsstatsConfig"));
 
 var sqliteConnectionString = $"Data Source={Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "dsstats.worker", "dsstats3.db")}";
@@ -23,10 +27,11 @@ builder.Services.AddDbContext<DsstatsContext>(options => options
 //.EnableSensitiveDataLogging()
 );
 
+var dsstats = builder.Configuration.GetSection("DsstatsConfig").Get<DsstatsConfig>();
+
 builder.Services.AddHttpClient("api", httpClient =>
 {
-    // httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
-    httpClient.BaseAddress = new Uri("http://localhost:5279");
+    httpClient.BaseAddress = new Uri(dsstats!.UploadUrl);
     httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 }).ConfigurePrimaryHttpMessageHandler(() =>
     new HttpClientHandler
@@ -38,6 +43,7 @@ builder.Services.AddHttpClient("api", httpClient =>
 
 builder.Services.AddSingleton<IImportService, ImportService>();
 builder.Services.AddSingleton<DsstatsService>();
+builder.Services.AddOptions();
 builder.Services.AddHostedService<Worker>();
 
 var host = builder.Build();

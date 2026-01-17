@@ -4,7 +4,7 @@ namespace dsstats.service.Models;
 
 public class AppOptions
 {
-    public int ConfigVersion { get; init; } = 2;
+    public int ConfigVersion { get; init; } = 3;
     public Guid AppGuid { get; set; } = Guid.NewGuid();
     public List<Sc2ProfileDto> Sc2Profiles { get; set; } = [];
     public List<Sc2ProfileDto> IgnoreProfiles { get; set; } = [];

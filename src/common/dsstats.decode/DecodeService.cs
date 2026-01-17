@@ -134,7 +134,7 @@ public static class DecodeService
                         await writer.WriteAsync(new(null, "Failed parsing replay."), ct);
                         return;
                     }
-
+                    replayDto.FileName = replayPath;
                     await writer.WriteAsync(new(replayDto, null), ct);
                 }
                 catch (OperationCanceledException) { }
