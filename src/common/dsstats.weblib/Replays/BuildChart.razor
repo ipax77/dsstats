@@ -118,11 +118,14 @@
             datasets.Add(GetBubbleChartDataset(items, unitInfo));
             i++;
         }
-
-        chartConfig.AddDatasets(datasets);
-        var module = await moduleTask.Value;
-        await module.InvokeVoidAsync("setChartTooltips", chartConfig.ChartJsConfigGuid);
-        await module.InvokeVoidAsync("drawChartBorder", chartConfig.ChartJsConfigGuid);
+        try
+        {
+            chartConfig.AddDatasets(datasets);
+            var module = await moduleTask.Value;
+            await module.InvokeVoidAsync("setChartTooltips", chartConfig.ChartJsConfigGuid);
+            await module.InvokeVoidAsync("drawChartBorder", chartConfig.ChartJsConfigGuid);
+        }
+        catch (TaskCanceledException) { }
     }
 
     public async Task HighlightUnits(string unitName)

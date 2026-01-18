@@ -71,7 +71,7 @@ public static class RequestExtensions
             request.RatingType != RatingType.All ? (int)request.RatingType : null;
 
         queryDic[paramMap[nameof(BuildsRequest.TimePeriod)]] =
-            request.TimePeriod == TimePeriod.Last90Days ? null : (int)request.TimePeriod;
+            request.TimePeriod != TimePeriod.Last90Days ? (int)request.TimePeriod : null;
 
         queryDic[paramMap[nameof(BuildsRequest.Interest)]] =
             request.Interest != Commander.Abathur ? request.Interest.ToString() : null;
