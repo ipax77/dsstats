@@ -5,7 +5,7 @@ using pax.BlazorChartJs;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.AddLogging(l => l.AddSimpleConsole(o => o.TimestampFormat = "yyyy-MM-dd HH:mm:ss: "));
 
 builder.Services.AddHttpClient("api", httpClient =>
 {
@@ -27,9 +27,6 @@ builder.Services.AddChartJs(options =>
     options.ChartJsPluginDatalabelsLocation = "/_content/dsstats.weblib/js/chartjs-plugin-datalabels.min.js";
 });
 builder.Services.AddMemoryCache();
-
-//builder.Services.AddSingleton<IImportService, ImportService>();
-//builder.Services.AddSingleton<IRatingService, RatingService>();
 
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();

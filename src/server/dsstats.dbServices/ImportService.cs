@@ -18,7 +18,7 @@ public interface IImportService
     void ClearExistingArcadeReplayKeys();
     int GetPlayerId(ToonIdDto toonId);
     string GetPlayerName(ToonIdDto toonId);
-    int GetOrCreatePlayerId(string name, int region, int realm, int id, DsstatsContext context);
+    int GetOrCreatePlayerId(string name, int region, int realm, int id, DsstatsContext context, bool updateName = false);
     Task CheckDuplicateCandidates();
     Task FixPlayerNames();
 }
@@ -145,7 +145,8 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
         int region,
         int realm,
         int id,
-        DsstatsContext context)
+        DsstatsContext context,
+        bool updateName = false)
     {
         Init();
         playerSs.Wait();
@@ -155,7 +156,7 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
 
             if (toonIdPlayerIdDict.TryGetValue(toonId, out var playerInfo))
             {
-                if (!string.Equals(playerInfo.Name, name, StringComparison.Ordinal))
+                if (updateName && !string.Equals(playerInfo.Name, name, StringComparison.Ordinal))
                 {
                     var player = context.Players
                         .Single(p =>

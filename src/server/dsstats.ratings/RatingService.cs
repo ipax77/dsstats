@@ -77,7 +77,7 @@ public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<I
 
                     fromTime = replay.Gametime;
                 }
-                (replayRatingId, replayPlayerRatingId) = 
+                (replayRatingId, replayPlayerRatingId) =
                     await SaveCsvStepResult(replayRatingsToInsert, replayRatingId, replayPlayerRatingId);
                 arcadeReplayRatingId = await SaveCsvArcadeReplayRatings(arcadeReplayRatingsToInsert, arcadeReplayRatingId);
 
@@ -87,11 +87,11 @@ public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<I
                     .ToList();
                 skipArcadeReplayIds = skipReplays.Where(x => x.IsArcade).Select(s => s.ReplayId).ToHashSet();
                 skipDsstatsReplayIds = skipReplays.Where(x => !x.IsArcade).Select(s => s.ReplayId).ToHashSet();
-                    
+
                 replayRatingsToInsert.Clear();
                 arcadeReplayRatingsToInsert.Clear();
                 logger.LogInformation("{date} - {count}, {time}sec", fromTime.ToShortDateString(),
-                    processed, elapsed == TimeSpan.Zero ? Math.Round(sw.Elapsed.TotalSeconds, 2) 
+                    processed, elapsed == TimeSpan.Zero ? Math.Round(sw.Elapsed.TotalSeconds, 2)
                     : Math.Round(sw.Elapsed.TotalSeconds - elapsed.TotalSeconds, 2));
                 elapsed = sw.Elapsed;
             }
@@ -206,7 +206,7 @@ public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<I
         }
         using var scope = scopeFactory.CreateAsyncScope();
         using var context = scope.ServiceProvider.GetRequiredService<StagingDsstatsContext>();
-        
+
         await context.Database.OpenConnectionAsync();
         await context.Database.ExecuteSqlRawAsync("SET unique_checks=0;");
 
@@ -330,7 +330,7 @@ public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<I
         var data = await context.ReplayArcadeMatches
             .Select(s => s.ArcadeReplayId)
             .ToListAsync();
-       return data.ToHashSet();
+        return data.ToHashSet();
     }
 
     private async Task BatchImportCombinedReplays()

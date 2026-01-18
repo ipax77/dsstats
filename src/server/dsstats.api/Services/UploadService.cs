@@ -27,6 +27,7 @@ public partial class UploadService(IServiceScopeFactory serviceScopeFactory, ILo
             var uploadJob = new UploadJob
             {
                 PlayerIds = playerIds.ToArray(),
+                Version = uploadDto.AppVersion,
                 BlobFilePath = filePath,
                 CreatedAt = DateTime.UtcNow,
             };
@@ -63,6 +64,7 @@ public partial class UploadService(IServiceScopeFactory serviceScopeFactory, ILo
             var uploadJob = new UploadJob
             {
                 PlayerIds = playerIds.ToArray(),
+                Version = request.AppVersion,
                 BlobFilePath = filePath,
                 CreatedAt = DateTime.UtcNow,
             };
@@ -94,15 +96,6 @@ public partial class UploadService(IServiceScopeFactory serviceScopeFactory, ILo
         var replaysChannel = scope.ServiceProvider.GetRequiredService<Channel<ReplayUploadJob>>();
 
         var queueCount = 1;
-        //var queueCount = replaysChannel.Reader.Count;
-        //if (replaysChannel.Reader.Count > 10)
-        //{
-        //    return new()
-        //    {
-        //        Error = "Too many replays in queue.",
-        //        QueuePosition = queueCount
-        //    };
-        //}
 
         try
         {
@@ -123,7 +116,7 @@ public partial class UploadService(IServiceScopeFactory serviceScopeFactory, ILo
         catch (Exception ex)
         {
             logger.LogError(ex, "Error processing replay upload");
-            return new() {  Error = "Unknown Error", QueuePosition = queueCount };
+            return new() { Error = "Unknown Error", QueuePosition = queueCount };
         }
     }
 }
