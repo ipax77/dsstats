@@ -7,6 +7,8 @@ public sealed class UploadJob
 {
     public int UploadJobId { get; set; }
     public int[] PlayerIds { get; set; } = [];
+    [MaxLength(10)]
+    public string? Version { get; set; }
     public string BlobFilePath { get; set; } = string.Empty;
     [Precision(0)]
     public DateTime CreatedAt { get; set; }

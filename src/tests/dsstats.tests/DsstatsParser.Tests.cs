@@ -1,7 +1,6 @@
 ﻿using dsstats.parser;
 using dsstats.shared;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace dsstats.tests;
 

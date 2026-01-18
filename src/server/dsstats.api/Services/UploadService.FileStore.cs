@@ -1,5 +1,4 @@
-﻿using dsstats.db;
-using dsstats.shared.Upload;
+﻿using dsstats.shared.Upload;
 using System.IO.Compression;
 using System.Text.Json;
 

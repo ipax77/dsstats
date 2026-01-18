@@ -14,7 +14,7 @@ public static class ChannelServiceCollectionExtensions
             SingleReader = true
         });
         services.AddSingleton<Channel<UploadJob>>(blobChannel);
-        
+
         // --- Replay Channel Setup ---
         var replayChannel = Channel.CreateUnbounded<ReplayUploadJob>(new UnboundedChannelOptions
         {

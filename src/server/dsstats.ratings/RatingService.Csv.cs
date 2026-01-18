@@ -42,7 +42,7 @@ public partial class RatingService
 
     private async Task SaveCsvPlayerRatings(Dictionary<int, Dictionary<RatingType, PlayerRatingCalcDto>> playerRatingsDict, string connectionString)
     {
-        CsvInfo<PlayerRatingCsv> csvInfo = new ()
+        CsvInfo<PlayerRatingCsv> csvInfo = new()
         {
             FileName = Path.Combine(csvDir, "playerRatings.csv"),
             FileMode = FileMode.Create,

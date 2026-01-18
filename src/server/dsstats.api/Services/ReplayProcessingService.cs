@@ -143,5 +143,5 @@ public class ReplayProcessingService(
         .Clients
         .Group(e.Guid.ToString())
         .SendAsync("DecodeResult", e);
-        }
+    }
 }

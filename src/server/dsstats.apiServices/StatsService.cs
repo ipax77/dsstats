@@ -15,7 +15,7 @@ public class StatsService(IHttpClientFactory httpClientFactory) : IStatsService
             request.Type = type;
             var response = await _httpClient.PostAsJsonAsync("api10/Stats", request, token);
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<T>(cancellationToken: token) ?? throw new Exception("Failed to deserialize response");;
+            return await response.Content.ReadFromJsonAsync<T>(cancellationToken: token) ?? throw new Exception("Failed to deserialize response"); ;
         }
         catch (Exception)
         {

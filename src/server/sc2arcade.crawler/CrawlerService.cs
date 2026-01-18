@@ -96,7 +96,7 @@ public partial class CrawlerService : ICrawlerService
         using var scope = serviceProvider.CreateScope();
         var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
         importService.ClearExistingArcadeReplayKeys();
-        
+
         var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
         await ratingService.MatchWithNewArcadeReplays(startTime);
     }

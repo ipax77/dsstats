@@ -17,7 +17,7 @@ namespace dsstats.migrations.mysql.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.9")
+                .HasAnnotation("ProductVersion", "9.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
@@ -1052,6 +1052,10 @@ namespace dsstats.migrations.mysql.Migrations
                     b.PrimitiveCollection<string>("PlayerIds")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<string>("Version")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)");
 
                     b.HasKey("UploadJobId");
 
