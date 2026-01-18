@@ -52,7 +52,7 @@ public sealed record CommanderCount
 public sealed record RatingAtDateTime
 {
     public int Year { get; set; }
-    public int Week {  get; set; }
+    public int Week { get; set; }
     public int Games { get; set; }
     public float Rating { get; set; }
 }

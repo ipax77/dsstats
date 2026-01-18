@@ -116,9 +116,10 @@ partial class Program
         // CheckDups(serviceProvider).Wait();
         // CheckHash(serviceProvider).Wait();
         // FixHashes(serviceProvider).Wait();
-        //CheckHash2(serviceProvider).Wait();
-        
-        DeleteComputerReplays(serviceProvider).Wait();
+        CheckHash2(serviceProvider).Wait();
+
+        // DeleteComputerReplays(serviceProvider).Wait();
+        // FixTutorialReplays(serviceProvider).Wait();
 
         // CreateImportJobs(serviceProvider).Wait();
 
@@ -735,13 +736,15 @@ partial class Program
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        List<string> dbHashes = ["556A167F3F908E44ADB5F9592FE68DD66D4748F095460FF68B28CBB295BE63B4", "9873AED95081571A11EE59050E54B6A79E6B41173D064423A9278A8855F8A569"];
+        List<string> dbHashes = ["30CFD79BF73C6C060CEFD6615259F702B403B40921841BE8CC8779AD892B9A6E", "DCCD591F3D0DFDDDD16E9FE688986A21826D7E927EBF79A5E20CCE81EAE9343F"];
         // List<string> dbHashes = ["E7570F8064A720C353A5074A03A45562AD4ECF5170119169846B7D4E22AD30E0"];
         List<string> calcHashes = [];
         List<string> calcCompatHashes = [];
         foreach (var dbHash in dbHashes)
         {
             var minReplay = await GetMinimalReplayDto(dbHash, context);
+            // var details = await replayRepository.GetReplayDetails(dbHash);
+            // var minReplay = details?.Replay;
             if (minReplay is null)
             {
                 continue;
@@ -847,6 +850,8 @@ partial class Program
             {
                 Title = s.Title,
                 Version = s.Version,
+                GameMode = s.GameMode,
+                RegionId = s.RegionId,
                 Gametime = s.Gametime,
                 Duration = s.Duration,
                 Players = s.Players.Select(t => new ReplayPlayerDto()
@@ -910,6 +915,8 @@ partial class Program
         {
             Title = replay.Title,
             Version = replay.Version,
+            GameMode = replay.GameMode,
+            RegionId = replay.RegionId,
             Gametime = replay.Gametime,
             Duration = replay.Duration,
             Players = replay.Players.Select(t => new ReplayPlayerDto()
@@ -977,7 +984,7 @@ partial class Program
         await context.SaveChangesAsync();
     }
 
-        public static async Task DeleteComputerReplays(ServiceProvider serviceProvider)
+    public static async Task DeleteComputerReplays(ServiceProvider serviceProvider)
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
@@ -992,5 +999,29 @@ partial class Program
         {
             await DeleteReplay(hash, context);
         }
+    }
+
+    public static async Task FixTutorialReplays(ServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+
+        var replays = await context.Replays
+            .Include(i => i.Players)
+                .ThenInclude(i => i.Player)
+            .Where(x => x.GameMode == GameMode.Tutorial && x.PlayerCount > 1)
+            .AsSplitQuery()
+            .ToListAsync();
+
+        Console.WriteLine(replays.Count);
+        foreach (var replay in replays)
+        {
+            GameMode gameMode = replay.Players.Any(a => (int)a.Race > 3) ? GameMode.Commanders : GameMode.Standard;
+            replay.GameMode = gameMode;
+            var replayDto = GetMinimalReplayDto(replay);
+            replay.CompatHash = replayDto.ComputeCandidateHash();
+            replay.Imported = DateTime.UtcNow;
+        }
+        await context.SaveChangesAsync();
     }
 }

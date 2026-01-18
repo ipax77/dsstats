@@ -132,7 +132,7 @@ internal static partial class DsstatsReplayMapper
     public static ReplayPlayerDto ToDto(this DsPlayer player, DsstatsReplay replay, GameMode gameMode)
     {
         Commander race = player.Race;
-        if (Data.IsCommanderGameMode(gameMode) && (int)player.Race <= 3) 
+        if (Data.IsCommanderGameMode(gameMode) && (int)player.Race <= 3)
         {
             race = Commander.None;
         }

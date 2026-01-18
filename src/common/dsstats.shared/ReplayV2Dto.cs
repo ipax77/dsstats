@@ -269,7 +269,8 @@ public static class ReplayV2DtoMapper
 
     public static ReplayPlayerDto ToV3Dto(this ReplayPlayerV2Dto dto, ReplayV2Dto replay)
     {
-        return new ()        {
+        return new()
+        {
             Name = dto.Name.Length > 20 ? dto.Name[..20] : dto.Name,
             Clan = dto.Clan?.Length > 10 ? dto.Clan[..10] : dto.Clan,
             Race = dto.Race,

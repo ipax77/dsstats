@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Define the variables in "$(var.*) expressions" -->
+<?define Name = "Dsstats Service" ?>
+<?define Manufacturer = "ipax77" ?>
+<?define Version = "3.0.0.0" ?>
+<?define UpgradeCode = "88b88f8c-abb7-4aa7-9cb4-7571e4c4c924"?>
+<?define BinPath = "..\dsstats.service\bin\Release\net10.0\win-x64\publish" ?>
+
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+    <Package Name="$(var.Name)"
+            Manufacturer="$(var.Manufacturer)"
+            Version="$(var.Version)"
+            UpgradeCode="$(var.UpgradeCode)"
+            Compressed="true">
+
+        <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
+        <MediaTemplate EmbedCab="yes" />
+
+        <StandardDirectory Id="ProgramFiles64Folder">
+            <Directory Id="ROOTDIRECTORY" Name="$(var.Manufacturer)">
+                <Directory Id="INSTALLFOLDER" Name="$(var.Name)" />
+            </Directory>
+        </StandardDirectory>
+
+        <DirectoryRef Id="INSTALLFOLDER">
+            <Component Id="ServiceExecutable" Bitness="always64">
+                <File Id="dsstats.service.exe" Source="$(var.BinPath)\dsstats.service.exe"/>
+                <File Id="AppSettingsJsonFile" Source="$(var.BinPath)\appsettings.json" />
+                <File Id="sqlite" Source="$(var.BinPath)\..\e_sqlite3.dll"/>
+                <RemoveFile Name="*.*" On="both" />
+
+                <ServiceInstall Id="ServiceInstaller"
+                                Type="ownProcess"
+                                Name="dsstats.worker"
+                                DisplayName="$(var.Name)"
+                                Description="Dsstats replay decoder and uploader"
+                                Start="auto"
+                                ErrorControl="normal"
+                                Account="LocalSystem" />
+
+                <ServiceControl Id="StartService"
+                                Start="install"
+                                Stop="both"
+                                Remove="uninstall"
+                                Name="dsstats.worker"
+                                Wait="true" />
+            </Component>
+        </DirectoryRef>
+
+        <Feature Id="Service" Title="dsstats.worker Setup" Level="1">
+            <ComponentRef Id="ServiceExecutable" />
+        </Feature>
+
+    </Package>
+</Wix>
+
+
+ 

@@ -70,6 +70,15 @@ public sealed class DecodeTests
         Assert.IsNotNull(replayDto);
     }
 
+    [TestMethod]
+    [DeploymentItem("testdata/Direct Strike (26).SC2Replay")]
+    public async Task CanSetGameModeForOldReplays()
+    {
+        string replayPath = "Direct Strike (26).SC2Replay";
+        var replayDto = await GetReplayDto(replayPath);
+        Assert.AreNotEqual(GameMode.Tutorial, replayDto.GameMode);
+    }
+
     private static async Task<ReplayDto> GetReplayDto(string replayPath)
     {
         var sc2Replay = await DsstatsParser.GetSc2Replay(replayPath);

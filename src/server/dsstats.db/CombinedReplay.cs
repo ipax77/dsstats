@@ -12,9 +12,9 @@ public class CombinedReplay
     public int Duration { get; set; }
     [Precision(0)]
     public DateTime Gametime { get; set; }
-    public bool TE {  get; set; }
+    public bool TE { get; set; }
     public int PlayerCount { get; set; }
     public int WinnerTeam { get; set; }
     [Precision(0)]
-    public DateTime Imported {  get; set; }
+    public DateTime Imported { get; set; }
 }

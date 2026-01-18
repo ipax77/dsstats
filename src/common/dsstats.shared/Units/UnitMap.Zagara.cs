@@ -19,7 +19,7 @@ public static partial class UnitMap
 
             // v2 names
             ["HunterKiller"] = "Hunter Killer",
-            
+
             // normalized names
             ["Bile Launcher"] = "Bile Launcher",
             ["Hunter Killer"] = "Hunter Killer",
