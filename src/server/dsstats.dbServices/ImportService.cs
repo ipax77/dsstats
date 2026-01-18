@@ -52,9 +52,6 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
                 ).ToDictionary(k => k.ToonId, v => v.PlayerInfo);
             unitNameIdDict = context.Units.ToDictionary(k => k.Name, v => v.UnitId);
             upgradeNameIdDict = context.Upgrades.ToDictionary(k => k.Name, v => v.UpgradeId);
-
-            logger.LogWarning("init {count} players.", toonIdPlayerIdDict.Count);
-
             isInit = true;
         }
     }
@@ -322,9 +319,16 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
                 await ratingService.PreRatings(replayCalcDtos);
             }
         }
-
-        logger.LogWarning("Replays imported: {count}, dups: {duplicates}, replaced: {replaced}",
-         duplicateResult.ReplaysToImport.Count, duplicateResult.Duplicates, duplicateResult.Replaced);
+        if (!OperatingSystem.IsWindows())
+        {
+            logger.LogWarning("Replays imported: {count}, dups: {duplicates}, replaced: {replaced}",
+             duplicateResult.ReplaysToImport.Count, duplicateResult.Duplicates, duplicateResult.Replaced);
+        }
+        else
+        {
+            logger.LogInformation("Replays imported: {count}, dups: {duplicates}, replaced: {replaced}",
+             duplicateResult.ReplaysToImport.Count, duplicateResult.Duplicates, duplicateResult.Replaced);
+        }
     }
 
     private async Task CreatePlayerIds(Dictionary<ToonIdRec, string> players)

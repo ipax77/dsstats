@@ -24,6 +24,12 @@ internal sealed partial class DsstatsService
             }
             var folders = GetMyDocumentsPathAllUsers();
             var sc2profiles = GetInitialNamesAndFolders(folders);
+
+            if (sc2profiles.Count == 0)
+            {
+                logger.LogWarning("No sc2 profiles found.");
+            }
+
             if (appOptions is null)
             {
                 appOptions = new()
@@ -41,7 +47,7 @@ internal sealed partial class DsstatsService
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            logger.LogError("Failed getting config: {error}", ex.Message);
             return new();
         }
         finally

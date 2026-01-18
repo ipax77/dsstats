@@ -31,6 +31,7 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
             var toDoReplayPaths = await GetToDoReplayPaths(config, token);
             if (toDoReplayPaths.Count == 0)
             {
+                logger.LogWarning("no replay to decode found.");
                 return;
             }
             Stopwatch sw = Stopwatch.StartNew();

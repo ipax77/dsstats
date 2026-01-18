@@ -26,7 +26,8 @@
         <DirectoryRef Id="INSTALLFOLDER">
             <Component Id="ServiceExecutable" Bitness="always64">
                 <File Id="dsstats.service.exe" Source="$(var.BinPath)\dsstats.service.exe"/>
-                <File Id="sqlite" Source="$(var.BinPath)\e_sqlite3.dll"/>
+                <File Id="AppSettingsJsonFile" Source="$(var.BinPath)\appsettings.json" />
+                <File Id="sqlite" Source="$(var.BinPath)\..\e_sqlite3.dll"/>
                 <RemoveFile Name="*.*" On="both" />
 
                 <ServiceInstall Id="ServiceInstaller"
