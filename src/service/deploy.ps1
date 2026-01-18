@@ -25,4 +25,4 @@ $yamlFilePath = Join-Path -Path $releasePath -ChildPath 'latest.yml'
 $yamlContent | Out-File -FilePath $yamlFilePath -Encoding UTF8
 
 $ghVersion = "v$versionString"
-# gh release create --generate-notes --draft $ghVersion $file1 $yamlFilePath
+gh release create --repo ipax77/dsstats.service --generate-notes --draft $ghVersion $file1 $yamlFilePath

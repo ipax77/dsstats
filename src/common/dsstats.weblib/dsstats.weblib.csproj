@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.2" />
     <PackageReference Include="pax.BlazorChartJs" Version="0.8.6-rc2" />
   </ItemGroup>
 
