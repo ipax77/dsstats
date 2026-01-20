@@ -1,0 +1,185 @@
+{
+  "FileName": "",
+  "CompatHash": "",
+  "Title": "Direct Strike",
+  "Version": "5.0.8.86383",
+  "GameMode": 7,
+  "RegionId": 2,
+  "Gametime": "2021-11-11T16:28:06",
+  "BaseBuild": 0,
+  "Duration": 1512,
+  "Cannon": 0,
+  "Bunker": 0,
+  "WinnerTeam": 0,
+  "MiddleChanges": [],
+  "Players": [
+    {
+      "Name": "djVEJDR",
+      "Clan": null,
+      "Race": 3,
+      "SelectedRace": 0,
+      "TeamId": 0,
+      "GamePos": 1,
+      "Result": 0,
+      "Duration": 0,
+      "Apm": 0,
+      "Messages": 0,
+      "Pings": 0,
+      "IsMvp": false,
+      "IsUploader": false,
+      "Spawns": [],
+      "Upgrades": [],
+      "TierUpgrades": [],
+      "Refineries": [],
+      "Player": {
+        "PlayerId": 0,
+        "Name": "",
+        "ToonId": {
+          "Region": 2,
+          "Realm": 1,
+          "Id": 5563818
+        }
+      }
+    },
+    {
+      "Name": "Malcolm",
+      "Clan": null,
+      "Race": 1,
+      "SelectedRace": 0,
+      "TeamId": 0,
+      "GamePos": 2,
+      "Result": 0,
+      "Duration": 0,
+      "Apm": 0,
+      "Messages": 0,
+      "Pings": 0,
+      "IsMvp": false,
+      "IsUploader": false,
+      "Spawns": [],
+      "Upgrades": [],
+      "TierUpgrades": [],
+      "Refineries": [],
+      "Player": {
+        "PlayerId": 0,
+        "Name": "",
+        "ToonId": {
+          "Region": 2,
+          "Realm": 2,
+          "Id": 1984170
+        }
+      }
+    },
+    {
+      "Name": "Boka",
+      "Clan": null,
+      "Race": 1,
+      "SelectedRace": 0,
+      "TeamId": 0,
+      "GamePos": 3,
+      "Result": 0,
+      "Duration": 0,
+      "Apm": 0,
+      "Messages": 0,
+      "Pings": 0,
+      "IsMvp": false,
+      "IsUploader": false,
+      "Spawns": [],
+      "Upgrades": [],
+      "TierUpgrades": [],
+      "Refineries": [],
+      "Player": {
+        "PlayerId": 0,
+        "Name": "",
+        "ToonId": {
+          "Region": 2,
+          "Realm": 2,
+          "Id": 547816
+        }
+      }
+    },
+    {
+      "Name": "DrDisrespect",
+      "Clan": null,
+      "Race": 2,
+      "SelectedRace": 0,
+      "TeamId": 0,
+      "GamePos": 4,
+      "Result": 0,
+      "Duration": 0,
+      "Apm": 0,
+      "Messages": 0,
+      "Pings": 0,
+      "IsMvp": false,
+      "IsUploader": false,
+      "Spawns": [],
+      "Upgrades": [],
+      "TierUpgrades": [],
+      "Refineries": [],
+      "Player": {
+        "PlayerId": 0,
+        "Name": "",
+        "ToonId": {
+          "Region": 2,
+          "Realm": 1,
+          "Id": 515901
+        }
+      }
+    },
+    {
+      "Name": "Mars",
+      "Clan": null,
+      "Race": 1,
+      "SelectedRace": 0,
+      "TeamId": 0,
+      "GamePos": 5,
+      "Result": 0,
+      "Duration": 0,
+      "Apm": 0,
+      "Messages": 0,
+      "Pings": 0,
+      "IsMvp": false,
+      "IsUploader": true,
+      "Spawns": [],
+      "Upgrades": [],
+      "TierUpgrades": [],
+      "Refineries": [],
+      "Player": {
+        "PlayerId": 0,
+        "Name": "",
+        "ToonId": {
+          "Region": 2,
+          "Realm": 1,
+          "Id": 9982372
+        }
+      }
+    },
+    {
+      "Name": "MilkyWay",
+      "Clan": null,
+      "Race": 2,
+      "SelectedRace": 0,
+      "TeamId": 0,
+      "GamePos": 6,
+      "Result": 0,
+      "Duration": 0,
+      "Apm": 0,
+      "Messages": 0,
+      "Pings": 0,
+      "IsMvp": false,
+      "IsUploader": false,
+      "Spawns": [],
+      "Upgrades": [],
+      "TierUpgrades": [],
+      "Refineries": [],
+      "Player": {
+        "PlayerId": 0,
+        "Name": "",
+        "ToonId": {
+          "Region": 2,
+          "Realm": 1,
+          "Id": 9763145
+        }
+      }
+    }
+  ]
+}

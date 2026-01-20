@@ -2,10 +2,11 @@ using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using pax.BlazorChartJs;
 
 namespace dsstats.weblib.Replays;
 
-public partial class ReplayComponent : ComponentBase
+public partial class ReplayComponent : ComponentBase, IAsyncDisposable
 {
     [Inject]
     public IJSRuntime JSRuntime { get; set; } = null!;
@@ -43,7 +44,7 @@ public partial class ReplayComponent : ComponentBase
     protected override void OnInitialized()
     {
         moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
-       "import", "./_content/dsstats.weblib/js/annotationChart.js?v=0.5").AsTask());
+       "import", "./_content/dsstats.weblib/js/annotationChart.js?v=0.6").AsTask());
         _replayHelper = new ReplayHelper(ReplayDetails);
         base.OnInitialized();
     }
@@ -74,6 +75,21 @@ public partial class ReplayComponent : ComponentBase
     public void Close()
     {
         OnClose.InvokeAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore();
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual async ValueTask DisposeAsyncCore()
+    {
+        if (moduleTask.IsValueCreated)
+        {
+            var module = await moduleTask.Value.ConfigureAwait(false);
+            await module.DisposeAsync();
+        }
     }
 }
 

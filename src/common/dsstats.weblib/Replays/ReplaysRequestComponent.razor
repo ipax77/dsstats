@@ -21,7 +21,7 @@
 					</span>
 				}
 			</div>
-			<div class="col-3">
+			<div class="col-12 col-md-3">
 				<label for="commanders" class="form-label">Commanders</label>
 				<div class="input-group">
 					<InputText class="form-control" id="commanders" placeholder="Kerrigan Zagara" @bind-Value="Request.Commander" />
@@ -30,11 +30,11 @@
 					</button>
 				</div>
 			</div>
-			<div class="col-1 text-center">
+			<div class="col-12 col-md-1 text-center">
 				<InputCheckbox class="btn-check" autocomplete="off" id="link" @bind-Value="Request.LinkCommanders" />
 				<label class="btn btn-sm btn-outline-light" for="link"><i class="bi bi-link"></i></label>
 			</div>
-			<div class="col-3">
+			<div class="col-12 col-md-3">
 				<label for="name" class="form-label">Names</label>
 				<div class="input-group">
 					<InputText class="form-control" id="name" placeholder="Feralan PAX" @bind-Value="Request.Name" />

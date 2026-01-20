@@ -183,6 +183,40 @@ public static class ReplayDtoExtensions
         return Convert.ToHexString(hashBytes);
     }
 
+    public static string ReComputeHash(this ReplayDto replay, int timeBucketMinutes = 3)
+    {
+        var sb = new StringBuilder();
+
+        sb.Append("TITLE:");
+        sb.Append(replay.Title);
+
+        sb.Append("|TIME:");
+        sb.Append(timeBucketMinutes);
+        sb.Append('|');
+        sb.Append(replay.Gametime.ToUniversalTime().ToString("o"));
+
+        sb.Append("|PLAYERS:");
+
+        foreach (var player in replay.Players
+            .OrderBy(p => p.GamePos)
+            .ThenBy(p => p.Player?.ToonId.Id)
+            .ThenBy(p => p.Player?.ToonId.Region)
+            .ThenBy(p => p.Player?.ToonId.Realm))
+        {
+            sb.Append('|');
+            sb.Append(player.Player?.ToonId.Region);
+            sb.Append(':');
+            sb.Append(player.Player?.ToonId.Realm);
+            sb.Append(':');
+            sb.Append(player.Player?.ToonId.Id);
+            sb.Append('|');
+            sb.Append((int)player.Race);
+        }
+
+        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString()));
+        return Convert.ToHexString(hashBytes);
+    }
+
     public static string ComputeHash(this ReplayDto replay, int timeBucketMinutes = 3)
     {
         var sb = new StringBuilder();

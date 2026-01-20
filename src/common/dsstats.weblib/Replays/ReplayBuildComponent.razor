@@ -102,7 +102,7 @@
 
     private async Task HighlightUnits(string name)
     {
-        if (buildChart is null)
+        if (!showMap || buildChart is null)
         {
             return;
         }
