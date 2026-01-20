@@ -5,7 +5,7 @@
 <div class="bgchart border rounded p-2">
 	<EditForm EditContext="editContext" FormName="StatsRequest">
 		<div class="row">
-			<div class="col-1 align-self-center">
+			<div class="col-12 col-md-1 align-self-center">
 				@if (isLoading)
 				{
 					<div class="spinner-border ms-2" role="status">
@@ -18,7 +18,7 @@
 					<span class="badge bg-dark"># @Data.GetNumberString(Count)</span>
 				}
 			</div>
-			<div class="col-3">
+			<div class="col-12 col-md-3">
 				<label for="namesearch" class="col-form-label">Name</label>
 				<div class="input-group">
 					<InputText id="namesearch" class="form-control border-end-0 border" @bind-Value="Request.Name" />
@@ -31,7 +31,7 @@
 				</div>
 
 			</div>
-			<div class="col-3">
+			<div class="col-12 col-md-3">
 				<label for="ratingselect" class="col-form-label">Rating Type</label>
 				<InputSelect id="ratingselect" class="form-select" @bind-Value="Request.RatingType">
 					@foreach (RatingType type in Enum.GetValues(typeof(RatingType)))
@@ -40,7 +40,7 @@
 					}
 				</InputSelect>
 			</div>
-			<div class="col-3">
+			<div class="col-12 col-md-3">
 				<div class="row mt-3 align-items-center">
 					<div class="col-auto">
 						<label for="pageSize" class="form-label mb-0 me-2">Region:</label>
