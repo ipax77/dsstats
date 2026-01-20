@@ -4,7 +4,7 @@
 @using dsstats.weblib.Replays
 @inject IReplayRepository ReplayRepository
 @inject IJSRuntime JSRuntime
-@implements IDisposable
+@implements IAsyncDisposable
 
 
 <div class="row bgchart p-1">
@@ -53,7 +53,7 @@
 	protected override async Task OnInitializedAsync()
 	{
 		moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
-				"import", "./_content/dsstats.weblib/js/annotationChart.js?v=0.5").AsTask());
+				"import", "./_content/dsstats.weblib/js/annotationChart.js?v=0.6").AsTask());
 		await LoadData();
 		await base.OnInitializedAsync();
 	}
@@ -188,8 +188,19 @@
 		}
 	}
 
-	public void Dispose()
+	public async ValueTask DisposeAsync()
+	{
+		await DisposeAsyncCore();
+		GC.SuppressFinalize(this);
+	}
+
+	protected virtual async ValueTask DisposeAsyncCore()
 	{
 		ss.Dispose();
+		if (moduleTask.IsValueCreated)
+		{
+			var module = await moduleTask.Value.ConfigureAwait(false);
+			await module.DisposeAsync();
+		}
 	}
 }
