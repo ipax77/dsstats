@@ -287,7 +287,7 @@ public static class ReplayV2DtoMapper
             Refineries = dto.Refineries.Split('|', StringSplitOptions.RemoveEmptyEntries).Select(s => (int)(int.Parse(s) / 22.4)).ToList(),
             Upgrades = dto.Upgrades.Select(s => new UpgradeDto()
             {
-                Gameloop = s.Gameloop,
+                Gameloop = (int)(s.Gameloop / 22.4),
                 Name = s.Upgrade.Name,
             }).ToList(),
             Player = new()

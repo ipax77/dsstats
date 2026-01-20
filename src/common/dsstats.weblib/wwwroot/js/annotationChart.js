@@ -1,4 +1,4 @@
-//v0.5
+//v0.6
 
 import * as annotationPlugin from './chartjs-plugin-annotation.min.js';
 
@@ -31,6 +31,14 @@ export function setDatasetPointsActive(chartId, datasetIndex) {
     const chart = Chart.getChart(chartId);
 
     if (chart.data.datasets.length <= datasetIndex) {
+        return;
+    }
+
+    if (!chart) {
+        return;
+    }
+
+    if (!chart.data || !chart.data.datasets || chart.data.datasets.length <= datasetIndex) {
         return;
     }
 

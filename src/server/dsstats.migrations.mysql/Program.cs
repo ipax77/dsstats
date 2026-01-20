@@ -736,7 +736,7 @@ partial class Program
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
-        List<string> dbHashes = ["30CFD79BF73C6C060CEFD6615259F702B403B40921841BE8CC8779AD892B9A6E", "DCCD591F3D0DFDDDD16E9FE688986A21826D7E927EBF79A5E20CCE81EAE9343F"];
+        List<string> dbHashes = ["9DF74258E7B22ECF341CAD80B0D8BBAC2BC4DA9AE2C7843647079C360B3EE76B", "97C90F2C413F26645C290677C9B8F3115B85C92D007A71B3919B6A2CB3576817"];
         // List<string> dbHashes = ["E7570F8064A720C353A5074A03A45562AD4ECF5170119169846B7D4E22AD30E0"];
         List<string> calcHashes = [];
         List<string> calcCompatHashes = [];
