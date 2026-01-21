@@ -88,54 +88,48 @@ public sealed record PickBanSlot
 
 public static class PickBanStateExtensions
 {
-    public static List<Commander> GetAvailableBanCommanders(this PickBanState state)
+    public static List<PickBanCmdrInfo> GetAvailableBanCommanders(this PickBanState state)
     {
-        var allCommanders = Enum.GetValues<Commander>().ToHashSet();
+        var allCommanders = (state.Options.GameMode == GameMode.Standard ? Data.GetStandardCommanders() : Data.GetCommanders())
+            .ToDictionary(k => k, v => false);
+        allCommanders.Add(Commander.None, false);
 
-        if (state.Options.GameMode == GameMode.Standard)
-        {
-            allCommanders = allCommanders.Where(x => (int)x <= 3).ToHashSet();
-        }
-        else
-        {
-            allCommanders = allCommanders.Where(x => (int)x == 0 || (int)x > 3).ToHashSet();
-        }
-
-        HashSet<Commander> bannedCommanders = [];
         foreach (var slot in state.BanSlots.Where(x => x.Locked && x.Commander != Commander.None))
         {
-            bannedCommanders.Add(slot.Commander);
+            if (allCommanders.ContainsKey(slot.Commander))
+            {
+                allCommanders[slot.Commander] = true;
+            }
         }
-
-        return allCommanders.Except(bannedCommanders).ToList();
+        return allCommanders.OrderBy(o => (int)o.Key).Select(s => new PickBanCmdrInfo(s.Key, s.Value)).ToList();
     }
 
-    public static List<Commander> GetAvailablePickCommanders(this PickBanState state)
+    public static List<PickBanCmdrInfo> GetAvailablePickCommanders(this PickBanState state)
     {
-        var allCommanders = Enum.GetValues<Commander>().ToHashSet();
+        var allCommanders = (state.Options.GameMode == GameMode.Standard ? Data.GetStandardCommanders() : Data.GetCommanders())
+            .ToDictionary(k => k, v => false);
+        allCommanders.Add(Commander.None, false);
 
-        if (state.Options.GameMode == GameMode.Standard)
+        foreach (var slot in state.BanSlots.Where(x => x.Locked && x.Commander != Commander.None))
         {
-            allCommanders = allCommanders.Where(x => (int)x <= 3).ToHashSet();
+            if (allCommanders.ContainsKey(slot.Commander))
+            {
+                allCommanders[slot.Commander] = true;
+            }
         }
-        else
-        {
-            allCommanders = allCommanders.Where(x => (int)x == 0 || (int)x > 3).ToHashSet();
-        }
-
-        allCommanders = allCommanders.Except(state.BanSlots.Select(s => s.Commander)).ToHashSet();
 
         if (state.Options.UniqueCommanders)
         {
-            HashSet<Commander> pickedCommanders = [];
             foreach (var slot in state.PickSlots.Where(x => x.Locked && x.Commander != Commander.None))
             {
-                pickedCommanders.Add(slot.Commander);
+                if (allCommanders.ContainsKey(slot.Commander))
+                {
+                    allCommanders[slot.Commander] = true;
+                }
             }
-            allCommanders = allCommanders.Except(pickedCommanders).ToHashSet();
         }
 
-        return allCommanders.ToList();
+        return allCommanders.OrderBy(o => (int)o.Key).Select(s => new PickBanCmdrInfo(s.Key, s.Value)).ToList();
     }
 
     public static bool BansReady(this PickBanState state)
@@ -195,3 +189,5 @@ public enum SlotState
     UnknownLocked,
     Forbidden,
 }
+
+public sealed record PickBanCmdrInfo(Commander Commander, bool Disabled);
