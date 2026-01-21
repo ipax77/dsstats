@@ -174,6 +174,11 @@ public static class Data
         ];
     }
 
+    public static List<Commander> GetStandardCommanders() => [Commander.Protoss, Commander.Terran, Commander.Zerg];
+    public static List<Commander> GetCommanders()
+    {
+        return Enum.GetValues<Commander>().Where(x => (int)x > 3 && x != Commander.Zeratul).ToList();
+    }
 
     public static FrozenDictionary<Commander, string> CmdrColor { get; } = new Dictionary<Commander, string>()
         {
