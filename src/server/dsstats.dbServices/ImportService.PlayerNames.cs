@@ -1,6 +1,7 @@
 ﻿using dsstats.db;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace dsstats.dbServices;
 
@@ -31,7 +32,7 @@ public partial class ImportService
                OR p.Name COLLATE utf8mb4_0900_ai_ci
                   <> latest.Name COLLATE utf8mb4_0900_ai_ci;
         ";
-        await context.Database.ExecuteSqlRawAsync(sql);
+        var rows = await context.Database.ExecuteSqlRawAsync(sql);
+        logger.LogWarning("Player names fixed: {rows}", rows);
     }
-
 }

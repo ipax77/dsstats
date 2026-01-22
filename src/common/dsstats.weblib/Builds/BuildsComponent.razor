@@ -312,7 +312,7 @@
 	{
 		isLoading = true;
 		await InvokeAsync(StateHasChanged);
-		response = await BuildsService.GetBuildResponse(Request);
+		response = await BuildsService.GetBuildResponse(Request, cts.Token);
 		isLoading = false;
 		await InvokeAsync(StateHasChanged);
 		replayHash = response.Replays.FirstOrDefault()?.ReplayHash ?? string.Empty;

@@ -76,9 +76,6 @@ public partial class ReplayRepository
 
     public async Task<List<ReplayListDto>> GetArcadeReplays(ArcadeReplaysRequest request, CancellationToken token = default)
     {
-        logger.LogInformation(
-            "Requesting arcade replays: Page: {Page}, Size: {PageSize}, Skip: {Skip}, Take: {Take}",
-            request.Page, request.PageSize, request.Skip, request.Take);
         using var scope = scopeFactory.CreateScope();
         using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
         try
@@ -141,7 +138,6 @@ public partial class ReplayRepository
             // Count query - no need for ratings at all
             var query = GetArcadeReplaysQueriableForCount(request, context);
             var count = await query.CountAsync(token);
-            logger.LogInformation("Got arcade replays count: {count}", count);
             return count;
         }
         catch (OperationCanceledException) { }
