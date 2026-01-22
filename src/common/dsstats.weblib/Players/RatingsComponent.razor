@@ -147,7 +147,7 @@
 
 	private async Task SetCount()
 	{
-		totalCount = await PlayerService.GetRatingsCount(PlayerRequest, cts.Token);
+		totalCount = await PlayerService.GetRatingsCount(PlayerRequest);
 		await InvokeAsync(StateHasChanged);
 	}
 

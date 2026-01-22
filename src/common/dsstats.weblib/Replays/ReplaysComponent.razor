@@ -130,7 +130,7 @@
 
 	private async Task SetCount()
 	{
-		replaysCount = await ReplayRepository.GetReplaysCount(ReplaysRequest, cts.Token);
+		replaysCount = await ReplayRepository.GetReplaysCount(ReplaysRequest);
 		isLoading = false;
 		await InvokeAsync(StateHasChanged);
 	}
@@ -249,6 +249,7 @@
 
 	public void Dispose()
 	{
+		cts.Cancel();
 		cts.Dispose();
 	}
 }
