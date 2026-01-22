@@ -18,7 +18,7 @@ public interface IImportService
     void ClearExistingArcadeReplayKeys();
     int GetPlayerId(ToonIdDto toonId);
     string GetPlayerName(ToonIdDto toonId);
-    int GetOrCreatePlayerId(string name, int region, int realm, int id, DsstatsContext context, bool updateName = false);
+    int GetOrCreatePlayerId(string name, int region, int realm, int id, DsstatsContext context);
     Task CheckDuplicateCandidates();
     Task FixPlayerNames();
 }
@@ -145,8 +145,7 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
         int region,
         int realm,
         int id,
-        DsstatsContext context,
-        bool updateName = false)
+        DsstatsContext context)
     {
         Init();
         playerSs.Wait();
@@ -156,21 +155,6 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
 
             if (toonIdPlayerIdDict.TryGetValue(toonId, out var playerInfo))
             {
-                if (updateName && !string.Equals(playerInfo.Name, name, StringComparison.Ordinal))
-                {
-                    var player = context.Players
-                        .Single(p =>
-                            p.ToonId.Region == region &&
-                            p.ToonId.Realm == realm &&
-                            p.ToonId.Id == id);
-
-                    player.Name = name;
-                    context.SaveChanges();
-
-                    toonIdPlayerIdDict[toonId] =
-                        new(playerInfo.PlayerId, name);
-                }
-
                 return playerInfo.PlayerId;
             }
 
@@ -338,7 +322,6 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
         try
         {
             List<Player> playersToInsert = [];
-            Dictionary<ToonIdRec, PlayerInfo> playersToRename = [];
 
             // First pass: classify work
             foreach (var (toonId, name) in players)
@@ -356,13 +339,9 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
                         }
                     });
                 }
-                else if (!string.Equals(cached.Name, name, StringComparison.Ordinal))
-                {
-                    playersToRename.Add(toonId, new(cached.PlayerId, name));
-                }
             }
 
-            if (playersToInsert.Count == 0 && playersToRename.Count == 0)
+            if (playersToInsert.Count == 0)
             {
                 return;
             }
@@ -374,27 +353,6 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
             if (playersToInsert.Count > 0)
             {
                 context.Players.AddRange(playersToInsert);
-            }
-
-            // Rename existing players
-            if (playersToRename.Count > 0)
-            {
-                var idsToUpdate = playersToRename.Values
-                    .Select(p => p.PlayerId)
-                    .ToHashSet();
-
-                var dbPlayers = await context.Players
-                    .Where(p => idsToUpdate.Contains(p.PlayerId))
-                    .ToListAsync();
-
-                foreach (var dbPlayer in dbPlayers)
-                {
-                    ToonIdRec toonId = new(dbPlayer.ToonId.Region, dbPlayer.ToonId.Realm, dbPlayer.ToonId.Id);
-                    if (playersToRename.TryGetValue(toonId, out var rnPlayer))
-                    {
-                        dbPlayer.Name = rnPlayer.Name;
-                    }
-                }
             }
 
             await context.SaveChangesAsync();
@@ -409,12 +367,6 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
 
                 toonIdPlayerIdDict[key] =
                     new(player.PlayerId, player.Name);
-            }
-
-            foreach (var ent in playersToRename)
-            {
-                toonIdPlayerIdDict[ent.Key] =
-                    ent.Value;
             }
         }
         finally
