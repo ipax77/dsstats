@@ -17,6 +17,27 @@ public sealed class StatsRequest
     public RatingType RatingType { get; set; }
     public Commander Interest { get; set; }
     public bool WithLeavers { get; set; }
+    public StatsFilter? Filter { get; set; }
+}
+
+public sealed class StatsFilter
+{
+    public FilterRange<DateTime> DateRange { get; set; } = new() { From = DateTime.Today.AddDays(-90), To = DateTime.Today };
+    public FilterRange<int> RatingRange { get; set; } = new() { From = Data.MinBuildRating, To = Data.MaxBuildRating };
+    public FilterRange<int> DurationRange { get; set; } = new() { From = Data.MinDuration, To = Data.MaxDuration };
+
+    public void Reset()
+    {
+        DateRange = new() { From = DateTime.Today.AddDays(-90), To = DateTime.Today };
+        RatingRange = new() { From = Data.MinBuildRating, To = Data.MaxBuildRating };
+        DurationRange = new() { From = Data.MinDuration, To = Data.MaxDuration };
+    }
+}
+
+public sealed class FilterRange<T>
+{
+    public T From { get; set; } = default!;
+    public T To { get; set; } = default!;
 }
 
 public interface IStatsResponse { }

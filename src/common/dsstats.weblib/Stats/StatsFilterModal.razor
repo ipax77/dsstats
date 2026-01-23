@@ -1,0 +1,136 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using dsstats.shared
+@inject IJSRuntime JSRuntime
+
+<div class="modal" id="@modalId" aria-hidden="true" aria-labelledby="@modalId" tabindex="-1">
+	<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+		<div class="modal-content">
+			<div class="modal-header bgchart2">
+				<h5 class="modal-title">Replay Filter</h5>
+				<button type="button" class="btn-close" @onclick="Close"></button>
+			</div>
+
+			<div class="modal-body bgchart">
+				<EditForm EditContext="@editContext" FormName="ReplaysFilterForm" OnValidSubmit="@OnSubmit">
+					<DataAnnotationsValidator />
+					<ValidationSummary />
+
+					<div class="mb-3">
+						<label class="form-label">Date Range</label>
+						<div class="row g-2">
+							<div class="col-md-6">
+								<label for="dateFrom" class="form-label small">From</label>
+								<InputDate id="dateFrom" class="form-control" @bind-Value="filter.DateRange.From" />
+							</div>
+							<div class="col-md-6">
+								<label for="dateTo" class="form-label small">To</label>
+								<InputDate id="dateTo" class="form-control" @bind-Value="filter.DateRange.To" />
+							</div>
+						</div>
+					</div>
+
+					<div class="mb-3">
+						<label class="form-label">Rating Range</label>
+						<div class="row g-2">
+							<div class="col-md-6">
+								<label for="ratingFrom" class="form-label small">From: @filter.RatingRange.From</label>
+								<input type="range" class="form-range" id="ratingFrom"
+									   min="@Data.MinBuildRating" max="@Data.MaxBuildRating" step="50"
+									   @bind="filter.RatingRange.From" @bind:event="oninput" />
+							</div>
+							<div class="col-md-6">
+								<label for="ratingTo" class="form-label small">To: @filter.RatingRange.To</label>
+								<input type="range" class="form-range" id="ratingTo"
+									   min="@Data.MinBuildRating" max="@Data.MaxBuildRating" step="50"
+									   @bind="filter.RatingRange.To" @bind:event="oninput" />
+							</div>
+						</div>
+					</div>
+
+					<div class="mb-3">
+						<label class="form-label">Duration Range (seconds)</label>
+						<div class="row g-2">
+							<div class="col-md-6">
+								<label for="durationFrom" class="form-label small">From: @filter.DurationRange.From</label>
+								<input type="range" class="form-range" id="durationFrom"
+									   min="@Data.MinDuration" max="@Data.MaxDuration" step="50"
+									   @bind="filter.DurationRange.From" @bind:event="oninput" />
+							</div>
+							<div class="col-md-6">
+								<label for="durationTo" class="form-label small">To: @filter.DurationRange.To</label>
+								<input type="range" class="form-range" id="durationTo"
+									   min="@Data.MinDuration" max="@Data.MaxDuration" step="50"
+									   @bind="filter.DurationRange.To" @bind:event="oninput" />
+							</div>
+						</div>
+					</div>
+
+					<div class="d-flex justify-content-end gap-2 mt-4 bgchart2">
+						<button type="button" class="btn btn-secondary" @onclick="Close">Cancel</button>
+						<button type="submit" class="btn btn-success">Apply</button>
+						<button type="button" class="btn btn-warning" @onclick="ResetFilter">Reset</button>
+					</div>
+				</EditForm>
+			</div>
+		</div>
+	</div>
+</div>
+
+@code {
+	private string modalId = "statsFilterModal";
+	public StatsFilter filter = new();
+	private EditContext editContext = null!;
+
+	[Parameter] public EventCallback<StatsFilter?> OnRequest { get; set; }
+	[Parameter] public EventCallback OnClose { get; set; }
+
+	protected override void OnInitialized()
+	{
+		editContext = new EditContext(filter);
+	}
+
+	public void Show(StatsFilter filter)
+	{
+		this.filter = filter;
+		editContext = new EditContext(filter);
+		InvokeAsync(StateHasChanged);
+		JSRuntime.InvokeVoidAsync("openModalById", modalId);
+	}
+
+	public void Close()
+	{
+		JSRuntime.InvokeVoidAsync("closeModalById", modalId);
+		OnClose.InvokeAsync();
+	}
+
+	private void ResetFilter()
+	{
+		filter.Reset();
+		editContext = new EditContext(filter);
+		OnRequest.InvokeAsync(null);
+		Close();
+	}
+
+	private async Task OnSubmit()
+	{
+		// Ensure From is always less than or equal to To
+		if (filter.DateRange.From > filter.DateRange.To)
+		{
+			(filter.DateRange.From, filter.DateRange.To) = (filter.DateRange.To, filter.DateRange.From);
+		}
+
+		if (filter.RatingRange.From > filter.RatingRange.To)
+		{
+			(filter.RatingRange.From, filter.RatingRange.To) = (filter.RatingRange.To, filter.RatingRange.From);
+		}
+
+		if (filter.DurationRange.From > filter.DurationRange.To)
+		{
+			(filter.DurationRange.From, filter.DurationRange.To) = (filter.DurationRange.To, filter.DurationRange.From);
+		}
+
+		await OnRequest.InvokeAsync(filter);
+		Close();
+	}
+}

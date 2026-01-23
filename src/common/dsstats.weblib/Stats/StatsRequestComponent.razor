@@ -11,9 +11,26 @@
                     <div class="spinner-border ms-2" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
-                } else
+                }
+                else
                 {
                     <span class="bi bi-bar-chart-line ms-2"></span>
+                }
+            </div>
+            <div class="col-auto align-self-center">
+                @if (Request.Filter == null)
+                {
+                    <span class="pointer" @onclick="ShowFilter">
+                        <i class="ms-2 text-muted bi bi-filter-circle"></i>
+                        <span class="ms-1 text-muted">Filter</span>
+                    </span>
+                }
+                else
+                {
+                    <span class="pointer" @onclick="ShowFilter">
+                        <i class="ms-2 text-primary bi bi-filter-circle-fill"></i>
+                        <span class="ms-1 text-primary">Filter</span>
+                    </span>
                 }
             </div>
             <div class="col-12 col-md-3">
@@ -28,8 +45,8 @@
                         else if (type == TimePeriod.Custom)
                         {
                             continue;
-                        } 
-                        else 
+                        }
+                        else
                         {
                             <option value="@type">@Data.GetTimePeriodInfo(type).Name</option>
                         }
@@ -62,17 +79,20 @@
     </EditForm>
 </div>
 
+<StatsFilterModal @ref="statsFilterModal" OnRequest="FilterRequest" />
+
 @code {
     [Parameter, EditorRequired]
     public StatsRequest Request { get; set; } = default!;
 
     [Parameter, EditorRequired]
-	public bool IsLoading { get; set; }
+    public bool IsLoading { get; set; }
 
     [Parameter]
     public EventCallback OnRequestChanged { get; set; }
 
     EditContext editContext = null!;
+    StatsFilterModal? statsFilterModal;
 
     protected override void OnInitialized()
     {
@@ -87,6 +107,21 @@
         {
             OnRequestChanged.InvokeAsync();
         }
+    }
+
+    private void ShowFilter()
+    {
+        if (Request.Filter == null)
+        {
+            Request.Filter = new();
+        }
+        statsFilterModal?.Show(Request.Filter);
+    }
+
+    private void FilterRequest(StatsFilter? filter)
+    {
+        Request.Filter = filter;
+        OnRequestChanged.InvokeAsync();
     }
 
     public void Dispose()
