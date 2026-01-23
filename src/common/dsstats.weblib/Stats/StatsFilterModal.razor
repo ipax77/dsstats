@@ -4,7 +4,7 @@
 @inject IJSRuntime JSRuntime
 
 <div class="modal" id="@modalId" aria-hidden="true" aria-labelledby="@modalId" tabindex="-1">
-	<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+	<div class="modal-dialog">
 		<div class="modal-content">
 			<div class="modal-header bgchart2">
 				<h5 class="modal-title">Replay Filter</h5>
@@ -18,12 +18,12 @@
 
 					<div class="mb-3">
 						<label class="form-label">Date Range</label>
-						<div class="row g-2">
-							<div class="col-md-6">
+						<div class="row g-md-2">
+							<div class="col-12 col-md-6">
 								<label for="dateFrom" class="form-label small">From</label>
 								<InputDate id="dateFrom" class="form-control" @bind-Value="filter.DateRange.From" />
 							</div>
-							<div class="col-md-6">
+							<div class="col-12 col-md-6">
 								<label for="dateTo" class="form-label small">To</label>
 								<InputDate id="dateTo" class="form-control" @bind-Value="filter.DateRange.To" />
 							</div>
@@ -32,14 +32,14 @@
 
 					<div class="mb-3">
 						<label class="form-label">Rating Range</label>
-						<div class="row g-2">
-							<div class="col-md-6">
+						<div class="row g-md-2">
+							<div class="col-12 col-md-6">
 								<label for="ratingFrom" class="form-label small">From: @filter.RatingRange.From</label>
 								<input type="range" class="form-range" id="ratingFrom"
 									   min="@Data.MinBuildRating" max="@Data.MaxBuildRating" step="50"
 									   @bind="filter.RatingRange.From" @bind:event="oninput" />
 							</div>
-							<div class="col-md-6">
+							<div class="col-12 col-md-6">
 								<label for="ratingTo" class="form-label small">To: @filter.RatingRange.To</label>
 								<input type="range" class="form-range" id="ratingTo"
 									   min="@Data.MinBuildRating" max="@Data.MaxBuildRating" step="50"
@@ -50,14 +50,14 @@
 
 					<div class="mb-3">
 						<label class="form-label">Duration Range (seconds)</label>
-						<div class="row g-2">
-							<div class="col-md-6">
+						<div class="row g-md-2">
+							<div class="col-12 col-md-6">
 								<label for="durationFrom" class="form-label small">From: @filter.DurationRange.From</label>
 								<input type="range" class="form-range" id="durationFrom"
 									   min="@Data.MinDuration" max="@Data.MaxDuration" step="50"
 									   @bind="filter.DurationRange.From" @bind:event="oninput" />
 							</div>
-							<div class="col-md-6">
+							<div class="col-12 col-md-6">
 								<label for="durationTo" class="form-label small">To: @filter.DurationRange.To</label>
 								<input type="range" class="form-range" id="durationTo"
 									   min="@Data.MinDuration" max="@Data.MaxDuration" step="50"

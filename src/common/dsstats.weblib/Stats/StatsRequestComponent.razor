@@ -17,23 +17,7 @@
                     <span class="bi bi-bar-chart-line ms-2"></span>
                 }
             </div>
-            <div class="col-auto align-self-center">
-                @if (Request.Filter == null)
-                {
-                    <span class="pointer" @onclick="ShowFilter">
-                        <i class="ms-2 text-muted bi bi-filter-circle"></i>
-                        <span class="ms-1 text-muted">Filter</span>
-                    </span>
-                }
-                else
-                {
-                    <span class="pointer" @onclick="ShowFilter">
-                        <i class="ms-2 text-primary bi bi-filter-circle-fill"></i>
-                        <span class="ms-1 text-primary">Filter</span>
-                    </span>
-                }
-            </div>
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-md-2">
                 <label for="timeselect" class="col-form-label">Time Period</label>
                 <InputSelect id="timeselect" class="form-select" @bind-Value="Request.TimePeriod">
                     @foreach (TimePeriod type in Enum.GetValues(typeof(TimePeriod)))
@@ -53,7 +37,7 @@
                     }
                 </InputSelect>
             </div>
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-md-2">
                 <label for="ratingselect" class="col-form-label">Rating Type</label>
                 <InputSelect id="ratingselect" class="form-select" @bind-Value="Request.RatingType">
                     @foreach (RatingType type in Enum.GetValues(typeof(RatingType)))
@@ -62,7 +46,7 @@
                     }
                 </InputSelect>
             </div>
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-md-2">
                 <label for="cmdrselect" class="col-form-label">Commander</label>
                 <InputSelect id="cmdrselect" class="form-select" @bind-Value="Request.Interest">
                     @foreach (Commander type in Enum.GetValues(typeof(Commander)))
@@ -71,7 +55,23 @@
                     }
                 </InputSelect>
             </div>
-            <div class="col-12 col-md-2 form-check form-switch align-self-end mb-2">
+            <div class="col-12 col-md-2 form-check form-switch align-self-end mb-2  mt-sm-2">
+                <div class="mb-1 mt-2">
+                    @if (Request.Filter == null)
+                    {
+                        <span class="pointer" @onclick="ShowFilter">
+                            <i class="ms-2 text-muted bi bi-filter-circle"></i>
+                            <span class="ms-1 text-muted">Filter</span>
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="pointer" @onclick="ShowFilter">
+                            <i class="ms-2 text-primary bi bi-filter-circle-fill"></i>
+                            <span class="ms-1 text-primary">Filter</span>
+                        </span>
+                    }
+                </div>
                 <InputCheckbox class="form-check-input" type="checkbox" role="switch" id="leaverCheck" @bind-Value="Request.WithLeavers" />
                 <label class="form-check-label" for="leaverCheck">With Leavers</label>
             </div>
@@ -103,6 +103,12 @@
 
     private void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
+        if (Request.Filter != null && e.FieldIdentifier.FieldName == nameof(StatsRequest.TimePeriod))
+        {
+            var timeInfo = Data.GetTimePeriodInfo(Request.TimePeriod);
+            Request.Filter.DateRange.From = timeInfo.Start;
+            Request.Filter.DateRange.To = timeInfo.End;
+        }
         if (!IsLoading)
         {
             OnRequestChanged.InvokeAsync();
@@ -113,7 +119,8 @@
     {
         if (Request.Filter == null)
         {
-            Request.Filter = new();
+            var timeInfo = Data.GetTimePeriodInfo(Request.TimePeriod);
+            Request.Filter = new() { DateRange = new() { From = timeInfo.Start, To = timeInfo.End } };
         }
         statsFilterModal?.Show(Request.Filter);
     }
