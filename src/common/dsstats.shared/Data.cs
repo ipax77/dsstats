@@ -224,6 +224,9 @@ public static class Data
     public const int MinBuildRating = 500;
     public const int MaxBuildRating = 3000;
     public const int MaxBuildPlayers = 6;
+
+    public const int MinDuration = 300;
+    public const int MaxDuration = 1200;
 }
 
 

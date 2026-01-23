@@ -96,4 +96,23 @@ public static class RequestExtensions
 
         return queryDic;
     }
+
+    public static Dictionary<string, object?> BuildQueryParams(this StatsRequest request, FrozenDictionary<string, string> paramMap)
+    {
+        var queryDic = new Dictionary<string, object?>();
+
+        queryDic[paramMap[nameof(BuildsRequest.RatingType)]] =
+            request.RatingType != RatingType.Commanders ? (int)request.RatingType : null;
+
+        queryDic[paramMap[nameof(BuildsRequest.TimePeriod)]] =
+            request.TimePeriod != TimePeriod.Last90Days ? (int)request.TimePeriod : null;
+
+        queryDic[paramMap[nameof(BuildsRequest.Interest)]] =
+            request.Interest != Commander.None ? request.Interest.ToString() : null;
+
+        queryDic[paramMap[nameof(BuildsRequest.WithLeavers)]] =
+            request.WithLeavers != false ? request.WithLeavers : null;
+
+        return queryDic;
+    }
 }

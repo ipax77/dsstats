@@ -1,10 +1,266 @@
 ﻿@page "/winrate"
+@using System.Collections.Frozen
+@using dsstats.shared
+@using dsstats.shared.Extensions
 @rendermode InteractiveServer
+@inject NavigationManager NavigationManager
 
 <PageTitle>dsstats - stats</PageTitle>
 
-<dsstats.weblib.Stats.WinrateComponent />
+<dsstats.weblib.Stats.WinrateComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
 
 @code {
+    [SupplyParameterFromQuery]
+    public string? St { get; set; }
 
+    [SupplyParameterFromQuery]
+    public string? Tp { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Rt { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Int { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? WithL { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? FromDate { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? ToDate { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? FromRating { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? ToRating { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? FromDuration { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? ToDuration { get; set; }
+
+    private static readonly FrozenDictionary<string, string> paramMap = new Dictionary<string, string>
+    {
+        { nameof(StatsRequest.Type), "St" },
+        { nameof(StatsRequest.TimePeriod), "Tp" },
+        { nameof(StatsRequest.RatingType), "Rt" },
+        { nameof(StatsRequest.Interest), "Int" },
+        { nameof(StatsRequest.WithLeavers), "WithL" },
+    }.ToFrozenDictionary();
+    private static readonly int stepSize = 50;
+
+    StatsRequest Request = new()
+    {
+        Type = StatsType.Winrate,
+        TimePeriod = TimePeriod.Last90Days,
+        RatingType = RatingType.Commanders,
+        WithLeavers = false,
+    };
+
+    protected override void OnInitialized()
+    {
+        InitRequest();
+        base.OnInitialized();
+    }
+
+    private void InitRequest()
+    {
+        Request = new StatsRequest
+        {
+            Type = EnumExtensions.ParseEnumOrDefault(St, StatsType.Winrate),
+            RatingType = EnumExtensions.ParseEnumOrDefault(Rt, RatingType.All),
+            TimePeriod = EnumExtensions.ParseEnumOrDefault(Tp, TimePeriod.Last90Days),
+            Interest = EnumExtensions.ParseEnumOrDefault(Int, Commander.None),
+            WithLeavers = bool.TryParse(WithL, out var wl) && wl,
+            Filter = InitFilter()
+        };
+    }
+
+    private StatsFilter? InitFilter()
+    {
+        StatsFilter filter = new();
+
+        if (DateTime.TryParseExact(FromDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var fromDate))
+        {
+            filter.DateRange.From = fromDate;
+        }
+        if (DateTime.TryParseExact(ToDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var toDate))
+        {
+            filter.DateRange.To = toDate;
+        }
+        if (int.TryParse(FromRating, out var fromRating))
+        {
+            filter.RatingRange.From = fromRating;
+        }
+        if (int.TryParse(ToRating, out var toRating))
+        {
+            filter.RatingRange.To = toRating;
+        }
+        if (int.TryParse(FromDuration, out var fromDuration))
+        {
+            filter.DurationRange.From = fromDuration;
+        }
+        if (int.TryParse(ToDuration, out var toDuration))
+        {
+            filter.DurationRange.To = toDuration;
+        }
+
+        if (filter.IsDefault())
+        {
+            return null;
+        }
+
+        filter.RatingRange.From = NormalizeRating(
+            filter.RatingRange.From,
+            Data.MinBuildRating);
+
+        filter.RatingRange.To = NormalizeRating(
+            filter.RatingRange.To,
+            Data.MaxBuildRating);
+
+        filter.DurationRange.From = NormalizeDuration(
+            filter.DurationRange.From,
+            Data.MinDuration);
+
+        filter.DurationRange.To = NormalizeDuration(
+            filter.DurationRange.To,
+            Data.MaxDuration);
+
+        if (filter.DateRange.From > filter.DateRange.To)
+        {
+            (filter.DateRange.From, filter.DateRange.To) = (filter.DateRange.To, filter.DateRange.From);
+        }
+
+        if (filter.RatingRange.From > filter.RatingRange.To)
+        {
+            (filter.RatingRange.From, filter.RatingRange.To) = (filter.RatingRange.To, filter.RatingRange.From);
+        }
+
+        if (filter.DurationRange.From > filter.DurationRange.To)
+        {
+            (filter.DurationRange.From, filter.DurationRange.To) = (filter.DurationRange.To, filter.DurationRange.From);
+        }
+
+        return filter;
+    }
+
+    private static int NormalizeRating(
+        int? value,
+        int defaultValue)
+    {
+        if (!value.HasValue)
+            return defaultValue;
+
+        var clamped = Math.Clamp(
+            value.Value,
+            Data.MinBuildRating,
+            Data.MaxBuildRating);
+
+        // Snap to nearest step
+        var normalized =
+            ((clamped - Data.MinBuildRating) / stepSize) * stepSize
+            + Data.MinBuildRating;
+
+        return normalized;
+    }
+
+    private static int NormalizeDuration(
+    int? value,
+    int defaultValue)
+    {
+        if (!value.HasValue)
+            return defaultValue;
+
+        var clamped = Math.Clamp(
+            value.Value,
+            Data.MinDuration,
+            Data.MaxDuration);
+
+        // Snap to nearest step
+        var normalized =
+            ((clamped - Data.MinDuration) / stepSize) * stepSize
+            + Data.MinDuration;
+
+        return normalized;
+    }
+
+    private void RequestChanged(StatsRequest newRequest)
+    {
+        var queryDic = newRequest.BuildQueryParams(paramMap);
+
+        if (newRequest.Filter != null)
+        {
+            if (newRequest.Filter.DateRange.From != DateTime.Today.AddDays(-90))
+            {
+                queryDic["FromDate"] = newRequest.Filter.DateRange.From.ToString("yyyy-MM-dd");
+            }
+            else
+            {
+                queryDic["FromDate"] = null;
+            }
+
+
+            if (newRequest.Filter.DateRange.To != DateTime.Today)
+            {
+                queryDic["ToDate"] = newRequest.Filter.DateRange.To.ToString("yyyy-MM-dd");
+            }
+            else
+            {
+                queryDic["ToDate"] = null;
+            }
+
+            if (newRequest.Filter.RatingRange.From != Data.MinBuildRating)
+            {
+                queryDic["FromRating"] = newRequest.Filter.RatingRange.From.ToString();
+            }
+            else
+            {
+                queryDic["FromRating"] = null;
+            }
+
+            if (newRequest.Filter.RatingRange.To != Data.MaxBuildRating)
+            {
+                queryDic["ToRating"] = newRequest.Filter.RatingRange.To.ToString();
+            }
+            else
+            {
+                queryDic["ToRating"] = null;
+            }
+
+            if (newRequest.Filter.DurationRange.From != Data.MinDuration)
+            {
+                queryDic["FromDuration"] = newRequest.Filter.DurationRange.From.ToString();
+            }
+            else
+            {
+                queryDic["FromDuration"] = null;
+            }
+
+            if (newRequest.Filter.DurationRange.To != Data.MaxDuration)
+            {
+                queryDic["ToDuration"] = newRequest.Filter.DurationRange.To.ToString();
+            }
+            else
+            {
+                queryDic["ToDuration"] = null;
+            }
+        }
+        else
+        {
+            queryDic["FromDate"] = null;
+            queryDic["ToDate"] = null;
+            queryDic["FromRating"] = null;
+            queryDic["ToRating"] = null;
+            queryDic["FromDuration"] = null;
+            queryDic["ToDuration"] = null;
+        }
+
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters(
+                new Dictionary<string, object?>(queryDic)));
+    }
 }

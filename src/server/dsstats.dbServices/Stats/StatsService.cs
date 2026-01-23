@@ -69,6 +69,27 @@ public class WinrateStatsProvider(DsstatsContext context, IMemoryCache memoryCac
         var timeInfo = Data.GetTimePeriodInfo(request.TimePeriod);
         var noEnd = timeInfo.End > DateTime.Today.AddDays(-2);
 
+        bool noFromRating = true;
+        bool noToRating = true;
+        bool noFromDuration = true;
+        bool noToDuration = true;
+
+        if (request.Filter != null)
+        {
+            timeInfo = new(request.Filter.DateRange.From, request.Filter.DateRange.To, "Custom", true);
+            noEnd = timeInfo.End > DateTime.Today.AddDays(-2);
+
+            noFromRating = request.Filter.RatingRange.From <= Data.MinBuildRating;
+            noToRating = request.Filter.RatingRange.To >= Data.MaxBuildRating;
+            noFromDuration = request.Filter.DurationRange.From <= Data.MinDuration;
+            noToDuration = request.Filter.DurationRange.To >= Data.MaxDuration;
+        }
+        else
+        {
+            request.Filter = new();
+        }
+
+
         var query = from r in context.Replays
                     from rp in r.Players
                     from rr in r.Ratings
@@ -79,6 +100,10 @@ public class WinrateStatsProvider(DsstatsContext context, IMemoryCache memoryCac
                         && (noEnd || r.Gametime < timeInfo.End)
                         && rr.RatingType == request.RatingType
                         && (request.WithLeavers || rr.LeaverType == LeaverType.None)
+                        && (noFromRating || rpr.RatingBefore >= request.Filter.RatingRange.From)
+                        && (noToRating || rpr.RatingBefore <= request.Filter.RatingRange.To)
+                        && (noFromDuration || r.Duration >= request.Filter.DurationRange.From)
+                        && (noToDuration || r.Duration <= request.Filter.DurationRange.To)
                         && rp.Race != Commander.None
                     group new { rp, rr, rpr, r } by rp.Race into g
                     select new WinrateEnt()
@@ -100,6 +125,26 @@ public class WinrateStatsProvider(DsstatsContext context, IMemoryCache memoryCac
         var timeInfo = Data.GetTimePeriodInfo(request.TimePeriod);
         var noEnd = timeInfo.End > DateTime.Today.AddDays(-2);
 
+        bool noFromRating = true;
+        bool noToRating = true;
+        bool noFromDuration = true;
+        bool noToDuration = true;
+
+        if (request.Filter != null)
+        {
+            timeInfo = new(request.Filter.DateRange.From, request.Filter.DateRange.To, "Custom", true);
+            noEnd = timeInfo.End > DateTime.Today.AddDays(-2);
+
+            noFromRating = request.Filter.RatingRange.From <= Data.MinBuildRating;
+            noToRating = request.Filter.RatingRange.To >= Data.MaxBuildRating;
+            noFromDuration = request.Filter.DurationRange.From <= Data.MinDuration;
+            noToDuration = request.Filter.DurationRange.To >= Data.MaxDuration;
+        }
+        else
+        {
+            request.Filter = new();
+        }
+
         var query = from r in context.Replays
                     from rp in r.Players
                     from rr in r.Ratings
@@ -110,6 +155,10 @@ public class WinrateStatsProvider(DsstatsContext context, IMemoryCache memoryCac
                         && (noEnd || r.Gametime < timeInfo.End)
                         && rr.RatingType == request.RatingType
                         && (request.WithLeavers || rr.LeaverType == LeaverType.None)
+                        && (noFromRating || rpr.RatingBefore >= request.Filter.RatingRange.From)
+                        && (noToRating || rpr.RatingBefore <= request.Filter.RatingRange.To)
+                        && (noFromDuration || r.Duration >= request.Filter.DurationRange.From)
+                        && (noToDuration || r.Duration <= request.Filter.DurationRange.To)
                         && rp.Race == request.Interest
                         && rp.OppRace != Commander.None
                     group new { rp, rr, rpr, r } by rp.OppRace into g
@@ -142,7 +191,17 @@ public static class StatsRequestExtensions
 {
     public static string GetMemKey(this StatsRequest request, StatsType statsType)
     {
-        return $"{statsType}:{request.TimePeriod}|{request.RatingType}|{request.Interest}|{request.WithLeavers}";
+        if (request.Filter is null)
+        {
+            return $"{statsType}:{request.TimePeriod}|{request.RatingType}|{request.Interest}|{request.WithLeavers}";
+        }
+        else
+        {
+            return $"{statsType}:{request.RatingType}|{request.Interest}|{request.WithLeavers}"
+                + $"{request.Filter.DateRange.From.ToShortDateString()}|{request.Filter.DateRange.To.ToShortDateString()}"
+                + $"{request.Filter.RatingRange.From}|{request.Filter.RatingRange.To}"
+                + $"{request.Filter.DurationRange.From}|{request.Filter.DurationRange.To}";
+        }
     }
 }
 
