@@ -32,6 +32,16 @@ public sealed class StatsFilter
         RatingRange = new() { From = Data.MinBuildRating, To = Data.MaxBuildRating };
         DurationRange = new() { From = Data.MinDuration, To = Data.MaxDuration };
     }
+
+    public bool IsDefault()
+    {
+        return DateRange.From == DateTime.Today.AddDays(-90)
+            && DateRange.To == DateTime.Today
+            && RatingRange.From == Data.MinBuildRating
+            && RatingRange.To == Data.MaxBuildRating
+            && DurationRange.From == Data.MinDuration
+            && DurationRange.To == Data.MaxDuration;
+    }
 }
 
 public sealed class FilterRange<T>
