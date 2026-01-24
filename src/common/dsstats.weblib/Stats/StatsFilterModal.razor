@@ -31,7 +31,7 @@
 					</div>
 
 					<div class="mb-3">
-						<label class="form-label">Rating Range</label>
+						<label class="form-label">Player Rating Range</label>
 						<div class="row g-md-2">
 							<div class="col-12 col-md-6">
 								<label for="ratingFrom" class="form-label small">From: @filter.RatingRange.From</label>
@@ -47,6 +47,24 @@
 							</div>
 						</div>
 					</div>
+
+@* 					<div class="mb-3">
+						<label class="form-label">Avg.Rating Range</label>
+						<div class="row g-md-2">
+							<div class="col-12 col-md-6">
+								<label for="teamratingFrom" class="form-label small">From: @filter.TeamRatingRange.From</label>
+								<input type="range" class="form-range" id="teamratingFrom"
+									   min="@Data.MinBuildRating" max="@Data.MaxBuildRating" step="50"
+									   @bind="filter.TeamRatingRange.From" @bind:event="oninput" />
+							</div>
+							<div class="col-12 col-md-6">
+								<label for="teamratingTo" class="form-label small">To: @filter.TeamRatingRange.To</label>
+								<input type="range" class="form-range" id="teamratingTo"
+									   min="@Data.MinBuildRating" max="@Data.MaxBuildRating" step="50"
+									   @bind="filter.TeamRatingRange.To" @bind:event="oninput" />
+							</div>
+						</div>
+					</div> *@
 
 					<div class="mb-3">
 						<label class="form-label">Win Probability Range: @filter.Exp2WinRange.From% - @filter.Exp2WinRange.To%</label>

@@ -26,6 +26,7 @@ public sealed class StatsFilter
     public FilterRange<int> RatingRange { get; set; } = new() { From = Data.MinBuildRating, To = Data.MaxBuildRating };
     public FilterRange<int> DurationRange { get; set; } = new() { From = Data.MinDuration, To = Data.MaxDuration };
     public FilterRange<int> Exp2WinRange { get; set; } = new() { From = 0, To = 100 };
+    public FilterRange<int> TeamRatingRange { get; set; } = new() { From = Data.MinBuildRating, To = Data.MaxBuildRating };
 
     public void Reset()
     {
@@ -33,6 +34,7 @@ public sealed class StatsFilter
         RatingRange = new() { From = Data.MinBuildRating, To = Data.MaxBuildRating };
         DurationRange = new() { From = Data.MinDuration, To = Data.MaxDuration };
         Exp2WinRange = new() { From = 0, To = 100 };
+        TeamRatingRange = new() { From = Data.MinBuildRating, To = Data.MaxBuildRating };
     }
 
     public bool IsDefault()
@@ -43,7 +45,8 @@ public sealed class StatsFilter
             && RatingRange.To == Data.MaxBuildRating
             && DurationRange.From == Data.MinDuration
             && DurationRange.To == Data.MaxDuration
-            && Exp2WinRange.From == 0 && Exp2WinRange.To == 100;
+            && Exp2WinRange.From == 0 && Exp2WinRange.To == 100
+            && TeamRatingRange.From == Data.MinBuildRating && TeamRatingRange.To == Data.MaxBuildRating;
     }
 }
 

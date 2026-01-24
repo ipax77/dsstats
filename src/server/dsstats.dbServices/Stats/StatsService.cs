@@ -87,6 +87,8 @@ public class WinrateStatsProvider(DsstatsContext context, IMemoryCache memoryCac
                 (f.DurationTo == null || r.Duration <= f.DurationTo) &&
                 (f.Exp2WinFrom == null || rr.ExpectedWinProbability >= f.Exp2WinFrom) &&
                 (f.Exp2WinTo == null || rr.ExpectedWinProbability <= f.Exp2WinTo) &&
+                (f.TeamRatingTo == null || rr.AvgRating <= f.TeamRatingTo) &&
+                (f.TeamRatingFrom == null || rr.AvgRating >= f.TeamRatingFrom) &&
                 rp.Race != Commander.None
             group new { rp, rr, rpr, r } by rp.Race into g
             select new WinrateEnt
@@ -125,6 +127,8 @@ public class WinrateStatsProvider(DsstatsContext context, IMemoryCache memoryCac
                         (f.DurationTo == null || r.Duration <= f.DurationTo) &&
                         (f.Exp2WinFrom == null || rr.ExpectedWinProbability >= f.Exp2WinFrom) &&
                         (f.Exp2WinTo == null || rr.ExpectedWinProbability <= f.Exp2WinTo) &&
+                        (f.TeamRatingTo == null || rr.AvgRating <= f.TeamRatingTo) &&
+                        (f.TeamRatingFrom == null || rr.AvgRating >= f.TeamRatingFrom) &&
                         rp.Race == request.Interest &&
                         rp.OppRace != Commander.None
                     group new { rp, rr, rpr, r } by rp.OppRace into g

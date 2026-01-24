@@ -16,6 +16,9 @@ public sealed class ResolvedStatsFilter
 
     public double? Exp2WinFrom { get; init; }  // already normalized [0,1]
     public double? Exp2WinTo { get; init; }
+
+    public int? TeamRatingFrom { get; init; }
+    public int? TeamRatingTo { get; init; }
 }
 
 public static class StatsFilterResolver
@@ -33,14 +36,14 @@ public static class StatsFilterResolver
         {
             fromDate = request.Filter.DateRange.From;
             toDate = request.Filter.DateRange.To;
-            hasToDate = true; // custom always has end
+            hasToDate = request.Filter.DateRange.To <= DateTime.Today.AddDays(-2);
         }
 
         // Boundary resolution helper
         static int? MinNull(int val, int min) => val <= min ? null : val;
         static int? MaxNull(int val, int max) => val >= max ? null : val;
 
-        int? ratingFrom = null, ratingTo = null, durationFrom = null, durationTo = null;
+        int? ratingFrom = null, ratingTo = null, durationFrom = null, durationTo = null, teamRatingFrom = null, teamRatingTo = null;
         double? expFrom = null, expTo = null;
 
         if (request.Filter != null)
@@ -53,6 +56,9 @@ public static class StatsFilterResolver
 
             expFrom = request.Filter.Exp2WinRange.From <= 0 ? null : request.Filter.Exp2WinRange.From / 100.0;
             expTo = request.Filter.Exp2WinRange.To >= 100 ? null : request.Filter.Exp2WinRange.To / 100.0;
+
+            teamRatingFrom = MinNull(request.Filter.TeamRatingRange.From, Data.MinBuildRating);
+            teamRatingTo = MaxNull(request.Filter.TeamRatingRange.To, Data.MaxBuildRating);
         }
 
         return new ResolvedStatsFilter
@@ -65,7 +71,9 @@ public static class StatsFilterResolver
             DurationFrom = durationFrom,
             DurationTo = durationTo,
             Exp2WinFrom = expFrom,
-            Exp2WinTo = expTo
+            Exp2WinTo = expTo,
+            TeamRatingFrom = teamRatingFrom,
+            TeamRatingTo = teamRatingTo,
         };
     }
 }
