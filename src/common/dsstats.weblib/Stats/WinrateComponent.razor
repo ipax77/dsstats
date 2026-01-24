@@ -24,7 +24,7 @@
 @if (showSampleSizeWarning)
 {
     <div class="alert alert-warning mt-2" role="alert" style="max-width: 1000px;">
-        <strong>Warning:</strong> Some commanders have a small sample size (less than 100 games). Interpret the stats with caution or try to adjust the Time Period.
+        <strong>Warning:</strong> Some commanders have a low sample size (fewer than 100 games). Interpret these results with caution or adjust the time period.
     </div>
 }
 @if (response != null)
@@ -55,7 +55,7 @@
                         @foreach (var ent in response.WinrateEnts
                                         .OrderByDescending(o => o.AvgPerformance))
                         {
-                            <tr>
+                            <tr class="@(ent.Count < 100 ? "text-danger" : "")">
                                 <td>
                                     <div class="d-flex">
                                         <div class="preload-@(ent.Commander.ToString().ToLower())" alt="@ent.Commander" style="width: 30px; height: 30px;"></div>
