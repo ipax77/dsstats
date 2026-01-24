@@ -49,7 +49,7 @@ builder.Services.AddHttpClient("update")
     });
 
 builder.Services.AddSingleton<IImportService, ImportService>();
-builder.Services.AddScoped<IRatingService, RatingService>();
+builder.Services.AddScoped<IRatingService, RatingsService>();
 builder.Services.AddSingleton<DsstatsService>();
 builder.Services.AddOptions();
 builder.Services.AddHostedService<Worker>();
