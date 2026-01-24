@@ -53,7 +53,7 @@ internal sealed partial class DsstatsService
                 UploadRequestDto upload = new()
                 {
                     AppGuid = config.AppGuid,
-                    AppVersion = "99.8",
+                    AppVersion = "ser" + CurrentVersion.ToString(),
                     RequestNames = config.Sc2Profiles
                         .Where(x => x.PlayerId.ToonId > 0)
                         .Select(s => new RequestNames()

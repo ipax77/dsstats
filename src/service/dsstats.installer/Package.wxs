@@ -3,7 +3,7 @@
 <!-- Define the variables in "$(var.*) expressions" -->
 <?define Name = "Dsstats Service" ?>
 <?define Manufacturer = "ipax77" ?>
-<?define Version = "3.0.0.0" ?>
+<?define Version = "3.0.1.0" ?>
 <?define UpgradeCode = "88b88f8c-abb7-4aa7-9cb4-7571e4c4c924"?>
 <?define BinPath = "..\dsstats.service\bin\Release\net10.0\win-x64\publish" ?>
 

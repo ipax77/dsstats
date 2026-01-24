@@ -3,36 +3,36 @@ using dsstats.shared.Interfaces;
 
 namespace dsstats.service.Services;
 
-internal sealed class RatingService : IRatingService
+internal sealed class RatingsService : IRatingService
 {
     public Task ContinueFindSc2ArcadeMatches(DateTime? lastCheckTime = null)
     {
-        throw new NotImplementedException();
+        return Task.CompletedTask;
     }
 
     public Task ContinueRatings()
     {
-        throw new NotImplementedException();
+        return Task.CompletedTask;
     }
 
     public Task CreateRatings()
     {
-        throw new NotImplementedException();
+        return Task.CompletedTask;
     }
 
     public Task FindSc2ArcadeMatches()
     {
-        throw new NotImplementedException();
+        return Task.CompletedTask;
     }
 
     public Task MatchNewDsstatsReplays(DateTime? dsstatsImportedAfter = null)
     {
-        throw new NotImplementedException();
+        return Task.CompletedTask;
     }
 
     public Task MatchWithNewArcadeReplays(DateTime? arcadeImportedAfter = null)
     {
-        throw new NotImplementedException();
+        return Task.CompletedTask;
     }
 
     public Task PreRatings(List<int> replayIds)
