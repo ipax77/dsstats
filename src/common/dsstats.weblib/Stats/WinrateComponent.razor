@@ -6,6 +6,27 @@
 <div class="mb-1" style="max-width: 1000px;">
     <StatsRequestComponent @ref="statsRequestComponent" Request="StatsRequest" IsLoading="isLoading" OnRequestChanged="Update" />
 </div>
+<div class="btn-group bgchart p-1 rounded">
+    <span class="px-2 text-muted small">Preset</span>
+    <button type="button" class="btn @(IsStrongPlayerFilter ? "btn-info" : "btn-outline-info")"
+            @onclick="SetStrongPlayersFilter">
+        Strong Players
+    </button>
+    <button type="button" class="btn @(IsBalancedTeamsFilter ? "btn-info" : "btn-outline-info")"
+            @onclick="SetBalancedTeamsFilter">
+        Balanced Teams
+    </button>
+    <button type="button" class="btn @(IsLongGamesFilter ? "btn-info" : "btn-outline-info")"
+            @onclick="SetLongGamesFilter">
+        Long Games
+    </button>
+</div>
+@if (showSampleSizeWarning)
+{
+    <div class="alert alert-warning mt-2" role="alert" style="max-width: 1000px;">
+        <strong>Warning:</strong> Some commanders have a low sample size (fewer than 100 games). Interpret these results with caution or adjust the time period.
+    </div>
+}
 @if (response != null)
 {
     <div class="row">
@@ -34,7 +55,7 @@
                         @foreach (var ent in response.WinrateEnts
                                         .OrderByDescending(o => o.AvgPerformance))
                         {
-                            <tr>
+                            <tr class="@(ent.Count < 100 ? "text-danger" : "")">
                                 <td>
                                     <div class="d-flex">
                                         <div class="preload-@(ent.Commander.ToString().ToLower())" alt="@ent.Commander" style="width: 30px; height: 30px;"></div>
@@ -69,6 +90,7 @@
     WinrateChart? winrateChart;
     StatsRequestComponent? statsRequestComponent;
     bool isLoading = true;
+    bool showSampleSizeWarning = false;
 
     protected override void OnInitialized()
     {
@@ -103,7 +125,75 @@
         response = await StatsService.GetStatsAsync<WinrateResponse>(StatsType.Winrate, StatsRequest);
         winrateChart?.PrepareData(response, StatsRequest);
         isLoading = false;
+        showSampleSizeWarning = response.WinrateEnts.Any(a => a.Count < 100);
         await InvokeAsync(StateHasChanged);
         await OnRequestChanged.InvokeAsync(StatsRequest);
+    }
+
+    private bool IsStrongPlayerFilter => StatsRequest.Filter != null &&
+                                        StatsRequest.Filter.RatingRange.From == 2000 &&
+                                        StatsRequest.Filter.RatingRange.To == Data.MaxBuildRating;
+
+    private bool IsBalancedTeamsFilter => StatsRequest.Filter != null &&
+                                         StatsRequest.Filter.Exp2WinRange.From >= 40 &&
+                                         StatsRequest.Filter.Exp2WinRange.To <= 60;
+    private bool IsLongGamesFilter => StatsRequest.Filter != null &&
+                                        StatsRequest.Filter.DurationRange.From >= 900;
+
+    private void SetStrongPlayersFilter()
+    {
+        if (StatsRequest.Filter == null)
+        {
+            StatsRequest.Filter = new StatsFilter();
+        }
+        if (IsStrongPlayerFilter)
+        {
+            StatsRequest.Filter.RatingRange.From = 0;
+            StatsRequest.Filter.RatingRange.To = Data.MaxBuildRating;
+        }
+        else
+        {
+            StatsRequest.Filter.RatingRange.From = 2000;
+            StatsRequest.Filter.RatingRange.To = Data.MaxBuildRating;
+        }
+        _ = Update();
+    }
+
+    private void SetBalancedTeamsFilter()
+    {
+        if (StatsRequest.Filter == null)
+        {
+            StatsRequest.Filter = new StatsFilter();
+        }
+        if (IsBalancedTeamsFilter)
+        {
+            StatsRequest.Filter.Exp2WinRange.From = 0;
+            StatsRequest.Filter.Exp2WinRange.To = 100;
+        }
+        else
+        {
+            StatsRequest.Filter.Exp2WinRange.From = 40;
+            StatsRequest.Filter.Exp2WinRange.To = 60;
+        }
+        _ = Update();
+    }
+
+    private void SetLongGamesFilter()
+    {
+        if (StatsRequest.Filter == null)
+        {
+            StatsRequest.Filter = new StatsFilter();
+        }
+        if (IsLongGamesFilter)
+        {
+            StatsRequest.Filter.DurationRange.From = Data.MinDuration;
+            StatsRequest.Filter.DurationRange.To = Data.MaxDuration;
+        }
+        else
+        {
+            StatsRequest.Filter.DurationRange.From = 900;
+            StatsRequest.Filter.DurationRange.To = Data.MaxDuration;
+        }
+        _ = Update();
     }
 }

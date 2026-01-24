@@ -122,6 +122,7 @@
             var noToRating = request.Filter.RatingRange.To >= Data.MaxBuildRating;
             var noFromDuration = request.Filter.DurationRange.From <= Data.MinDuration;
             var noToDuration = request.Filter.DurationRange.To >= Data.MaxDuration;
+            var noExp2Win = request.Filter.Exp2WinRange.From <= 0;
 
             List<string> filterParts = new();
 
@@ -147,16 +148,21 @@
             {
                 if (!noFromDuration && !noToDuration)
                 {
-                    filterParts.Add($"Duration: {request.Filter.DurationRange.From}-{request.Filter.DurationRange.To}s");
+                    filterParts.Add($"Duration: {TimeSpan.FromSeconds(request.Filter.DurationRange.From).ToString(@"mm\:ss")}-{TimeSpan.FromSeconds(request.Filter.DurationRange.To).ToString(@"mm\:ss")}min");
                 }
                 else if (!noFromDuration)
                 {
-                    filterParts.Add($"Duration: ≥{request.Filter.DurationRange.From}s");
+                    filterParts.Add($"Duration: ≥{TimeSpan.FromSeconds(request.Filter.DurationRange.From).ToString(@"mm\:ss")}min");
                 }
                 else
                 {
-                    filterParts.Add($"Duration: ≤{request.Filter.DurationRange.To}s");
+                    filterParts.Add($"Duration: ≤{TimeSpan.FromSeconds(request.Filter.DurationRange.To).ToString(@"mm\:ss")}min");
                 }
+            }
+
+            if (!noExp2Win)
+            {
+                filterParts.Add($"Exp2Win: {request.Filter.Exp2WinRange.From}% - {request.Filter.Exp2WinRange.To}%");
             }
 
             if (filterParts.Count > 0)

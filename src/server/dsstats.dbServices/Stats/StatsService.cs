@@ -1,9 +1,10 @@
-﻿using dsstats.shared;
+﻿using dsstats.db;
+using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace dsstats.db.Services.Stats;
+namespace dsstats.dbServices.Stats;
 
 public interface IStatsProvider
 {
@@ -66,55 +67,40 @@ public class WinrateStatsProvider(DsstatsContext context, IMemoryCache memoryCac
 
     private async Task<List<WinrateEnt>> GetWinrateBaseData(StatsRequest request, CancellationToken token)
     {
-        var timeInfo = Data.GetTimePeriodInfo(request.TimePeriod);
-        var noEnd = timeInfo.End > DateTime.Today.AddDays(-2);
+        var f = StatsFilterResolver.Resolve(request);
 
-        bool noFromRating = true;
-        bool noToRating = true;
-        bool noFromDuration = true;
-        bool noToDuration = true;
+        var query =
+            from r in context.Replays
+            from rp in r.Players
+            from rr in r.Ratings
+            join rpr in context.ReplayPlayerRatings
+                on new { rp.ReplayPlayerId, rr.ReplayRatingId }
+                equals new { rpr.ReplayPlayerId, rpr.ReplayRatingId }
+            where
+                r.Gametime >= f.FromDate &&
+                (!f.HasToDate || r.Gametime < f.ToDate) &&
+                rr.RatingType == request.RatingType &&
+                (request.WithLeavers || rr.LeaverType == LeaverType.None) &&
+                (f.RatingFrom == null || rpr.RatingBefore >= f.RatingFrom) &&
+                (f.RatingTo == null || rpr.RatingBefore <= f.RatingTo) &&
+                (f.DurationFrom == null || r.Duration >= f.DurationFrom) &&
+                (f.DurationTo == null || r.Duration <= f.DurationTo) &&
+                (f.Exp2WinFrom == null || rr.ExpectedWinProbability >= f.Exp2WinFrom) &&
+                (f.Exp2WinTo == null || rr.ExpectedWinProbability <= f.Exp2WinTo) &&
+                (f.TeamRatingTo == null || rr.AvgRating <= f.TeamRatingTo) &&
+                (f.TeamRatingFrom == null || rr.AvgRating >= f.TeamRatingFrom) &&
+                rp.Race != Commander.None
+            group new { rp, rr, rpr, r } by rp.Race into g
+            select new WinrateEnt
+            {
+                Commander = g.Key,
+                Count = g.Count(),
+                AvgRating = Math.Round(g.Average(a => a.rpr.RatingBefore), 2),
+                AvgPerformance = Math.Round(g.Average(a => a.rpr.RatingDelta), 2),
+                Wins = g.Sum(s => s.rp.Result == PlayerResult.Win ? 1 : 0),
+                Replays = g.Select(s => s.r.ReplayId).Distinct().Count()
+            };
 
-        if (request.Filter != null)
-        {
-            timeInfo = new(request.Filter.DateRange.From, request.Filter.DateRange.To, "Custom", true);
-            noEnd = timeInfo.End > DateTime.Today.AddDays(-2);
-
-            noFromRating = request.Filter.RatingRange.From <= Data.MinBuildRating;
-            noToRating = request.Filter.RatingRange.To >= Data.MaxBuildRating;
-            noFromDuration = request.Filter.DurationRange.From <= Data.MinDuration;
-            noToDuration = request.Filter.DurationRange.To >= Data.MaxDuration;
-        }
-        else
-        {
-            request.Filter = new();
-        }
-
-
-        var query = from r in context.Replays
-                    from rp in r.Players
-                    from rr in r.Ratings
-                    join rpr in context.ReplayPlayerRatings
-                        on new { rp.ReplayPlayerId, rr.ReplayRatingId }
-                        equals new { rpr.ReplayPlayerId, rpr.ReplayRatingId }
-                    where r.Gametime >= timeInfo.Start
-                        && (noEnd || r.Gametime < timeInfo.End)
-                        && rr.RatingType == request.RatingType
-                        && (request.WithLeavers || rr.LeaverType == LeaverType.None)
-                        && (noFromRating || rpr.RatingBefore >= request.Filter.RatingRange.From)
-                        && (noToRating || rpr.RatingBefore <= request.Filter.RatingRange.To)
-                        && (noFromDuration || r.Duration >= request.Filter.DurationRange.From)
-                        && (noToDuration || r.Duration <= request.Filter.DurationRange.To)
-                        && rp.Race != Commander.None
-                    group new { rp, rr, rpr, r } by rp.Race into g
-                    select new WinrateEnt()
-                    {
-                        Commander = g.Key,
-                        Count = g.Count(),
-                        AvgRating = Math.Round(g.Average(a => a.rpr.RatingBefore), 2),
-                        AvgPerformance = Math.Round(g.Average(a => a.rpr.RatingDelta), 2),
-                        Wins = g.Sum(s => s.rp.Result == PlayerResult.Win ? 1 : 0),
-                        Replays = g.Select(s => s.r.ReplayId).Distinct().Count()
-                    };
         return await query
             .OrderByDescending(o => o.AvgPerformance)
             .ToListAsync(token);
@@ -122,28 +108,7 @@ public class WinrateStatsProvider(DsstatsContext context, IMemoryCache memoryCac
 
     private async Task<List<WinrateEnt>> GetWinrateInterestData(StatsRequest request, CancellationToken token)
     {
-        var timeInfo = Data.GetTimePeriodInfo(request.TimePeriod);
-        var noEnd = timeInfo.End > DateTime.Today.AddDays(-2);
-
-        bool noFromRating = true;
-        bool noToRating = true;
-        bool noFromDuration = true;
-        bool noToDuration = true;
-
-        if (request.Filter != null)
-        {
-            timeInfo = new(request.Filter.DateRange.From, request.Filter.DateRange.To, "Custom", true);
-            noEnd = timeInfo.End > DateTime.Today.AddDays(-2);
-
-            noFromRating = request.Filter.RatingRange.From <= Data.MinBuildRating;
-            noToRating = request.Filter.RatingRange.To >= Data.MaxBuildRating;
-            noFromDuration = request.Filter.DurationRange.From <= Data.MinDuration;
-            noToDuration = request.Filter.DurationRange.To >= Data.MaxDuration;
-        }
-        else
-        {
-            request.Filter = new();
-        }
+        var f = StatsFilterResolver.Resolve(request);
 
         var query = from r in context.Replays
                     from rp in r.Players
@@ -151,16 +116,21 @@ public class WinrateStatsProvider(DsstatsContext context, IMemoryCache memoryCac
                     join rpr in context.ReplayPlayerRatings
                         on new { rp.ReplayPlayerId, rr.ReplayRatingId }
                         equals new { rpr.ReplayPlayerId, rpr.ReplayRatingId }
-                    where r.Gametime >= timeInfo.Start
-                        && (noEnd || r.Gametime < timeInfo.End)
-                        && rr.RatingType == request.RatingType
-                        && (request.WithLeavers || rr.LeaverType == LeaverType.None)
-                        && (noFromRating || rpr.RatingBefore >= request.Filter.RatingRange.From)
-                        && (noToRating || rpr.RatingBefore <= request.Filter.RatingRange.To)
-                        && (noFromDuration || r.Duration >= request.Filter.DurationRange.From)
-                        && (noToDuration || r.Duration <= request.Filter.DurationRange.To)
-                        && rp.Race == request.Interest
-                        && rp.OppRace != Commander.None
+                    where
+                        r.Gametime >= f.FromDate &&
+                        (!f.HasToDate || r.Gametime < f.ToDate) &&
+                        rr.RatingType == request.RatingType &&
+                        (request.WithLeavers || rr.LeaverType == LeaverType.None) &&
+                        (f.RatingFrom == null || rpr.RatingBefore >= f.RatingFrom) &&
+                        (f.RatingTo == null || rpr.RatingBefore <= f.RatingTo) &&
+                        (f.DurationFrom == null || r.Duration >= f.DurationFrom) &&
+                        (f.DurationTo == null || r.Duration <= f.DurationTo) &&
+                        (f.Exp2WinFrom == null || rr.ExpectedWinProbability >= f.Exp2WinFrom) &&
+                        (f.Exp2WinTo == null || rr.ExpectedWinProbability <= f.Exp2WinTo) &&
+                        (f.TeamRatingTo == null || rr.AvgRating <= f.TeamRatingTo) &&
+                        (f.TeamRatingFrom == null || rr.AvgRating >= f.TeamRatingFrom) &&
+                        rp.Race == request.Interest &&
+                        rp.OppRace != Commander.None
                     group new { rp, rr, rpr, r } by rp.OppRace into g
                     select new WinrateEnt()
                     {
@@ -200,10 +170,12 @@ public static class StatsRequestExtensions
             return $"{statsType}:{request.RatingType}|{request.Interest}|{request.WithLeavers}"
                 + $"{request.Filter.DateRange.From.ToShortDateString()}|{request.Filter.DateRange.To.ToShortDateString()}"
                 + $"{request.Filter.RatingRange.From}|{request.Filter.RatingRange.To}"
-                + $"{request.Filter.DurationRange.From}|{request.Filter.DurationRange.To}";
+                + $"{request.Filter.DurationRange.From}|{request.Filter.DurationRange.To}"
+                + $"{request.Filter.Exp2WinRange.From}|{request.Filter.Exp2WinRange.To}";
         }
     }
 }
+
 
 
 

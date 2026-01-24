@@ -43,6 +43,9 @@
     [SupplyParameterFromQuery]
     public string? ToDuration { get; set; }
 
+    [SupplyParameterFromQuery]
+    public string? FromExp2Win { get; set; }
+
     private static readonly FrozenDictionary<string, string> paramMap = new Dictionary<string, string>
     {
         { nameof(StatsRequest.Type), "St" },
@@ -72,7 +75,7 @@
         Request = new StatsRequest
         {
             Type = EnumExtensions.ParseEnumOrDefault(St, StatsType.Winrate),
-            RatingType = EnumExtensions.ParseEnumOrDefault(Rt, RatingType.All),
+            RatingType = EnumExtensions.ParseEnumOrDefault(Rt, RatingType.Commanders),
             TimePeriod = EnumExtensions.ParseEnumOrDefault(Tp, TimePeriod.Last90Days),
             Interest = EnumExtensions.ParseEnumOrDefault(Int, Commander.None),
             WithLeavers = bool.TryParse(WithL, out var wl) && wl,
@@ -107,6 +110,12 @@
         if (int.TryParse(ToDuration, out var toDuration))
         {
             filter.DurationRange.To = toDuration;
+        }
+
+        if (int.TryParse(FromExp2Win, out var fromExp2Win) && fromExp2Win > 0 && fromExp2Win <= 45)
+        {
+            filter.Exp2WinRange.From = fromExp2Win;
+            filter.Exp2WinRange.To = 100 - fromExp2Win;
         }
 
         if (filter.IsDefault())
@@ -248,6 +257,15 @@
             {
                 queryDic["ToDuration"] = null;
             }
+
+            if (newRequest.Filter.Exp2WinRange.From > 0 && newRequest.Filter.Exp2WinRange.From <= 45)
+            {
+                queryDic["FromExp2Win"] = newRequest.Filter.Exp2WinRange.From.ToString();
+            }
+            else
+            {
+                queryDic["FromExp2Win"] = null;
+            }
         }
         else
         {
@@ -257,6 +275,7 @@
             queryDic["ToRating"] = null;
             queryDic["FromDuration"] = null;
             queryDic["ToDuration"] = null;
+            queryDic["FromExp2Win"] = null;
         }
 
         NavigationManager.NavigateTo(
