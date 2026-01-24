@@ -72,7 +72,7 @@
         Request = new StatsRequest
         {
             Type = EnumExtensions.ParseEnumOrDefault(St, StatsType.Winrate),
-            RatingType = EnumExtensions.ParseEnumOrDefault(Rt, RatingType.All),
+            RatingType = EnumExtensions.ParseEnumOrDefault(Rt, RatingType.Commanders),
             TimePeriod = EnumExtensions.ParseEnumOrDefault(Tp, TimePeriod.Last90Days),
             Interest = EnumExtensions.ParseEnumOrDefault(Int, Commander.None),
             WithLeavers = bool.TryParse(WithL, out var wl) && wl,

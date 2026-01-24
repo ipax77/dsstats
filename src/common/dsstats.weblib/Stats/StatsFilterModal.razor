@@ -49,6 +49,18 @@
 					</div>
 
 					<div class="mb-3">
+						<label class="form-label">Win Probability Range: @filter.Exp2WinRange.From% - @filter.Exp2WinRange.To%</label>
+						<input type="range" class="form-range"
+							   min="0" max="45" step="5"
+							   value="@filter.Exp2WinRange.From"
+							   @oninput="@(e => UpdateRange(e.Value))" />
+						<div class="d-flex justify-content-between small text-muted mt-1">
+							<span>0-100%</span>
+							<span>45-55%</span>
+						</div>
+					</div>
+
+					<div class="mb-3">
 						<label class="form-label">Duration Range (seconds)</label>
 						<div class="row g-md-2">
 							<div class="col-12 col-md-6">
@@ -132,5 +144,15 @@
 
 		await OnRequest.InvokeAsync(filter);
 		Close();
+	}
+
+	private void UpdateRange(object? fromValue)
+	{
+		if (fromValue is null || !int.TryParse(fromValue.ToString(), out var fromInt))
+		{
+			return;
+        }
+		filter.Exp2WinRange.From = fromInt;
+		filter.Exp2WinRange.To = 100 - fromInt;
 	}
 }

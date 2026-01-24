@@ -25,12 +25,14 @@ public sealed class StatsFilter
     public FilterRange<DateTime> DateRange { get; set; } = new() { From = DateTime.Today.AddDays(-90), To = DateTime.Today };
     public FilterRange<int> RatingRange { get; set; } = new() { From = Data.MinBuildRating, To = Data.MaxBuildRating };
     public FilterRange<int> DurationRange { get; set; } = new() { From = Data.MinDuration, To = Data.MaxDuration };
+    public FilterRange<int> Exp2WinRange { get; set; } = new() { From = 0, To = 100 };
 
     public void Reset()
     {
         DateRange = new() { From = DateTime.Today.AddDays(-90), To = DateTime.Today };
         RatingRange = new() { From = Data.MinBuildRating, To = Data.MaxBuildRating };
         DurationRange = new() { From = Data.MinDuration, To = Data.MaxDuration };
+        Exp2WinRange = new() { From = 0, To = 100 };
     }
 
     public bool IsDefault()
@@ -40,7 +42,8 @@ public sealed class StatsFilter
             && RatingRange.From == Data.MinBuildRating
             && RatingRange.To == Data.MaxBuildRating
             && DurationRange.From == Data.MinDuration
-            && DurationRange.To == Data.MaxDuration;
+            && DurationRange.To == Data.MaxDuration
+            && Exp2WinRange.From == 0 && Exp2WinRange.To == 100;
     }
 }
 

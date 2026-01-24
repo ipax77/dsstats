@@ -3,6 +3,7 @@ using dsstats.dbServices;
 using dsstats.service;
 using dsstats.service.Models;
 using dsstats.service.Services;
+using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 
@@ -48,6 +49,7 @@ builder.Services.AddHttpClient("update")
     });
 
 builder.Services.AddSingleton<IImportService, ImportService>();
+builder.Services.AddScoped<IRatingService, RatingService>();
 builder.Services.AddSingleton<DsstatsService>();
 builder.Services.AddOptions();
 builder.Services.AddHostedService<Worker>();
