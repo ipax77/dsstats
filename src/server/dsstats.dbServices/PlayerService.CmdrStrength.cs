@@ -35,25 +35,31 @@ public partial class PlayerService
                         from rp in pr.Player!.ReplayPlayers
                         join tm in context.ReplayPlayers on new { rp.ReplayId, rp.TeamId } equals new { tm.ReplayId, tm.TeamId }
                         join rr in context.ReplayRatings on tm.ReplayId equals rr.ReplayId
-                        join rpr in context.ReplayPlayerRatings on new { tm.ReplayPlayerId, rr.ReplayRatingId } equals new { rpr.ReplayPlayerId, rpr.ReplayRatingId }
+                        join rpr in context.ReplayPlayerRatings
+                            on new { rp.ReplayPlayerId, rr.ReplayRatingId } equals new { rpr.ReplayPlayerId, rpr.ReplayRatingId }
+                        join trpr in context.ReplayPlayerRatings
+                            on new { tm.ReplayPlayerId, rr.ReplayRatingId }
+                            equals new { trpr.ReplayPlayerId, trpr.ReplayRatingId }
                         where pr.RatingType == request.RatingType
                           && rr.RatingType == request.RatingType
                           && rp.Race == request.Interest
                           && rr.Replay!.Gametime >= timeInfo.Start
                           && (!timeInfo.HasEnd || rr.Replay.Gametime < timeInfo.End)
                           && tm.ReplayPlayerId != rp.ReplayPlayerId
-                        group new { pr.Player, rp, rpr } by new { rp.Player!.ToonId } into g
+                        group new { pr.Player, rp, rpr, trpr } by new { rp.Player!.ToonId } into g
                         where g.Count() >= limit
                         select new CmdrStrengthItem()
                         {
                             ToonId = new() { Id = g.Key.ToonId.Id, Realm = g.Key.ToonId.Realm, Region = g.Key.ToonId.Region },
                             Count = g.Count() / 2,
                             Wins = g.Count(c => c.rp.Result == PlayerResult.Win) / 2,
-                            AvgRating = Math.Round(g.Average(s => s.rpr.RatingBefore + s.rpr.RatingDelta)),
+                            AvgRating = Math.Round(g.Average(s => s.rpr.RatingBefore)),
                             AvgGain = Math.Round(g.Average(a => a.rpr.RatingDelta), 2),
-                            TeamRating = Math.Round(g.Average(a => a.rpr.RatingBefore))
+                            TeamRating = Math.Round(
+                                g.Where(x => x.trpr != null)
+                                 .Average(x => (double?)x.trpr.RatingBefore) ?? 0
+                            )
                         };
-
 
             var data = await group
                 .OrderByDescending(o => o.Count)
