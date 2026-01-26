@@ -11,53 +11,74 @@ using System.Threading.Channels;
 
 namespace dsstats.service.Services;
 
+public interface IDsstatsService
+{
+    void Dispose();
+    Task StartImportAsync(CancellationToken token);
+    Task Update(CancellationToken ct);
+}
+
 internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
                                     IHttpClientFactory httpClientFactory,
                                     IOptions<DsstatsConfig> dsstatsConfig,
-                                    ILogger<DsstatsService> logger) : IDisposable
+                                    ILogger<DsstatsService> logger) : IDisposable, IDsstatsService
 {
     public static readonly string appFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "dsstats.worker");
 
     private static readonly string configFile = Path.Combine(appFolder, "workerconfig.json");
     private readonly SemaphoreSlim _dbSemaphore = new(1, 1);
+    private readonly SemaphoreSlim _importSemaphore = new(1, 1);
     internal readonly Version CurrentVersion = new(3, 0, 1);
 
     public async Task StartImportAsync(CancellationToken token)
     {
-        var config = await GetConfig();
+        if (!await _importSemaphore.WaitAsync(0, token))
+        {
+            logger.LogInformation("An import is already in progress.");
+            return;
+        }
+
         try
         {
-            var toDoReplayPaths = await GetToDoReplayPaths(config, token);
-            if (toDoReplayPaths.Count == 0)
+            var config = await GetConfig();
+            try
             {
-                logger.LogWarning("no replay to decode found.");
-                return;
+                var toDoReplayPaths = await GetToDoReplayPaths(config, token);
+                if (toDoReplayPaths.Count == 0)
+                {
+                    logger.LogWarning("no replay to decode found.");
+                    return;
+                }
+                Stopwatch sw = Stopwatch.StartNew();
+                var channel = Channel.CreateBounded<ReplayResult>(
+                new BoundedChannelOptions(dsstatsConfig.Value.BatchSize)
+                {
+                    SingleWriter = false,
+                    SingleReader = true,
+                    FullMode = BoundedChannelFullMode.Wait
+                });
+
+                var decodeTask = DecodeService.DecodeReplaysToWriter(toDoReplayPaths, config.CPUCores, channel.Writer, token);
+                var importTask = ImportFromChannelAsync(channel.Reader, GetToonIds(config), token);
+
+                await decodeTask;
+                channel.Writer.TryComplete();
+                await importTask;
+
+                await Upload(config, token);
+                sw.Stop();
+                logger.LogWarning("{count} replays decoded in {time}.", toDoReplayPaths.Count, sw.Elapsed.ToString(@"mm\:ss", CultureInfo.InvariantCulture));
             }
-            Stopwatch sw = Stopwatch.StartNew();
-            var channel = Channel.CreateBounded<ReplayResult>(
-            new BoundedChannelOptions(dsstatsConfig.Value.BatchSize)
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
             {
-                SingleWriter = false,
-                SingleReader = true,
-                FullMode = BoundedChannelFullMode.Wait
-            });
-
-            var decodeTask = DecodeService.DecodeReplaysToWriter(toDoReplayPaths, config.CPUCores, channel.Writer, token);
-            var importTask = ImportFromChannelAsync(channel.Reader, GetToonIds(config), token);
-
-            await decodeTask;
-            channel.Writer.TryComplete();
-            await importTask;
-
-            await Upload(config, token);
-            sw.Stop();
-            logger.LogWarning("{count} replays decoded in {time}.", toDoReplayPaths.Count, sw.Elapsed.ToString(@"mm\:ss", CultureInfo.InvariantCulture));
+                logger.LogError("Failed decoding replays: {error}", ex.Message);
+            }
         }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
+        finally
         {
-            logger.LogError("Failed decoding replays: {error}", ex.Message);
+            _importSemaphore.Release();
         }
     }
 
@@ -163,6 +184,7 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
     public void Dispose()
     {
         _dbSemaphore.Dispose();
+        _importSemaphore.Dispose();
         configSemaphore.Dispose();
     }
 }

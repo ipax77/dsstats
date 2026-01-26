@@ -46,14 +46,27 @@
                                 Name="dsstats.worker"
                                 Wait="true" />
             </Component>
+            
+            <Component Id="TrayExecutable" Guid="d6c8b9a5-8a24-4f51-9e28-7b9c1d68a2d1" Bitness="always64">
+                <File Id="dsstats.tray.exe" Name="dsstats.tray.exe" Source="$(var.dsstats.tray.TargetPath)"/>
+                <File Id="favicon.ico" Name="favicon.ico" Source="$(var.dsstats.tray.TargetDir)favicon.ico"/>
+            </Component>
+
+            <Component Id="TrayAutoStart" Guid="f6d8d9c5-2b1f-4f8e-9c7b-1d68a2d1b9d5" Bitness="always64">
+                <RegistryKey Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Run">
+                    <RegistryValue Name="DsstatsTray"
+                                   Type="string"
+                                   Value="[#dsstats.tray.exe]"
+                                   KeyPath="yes"/>
+                </RegistryKey>
+            </Component>
         </DirectoryRef>
 
         <Feature Id="Service" Title="dsstats.worker Setup" Level="1">
             <ComponentRef Id="ServiceExecutable" />
+            <ComponentRef Id="TrayExecutable" />
+            <ComponentRef Id="TrayAutoStart" />
         </Feature>
 
     </Package>
 </Wix>
-
-
- 

@@ -1,6 +1,7 @@
 <Project Sdk="WixToolset.Sdk/6.0.2">
   <ItemGroup>
     <ProjectReference Include="..\dsstats.service\dsstats.service.csproj" />
+    <ProjectReference Include="..\dsstats.service\dsstats.tray\dsstats.tray.csproj" />
   </ItemGroup>
   <PropertyGroup>
     <InstallerPlatform>x64</InstallerPlatform>

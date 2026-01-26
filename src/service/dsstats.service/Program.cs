@@ -4,10 +4,13 @@ using dsstats.service;
 using dsstats.service.Models;
 using dsstats.service.Services;
 using dsstats.shared.Interfaces;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(o => o.Listen(IPAddress.Loopback, 5177));
+
 builder.Services.AddWindowsService(options =>
 {
     options.ServiceName = "Dsstats Service";
@@ -50,17 +53,23 @@ builder.Services.AddHttpClient("update")
 
 builder.Services.AddSingleton<IImportService, ImportService>();
 builder.Services.AddScoped<IRatingService, RatingsService>();
-builder.Services.AddSingleton<DsstatsService>();
+builder.Services.AddSingleton<IDsstatsService, DsstatsService>();
 builder.Services.AddOptions();
 builder.Services.AddHostedService<Worker>();
+builder.Services.AddControllers();
 
-var host = builder.Build();
+var app = builder.Build();
+
 if (!Directory.Exists(DsstatsService.appFolder))
 {
     Directory.CreateDirectory(DsstatsService.appFolder);
 }
-using var scope = builder.Services.BuildServiceProvider().CreateScope();
-var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
-context.Database.Migrate();
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+    context.Database.Migrate();
+}
 
-host.Run();
+app.MapControllers();
+
+app.Run();

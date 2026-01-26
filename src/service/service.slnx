@@ -7,4 +7,5 @@
   <Project Path="../server/dsstats.migrations.sqlite/dsstats.migrations.sqlite.csproj" />
   <Project Path="dsstats.installer/dsstats.installer.wixproj" Type="b7dd6f7e-def8-4e67-b5b7-07ef123db6f0" />
   <Project Path="dsstats.service/dsstats.service.csproj" />
+  <Project Path="dsstats.tray/dsstats.tray.csproj" />
 </Solution>

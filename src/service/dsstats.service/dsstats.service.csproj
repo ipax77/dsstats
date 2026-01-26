@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -23,7 +23,7 @@
 	<Nullable>enable</Nullable>
 	<WarningsAsErrors>nullable</WarningsAsErrors>
 	<LangVersion>latest</LangVersion>
-	<WarningsNotAsErrors></WarningsNotAsErrors>
+	<WarningsNotAsErrors>NU1510</WarningsNotAsErrors>
 	<DisabledWarnings>1591</DisabledWarnings>
 	<NoWarn>1591, CA2007, CA1727, CA1848, CA1031, CA1812</NoWarn>
   </PropertyGroup>

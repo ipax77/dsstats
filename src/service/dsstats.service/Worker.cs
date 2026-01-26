@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace dsstats.service;
 
-internal sealed class Worker(DsstatsService dsstatsService, IOptions<DsstatsConfig> dsstatsConfig, ILogger<Worker> logger) : BackgroundService
+internal sealed class Worker(IDsstatsService dsstatsService, IOptions<DsstatsConfig> dsstatsConfig, ILogger<Worker> logger) : BackgroundService
 {
     private int jobCounter;
 
