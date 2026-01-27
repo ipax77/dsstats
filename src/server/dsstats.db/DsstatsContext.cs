@@ -160,6 +160,8 @@ public class DsstatsContext : DbContext
             .HasIndex(x => new { x.ReplayRatingId, x.ReplayPlayerId, x.RatingType })
             .IsUnique();
 
+        modelBuilder.Entity<ReplayIdResult>().HasNoKey();
+
         MethodInfo weekMethodInfo = typeof(DsstatsContext)
             .GetRuntimeMethod(nameof(DsstatsContext.Week), new[] { typeof(DateTime) }) ?? throw new ArgumentNullException();
 

@@ -21,6 +21,7 @@ public interface IImportService
     int GetOrCreatePlayerId(string name, int region, int realm, int id, DsstatsContext context);
     Task CheckDuplicateCandidates();
     Task FixPlayerNames();
+    Task CheckRealmDuplicateCandidates();
 }
 public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<ImportService> logger) : IImportService
 {
