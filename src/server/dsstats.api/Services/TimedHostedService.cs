@@ -45,6 +45,7 @@ public class TimedHostedService(IServiceScopeFactory scopeFactory, ILogger<Timed
             {
                 var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
                 await importService.CheckDuplicateCandidates();
+                await importService.CheckRealmDuplicateCandidates();
                 await importService.FixPlayerNames();
                 await ratingService.CreateRatings();
             }

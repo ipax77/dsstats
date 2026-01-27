@@ -27,10 +27,64 @@ public partial class ImportService
         }
     }
 
-    private async Task HandleCandidateDuplicates(List<Replay> replays, DsstatsContext context)
+    public async Task CheckRealmDuplicateCandidates()
+    {
+        int startYear = 2018;
+        int currentYear = DateTime.UtcNow.Year;
+        int countTotal = 0;
+        int deletedTotal = 0;
+
+        for (int i = startYear; i <= currentYear; i++)
+        {
+            var from = new DateTime(i, 1, 1);
+            var to = new DateTime(i, 12, 31);
+
+            using var scope = scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+            context.Database.SetCommandTimeout(180);
+
+
+            var results = await context.Set<ReplayIdResult>()
+                .FromSqlRaw("CALL FindDuplicateReplayClustersInRange({0}, {1});", from, to)
+                .ToListAsync();
+
+            countTotal += results.Count;
+
+            // optional: preload all replays in one shot
+            var allIds = results
+                .SelectMany(r => r.ReplayIdsCsv.Split(','))
+                .Select(int.Parse)
+                .Distinct()
+                .ToList();
+
+            var allReplays = await GetMinimalReplays(allIds, context);
+
+            foreach (var result in results)
+            {
+                var replayIds = result.ReplayIdsCsv.Split(',')
+                    .Select(int.Parse)
+                    .ToList();
+
+                if (replayIds.Count <= 1)
+                    continue;
+
+                var replays = allReplays
+                    .Where(r => replayIds.Contains(r.ReplayId))
+                    .ToList();
+
+                deletedTotal += await HandleCandidateDuplicates(replays, context);
+            }
+        }
+        logger.LogWarning("Found {count} realm-based candidate duplicate clusters.", countTotal);
+        logger.LogWarning("Deleted {count} realm-based candidate duplicate replays.", deletedTotal);
+    }
+
+
+    private async Task<int> HandleCandidateDuplicates(List<Replay> replays, DsstatsContext context)
     {
         // Step 1: Cluster by start time within candidate hash
         var matchGroups = new List<List<Replay>>();
+        int deletedCount = 0;
 
         foreach (var replay in replays)
         {
@@ -46,19 +100,24 @@ public partial class ImportService
         // Step 2: Resolve duplicates inside each cluster
         foreach (var group in matchGroups.Where(x => x.Count > 1))
         {
-            // Keep longest replay
-            var keeper = group.OrderByDescending(r => r.Duration).First();
+            // Rank candidates
+            var keeper = group
+                .OrderByDescending(r => r.Duration)
+                .ThenByDescending(r => r.Version.StartsWith("5.", StringComparison.OrdinalIgnoreCase))
+                .ThenByDescending(r => r.ReplayId) // optional deterministic fallback
+                .First();
 
             foreach (var duplicate in group.Where(r => r != keeper))
             {
-                // Merge uploaders
                 SetUploaders(keeper, duplicate);
-                logger.LogInformation("Found duplicate replays: Keeper {keeperId}, Duplicate {duplicateId}", keeper.ReplayId, duplicate.ReplayId);
+                logger.LogInformation("Duplicate candidate: Keeper {keeperId}, Duplicate {dupId}", keeper.ReplayId, duplicate.ReplayId);
                 await DeleteReplay(duplicate.ReplayHash, context);
+                deletedCount++;
             }
 
             await context.SaveChangesAsync();
         }
+        return deletedCount;
     }
 
     private static async Task<List<string>> GetDuplicateCandidateHashes(DsstatsContext context, DateTime fromTime)
@@ -170,6 +229,43 @@ public partial class ImportService
                 .ThenInclude(i => i.Player)
             .AsNoTracking()
             .Where(x => x.CompatHash == compatHash)
+            .Select(s => new Replay()
+            {
+                ReplayId = s.ReplayId,
+                Version = s.Version,
+                ReplayHash = s.ReplayHash,
+                GameMode = s.GameMode,
+                RegionId = s.RegionId,
+                Gametime = s.Gametime,
+                Duration = s.Duration,
+                Players = s.Players.Select(t => new ReplayPlayer()
+                {
+                    ReplayPlayerId = t.ReplayPlayerId,
+                    GamePos = t.GamePos,
+                    Name = t.Name,
+                    IsUploader = t.IsUploader,
+                    Race = t.Race,
+                    Player = new Player()
+                    {
+                        ToonId = new()
+                        {
+                            Id = t.Player!.ToonId.Id,
+                            Realm = t.Player!.ToonId.Realm,
+                            Region = t.Player!.ToonId.Region
+                        }
+                    }
+                }).ToList()
+            })
+            .ToListAsync();
+    }
+
+    private static async Task<List<Replay>> GetMinimalReplays(List<int> replayIds, DsstatsContext context)
+    {
+        return await context.Replays
+            .Include(i => i.Players)
+                .ThenInclude(i => i.Player)
+            .AsNoTracking()
+            .Where(x => replayIds.Contains(x.ReplayId))
             .Select(s => new Replay()
             {
                 ReplayId = s.ReplayId,
