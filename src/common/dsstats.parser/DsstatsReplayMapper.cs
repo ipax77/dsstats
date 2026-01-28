@@ -103,7 +103,7 @@ internal static partial class DsstatsReplayMapper
         {
             return GameMode.BrawlCommanders;
         }
-        else if (isBrawl && isStandard)
+        else if (isBrawl)
         {
             return GameMode.BrawlStandard;
         }

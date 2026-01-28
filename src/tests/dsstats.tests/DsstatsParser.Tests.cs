@@ -128,6 +128,26 @@ public sealed class DsstatsParserTests
         Assert.AreEqual(617, replayDto.Duration);
     }
 
+    [TestMethod]
+    [DeploymentItem("testdata/Direct Strike (7791).SC2Replay")]
+    public async Task CanSetGameMode()
+    {
+        string replayPath = "Direct Strike (7791).SC2Replay";
+        var replayDto = await GetReplayDto(replayPath);
+
+        Assert.AreNotEqual(GameMode.Tutorial, replayDto.GameMode);
+    }
+
+    [TestMethod]
+    [DeploymentItem("testdata/Direct Strike (130).SC2Replay")]
+    public async Task CanSetGameMode2()
+    {
+        string replayPath = "Direct Strike (130).SC2Replay";
+        var replayDto = await GetReplayDto(replayPath);
+
+        Assert.AreNotEqual(GameMode.Tutorial, replayDto.GameMode);
+    }
+
     private async Task<ReplayDto> GetReplayDto(string replayPath)
     {
         var sc2Replay = await DsstatsParser.GetSc2Replay(replayPath);
