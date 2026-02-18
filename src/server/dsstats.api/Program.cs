@@ -109,9 +109,12 @@ dbContext.Database.Migrate();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
-    importService.CheckRealmDuplicateCandidates().Wait();
-    app.MapOpenApi();
+    //var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
+    //var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
+    //await importService.CheckDuplicateCandidates();
+    // await importService.CheckRealmDuplicateCandidates();
+    //await importService.FixPlayerNames();
+    //await ratingService.CreateRatings();
 }
 
 app.UseForwardedHeaders();

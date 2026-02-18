@@ -24,11 +24,12 @@ public partial class PlayerService
             .Select(p => p.ReplayId)
             .ToListAsync(token)).ToHashSet();
 
-        var replays = await GetDsstatsReplays(context, playerId, replayIds, token);
+        var replays = await GetDsstatsReplays(context, ratingType, playerId, replayIds, token);
 
         var ratings = await GetDsstatsRatings(context, ratingType, playerId, replayIds, token);
 
         var ratingDetails = GenerateStats3(replays, ratings, playerId);
+        ratingDetails.RatingType = ratingType;
 
         foreach (var stat in ratingDetails.TeammateStats)
         {
@@ -57,11 +58,12 @@ public partial class PlayerService
         return ratingDetails;
     }
 
-    private static async Task<List<ReplayPlayerStatsData>> GetDsstatsReplays(DsstatsContext context, int playerId, HashSet<int> replayIds, CancellationToken token)
+    private static async Task<List<ReplayPlayerStatsData>> GetDsstatsReplays(DsstatsContext context, RatingType ratingType, int playerId, HashSet<int> replayIds, CancellationToken token)
     {
         return await context.Replays
             .AsNoTracking()
-            .Where(r => replayIds.Contains(r.ReplayId))
+            .Where(r => replayIds.Contains(r.ReplayId)
+                && r.Ratings.Any(a => a.RatingType == ratingType))
             .Select(s => new ReplayPlayerStatsData
             {
                 ReplayId = s.ReplayId,
