@@ -311,4 +311,107 @@ public static partial class DsstatsParser
         sb.Append(minArmy + minKills + minIncome + maxKills);
         return sb.ToString();
     }
+
+    public static ReplayTourneyInfoDto? GetMetaData(Sc2Replay replay)
+    {
+        List<TourneyPlayerDto> players = [];
+
+        if (replay.Initdata is null || replay.Details is null || replay.Metadata is null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < replay.Initdata.UserInitialData.Count; i++)
+        {
+            var initData = replay.Initdata.UserInitialData.ElementAt(i);
+            if (string.IsNullOrEmpty(initData.Name))
+            {
+                continue;
+            }
+
+            TourneyPlayerDto player = new()
+            {
+                Player = new()
+                {
+                    Name = initData.Name,
+                },
+            };
+            players.Add(player);
+        }
+
+        for (int i = 0; i < replay.Initdata.LobbyState.Slots.Count; i++)
+        {
+            var slot = replay.Initdata.LobbyState.Slots.ElementAt(i);
+            var player = players.ElementAtOrDefault(i);
+            if (player is null)
+            {
+                continue;
+            }
+            player.Observer = slot.Observe == 1;
+            player.WorkingSetSlotId = slot.WorkingSetSlotId;
+        }
+
+        for (int i = 0; i < replay.Metadata.Players.Count; i++)
+        {
+            var metaPlayer = replay.Metadata.Players.ElementAt(i);
+            var player = players.ElementAtOrDefault(i);
+            if (player is null)
+            {
+                continue;
+            }
+            player.AssignedRace = GetRace(metaPlayer.AssignedRace);
+            player.SelectedRace = GetSelectedRace(metaPlayer.SelectedRace);
+        }
+
+        for (int i = 0; i < replay.Details.Players.Count; i++)
+        {
+            var detailPlayer = replay.Details.Players.ElementAt(i);
+            var player = players.ElementAtOrDefault(i);
+            if (player is null)
+            {
+                continue;
+            }
+            player.Player.Name = detailPlayer.Name;
+            player.Player.ToonId = new()
+            {
+                Region = detailPlayer.Toon.Region,
+                Realm = detailPlayer.Toon.Realm,
+                Id = detailPlayer.Toon.Id,
+            };
+            player.PlayerColor = new()
+            {
+                A = detailPlayer.Color.A,
+                R = detailPlayer.Color.R,
+                G = detailPlayer.Color.G,
+                B = detailPlayer.Color.B,
+            };
+        }
+
+        return new()
+        {
+            Players = players
+        };
+    }
+
+    private static Commander GetRace(string race)
+    {
+        if (Enum.TryParse(typeof(Commander), race, out var cmdrObj)
+            && cmdrObj is Commander cmdr)
+        {
+            return cmdr;
+        }
+        return Commander.None;
+    }
+
+    private static Commander GetSelectedRace(string selectedRace)
+    {
+        var race = selectedRace switch
+        {
+            "Terr" => "Terran",
+            "Prot" => "Protoss",
+            "Rand" => "None",
+            _ => selectedRace
+        };
+        return GetRace(race);
+    }
 }

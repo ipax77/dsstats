@@ -184,6 +184,10 @@ public static class EnumExtensions
     public static TEnum ParseEnumOrDefault<TEnum>(string? value, TEnum defaultValue)
     where TEnum : struct, Enum
     {
+        if (int.TryParse(value, out var enumValue))
+        {
+            return ParseEnumOrDefault(enumValue, defaultValue);
+        }
         if (!string.IsNullOrWhiteSpace(value) &&
             Enum.TryParse<TEnum>(value, true, out var parsed) &&
             Enum.IsDefined(parsed))
