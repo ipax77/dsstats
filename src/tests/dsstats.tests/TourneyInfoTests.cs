@@ -1,8 +1,5 @@
 ﻿using dsstats.parser;
 using dsstats.shared;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
 
 namespace dsstats.tests;
 

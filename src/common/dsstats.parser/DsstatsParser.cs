@@ -336,6 +336,7 @@ public static partial class DsstatsParser
                     Name = initData.Name,
                 },
             };
+            players.Add(player);
         }
 
         for (int i = 0; i < replay.Initdata.LobbyState.Slots.Count; i++)
