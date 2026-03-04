@@ -43,17 +43,16 @@
             <table class="tptable w-auto">
                 <thead class="user-select-none">
                     <tr>
-                        <th>Commander</th>
-                        <th>Games</th>
-                        <th>AvgPerf</th>
-                        <th>Winrate</th>
+                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Commander))">Commander</th>
+                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Count))">Games</th>
+                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.AvgPerformance))">AvgPerf</th>
+                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Wins))">Winrate</th>
                     </tr>
                 </thead>
                 <tbody class="text-nowrap">
                     @if (response != null)
                     {
-                        @foreach (var ent in response.WinrateEnts
-                                        .OrderByDescending(o => o.AvgPerformance))
+                        @foreach (var ent in SortedStats)
                         {
                             <tr class="@(ent.Count < 100 ? "text-danger" : "")">
                                 <td>
@@ -91,6 +90,36 @@
     StatsRequestComponent? statsRequestComponent;
     bool isLoading = true;
     bool showSampleSizeWarning = false;
+
+    private string? currentSortColumn = null;
+    private bool isDescending = true;
+
+    private IEnumerable<WinrateEnt> SortedStats
+    {
+        get
+        {
+            if (response == null)
+            {
+                return Enumerable.Empty<WinrateEnt>();
+            }
+            return currentSortColumn switch
+            {
+                nameof(WinrateEnt.Commander) => isDescending
+                    ? response.WinrateEnts.OrderByDescending(e => e.Commander)
+                    : response.WinrateEnts.OrderBy(e => e.Commander),
+                nameof(WinrateEnt.Count) => isDescending
+                    ? response.WinrateEnts.OrderByDescending(e => e.Count)
+                    : response.WinrateEnts.OrderBy(e => e.Count),
+                nameof(WinrateEnt.AvgPerformance) => isDescending
+                    ? response.WinrateEnts.OrderByDescending(e => e.AvgPerformance)
+                    : response.WinrateEnts.OrderBy(e => e.AvgPerformance),
+                nameof(WinrateEnt.Wins) => isDescending
+                    ? response.WinrateEnts.OrderByDescending(e => e.Count == 0 ? 0 : e.Wins / (double)e.Count)
+                    : response.WinrateEnts.OrderBy(e => e.Count == 0 ? 0 : e.Wins / (double)e.Count),
+                _ => response.WinrateEnts.OrderByDescending(e => e.AvgPerformance)
+            };
+        }
+    }
 
     protected override void OnInitialized()
     {
@@ -195,5 +224,33 @@
             StatsRequest.Filter.DurationRange.To = Data.MaxDuration;
         }
         _ = Update();
+    }
+
+    private void SortBy(string columnName)
+    {
+        if (currentSortColumn == columnName)
+        {
+            // Toggle direction if the same column is clicked
+            isDescending = !isDescending;
+        }
+        else
+        {
+            // New column clicked, set new column and default to descending
+            currentSortColumn = columnName;
+            isDescending = true;
+        }
+    }
+
+    private MarkupString GetSortIcon(string columnName)
+    {
+        if (currentSortColumn != columnName)
+        {
+            return (MarkupString)""; // No icon if not the current sort column
+        }
+
+        // Use Bootstrap Icons (bi) for direction indicators
+        return isDescending
+            ? (MarkupString)"<span class='bi bi-arrow-down-short ms-1'></span>"
+            : (MarkupString)"<span class='bi bi-arrow-up-short ms-1'></span>";
     }
 }
