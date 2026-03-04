@@ -43,10 +43,22 @@
             <table class="tptable w-auto">
                 <thead class="user-select-none">
                     <tr>
-                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Commander))">Commander</th>
-                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Count))">Games</th>
-                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.AvgPerformance))">AvgPerf</th>
-                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Wins))">Winrate</th>
+                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Commander))">
+                            Commander
+                            @GetSortIcon(nameof(WinrateEnt.Commander))
+                        </th>
+                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Count))">
+                            Games
+                            @GetSortIcon(nameof(WinrateEnt.Count))
+                        </th>
+                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.AvgPerformance))">
+                            AvgPerf
+                            @GetSortIcon(nameof(WinrateEnt.AvgPerformance))
+                        </th>
+                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Wins))">
+                            Winrate
+                            @GetSortIcon(nameof(WinrateEnt.Wins))
+                        </th>
                     </tr>
                 </thead>
                 <tbody class="text-nowrap">
