@@ -87,8 +87,16 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
     {
         if (moduleTask.IsValueCreated)
         {
-            var module = await moduleTask.Value.ConfigureAwait(false);
-            await module.DisposeAsync();
+            try
+            {
+                var module = await moduleTask.Value.ConfigureAwait(false);
+                await module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // Circuit disconnected (e.g. page closed) — JS interop is no longer available.
+            }
+            catch (TaskCanceledException) { }
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿@using Microsoft.JSInterop
+@using Microsoft.JSInterop
 @using dsstats.shared
 @using dsstats.shared.Units
 
@@ -42,7 +42,7 @@
             <div class="bgchart" style="height: 600px; width: 500px;">
                 @if (showMap)
                 {
-                    <BuildChart @ref="buildChart" Spawn="spawn" Team="Player.TeamId" Cmdr="Player.Race" moduleTask="moduleTask" />
+                    <BuildChart @ref="buildChart" Spawn="spawn" Team="Player.TeamId" Cmdr="Player.Race" moduleTask="moduleTask" UnitDisplayInfo="_unitDisplayInfo" />
                 }
             </div>
         </div>
@@ -64,12 +64,13 @@
                 <tbody>
                     @if (spawn != null)
                     {
-                        @foreach (var unit in spawn.Units.OrderByDescending(o => o.Count))
+                    @foreach (var unit in spawn.Units.OrderByDescending(o => o.Count))
                         {
                             var unitInfo = UnitMap.GetUnitInfo(unit.Name, Player.Race);
+                            var unitColor = _unitDisplayInfo.TryGetValue(unit.Name, out var di) ? di.Color : "#CCCCCC";
                             <tr @onmouseover="e => HighlightUnits(unitInfo.Name)">
                                 <td>
-                                    <span class="unit-color-indicator" style="background-color: @($"{UnitMap.GetColor(unitInfo.Name)}CC")"></span>
+                                    <span class="unit-color-indicator" style="background-color: @($"{unitColor}CC")"></span>
                                 </td>
                                 <td>@unitInfo.Name</td>
                                 <td class="text-start">@unit.Count</td>
@@ -100,6 +101,21 @@
     private SpawnDto? spawn => ReplayHelper.GetSpawn(Player);
     private string badgeClass => ReplayHelper.IsWinner(Player) ? "text-bg-success" : "text-bg-danger";
 
+    private Dictionary<string, (double Radius, string Color)> _unitDisplayInfo = [];
+
+    protected override void OnParametersSet()
+    {
+        ComputeDisplayInfo();
+    }
+
+    private void ComputeDisplayInfo()
+    {
+        _unitDisplayInfo = spawn?.Units
+            .DistinctBy(u => u.Name)
+            .ToDictionary(u => u.Name, u => UnitMapNg.GetColorAndRadius(u.Name, Player.Race))
+            ?? [];
+    }
+
     private async Task HighlightUnits(string name)
     {
         if (!showMap || buildChart is null)
@@ -111,7 +127,8 @@
 
     public void Update()
     {
+        ComputeDisplayInfo();
         InvokeAsync(StateHasChanged);
-        buildChart?.Update(spawn, Player.Race, Player.TeamId);
+        buildChart?.Update(spawn, Player.Race, Player.TeamId, _unitDisplayInfo);
     }
 }

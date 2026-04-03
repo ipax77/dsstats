@@ -26,6 +26,9 @@
     [Parameter, EditorRequired]
     public Lazy<Task<IJSObjectReference>> moduleTask { get; set; } = default!;
 
+    [Parameter]
+    public Dictionary<string, (double Radius, string Color)>? UnitDisplayInfo { get; set; }
+
     private CustomChartJsConfig chartConfig = null!;
     private ChartComponent? chartComponent;
 
@@ -83,7 +86,7 @@
         return (x, y);
     }
 
-    public async Task Update(SpawnDto? spawn, Commander cmdr, int team)
+    public async Task Update(SpawnDto? spawn, Commander cmdr, int team, Dictionary<string, (double Radius, string Color)>? unitDisplayInfo = null)
     {
         if (!chartIsReady)
         {
@@ -103,6 +106,10 @@
         Team = team;
         Spawn = spawn;
         Cmdr = cmdr;
+        if (unitDisplayInfo is not null)
+        {
+            UnitDisplayInfo = unitDisplayInfo;
+        }
 
         var unitGroups = GetUnits(spawn, team).GroupBy(g => g.Name);
         List<ChartJsDataset> datasets = new();
@@ -115,7 +122,7 @@
                 continue;
             }
             var unitInfo = UnitMap.GetUnitInfo(group.Key, Cmdr);
-            datasets.Add(GetBubbleChartDataset(items, unitInfo));
+            datasets.Add(GetBubbleChartDataset(items, unitInfo, group.Key));
             i++;
         }
         try
@@ -146,8 +153,13 @@
             return;
         }
 
-        var module = await moduleTask.Value.ConfigureAwait(false);
-        await module.InvokeVoidAsync("setDatasetPointsActive", chartConfig.ChartJsConfigGuid, index);
+        try
+        {
+            var module = await moduleTask.Value.ConfigureAwait(false);
+            await module.InvokeVoidAsync("setDatasetPointsActive", chartConfig.ChartJsConfigGuid, index);
+        }
+        catch (TaskCanceledException) { }
+        catch (JSDisconnectedException) { }
     }
 
     private async void ChartEventTriggered(ChartJsEvent e)
@@ -167,13 +179,12 @@
         }
     }
 
-    private ChartJsDataset GetBubbleChartDataset(List<MapUnit> units, UnitInfo unitInfo)
+    private ChartJsDataset GetBubbleChartDataset(List<MapUnit> units, UnitInfo unitInfo, string dbName)
     {
         var label = unitInfo.Name;
-        var color = UnitMap.GetColor(unitInfo.Name);
-        // var color = UnitMap.GetColor(unitInfo.Name, Cmdr);
-        // var color = UnitMap.ResolveAutoColor(unitInfo.Name);
-        var radius = GetRadius(unitInfo);
+        (var radius, var color) = UnitDisplayInfo is not null && UnitDisplayInfo.TryGetValue(dbName, out var di)
+            ? di
+            : UnitMapNg.GetColorAndRadius(dbName, Cmdr);
 
         return new BubbleDataset()
         {
@@ -191,23 +202,6 @@
             HoverBorderColor = $"{color}FF",
             HoverBorderWidth = 4,
         };
-    }
-
-    private double GetRadius(UnitInfo unitInfo)
-    {
-        var size = unitInfo.Size switch
-        {
-            UnitSize.Small => 8,
-            UnitSize.Medium => 12,
-            UnitSize.Large => 16,
-            UnitSize.VeryLarge => 22,
-            _ => 12
-        };
-
-        if (unitInfo.Type == UnitType.Air)
-            size += 2;
-
-        return size;
     }
 
     public CustomChartJsConfig GetBubbleChartConfig()
@@ -297,9 +291,14 @@
     {
         if (!annotationsRegistered)
         {
-            var module = await moduleTask.Value.ConfigureAwait(false);
-            await module.InvokeVoidAsync("registerPlugin")
-                .ConfigureAwait(false);
+            try
+            {
+                var module = await moduleTask.Value.ConfigureAwait(false);
+                await module.InvokeVoidAsync("registerPlugin")
+                    .ConfigureAwait(false);
+            }
+            catch (TaskCanceledException) { return false; }
+            catch (JSDisconnectedException) { return false; }
 
             annotationsRegistered = true;
 
