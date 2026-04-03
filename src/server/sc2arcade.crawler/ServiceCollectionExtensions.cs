@@ -9,8 +9,9 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient("sc2arcardeClient")
             .ConfigureHttpClient(options =>
             {
-                options.BaseAddress = new Uri("https://api.sc2arcade.com");
+                options.BaseAddress = new Uri("https://sc2arcade.com/api/");
                 options.DefaultRequestHeaders.Add("Accept", "application/json");
+                options.DefaultRequestHeaders.Add("User-Agent", "dsstats-crawler/1.0");
             });
 
         services.AddScoped<ICrawlerService, CrawlerService>();

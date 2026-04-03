@@ -251,6 +251,41 @@ public static class ArcadeReplayDtoMapper
         return new(replay.RegionId, replay.BnetBucketId, replay.BnetRecordId);
     }
 
+    public static ArcadeReplayDto ToArcadeDto(this ArcadeReplay replay)
+    {
+        return new()
+        {
+            RegionId = replay.RegionId,
+            BnetBucketId = replay.BnetBucketId,
+            BnetRecordId = replay.BnetRecordId,
+            GameMode = replay.GameMode,
+            CreatedAt = replay.CreatedAt,
+            Duration = replay.Duration,
+            PlayerCount = replay.PlayerCount,
+            WinnerTeam = replay.WinnerTeam,
+            Players = replay.Players.Select(p => p.ToArcadePlayerDto()).ToList(),
+        };
+    }
+
+    public static ArcadeReplayPlayerDto ToArcadePlayerDto(this ArcadeReplayPlayer player)
+    {
+        return new()
+        {
+            SlotNumber = player.SlotNumber,
+            Team = player.Team,
+            Player = new()
+            {
+                Name = player.Player?.Name ?? string.Empty,
+                ToonId = new()
+                {
+                    Region = player.Player?.ToonId.Region ?? 0,
+                    Realm = player.Player?.ToonId.Realm ?? 0,
+                    Id = player.Player?.ToonId.Id ?? 0,
+                }
+            }
+        };
+    }
+
     public static ReplayDto ToDto(this ArcadeReplay replay)
     {
         return new()

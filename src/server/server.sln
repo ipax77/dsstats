@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.ratings", "dsstats.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.apiServices", "dsstats.apiServices\dsstats.apiServices.csproj", "{874CC9B1-B46F-4777-A992-A0EDCFC658BA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.arcade.migration", "dsstats.arcade.migration\dsstats.arcade.migration.csproj", "{73E45350-AD6E-4327-B297-951CDCCF4BE1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -195,6 +197,18 @@ Global
 		{874CC9B1-B46F-4777-A992-A0EDCFC658BA}.Release|x64.Build.0 = Release|Any CPU
 		{874CC9B1-B46F-4777-A992-A0EDCFC658BA}.Release|x86.ActiveCfg = Release|Any CPU
 		{874CC9B1-B46F-4777-A992-A0EDCFC658BA}.Release|x86.Build.0 = Release|Any CPU
+		{73E45350-AD6E-4327-B297-951CDCCF4BE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{73E45350-AD6E-4327-B297-951CDCCF4BE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{73E45350-AD6E-4327-B297-951CDCCF4BE1}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{73E45350-AD6E-4327-B297-951CDCCF4BE1}.Debug|x64.Build.0 = Debug|Any CPU
+		{73E45350-AD6E-4327-B297-951CDCCF4BE1}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{73E45350-AD6E-4327-B297-951CDCCF4BE1}.Debug|x86.Build.0 = Debug|Any CPU
+		{73E45350-AD6E-4327-B297-951CDCCF4BE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{73E45350-AD6E-4327-B297-951CDCCF4BE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{73E45350-AD6E-4327-B297-951CDCCF4BE1}.Release|x64.ActiveCfg = Release|Any CPU
+		{73E45350-AD6E-4327-B297-951CDCCF4BE1}.Release|x64.Build.0 = Release|Any CPU
+		{73E45350-AD6E-4327-B297-951CDCCF4BE1}.Release|x86.ActiveCfg = Release|Any CPU
+		{73E45350-AD6E-4327-B297-951CDCCF4BE1}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
