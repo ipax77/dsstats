@@ -153,8 +153,13 @@
             return;
         }
 
-        var module = await moduleTask.Value.ConfigureAwait(false);
-        await module.InvokeVoidAsync("setDatasetPointsActive", chartConfig.ChartJsConfigGuid, index);
+        try
+        {
+            var module = await moduleTask.Value.ConfigureAwait(false);
+            await module.InvokeVoidAsync("setDatasetPointsActive", chartConfig.ChartJsConfigGuid, index);
+        }
+        catch (TaskCanceledException) { }
+        catch (JSDisconnectedException) { }
     }
 
     private async void ChartEventTriggered(ChartJsEvent e)
@@ -286,9 +291,14 @@
     {
         if (!annotationsRegistered)
         {
-            var module = await moduleTask.Value.ConfigureAwait(false);
-            await module.InvokeVoidAsync("registerPlugin")
-                .ConfigureAwait(false);
+            try
+            {
+                var module = await moduleTask.Value.ConfigureAwait(false);
+                await module.InvokeVoidAsync("registerPlugin")
+                    .ConfigureAwait(false);
+            }
+            catch (TaskCanceledException) { return false; }
+            catch (JSDisconnectedException) { return false; }
 
             annotationsRegistered = true;
 

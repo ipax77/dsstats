@@ -96,6 +96,7 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
             {
                 // Circuit disconnected (e.g. page closed) — JS interop is no longer available.
             }
+            catch (TaskCanceledException) { }
         }
     }
 }
