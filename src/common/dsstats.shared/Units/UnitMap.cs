@@ -33,27 +33,8 @@ public static partial class UnitMap
         };
     }
 
+    // Curated 15-color palette — same hand-picked colors as the old UnitColor enum.
     private static readonly string[] _stdColors = [
-        "#FF6B6B",
-        "#FF9F1C",
-        "#FFCA3A",
-        "#8AC926",
-        "#2EC4B6",
-        "#36A2EB",
-        "#4D96FF",
-        "#9D4EDD",
-        "#C77DFF",
-        "#FF5D8F",
-        "#E06C75",
-        "#F2A541",
-        "#FFD166",
-        "#80ED99",
-        "#3DB2FF",
-        "#4895EF",
-        "#7B2CBF",
-        "#A663CC",
-        "#FF84E8",
-        "#F28482",
         "#C0392B",
         "#9B59B6",
         "#2980B9",
@@ -295,7 +276,7 @@ public static partial class UnitMap
         { "Talis", new("Talis", UnitSize.Medium, UnitType.Ground) },
         { "Tempest", new("Tempest", UnitSize.Large, UnitType.Air) },
         { "TheiaRaven", new("TheiaRaven", UnitSize.Medium, UnitType.Air) },
-        { "Thor", new("Thor", UnitSize.Medium, UnitType.Ground) },
+        { "Thor", new("Thor", UnitSize.Large, UnitType.Ground) },
         { "Thor (AP)", new("Thor (AP)", UnitSize.Large, UnitType.Ground) },
         { "Titan", new("Titan", UnitSize.Medium, UnitType.Ground) },
         { "Torrasque", new("Torrasque", UnitSize.Large, UnitType.Ground) },
@@ -436,11 +417,9 @@ public static partial class UnitMap
     {
         if (_unitIndexMap.TryGetValue(unitName, out int index))
         {
-            // Use the stable index to generate a color.
-            return GenerateColorFromIndex(index);
+            return _stdColors[index % _stdColors.Length];
         }
-        // Fallback for an unknown unit name, though this should be rare if the list is comprehensive.
-        return "#CCCCCC"; // A neutral gray fallback.
+        return "#CCCCCC";
     }
 
     public static string GetColor(string unitName, Commander commander)
@@ -449,7 +428,7 @@ public static partial class UnitMap
             return "#CCCCCC";
 
         if (!Data.CmdrColor.TryGetValue(commander, out var baseHex))
-            return GenerateColorFromIndex(index);
+            return _stdColors[index % _stdColors.Length];
 
         return GenerateCommanderVariant(baseHex, index);
     }
@@ -467,8 +446,9 @@ public static partial class UnitMap
 
         int newHue = (h + hueOffset) % 360;
         int newLightness = Clamp(l + lightnessOffset, 35, 75);
+        int newSaturation = Math.Max(s, 60);
 
-        return HslToHex(newHue, s, newLightness);
+        return HslToHex(newHue, newSaturation, newLightness);
     }
 
     private static int Clamp(int value, int min, int max)

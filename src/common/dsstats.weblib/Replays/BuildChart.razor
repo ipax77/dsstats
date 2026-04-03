@@ -170,9 +170,8 @@
     private ChartJsDataset GetBubbleChartDataset(List<MapUnit> units, UnitInfo unitInfo)
     {
         var label = unitInfo.Name;
-        var color = UnitMap.GetColor(unitInfo.Name);
         // var color = UnitMap.GetColor(unitInfo.Name, Cmdr);
-        // var color = UnitMap.ResolveAutoColor(unitInfo.Name);
+        var color = UnitMap.GetColor(unitInfo.Name);
         var radius = GetRadius(unitInfo);
 
         return new BubbleDataset()
@@ -197,11 +196,11 @@
     {
         var size = unitInfo.Size switch
         {
-            UnitSize.Small => 8,
-            UnitSize.Medium => 12,
-            UnitSize.Large => 16,
-            UnitSize.VeryLarge => 22,
-            _ => 12
+            UnitSize.Small => 6,
+            UnitSize.Medium => 10,
+            UnitSize.Large => 15,
+            UnitSize.VeryLarge => 20,
+            _ => 10
         };
 
         if (unitInfo.Type == UnitType.Air)

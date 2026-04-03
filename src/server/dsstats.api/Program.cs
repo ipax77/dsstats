@@ -109,8 +109,8 @@ dbContext.Database.Migrate();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    var crawlerService =  scope.ServiceProvider.GetRequiredService<ICrawlerService>();
-    await crawlerService.GetLobbyHistory(new DateTime(2025, 11, 19), default);
+    //var crawlerService =  scope.ServiceProvider.GetRequiredService<ICrawlerService>();
+    //await crawlerService.GetLobbyHistory(new DateTime(2025, 11, 19), default);
 }
 
 app.UseForwardedHeaders();

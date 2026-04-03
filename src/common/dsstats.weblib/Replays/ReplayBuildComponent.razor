@@ -69,6 +69,7 @@
                             var unitInfo = UnitMap.GetUnitInfo(unit.Name, Player.Race);
                             <tr @onmouseover="e => HighlightUnits(unitInfo.Name)">
                                 <td>
+                                    @* <span class="unit-color-indicator" style="background-color: @($"{UnitMap.GetColor(unitInfo.Name, Player.Race)}CC")"></span> *@
                                     <span class="unit-color-indicator" style="background-color: @($"{UnitMap.GetColor(unitInfo.Name)}CC")"></span>
                                 </td>
                                 <td>@unitInfo.Name</td>

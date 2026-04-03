@@ -1,0 +1,12 @@
+The colors in src\common\dsstats.shared\Units\UnitMap.cs used in src\common\dsstats.weblib\Replays\BuildChart.razor are still bad (e.g. for Terran)
+e.g. for Terran we get
+Marauder => #518546
+Hellion => #46856A
+Widow Mine => #818546
+Ghost => #5E92AA
+Thor => #5EAA89 (and size is medium, should be big)
+Medivac => #47743D
+Raven => #5EAA89
+
+And we need to use the same colors .\dsstats\src\common\dsstats.weblib\Replays\ReplayBuildComponent.razor
+
