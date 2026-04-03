@@ -8,6 +8,13 @@
         "wix"
       ],
       "rollForward": false
+    },
+    "s2cli": {
+      "version": "0.2.0",
+      "commands": [
+        "s2cli"
+      ],
+      "rollForward": false
     }
   }
 }

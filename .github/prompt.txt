@@ -1,5 +1,5 @@
 I added a StatsTest here: src\tests\dsstats.tests\Stats.Tests.cs
-Can we try to add some tests if the decoder can parse reasonable data, please?
+Can we add a test if the src\common\dsstats.parser\DsstatsReplayMapper.Spawn.cs GetIncome is alligning with the Economy | Minerals Coll for each player
 
 Actual Data from in game stats summary at the end of the game:
 Team 1 (And, Vlados, PAX)
