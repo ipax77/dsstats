@@ -113,7 +113,7 @@ internal static partial class DsstatsReplayMapper
         };
     }
 
-    private static int GetIncome(DsstatsReplay replay, DsPlayer player, Breakpoint bp)
+    internal static int GetIncome(DsstatsReplay replay, DsPlayer player, Breakpoint bp)
     {
         double baseIncome = 7.5;
         double baseGasIncome = 0.5;
