@@ -95,6 +95,7 @@ internal static partial class DsstatsReplayMapper
             spawn.Income = GetIncome(replay, player, breakpoint);
             spawn.ArmyValue = stat.MineralsUsedActiveForces / 2;
             spawn.KilledValue = stat.MineralsKilledArmy;
+            spawn.LostValue = stat.MineralsLostArmy;
             spawn.UpgradeSpent = stat.MineralsUsedCurrentTechnology;
             spawn.GasCount = player.Refineries.Where(x => x.Taken && x.Gameloop <= lastGameloop).Count();
         }

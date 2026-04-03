@@ -90,6 +90,7 @@ public static partial class DsstatsParser
                 MineralsUsedActiveForces = ent.MineralsUsedActiveForces,
                 MineralsUsedCurrentTechnology = ent.MineralsUsedCurrentTechnology,
                 MineralsKilledArmy = ent.MineralsKilledArmy,
+                MineralsLostArmy = ent.MineralsLostArmy,
             });
             if (ent.MineralsCollectionRate > 0)
             {
