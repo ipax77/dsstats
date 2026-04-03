@@ -63,6 +63,11 @@ public partial class CrawlerService : ICrawlerService
 
                     int waitTime = await HandleResponse(response, crawlInfo, tillTime, token);
 
+                    if (crawlInfo.Done)
+                    {
+                        break;
+                    }
+
                     if (crawlInfo.Results.Count > 10000)
                     {
                         await Import(crawlInfo, tillTime, token);
@@ -124,7 +129,19 @@ public partial class CrawlerService : ICrawlerService
 
             var result = System.Text.Json.JsonSerializer.Deserialize<LobbyHistoryResponse>(content,
                 new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            if (result != null)
+            if (result == null)
+            {
+                logger.LogWarning("Failed to deserialize response for next={next}, stopping crawl", crawlInfo.Next);
+                crawlInfo.Next = null;
+                crawlInfo.Done = true;
+            }
+            else if (result.Results.Count == 0)
+            {
+                logger.LogWarning("Empty results page for next={next}, stopping crawl", crawlInfo.Next);
+                crawlInfo.Next = null;
+                crawlInfo.Done = true;
+            }
+            else
             {
                 crawlInfo.Results.AddRange(result.Results);
                 crawlInfo.Next = result.Page.Next;
