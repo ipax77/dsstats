@@ -1,12 +1,450 @@
-The colors in src\common\dsstats.shared\Units\UnitMap.cs used in src\common\dsstats.weblib\Replays\BuildChart.razor are still bad (e.g. for Terran)
-e.g. for Terran we get
-Marauder => #518546
-Hellion => #46856A
-Widow Mine => #818546
-Ghost => #5E92AA
-Thor => #5EAA89 (and size is medium, should be big)
-Medivac => #47743D
-Raven => #5EAA89
+We need to cleanup the src\common\dsstats.shared\Units\UnitMap.cs used in src\common\dsstats.weblib\Replays\BuildChart.razor and src\common\dsstats.weblib\Replays\ReplayBuildComponent.razor
+Maybe we can hamonize the src\common\dsstats.weblib\Replays\ReplayComponent.razor so we don't have to collect the unit info twice for the chart and the list.
+We should create a new UnitMapNg with the aim to replace the current UnitMap with a complete static list of units with the size and color info.
+We should use the following set of unit colors (maybe there is a better way than the virtual UnitColor enum ..)
+    public static string GetUnitColor(UnitColor unitColor)
+    {
+        return unitColor switch
+        {
+            UnitColor.Color1 => "#C0392B",
+            UnitColor.Color2 => "#9B59B6",
+            UnitColor.Color3 => "#2980B9",
+            UnitColor.Color4 => "#1ABC9C",
+            UnitColor.Color5 => "#F1C40F",
+            UnitColor.Color6 => "#D35400",
+            UnitColor.Color7 => "#ECF0F1",
+            UnitColor.Color8 => "#7F8C8D",
+            UnitColor.Color9 => "#943126",
+            UnitColor.Color10 => "#5B2C6F",
+            UnitColor.Color11 => "#21618C",
+            UnitColor.Color12 => "#0E6655",
+            UnitColor.Color13 => "#9C640C",
+            UnitColor.Color14 => "#797D7F",
+            UnitColor.Color15 => "#515A5A",
+            _ => "#F9EBEA"
+        };
+    }
+We should switch to the 'old' unit sizes and use them accordingly (https://github.com/ipax77/dsstats/blob/dotnet8/src/dsstats.razorlib/Replays/ReplayPlayerChartMap.razor):
+    private static (double, string) GetColorAndRadius(MapUnit mapUnit, SpawnInfo spawnInfo)
+    {
+        if (spawnInfo.BuildUnits.TryGetValue(mapUnit.Name, out var buildUnit)
+            && buildUnit is not null)
+        {
+            var radius = buildUnit.Size switch
+            {
+                UnitSize.VerySmall => 3,
+                UnitSize.Small => 6,
+                UnitSize.Normal => 10,
+                UnitSize.Big => 15,
+                UnitSize.Hero => 20,
+                UnitSize.VeryBig => 25,
+                _ => 12
+            };
 
-And we need to use the same colors .\dsstats\src\common\dsstats.weblib\Replays\ReplayBuildComponent.razor
+            if (buildUnit.MovementType.HasFlag(WeaponTarget.Air))
+            {
+                radius += 2;
+            }
 
+            var color = HelperService.GetUnitColor(buildUnit.Color);
+
+            return (radius, color);
+        }
+        else
+        {
+            return (12, "#EC7063");
+        }
+    }
+
+
+Here is a complete list of unit names stored in the db for each commander (first number is the commander enum from src\common\dsstats.shared\Enums.cs):
+1	Stalker
+1	Sentry
+1	Adept
+1	Observer
+1	VoidRay
+1	Disruptor
+1	Immortal
+1	HighTemplar
+1	Mothership
+1	Carrier
+1	Archon
+1	Zealot
+1	Colossus
+1	Tempest
+1	Phoenix
+1	Oracle
+1	DarkTemplar
+2	Reaper
+2	Marine
+2	Marauder
+2	Medivac
+2	Raven
+2	Viking
+2	Thor
+2	SiegeTank
+2	Battlecruiser
+2	Liberator
+2	WidowMine
+2	Banshee
+2	Ghost
+2	Hellion
+2	Cyclone
+2	MarineLightweight
+2	ThorAP
+2	VikingFighter
+2	HellionTank
+2	GhostAlternate
+2	GhostNova
+2	VikingAssault
+3	Zergling
+3	Queen
+3	Hydralisk
+3	Infestor
+3	Corruptor
+3	BroodLord
+3	Viper
+3	Mutalisk
+3	Roach
+3	Overseer
+3	Baneling
+3	Ultralisk
+3	Lurker
+3	SwarmHost
+3	SwarmHostMP
+3	Ravager
+3	ZerglingLightweight
+3	LurkerMP
+3	LocustMPPrecursor
+10	VileRoach
+10	Brutalisk
+10	SwarmQueenStarlight
+10	GuardianStarlight
+10	AbathurOverseer
+10	ViperAbathur
+10	SwarmHostMP
+10	AbathurMutalisk
+10	SwarmQueen
+10	SwarmHost
+10	Overseer
+10	Mutalisk
+10	Ravager
+10	LeviathanStarlight
+10	DevourerStarlight
+10	RavagerAbathur
+10	Devourer
+10	Viper
+10	Guardian
+10	Leviathan
+20	Vanguard
+20	Alarak
+20	Supplicant
+20	Havoc
+20	Slayer
+20	HeroAlarakWaveUnit
+20	SupplicantStarlight
+20	HavocStarlight
+20	WarPrism
+20	Wrathwalker
+20	Destroyer
+20	AscendantStarlight
+20	MothershipTaldarim
+20	Ascendant
+30	Dragoon
+30	Observer
+30	HonorGuard
+30	Phoenix
+30	DragoonStarlight
+30	PurifierTempest
+30	PhoenixArtanis
+30	HighArchon
+30	ArtanisObserver
+30	ImmortalArtanis
+30	HighTemplarArtanis
+30	Immortal
+30	Reaver
+30	ReaverStarlight
+30	HighTemplar
+40	Dehaka
+40	PrimalHydralisk
+40	PrimalMutalisk
+40	DehakaHero
+40	DehakaTyrannozor
+40	Tyrannozor
+40	CreeperHost
+40	PrimalIgniter
+40	PrimalHost
+40	PrimalRavasaur
+40	PrimalZergling
+40	Impaler
+40	DehakaPrimalHydralisk
+40	DehakaPrimalRoach
+40	DehakaPrimalRavasaur
+40	DehakaPrimalIgniter
+40	DehakaPrimalMutalisk
+40	DehakaCreeperHost
+40	DehakaPrimalGuardian
+40	DehakaPrimalZergling
+40	DehakaImpaler
+40	DehakaPrimalUltralisk
+40	DehakaPrimalHost
+40	PrimalUltralisk
+40	PrimalRoach
+40	PrimalGuardian
+40	DehakaPrimalHostLocust
+40	StrikeWeaponryLevel2Dummy
+40	LocustMPPrecursor
+50	Legionnaire
+50	PurifierAdept
+50	PurifierTalis
+50	PurifierImmortal
+50	Kaldalis
+50	PurifierScout
+50	Mojo
+50	PurifierObserver
+50	Walker
+50	PurifierCarrier
+50	FenixWalker
+50	Taldarin
+50	Conservator
+50	PurifierDisruptor
+50	FenixFlyer
+50	Warbringer
+50	Clolarion
+50	PurifierInterceptor
+50	FenixPraetor
+50	Praetor
+50	PurifierColossus
+50	Flyer
+50	PurifierColossusFenix
+50	Probius
+60	HornerAssaultGalleonUpgraded
+60	HornerWidowMine
+60	AssaultGalleon
+60	SovereignBattlecruiser
+60	HornerHellbat
+60	HornerTheiaRaven
+60	HornerAssaultGalleon
+60	HornerDeimosVikingFighter
+60	HornerSovereignBattlecruiser
+60	HornerHellion
+60	HornerStrikeFighter
+60	HornerAsteriaWraith
+60	Hellbat
+60	Hellion
+60	TheiaRaven
+60	AsteriaWraith
+60	Reaper
+60	DeimosViking
+60	WidowMine
+60	StrikeFighter
+60	HornerDeimosVikingAssault
+60	HornerReaper
+60	HornerReaperKD8Charge
+60	HornerReaperLD9ClusterCharges
+70	AiurCarrier
+70	Mirage
+70	Observer
+70	Sentinel
+70	Energizer
+70	SentinelStarlight
+70	Annihilator
+70	PurifierColossus
+70	KaraxObserver
+80	HeroKerriganWaveUnit
+80	HydraliskKerrigan
+80	RaptorlingLightweight
+80	BroodMutalisk
+80	KerriganQueen
+80	KerriganOverseer
+80	LurkerMP
+80	Torrasque
+80	BroodLordKerrigan
+80	Kerrigan
+80	Overseer
+80	Hydralisk
+80	Lurker
+80	Raptorling
+80	BroodLord
+80	Queen
+80	StrikeWeaponryLevel2Dummy
+90	Marauder
+90	TrooperMengskFlamethrower
+90	Raven
+90	SiegeTank
+90	TrooperMengskAA
+90	SkyFury
+90	TrooperMengskImproved
+90	Zergling
+90	WarHound
+90	ZerglingMengsk
+90	VikingMengskAssault
+90	MarauderMengsk
+90	GhostMengsk
+90	VikingMengskFighter
+90	TrooperMengsk
+90	MutaliskMengsk
+90	ThorMengsk
+90	UltraliskMengsk
+90	RavenMengsk
+90	MedivacMengsk
+90	SiegeTankMengsk
+90	BattlecruiserMengsk
+90	Ghost
+90	Ultralisk
+90	Medivac
+90	Trooper
+90	Mutalisk
+90	Battlecruiser
+90	Thor
+90	StrikeWeaponryLevel2Dummy
+100	MarauderCommando
+100	SpecOpsGhost
+100	RavenTypeII
+100	EliteMarine
+100	StrikeGoliath
+100	Nova
+100	HellbatRanger
+100	RaidLiberator
+100	HeroNovaWaveUnit
+100	HeavySiegeTank
+100	CovertBanshee
+100	HoloDecoy
+100	StrikeWeaponryLevel1Dummy
+100	RailgunTurret
+100	NovaDefensiveDroneUnit
+110	Vulture
+110	DuskWing
+110	Battlecruiser
+110	Viking
+110	Medic
+110	Banshee
+110	VultureStarlight
+110	MarineLightweight
+110	RaynorHyperion
+110	VikingFighter
+110	MedicStarlight
+110	Marauder
+110	FirebatStarlight
+110	SiegeTank
+110	BattlecruiserRaynor
+110	Marine
+110	Firebat
+110	Hyperion
+110	SpiderMine
+110	VikingAssault
+120	Baneling
+120	Gary
+120	Zergling
+120	SuperGary
+120	Ultralisk
+120	SuperGaryStetmann
+120	OverseerStetmann
+120	CorruptorStetmann
+120	HydraliskStetmann
+120	LurkerStetmann
+120	BanelingStetmann
+120	GaryStetmann
+120	ZerglingStetmann
+120	InfestorStetmann
+120	UltraliskStetmann
+120	BroodLordStetmann
+120	InterceptorStetmann
+120	Lurker
+120	Hydralisk
+120	Corruptor
+120	Overseer
+120	Infestor
+120	BroodLord
+120	BroodlingStetmann
+130	InfestedBanshee
+130	InfestedBunker
+130	InfestedMarineStarlight
+130	StukovInfestedBunker
+130	Overseer
+130	InfestedDiamondbackStarlight
+130	InfestedBansheeStarlight
+130	StukovAleksander
+130	BroodQueenStarlight
+130	ApocaliskStarlight
+130	InfestedSiegeTankStarlight
+130	InfestedCivilian
+130	InfestedCivilianStarlight
+130	InfestedDiamondback
+130	Aleksander
+130	VolatileInfestedStarlight
+130	InfestedLiberatorStarlight
+130	VolatileInfested
+130	InfestedMarine
+130	BroodQueen
+130	InfestedLiberator
+130	Apocalisk
+130	InfestedSiegeTank
+130	InfestedLiberatorViralSwarm
+130	InfestedLiberatorStarlightViralSwarm
+130	StrikeWeaponryLevel3Dummy
+140	HellbatSwann
+140	SwannCyclone
+140	GoliathStarlight
+140	ScienceVesselStarlight
+140	WraithStarlight
+140	Hellbat
+140	ScienceVessel
+140	Cyclone
+140	SiegeTank
+140	Goliath
+140	ARES
+140	Thor
+140	SwannThor
+140	Wraith
+140	StrikeWeaponryLevel5Dummy
+150	Blaze
+150	Vega
+150	Nikara
+150	Tychus
+150	TychusBlaze
+150	TychusTychus
+150	TychusNikara
+150	TychusSam
+150	TychusSirius
+150	TychusCannonball
+150	TychusVega
+150	TychusRattlesnake
+150	Rattlesnake
+150	Sirius
+150	Cannonball
+150	Sam
+150	TychusNux
+150	Nux
+160	Oracle
+160	Corsair
+160	DarkTemplar
+160	Stalker
+160	VoidRay
+160	StalkerVorazun
+160	VorazunOracle
+160	VoidRayVorazun
+160	ShadowGuard
+160	DarkArchonStarlight
+160	Centurion
+160	DarkTemplarVorazun
+160	DarkArchon
+160	StrikeWeaponryLevel1Dummy
+170	HeroZagaraWaveUnit
+170	ZagaraQueen
+170	Splitterling
+170	SwarmlingLightweight
+170	HunterKillerZagara
+170	CorruptorZagara
+170	Swarmling
+170	Zagara
+170	HunterKiller
+170	Roach
+170	Aberration
+170	Scourge
+170	Corruptor
+170	Queen
+170	OverseerZagara
+170	InfestedAbomination
+170	ZagaraRoach
+170	Overseer

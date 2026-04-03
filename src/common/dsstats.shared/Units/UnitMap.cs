@@ -413,6 +413,7 @@ public static partial class UnitMap
     /// </summary>
     /// <param name="unitName">The full name of the unit (e.g., "Adept").</param>
     /// <returns>A hex color string.</returns>
+    [Obsolete("Use UnitMapNg.GetColorAndRadius() instead.")]
     public static string GetColor(string unitName)
     {
         if (_unitIndexMap.TryGetValue(unitName, out int index))
@@ -422,6 +423,7 @@ public static partial class UnitMap
         return "#CCCCCC";
     }
 
+    [Obsolete("Use UnitMapNg.GetColorAndRadius() instead.")]
     public static string GetColor(string unitName, Commander commander)
     {
         if (!_unitIndexMap.TryGetValue(unitName, out int index))

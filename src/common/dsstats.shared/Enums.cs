@@ -90,6 +90,11 @@ public enum UnitSize
     Medium = 2,
     Large = 3,
     VeryLarge = 4,
+    VerySmall = 5,
+    Normal = 6,
+    Big = 7,
+    Hero = 8,
+    VeryBig = 9,
 }
 
 public enum TimePeriod
