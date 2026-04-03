@@ -3,12 +3,15 @@ using dsstats.shared.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Net;
-using System.Net.Http.Json;
 
 namespace sc2arcade.crawler;
 
 public partial class CrawlerService : ICrawlerService
 {
+    private const int MinRequestDelayMs = 500;
+    private const int ErrorWaitMs = 5_000;
+    private const int RateLimitFallbackMs = 60_000;
+
     private readonly IServiceProvider serviceProvider;
     private readonly IHttpClientFactory httpClientFactory;
     private readonly ILogger<CrawlerService> logger;
@@ -47,9 +50,8 @@ public partial class CrawlerService : ICrawlerService
         foreach (var crawlInfo in crawlInfos)
         {
 
-            // &includeSlotsProfile=true
             string baseRequest =
-                $"lobbies/history?regionId={crawlInfo.RegionId}&mapId={crawlInfo.MapId}&profileHandle={crawlInfo.Handle}&orderDirection=desc&includeMapInfo=false&includeSlots=true&includeSlotsProfile=true&includeMatchResult=true&includeMatchPlayers=true";
+                $"lobbies/history?regionId={crawlInfo.RegionId}&mapId={crawlInfo.MapId}&profileHandle={crawlInfo.Handle}&orderDirection=desc&includeMapInfo=false&includeSlots=true&includeSlotsProfile=true&includeMatchResult=true&includeMatchPlayers=true&limit=200";
 
             while (!crawlInfo.Done && !token.IsCancellationRequested)
             {
@@ -72,10 +74,8 @@ public partial class CrawlerService : ICrawlerService
                         break;
                     }
 
-                    if (waitTime > 0)
-                    {
-                        await Task.Delay(waitTime, token);
-                    }
+                    int delay = Math.Max(MinRequestDelayMs, waitTime);
+                    await Task.Delay(delay, token);
                 }
                 catch (Exception ex)
                 {
@@ -114,7 +114,16 @@ public partial class CrawlerService : ICrawlerService
     {
         if (response.IsSuccessStatusCode)
         {
-            var result = await response.Content.ReadFromJsonAsync<LobbyHistoryResponse>(cancellationToken: token);
+            var content = await response.Content.ReadAsStringAsync(token);
+
+            if (content.TrimStart().StartsWith('<'))
+            {
+                logger.LogWarning("Unexpected HTML response (possible Cloudflare challenge) for next={next}", crawlInfo.Next);
+                return RateLimitFallbackMs;
+            }
+
+            var result = System.Text.Json.JsonSerializer.Deserialize<LobbyHistoryResponse>(content,
+                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             if (result != null)
             {
                 crawlInfo.Results.AddRange(result.Results);
@@ -127,12 +136,14 @@ public partial class CrawlerService : ICrawlerService
         }
         else if (response.StatusCode == HttpStatusCode.TooManyRequests)
         {
-            return GetWaitTime(response);
+            int wait = GetWaitTime(response);
+            logger.LogWarning("Rate limited (429), waiting {wait}ms", wait);
+            return wait;
         }
         else
         {
             logger.LogError("Failed request ({next}): {statusCode}", crawlInfo.Next, response.StatusCode);
-            return 2000; // fallback
+            return ErrorWaitMs;
         }
     }
 
@@ -140,6 +151,7 @@ public partial class CrawlerService : ICrawlerService
     {
         logger.LogError("Failed request ({next}): {error}", crawlInfo.Next, ex.Message);
         await Import(crawlInfo, tillTime, token);
+        await Task.Delay(ErrorWaitMs, token);
     }
 
     private async Task<int> Import(CrawlInfo crawlInfo, DateTime tillTime, CancellationToken token)
@@ -166,18 +178,16 @@ public partial class CrawlerService : ICrawlerService
             && int.TryParse(remainValues.FirstOrDefault(), out int rateLimitRemaining)
             && int.TryParse(resetValues.FirstOrDefault(), out int rateLimitReset))
         {
-            if (rateLimitRemaining > 0)
+            if (rateLimitRemaining <= 1)
             {
-                return 0;
-            }
-            else
-            {
+                // Pre-emptively wait when almost out of quota
                 return rateLimitReset * 1000;
             }
+            return 0;
         }
 
-        // no headers → fall back to small wait
-        return 2000;
+        // no headers → conservative fallback
+        return RateLimitFallbackMs;
     }
 }
 

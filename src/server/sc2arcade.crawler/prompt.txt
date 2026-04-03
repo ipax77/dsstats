@@ -1,0 +1,133 @@
+The sc2arcade API has changed, we need to update sc2arcade.crawler\CrawlerService.cs
+the command  curl "https://sc2arcade.com/api/lobbies/history?regionId=1&mapId=208271&includeMatchResult=true&limit=200&profileHandle=2-S2-1-226401&orderDirection=desc&includeMapInfo=false&includeSlots=true&includeSlotsProfile=true&includeMatchPlayers=true"
+is returning json, e.g.:
+{
+	"page": {
+		"prev": null,
+		"next": "WzEyMjg4MjIxMV0="
+	},
+		{
+			"regionId": 1,
+			"bnetBucketId": 1771360161,
+			"bnetRecordId": 5726533,
+			"createdAt": "2026-04-03T05:58:03.836Z",
+			"closedAt": "2026-04-03T05:58:12.652Z",
+			"status": "started",
+			"mapBnetId": 208271,
+			"extModBnetId": null,
+			"multiModBnetId": null,
+			"mapVariantIndex": 0,
+			"mapVariantMode": "3V3",
+			"lobbyTitle": "",
+			"hostName": "TrkyLegJnson",
+			"slotsHumansTotal": 3,
+			"slotsHumansTaken": 3,
+			"match": {
+				"result": 0,
+				"completedAt": "2026-04-03T05:59:06.000Z",
+				"profileMatches": [
+					{
+						"decision": "win",
+						"profile": {
+							"regionId": 1,
+							"realmId": 1,
+							"profileId": 1635093,
+							"name": "TrkyLegJnson",
+							"discriminator": 828,
+							"avatar": "11-1"
+						}
+					},
+					{
+						"decision": "win",
+						"profile": {
+							"regionId": 1,
+							"realmId": 1,
+							"profileId": 13380457,
+							"name": "youngstroker",
+							"discriminator": 370,
+							"avatar": "0-1"
+						}
+					},
+					{
+						"decision": "loss",
+						"profile": {
+							"regionId": 1,
+							"realmId": 1,
+							"profileId": 13408143,
+							"name": "DirectStroke",
+							"discriminator": 204,
+							"avatar": "2-3"
+						}
+					}
+				]
+			},
+			"slots": [
+				{
+					"slotNumber": 1,
+					"team": 1,
+					"kind": "human",
+					"name": "TrkyLegJnson",
+					"profile": {
+						"regionId": 1,
+						"realmId": 1,
+						"profileId": 1635093,
+						"name": "TrkyLegJnson",
+						"discriminator": 828,
+						"avatar": "11-1"
+					}
+				},
+				{
+					"slotNumber": 2,
+					"team": 1,
+					"kind": "human",
+					"name": "DirectStroke",
+					"profile": {
+						"regionId": 1,
+						"realmId": 1,
+						"profileId": 13408143,
+						"name": "DirectStroke",
+						"discriminator": 204,
+						"avatar": "2-3"
+					}
+				},
+				{
+					"slotNumber": 3,
+					"team": 1,
+					"kind": "human",
+					"name": "youngstroker",
+					"profile": {
+						"regionId": 1,
+						"realmId": 1,
+						"profileId": 13380457,
+						"name": "youngstroker",
+						"discriminator": 370,
+						"avatar": "0-1"
+					}
+				},
+				{
+					"slotNumber": 4,
+					"team": 2,
+					"kind": "open",
+					"name": null,
+					"profile": null
+				},
+				{
+					"slotNumber": 5,
+					"team": 2,
+					"kind": "open",
+					"name": null,
+					"profile": null
+				},
+				{
+					"slotNumber": 6,
+					"team": 2,
+					"kind": "open",
+					"name": null,
+					"profile": null
+				}
+			]
+		}
+}
+The owner of the API is very ... special, so we need to be super defensive when it comes to rate limit. We are in no hurry, so we can wait as long as it takes but try to avoid 429 where ever possible (also an error should trigger a wait before we move on)
+With the current implementation we get this response with the first request which I do not understand ..:
+"<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><link rel=\"icon\" href=\"/favicon.ico\"><title>StarCraft II Arcade database</title><link rel=\"dns-prefetch\" href=\"https://static.sc2arcade.com\"><link rel=\"dns-prefetch\" href=\"https://api.sc2arcade.com\"><style type=\"text/css\">@font-face {font-family:Roboto;font-style:normal;font-weight:300;src:url(/cf-fonts/s/roboto/5.0.11/latin/300/normal.woff2);unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;font-display:swap;}@font-face {font-family:Roboto;font-style:normal;font-weight:300;src:url(/cf-fonts/s/roboto/5.0.11/latin-ext/300/normal.woff2);unicode-range:U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20CF,U+2113,U+2C60-2C7F,U+A720-A7FF;font-display:swap;}@font-face {font-family:Robo..."

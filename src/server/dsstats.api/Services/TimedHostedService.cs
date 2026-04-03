@@ -1,6 +1,7 @@
 ﻿
 using dsstats.dbServices;
 using dsstats.shared.Interfaces;
+using sc2arcade.crawler;
 
 namespace dsstats.api.Services;
 
@@ -43,6 +44,9 @@ public class TimedHostedService(IServiceScopeFactory scopeFactory, ILogger<Timed
 
             if (nowTime.Hour == 3)
             {
+                var crawlerService = scope.ServiceProvider.GetRequiredService<ICrawlerService>();
+                await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-5), token);
+
                 var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
                 await importService.CheckDuplicateCandidates();
                 await importService.CheckRealmDuplicateCandidates();

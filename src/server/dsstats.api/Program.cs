@@ -109,12 +109,8 @@ dbContext.Database.Migrate();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    //var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
-    //var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
-    //await importService.CheckDuplicateCandidates();
-    // await importService.CheckRealmDuplicateCandidates();
-    //await importService.FixPlayerNames();
-    //await ratingService.CreateRatings();
+    var crawlerService =  scope.ServiceProvider.GetRequiredService<ICrawlerService>();
+    await crawlerService.GetLobbyHistory(new DateTime(2025, 11, 19), default);
 }
 
 app.UseForwardedHeaders();
