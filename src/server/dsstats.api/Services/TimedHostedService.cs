@@ -1,7 +1,5 @@
 ﻿
-using dsstats.dbServices;
 using dsstats.shared.Interfaces;
-using sc2arcade.crawler;
 
 namespace dsstats.api.Services;
 
@@ -40,21 +38,15 @@ public class TimedHostedService(IServiceScopeFactory scopeFactory, ILogger<Timed
             DateTime nowTime = DateTime.UtcNow;
 
             using var scope = scopeFactory.CreateAsyncScope();
-            var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
 
             if (nowTime.Hour == 3)
             {
-                var crawlerService = scope.ServiceProvider.GetRequiredService<ICrawlerService>();
-                await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-5), token);
-
-                var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
-                await importService.CheckDuplicateCandidates();
-                await importService.CheckRealmDuplicateCandidates();
-                await importService.FixPlayerNames();
-                await ratingService.CreateRatings();
+                var arcadeJobService = scope.ServiceProvider.GetRequiredService<ArcadeJobService>();
+                await arcadeJobService.RunAsync(token);
             }
             else
             {
+                var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
                 await ratingService.ContinueRatings();
             }
         }

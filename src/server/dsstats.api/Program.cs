@@ -58,6 +58,14 @@ builder.Services.AddRateLimiter(options =>
         options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         options.QueueLimit = 2;
     });
+
+    options.AddFixedWindowLimiter(policyName: "admin", options =>
+    {
+        options.PermitLimit = 3;
+        options.Window = TimeSpan.FromMinutes(1);
+        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        options.QueueLimit = 0;
+    });
 });
 
 builder.Services.AddDbConfig(builder.Configuration);
@@ -75,6 +83,7 @@ builder.Services.AddSC2ArcadeCrawler();
 
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddSingleton<UploadService>();
+builder.Services.AddSingleton<ArcadeJobService>();
 builder.Services.AddSingleton<IImportService, ImportService>();
 builder.Services.AddSingleton<IRatingService, RatingService>();
 builder.Services.AddSingleton<IPickBanService, PickBanService>();

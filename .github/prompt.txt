@@ -1,4 +1,1 @@
-It seems the changed the API again :(
-When running src\server\sc2arcade.crawler\CrawlerService.cs we got some data, but then we got a 403 (Forbidden) error.
-The error repeated for > 1h trying every 6 seconds
-We should break when we get anything else but a 429 (with a warning and the so far collected lobby histories if possible)
+Since the arcade import crashed/got aborted, we need to find a way to externally trigger job at the 3 hour mark in src\server\dsstats.api\Services\TimedHostedService.cs
