@@ -27,8 +27,8 @@
 		<ApplicationIdGuid>32172F77-64E0-4DED-AF1C-39125CA1088D</ApplicationIdGuid>
 
         <!-- Versions -->
-        <ApplicationDisplayVersion>3.0</ApplicationDisplayVersion>
-        <ApplicationVersion>3</ApplicationVersion>
+        <ApplicationDisplayVersion>3.0.2</ApplicationDisplayVersion>
+        <ApplicationVersion>4</ApplicationVersion>
 
         <!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
         <WindowsPackageType>None</WindowsPackageType>

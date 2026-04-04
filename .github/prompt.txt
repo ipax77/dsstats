@@ -1,1 +1,4 @@
-Since the arcade import crashed/got aborted, we need to find a way to externally trigger job at the 3 hour mark in src\server\dsstats.api\Services\TimedHostedService.cs
+We changed the 'replay production' so we need to deploy a new version for mydsstats (PWA app), dsstats.maui (MAUI app) and the dsstats.service (Windows service)
+We have a deploy script for mydsstats on the server, so this should not be a problem
+The deploy script for the service (src\service\deploy.ps1) should also work (we need to make sure we increse the version)
+For maui we manually upload the result of src\maui\build.ps1, but we also have to make sure to encrese the version
