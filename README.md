@@ -33,7 +33,13 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v3.0.1</summary>
+<details open="open"><summary>v3.0.2</summary>
+
+>- Fix replay income calculation
+
+</details>
+
+<details><summary>v3.0.1</summary>
 
 >- Fix maui save config error
 
