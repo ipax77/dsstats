@@ -57,10 +57,13 @@ var devOptions = new DbContextOptionsBuilder<DsstatsContext>()
         o.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery))
     .Options;
 
+var scopeFactory = host.Services.GetRequiredService<IServiceScopeFactory>();
+
 // Connection test: print replay counts from both databases before migrating
 using (var devContext = new DsstatsContext(devOptions))
-using (var prodContext = host.Services.GetRequiredService<DsstatsContext>())
+using (var scope = scopeFactory.CreateScope())
 {
+    var prodContext = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
     var devCount = await devContext.ArcadeReplays.CountAsync();
     var prodCount = await prodContext.ArcadeReplays.CountAsync();
     logger.LogInformation("Dev  ArcadeReplays: {devCount}", devCount);
@@ -71,7 +74,7 @@ const int batchSize = 2000;
 int page = 0;
 int totalImported = 0;
 
-var imported = new DateTime(2026, 4, 1);
+var imported = new DateTime(2026, 4, 4);
 logger.LogInformation("Starting arcade replay migration... after imported {imported}", imported.ToShortDateString());
 
 while (true)
@@ -111,8 +114,9 @@ logger.LogInformation("Migration complete. Total replays processed: {total}", to
 
 // Populate CombinedReplays table with the newly imported arcade replays
 logger.LogInformation("Calling BatchImportCombinedReplays stored procedure...");
-using (var prodContext = host.Services.GetRequiredService<DsstatsContext>())
+using (var scope = scopeFactory.CreateScope())
 {
+    var prodContext = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
     prodContext.Database.SetCommandTimeout(TimeSpan.FromMinutes(20));
     await prodContext.Database.ExecuteSqlRawAsync("CALL BatchImportCombinedReplays();");
 }
@@ -120,5 +124,6 @@ logger.LogInformation("BatchImportCombinedReplays complete.");
 
 // Match the backfilled arcade replays against dsstats replays (full historical scan)
 logger.LogInformation("Running FindSc2ArcadeMatches to match arcade backfill with dsstats replays...");
-await ratingService.FindSc2ArcadeMatches();
+// await ratingService.FindSc2ArcadeMatches();
+await ratingService.MatchWithNewArcadeReplays(imported);
 logger.LogInformation("FindSc2ArcadeMatches complete.");

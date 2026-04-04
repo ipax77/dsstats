@@ -59,7 +59,6 @@ public partial class CrawlerService : ICrawlerService
                 {
                     var requestUri = BuildRequestUri(crawlInfo, baseRequest);
                     var response = await httpClient.GetAsync(requestUri, token);
-                    response.EnsureSuccessStatusCode();
 
                     int waitTime = await HandleResponse(response, crawlInfo, tillTime, token);
 
@@ -159,8 +158,11 @@ public partial class CrawlerService : ICrawlerService
         }
         else
         {
-            logger.LogError("Failed request ({next}): {statusCode}", crawlInfo.Next, response.StatusCode);
-            return ErrorWaitMs;
+            logger.LogWarning("Non-recoverable HTTP error ({statusCode}) for next={next}, stopping crawl",
+                response.StatusCode, crawlInfo.Next);
+            await Import(crawlInfo, tillTime, token);
+            crawlInfo.Done = true;
+            return 0;
         }
     }
 
