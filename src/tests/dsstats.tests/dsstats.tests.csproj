@@ -75,6 +75,9 @@
 	<None Update="testdata\Direct Strike %2826%29.SC2Replay">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</None>
+  <None Update="testdata\Direct Strike %289886%29.SC2Replay">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
 	<None Update="testdata\min1_1.json">
 		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</None>

@@ -126,7 +126,7 @@ internal static partial class DsstatsReplayMapper
             return [];
         }
         int firstTeam = middleChanges[0].ControlTeam;
-        return [firstTeam, .. middleChanges.Select(s => (int)(s.Gameloop / 22.4))];
+        return [firstTeam, .. middleChanges.Select(s => Convert.ToInt32(s.Gameloop / 22.4))];
     }
 
     public static ReplayPlayerDto ToDto(this DsPlayer player, DsstatsReplay replay, GameMode gameMode)

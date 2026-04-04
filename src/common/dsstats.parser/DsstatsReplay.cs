@@ -85,6 +85,7 @@ internal class PlayerStats
     public int MineralsUsedCurrentTechnology { get; set; }
     public int MineralsUsedActiveForces { get; set; }
     public int MineralsKilledArmy { get; set; }
+    public int MineralsLostArmy { get; set; }
 }
 
 internal class DsMiddle

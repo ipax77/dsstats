@@ -217,7 +217,7 @@ public static partial class DsstatsParser
         }
     }
 
-    private static (int, int) GetMiddleIncome(DsstatsReplay replay, int targetGameloop)
+    internal static (int, int) GetMiddleIncome(DsstatsReplay replay, int targetGameloop)
     {
         if (replay.MiddleChanges.Count == 0 || replay.Duration <= 0)
         {
@@ -263,11 +263,11 @@ public static partial class DsstatsParser
                 var controlledGameloops = middle.Gameloop - currentGameloop;
                 if (currentTeam == 1)
                 {
-                    team2control += controlledGameloops;
+                    team1control += controlledGameloops;
                 }
                 else
                 {
-                    team1control += controlledGameloops;
+                    team2control += controlledGameloops;
                 }
 
                 currentTeam = middle.ControlTeam;

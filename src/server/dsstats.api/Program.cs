@@ -58,6 +58,14 @@ builder.Services.AddRateLimiter(options =>
         options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         options.QueueLimit = 2;
     });
+
+    options.AddFixedWindowLimiter(policyName: "admin", options =>
+    {
+        options.PermitLimit = 3;
+        options.Window = TimeSpan.FromMinutes(1);
+        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        options.QueueLimit = 0;
+    });
 });
 
 builder.Services.AddDbConfig(builder.Configuration);
@@ -75,6 +83,7 @@ builder.Services.AddSC2ArcadeCrawler();
 
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddSingleton<UploadService>();
+builder.Services.AddSingleton<ArcadeJobService>();
 builder.Services.AddSingleton<IImportService, ImportService>();
 builder.Services.AddSingleton<IRatingService, RatingService>();
 builder.Services.AddSingleton<IPickBanService, PickBanService>();
@@ -109,8 +118,8 @@ dbContext.Database.Migrate();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    //var crawlerService =  scope.ServiceProvider.GetRequiredService<ICrawlerService>();
-    //await crawlerService.GetLobbyHistory(new DateTime(2025, 11, 19), default);
+    // var crawlerService =  scope.ServiceProvider.GetRequiredService<ICrawlerService>();
+    // await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-5), default);
 }
 
 app.UseForwardedHeaders();

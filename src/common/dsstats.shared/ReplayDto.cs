@@ -64,6 +64,7 @@ public class SpawnDto
     public int GasCount { get; set; }
     public int ArmyValue { get; set; }
     public int KilledValue { get; set; }
+    public int LostValue { get; set; }
     public int UpgradeSpent { get; set; }
     public List<UnitDto> Units { get; set; } = [];
 }
