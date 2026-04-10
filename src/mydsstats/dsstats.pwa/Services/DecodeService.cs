@@ -20,6 +20,7 @@ public partial class DecodeService : IDisposable
     private CancellationTokenSource? decodeCts;
     private readonly SemaphoreSlim ss = new(1, 1);
     public bool Decoding { get; private set; }
+    public ReplayDto? LatestReplay { get; private set; }
 
     public DecodeService(IServiceScopeFactory scopeFactory, IHttpClientFactory httpClientFactory,
                          ILogger<DecodeService> logger, PwaConfigService pwaConfigService)
@@ -95,6 +96,7 @@ public partial class DecodeService : IDisposable
             logger.LogInformation("Decoded and saved replay from stream: {FileName}", originalFileName);
             success = true;
             replayDto = replay;
+            LatestReplay = replayDto;
         }
         catch (Exception ex)
         {
@@ -267,6 +269,7 @@ public partial class DecodeService : IDisposable
             // IndexedDB write: JSInterop — must stay on main thread
             await dbService.UpsertReplayAsync(hash!, replay);
             Interlocked.Increment(ref replaysDecoded);
+            LatestReplay = replay;
             return new DecodeResult { Success = true, Message = "Replay decoded successfully.", Replay = replay, Path = path };
         }
         catch (OperationCanceledException)

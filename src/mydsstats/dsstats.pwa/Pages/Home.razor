@@ -1,4 +1,12 @@
-﻿@page "/"
+@page "/"
+@using dsstats.indexedDb.Services
+@using dsstats.pwa.Services
+@using dsstats.shared
+@using pax.BBToast
+@inject DecodeService DecodeService
+@inject IndexedDbService DbService
+@inject IToastService ToastService
+@implements IDisposable
 
 <PageTitle>mydsstats</PageTitle>
 
@@ -8,19 +16,113 @@
             <h1 class="display-4 fw-bold mb-3">Direct Strike Replay Decoder</h1>
             <p class="lead text-muted mb-4">
                 Upload and decode your <strong>StarCraft II: Direct Strike</strong> replays directly in your browser.
-                Your decoded matches are stored securely in your device’s <strong>IndexedDB</strong>, ready for quick access—anytime, anywhere.
+                Your decoded matches are stored securely in your device's <strong>IndexedDB</strong>, ready for quick access—anytime, anywhere.
             </p>
             <ul class="list-unstyled mb-4">
                 <li class="mb-2"><i class="bi bi-lightning-charge-fill text-primary me-2"></i>Fast replay decoding in your browser</li>
                 <li class="mb-2"><i class="bi bi-hdd-fill text-primary me-2"></i>Local IndexedDB storage — no servers involved</li>
                 <li class="mb-2"><i class="bi bi-pwa text-primary me-2"></i>Installable as a <strong>PWA</strong> for offline use</li>
             </ul>
-            <a href="/decode" class="btn btn-primary btn-lg px-4">
-                <i class="bi bi-upload me-2"></i>Start Decoding
-            </a>
+
+            @if (hasDirHandles)
+            {
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-success btn-lg px-4"
+                            @onclick="DecodeAllJob"
+                            disabled="@(isLoading || DecodeService.Decoding)">
+                        <i class="bi bi-folder2-open me-2"></i>Decode All My New Replays
+                    </button>
+                    <a href="/decode" class="btn btn-outline-primary btn-lg px-4">
+                        <i class="bi bi-folder-symlink me-2"></i>Manage Folders
+                    </a>
+                </div>
+                @if (isLoading || DecodeService.Decoding)
+                {
+                    <div class="d-flex align-items-center gap-3 mt-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Decoding...</span>
+                        </div>
+                        <span class="fw-semibold">Decoding in progress...</span>
+                        <button class="btn btn-danger btn-sm" @onclick="() => DecodeService.Cancel()">
+                            <i class="bi bi-x-circle me-1"></i>Cancel
+                        </button>
+                    </div>
+                }
+            }
+            else
+            {
+                <a href="/decode" class="btn btn-primary btn-lg px-4">
+                    <i class="bi bi-upload me-2"></i>Start Decoding
+                </a>
+            }
         </div>
         <div class="col-lg-6 text-center mt-4 mt-lg-0">
             <img src="images/replay.jpg" alt="Replay decoding illustration" class="img-fluid rounded shadow-sm" />
         </div>
     </div>
 </div>
+
+@{
+    var shownReplay = DecodeService.LatestReplay ?? latestStoredReplay;
+}
+@if (shownReplay is not null)
+{
+    <div class="mb-5">
+        <dsstats.weblib.Replays.ReplayComponent ReplayDetails="new() { Replay = shownReplay }" />
+    </div>
+}
+
+@code {
+    private bool hasDirHandles;
+    private bool isLoading;
+    private ReplayDto? latestStoredReplay;
+
+    protected override void OnInitialized()
+    {
+        DecodeService.DecodeStateChanged += DecodeStateChanged;
+        _ = LoadInitialData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadInitialData()
+    {
+        var entries = await DbService.GetAllDirectoryHandleEntries();
+        hasDirHandles = entries.Count > 0;
+
+        if (DecodeService.LatestReplay is null)
+        {
+            var list = await DbService.GetFilteredReplayListsAsync(
+                new ReplayFilter(new ReplaysRequest { Skip = 0, Take = 1 }));
+            if (list.Count > 0)
+                latestStoredReplay = await DbService.GetReplayByHashAsync(list[0].ReplayHash);
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void DecodeStateChanged(object? sender, DecodeInfoEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task DecodeAllJob()
+    {
+        isLoading = true;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await DecodeService.DecodeAllHandles();
+            ToastService.ShowSuccess("Decode all finished.");
+        }
+        finally
+        {
+            isLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public void Dispose()
+    {
+        DecodeService.DecodeStateChanged -= DecodeStateChanged;
+    }
+}

@@ -1,4 +1,20 @@
-We changed the 'replay production' so we need to deploy a new version for mydsstats (PWA app), dsstats.maui (MAUI app) and the dsstats.service (Windows service)
-We have a deploy script for mydsstats on the server, so this should not be a problem
-The deploy script for the service (src\service\deploy.ps1) should also work (we need to make sure we increse the version)
-For maui we manually upload the result of src\maui\build.ps1, but we also have to make sure to encrese the version
+In the MAUI app we have the option to fetch the ratings from decoded replays (src\maui\dsstats.maui\Components\Pages\Home.razor) with src\maui\dsstats.maui\Services\SessionProgress.cs
+We want the same option for the mydsstats pwa app (src\mydsstats\dsstats.pwa\Pages\Home.razor)
+So after we decode and upload the replays, we can try to fetch the ratings from the server for the latest replay (and refetch if desired), in src\common\dsstats.weblib\Replays\ReplayComponent.razor we have (currently only for the MAUI app configured):
+				@if (OperatingSystem.IsWindows())
+				{
+					<div class="col-auto">
+						<button type="button" class="btn btn-sm btn-outline-warning"
+								@onclick="() => OnRatingUpdateRequest.InvokeAsync()">
+							Update Ratings
+						</button>
+					</div>
+					<div class="col-auto">
+						<button type="button" class="btn btn-sm btn-outline-light"
+								@onclick="() => _replayHelper.ShowFileName = !_replayHelper.ShowFileName">
+							@(_replayHelper.ShowFileName ? "Hide" : "Show") File Name
+						</button>
+					</div>
+				}
+The server is usually quite fast to produce the ratings (<2sec)
+Like the MAUI app we want to be able to store the ratings in the db, so don't have to refetch them every time and can show them if the replay is opened via src\mydsstats\dsstats.pwa\Pages\ReplaysPage.razor

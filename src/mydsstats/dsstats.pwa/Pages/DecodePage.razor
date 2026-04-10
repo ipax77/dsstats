@@ -241,6 +241,8 @@
 	private void DecodeStateChanged(object? sender, DecodeInfoEventArgs e)
 	{
 		decodeInfoEventArgs = e;
+		if (e.Finished && DecodeService.LatestReplay is not null)
+			replay = DecodeService.LatestReplay;
 		InvokeAsync(StateHasChanged);
 	}
 
