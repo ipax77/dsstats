@@ -1,8 +1,21 @@
 @using dsstats.pwa.Services
+@using dsstats.indexedDb.Services
 @inject DecodeService DecodeService
+@inject IndexedDbService DbService
 @implements IDisposable
 
 <div class="top-row d-flex flex-wrap align-items-center gap-2 px-4 py-3 bg-dark text-light">
+	@if (hasDirHandles)
+	{
+		<button class="btn btn-success btn-sm" @onclick="DecodeAll"
+				disabled="@(isDecoding || DecodeService.Decoding)">
+			<i class="bi bi-folder2-open me-1"></i>Decode All
+		</button>
+		<a href="/decode" class="btn btn-outline-secondary btn-sm">
+			<i class="bi bi-folder-symlink me-1"></i>Manage Folders
+		</a>
+	}
+
 	@if (decodeInfo != null)
 	{
 		@if (decodeInfo.Total > 0)
@@ -48,16 +61,47 @@
 
 @code {
 	private DecodeInfoEventArgs? decodeInfo;
+	private bool hasDirHandles;
+	private bool isDecoding;
 
-	protected override void OnInitialized()
+	protected override async Task OnInitializedAsync()
 	{
 		DecodeService.DecodeStateChanged += OnDecodeStateChanged;
+		var entries = await DbService.GetAllDirectoryHandleEntries();
+		hasDirHandles = entries.Count > 0;
 	}
 
 	private void OnDecodeStateChanged(object? sender, DecodeInfoEventArgs e)
 	{
 		decodeInfo = e;
+		if (e.Finished)
+		{
+			isDecoding = false;
+			_ = RefreshDirHandles();
+		}
 		InvokeAsync(StateHasChanged);
+	}
+
+	private async Task RefreshDirHandles()
+	{
+		var entries = await DbService.GetAllDirectoryHandleEntries();
+		hasDirHandles = entries.Count > 0;
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task DecodeAll()
+	{
+		isDecoding = true;
+		await InvokeAsync(StateHasChanged);
+		try
+		{
+			await DecodeService.DecodeAllHandles();
+		}
+		finally
+		{
+			isDecoding = false;
+			await InvokeAsync(StateHasChanged);
+		}
 	}
 
 	public void Dispose()

@@ -51,6 +51,7 @@ builder.Services.AddScoped<IndexedDbService>();
 builder.Services.AddSingleton<PwaConfigService>();
 builder.Services.AddScoped<BackupService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
+builder.Services.AddScoped<RatingService>();
 builder.Services.AddScoped<IPlayerService, dsstats.apiServices.PlayerService>();
 builder.Services.AddScoped<IStatsService, dsstats.apiServices.StatsService>();
 

@@ -43,8 +43,9 @@ describe('getReplaysFromFolder', () => {
         originalWindow = window;
 
         // Mock file-handle-repository functions
-
-        vi.spyOn(fileHandleRepository, 'saveDirectoryHandle').mockResolvedValue(undefined);
+        // addDirectoryHandle returns the UUID/key used as path root; return handle.name
+        // so that stored paths match mock-folder/... expectations in assertions.
+        vi.spyOn(fileHandleRepository, 'addDirectoryHandle').mockImplementation(async (handle) => (handle as any).name);
         vi.spyOn(fileHandleRepository, 'verifyDirectoryPermission').mockResolvedValue(true);
 
         // Mock window.showDirectoryPicker
@@ -147,7 +148,7 @@ describe('getReplaysFromFolder', () => {
         expect(result).toHaveLength(1);
         expect(result[0].name).toBe('custom-replay.txt');
         expect(getDirectoryHandleFromUserSpy).not.toHaveBeenCalled();
-        expect(fileHandleRepository.saveDirectoryHandle).not.toHaveBeenCalled();
+        expect(fileHandleRepository.addDirectoryHandle).not.toHaveBeenCalled();
         expect(fileHandleRepository.verifyDirectoryPermission).toHaveBeenCalledWith(customDirHandle);
     });
 
@@ -157,7 +158,7 @@ describe('getReplaysFromFolder', () => {
         );
         const result = await getReplaysFromFolder(1, 'replay', [], 10);
         expect(fileHandleRepository.getDirectoryHandleFromUser).toHaveBeenCalled();
-        expect(fileHandleRepository.saveDirectoryHandle).toHaveBeenCalledWith('mock-folder_1', expect.any(Object));
+        expect(fileHandleRepository.addDirectoryHandle).toHaveBeenCalledWith(expect.any(Object), 'mock-folder', 1);
     });
 
     it('should not save the directory handle if dirHandle is provided', async () => {
@@ -165,7 +166,7 @@ describe('getReplaysFromFolder', () => {
             'custom-replay.txt': mockFileHandle('custom-replay.txt', mockFile('custom-replay.txt', 150, Date.now() - 100)),
         });
         await getReplaysFromFolder(1, 'custom', [], 10, customDirHandle);
-        expect(fileHandleRepository.saveDirectoryHandle).not.toHaveBeenCalled();
+        expect(fileHandleRepository.addDirectoryHandle).not.toHaveBeenCalled();
     });
 
     it('should handle errors during file system access gracefully', async () => {

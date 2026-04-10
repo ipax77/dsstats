@@ -29,6 +29,18 @@ public class IndexedDbService
         return await module.InvokeAsync<ReplayDto?>($"getReplayByHash", replayHash);
     }
 
+    public async Task SaveReplayRatingAsync(string replayHash, ReplayRatingDto rating)
+    {
+        var module = await _moduleTask;
+        await module.InvokeVoidAsync("saveReplayRating", replayHash, rating);
+    }
+
+    public async Task<ReplayRatingDto?> GetReplayRatingAsync(string replayHash)
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<ReplayRatingDto?>("getReplayRating", replayHash);
+    }
+
     public async Task<int> GetFilteredReplayListsCountAsync(ReplayFilter filter)
     {
         var module = await _moduleTask;

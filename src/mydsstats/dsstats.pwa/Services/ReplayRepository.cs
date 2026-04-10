@@ -10,10 +10,14 @@ public class ReplayRepository(IndexedDbService dbService, ILogger<ReplayReposito
     public async Task<ReplayDetails?> GetReplayDetails(string replayHash)
     {
         var raw = await dbService.GetReplayByHashAsync(replayHash);
-
         if (raw is null) return null;
-
-        return new ReplayDetails { Replay = raw };
+        var rating = await dbService.GetReplayRatingAsync(replayHash);
+        return new ReplayDetails
+        {
+            ReplayHash = replayHash,
+            Replay = raw,
+            ReplayRatings = rating is not null ? [rating] : [],
+        };
     }
 
     public async Task<List<ReplayListDto>> GetReplays(ReplaysRequest request, CancellationToken token = default)
@@ -54,15 +58,11 @@ public class ReplayRepository(IndexedDbService dbService, ILogger<ReplayReposito
         throw new NotImplementedException();
     }
 
-    public Task<ReplayRatingDto?> GetReplayRating(string replayHash)
-    {
-        throw new NotImplementedException();
-    }
+    public async Task<ReplayRatingDto?> GetReplayRating(string replayHash)
+        => await dbService.GetReplayRatingAsync(replayHash);
 
-    public Task SaveReplayRatingAll(string replayHash, ReplayRatingDto rating)
-    {
-        throw new NotImplementedException();
-    }
+    public async Task SaveReplayRatingAll(string replayHash, ReplayRatingDto rating)
+        => await dbService.SaveReplayRatingAsync(replayHash, rating);
 
     public Task<ReplayDetails?> GetLatestReplay()
     {

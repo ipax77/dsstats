@@ -1,14 +1,9 @@
-In the MAUI app we have the option to fetch the ratings from decoded replays (src\maui\dsstats.maui\Components\Pages\Home.razor) with src\maui\dsstats.maui\Services\SessionProgress.cs
-We want the same option for the mydsstats pwa app (src\mydsstats\dsstats.pwa\Pages\Home.razor)
-So after we decode and upload the replays, we can try to fetch the ratings from the server for the latest replay (and refetch if desired), in src\common\dsstats.weblib\Replays\ReplayComponent.razor we have (currently only for the MAUI app configured):
-				@if (OperatingSystem.IsWindows())
+If we have multiple replay folders, the first 'allow floder access' question shows up, but not the following after pressing 'decode all'
+Add a 'decode cancel button' to the TopRow - since can start it from here, we should also be able to stop it there.
+Add header line 'Latest Replay' on top of Laterst Replay on Home page.
+In src\common\dsstats.weblib\Replays\ReplayComponent.razor this is dangerouse, since we also use the component for the server (Blazor server), we need a better way to identify the PWA (and MAUI) app:
+            @if (OperatingSystem.IsWindows() || OperatingSystem.IsBrowser())
 				{
-					<div class="col-auto">
-						<button type="button" class="btn btn-sm btn-outline-warning"
-								@onclick="() => OnRatingUpdateRequest.InvokeAsync()">
-							Update Ratings
-						</button>
-					</div>
 					<div class="col-auto">
 						<button type="button" class="btn btn-sm btn-outline-light"
 								@onclick="() => _replayHelper.ShowFileName = !_replayHelper.ShowFileName">
@@ -16,5 +11,3 @@ So after we decode and upload the replays, we can try to fetch the ratings from 
 						</button>
 					</div>
 				}
-The server is usually quite fast to produce the ratings (<2sec)
-Like the MAUI app we want to be able to store the ratings in the db, so don't have to refetch them every time and can show them if the replay is opened via src\mydsstats\dsstats.pwa\Pages\ReplaysPage.razor

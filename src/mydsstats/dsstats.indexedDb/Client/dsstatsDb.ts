@@ -1,6 +1,6 @@
 // dsstatsDb.ts v1.4
 import { openDB, STORES } from "./db-core";
-import { ExportedReplays, FileInfoRecord, PlayerDto, PwaConfig, ReplayDto, ReplayFilter, ReplayListDto, ReplayMeta, UploadRequestDto, ExportResult } from "./dtos";
+import { ExportedReplays, FileInfoRecord, PlayerDto, PwaConfig, ReplayDto, ReplayFilter, ReplayListDto, ReplayMeta, UploadRequestDto, ExportResult, ReplayRatingDto } from "./dtos";
 import { getReplaysFromFolder, readFileContentStream } from "./pick-replays";
 import { exportBackup, importBackup } from "./backup";
 import { MyPlayerStats } from "./stats/stats-dto";
@@ -477,6 +477,28 @@ export function ungzipString(base64: string): string {
     const binary = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
     const text = pako.ungzip(binary, { to: "string" });
     return text;
+}
+
+export async function saveReplayRating(replayHash: string, rating: ReplayRatingDto): Promise<void> {
+    const database = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = database.transaction(STORES.ratings, "readwrite");
+        const store = tx.objectStore(STORES.ratings);
+        store.put({ ...rating, replayHash });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+export async function getReplayRating(replayHash: string): Promise<ReplayRatingDto | undefined> {
+    const database = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = database.transaction(STORES.ratings, "readonly");
+        const store = tx.objectStore(STORES.ratings);
+        const request = store.get(replayHash);
+        request.onsuccess = () => resolve(request.result as ReplayRatingDto | undefined);
+        request.onerror = () => reject(request.error);
+    });
 }
 
 export async function getPlayerStats(player: PlayerDto): Promise<MyPlayerStats> {

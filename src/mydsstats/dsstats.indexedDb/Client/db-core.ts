@@ -1,7 +1,7 @@
 import { Dump, Migration } from "./migration.js";
 
 export const DB_NAME = "ReplayDB";
-export const DB_VERSION = 5;
+export const DB_VERSION = 6;
 
 export const STORES = {
     replays: "Replays",
@@ -9,6 +9,7 @@ export const STORES = {
     meta: "ReplayMeta",
     config: "Config",
     directoryHandles: "DirectoryHandles",
+    ratings: "ReplayRatings",
 };
 
 let db: IDBDatabase | null = null;
@@ -200,10 +201,20 @@ const migration4: Migration = {
   },
 };
 
+// migration5: add ReplayRatings store for persisting server-fetched Elo ratings per replay.
+const migration5: Migration = {
+  schema: (db) => {
+    if (!db.objectStoreNames.contains(STORES.ratings)) {
+      db.createObjectStore(STORES.ratings, { keyPath: "replayHash" });
+    }
+  },
+};
+
 const upgrades: Record<number, Migration> = {
   0: migration0, // initial schema
   1: migration1, // uploaded boolean → number (dump/restore path only)
   2: migration2, // new store for directory handles
   3: migration3, // fix boolean uploaded → number in live DB records
   4: migration4, // DirectoryHandles: humanName → UUID key, value wraps handle+displayName+regionId
+  5: migration5, // new ReplayRatings store
 };

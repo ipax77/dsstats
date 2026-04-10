@@ -218,7 +218,7 @@
 						<span class="@expToWin.Item1 ms-2">@expToWin.Item2</span>
 					</div>
 				}
-				@if (OperatingSystem.IsWindows())
+				@if (OnRatingUpdateRequest.HasDelegate)
 				{
 					<div class="col-auto">
 						<button type="button" class="btn btn-sm btn-outline-warning"
@@ -226,6 +226,9 @@
 							Update Ratings
 						</button>
 					</div>
+				}
+				@if (OperatingSystem.IsWindows() || OperatingSystem.IsBrowser())
+				{
 					<div class="col-auto">
 						<button type="button" class="btn btn-sm btn-outline-light"
 								@onclick="() => _replayHelper.ShowFileName = !_replayHelper.ShowFileName">

@@ -5,96 +5,125 @@
 @using pax.BBToast
 @inject DecodeService DecodeService
 @inject IndexedDbService DbService
-@inject IToastService ToastService
+@inject RatingService RatingService
+@inject PwaConfigService PwaConfigService
 @implements IDisposable
 
 <PageTitle>mydsstats</PageTitle>
 
-<div class="container py-5 bgchart rounded">
-    <div class="row align-items-center">
-        <div class="col-lg-6 text-center text-lg-start">
-            <h1 class="display-4 fw-bold mb-3">Direct Strike Replay Decoder</h1>
-            <p class="lead text-muted mb-4">
-                Upload and decode your <strong>StarCraft II: Direct Strike</strong> replays directly in your browser.
-                Your decoded matches are stored securely in your device's <strong>IndexedDB</strong>, ready for quick access—anytime, anywhere.
-            </p>
-            <ul class="list-unstyled mb-4">
-                <li class="mb-2"><i class="bi bi-lightning-charge-fill text-primary me-2"></i>Fast replay decoding in your browser</li>
-                <li class="mb-2"><i class="bi bi-hdd-fill text-primary me-2"></i>Local IndexedDB storage — no servers involved</li>
-                <li class="mb-2"><i class="bi bi-pwa text-primary me-2"></i>Installable as a <strong>PWA</strong> for offline use</li>
-            </ul>
+@if (latestReplayDetails is not null)
+{
+    <div class="container py-4 bgchart rounded mb-3">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1 class="display-5 fw-bold mb-2">Direct Strike Replay Decoder</h1>
+                <ul class="list-unstyled mb-0 d-flex flex-wrap gap-3">
+                    <li><i class="bi bi-lightning-charge-fill text-primary me-1"></i>Fast browser decoding</li>
+                    <li><i class="bi bi-hdd-fill text-primary me-1"></i>Local IndexedDB storage</li>
+                    <li><i class="bi bi-pwa text-primary me-1"></i>Installable PWA</li>
+                </ul>
+            </div>
+        </div>
+    </div>
 
-            @if (hasDirHandles)
-            {
-                <div class="d-flex flex-wrap gap-2">
-                    <button class="btn btn-success btn-lg px-4"
-                            @onclick="DecodeAllJob"
-                            disabled="@(isLoading || DecodeService.Decoding)">
-                        <i class="bi bi-folder2-open me-2"></i>Decode All My New Replays
-                    </button>
-                    <a href="/decode" class="btn btn-outline-primary btn-lg px-4">
-                        <i class="bi bi-folder-symlink me-2"></i>Manage Folders
-                    </a>
-                </div>
-                @if (isLoading || DecodeService.Decoding)
-                {
-                    <div class="d-flex align-items-center gap-3 mt-3">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Decoding...</span>
-                        </div>
-                        <span class="fw-semibold">Decoding in progress...</span>
-                        <button class="btn btn-danger btn-sm" @onclick="() => DecodeService.Cancel()">
-                            <i class="bi bi-x-circle me-1"></i>Cancel
-                        </button>
-                    </div>
-                }
-            }
-            else
-            {
+    <div class="mb-5">
+        <dsstats.weblib.Replays.ReplayComponent @ref="replayComponent"
+            ReplayDetails="latestReplayDetails"
+            OnRatingUpdateRequest="UpdateRatings" />
+    </div>
+}
+else
+{
+    <div class="container py-5 bgchart rounded">
+        <div class="row align-items-center">
+            <div class="col-lg-6 text-center text-lg-start">
+                <h1 class="display-4 fw-bold mb-3">Direct Strike Replay Decoder</h1>
+                <p class="lead text-muted mb-4">
+                    Upload and decode your <strong>StarCraft II: Direct Strike</strong> replays directly in your browser.
+                    Your decoded matches are stored securely in your device's <strong>IndexedDB</strong>, ready for quick access—anytime, anywhere.
+                </p>
+                <ul class="list-unstyled mb-4">
+                    <li class="mb-2"><i class="bi bi-lightning-charge-fill text-primary me-2"></i>Fast replay decoding in your browser</li>
+                    <li class="mb-2"><i class="bi bi-hdd-fill text-primary me-2"></i>Local IndexedDB storage — no servers involved</li>
+                    <li class="mb-2"><i class="bi bi-pwa text-primary me-2"></i>Installable as a <strong>PWA</strong> for offline use</li>
+                </ul>
                 <a href="/decode" class="btn btn-primary btn-lg px-4">
                     <i class="bi bi-upload me-2"></i>Start Decoding
                 </a>
-            }
-        </div>
-        <div class="col-lg-6 text-center mt-4 mt-lg-0">
-            <img src="images/replay.jpg" alt="Replay decoding illustration" class="img-fluid rounded shadow-sm" />
+            </div>
+            <div class="col-lg-6 text-center mt-4 mt-lg-0">
+                <img src="images/replay.jpg" alt="Replay decoding illustration" class="img-fluid rounded shadow-sm" />
+            </div>
         </div>
     </div>
-</div>
-
-@{
-    var shownReplay = DecodeService.LatestReplay ?? latestStoredReplay;
 }
-@if (shownReplay is not null)
+
+@if (showUploadPrompt)
 {
-    <div class="mb-5">
-        <dsstats.weblib.Replays.ReplayComponent ReplayDetails="new() { Replay = shownReplay }" />
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6)">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-cloud-upload me-2"></i>Upload Anonymously?</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Your replays can be uploaded anonymously to contribute to shared statistics. No personal data is linked to your account.</p>
+                    <p class="mb-0">Would you like to enable anonymous uploads?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="DeclineUpload">Not Now</button>
+                    <button class="btn btn-primary" @onclick="AcceptUpload">
+                        <i class="bi bi-check2 me-1"></i>Enable &amp; Upload
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 }
 
 @code {
-    private bool hasDirHandles;
-    private bool isLoading;
-    private ReplayDto? latestStoredReplay;
+    private ReplayDetails? latestReplayDetails;
+    private dsstats.weblib.Replays.ReplayComponent? replayComponent;
+    private bool showUploadPrompt;
 
     protected override void OnInitialized()
     {
         DecodeService.DecodeStateChanged += DecodeStateChanged;
+        DecodeService.PromptForUpload += OnPromptForUpload;
         _ = LoadInitialData();
         base.OnInitialized();
     }
 
     private async Task LoadInitialData()
     {
-        var entries = await DbService.GetAllDirectoryHandleEntries();
-        hasDirHandles = entries.Count > 0;
-
-        if (DecodeService.LatestReplay is null)
+        if (DecodeService.LatestReplayHash is not null && DecodeService.LatestReplay is not null)
+        {
+            var rating = await DbService.GetReplayRatingAsync(DecodeService.LatestReplayHash);
+            latestReplayDetails = new ReplayDetails
+            {
+                ReplayHash = DecodeService.LatestReplayHash,
+                Replay = DecodeService.LatestReplay,
+                ReplayRatings = rating is not null ? [rating] : [],
+            };
+        }
+        else
         {
             var list = await DbService.GetFilteredReplayListsAsync(
                 new ReplayFilter(new ReplaysRequest { Skip = 0, Take = 1 }));
             if (list.Count > 0)
-                latestStoredReplay = await DbService.GetReplayByHashAsync(list[0].ReplayHash);
+            {
+                var replay = await DbService.GetReplayByHashAsync(list[0].ReplayHash);
+                if (replay is not null)
+                {
+                    var rating = await DbService.GetReplayRatingAsync(list[0].ReplayHash);
+                    latestReplayDetails = new ReplayDetails
+                    {
+                        ReplayHash = list[0].ReplayHash,
+                        Replay = replay,
+                        ReplayRatings = rating is not null ? [rating] : [],
+                    };
+                }
+            }
         }
 
         await InvokeAsync(StateHasChanged);
@@ -102,27 +131,50 @@
 
     private void DecodeStateChanged(object? sender, DecodeInfoEventArgs e)
     {
+        if (e.Finished && DecodeService.LatestReplayHash is not null && DecodeService.LatestReplay is not null)
+        {
+            latestReplayDetails = new ReplayDetails
+            {
+                ReplayHash = DecodeService.LatestReplayHash,
+                Replay = DecodeService.LatestReplay,
+                ReplayRatings = [],
+            };
+        }
         InvokeAsync(StateHasChanged);
     }
 
-    private async Task DecodeAllJob()
+    private void OnPromptForUpload(object? sender, EventArgs e)
     {
-        isLoading = true;
-        await InvokeAsync(StateHasChanged);
-        try
-        {
-            await DecodeService.DecodeAllHandles();
-            ToastService.ShowSuccess("Decode all finished.");
-        }
-        finally
-        {
-            isLoading = false;
-            await InvokeAsync(StateHasChanged);
-        }
+        showUploadPrompt = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task AcceptUpload()
+    {
+        showUploadPrompt = false;
+        var config = await PwaConfigService.GetConfig();
+        config.UploadCredential = true;
+        await PwaConfigService.SaveConfig(config);
+        await DecodeService.TriggerUploadAsync();
+    }
+
+    private void DeclineUpload()
+    {
+        showUploadPrompt = false;
+    }
+
+    private async Task UpdateRatings()
+    {
+        if (latestReplayDetails is null) return;
+        var rating = await RatingService.FetchAndSaveRating(latestReplayDetails.ReplayHash);
+        if (rating is null) return;
+        latestReplayDetails.ReplayRatings = [rating];
+        replayComponent?.Update(latestReplayDetails);
     }
 
     public void Dispose()
     {
         DecodeService.DecodeStateChanged -= DecodeStateChanged;
+        DecodeService.PromptForUpload -= OnPromptForUpload;
     }
 }

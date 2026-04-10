@@ -21,6 +21,7 @@ public partial class DecodeService : IDisposable
     private readonly SemaphoreSlim ss = new(1, 1);
     public bool Decoding { get; private set; }
     public ReplayDto? LatestReplay { get; private set; }
+    public string? LatestReplayHash { get; private set; }
 
     public DecodeService(IServiceScopeFactory scopeFactory, IHttpClientFactory httpClientFactory,
                          ILogger<DecodeService> logger, PwaConfigService pwaConfigService)
@@ -63,10 +64,18 @@ public partial class DecodeService : IDisposable
     }
 
     public event EventHandler<DecodeInfoEventArgs>? DecodeStateChanged;
+    public event EventHandler? PromptForUpload;
+    private int _decodeCompletionsWithoutUpload = 0;
+
     private void OnDecodeStateChanged(DecodeInfoEventArgs e)
     {
         EventHandler<DecodeInfoEventArgs>? handler = DecodeStateChanged;
         handler?.Invoke(this, e);
+    }
+
+    private void OnPromptForUpload()
+    {
+        PromptForUpload?.Invoke(this, EventArgs.Empty);
     }
 
     public async Task<ReplayDto?> DecodeFromStream(Stream stream, string originalFileName)
@@ -92,11 +101,13 @@ public partial class DecodeService : IDisposable
                 ArgumentNullException.ThrowIfNull(sc2Replay, message);
             }
             var replay = DsstatsParser.ParseReplay(sc2Replay, compat: true);
-            await dbService.UpsertReplayAsync(replay.ComputeHash(), replay);
+            var hash = replay.ComputeHash();
+            await dbService.UpsertReplayAsync(hash, replay);
             logger.LogInformation("Decoded and saved replay from stream: {FileName}", originalFileName);
             success = true;
             replayDto = replay;
             LatestReplay = replayDto;
+            LatestReplayHash = hash;
         }
         catch (Exception ex)
         {
@@ -125,6 +136,12 @@ public partial class DecodeService : IDisposable
         if (config.UploadCredential)
         {
             await Upload10(dbService);
+        }
+        else
+        {
+            _decodeCompletionsWithoutUpload++;
+            if (_decodeCompletionsWithoutUpload == 1 || _decodeCompletionsWithoutUpload % 10 == 0)
+                OnPromptForUpload();
         }
 
         return replayDto;
@@ -244,6 +261,20 @@ public partial class DecodeService : IDisposable
         {
             await Upload10(dbService);
         }
+        else
+        {
+            _decodeCompletionsWithoutUpload++;
+            if (_decodeCompletionsWithoutUpload == 1 || _decodeCompletionsWithoutUpload % 10 == 0)
+                OnPromptForUpload();
+        }
+    }
+
+    [SupportedOSPlatform("browser")]
+    public async Task TriggerUploadAsync()
+    {
+        using var scope = scopeFactory.CreateAsyncScope();
+        var dbService = scope.ServiceProvider.GetRequiredService<IndexedDbService>();
+        await Upload10(dbService);
     }
 
     [SupportedOSPlatform("browser")]
@@ -270,6 +301,7 @@ public partial class DecodeService : IDisposable
             await dbService.UpsertReplayAsync(hash!, replay);
             Interlocked.Increment(ref replaysDecoded);
             LatestReplay = replay;
+            LatestReplayHash = hash;
             return new DecodeResult { Success = true, Message = "Replay decoded successfully.", Replay = replay, Path = path };
         }
         catch (OperationCanceledException)

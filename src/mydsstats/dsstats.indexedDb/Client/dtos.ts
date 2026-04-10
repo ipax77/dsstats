@@ -1,5 +1,24 @@
 // dto.ts v1.0
 
+export interface ToonId { region: number; realm: number; id: number; }
+
+export interface ReplayPlayerRatingDto {
+    ratingBefore: number;
+    ratingDelta: number;
+    games: number;
+    toonId: ToonId;
+}
+
+export interface ReplayRatingDto {
+    replayHash?: string;
+    ratingType: number;
+    leaverType: number;
+    expectedWinProbability: number;
+    isPreRating: boolean;
+    avgRating: number;
+    replayPlayerRatings: ReplayPlayerRatingDto[];
+}
+
 export interface TableOrder {
     name: string;
     ascending: boolean;
