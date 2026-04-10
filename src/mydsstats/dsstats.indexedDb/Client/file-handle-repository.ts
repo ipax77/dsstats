@@ -141,6 +141,17 @@ export async function verifyDirectoryPermission(
   return r === "granted";
 }
 
+export async function verifyAllDirectoryPermissions(keys: string[]): Promise<string[]> {
+  const granted: string[] = [];
+  for (const key of keys) {
+    const entry = await getDirectoryHandle(key);
+    if (!entry) continue;
+    const ok = await verifyDirectoryPermission(entry.handle);
+    if (ok) granted.push(key);
+  }
+  return granted;
+}
+
 export async function getDirectoryHandleFromUser(): Promise<FileSystemDirectoryHandle | null> {
   if (!("showDirectoryPicker" in window)) {
     throw new Error(

@@ -15,6 +15,12 @@
 			<i class="bi bi-folder-symlink me-1"></i>Manage Folders
 		</a>
 	}
+	@if (isDecoding || DecodeService.Decoding)
+	{
+		<button class="btn btn-danger btn-sm" @onclick="DecodeService.Cancel">
+			<i class="bi bi-stop-circle me-1"></i>Cancel
+		</button>
+	}
 
 	@if (decodeInfo != null)
 	{

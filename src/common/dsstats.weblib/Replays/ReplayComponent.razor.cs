@@ -1,6 +1,7 @@
 using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Options;
 using Microsoft.JSInterop;
 using pax.BlazorChartJs;
 
@@ -13,6 +14,9 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
 
     [Inject]
     public IPlayerService PlayerService { get; set; } = null!;
+
+    [Inject]
+    public IOptions<HostOptions> HostOptions { get; set; } = null!;
 
     [Parameter, EditorRequired]
     public ReplayDetails ReplayDetails { get; set; } = null!;

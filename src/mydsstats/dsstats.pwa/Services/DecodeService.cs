@@ -358,6 +358,11 @@ public partial class DecodeService : IDisposable
         var dbService = scope.ServiceProvider.GetRequiredService<IndexedDbService>();
         var entries = await dbService.GetAllDirectoryHandleEntries();
 
+        // Request all folder permissions up-front while the user gesture is still active.
+        // Sequential calls chain off each other's activation (user clicks "Allow" → new activation).
+        // This is best-effort; even if a dialog is skipped, DecodeFromDirectory handles it gracefully (0 files).
+        await dbService.VerifyAllDirectoryPermissions(entries.Select(e => e.Key).ToList());
+
         foreach (var entry in entries)
         {
             if (cts.IsCancellationRequested) break;

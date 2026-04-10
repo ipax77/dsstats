@@ -203,7 +203,7 @@
 				{
 					<div class="col-auto d-flex align-items-center">
 						<label for="ratingSelect" class="form-label text-light me-2">Rating Type:</label>
-						<select id="ratingSelect" class="form-select text-light bgchart" disabled="@OperatingSystem.IsWindows()" aria-label="Rating Type" @bind="_replayHelper.RatingType">
+						<select id="ratingSelect" class="form-select text-light bgchart" disabled="@(HostOptions.Value.Kind == HostAppKind.MauiBlazor)" aria-label="Rating Type" @bind="_replayHelper.RatingType">
 							@foreach (var rating in _replayHelper.GetRatingTypes())
 							{
 								<option value="@rating">@rating.ToString()</option>
@@ -227,7 +227,7 @@
 						</button>
 					</div>
 				}
-				@if (OperatingSystem.IsWindows() || OperatingSystem.IsBrowser())
+				@if (HostOptions.Value.Kind != HostAppKind.BlazorServer)
 				{
 					<div class="col-auto">
 						<button type="button" class="btn btn-sm btn-outline-light"

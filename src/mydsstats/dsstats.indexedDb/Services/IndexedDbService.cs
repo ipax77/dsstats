@@ -134,6 +134,12 @@ public class IndexedDbService
         return await module.InvokeAsync<List<string>>("exportAllDirectoryHandles");
     }
 
+    public async ValueTask<List<string>> VerifyAllDirectoryPermissions(List<string> keys)
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<List<string>>("verifyAllDirectoryPermissions", keys);
+    }
+
     public async ValueTask<List<DirHandleEntry>> GetAllDirectoryHandleEntries()
     {
         var module = await _moduleTask;
