@@ -129,7 +129,7 @@ public partial class DecodeService : IDisposable
     }
 
     [SupportedOSPlatform("browser")]
-    public async Task DecodeFromDirectory(int regionId, string? dirKey = null)
+    public async Task DecodeFromDirectory(int regionId, string? dirKey = null, int limit = 100)
     {
         await ss.WaitAsync();
 
@@ -158,13 +158,24 @@ public partial class DecodeService : IDisposable
             logger.LogInformation("Found {Count} existing replay paths in database.", existingPaths.Count);
 
 
-            var fileInfos = await dbService.PickDirectoryInit(regionId, config.ReplayStartName, dirKey);
+            var fileInfos = await dbService.PickDirectoryInit(regionId, config.ReplayStartName, dirKey, limit);
 
             logger.LogInformation("Starting decoding of {FileCount} replays...", fileInfos.Count);
+            OnDecodeStateChanged(new DecodeInfoEventArgs
+            {
+                Done = 0,
+                Total = fileInfos.Count,
+                Error = 0,
+                Elapsed = sw.Elapsed,
+                Eta = TimeSpan.Zero,
+                Saving = false,
+                Finished = false,
+                Info = $"Starting decode of {fileInfos.Count} replays..."
+            });
             await EnsureWorkersAsync(config.CPUCores);
             var options = new ParallelOptions
             {
-                MaxDegreeOfParallelism = config.CPUCores * 4,
+                MaxDegreeOfParallelism = config.CPUCores,
                 CancellationToken = decodeCts.Token
             };
 
@@ -269,54 +280,6 @@ public partial class DecodeService : IDisposable
     }
 
     [SupportedOSPlatform("browser")]
-    public async Task DecodeAllFromDirectory(int regionId, string? dirKey = null)
-    {
-        await ss.WaitAsync();
-        Decoding = true;
-        decodeCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
-        Stopwatch sw = Stopwatch.StartNew();
-        ConcurrentBag<string> failedReplays = [];
-        var config = await pwaConfigService.GetConfig();
-
-        using var scope = scopeFactory.CreateAsyncScope();
-        var dbService = scope.ServiceProvider.GetRequiredService<IndexedDbService>();
-
-        try
-        {
-            replaysDecoded = 0;
-            var existingPaths = await dbService.GetExistingPaths();
-
-            int batchIndex = 0;
-            while (true)
-            {
-                // Ask frontend for the next batch of up to 100
-                var fileInfos = await dbService.PickDirectoryInit(regionId, config.ReplayStartName, dirKey);
-
-                if (fileInfos.Count == 0)
-                    break; // no more new replays
-
-                logger.LogInformation("Decoding batch {Batch} with {Count} replays", ++batchIndex, fileInfos.Count);
-                await EnsureWorkersAsync(config.CPUCores);
-                await DecodeBatch(fileInfos, dbService, failedReplays, sw, config.CPUCores);
-
-                // Extend the "already decoded" list so we don’t get duplicates
-                foreach (var fi in fileInfos)
-                    existingPaths.Add(fi.Path);
-            }
-        }
-        finally
-        {
-            Decoding = false;
-            if (cts.IsCancellationRequested)
-                await TeardownWorkersAsync();
-            ss.Release();
-        }
-
-        sw.Stop();
-        logger.LogInformation("Finished decoding {Count} replays", replaysDecoded);
-    }
-
-    [SupportedOSPlatform("browser")]
     private async Task DecodeBatch(IEnumerable<FileInfoRecord> files,
                                IndexedDbService dbService,
                                ConcurrentBag<string> failedReplays,
@@ -352,6 +315,20 @@ public partial class DecodeService : IDisposable
         });
     }
 
+
+    [SupportedOSPlatform("browser")]
+    public async Task DecodeAllHandles()
+    {
+        using var scope = scopeFactory.CreateAsyncScope();
+        var dbService = scope.ServiceProvider.GetRequiredService<IndexedDbService>();
+        var entries = await dbService.GetAllDirectoryHandleEntries();
+
+        foreach (var entry in entries)
+        {
+            if (cts.IsCancellationRequested) break;
+            await DecodeFromDirectory(entry.RegionId, entry.Key, limit: 0);
+        }
+    }
 
     public void Cancel()
     {

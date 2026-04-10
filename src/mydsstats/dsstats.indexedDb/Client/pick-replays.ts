@@ -1,5 +1,5 @@
-﻿import { FileInfo, FileInfoRecord } from "./dtos";
-import { getDirectoryHandleFromUser, saveDirectoryHandle, verifyDirectoryPermission } from "./file-handle-repository";
+import { FileInfo, FileInfoRecord } from "./dtos";
+import { addDirectoryHandle, getDirectoryHandleFromUser, verifyDirectoryPermission } from "./file-handle-repository";
 
 const fileHandleMap = new Map<string, File>();
 
@@ -9,6 +9,7 @@ export async function getReplaysFromFolder(
     existingPaths: string[],
     count: number,
     dirHandle?: FileSystemDirectoryHandle | null,
+    rootKey?: string,
 ): Promise<FileInfoRecord[]> {
     fileHandleMap.clear(); // reset
 
@@ -19,19 +20,23 @@ export async function getReplaysFromFolder(
             if (dirHandle === null || dirHandle === undefined) {
                 return [];
             }
-            await saveDirectoryHandle(`${dirHandle.name}_${regionId}`, dirHandle);
+            // Save with unique UUID key; returns existing UUID if same folder was already saved.
+            rootKey = await addDirectoryHandle(dirHandle, dirHandle.name, regionId);
         } else {
             await verifyDirectoryPermission(dirHandle);
         }
 
-        const records = await getFilesFromFolderRecursive(dirHandle, existingSet, startName, true, dirHandle.name);
+        // Use the UUID (or dirHandle.name as fallback) as the path root so that
+        // stored paths are globally unique across handles with the same folder name.
+        const pathRoot = rootKey ?? dirHandle.name;
+        const records = await getFilesFromFolderRecursive(dirHandle, existingSet, startName, true, pathRoot);
 
         // Filter + sort
         const filtered = records
             .sort((a, b) => b.record.lastModified - a.record.lastModified);
 
-        // Take only {count}
-        const top = filtered.slice(0, count);
+        // Take only {count}; 0 means no limit (all remaining replays)
+        const top = count > 0 ? filtered.slice(0, count) : filtered;
 
         // Store only those files in memory
         for (const { record, file } of top) {
@@ -50,7 +55,7 @@ async function getFilesFromFolderRecursive(
     existing: Set<string>,
     startName: string,
     recursive: boolean,
-    currentPath: string // initial is dirHandle.name
+    currentPath: string // initial is the UUID or dirHandle.name
 ): Promise<FileInfo[]> {
     const out: FileInfo[] = [];
 
@@ -75,7 +80,7 @@ async function getFilesFromFolderRecursive(
             if (existing.has(fullPath)) continue;
 
             const file = await (entry as FileSystemFileHandle).getFile();
-            
+
             out.push({
                 record: {
                     path: fullPath,     // important for uniqueness in recursion

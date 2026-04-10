@@ -1,4 +1,4 @@
-﻿@page "/decode"
+@page "/decode"
 @using dsstats.indexedDb.Services
 @using dsstats.parser
 @using dsstats.pwa.Services
@@ -19,7 +19,7 @@
 			<h2 class="fw-bold mb-3">Decode Your Replays</h2>
 			<p class="text-muted mb-4">
 				Select one <strong>Direct Strike replay files</strong> to decode.
-				Your decoded matches will be stored locally in your browser’s IndexedDB for quick access.
+				Your decoded matches will be stored locally in your browser's IndexedDB for quick access.
 			</p>
 
 			<!-- File Upload -->
@@ -34,23 +34,26 @@
 
 			<!-- Decode Controls -->
 			<div class="row text-center g-3 mb-4">
-				<!-- Decode -->
+				<!-- Decode Folder -->
 				<div class="col-md-4">
-					<div>
-						<button class="btn btn-primary w-100" @onclick="DecodeFilesJob">
-							<i class="bi bi-folder-symlink me-2"></i> Decode Folder
-						</button>
-						<select id="breakpointSelect" class="form-select text-light bgchart" aria-label="Breakpoint" @bind="regionId">
-							<option value="0">Select Region ..</option>
-							<option value="1">NA</option>
-							<option value="2">EU</option>
-							<option value="3">AS</option>
-							<option value="4">CH</option>
-						</select>
-					</div>
+					<button class="btn btn-primary w-100" @onclick="DecodeFilesJob"
+							disabled="@(isLoading || DecodeService.Decoding)">
+						<i class="bi bi-folder-symlink me-2"></i> Decode Folder
+					</button>
 					<p class="small text-muted mt-2">
 						Opens a folder picker and decodes all Direct Strike Replays in batches of 100.
 						Already decoded replays will be skipped automatically, so you can Cancel and Restart at any time.
+					</p>
+				</div>
+
+				<!-- Decode All -->
+				<div class="col-md-4">
+					<button class="btn btn-success w-100" @onclick="DecodeAllJob"
+							disabled="@(isLoading || DecodeService.Decoding)">
+						<i class="bi bi-folder2-open me-2"></i> Decode All My New Replays
+					</button>
+					<p class="small text-muted mt-2">
+						Decode new replays from all saved folders at once. No region selection needed.
 					</p>
 				</div>
 
@@ -104,7 +107,7 @@
 		</div>
 		<div class="col-lg-4">
 			<!-- Saved Directories -->
-			@if (dirHandleKeys?.Count > 0)
+			@if (dirHandleEntries?.Count > 0)
 			{
 				<div class="card border-0 shadow-sm mb-4 bgchart2">
 					<div class="card-body">
@@ -114,25 +117,46 @@
 						</h5>
 
 						<p class="text-muted small mb-3">
-							These folders were previously authorized. You can decode them again or remove the saved handle.
+							These folders were previously authorized. You can decode them again, rename, or remove the saved handle.
 						</p>
 
 						<ul class="list-group">
-							@foreach (var key in dirHandleKeys)
+							@foreach (var entry in dirHandleEntries)
 							{
-								<li class="list-group-item d-flex justify-content-between align-items-center bgchart text-light">
-									<span class="text-break">@key</span>
-									<div>
-										<button class="btn btn-sm btn-primary me-2"
-												@onclick="() => DecodeDirHandleJob(key)">
-											<i class="bi bi-play-fill me-1"></i> Decode
-										</button>
-
-										<button class="btn btn-sm btn-danger"
-												@onclick="() => DeleteDirHandle(key)">
-											<i class="bi bi-trash me-1"></i> Delete
-										</button>
+								<li class="list-group-item bgchart text-light mb-2">
+									<div class="d-flex justify-content-between align-items-center">
+										<div>
+											<span class="fw-semibold text-break">@entry.DisplayName</span>
+											<span class="badge bg-secondary ms-2">@GetRegionLabel(entry.RegionId)</span>
+										</div>
+										<div class="d-flex gap-1">
+											<button class="btn btn-sm btn-primary"
+													@onclick="() => DecodeDirHandleJob(entry.Key)">
+												<i class="bi bi-play-fill"></i>
+											</button>
+											<button class="btn btn-sm btn-outline-light"
+													@onclick="() => StartRename(entry.Key, entry.DisplayName)">
+												<i class="bi bi-pencil"></i>
+											</button>
+											<button class="btn btn-sm btn-danger"
+													@onclick="() => DeleteDirHandle(entry.Key)">
+												<i class="bi bi-trash"></i>
+											</button>
+										</div>
 									</div>
+									@if (renamingKey == entry.Key)
+									{
+										<div class="mt-2 d-flex gap-2">
+											<input class="form-control form-control-sm bgchart text-light"
+												   @bind="renameValue" placeholder="New name" />
+											<button class="btn btn-sm btn-success" @onclick="ConfirmRename">
+												<i class="bi bi-check"></i>
+											</button>
+											<button class="btn btn-sm btn-secondary" @onclick="CancelRename">
+												<i class="bi bi-x"></i>
+											</button>
+										</div>
+									}
 								</li>
 							}
 						</ul>
@@ -155,8 +179,10 @@
 	private int maxAllowedFiles = 1;
 	private ReplayDto? replay = null;
 	private int replaysDecoded = 0;
-	private int regionId = 0;
-	private List<string> dirHandleKeys = [];
+	private List<IndexedDbService.DirHandleEntry> dirHandleEntries = [];
+
+	private string? renamingKey = null;
+	private string renameValue = string.Empty;
 
 	DecodeInfoEventArgs? decodeInfoEventArgs;
 
@@ -169,7 +195,7 @@
 
 	private async Task LoadDirHandles()
 	{
-		dirHandleKeys = await dbService.GetAllDirectoryHandles();
+		dirHandleEntries = await dbService.GetAllDirectoryHandleEntries();
 		await InvokeAsync(StateHasChanged);
 	}
 
@@ -177,6 +203,39 @@
 	{
 		await dbService.DeleteDirectoryHandle(key);
 		await LoadDirHandles();
+	}
+
+	private void StartRename(string key, string currentName)
+	{
+		renamingKey = key;
+		renameValue = currentName;
+	}
+
+	private void CancelRename()
+	{
+		renamingKey = null;
+		renameValue = string.Empty;
+	}
+
+	private async Task ConfirmRename()
+	{
+		if (renamingKey is null) return;
+		if (dirHandleEntries.Any(e => e.Key != renamingKey && e.DisplayName == renameValue))
+		{
+			ToastService.ShowError($"Name \"{renameValue}\" is already in use.");
+			return;
+		}
+		try
+		{
+			await dbService.RenameDirectoryHandle(renamingKey, renameValue);
+			renamingKey = null;
+			renameValue = string.Empty;
+			await LoadDirHandles();
+		}
+		catch (Exception ex)
+		{
+			ToastService.ShowError(ex.Message);
+		}
 	}
 
 	private void DecodeStateChanged(object? sender, DecodeInfoEventArgs e)
@@ -203,20 +262,41 @@
 
 	private async Task DecodeFilesJob()
 	{
-		if (regionId == 0)
-		{
-			ToastService.ShowError("Please select a Region first!", smallTitle: "The region info is necessary to be able to store replays from different regions with the same file name.");
-			return;
-		}
-		await DecodeService.DecodeFromDirectory(regionId);
+		await DecodeService.DecodeFromDirectory(0);
 		ToastService.ShowSuccess("Decode job finished.");
+	}
+
+	private async Task DecodeAllJob()
+	{
+		isLoading = true;
+		await InvokeAsync(StateHasChanged);
+		try
+		{
+			await DecodeService.DecodeAllHandles();
+			ToastService.ShowSuccess("Decode all finished.");
+		}
+		finally
+		{
+			isLoading = false;
+			await InvokeAsync(StateHasChanged);
+		}
+		await LoadDirHandles();
 	}
 
 	private async Task DecodeDirHandleJob(string key)
 	{
-		await DecodeService.DecodeFromDirectory(regionId, key);
+		await DecodeService.DecodeFromDirectory(0, key);
 		ToastService.ShowSuccess("Decode job finished.");
 	}
+
+	private static string GetRegionLabel(int regionId) => regionId switch
+	{
+		1 => "NA",
+		2 => "EU",
+		3 => "AS",
+		4 => "CH",
+		_ => "?"
+	};
 
 	public void Dispose()
 	{

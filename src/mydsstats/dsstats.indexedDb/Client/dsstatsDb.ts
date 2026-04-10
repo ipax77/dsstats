@@ -5,7 +5,7 @@ import { getReplaysFromFolder, readFileContentStream } from "./pick-replays";
 import { exportBackup, importBackup } from "./backup";
 import { MyPlayerStats } from "./stats/stats-dto";
 import { StatsService } from "./stats/stats";
-import { deleteDirectoryHandle, getAllDirectoryHandles, getDirectoryHandle } from "./file-handle-repository";
+import { deleteDirectoryHandle, getAllDirectoryHandleEntries, getAllDirectoryHandles, getDirectoryHandle, renameDirectoryHandle as renameDirHandle } from "./file-handle-repository";
 
 // Save replay and its projection + meta in one transaction
 export async function saveReplayFull(
@@ -275,9 +275,27 @@ export async function pickDirectoryInit(
     count: number = 100
 ): Promise<FileInfoRecord[]> {
     const metas = await getAllReplayMatas();
-    const paths = metas.filter(f => f.regionId === regionId).map(m => m.filePath);
-    const dirHandle = !dirKey ? null : await getDirectoryHandle(dirKey);
-    return await getReplaysFromFolder(regionId, startName, paths, count, dirHandle ?? undefined);
+
+    let effectiveRegionId = regionId;
+    let dirHandle: FileSystemDirectoryHandle | null = null;
+    let rootKey: string | undefined = undefined;
+
+    if (dirKey) {
+        const entry = await getDirectoryHandle(dirKey);
+        if (entry) {
+            dirHandle = entry.handle;
+            effectiveRegionId = entry.regionId;
+            rootKey = dirKey;
+        }
+    }
+
+    // Scope the "already decoded" set to this handle's UUID prefix when possible,
+    // otherwise fall back to regionId filtering (new-picker path).
+    const paths = rootKey
+        ? metas.filter(m => m.filePath.startsWith(rootKey + '/')).map(m => m.filePath)
+        : metas.filter(f => f.regionId === effectiveRegionId).map(m => m.filePath);
+
+    return await getReplaysFromFolder(effectiveRegionId, startName, paths, count, dirHandle, rootKey);
 }
 
 export async function getFileContentStream(path: string) {
@@ -470,6 +488,14 @@ export async function exportAllDirectoryHandles(): Promise<string[]> {
     return await getAllDirectoryHandles();
 }
 
-export async function delDirectoryHandle(key: string): Promise<void> {
-    await deleteDirectoryHandle(key);
+export async function exportAllDirectoryHandleEntries(): Promise<{ key: string; displayName: string; regionId: number }[]> {
+    return await getAllDirectoryHandleEntries();
+}
+
+export async function renameDirectoryHandle(key: string, newDisplayName: string): Promise<void> {
+    await renameDirHandle(key, newDisplayName);
+}
+
+export async function delDirectoryHandle(key: string): Promise<boolean> {
+    return await deleteDirectoryHandle(key);
 }

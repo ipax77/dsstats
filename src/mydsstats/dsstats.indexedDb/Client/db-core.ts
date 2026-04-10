@@ -1,7 +1,7 @@
 import { Dump, Migration } from "./migration.js";
 
 export const DB_NAME = "ReplayDB";
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 
 export const STORES = {
     replays: "Replays",
@@ -172,9 +172,38 @@ const migration3: Migration = {
   },
 };
 
+// migration4: migrate DirectoryHandles from {key: humanName, value: FileSystemDirectoryHandle}
+// to {key: UUID, value: {handle, displayName, regionId}} for unique, user-editable handle names.
+const migration4: Migration = {
+  schema: (_db, tx) => {
+    const store = tx.objectStore(STORES.directoryHandles);
+    const req = store.openCursor();
+    req.onsuccess = (e) => {
+      const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+      if (!cursor) return;
+      const oldKey = cursor.key as string;
+      const oldValue = cursor.value;
+      // Skip if already migrated (value has a .handle property)
+      if (oldValue && typeof oldValue === "object" && "handle" in oldValue) {
+        cursor.continue();
+        return;
+      }
+      // Extract regionId from key pattern like "Multiplayer_2" or "Multiplayer_2_3"
+      let regionId = 0;
+      const match = (oldKey as string).match(/_(\d)(?:_\d+)?$/);
+      if (match) regionId = parseInt(match[1], 10);
+      const uuid = crypto.randomUUID();
+      store.put({ handle: oldValue, displayName: oldKey, regionId }, uuid);
+      cursor.delete();
+      cursor.continue();
+    };
+  },
+};
+
 const upgrades: Record<number, Migration> = {
   0: migration0, // initial schema
   1: migration1, // uploaded boolean → number (dump/restore path only)
   2: migration2, // new store for directory handles
   3: migration3, // fix boolean uploaded → number in live DB records
+  4: migration4, // DirectoryHandles: humanName → UUID key, value wraps handle+displayName+regionId
 };

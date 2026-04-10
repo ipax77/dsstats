@@ -122,10 +122,29 @@ public class IndexedDbService
         return await module.InvokeAsync<List<string>>("exportAllDirectoryHandles");
     }
 
+    public async ValueTask<List<DirHandleEntry>> GetAllDirectoryHandleEntries()
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<List<DirHandleEntry>>("exportAllDirectoryHandleEntries");
+    }
+
+    public async ValueTask RenameDirectoryHandle(string key, string newDisplayName)
+    {
+        var module = await _moduleTask;
+        await module.InvokeVoidAsync("renameDirectoryHandle", key, newDisplayName);
+    }
+
     public async ValueTask<bool> DeleteDirectoryHandle(string key)
     {
         var module = await _moduleTask;
         return await module.InvokeAsync<bool>("delDirectoryHandle", key);
+    }
+
+    public sealed class DirHandleEntry
+    {
+        public string Key { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public int RegionId { get; set; }
     }
 
     public sealed class FileInfoRecord
