@@ -1,7 +1,7 @@
 import { Dump, Migration } from "./migration.js";
 
 export const DB_NAME = "ReplayDB";
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 export const STORES = {
     replays: "Replays",
@@ -151,8 +151,30 @@ const migration2: Migration = {
 };
 
 
+// migration3: fix boolean 'uploaded' values that migration1 missed in live DBs.
+// migration1 only ran via the dump/restore path; existing live records may still
+// have uploaded: true/false. Convert them to 1/0 so getAllReplayMetas() can be
+// deserialized as number (int) in C#.
+const migration3: Migration = {
+  schema: (_db, tx) => {
+    const metaStore = tx.objectStore(STORES.meta);
+    const cursorReq = metaStore.openCursor();
+    cursorReq.onsuccess = (e) => {
+      const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+      if (!cursor) return;
+      const record = cursor.value;
+      if (typeof record.uploaded === "boolean") {
+        record.uploaded = record.uploaded ? 1 : 0;
+        cursor.update(record);
+      }
+      cursor.continue();
+    };
+  },
+};
+
 const upgrades: Record<number, Migration> = {
   0: migration0, // initial schema
-  1: migration1, // uploaded boolean → number, can modify other stores too
+  1: migration1, // uploaded boolean → number (dump/restore path only)
   2: migration2, // new store for directory handles
+  3: migration3, // fix boolean uploaded → number in live DB records
 };
