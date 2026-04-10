@@ -28,13 +28,18 @@ public partial class DecodeClient : IAsyncDisposable
     /// <summary>
     /// Dispatches replay bytes to an idle worker and returns the decoded replay.
     /// Returns (false, error, null, null) on decode failure.
+    /// If <paramref name="cancellationToken"/> fires before the worker responds the
+    /// call throws <see cref="OperationCanceledException"/>. The underlying JS
+    /// promise stays alive until the worker finishes, then resolves silently —
+    /// the pool stays healthy.
     /// </summary>
-    public async Task<(bool Success, string? Error, string? Hash, ReplayDto? Replay)> DecodeAsync(byte[] bytes)
+    public async Task<(bool Success, string? Error, string? Hash, ReplayDto? Replay)> DecodeAsync(
+        byte[] bytes, CancellationToken cancellationToken = default)
     {
         // byte[] cannot be marshaled directly in JSImport — encode as base64 string.
         // JS decodeReplay() uses atob() to recover the Uint8Array before dispatching.
         var base64 = Convert.ToBase64String(bytes);
-        var json = await DecodeReplayJs(base64);
+        var json = await DecodeReplayJs(base64).WaitAsync(cancellationToken);
         var result = JsonSerializer.Deserialize(json, WorkerSerializerContext.Default.WorkerDecodeResult);
         if (result is null || !result.Success)
             return (false, result?.Error ?? "null result from worker", null, null);

@@ -10,13 +10,14 @@ using static dsstats.indexedDb.Services.IndexedDbService;
 
 namespace dsstats.pwa.Services;
 
-public partial class DecodeService
+public partial class DecodeService : IDisposable
 {
     private readonly IServiceScopeFactory scopeFactory;
     private readonly ILogger<DecodeService> logger;
     private readonly PwaConfigService pwaConfigService;
     private readonly IHttpClientFactory httpClientFactory;
-    private CancellationTokenSource cts = new();
+    private readonly CancellationTokenSource cts = new();
+    private CancellationTokenSource? decodeCts;
     private readonly SemaphoreSlim ss = new(1, 1);
     public bool Decoding { get; private set; }
 
@@ -52,6 +53,14 @@ public partial class DecodeService
         await _decodeClient.InitAsync(cpuCores);
     }
 
+    [SupportedOSPlatform("browser")]
+    private async Task TeardownWorkersAsync()
+    {
+        if (_decodeClient is null) return;
+        await _decodeClient.DisposeAsync();
+        _decodeClient = null;
+    }
+
     public event EventHandler<DecodeInfoEventArgs>? DecodeStateChanged;
     private void OnDecodeStateChanged(DecodeInfoEventArgs e)
     {
@@ -63,7 +72,7 @@ public partial class DecodeService
     {
         await ss.WaitAsync();
         Decoding = true;
-        cts = new();
+        decodeCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
         Stopwatch sw = Stopwatch.StartNew();
         bool success = false;
         string message = string.Empty;
@@ -74,7 +83,7 @@ public partial class DecodeService
 
         try
         {
-            var sc2Replay = await decoder.DecodeAsync(stream, decoderOptions, cts.Token);
+            var sc2Replay = await decoder.DecodeAsync(stream, decoderOptions, decodeCts.Token);
             if (sc2Replay is null)
             {
                 logger.LogWarning("Failed to decode replay from stream.");
@@ -134,7 +143,7 @@ public partial class DecodeService
         }
 
         Decoding = true;
-        cts = new();
+        decodeCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
         Stopwatch sw = Stopwatch.StartNew();
         ConcurrentBag<string> failedReplays = [];
         ConcurrentBag<string> decodedReplays = [];
@@ -156,7 +165,7 @@ public partial class DecodeService
             var options = new ParallelOptions
             {
                 MaxDegreeOfParallelism = config.CPUCores * 4,
-                CancellationToken = cts.Token
+                CancellationToken = decodeCts.Token
             };
 
             await Parallel.ForEachAsync(fileInfos, options, async (fileInfo, ct) =>
@@ -199,6 +208,8 @@ public partial class DecodeService
         finally
         {
             Decoding = false;
+            if (decodeCts.IsCancellationRequested)
+                await TeardownWorkersAsync();
             ss.Release();
         }
         sw.Stop();
@@ -236,7 +247,7 @@ public partial class DecodeService
             token.ThrowIfCancellationRequested();
 
             // CPU-heavy decode: dispatched to Web Worker
-            var (success, error, hash, replay) = await _decodeClient!.DecodeAsync(ms.ToArray());
+            var (success, error, hash, replay) = await _decodeClient!.DecodeAsync(ms.ToArray(), token);
             if (!success || replay is null)
                 return new DecodeResult { Success = false, Message = error ?? "Worker decode error", Path = path };
 
@@ -262,7 +273,7 @@ public partial class DecodeService
     {
         await ss.WaitAsync();
         Decoding = true;
-        cts = new();
+        decodeCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
         Stopwatch sw = Stopwatch.StartNew();
         ConcurrentBag<string> failedReplays = [];
         var config = await pwaConfigService.GetConfig();
@@ -296,6 +307,8 @@ public partial class DecodeService
         finally
         {
             Decoding = false;
+            if (cts.IsCancellationRequested)
+                await TeardownWorkersAsync();
             ss.Release();
         }
 
@@ -342,7 +355,7 @@ public partial class DecodeService
 
     public void Cancel()
     {
-        cts.Cancel();
+        decodeCts?.Cancel();
     }
 
     internal sealed class DecodeResult
@@ -351,6 +364,13 @@ public partial class DecodeService
         public string Message { get; set; } = string.Empty;
         public ReplayDto? Replay { get; set; }
         public string Path { get; set; } = string.Empty;
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+        decodeCts?.Dispose();
     }
 }
 
