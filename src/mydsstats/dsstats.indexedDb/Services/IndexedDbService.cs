@@ -162,7 +162,7 @@ public class IndexedDbService
         public string ReplayHash { get; set; } = string.Empty;
         public string FilePath { get; set; } = string.Empty;
         public int RegionId { get; set; }
-        public int Uploaded { get; set; }
+        public bool Uploaded { get; set; }
         public bool Skip { get; set; }
     }
 }

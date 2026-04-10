@@ -1,9 +1,11 @@
 ﻿using dsstats.indexedDb.Services;
 using dsstats.parser;
+using dsstats.pwa.Clients;
 using dsstats.shared;
 using s2protocol.NET;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using static dsstats.indexedDb.Services.IndexedDbService;
 
 namespace dsstats.pwa.Services;
@@ -27,6 +29,9 @@ public partial class DecodeService
         this.pwaConfigService = pwaConfigService;
     }
     int replaysDecoded = 0;
+    private DecodeClient? _decodeClient;
+
+    // Used only by DecodeFromStream (single-file upload path, no worker needed).
     private readonly ReplayDecoder decoder = new ReplayDecoder();
     private readonly ReplayDecoderOptions decoderOptions = new()
     {
@@ -38,6 +43,14 @@ public partial class DecodeService
         TrackerEvents = true,
         AttributeEvents = false,
     };
+
+    [SupportedOSPlatform("browser")]
+    private async Task EnsureWorkersAsync(int cpuCores)
+    {
+        if (_decodeClient is not null) return;
+        _decodeClient = new DecodeClient();
+        await _decodeClient.InitAsync(cpuCores);
+    }
 
     public event EventHandler<DecodeInfoEventArgs>? DecodeStateChanged;
     private void OnDecodeStateChanged(DecodeInfoEventArgs e)
@@ -106,6 +119,7 @@ public partial class DecodeService
         return replayDto;
     }
 
+    [SupportedOSPlatform("browser")]
     public async Task DecodeFromDirectory(int regionId, string? dirKey = null)
     {
         await ss.WaitAsync();
@@ -138,9 +152,10 @@ public partial class DecodeService
             var fileInfos = await dbService.PickDirectoryInit(regionId, config.ReplayStartName, dirKey);
 
             logger.LogInformation("Starting decoding of {FileCount} replays...", fileInfos.Count);
+            await EnsureWorkersAsync(config.CPUCores);
             var options = new ParallelOptions
             {
-                MaxDegreeOfParallelism = config.CPUCores,
+                MaxDegreeOfParallelism = config.CPUCores * 4,
                 CancellationToken = cts.Token
             };
 
@@ -207,49 +222,42 @@ public partial class DecodeService
         }
     }
 
+    [SupportedOSPlatform("browser")]
     private async Task<DecodeResult> TryDecodeReplay(string path, IndexedDbService dbService, CancellationToken token)
     {
         try
         {
+            // File read: JSInterop — must stay on main thread
             var streamRef = await dbService.GetFileContent(path);
-            using var stream = await streamRef.OpenReadStreamAsync(maxAllowedSize: 5_000_000, token); // 5MB
+            using var stream = await streamRef.OpenReadStreamAsync(maxAllowedSize: 5_000_000, token);
             var ms = new MemoryStream();
             await stream.CopyToAsync(ms, token);
-            ms.Position = 0;
 
-            var sc2Replay = await decoder.DecodeAsync(ms, decoderOptions, token);
-            if (sc2Replay is null)
-            {
-                return new DecodeResult
-                {
-                    Success = false,
-                    Message = "Failed to decode replay.",
-                    Path = path
-                };
-            }
-            var replay = DsstatsParser.ParseReplay(sc2Replay, compat: true);
+            token.ThrowIfCancellationRequested();
+
+            // CPU-heavy decode: dispatched to Web Worker
+            var (success, error, hash, replay) = await _decodeClient!.DecodeAsync(ms.ToArray());
+            if (!success || replay is null)
+                return new DecodeResult { Success = false, Message = error ?? "Worker decode error", Path = path };
+
             replay.FileName = path;
-            await dbService.UpsertReplayAsync(replay.ComputeHash(), replay);
+
+            // IndexedDB write: JSInterop — must stay on main thread
+            await dbService.UpsertReplayAsync(hash!, replay);
             Interlocked.Increment(ref replaysDecoded);
-            return new DecodeResult
-            {
-                Success = true,
-                Message = "Replay decoded successfully.",
-                Replay = replay,
-                Path = path
-            };
+            return new DecodeResult { Success = true, Message = "Replay decoded successfully.", Replay = replay, Path = path };
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
-            return new DecodeResult
-            {
-                Success = false,
-                Message = ex.Message,
-                Path = path
-            };
+            return new DecodeResult { Success = false, Message = ex.Message, Path = path };
         }
     }
 
+    [SupportedOSPlatform("browser")]
     public async Task DecodeAllFromDirectory(int regionId, string? dirKey = null)
     {
         await ss.WaitAsync();
@@ -277,7 +285,7 @@ public partial class DecodeService
                     break; // no more new replays
 
                 logger.LogInformation("Decoding batch {Batch} with {Count} replays", ++batchIndex, fileInfos.Count);
-
+                await EnsureWorkersAsync(config.CPUCores);
                 await DecodeBatch(fileInfos, dbService, failedReplays, sw, config.CPUCores);
 
                 // Extend the "already decoded" list so we don’t get duplicates
@@ -295,6 +303,7 @@ public partial class DecodeService
         logger.LogInformation("Finished decoding {Count} replays", replaysDecoded);
     }
 
+    [SupportedOSPlatform("browser")]
     private async Task DecodeBatch(IEnumerable<FileInfoRecord> files,
                                IndexedDbService dbService,
                                ConcurrentBag<string> failedReplays,
@@ -303,7 +312,7 @@ public partial class DecodeService
     {
         var options = new ParallelOptions
         {
-            MaxDegreeOfParallelism = maxParallelism,
+            MaxDegreeOfParallelism = maxParallelism * 4,
             CancellationToken = cts.Token
         };
 
