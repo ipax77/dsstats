@@ -1,6 +1,90 @@
 import { Dump } from "./migration";
 import { openDB, migrateDump, STORES } from "./db-core";
 
+type KeyedDumpItem = {
+    __idbKey: IDBValidKey;
+    __idbValue: unknown;
+};
+
+function isKeyedDumpItem(item: unknown): item is KeyedDumpItem {
+    return !!item && typeof item === "object" && "__idbKey" in item && "__idbValue" in item;
+}
+
+async function exportStore(store: IDBObjectStore): Promise<unknown[]> {
+    if (store.keyPath !== null) {
+        return await new Promise((resolve, reject) => {
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    return await new Promise((resolve, reject) => {
+        const items: KeyedDumpItem[] = [];
+        const req = store.openCursor();
+
+        req.onsuccess = () => {
+            const cursor = req.result;
+            if (!cursor) {
+                resolve(items);
+                return;
+            }
+
+            items.push({
+                __idbKey: cursor.key,
+                __idbValue: cursor.value,
+            });
+            cursor.continue();
+        };
+
+        req.onerror = () => reject(req.error);
+    });
+}
+
+function transformImportedItem(storeName: string, item: any) {
+    if (storeName === STORES.directoryHandles) {
+        return {
+            ...item,
+            handle: null,              // strip invalid handle
+            status: "unbound",         // force rebinding
+            lastBoundAt: undefined
+        };
+    }
+
+    return item;
+}
+
+function getLegacyOutOfLineKey(storeName: string, item: unknown): IDBValidKey | undefined {
+    if (storeName === STORES.config) {
+        return "app";
+    }
+
+    if (storeName === STORES.directoryHandles) {
+        console.warn("Skipping legacy directory handle backup entry without key; it cannot be restored reliably.");
+        return undefined;
+    }
+
+    console.warn(`Skipping legacy backup entry for out-of-line store "${storeName}" without key.`);
+    return undefined;
+}
+
+function putImportedItem(store: IDBObjectStore, storeName: string, item: unknown) {
+    if (store.keyPath === null) {
+        if (isKeyedDumpItem(item)) {
+            store.put(transformImportedItem(storeName, item.__idbValue), item.__idbKey);
+            return;
+        }
+
+        const legacyKey = getLegacyOutOfLineKey(storeName, item);
+        if (legacyKey !== undefined) {
+            store.put(transformImportedItem(storeName, item), legacyKey);
+        }
+        return;
+    }
+
+    store.put(transformImportedItem(storeName, item));
+}
+
 export async function exportDb(): Promise<ArrayBuffer> {
     const database = await openDB();
 
@@ -13,19 +97,17 @@ export async function exportDb(): Promise<ArrayBuffer> {
 
         for (const storeName of Array.from(database.objectStoreNames)) {
             const store = tx.objectStore(storeName);
-            const req = store.getAll();
-
-            req.onsuccess = () => {
-                dump.stores[storeName] = req.result;
-                if (--pending === 0) {
-                    const json = JSON.stringify(dump);
-                    const compressed = pako.gzip(json);
-                    const binary = new Uint8Array(compressed);
-                    resolve(binary.buffer);
-                }
-            };
-
-            req.onerror = () => reject(req.error);
+            exportStore(store)
+                .then((items) => {
+                    dump.stores[storeName] = items;
+                    if (--pending === 0) {
+                        const json = JSON.stringify(dump);
+                        const compressed = pako.gzip(json);
+                        const binary = new Uint8Array(compressed);
+                        resolve(binary.buffer);
+                    }
+                })
+                .catch(reject);
         }
     });
 }
@@ -44,25 +126,13 @@ export async function importDb(json: string, replace = false): Promise<void> {
             if (!db.objectStoreNames.contains(storeName)) continue;
             const store = tx.objectStore(storeName);
 
-            const transformedItems = items.map((item: any) => {
-                if (storeName === STORES.directoryHandles) {
-                    return {
-                        ...item,
-                        handle: null,              // ❗ strip invalid handle
-                        status: "unbound",         // ❗ force rebinding
-                        lastBoundAt: undefined
-                    };
-                }
-                return item;
-            });
-
             if (replace) {
                 const clearReq = store.clear();
                 clearReq.onsuccess = () => {
-                    for (const item of transformedItems) store.put(item);
+                    for (const item of items) putImportedItem(store, storeName, item);
                 };
             } else {
-                for (const item of transformedItems) store.put(item);
+                for (const item of items) putImportedItem(store, storeName, item);
             }
         }
     });
@@ -123,5 +193,4 @@ export async function importBackup(replace: boolean = false): Promise<void> {
         input.click();
     });
 }
-
 
