@@ -1,5 +1,5 @@
 import { Dump } from "./migration";
-import { openDB, migrateDump } from "./db-core";
+import { openDB, migrateDump, STORES } from "./db-core";
 
 export async function exportDb(): Promise<ArrayBuffer> {
     const database = await openDB();
@@ -44,13 +44,25 @@ export async function importDb(json: string, replace = false): Promise<void> {
             if (!db.objectStoreNames.contains(storeName)) continue;
             const store = tx.objectStore(storeName);
 
+            const transformedItems = items.map((item: any) => {
+                if (storeName === STORES.directoryHandles) {
+                    return {
+                        ...item,
+                        handle: null,              // ❗ strip invalid handle
+                        status: "unbound",         // ❗ force rebinding
+                        lastBoundAt: undefined
+                    };
+                }
+                return item;
+            });
+
             if (replace) {
                 const clearReq = store.clear();
                 clearReq.onsuccess = () => {
-                    for (const item of items) store.put(item);
+                    for (const item of transformedItems) store.put(item);
                 };
             } else {
-                for (const item of items) store.put(item);
+                for (const item of transformedItems) store.put(item);
             }
         }
     });

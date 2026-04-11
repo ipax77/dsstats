@@ -269,14 +269,12 @@ export async function markReplaysAsUploaded(hashes: string[]): Promise<void> {
 }
 
 export async function pickDirectoryInit(
-    regionId: number,
     startName: string,
     dirKey?: string,
     count: number = 100
 ): Promise<FileInfoRecord[]> {
     const metas = await getAllReplayMatas();
 
-    let effectiveRegionId = regionId;
     let dirHandle: FileSystemDirectoryHandle | null = null;
     let rootKey: string | undefined = undefined;
 
@@ -284,7 +282,6 @@ export async function pickDirectoryInit(
         const entry = await getDirectoryHandle(dirKey);
         if (entry) {
             dirHandle = entry.handle;
-            effectiveRegionId = entry.regionId;
             rootKey = dirKey;
         }
     }
@@ -293,9 +290,9 @@ export async function pickDirectoryInit(
     // otherwise fall back to regionId filtering (new-picker path).
     const paths = rootKey
         ? metas.filter(m => m.filePath.startsWith(rootKey + '/')).map(m => m.filePath)
-        : metas.filter(f => f.regionId === effectiveRegionId).map(m => m.filePath);
+        : [];
 
-    return await getReplaysFromFolder(effectiveRegionId, startName, paths, count, dirHandle, rootKey);
+    return await getReplaysFromFolder(startName, paths, count, dirHandle, rootKey);
 }
 
 export async function getFileContentStream(path: string) {
@@ -514,7 +511,7 @@ export async function exportAllDirectoryHandles(): Promise<string[]> {
     return await getAllDirectoryHandles();
 }
 
-export async function exportAllDirectoryHandleEntries(): Promise<{ key: string; displayName: string; regionId: number }[]> {
+export async function exportAllDirectoryHandleEntries(): Promise<{ key: string; displayName: string; }[]> {
     return await getAllDirectoryHandleEntries();
 }
 

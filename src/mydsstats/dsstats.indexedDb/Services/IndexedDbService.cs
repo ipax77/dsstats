@@ -54,10 +54,10 @@ public class IndexedDbService
         return list;
     }
 
-    public async Task<List<FileInfoRecord>> PickDirectoryInit(int regionId, string startName, string? dirKey, int limit = 100)
+    public async Task<List<FileInfoRecord>> PickDirectoryInit(string startName, string? dirKey, int limit = 100)
     {
         var module = await _moduleTask;
-        return await module.InvokeAsync<List<FileInfoRecord>>("pickDirectoryInit", regionId, startName, dirKey, limit);
+        return await module.InvokeAsync<List<FileInfoRecord>>("pickDirectoryInit", startName, dirKey, limit);
     }
 
     public async Task<IJSStreamReference> GetFileContent(string path)
@@ -162,7 +162,6 @@ public class IndexedDbService
     {
         public string Key { get; set; } = string.Empty;
         public string DisplayName { get; set; } = string.Empty;
-        public int RegionId { get; set; }
     }
 
     public sealed class FileInfoRecord

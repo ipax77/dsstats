@@ -169,3 +169,14 @@ export interface FileInfo {
 export interface FileContentRecord {
     contentBase64: string;
 }
+
+export type FingerprintFile = {
+  name: string;
+  size: number;
+  lastModified: number;
+};
+
+export type DirectoryFingerprint = {
+  version: 1;
+  files: FingerprintFile[]; // ~10–20 entries
+};

@@ -1,10 +1,15 @@
 // file-handle-repository.ts
 import { openDB, STORES } from "./db-core";
+import { DirectoryFingerprint, FileInfo, FileInfoRecord } from "./dtos";
+import { getFilesFromFolderRecursive } from "./get-files";
 
 export interface StoredDirHandle {
-  handle: FileSystemDirectoryHandle;
+  handle: FileSystemDirectoryHandle | null;
   displayName: string;
   regionId: number;
+  fingerprint: DirectoryFingerprint | null;
+  status: "bound" | "unbound";
+  lastBoundAt?: number;
 }
 
 // ── internal helpers ──────────────────────────────────────────────────────────
@@ -37,37 +42,96 @@ async function getAllStoredEntries(): Promise<{ key: string; entry: StoredDirHan
  */
 export async function addDirectoryHandle(
   handle: FileSystemDirectoryHandle,
-  displayName: string,
-  regionId: number
+  startName: string,
+  rootKey: string | undefined,
 ): Promise<string> {
   const existing = await getAllStoredEntries();
 
   // Duplicate-handle check
   for (const { key, entry } of existing) {
-    if (await entry.handle.isSameEntry(handle)) {
+    if (await entry.handle?.isSameEntry(handle)) {
       return key;
     }
   }
 
+  if (rootKey) {
+    const unboundHandles = existing.filter((f) => f.entry.status == 'unbound');
+    if (unboundHandles.length > 0) {
+      const fileInfos: FileInfo[] = await getFilesFromFolderRecursive(handle, startName, true, rootKey);
+      const fileIndex = new Map<string, FileInfoRecord[]>();
+      for (const f of fileInfos) {
+        const key = `${f.file.name}::${f.file.size}`;
+        if (!fileIndex.has(key)) fileIndex.set(key, []);
+        fileIndex.get(key)!.push({
+          name: f.file.name,
+          size: f.file.size,
+          lastModified: f.file.lastModified,
+          path: f.record.path
+        });
+      }
+      for (const { key, entry } of unboundHandles) {
+        if (matchesFingerprint(entry.fingerprint, fileIndex)) {
+          await updateDirectoryHandle(key, {
+            ...entry,
+            handle,
+            status: "bound",
+            lastBoundAt: Date.now()
+          });
+
+          return key; // reuse existing UUID
+        }
+      }
+    }
+  }
+  
   // Unique display-name
-  let effectiveName = displayName;
+  let effectiveName = handle.name;
   let suffix = 2;
   while (existing.some((e) => e.entry.displayName === effectiveName)) {
-    effectiveName = `${displayName} ${suffix++}`;
+    effectiveName = `${handle.name} ${suffix++}`;
   }
 
   const uuid = crypto.randomUUID();
   const db = await openDB();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORES.directoryHandles, "readwrite");
-    tx.objectStore(STORES.directoryHandles).put({ handle, displayName: effectiveName, regionId }, uuid);
+    tx.objectStore(STORES.directoryHandles).put({ handle, displayName: effectiveName }, uuid);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
   return uuid;
 }
 
-/** Returns the full entry (handle + displayName + regionId) for a UUID key. */
+async function updateDirectoryHandle(key: string, entry: StoredDirHandle) {
+  const db = await openDB();
+
+  return new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORES.directoryHandles, "readwrite");
+    tx.objectStore(STORES.directoryHandles).put(entry, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function updateDirectoryFingerprint(rootKey: string, fingerprint: DirectoryFingerprint) {
+    const existing = await getAllStoredEntries();
+    
+    const target = existing.find((e) => e.key === rootKey);
+    if (!target) throw new Error(`Handle key "${rootKey}" not found.`);
+
+    const db = await openDB();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORES.directoryHandles, "readwrite");
+      tx.objectStore(STORES.directoryHandles).put(
+        { ...target.entry, fingerprint: fingerprint },
+        rootKey
+      );
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+}
+
+/** Returns the full entry (handle + displayName) for a UUID key. */
 export async function getDirectoryHandle(key: string): Promise<StoredDirHandle | null> {
   const db = await openDB();
   return new Promise((resolve) => {
@@ -79,9 +143,9 @@ export async function getDirectoryHandle(key: string): Promise<StoredDirHandle |
 }
 
 /** Returns all saved entries as plain objects (no FileSystemDirectoryHandle, safe to serialize). */
-export async function getAllDirectoryHandleEntries(): Promise<{ key: string; displayName: string; regionId: number }[]> {
+export async function getAllDirectoryHandleEntries(): Promise<{ key: string; displayName: string; }[]> {
   const entries = await getAllStoredEntries();
-  return entries.map(({ key, entry }) => ({ key, displayName: entry.displayName, regionId: entry.regionId }));
+  return entries.map(({ key, entry }) => ({ key, displayName: entry.displayName }));
 }
 
 /** Returns just the UUID keys (kept for backward compatibility). */
@@ -165,3 +229,43 @@ export async function getDirectoryHandleFromUser(): Promise<FileSystemDirectoryH
     throw new Error(`Failed to pick directory: ${error?.message ?? error}`);
   }
 }
+
+export function selectFingerprintFiles(files: FileInfo[], count = 12) {
+  if (files.length <= count) return files;
+
+  const sorted = files
+    .slice()
+    .sort((a, b) => a.record.lastModified - b.record.lastModified);
+
+  const result: FileInfo[] = [];
+  const step = sorted.length / count;
+
+  for (let i = 0; i < count; i++) {
+    result.push(sorted[Math.floor(i * step)]);
+  }
+
+  return result;
+}
+
+export function matchesFingerprint(
+  fingerprint: DirectoryFingerprint | null,
+  fileIndex: Map<string, FileInfoRecord[]>
+): boolean {
+  if (!fingerprint) return false;
+  let matches = 0;
+
+  for (const f of fingerprint.files) {
+    const key = `${f.name}::${f.size}`;
+    const candidates = fileIndex.get(key);
+
+    if (!candidates) continue;
+
+    if (candidates.some(c => c.lastModified === f.lastModified)) {
+      matches++;
+    }
+  }
+
+  // threshold tuning
+  return matches >= Math.ceil(fingerprint.files.length * 0.5);
+}
+

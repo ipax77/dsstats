@@ -2,7 +2,6 @@
 @using dsstats.indexedDb.Services
 @using dsstats.pwa.Services
 @using dsstats.shared
-@using pax.BBToast
 @inject DecodeService DecodeService
 @inject IndexedDbService DbService
 @inject RatingService RatingService
@@ -103,58 +102,68 @@ else
 
     private async Task LoadInitialData()
     {
+        // If the service already has a replay, use it; otherwise, fetch from DB
         if (DecodeService.LatestReplayHash is not null && DecodeService.LatestReplay is not null)
         {
-            var rating = await DbService.GetReplayRatingAsync(DecodeService.LatestReplayHash);
-            latestReplayDetails = new ReplayDetails
-            {
-                ReplayHash = DecodeService.LatestReplayHash,
-                Replay = DecodeService.LatestReplay,
-                ReplayRatings = rating is not null ? [rating] : [],
-            };
+            await SetLatestReplay(DecodeService.LatestReplayHash, DecodeService.LatestReplay);
         }
         else
         {
             var list = await DbService.GetFilteredReplayListsAsync(
                 new ReplayFilter(new ReplaysRequest { Skip = 0, Take = 1 }));
+
             if (list.Count > 0)
             {
                 var replay = await DbService.GetReplayByHashAsync(list[0].ReplayHash);
                 if (replay is not null)
                 {
-                    var rating = await DbService.GetReplayRatingAsync(list[0].ReplayHash);
-                    latestReplayDetails = new ReplayDetails
-                    {
-                        ReplayHash = list[0].ReplayHash,
-                        Replay = replay,
-                        ReplayRatings = rating is not null ? [rating] : [],
-                    };
+                    await SetLatestReplay(list[0].ReplayHash, replay);
                 }
             }
         }
-
         await InvokeAsync(StateHasChanged);
     }
 
-    private void DecodeStateChanged(object? sender, DecodeInfoEventArgs e)
+    private async Task SetLatestReplay(string hash, ReplayDto replay, ReplayRatingDto? rating = null)
     {
-        if (e.Finished && DecodeService.LatestReplayHash is not null && DecodeService.LatestReplay is not null
-            && DecodeService.LatestReplay.Gametime > latestReplayDetails?.Replay.Gametime)
+        // Fetch rating immediately
+        rating ??= await DbService.GetReplayRatingAsync(hash);
+
+        latestReplayDetails = new ReplayDetails
         {
-            latestReplayDetails = new ReplayDetails
+            ReplayHash = hash,
+            Replay = replay,
+            ReplayRatings = rating is not null ? [rating] : [],
+        };
+    }
+
+    private async void DecodeStateChanged(object? sender, DecodeInfoEventArgs e)
+    {
+        if (e.Finished && DecodeService.LatestReplayHash is not null && DecodeService.LatestReplay is not null)
+        {
+            // Only update if it's actually newer than what we have (or if we have nothing)
+            bool isNewer = latestReplayDetails == null ||
+                           DecodeService.LatestReplay.Gametime > latestReplayDetails.Replay.Gametime;
+
+            if (isNewer)
             {
-                ReplayHash = DecodeService.LatestReplayHash,
-                Replay = DecodeService.LatestReplay,
-                ReplayRatings = [],
-            };
+                var rating = await RatingService.FetchAndSaveRating(DecodeService.LatestReplayHash);
+                await SetLatestReplay(DecodeService.LatestReplayHash, DecodeService.LatestReplay, rating);
+                await InvokeAsync(StateHasChanged);
+            }
         }
-        InvokeAsync(StateHasChanged);
     }
 
     private void OnPromptForUpload(object? sender, EventArgs e)
+
     {
         showUploadPrompt = true;
         InvokeAsync(StateHasChanged);
+    }
+
+    private void DeclineUpload()
+    {
+        showUploadPrompt = false;
     }
 
     private async Task AcceptUpload()
@@ -166,18 +175,15 @@ else
         await DecodeService.TriggerUploadAsync();
     }
 
-    private void DeclineUpload()
-    {
-        showUploadPrompt = false;
-    }
-
     private async Task UpdateRatings()
     {
         if (latestReplayDetails is null) return;
         var rating = await RatingService.FetchAndSaveRating(latestReplayDetails.ReplayHash);
         if (rating is null) return;
+
         latestReplayDetails.ReplayRatings = [rating];
         replayComponent?.Update(latestReplayDetails);
+        await InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()

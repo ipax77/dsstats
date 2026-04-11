@@ -9,6 +9,8 @@ namespace dsstats.pwa.Services;
 
 public partial class DecodeService
 {
+    private readonly Lock lastReplayLock = new();
+
     [SupportedOSPlatform("browser")]
     public async Task DecodeFromDirectory(int regionId, string? dirKey = null, int limit = 100)
     {
@@ -127,8 +129,7 @@ public partial class DecodeService
 
                         Interlocked.Increment(ref replaysDecoded);
 
-                        LatestReplay = item.Replay;
-                        LatestReplayHash = item.Hash;
+                        SetLatestReplay(item);
                     }
                     else
                     {
@@ -222,6 +223,24 @@ public partial class DecodeService
             _decodeCompletionsWithoutUpload++;
             if (_decodeCompletionsWithoutUpload == 1 || _decodeCompletionsWithoutUpload % 10 == 0)
                 OnPromptForUpload();
+        }
+    }
+
+    private void SetLatestReplay(DecodedItem item)
+    {
+        if (item.Replay is null) return;
+        lock (lastReplayLock)
+        {
+            if (LatestReplay is null)
+            {
+                LatestReplay = item.Replay;
+                LatestReplayHash = item.Hash;
+            }
+            else if (item.Replay.Gametime > LatestReplay.Gametime)
+            {
+                LatestReplay = item.Replay;
+                LatestReplayHash = item.Hash;
+            }
         }
     }
 }
