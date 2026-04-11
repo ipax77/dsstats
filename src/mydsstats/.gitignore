@@ -1,0 +1,4 @@
+dsstats.indexedDb/wwwroot/js/*.js
+dsstats.indexedDb/wwwroot/js/*.js.map
+!dsstats.indexedDb/wwwroot/js/pako/
+!dsstats.indexedDb/wwwroot/js/pako/index.js
