@@ -12,7 +12,7 @@ public partial class DecodeService
     private readonly Lock lastReplayLock = new();
 
     [SupportedOSPlatform("browser")]
-    public async Task DecodeFromDirectory(int regionId, string? dirKey = null, int limit = 100)
+    public async Task DecodeFromDirectory(string? dirKey = null, int limit = 100)
     {
         await ss.WaitAsync();
 
@@ -43,16 +43,7 @@ public partial class DecodeService
                 FullMode = BoundedChannelFullMode.Wait
             });
 
-            if (regionId == 0 && dirKey != null)
-            {
-                // Extract last character from dirKey and parse as integer
-                if (dirKey.Length > 0 && char.IsDigit(dirKey[^1]))
-                {
-                    regionId = int.Parse(dirKey[^1].ToString());
-                }
-            }
-
-            var fileInfos = await dbService.PickDirectoryInit(regionId, config.ReplayStartName, dirKey, limit);
+            var fileInfos = await dbService.PickDirectoryInit(config.ReplayStartName, dirKey, limit);
 
             var readerTask = Task.Run(async () =>
             {

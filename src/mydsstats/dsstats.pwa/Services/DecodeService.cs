@@ -189,7 +189,7 @@ public partial class DecodeService : IDisposable
             logger.LogInformation("Found {Count} existing replay paths in database.", existingPaths.Count);
 
 
-            var fileInfos = await dbService.PickDirectoryInit(regionId, config.ReplayStartName, dirKey, limit);
+            var fileInfos = await dbService.PickDirectoryInit(config.ReplayStartName, dirKey, limit);
 
             logger.LogInformation("Starting decoding of {FileCount} replays...", fileInfos.Count);
             OnDecodeStateChanged(new DecodeInfoEventArgs
@@ -357,7 +357,7 @@ public partial class DecodeService : IDisposable
         foreach (var entry in entries)
         {
             if (cts.IsCancellationRequested) break;
-            await DecodeFromDirectory(entry.RegionId, entry.Key, limit: 0);
+            await DecodeFromDirectory(entry.Key, limit: 0);
         }
     }
 

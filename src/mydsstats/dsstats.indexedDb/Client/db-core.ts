@@ -1,7 +1,7 @@
 import { Dump, Migration } from "./migration.js";
 
 export const DB_NAME = "ReplayDB";
-export const DB_VERSION = 6;
+export const DB_VERSION = 7;
 
 export const STORES = {
     replays: "Replays",
@@ -210,6 +210,37 @@ const migration5: Migration = {
   },
 };
 
+const migration6: Migration = {
+  schema: (_db, tx) => {
+    const store = tx.objectStore(STORES.directoryHandles);
+    const req = store.openCursor();
+
+    req.onsuccess = (e) => {
+      const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+      if (!cursor) return;
+
+      const value = cursor.value;
+
+      // Skip if already migrated
+      if (value && typeof value === "object" && "status" in value) {
+        cursor.continue();
+        return;
+      }
+
+      const migrated = {
+        ...value,
+        handle: value.handle ?? null,   // keep existing handle
+        fingerprint: value.fingerprint ?? null,
+        status: "bound",                // existing entries are valid
+        lastBoundAt: Date.now()
+      };
+
+      cursor.update(migrated);
+      cursor.continue();
+    };
+  },
+};
+
 const upgrades: Record<number, Migration> = {
   0: migration0, // initial schema
   1: migration1, // uploaded boolean → number (dump/restore path only)
@@ -217,4 +248,5 @@ const upgrades: Record<number, Migration> = {
   3: migration3, // fix boolean uploaded → number in live DB records
   4: migration4, // DirectoryHandles: humanName → UUID key, value wraps handle+displayName+regionId
   5: migration5, // new ReplayRatings store
+  6: migration6, // add directory fingerprints
 };
