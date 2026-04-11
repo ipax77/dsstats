@@ -1,7 +1,6 @@
 
 using dsstats.indexedDb.Services;
 using dsstats.shared;
-using pax.BBToast;
 
 namespace dsstats.pwa.Services;
 
@@ -36,7 +35,7 @@ public class PwaConfigService(IServiceScopeFactory scopeFactory)
         await dbService.SaveConfig(config);
         this.config = config;
 
-        var toastService = scope.ServiceProvider.GetRequiredService<IToastService>();
-        toastService.ShowSuccess("Config successfully saved.");
+        var notificationService = scope.ServiceProvider.GetRequiredService<AppNotificationService>();
+        notificationService.ShowSuccess("Config successfully saved.");
     }
 }

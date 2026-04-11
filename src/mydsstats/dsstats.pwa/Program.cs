@@ -5,7 +5,6 @@ using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using pax.BBToast;
 using pax.BlazorChartJs;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -44,10 +43,10 @@ builder.Services.AddChartJs(options =>
     options.ChartJsLocation = $"/_content/dsstats.weblib/js/chart.umd.min.js?v={version}";
     options.ChartJsPluginDatalabelsLocation = "/_content/dsstats.weblib/js/chartjs-plugin-annotation.min.js";
 });
-builder.Services.AddBbToast();
 
 
 builder.Services.AddScoped<IndexedDbService>();
+builder.Services.AddSingleton<AppNotificationService>();
 builder.Services.AddSingleton<PwaConfigService>();
 builder.Services.AddScoped<BackupService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();

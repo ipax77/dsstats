@@ -1,0 +1,12 @@
+.notification-stack {
+    position: fixed;
+    top: 5.5rem;
+    right: 1rem;
+    z-index: 1080;
+    width: min(26rem, calc(100vw - 2rem));
+}
+
+.notification-item {
+    margin-bottom: 0.75rem;
+    border: 0;
+}

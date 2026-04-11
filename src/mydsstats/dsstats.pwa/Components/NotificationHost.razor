@@ -1,0 +1,70 @@
+@using dsstats.pwa.Services
+@inject AppNotificationService NotificationService
+@implements IDisposable
+
+@if (notifications.Count > 0)
+{
+    <div class="notification-stack" aria-live="polite" aria-atomic="true">
+        @foreach (var notification in notifications)
+        {
+            <div class="alert @GetAlertClass(notification.Level) alert-dismissible shadow-sm notification-item" role="alert">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="bi @GetIconClass(notification.Level) mt-1"></i>
+                    <div class="flex-grow-1">@notification.Message</div>
+                    <button type="button"
+                            class="btn-close"
+                            aria-label="Close"
+                            @onclick="() => Dismiss(notification.Id)"></button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private IReadOnlyList<AppNotification> notifications = [];
+
+    protected override void OnInitialized()
+    {
+        notifications = NotificationService.Notifications;
+        NotificationService.Changed += OnNotificationsChanged;
+    }
+
+    private void OnNotificationsChanged()
+    {
+        notifications = NotificationService.Notifications;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void Dismiss(Guid id)
+    {
+        NotificationService.Dismiss(id);
+    }
+
+    private static string GetAlertClass(AppNotificationLevel level)
+    {
+        return level switch
+        {
+            AppNotificationLevel.Success => "alert-success",
+            AppNotificationLevel.Warning => "alert-warning",
+            AppNotificationLevel.Error => "alert-danger",
+            _ => "alert-info"
+        };
+    }
+
+    private static string GetIconClass(AppNotificationLevel level)
+    {
+        return level switch
+        {
+            AppNotificationLevel.Success => "bi-check-circle-fill",
+            AppNotificationLevel.Warning => "bi-exclamation-triangle-fill",
+            AppNotificationLevel.Error => "bi-x-circle-fill",
+            _ => "bi-info-circle-fill"
+        };
+    }
+
+    public void Dispose()
+    {
+        NotificationService.Changed -= OnNotificationsChanged;
+    }
+}

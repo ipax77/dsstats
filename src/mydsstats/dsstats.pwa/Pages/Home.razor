@@ -13,14 +13,27 @@
 @if (latestReplayDetails is not null)
 {
     <div class="container py-4 bgchart rounded mb-3">
-        <div class="row align-items-center">
-            <div class="col">
+        <div class="row align-items-center g-3">
+            <div class="col-lg-8">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <span class="badge text-bg-success">Ready To Decode</span>
+                    <span class="badge text-bg-light">Folder-first workflow</span>
+                </div>
                 <h1 class="display-5 fw-bold mb-2">Direct Strike Replay Decoder</h1>
+                <p class="text-muted mb-3">
+                    Your replay library is set up locally in the browser. Add folders once, decode the newest replays in small batches,
+                    and keep the latest match ready for review.
+                </p>
                 <ul class="list-unstyled mb-0 d-flex flex-wrap gap-3">
                     <li><i class="bi bi-lightning-charge-fill text-primary me-1"></i>Fast browser decoding</li>
                     <li><i class="bi bi-hdd-fill text-primary me-1"></i>Local IndexedDB storage</li>
-                    <li><i class="bi bi-pwa text-primary me-1"></i>Installable PWA</li>
+                    <li><i class="bi bi-folder2-open text-primary me-1"></i>Saved replay folders</li>
                 </ul>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <a href="/decode" class="btn btn-primary btn-lg px-4">
+                    <i class="bi bi-folder-symlink me-2"></i>Manage Decode Folders
+                </a>
             </div>
         </div>
     </div>
@@ -36,32 +49,57 @@
 else
 {
     <div class="container py-5 bgchart rounded">
-        <div class="row align-items-center">
-            <div class="col-lg-6 text-center text-lg-start">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-7 text-center text-lg-start">
+                <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-lg-start mb-3">
+                    <span class="badge text-bg-light">Browser-only</span>
+                    <span class="badge text-bg-light">Saved folders</span>
+                    <span class="badge text-bg-light">Default top 100</span>
+                </div>
                 <h1 class="display-4 fw-bold mb-3">Direct Strike Replay Decoder</h1>
                 <p class="lead text-muted mb-4">
-                    Upload and decode your <strong>StarCraft II: Direct Strike</strong> replays directly in your browser.
-                    Your decoded matches are stored securely in your device's <strong>IndexedDB</strong>, ready for quick
-                    access—anytime, anywhere.
+                    Decode your <strong>StarCraft II: Direct Strike</strong> replays directly in your browser.
+                    The main workflow is simple: save your replay folder once, then decode the newest replays whenever you want.
+                    Everything stays in your device's <strong>IndexedDB</strong> for quick local access.
                 </p>
-                <ul class="list-unstyled mb-4">
-                    <li class="mb-2"><i class="bi bi-lightning-charge-fill text-primary me-2"></i>Fast replay decoding in
-                        your browser</li>
-                        <li class="mb-2"><i class="bi bi-hdd-fill text-primary me-2"></i>Local IndexedDB storage — no servers
-                            involved</li>
-                            <li class="mb-2"><i class="bi bi-pwa text-primary me-2"></i>Installable as a <strong>PWA</strong> for
-                                offline use</li>
-                            </ul>
-                            <a href="/decode" class="btn btn-primary btn-lg px-4">
-                                <i class="bi bi-upload me-2"></i>Start Decoding
-                            </a>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="border rounded-3 p-3 h-100">
+                            <div class="fw-semibold mb-1">1. Add Folder</div>
+                            <div class="small text-muted">Grant access to your Direct Strike replay directory once.</div>
                         </div>
-                        <div class="col-lg-6 text-center mt-4 mt-lg-0">
-                            <img src="images/replay.jpg" alt="Replay decoding illustration" class="img-fluid rounded shadow-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded-3 p-3 h-100">
+                            <div class="fw-semibold mb-1">2. Pick A Batch</div>
+                            <div class="small text-muted">Decode 1, 10, 100, or all new replays. Default is 100.</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded-3 p-3 h-100">
+                            <div class="fw-semibold mb-1">3. Review Locally</div>
+                            <div class="small text-muted">Inspect decoded matches from IndexedDB and optionally upload later.</div>
                         </div>
                     </div>
                 </div>
-            }
+                <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-lg-start">
+                    <a href="/decode" class="btn btn-primary btn-lg px-4">
+                        <i class="bi bi-folder-symlink me-2"></i>Add Replay Folder
+                    </a>
+                    <a href="/replays" class="btn btn-outline-light btn-lg px-4">
+                        <i class="bi bi-collection-play me-2"></i>Browse Replays
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-5 text-center">
+                <img src="images/replay.jpg" alt="Replay decoding illustration" class="img-fluid rounded shadow-sm mb-3" />
+                <div class="small text-muted">
+                    Works best when you save a replay folder first, then decode the newest matches in repeatable runs.
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
             @if (showUploadPrompt)
             {

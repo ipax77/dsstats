@@ -2,10 +2,9 @@
 @using dsstats.indexedDb.Services
 @using dsstats.pwa.Services
 @using dsstats.shared
-@using pax.BBToast
 @inject IndexedDbService dbService
 @inject DecodeService DecodeService
-@inject IToastService ToastService
+@inject AppNotificationService NotificationService
 @implements IDisposable
 
 <PageTitle>mydsstats - decode</PageTitle>
@@ -356,13 +355,13 @@
 			var addedFolderName = dirHandleEntries.FirstOrDefault(entry => entry.Key == addedKey)?.DisplayName ?? "Replay folder";
 			statusMessage = $"{addedFolderName} is ready. Pick a decode size and start when you want.";
 			statusTone = "success";
-			ToastService.ShowSuccess($"Saved replay folder: {addedFolderName}");
+			NotificationService.ShowSuccess($"Saved replay folder: {addedFolderName}");
 		}
 		catch (Exception ex)
 		{
 			statusMessage = $"Failed to add replay folder: {ex.Message}";
 			statusTone = "danger";
-			ToastService.ShowError(ex.Message);
+			NotificationService.ShowError(ex.Message);
 		}
 		finally
 		{
@@ -412,13 +411,13 @@
 
 		if (string.IsNullOrWhiteSpace(renameValue))
 		{
-			ToastService.ShowError("Folder name cannot be empty.");
+			NotificationService.ShowError("Folder name cannot be empty.");
 			return;
 		}
 
 		if (dirHandleEntries.Any(entry => entry.Key != renamingKey && entry.DisplayName == renameValue))
 		{
-			ToastService.ShowError($"Name \"{renameValue}\" is already in use.");
+			NotificationService.ShowError($"Name \"{renameValue}\" is already in use.");
 			return;
 		}
 
@@ -431,7 +430,7 @@
 		}
 		catch (Exception ex)
 		{
-			ToastService.ShowError(ex.Message);
+			NotificationService.ShowError(ex.Message);
 		}
 	}
 
@@ -517,7 +516,7 @@
 		try
 		{
 			await DecodeService.DecodeAllHandles(selectedDecodeLimit);
-			ToastService.ShowSuccess("Saved folders decode finished.");
+			NotificationService.ShowSuccess("Saved folders decode finished.");
 		}
 		finally
 		{
@@ -538,7 +537,7 @@
 		try
 		{
 			await DecodeService.DecodeFromDirectory(key, selectedDecodeLimit);
-			ToastService.ShowSuccess($"Decode finished for {folderName}.");
+			NotificationService.ShowSuccess($"Decode finished for {folderName}.");
 		}
 		finally
 		{
