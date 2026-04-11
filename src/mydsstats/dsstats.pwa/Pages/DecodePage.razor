@@ -123,7 +123,8 @@
 							<div class="small mt-1">
 								@if (decodeInfoEventArgs.Total > 0)
 								{
-									<span class="me-3">Decoded: @decodeInfoEventArgs.Done / @decodeInfoEventArgs.Total</span>
+									<span class="me-3">Processed: @decodeInfoEventArgs.Done / @decodeInfoEventArgs.Total</span>
+									<span class="me-3">Saved: @decodeInfoEventArgs.Successful</span>
 									<span class="me-3">Errors: @decodeInfoEventArgs.Error</span>
 									<span class="me-3">Elapsed: @decodeInfoEventArgs.Elapsed.ToString(@"hh\:mm\:ss")</span>
 									@if (!decodeInfoEventArgs.Finished && decodeInfoEventArgs.Eta > TimeSpan.Zero)
@@ -458,7 +459,7 @@
 		}
 		else
 		{
-			replaysDecoded = e.Done;
+			replaysDecoded = e.Successful;
 			if (e.Finished && DecodeService.LatestReplay is not null)
 			{
 				replay = DecodeService.LatestReplay;
@@ -605,22 +606,27 @@
 			return decodeInfo.Info ?? "Decoding in progress...";
 		}
 
-		if (decodeInfo.Done == 0 && decodeInfo.Error == 0)
+		if (decodeInfo.Total == 0 && decodeInfo.Error == 0)
 		{
 			return "No new replays were found for this run.";
 		}
 
-		if (decodeInfo.Done > 0 && decodeInfo.Error == 0)
+		if (decodeInfo.Successful > 0 && decodeInfo.Error == 0)
 		{
-			return $"Decoded {decodeInfo.Done} replay{(decodeInfo.Done == 1 ? string.Empty : "s")}.";
+			return $"Decoded {decodeInfo.Successful} replay{(decodeInfo.Successful == 1 ? string.Empty : "s")}.";
 		}
 
-		if (decodeInfo.Done > 0)
+		if (decodeInfo.Successful > 0)
 		{
-			return $"Decoded {decodeInfo.Done} replay{(decodeInfo.Done == 1 ? string.Empty : "s")} with {decodeInfo.Error} error{(decodeInfo.Error == 1 ? string.Empty : "s")}.";
+			return $"Decoded {decodeInfo.Successful} replay{(decodeInfo.Successful == 1 ? string.Empty : "s")} with {decodeInfo.Error} error{(decodeInfo.Error == 1 ? string.Empty : "s")}.";
 		}
 
-		return decodeInfo.Info ?? "Decode finished with errors.";
+		if (decodeInfo.Error > 0)
+		{
+			return $"No replays were decoded. {decodeInfo.Error} error{(decodeInfo.Error == 1 ? string.Empty : "s")} occurred.";
+		}
+
+		return decodeInfo.Info ?? "Decode finished.";
 	}
 
 	private static string GetDecodeStatusTone(DecodeInfoEventArgs decodeInfo)
@@ -630,7 +636,7 @@
 			return "info";
 		}
 
-		if (decodeInfo.Done == 0 && decodeInfo.Error == 0)
+		if (decodeInfo.Total == 0 && decodeInfo.Error == 0)
 		{
 			return "secondary";
 		}

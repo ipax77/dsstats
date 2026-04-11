@@ -134,7 +134,8 @@ public partial class DecodeService : IDisposable
         sw.Stop();
         OnDecodeStateChanged(new DecodeInfoEventArgs
         {
-            Done = success ? 1 : 0,
+            Done = 1,
+            Successful = success ? 1 : 0,
             Total = 1,
             Error = success ? 0 : 1,
             Elapsed = sw.Elapsed,
@@ -178,6 +179,7 @@ public partial class DecodeService : IDisposable
         Stopwatch sw = Stopwatch.StartNew();
         ConcurrentBag<string> failedReplays = [];
         ConcurrentBag<string> decodedReplays = [];
+        int totalFiles = 0;
         var config = await pwaConfigService.GetConfig();
         using var scope = scopeFactory.CreateAsyncScope();
         var dbService = scope.ServiceProvider.GetRequiredService<IndexedDbService>();
@@ -190,18 +192,19 @@ public partial class DecodeService : IDisposable
 
 
             var fileInfos = await dbService.PickDirectoryInit(config.ReplayStartName, dirKey, limit);
+            totalFiles = fileInfos.Count;
 
             logger.LogInformation("Starting decoding of {FileCount} replays...", fileInfos.Count);
             OnDecodeStateChanged(new DecodeInfoEventArgs
             {
                 Done = 0,
-                Total = fileInfos.Count,
+                Total = totalFiles,
                 Error = 0,
                 Elapsed = sw.Elapsed,
                 Eta = TimeSpan.Zero,
                 Saving = false,
                 Finished = false,
-                Info = $"Starting decode of {fileInfos.Count} replays..."
+                Info = $"Starting decode of {totalFiles} replays..."
             });
             await EnsureWorkersAsync(config.CPUCores);
             var options = new ParallelOptions
@@ -240,11 +243,12 @@ public partial class DecodeService : IDisposable
                             OnDecodeStateChanged(new DecodeInfoEventArgs
                             {
                                 Done = current,
-                                Total = fileInfos.Count,
+                                Successful = current - failedReplays.Count,
+                                Total = totalFiles,
                                 Error = failedReplays.Count,
                                 Elapsed = sw.Elapsed,
                                 Eta = TimeSpan.FromTicks(
-                                    sw.Elapsed.Ticks * (fileInfos.Count - current) / Math.Max(current, 1)
+                                    sw.Elapsed.Ticks * (totalFiles - current) / Math.Max(current, 1)
                                 ),
                                 Saving = false,
                                 Finished = false,
@@ -275,8 +279,9 @@ public partial class DecodeService : IDisposable
          replaysDecoded, sw.Elapsed.TotalMinutes.ToString("N2"));
         OnDecodeStateChanged(new DecodeInfoEventArgs
         {
-            Done = replaysDecoded,
-            Total = replaysDecoded,
+            Done = replaysDecoded + failedReplays.Count,
+            Successful = replaysDecoded,
+            Total = totalFiles,
             Error = failedReplays.Count,
             Elapsed = sw.Elapsed,
             Eta = TimeSpan.Zero,
@@ -357,6 +362,7 @@ public partial class DecodeService : IDisposable
         using var scope = scopeFactory.CreateAsyncScope();
         var dbService = scope.ServiceProvider.GetRequiredService<IndexedDbService>();
         var entries = await dbService.GetAllDirectoryHandleEntries();
+        var aggregateState = new DecodeAggregateState();
 
         // Request all folder permissions up-front while the user gesture is still active.
         // Sequential calls chain off each other's activation (user clicks "Allow" → new activation).
@@ -366,7 +372,7 @@ public partial class DecodeService : IDisposable
         foreach (var entry in entries)
         {
             if (cts.IsCancellationRequested) break;
-            await DecodeFromDirectory(entry.Key, limit);
+            await DecodeFromDirectory(entry.Key, limit, aggregateState);
         }
     }
 
@@ -394,6 +400,7 @@ public partial class DecodeService : IDisposable
 public class DecodeInfoEventArgs : EventArgs
 {
     public int Done { get; set; }
+    public int Successful { get; set; }
     public int Total { get; set; }
     public int Error { get; set; }
     public TimeSpan Eta { get; set; }

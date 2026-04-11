@@ -22,11 +22,14 @@
 		</button>
 	}
 
+	<span class="badge bg-info text-dark">Decoded in DB: @totalReplayCount</span>
+
 	@if (decodeInfo != null)
 	{
 		@if (decodeInfo.Total > 0)
 		{
-			<span class="badge bg-secondary">@decodeInfo.Done / @decodeInfo.Total</span>
+			<span class="badge bg-secondary">Processed: @decodeInfo.Done / @decodeInfo.Total</span>
+			<span class="badge bg-success">Saved: @decodeInfo.Successful</span>
 			<span class="badge bg-danger">Errors: @decodeInfo.Error</span>
 			<span class="badge bg-light text-dark">Elapsed: @decodeInfo.Elapsed.ToString(@"hh\:mm\:ss")</span>
 			<span class="badge bg-light text-dark">ETA: @decodeInfo.Eta.ToString(@"hh\:mm\:ss")</span>
@@ -71,29 +74,67 @@
 	private DecodeInfoEventArgs? decodeInfo;
 	private bool hasDirHandles;
 	private bool isDecoding;
+	private int totalReplayCount;
+	private int? decodeStartReplayCount;
 
 	protected override async Task OnInitializedAsync()
 	{
 		DecodeService.DecodeStateChanged += OnDecodeStateChanged;
-		var entries = await DbService.GetAllDirectoryHandleEntries();
-		hasDirHandles = entries.Count > 0;
+		await RefreshTopRowState();
 	}
 
 	private void OnDecodeStateChanged(object? sender, DecodeInfoEventArgs e)
 	{
-		decodeInfo = e;
+		decodeInfo = MergeDecodeInfo(e);
+		UpdateReplayCount(e);
 		if (e.Finished)
 		{
 			isDecoding = false;
-			_ = RefreshDirHandles();
+			decodeStartReplayCount = null;
+			_ = RefreshTopRowState();
 		}
 		InvokeAsync(StateHasChanged);
 	}
 
-	private async Task RefreshDirHandles()
+	private DecodeInfoEventArgs MergeDecodeInfo(DecodeInfoEventArgs e)
+	{
+		var hasDecodePayload = e.Total > 0 || e.Done > 0 || e.Successful > 0 || e.Error > 0 || e.Finished;
+		if (hasDecodePayload || decodeInfo is null)
+		{
+			return e;
+		}
+
+		return new DecodeInfoEventArgs
+		{
+			Done = decodeInfo.Done,
+			Successful = decodeInfo.Successful,
+			Total = decodeInfo.Total,
+			Error = decodeInfo.Error,
+			Eta = decodeInfo.Eta,
+			Elapsed = decodeInfo.Elapsed,
+			Saving = decodeInfo.Saving,
+			Finished = decodeInfo.Finished,
+			Info = e.Info ?? decodeInfo.Info,
+			UploadStatus = e.UploadStatus
+		};
+	}
+
+	private void UpdateReplayCount(DecodeInfoEventArgs e)
+	{
+		if (e.Total <= 0)
+		{
+			return;
+		}
+
+		decodeStartReplayCount ??= totalReplayCount;
+		totalReplayCount = decodeStartReplayCount.Value + e.Successful;
+	}
+
+	private async Task RefreshTopRowState()
 	{
 		var entries = await DbService.GetAllDirectoryHandleEntries();
 		hasDirHandles = entries.Count > 0;
+		totalReplayCount = await DbService.GetTotalReplayCountAsync();
 		await InvokeAsync(StateHasChanged);
 	}
 

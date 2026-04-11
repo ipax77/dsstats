@@ -47,6 +47,12 @@ public class IndexedDbService
         return await module.InvokeAsync<int>("getFilteredReplayListsCount", filter);
     }
 
+    public async Task<int> GetTotalReplayCountAsync()
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<int>("getFilteredReplayListsCount", new { });
+    }
+
     public async Task<List<ReplayListDto>> GetFilteredReplayListsAsync(ReplayFilter filter)
     {
         var module = await _moduleTask;

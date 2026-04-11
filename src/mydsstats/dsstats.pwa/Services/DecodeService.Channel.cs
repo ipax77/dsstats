@@ -13,6 +13,10 @@ public partial class DecodeService
 
     [SupportedOSPlatform("browser")]
     public async Task DecodeFromDirectory(string? dirKey = null, int limit = 100)
+        => await DecodeFromDirectory(dirKey, limit, null);
+
+    [SupportedOSPlatform("browser")]
+    private async Task DecodeFromDirectory(string? dirKey, int limit, DecodeAggregateState? aggregateState)
     {
         await ss.WaitAsync();
 
@@ -28,6 +32,7 @@ public partial class DecodeService
         replaysDecoded = 0;
         int failedCount = 0;
         int processedCount = 0;
+        int totalFiles = 0;
 
         try
         {
@@ -44,6 +49,11 @@ public partial class DecodeService
             });
 
             var fileInfos = await dbService.PickDirectoryInit(config.ReplayStartName, dirKey, limit);
+            totalFiles = fileInfos.Count;
+            if (aggregateState is not null)
+            {
+                aggregateState.Total += totalFiles;
+            }
 
             var readerTask = Task.Run(async () =>
             {
@@ -150,21 +160,27 @@ public partial class DecodeService
 
                         await Task.Delay(interval, decodeCts.Token);
 
+                        var total = aggregateState?.Total ?? totalFiles;
+                        var done = (aggregateState?.Processed ?? 0) + processed;
+                        var successful = (aggregateState?.Successful ?? 0) + decoded;
+                        var errors = (aggregateState?.Error ?? 0) + Volatile.Read(ref failedCount);
+
                         OnDecodeStateChanged(new DecodeInfoEventArgs
                         {
-                            Done = decoded,
-                            Total = fileInfos.Count,
-                            Error = Volatile.Read(ref failedCount),
+                            Done = done,
+                            Successful = successful,
+                            Total = total,
+                            Error = errors,
                             Elapsed = sw.Elapsed,
                             Eta = TimeSpan.FromTicks(
-                                sw.Elapsed.Ticks * (fileInfos.Count - processed) / Math.Max(processed, 1)
+                                sw.Elapsed.Ticks * (totalFiles - processed) / Math.Max(processed, 1)
                             ),
                             Saving = false,
                             Finished = false,
-                            Info = $"Decoded: {decoded}, Failed: {failedCount}"
+                            Info = $"Decoded: {successful}, Failed: {errors}"
                         });
 
-                        if (processed >= fileInfos.Count)
+                        if (processed >= totalFiles)
                             break;
                     }
                 });
@@ -193,17 +209,31 @@ public partial class DecodeService
         sw.Stop();
         logger.LogInformation("Decoding completed. Decoded {DecodedCount} replays in {Elapsed} min.",
          replaysDecoded, sw.Elapsed.TotalMinutes.ToString("N2"));
+
+        var finalDone = (aggregateState?.Processed ?? 0) + processedCount;
+        var finalSuccessful = (aggregateState?.Successful ?? 0) + replaysDecoded;
+        var finalErrors = (aggregateState?.Error ?? 0) + failedCount;
+        var finalTotal = aggregateState?.Total ?? totalFiles;
+
         OnDecodeStateChanged(new DecodeInfoEventArgs
         {
-            Done = replaysDecoded,
-            Total = replaysDecoded,
-            Error = failedCount,
+            Done = finalDone,
+            Successful = finalSuccessful,
+            Total = finalTotal,
+            Error = finalErrors,
             Elapsed = sw.Elapsed,
             Eta = TimeSpan.Zero,
             Saving = false,
             Finished = true,
-            Info = $"Decoded: {replaysDecoded}"
+            Info = $"Decoded: {finalSuccessful}"
         });
+
+        if (aggregateState is not null)
+        {
+            aggregateState.Processed = finalDone;
+            aggregateState.Successful = finalSuccessful;
+            aggregateState.Error = finalErrors;
+        }
 
         if (config.UploadCredential)
         {
@@ -233,6 +263,14 @@ public partial class DecodeService
                 LatestReplayHash = item.Hash;
             }
         }
+    }
+
+    private sealed class DecodeAggregateState
+    {
+        public int Processed { get; set; }
+        public int Successful { get; set; }
+        public int Error { get; set; }
+        public int Total { get; set; }
     }
 }
 
