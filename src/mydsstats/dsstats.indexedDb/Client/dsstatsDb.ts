@@ -286,13 +286,7 @@ export async function pickDirectoryInit(
         }
     }
 
-    // Scope the "already decoded" set to this handle's UUID prefix when possible,
-    // otherwise fall back to regionId filtering (new-picker path).
-    const paths = rootKey
-        ? metas.filter(m => m.filePath.startsWith(rootKey + '/')).map(m => m.filePath)
-        : [];
-
-    return await getReplaysFromFolder(startName, paths, count, dirHandle, rootKey);
+    return await getReplaysFromFolder(startName, [], count, dirHandle, rootKey, metas);
 }
 
 export async function getFileContentStream(path: string) {

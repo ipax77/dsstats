@@ -1,4 +1,4 @@
-import { DirectoryFingerprint, FileInfo, FileInfoRecord } from "./dtos";
+import { DirectoryFingerprint, FileInfo, FileInfoRecord, ReplayMeta } from "./dtos";
 import { addDirectoryHandle, getDirectoryHandleFromUser, selectFingerprintFiles, updateDirectoryFingerprint, verifyDirectoryPermission } from "./file-handle-repository";
 import { getFilesFromFolderRecursive } from "./get-files";
 
@@ -10,10 +10,9 @@ export async function getReplaysFromFolder(
     count: number,
     dirHandle?: FileSystemDirectoryHandle | null,
     rootKey?: string,
+    metas: ReplayMeta[] = [],
 ): Promise<FileInfoRecord[]> {
     fileHandleMap.clear(); // reset
-
-    const existingSet = new Set(existingPaths);
     try {
         if (dirHandle === null || dirHandle === undefined) {
             dirHandle = await getDirectoryHandleFromUser();
@@ -30,6 +29,14 @@ export async function getReplaysFromFolder(
         // stored paths are globally unique across handles with the same folder name.
         const pathRoot = rootKey ?? dirHandle.name;
         const allRecords = await getFilesFromFolderRecursive(dirHandle, startName, true, pathRoot);
+
+        const metaPaths = rootKey
+            ? metas
+                .filter((meta) => meta.filePath.startsWith(`${rootKey}/`))
+                .map((meta) => meta.filePath)
+            : [];
+
+        const existingSet = new Set([...existingPaths, ...metaPaths]);
         if (rootKey) {
             const fingerprintRecords = selectFingerprintFiles(allRecords);
             const fingerprint: DirectoryFingerprint = {
@@ -46,7 +53,7 @@ export async function getReplaysFromFolder(
         const todoRecords = [];
         for (let i = 0; i < allRecords.length; i++) {
             const record = allRecords[i];
-            if (!existingSet.has(record.file.name)) {
+            if (!existingSet.has(record.record.path)) {
                 todoRecords.push(record);
             }
         }
