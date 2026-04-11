@@ -4,6 +4,14 @@ import { getFilesFromFolderRecursive } from "./get-files";
 
 const fileHandleMap = new Map<string, File>();
 
+function toLegacyPath(path: string, currentRoot: string, legacyRoot: string): string | null {
+    if (!path.startsWith(`${currentRoot}/`)) {
+        return null;
+    }
+
+    return `${legacyRoot}/${path.slice(currentRoot.length + 1)}`;
+}
+
 export async function getReplaysFromFolder(
     startName: string,
     existingPaths: string[],
@@ -30,11 +38,16 @@ export async function getReplaysFromFolder(
         const pathRoot = rootKey ?? dirHandle.name;
         const allRecords = await getFilesFromFolderRecursive(dirHandle, startName, true, pathRoot);
 
-        const metaPaths = rootKey
-            ? metas
-                .filter((meta) => meta.filePath.startsWith(`${rootKey}/`))
-                .map((meta) => meta.filePath)
-            : [];
+        const pathPrefixes = new Set<string>([pathRoot]);
+        if (dirHandle.name && dirHandle.name !== pathRoot) {
+            pathPrefixes.add(dirHandle.name);
+        }
+
+        const metaPaths = metas
+            .filter((meta) =>
+                Array.from(pathPrefixes).some((prefix) => meta.filePath.startsWith(`${prefix}/`))
+            )
+            .map((meta) => meta.filePath);
 
         const existingSet = new Set([...existingPaths, ...metaPaths]);
         if (rootKey) {
@@ -53,7 +66,12 @@ export async function getReplaysFromFolder(
         const todoRecords = [];
         for (let i = 0; i < allRecords.length; i++) {
             const record = allRecords[i];
-            if (!existingSet.has(record.record.path)) {
+            const currentPath = record.record.path;
+            const legacyPath = dirHandle.name !== pathRoot
+                ? toLegacyPath(currentPath, pathRoot, dirHandle.name)
+                : null;
+
+            if (!existingSet.has(currentPath) && (!legacyPath || !existingSet.has(legacyPath))) {
                 todoRecords.push(record);
             }
         }

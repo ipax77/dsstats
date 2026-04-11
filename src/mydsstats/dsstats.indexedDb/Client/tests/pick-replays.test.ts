@@ -150,6 +150,33 @@ describe('getReplaysFromFolder', () => {
         expect(result[0].path).toBe('restored-root/replay2.txt');
     });
 
+    it('should filter legacy folder-name meta paths when the current scan uses a root key', async () => {
+        const restoredDirHandle = mockDirectoryHandle('restored-folder', {
+            'replay1.txt': mockFileHandle('replay1.txt', mockFile('replay1.txt', 100, Date.now() - 10000)),
+            'replay2.txt': mockFileHandle('replay2.txt', mockFile('replay2.txt', 200, Date.now() - 5000)),
+        });
+
+        const result = await getReplaysFromFolder(
+            'replay',
+            [],
+            10,
+            restoredDirHandle,
+            'restored-root',
+            [
+                {
+                    replayHash: 'hash-1',
+                    filePath: 'restored-folder/replay1.txt',
+                    regionId: 1,
+                    uploaded: 0,
+                    skip: false,
+                },
+            ],
+        );
+
+        expect(result).toHaveLength(1);
+        expect(result[0].path).toBe('restored-root/replay2.txt');
+    });
+
     it('should limit the number of returned files by count', async () => {
         vi.spyOn(fileHandleRepository, 'getDirectoryHandleFromUser').mockResolvedValue(
             mockDirectoryHandle('mock-folder', {
