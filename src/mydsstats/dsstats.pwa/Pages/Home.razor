@@ -27,10 +27,11 @@
     </div>
 
     <div class="mb-5">
-        <h5 class="mb-2">Latest Replay</h5>
-        <dsstats.weblib.Replays.ReplayComponent @ref="replayComponent"
-            ReplayDetails="latestReplayDetails"
-            OnRatingUpdateRequest="UpdateRatings" />
+        <h3 class="p-2 rounded bgchart d-inline text-warning">Latest Replay</h3>
+        <div class="mt-2">
+            <dsstats.weblib.Replays.ReplayComponent @ref="replayComponent" ReplayDetails="latestReplayDetails"
+                                                    OnRatingUpdateRequest="UpdateRatings" />
+        </div>
     </div>
 }
 else
@@ -41,46 +42,51 @@ else
                 <h1 class="display-4 fw-bold mb-3">Direct Strike Replay Decoder</h1>
                 <p class="lead text-muted mb-4">
                     Upload and decode your <strong>StarCraft II: Direct Strike</strong> replays directly in your browser.
-                    Your decoded matches are stored securely in your device's <strong>IndexedDB</strong>, ready for quick access—anytime, anywhere.
+                    Your decoded matches are stored securely in your device's <strong>IndexedDB</strong>, ready for quick
+                    access—anytime, anywhere.
                 </p>
                 <ul class="list-unstyled mb-4">
-                    <li class="mb-2"><i class="bi bi-lightning-charge-fill text-primary me-2"></i>Fast replay decoding in your browser</li>
-                    <li class="mb-2"><i class="bi bi-hdd-fill text-primary me-2"></i>Local IndexedDB storage — no servers involved</li>
-                    <li class="mb-2"><i class="bi bi-pwa text-primary me-2"></i>Installable as a <strong>PWA</strong> for offline use</li>
-                </ul>
-                <a href="/decode" class="btn btn-primary btn-lg px-4">
-                    <i class="bi bi-upload me-2"></i>Start Decoding
-                </a>
-            </div>
-            <div class="col-lg-6 text-center mt-4 mt-lg-0">
-                <img src="images/replay.jpg" alt="Replay decoding illustration" class="img-fluid rounded shadow-sm" />
-            </div>
-        </div>
-    </div>
-}
+                    <li class="mb-2"><i class="bi bi-lightning-charge-fill text-primary me-2"></i>Fast replay decoding in
+                        your browser</li>
+                        <li class="mb-2"><i class="bi bi-hdd-fill text-primary me-2"></i>Local IndexedDB storage — no servers
+                            involved</li>
+                            <li class="mb-2"><i class="bi bi-pwa text-primary me-2"></i>Installable as a <strong>PWA</strong> for
+                                offline use</li>
+                            </ul>
+                            <a href="/decode" class="btn btn-primary btn-lg px-4">
+                                <i class="bi bi-upload me-2"></i>Start Decoding
+                            </a>
+                        </div>
+                        <div class="col-lg-6 text-center mt-4 mt-lg-0">
+                            <img src="images/replay.jpg" alt="Replay decoding illustration" class="img-fluid rounded shadow-sm" />
+                        </div>
+                    </div>
+                </div>
+            }
 
-@if (showUploadPrompt)
-{
-    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6)">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-cloud-upload me-2"></i>Upload Anonymously?</h5>
-                </div>
-                <div class="modal-body">
-                    <p>Your replays can be uploaded anonymously to contribute to shared statistics. No personal data is linked to your account.</p>
-                    <p class="mb-0">Would you like to enable anonymous uploads?</p>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="DeclineUpload">Not Now</button>
-                    <button class="btn btn-primary" @onclick="AcceptUpload">
-                        <i class="bi bi-check2 me-1"></i>Enable &amp; Upload
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
+            @if (showUploadPrompt)
+            {
+                <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6)">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title"><i class="bi bi-cloud-upload me-2"></i>Upload Anonymously?</h5>
+                            </div>
+                            <div class="modal-body">
+                                <p>Your replays can be uploaded anonymously to contribute to shared statistics. No personal data is
+                                    linked to your account.</p>
+                                    <p class="mb-0">Would you like to enable anonymous uploads?</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button class="btn btn-secondary" @onclick="DeclineUpload">Not Now</button>
+                                    <button class="btn btn-primary" @onclick="AcceptUpload">
+                                        <i class="bi bi-check2 me-1"></i>Enable &amp; Upload
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
 
 @code {
     private ReplayDetails? latestReplayDetails;
@@ -132,7 +138,8 @@ else
 
     private void DecodeStateChanged(object? sender, DecodeInfoEventArgs e)
     {
-        if (e.Finished && DecodeService.LatestReplayHash is not null && DecodeService.LatestReplay is not null)
+        if (e.Finished && DecodeService.LatestReplayHash is not null && DecodeService.LatestReplay is not null
+            && DecodeService.LatestReplay.Gametime > latestReplayDetails?.Replay.Gametime)
         {
             latestReplayDetails = new ReplayDetails
             {

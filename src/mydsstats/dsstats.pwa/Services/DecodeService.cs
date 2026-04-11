@@ -22,6 +22,8 @@ public partial class DecodeService : IDisposable
     public bool Decoding { get; private set; }
     public ReplayDto? LatestReplay { get; private set; }
     public string? LatestReplayHash { get; private set; }
+    public static readonly Version Version = new(1, 0);
+    private int _currentWorkerCount = -1;
 
     public DecodeService(IServiceScopeFactory scopeFactory, IHttpClientFactory httpClientFactory,
                          ILogger<DecodeService> logger, PwaConfigService pwaConfigService)
@@ -50,11 +52,21 @@ public partial class DecodeService : IDisposable
     [SupportedOSPlatform("browser")]
     private async Task EnsureWorkersAsync(int cpuCores)
     {
-        if (_decodeClient is not null) return;
+        if (_decodeClient != null && _currentWorkerCount == cpuCores)
+            return;
+
+        if (_decodeClient != null)
+        {
+            await _decodeClient.DisposeAsync(); // terminate old workers
+            _decodeClient = null;
+        }
+
         _decodeClient = new DecodeClient();
         await _decodeClient.InitAsync(cpuCores);
-    }
 
+        _currentWorkerCount = cpuCores;
+    }
+    
     [SupportedOSPlatform("browser")]
     private async Task TeardownWorkersAsync()
     {
@@ -148,7 +160,7 @@ public partial class DecodeService : IDisposable
     }
 
     [SupportedOSPlatform("browser")]
-    public async Task DecodeFromDirectory(int regionId, string? dirKey = null, int limit = 100)
+    public async Task DecodeFromDirectoryObsolete(int regionId, string? dirKey = null, int limit = 100)
     {
         await ss.WaitAsync();
 
@@ -198,6 +210,9 @@ public partial class DecodeService : IDisposable
                 CancellationToken = decodeCts.Token
             };
 
+            var lastUpdate = Stopwatch.StartNew();
+            var updateInterval = TimeSpan.FromMilliseconds(500);
+
             await Parallel.ForEachAsync(fileInfos, options, async (fileInfo, ct) =>
             {
                 var result = await TryDecodeReplay(fileInfo.Path, dbService, ct);
@@ -211,19 +226,32 @@ public partial class DecodeService : IDisposable
                     failedReplays.Add(fileInfo.Path);
                     logger.LogWarning("Failed to decode replay: {Path}, Reason: {Reason}", fileInfo.Path, result.Message);
                 }
-                if (replaysDecoded % 5 == 0)
+
+                var current = Interlocked.Increment(ref replaysDecoded);
+
+                if (lastUpdate.Elapsed >= updateInterval)
                 {
-                    OnDecodeStateChanged(new DecodeInfoEventArgs
+                    lock (lastUpdate)
                     {
-                        Done = replaysDecoded,
-                        Total = fileInfos.Count,
-                        Error = failedReplays.Count,
-                        Elapsed = sw.Elapsed,
-                        Eta = TimeSpan.FromTicks(sw.Elapsed.Ticks * (fileInfos.Count - replaysDecoded) / Math.Max(replaysDecoded, 1)),
-                        Saving = false,
-                        Finished = false,
-                        Info = $"Decoded: {replaysDecoded}, Failed: {failedReplays.Count}"
-                    });
+                        if (lastUpdate.Elapsed >= updateInterval)
+                        {
+                            lastUpdate.Restart();
+
+                            OnDecodeStateChanged(new DecodeInfoEventArgs
+                            {
+                                Done = current,
+                                Total = fileInfos.Count,
+                                Error = failedReplays.Count,
+                                Elapsed = sw.Elapsed,
+                                Eta = TimeSpan.FromTicks(
+                                    sw.Elapsed.Ticks * (fileInfos.Count - current) / Math.Max(current, 1)
+                                ),
+                                Saving = false,
+                                Finished = false,
+                                Info = $"Decoded: {current}, Failed: {failedReplays.Count}"
+                            });
+                        }
+                    }
                 }
             });
         }
@@ -313,43 +341,6 @@ public partial class DecodeService : IDisposable
             return new DecodeResult { Success = false, Message = ex.Message, Path = path };
         }
     }
-
-    [SupportedOSPlatform("browser")]
-    private async Task DecodeBatch(IEnumerable<FileInfoRecord> files,
-                               IndexedDbService dbService,
-                               ConcurrentBag<string> failedReplays,
-                               Stopwatch sw,
-                               int maxParallelism)
-    {
-        var options = new ParallelOptions
-        {
-            MaxDegreeOfParallelism = maxParallelism * 4,
-            CancellationToken = cts.Token
-        };
-
-        await Parallel.ForEachAsync(files, options, async (fileInfo, ct) =>
-        {
-            var result = await TryDecodeReplay(fileInfo.Path, dbService, ct);
-            if (!result.Success)
-                failedReplays.Add(fileInfo.Path);
-
-            if (replaysDecoded % 5 == 0)
-            {
-                OnDecodeStateChanged(new DecodeInfoEventArgs
-                {
-                    Done = replaysDecoded,
-                    Total = -1,
-                    Error = failedReplays.Count,
-                    Elapsed = sw.Elapsed,
-                    Eta = TimeSpan.Zero,
-                    Saving = false,
-                    Finished = false,
-                    Info = $"Decoded: {replaysDecoded}, Failed: {failedReplays.Count}"
-                });
-            }
-        });
-    }
-
 
     [SupportedOSPlatform("browser")]
     public async Task DecodeAllHandles()

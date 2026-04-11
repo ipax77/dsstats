@@ -41,6 +41,7 @@ builder.Services.AddCors(options =>
                               allowedOrigins.Add("http://localhost:5261");
                               allowedOrigins.Add("https://localhost:7039");
                               allowedOrigins.Add("https://localhost:5066");
+                              allowedOrigins.Add("http://localhost:5190");
                           }
 
                           policy.WithOrigins([.. allowedOrigins])
@@ -118,8 +119,8 @@ dbContext.Database.Migrate();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    // var crawlerService =  scope.ServiceProvider.GetRequiredService<ICrawlerService>();
-    // await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-5), default);
+    // var ratingsService = scope.ServiceProvider.GetRequiredService<IRatingService>();
+    // ratingsService.CreateRatings().Wait();
 }
 
 app.UseForwardedHeaders();
