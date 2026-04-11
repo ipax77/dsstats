@@ -306,6 +306,15 @@ public partial class DecodeService : IDisposable
     }
 
     [SupportedOSPlatform("browser")]
+    public async Task<string?> AddDirectoryHandle()
+    {
+        using var scope = scopeFactory.CreateAsyncScope();
+        var dbService = scope.ServiceProvider.GetRequiredService<IndexedDbService>();
+        var config = await pwaConfigService.GetConfig();
+        return await dbService.PickDirectoryHandle(config.ReplayStartName);
+    }
+
+    [SupportedOSPlatform("browser")]
     private async Task<DecodeResult> TryDecodeReplay(string path, IndexedDbService dbService, CancellationToken token)
     {
         try
@@ -343,7 +352,7 @@ public partial class DecodeService : IDisposable
     }
 
     [SupportedOSPlatform("browser")]
-    public async Task DecodeAllHandles()
+    public async Task DecodeAllHandles(int limit = 0)
     {
         using var scope = scopeFactory.CreateAsyncScope();
         var dbService = scope.ServiceProvider.GetRequiredService<IndexedDbService>();
@@ -357,7 +366,7 @@ public partial class DecodeService : IDisposable
         foreach (var entry in entries)
         {
             if (cts.IsCancellationRequested) break;
-            await DecodeFromDirectory(entry.Key, limit: 0);
+            await DecodeFromDirectory(entry.Key, limit);
         }
     }
 

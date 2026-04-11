@@ -1,0 +1,6 @@
+we want to increase the first visit experience for the user. Currently, on first visit, if you press the 'Decode All My Replays' button in the DecodePage, nothing happens.
+You have to click the 'Decode Folder' first. Then 100 replays get decoded, but only after the decoding is finished or you revisit the DecodePage, you see the 'Saved Reply Folders' and the 'Decode All My Replays' is working.
+We need to harmonize this, so the user actually knows what to do and what is happening. We want to give them the option to decode only the top x replays (1, 10, 100, all (default 100)) and keep the 'decode all' in the TopRow as is
+The Saved Replay Folders section should appear imediately after granting access.
+So we have to redesign the DecodePage (maybe add a 'add folder' option without the need to start the decoding right away) and make the 'Upload Replay Files' less prominent, the main use case is to selecta folder.
+Feel free to adjust the UX according to best practices (using Bootstrap as main css (and icon) source where ever possible)

@@ -5,7 +5,7 @@ import { getReplaysFromFolder, readFileContentStream } from "./pick-replays";
 import { exportBackup, importBackup } from "./backup";
 import { MyPlayerStats } from "./stats/stats-dto";
 import { StatsService } from "./stats/stats";
-import { deleteDirectoryHandle, getAllDirectoryHandleEntries, getAllDirectoryHandles, getDirectoryHandle, renameDirectoryHandle as renameDirHandle, verifyAllDirectoryPermissions as verifyAllDirPerms } from "./file-handle-repository";
+import { addDirectoryHandle, deleteDirectoryHandle, getAllDirectoryHandleEntries, getAllDirectoryHandles, getDirectoryHandle, getDirectoryHandleFromUser, renameDirectoryHandle as renameDirHandle, verifyAllDirectoryPermissions as verifyAllDirPerms } from "./file-handle-repository";
 
 // Save replay and its projection + meta in one transaction
 export async function saveReplayFull(
@@ -287,6 +287,15 @@ export async function pickDirectoryInit(
     }
 
     return await getReplaysFromFolder(startName, [], count, dirHandle, rootKey, metas);
+}
+
+export async function pickDirectoryHandle(startName: string): Promise<string | null> {
+    const dirHandle = await getDirectoryHandleFromUser();
+    if (!dirHandle) {
+        return null;
+    }
+
+    return await addDirectoryHandle(dirHandle, startName, undefined);
 }
 
 export async function getFileContentStream(path: string) {

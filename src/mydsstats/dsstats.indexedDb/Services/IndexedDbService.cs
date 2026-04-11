@@ -60,6 +60,12 @@ public class IndexedDbService
         return await module.InvokeAsync<List<FileInfoRecord>>("pickDirectoryInit", startName, dirKey, limit);
     }
 
+    public async Task<string?> PickDirectoryHandle(string startName)
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<string?>("pickDirectoryHandle", startName);
+    }
+
     public async Task<IJSStreamReference> GetFileContent(string path)
     {
         var module = await _moduleTask;
