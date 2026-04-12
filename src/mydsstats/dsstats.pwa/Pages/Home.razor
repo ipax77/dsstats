@@ -593,10 +593,12 @@ else
             sessionReplayResult = await SessionProgressService.GetSessionReplaysAsync(async result =>
             {
                 sessionReplayResult = result;
+                await SyncCurrentReplayRatingAsync();
                 await InvokeAsync(StateHasChanged);
             }, token);
 
             trackedProfiles = await SessionProgressService.GetTrackedProfilesAsync();
+            await SyncCurrentReplayRatingAsync();
         }
         catch (OperationCanceledException)
         {
@@ -607,6 +609,29 @@ else
         }
 
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SyncCurrentReplayRatingAsync()
+    {
+        if (currentReplayDetails is null)
+        {
+            return;
+        }
+
+        var rating = await ReplayRepository.GetReplayRating(currentReplayDetails.ReplayHash);
+        if (rating is null)
+        {
+            return;
+        }
+
+        var existing = currentReplayDetails.ReplayRatings.FirstOrDefault();
+        if (ReferenceEquals(existing, rating))
+        {
+            return;
+        }
+
+        currentReplayDetails.ReplayRatings = [rating];
+        replayComponent?.Update(currentReplayDetails);
     }
 
     private static string FormatToonId(ToonIdDto toonId)
