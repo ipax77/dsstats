@@ -90,7 +90,9 @@ public partial class DecodeService
                         var (success, error, hash, replay) =
                             await _decodeClient!.DecodeAsync(item.Data, decodeCts.Token);
 
-                        await decodeChannel.Writer.WriteAsync(
+                        await TryWriteDecodedItemAsync(
+                            decodeChannel,
+                            decodeCts.Token,
                             new DecodedItem(
                                 item.Path,
                                 item.Size,
@@ -99,23 +101,34 @@ public partial class DecodeService
                                 error,
                                 hash,
                                 replay
-                            ),
-                            decodeCts.Token
+                            )
                         );
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
                     }
                     catch (Exception ex)
                     {
-                        await decodeChannel.Writer.WriteAsync(
-                            new DecodedItem(item.Path, item.Size, item.LastModified, false, ex.Message, null, null),
-                            decodeCts.Token
+                        await TryWriteDecodedItemAsync(
+                            decodeChannel,
+                            decodeCts.Token,
+                            new DecodedItem(item.Path, item.Size, item.LastModified, false, ex.Message, null, null)
                         );
                     }
                 }
             }));
 
-            var decodeCompletion = Task.WhenAll(decodeWorkers).ContinueWith(_ =>
+            var decodeCompletion = Task.Run(async () =>
             {
-                decodeChannel.Writer.Complete();
+                try
+                {
+                    await Task.WhenAll(decodeWorkers);
+                }
+                finally
+                {
+                    decodeChannel.Writer.TryComplete();
+                }
             });
 
 
@@ -166,6 +179,7 @@ public partial class DecodeService
                         var done = (aggregateState?.Processed ?? 0) + processed;
                         var successful = (aggregateState?.Successful ?? 0) + decoded;
                         var errors = (aggregateState?.Error ?? 0) + Volatile.Read(ref failedCount);
+                        total = Math.Max(total, done);
 
                         OnDecodeStateChanged(new DecodeInfoEventArgs
                         {
@@ -190,7 +204,6 @@ public partial class DecodeService
             catch (OperationCanceledException) { }
 
             await readerTask;
-            await Task.WhenAll(decodeWorkers);
             await decodeCompletion;
             await writerTask;
             if (progressTask is not null)
@@ -216,6 +229,7 @@ public partial class DecodeService
         var finalSuccessful = (aggregateState?.Successful ?? 0) + replaysDecoded;
         var finalErrors = (aggregateState?.Error ?? 0) + failedCount;
         var finalTotal = aggregateState?.Total ?? totalFiles;
+        finalTotal = Math.Max(finalTotal, finalDone);
 
         OnDecodeStateChanged(new DecodeInfoEventArgs
         {
@@ -273,6 +287,21 @@ public partial class DecodeService
         public int Successful { get; set; }
         public int Error { get; set; }
         public int Total { get; set; }
+    }
+
+    private async Task TryWriteDecodedItemAsync(
+        Channel<DecodedItem> decodeChannel,
+        CancellationToken token,
+        DecodedItem item)
+    {
+        try
+        {
+            await decodeChannel.Writer.WriteAsync(item, token);
+        }
+        catch (ChannelClosedException)
+        {
+            logger.LogDebug("Decode result channel was already closed for {Path}", item.Path);
+        }
     }
 }
 
