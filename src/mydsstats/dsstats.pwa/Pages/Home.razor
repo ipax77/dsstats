@@ -229,7 +229,7 @@
                                             {
                                                 <tr class="pointer" @onclick="() => LoadReplay(replay.ReplayHash)">
                                                     <td>@replay.Gametime.ToString("yy-MM-dd")</td>
-                                                    <td>@replay.GameMode</td>
+                                                    <td><span class="d-inline-block text-truncate" style="max-width: 80px;">@replay.GameMode</span></td>
                                                     <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
                                                     <td class="@(replay.RatingGain < 0 ? "text-danger" : "text-success")">
                                                         @replay.RatingGain.ToString("N2")
