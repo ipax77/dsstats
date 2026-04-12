@@ -2,15 +2,17 @@
 @using dsstats.indexedDb.Services
 @using dsstats.pwa.Services
 @using dsstats.shared
+@using dsstats.shared.Interfaces
 @inject DecodeService DecodeService
-@inject IndexedDbService DbService
+@inject IReplayRepository ReplayRepository
 @inject RatingService RatingService
 @inject PwaConfigService PwaConfigService
+@inject SessionProgressService SessionProgressService
 @implements IDisposable
 
 <PageTitle>mydsstats</PageTitle>
 
-@if (latestReplayDetails is not null)
+@if (currentReplayDetails is not null)
 {
     <div class="container py-4 bgchart rounded mb-3">
         <div class="row align-items-center g-3">
@@ -18,31 +20,198 @@
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                     <span class="badge text-bg-success">Ready To Decode</span>
                     <span class="badge text-bg-light">Folder-first workflow</span>
+                    @if (uploadEnabled)
+                    {
+                        <span class="badge text-bg-warning">Session Progress Active</span>
+                    }
                 </div>
                 <h1 class="display-5 fw-bold mb-2">Direct Strike Replay Decoder</h1>
                 <p class="text-muted mb-3">
-                    Your replay library is set up locally in the browser. Add folders once, decode the newest replays in small batches,
-                    and keep the latest match ready for review.
+                    Decode locally, move through your most recent replays on Home, and track a browser session window
+                    for your saved SC2 profile.
                 </p>
                 <ul class="list-unstyled mb-0 d-flex flex-wrap gap-3">
                     <li><i class="bi bi-lightning-charge-fill text-primary me-1"></i>Fast browser decoding</li>
                     <li><i class="bi bi-hdd-fill text-primary me-1"></i>Local IndexedDB storage</li>
-                    <li><i class="bi bi-folder2-open text-primary me-1"></i>Saved replay folders</li>
+                    <li><i class="bi bi-arrow-left-right text-primary me-1"></i>Replay-to-replay navigation</li>
                 </ul>
             </div>
             <div class="col-lg-4 text-lg-end">
-                <a href="/decode" class="btn btn-primary btn-lg px-4">
-                    <i class="bi bi-folder-symlink me-2"></i>Manage Decode Folders
-                </a>
+                <div class="d-flex flex-column gap-2 align-items-lg-end">
+                    <a href="/decode" class="btn btn-primary btn-lg px-4">
+                        <i class="bi bi-folder-symlink me-2"></i>Manage Decode Folders
+                    </a>
+                    <a href="/my-profiles" class="btn btn-outline-light">
+                        <i class="bi bi-person-badge me-2"></i>Manage My Profiles
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="mb-5">
-        <h3 class="p-2 rounded bgchart d-inline text-warning">Latest Replay</h3>
-        <div class="mt-2">
-            <dsstats.weblib.Replays.ReplayComponent @ref="replayComponent" ReplayDetails="latestReplayDetails"
+    <div class="row g-4 align-items-start">
+        <div class="col-xl-8">
+            <div class="mb-3">
+                <h3 class="p-2 rounded bgchart d-inline text-warning">
+                    @(currentReplayDetails.ReplayHash == latestReplayHash ? "Latest Replay" : "Recent Replay")
+                </h3>
+            </div>
+            <dsstats.weblib.Replays.ReplayComponent @ref="replayComponent"
+                                                    ReplayDetails="currentReplayDetails"
+                                                    IsScrollable="true"
+                                                    IsCloseable="false"
+                                                    OnScrollRequest="ScrollReplay"
                                                     OnRatingUpdateRequest="UpdateRatings" />
+        </div>
+
+        <div class="col-xl-4">
+            <div class="card border-light">
+                <div class="card-header bgchart2">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <h4 class="text-warning mb-0">Session Progress</h4>
+                        <a href="/my-profiles" class="btn btn-sm btn-outline-light">
+                            <i class="bi bi-person-badge me-1"></i>My Profiles
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body bgchart">
+                    @if (!uploadEnabled)
+                    {
+                        <div class="alert alert-secondary mb-0">
+                            <div class="fw-semibold mb-2">Anonymous upload is required for session ratings.</div>
+                            <p class="small mb-3">
+                                Session progress uses replay ratings from the server. Enable anonymous uploads first, then your
+                                recent replay window can show rating gain and winrate.
+                            </p>
+                            <button class="btn btn-primary" @onclick="AcceptUpload">
+                                <i class="bi bi-cloud-upload me-2"></i>Enable Uploads
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Session window mode">
+                                <button type="button"
+                                        class="btn @(sessionSettings.Mode == SessionWindowModeDto.Time ? "btn-primary" : "btn-outline-light")"
+                                        @onclick="() => SetWindowMode(SessionWindowModeDto.Time)">
+                                    Time
+                                </button>
+                                <button type="button"
+                                        class="btn @(sessionSettings.Mode == SessionWindowModeDto.Count ? "btn-primary" : "btn-outline-light")"
+                                        @onclick="() => SetWindowMode(SessionWindowModeDto.Count)">
+                                    Count
+                                </button>
+                            </div>
+
+                            @if (sessionSettings.Mode == SessionWindowModeDto.Time)
+                            {
+                                <select class="form-select form-select-sm w-auto" value="@sessionSettings.Hours" @onchange="SetTimeWindow">
+                                    @foreach (var hours in timeWindows)
+                                    {
+                                        <option value="@hours">@hours h</option>
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <select class="form-select form-select-sm w-auto" value="@sessionSettings.ReplayCount" @onchange="SetReplayWindow">
+                                    @foreach (var replayCount in replayWindows)
+                                    {
+                                        <option value="@replayCount">Last @replayCount</option>
+                                    }
+                                </select>
+                            }
+                        </div>
+
+                        @if (trackedProfiles.Count == 0)
+                        {
+                            <div class="alert alert-secondary mb-0">
+                                No tracked profiles are active yet. Add or confirm one on <a href="/my-profiles">My Profiles</a>
+                                so the session window can identify your replay rating changes.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="small text-muted mb-3">
+                                Tracking: @string.Join(", ", trackedProfiles.Where(p => p.Active).Select(p => $"{p.Name} ({FormatToonId(p.ToonId)})"))
+                            </div>
+
+                            @if (sessionLoading)
+                            {
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <div class="spinner-border spinner-border-sm text-warning" role="status"></div>
+                                    <span class="small text-muted">Refreshing session window and rating data…</span>
+                                </div>
+                            }
+
+                            @if (sessionReplayResult.Replays.Count == 0)
+                            {
+                                <div class="alert alert-secondary mb-0">
+                                    No replays in the selected window match your tracked profiles yet.
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="row row-cols-2 g-2 small mb-3">
+                                    <div class="col">
+                                        <div class="border rounded p-2">
+                                            <div class="text-muted">Games</div>
+                                            <div class="fw-semibold">@sessionReplayResult.Replays.Count.ToString("N0")</div>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="border rounded p-2">
+                                            <div class="text-muted">Time</div>
+                                            <div class="fw-semibold">@TimeSpan.FromSeconds(sessionReplayResult.TotalDuration).ToString(@"hh\:mm\:ss")</div>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="border rounded p-2">
+                                            <div class="text-muted">Winrate</div>
+                                            <div class="fw-semibold">@sessionReplayResult.Winrate.ToString("P1")</div>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="border rounded p-2">
+                                            <div class="text-muted">Rating</div>
+                                            <div class="fw-semibold @(sessionReplayResult.TotalGain < 0 ? "text-danger" : "text-success")">
+                                                @sessionReplayResult.TotalGain.ToString("N2")
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="table-responsive" style="max-height: 520px;">
+                                    <table class="table table-dark table-striped align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>GameMode</th>
+                                                <th>Duration</th>
+                                                <th>Rating</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var replay in sessionReplayResult.Replays)
+                                            {
+                                                <tr class="pointer" @onclick="() => LoadReplay(replay.ReplayHash)">
+                                                    <td>@replay.Gametime.ToString("yyyy-MM-dd HH:mm")</td>
+                                                    <td>@replay.GameMode</td>
+                                                    <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+                                                    <td class="@(replay.RatingGain < 0 ? "text-danger" : "text-success")">
+                                                        @replay.RatingGain.ToString("N2")
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        }
+                    }
+                </div>
+            </div>
         </div>
     </div>
 }
@@ -54,13 +223,12 @@ else
                 <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-lg-start mb-3">
                     <span class="badge text-bg-light">Browser-only</span>
                     <span class="badge text-bg-light">Saved folders</span>
-                    <span class="badge text-bg-light">Default top 100</span>
+                    <span class="badge text-bg-light">Session windows</span>
                 </div>
                 <h1 class="display-4 fw-bold mb-3">Direct Strike Replay Decoder</h1>
                 <p class="lead text-muted mb-4">
                     Decode your <strong>StarCraft II: Direct Strike</strong> replays directly in your browser.
-                    The main workflow is simple: save your replay folder once, then decode the newest replays whenever you want.
-                    Everything stays in your device's <strong>IndexedDB</strong> for quick local access.
+                    Once your latest replays are saved locally, Home becomes your replay navigator and session tracker.
                 </p>
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
@@ -71,14 +239,14 @@ else
                     </div>
                     <div class="col-md-4">
                         <div class="border rounded-3 p-3 h-100">
-                            <div class="fw-semibold mb-1">2. Pick A Batch</div>
-                            <div class="small text-muted">Decode 1, 10, 100, or all new replays. Default is 100.</div>
+                            <div class="fw-semibold mb-1">2. Decode Latest Games</div>
+                            <div class="small text-muted">Keep recent replays in IndexedDB so Home can page through them.</div>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="border rounded-3 p-3 h-100">
-                            <div class="fw-semibold mb-1">3. Review Locally</div>
-                            <div class="small text-muted">Inspect decoded matches from IndexedDB and optionally upload later.</div>
+                            <div class="fw-semibold mb-1">3. Track A Session</div>
+                            <div class="small text-muted">Enable uploads and pick your toon profile to monitor rating swings.</div>
                         </div>
                     </div>
                 </div>
@@ -86,88 +254,110 @@ else
                     <a href="/decode" class="btn btn-primary btn-lg px-4">
                         <i class="bi bi-folder-symlink me-2"></i>Add Replay Folder
                     </a>
-                    <a href="/replays" class="btn btn-outline-light btn-lg px-4">
-                        <i class="bi bi-collection-play me-2"></i>Browse Replays
+                    <a href="/my-profiles" class="btn btn-outline-light btn-lg px-4">
+                        <i class="bi bi-person-badge me-2"></i>My Profiles
                     </a>
                 </div>
             </div>
             <div class="col-lg-5 text-center">
                 <img src="images/replay.jpg" alt="Replay decoding illustration" class="img-fluid rounded shadow-sm mb-3" />
                 <div class="small text-muted">
-                    Works best when you save a replay folder first, then decode the newest matches in repeatable runs.
+                    Save a replay folder, decode a batch, then come back here to browse replays and track your next session window.
                 </div>
             </div>
         </div>
     </div>
 }
 
-            @if (showUploadPrompt)
-            {
-                <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6)">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title"><i class="bi bi-cloud-upload me-2"></i>Upload Anonymously?</h5>
-                            </div>
-                            <div class="modal-body">
-                                <p>Your replays can be uploaded anonymously to contribute to shared statistics. No personal data is
-                                    linked to your account.</p>
-                                    <p class="mb-0">Would you like to enable anonymous uploads?</p>
-                                </div>
-                                <div class="modal-footer">
-                                    <button class="btn btn-secondary" @onclick="DeclineUpload">Not Now</button>
-                                    <button class="btn btn-primary" @onclick="AcceptUpload">
-                                        <i class="bi bi-check2 me-1"></i>Enable &amp; Upload
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
+@if (showUploadPrompt)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.6)">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-cloud-upload me-2"></i>Upload Anonymously?</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Your replays can be uploaded anonymously to contribute to shared statistics. No personal data is linked to your account.</p>
+                    <p class="mb-0">Would you like to enable anonymous uploads?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="DeclineUpload">Not Now</button>
+                    <button class="btn btn-primary" @onclick="AcceptUpload">
+                        <i class="bi bi-check2 me-1"></i>Enable &amp; Upload
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
-    private ReplayDetails? latestReplayDetails;
+    private static readonly int[] timeWindows = [3, 6, 12, 24];
+    private static readonly int[] replayWindows = [10, 20, 30, 50];
+
+    private ReplayDetails? currentReplayDetails;
     private dsstats.weblib.Replays.ReplayComponent? replayComponent;
+    private SessionReplayResult sessionReplayResult = SessionReplayResult.Empty;
+    private SessionWindowSettingsDto sessionSettings = new();
+    private List<TrackedProfileDto> trackedProfiles = [];
+    private CancellationTokenSource? sessionLoadCts;
     private bool showUploadPrompt;
+    private bool uploadEnabled = true;
+    private bool sessionLoading;
+    private string latestReplayHash = string.Empty;
+    private readonly SemaphoreSlim loadSemaphore = new(1, 1);
 
     protected override void OnInitialized()
     {
         DecodeService.DecodeStateChanged += DecodeStateChanged;
         DecodeService.PromptForUpload += OnPromptForUpload;
-        _ = LoadInitialData();
+        _ = InitializeAsync();
         base.OnInitialized();
     }
 
-    private async Task LoadInitialData()
+    private async Task InitializeAsync()
     {
-        // If the service already has a replay, use it; otherwise, fetch from DB
-        if (DecodeService.LatestReplayHash is not null && DecodeService.LatestReplay is not null)
-        {
-            await SetLatestReplay(DecodeService.LatestReplayHash, DecodeService.LatestReplay);
-        }
-        else
-        {
-            var list = await DbService.GetFilteredReplayListsAsync(
-                new ReplayFilter(new ReplaysRequest { Skip = 0, Take = 1 }));
-
-            if (list.Count > 0)
-            {
-                var replay = await DbService.GetReplayByHashAsync(list[0].ReplayHash);
-                if (replay is not null)
-                {
-                    await SetLatestReplay(list[0].ReplayHash, replay);
-                }
-            }
-        }
+        sessionSettings = await SessionProgressService.GetSessionWindowSettingsAsync();
+        await LoadUploadStateAsync();
+        await LoadInitialReplayAsync();
+        await RefreshSessionProgressAsync();
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task SetLatestReplay(string hash, ReplayDto replay, ReplayRatingDto? rating = null)
+    private async Task LoadUploadStateAsync()
     {
-        // Fetch rating immediately
-        rating ??= await DbService.GetReplayRatingAsync(hash);
+        var config = await PwaConfigService.GetConfig();
+        uploadEnabled = config.UploadCredential;
+    }
 
-        latestReplayDetails = new ReplayDetails
+    private async Task LoadInitialReplayAsync()
+    {
+        if (DecodeService.LatestReplayHash is not null && DecodeService.LatestReplay is not null)
+        {
+            var rating = SessionProgressService.CanHaveRating(DecodeService.LatestReplay)
+                ? await RatingService.FetchAndSaveRating(DecodeService.LatestReplayHash)
+                : null;
+            await SetCurrentReplay(DecodeService.LatestReplayHash, DecodeService.LatestReplay, rating);
+            latestReplayHash = DecodeService.LatestReplayHash;
+            return;
+        }
+
+        var latestReplay = await ReplayRepository.GetLatestReplay();
+        if (latestReplay is null)
+        {
+            return;
+        }
+
+        currentReplayDetails = latestReplay;
+        latestReplayHash = latestReplay.ReplayHash;
+    }
+
+    private async Task SetCurrentReplay(string hash, ReplayDto replay, ReplayRatingDto? rating = null)
+    {
+        rating ??= await ReplayRepository.GetReplayRating(hash);
+
+        currentReplayDetails = new ReplayDetails
         {
             ReplayHash = hash,
             Replay = replay,
@@ -177,26 +367,37 @@ else
 
     private async void DecodeStateChanged(object? sender, DecodeInfoEventArgs e)
     {
-        if (e.Finished && DecodeService.LatestReplayHash is not null && DecodeService.LatestReplay is not null)
+        if (!e.Finished || DecodeService.LatestReplayHash is null || DecodeService.LatestReplay is null)
         {
-            // Only update if it's actually newer than what we have (or if we have nothing)
-            bool isNewer = latestReplayDetails == null ||
-                           DecodeService.LatestReplay.Gametime > latestReplayDetails.Replay.Gametime;
-
-            if (isNewer)
-            {
-                var rating = await RatingService.FetchAndSaveRating(DecodeService.LatestReplayHash);
-                await SetLatestReplay(DecodeService.LatestReplayHash, DecodeService.LatestReplay, rating);
-                await InvokeAsync(StateHasChanged);
-            }
+            return;
         }
+
+        var isNewer = currentReplayDetails is null
+                      || DecodeService.LatestReplay.Gametime > currentReplayDetails.Replay.Gametime;
+
+        if (!isNewer)
+        {
+            return;
+        }
+
+        var rating = SessionProgressService.CanHaveRating(DecodeService.LatestReplay)
+            ? await RatingService.FetchAndSaveRating(DecodeService.LatestReplayHash)
+            : null;
+
+        await SetCurrentReplay(DecodeService.LatestReplayHash, DecodeService.LatestReplay, rating);
+        latestReplayHash = DecodeService.LatestReplayHash;
+        if (currentReplayDetails is not null)
+        {
+            replayComponent?.Update(currentReplayDetails);
+        }
+        await RefreshSessionProgressAsync();
+        await InvokeAsync(StateHasChanged);
     }
 
     private void OnPromptForUpload(object? sender, EventArgs e)
-
     {
         showUploadPrompt = true;
-        InvokeAsync(StateHasChanged);
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private void DeclineUpload()
@@ -210,23 +411,163 @@ else
         var config = await PwaConfigService.GetConfig();
         config.UploadCredential = true;
         await PwaConfigService.SaveConfig(config);
+        uploadEnabled = true;
         await DecodeService.TriggerUploadAsync();
+        await RefreshSessionProgressAsync();
+    }
+
+    private async Task LoadReplay(string replayHash)
+    {
+        await loadSemaphore.WaitAsync();
+        try
+        {
+            var replay = await ReplayRepository.GetReplayDetails(replayHash);
+            if (replay is null)
+            {
+                return;
+            }
+
+            currentReplayDetails = replay;
+            replayComponent?.Update(replay);
+        }
+        finally
+        {
+            loadSemaphore.Release();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ScrollReplay(bool left)
+    {
+        if (currentReplayDetails is null)
+        {
+            return;
+        }
+
+        await loadSemaphore.WaitAsync();
+        try
+        {
+            var replay = await ReplayRepository.GetNextReplay(!left, currentReplayDetails.ReplayHash);
+            if (replay is null)
+            {
+                return;
+            }
+
+            currentReplayDetails = replay;
+            replayComponent?.Update(replay);
+        }
+        finally
+        {
+            loadSemaphore.Release();
+        }
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task UpdateRatings()
     {
-        if (latestReplayDetails is null) return;
-        var rating = await RatingService.FetchAndSaveRating(latestReplayDetails.ReplayHash);
-        if (rating is null) return;
+        if (currentReplayDetails is null)
+        {
+            return;
+        }
 
-        latestReplayDetails.ReplayRatings = [rating];
-        replayComponent?.Update(latestReplayDetails);
+        var rating = await RatingService.FetchAndSaveRating(currentReplayDetails.ReplayHash, forceRefresh: true);
+        if (rating is null)
+        {
+            return;
+        }
+
+        currentReplayDetails.ReplayRatings = [rating];
+        replayComponent?.Update(currentReplayDetails);
+        await RefreshSessionProgressAsync();
         await InvokeAsync(StateHasChanged);
     }
+
+    private async Task SetWindowMode(SessionWindowModeDto mode)
+    {
+        if (sessionSettings.Mode == mode)
+        {
+            return;
+        }
+
+        sessionSettings.Mode = mode;
+        await SessionProgressService.SaveSessionWindowSettingsAsync(sessionSettings);
+        await RefreshSessionProgressAsync();
+    }
+
+    private async Task SetTimeWindow(ChangeEventArgs args)
+    {
+        if (!int.TryParse(args.Value?.ToString(), out var hours))
+        {
+            return;
+        }
+
+        sessionSettings.Hours = hours;
+        await SessionProgressService.SaveSessionWindowSettingsAsync(sessionSettings);
+        await RefreshSessionProgressAsync();
+    }
+
+    private async Task SetReplayWindow(ChangeEventArgs args)
+    {
+        if (!int.TryParse(args.Value?.ToString(), out var replayCount))
+        {
+            return;
+        }
+
+        sessionSettings.ReplayCount = replayCount;
+        await SessionProgressService.SaveSessionWindowSettingsAsync(sessionSettings);
+        await RefreshSessionProgressAsync();
+    }
+
+    private async Task RefreshSessionProgressAsync()
+    {
+        sessionLoadCts?.Cancel();
+        sessionLoadCts?.Dispose();
+        sessionLoadCts = new CancellationTokenSource();
+        var token = sessionLoadCts.Token;
+
+        sessionLoading = uploadEnabled;
+        sessionReplayResult = SessionReplayResult.Empty;
+        trackedProfiles = await SessionProgressService.GetTrackedProfilesAsync();
+        await InvokeAsync(StateHasChanged);
+
+        if (!uploadEnabled)
+        {
+            sessionLoading = false;
+            return;
+        }
+
+        try
+        {
+            sessionReplayResult = await SessionProgressService.GetSessionReplaysAsync(async result =>
+            {
+                sessionReplayResult = result;
+                await InvokeAsync(StateHasChanged);
+            }, token);
+
+            trackedProfiles = await SessionProgressService.GetTrackedProfilesAsync();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            sessionLoading = false;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private static string FormatToonId(ToonIdDto toonId)
+        => $"{toonId.Region}/{toonId.Realm}/{toonId.Id}";
 
     public void Dispose()
     {
         DecodeService.DecodeStateChanged -= DecodeStateChanged;
         DecodeService.PromptForUpload -= OnPromptForUpload;
+        sessionLoadCts?.Cancel();
+        sessionLoadCts?.Dispose();
+        loadSemaphore.Dispose();
     }
 }

@@ -1,11 +1,17 @@
 // dsstatsDb.ts v1.4
 import { openDB, STORES } from "./db-core";
-import { ExportedReplays, FileInfoRecord, PlayerDto, PwaConfig, ReplayDto, ReplayFilter, ReplayListDto, ReplayMeta, UploadRequestDto, ExportResult, ReplayRatingDto } from "./dtos";
+import { ExportedReplays, FileInfoRecord, PlayerDto, ProfileCandidateDto, PwaConfig, ReplayDto, ReplayFilter, ReplayListDto, ReplayMeta, TrackedProfileDto, UploadRequestDto, ExportResult, ReplayRatingDto, SessionWindowSettingsDto } from "./dtos";
 import { getReplaysFromFolder, readFileContentStream } from "./pick-replays";
 import { exportBackup, importBackup } from "./backup";
 import { MyPlayerStats } from "./stats/stats-dto";
 import { StatsService } from "./stats/stats";
 import { addDirectoryHandle, deleteDirectoryHandle, getAllDirectoryHandleEntries, getAllDirectoryHandles, getDirectoryHandle, getDirectoryHandleFromUser, renameDirectoryHandle as renameDirHandle, verifyAllDirectoryPermissions as verifyAllDirPerms } from "./file-handle-repository";
+
+const CONFIG_KEYS = {
+    app: "app",
+    trackedProfiles: "trackedProfiles",
+    sessionWindowSettings: "sessionWindowSettings"
+} as const;
 
 // Save replay and its projection + meta in one transaction
 export async function saveReplayFull(
@@ -307,32 +313,59 @@ export async function verifyAllDirectoryPermissions(keys: string[]): Promise<str
 }
 
 export async function getConfig(): Promise<PwaConfig | undefined> {
+    return await getConfigEntry<PwaConfig>(CONFIG_KEYS.app);
+}
+
+export async function saveConfig(
+    config: PwaConfig,
+): Promise<void> {
+    await saveConfigEntry(CONFIG_KEYS.app, config);
+}
+
+export async function getTrackedProfiles(): Promise<TrackedProfileDto[]> {
+    return await getConfigEntry<TrackedProfileDto[]>(CONFIG_KEYS.trackedProfiles) ?? [];
+}
+
+export async function saveTrackedProfiles(
+    profiles: TrackedProfileDto[],
+): Promise<void> {
+    await saveConfigEntry(CONFIG_KEYS.trackedProfiles, profiles);
+}
+
+export async function getSessionWindowSettings(): Promise<SessionWindowSettingsDto | undefined> {
+    return await getConfigEntry<SessionWindowSettingsDto>(CONFIG_KEYS.sessionWindowSettings);
+}
+
+export async function saveSessionWindowSettings(
+    settings: SessionWindowSettingsDto,
+): Promise<void> {
+    await saveConfigEntry(CONFIG_KEYS.sessionWindowSettings, settings);
+}
+
+async function getConfigEntry<T>(key: string): Promise<T | undefined> {
     const database = await openDB();
 
     return new Promise((resolve, reject) => {
         const tx = database.transaction(STORES.config, "readonly");
         const store = tx.objectStore(STORES.config);
-
-        const request = store.get("app");
+        const request = store.get(key);
 
         request.onsuccess = () => {
-            resolve(request.result);
+            resolve(request.result as T | undefined);
         };
 
         request.onerror = () => reject(request.error);
     });
 }
 
-export async function saveConfig(
-    config: PwaConfig,
-): Promise<void> {
+async function saveConfigEntry<T>(key: string, value: T): Promise<void> {
     const database = await openDB();
 
     return new Promise((resolve, reject) => {
         const tx = database.transaction(STORES.config, "readwrite");
+        const store = tx.objectStore(STORES.config);
 
-        const configs = tx.objectStore(STORES.config);
-        configs.put(config, "app");
+        store.put(value, key);
 
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
@@ -510,6 +543,115 @@ export async function getPlayerStats(player: PlayerDto): Promise<MyPlayerStats> 
     return await statsService.generateStats(player);
 }
 
+export async function detectTrackedProfileCandidates(limit: number = 10): Promise<ProfileCandidateDto[]> {
+    const database = await openDB();
+
+    return new Promise((resolve, reject) => {
+        const tx = database.transaction(STORES.replays, "readonly");
+        const store = tx.objectStore(STORES.replays);
+        const index = store.index("gametime");
+        const request = index.openCursor(null, "prev");
+        const counts = new Map<string, ProfileCandidateDto>();
+        let replaysVisited = 0;
+
+        request.onsuccess = (event) => {
+            const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+            if (!cursor || replaysVisited >= limit) {
+                const candidates = Array.from(counts.values())
+                    .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name));
+                resolve(candidates);
+                return;
+            }
+
+            const replay = cursor.value as ReplayDto;
+            replaysVisited += 1;
+
+            for (const replayPlayer of replay.players) {
+                const toonId = replayPlayer.player?.toonId;
+                if (!toonId || toonId.id <= 0) {
+                    continue;
+                }
+
+                const key = toonKey(toonId);
+                const existing = counts.get(key);
+
+                if (existing) {
+                    existing.count += 1;
+                    continue;
+                }
+
+                counts.set(key, {
+                    count: 1,
+                    name: replayPlayer.player?.name || replayPlayer.name,
+                    toonId: { ...toonId }
+                });
+            }
+
+            cursor.continue();
+        };
+
+        request.onerror = () => reject(request.error);
+    });
+}
+
+export async function getRecentReplayHashes(limit: number = 10): Promise<string[]> {
+    const database = await openDB();
+
+    return new Promise((resolve, reject) => {
+        const tx = database.transaction(STORES.lists, "readonly");
+        const store = tx.objectStore(STORES.lists);
+        const index = store.index("gametime");
+        const request = index.openCursor(null, "prev");
+        const hashes: string[] = [];
+
+        request.onsuccess = (event) => {
+            const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+            if (!cursor || hashes.length >= limit) {
+                resolve(hashes);
+                return;
+            }
+
+            const replay = cursor.value as ReplayListDto;
+            hashes.push(replay.replayHash);
+            cursor.continue();
+        };
+
+        request.onerror = () => reject(request.error);
+    });
+}
+
+export async function getReplayHashesSince(isoUtc: string): Promise<string[]> {
+    const cutoff = new Date(isoUtc).getTime();
+    const database = await openDB();
+
+    return new Promise((resolve, reject) => {
+        const tx = database.transaction(STORES.lists, "readonly");
+        const store = tx.objectStore(STORES.lists);
+        const index = store.index("gametime");
+        const request = index.openCursor(null, "prev");
+        const hashes: string[] = [];
+
+        request.onsuccess = (event) => {
+            const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+            if (!cursor) {
+                resolve(hashes);
+                return;
+            }
+
+            const replay = cursor.value as ReplayListDto;
+            if (new Date(replay.gametime).getTime() < cutoff) {
+                resolve(hashes);
+                return;
+            }
+
+            hashes.push(replay.replayHash);
+            cursor.continue();
+        };
+
+        request.onerror = () => reject(request.error);
+    });
+}
+
 export async function exportAllDirectoryHandles(): Promise<string[]> {
     return await getAllDirectoryHandles();
 }
@@ -524,4 +666,8 @@ export async function renameDirectoryHandle(key: string, newDisplayName: string)
 
 export async function delDirectoryHandle(key: string): Promise<boolean> {
     return await deleteDirectoryHandle(key);
+}
+
+function toonKey(toonId: { region: number; realm: number; id: number }): string {
+    return `${toonId.region}:${toonId.realm}:${toonId.id}`;
 }

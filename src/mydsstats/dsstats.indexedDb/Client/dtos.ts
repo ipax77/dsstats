@@ -43,6 +43,25 @@ export interface PwaConfig {
     culture: string;
 }
 
+export interface TrackedProfileDto {
+    name: string;
+    toonId: ToonIdDto;
+    active: boolean;
+    autoDetected: boolean;
+}
+
+export interface ProfileCandidateDto {
+    name: string;
+    toonId: ToonIdDto;
+    count: number;
+}
+
+export interface SessionWindowSettingsDto {
+    mode: number;
+    hours: number;
+    replayCount: number;
+}
+
 export interface ExportedReplays {
     hashes: string[];
     payload: string; // base64 string containing gzipped JSON of ReplayDto[]

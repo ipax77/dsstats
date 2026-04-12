@@ -121,6 +121,48 @@ public class IndexedDbService
         await module.InvokeVoidAsync("saveConfig", config);
     }
 
+    public async Task<List<TrackedProfileDto>> GetTrackedProfiles()
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<List<TrackedProfileDto>>("getTrackedProfiles");
+    }
+
+    public async Task SaveTrackedProfiles(List<TrackedProfileDto> profiles)
+    {
+        var module = await _moduleTask;
+        await module.InvokeVoidAsync("saveTrackedProfiles", profiles);
+    }
+
+    public async Task<SessionWindowSettingsDto?> GetSessionWindowSettings()
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<SessionWindowSettingsDto?>("getSessionWindowSettings");
+    }
+
+    public async Task SaveSessionWindowSettings(SessionWindowSettingsDto settings)
+    {
+        var module = await _moduleTask;
+        await module.InvokeVoidAsync("saveSessionWindowSettings", settings);
+    }
+
+    public async Task<List<ProfileCandidateDto>> DetectTrackedProfileCandidates(int replayLimit = 10)
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<List<ProfileCandidateDto>>("detectTrackedProfileCandidates", replayLimit);
+    }
+
+    public async Task<List<string>> GetRecentReplayHashes(int limit)
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<List<string>>("getRecentReplayHashes", limit);
+    }
+
+    public async Task<List<string>> GetReplayHashesSince(DateTime fromUtc)
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<List<string>>("getReplayHashesSince", fromUtc.ToUniversalTime().ToString("O"));
+    }
+
     public async Task TriggerBackup()
     {
         var module = await _moduleTask;

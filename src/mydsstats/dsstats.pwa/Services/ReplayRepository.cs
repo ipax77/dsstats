@@ -65,15 +65,42 @@ public class ReplayRepository(IndexedDbService dbService, ILogger<ReplayReposito
         => await dbService.SaveReplayRatingAsync(replayHash, rating);
 
     public Task<ReplayDetails?> GetLatestReplay()
+        => GetReplayAtIndex(0);
+
+    public async Task<ReplayDetails?> GetNextReplay(bool after, string replayHash)
     {
-        throw new NotImplementedException();
+        var replays = await GetOrderedReplayListAsync();
+        var currentIndex = replays.FindIndex(replay => replay.ReplayHash == replayHash);
+        if (currentIndex < 0)
+        {
+            return null;
+        }
+
+        var nextIndex = after ? currentIndex - 1 : currentIndex + 1;
+        return await GetReplayAtIndex(nextIndex, replays);
     }
 
-    public Task<ReplayDetails?> GetNextReplay(bool after, string replayHash)
+    private async Task<ReplayDetails?> GetReplayAtIndex(int index, List<ReplayListDto>? orderedReplays = null)
     {
-        throw new NotImplementedException();
+        var replays = orderedReplays ?? await GetOrderedReplayListAsync();
+        if (index < 0 || index >= replays.Count)
+        {
+            return null;
+        }
+
+        return await GetReplayDetails(replays[index].ReplayHash);
+    }
+
+    private async Task<List<ReplayListDto>> GetOrderedReplayListAsync()
+    {
+        var request = new ReplaysRequest
+        {
+            Skip = 0,
+            Take = 20_000,
+        };
+
+        return await dbService.GetFilteredReplayListsAsync(new ReplayFilter(request));
     }
 }
-
 
 
