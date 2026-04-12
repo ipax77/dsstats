@@ -50,7 +50,7 @@
     </div>
 
     <div class="row g-4 align-items-start">
-        <div class="col-xl-8">
+        <div class="col-auto">
             <div class="mb-3">
                 <h3 class="p-2 rounded bgchart d-inline text-warning">
                     @(currentReplayDetails.ReplayHash == latestReplayHash ? "Latest Replay" : "Recent Replay")
@@ -64,8 +64,8 @@
                                                     OnRatingUpdateRequest="UpdateRatings" />
         </div>
 
-        <div class="col-xl-4">
-            <div class="card border-light">
+        <div class="col-auto">
+            <div class="card border-light" style="max-width: 380px;">
                 <div class="card-header bgchart2">
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                         <h4 class="text-warning mb-0">Session Progress</h4>
@@ -90,15 +90,15 @@
                     }
                     else
                     {
-                        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-                            <div class="btn-group btn-group-sm" role="group" aria-label="Session window mode">
+                        <div class="row align-items-center gap-2 mb-3">
+                            <div class="" role="group" aria-label="Session window mode">
                                 <button type="button"
-                                        class="btn @(sessionSettings.Mode == SessionWindowModeDto.Time ? "btn-primary" : "btn-outline-light")"
+                                        class="btn btn-sm @(sessionSettings.Mode == SessionWindowModeDto.Time ? "btn-primary" : "btn-outline-light")"
                                         @onclick="() => SetWindowMode(SessionWindowModeDto.Time)">
                                     Time
                                 </button>
                                 <button type="button"
-                                        class="btn @(sessionSettings.Mode == SessionWindowModeDto.Count ? "btn-primary" : "btn-outline-light")"
+                                        class="btn btn-sm @(sessionSettings.Mode == SessionWindowModeDto.Count ? "btn-primary" : "btn-outline-light")"
                                         @onclick="() => SetWindowMode(SessionWindowModeDto.Count)">
                                     Count
                                 </button>
@@ -162,25 +162,25 @@
                             else
                             {
                                 <div class="row row-cols-2 g-2 small mb-3">
-                                    <div class="col">
+                                    <div class="col-auto">
                                         <div class="border rounded p-2">
                                             <div class="text-muted">Games</div>
                                             <div class="fw-semibold">@sessionReplayResult.Replays.Count.ToString("N0")</div>
                                         </div>
                                     </div>
-                                    <div class="col">
+                                    <div class="col-auto">
                                         <div class="border rounded p-2">
                                             <div class="text-muted">Time</div>
                                             <div class="fw-semibold">@TimeSpan.FromSeconds(sessionReplayResult.TotalDuration).ToString(@"hh\:mm\:ss")</div>
                                         </div>
                                     </div>
-                                    <div class="col">
+                                    <div class="col-auto">
                                         <div class="border rounded p-2">
                                             <div class="text-muted">Winrate</div>
                                             <div class="fw-semibold">@sessionReplayResult.Winrate.ToString("P1")</div>
                                         </div>
                                     </div>
-                                    <div class="col">
+                                    <div class="col-auto">
                                         <div class="border rounded p-2">
                                             <div class="text-muted">Rating</div>
                                             <div class="fw-semibold @(sessionReplayResult.TotalGain < 0 ? "text-danger" : "text-success")">
@@ -191,7 +191,7 @@
                                 </div>
 
                                 <div class="table-responsive" style="max-height: 520px;">
-                                    <table class="table table-dark table-striped align-middle mb-0">
+                                    <table class="tptable">
                                         <thead>
                                             <tr>
                                                 <th>Date</th>
@@ -204,7 +204,7 @@
                                             @foreach (var replay in sessionReplayResult.Replays)
                                             {
                                                 <tr class="pointer" @onclick="() => LoadReplay(replay.ReplayHash)">
-                                                    <td>@replay.Gametime.ToString("yyyy-MM-dd HH:mm")</td>
+                                                    <td>@replay.Gametime.ToString("yy-MM-dd")</td>
                                                     <td>@replay.GameMode</td>
                                                     <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
                                                     <td class="@(replay.RatingGain < 0 ? "text-danger" : "text-success")">
