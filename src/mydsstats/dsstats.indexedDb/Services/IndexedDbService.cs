@@ -1,16 +1,24 @@
 ﻿using dsstats.shared;
 using dsstats.shared.Upload;
 using Microsoft.JSInterop;
+using System.Reflection;
 
 namespace dsstats.indexedDb.Services;
 
 public class IndexedDbService
 {
+    private static readonly string ModuleVersion =
+        typeof(IndexedDbService).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split('+')[0]
+        ?? typeof(IndexedDbService).Assembly.GetName().Version?.ToString()
+        ?? "1.0.0";
+
     private Task<IJSObjectReference> _moduleTask;
 
     public IndexedDbService(IJSRuntime js)
     {
-        _moduleTask = js.InvokeAsync<IJSObjectReference>("import", "./_content/dsstats.indexedDb/js/dsstatsDb.js").AsTask();
+        _moduleTask = js.InvokeAsync<IJSObjectReference>(
+            "import",
+            $"./_content/dsstats.indexedDb/js/dsstatsDb.js?v={Uri.EscapeDataString(ModuleVersion)}").AsTask();
     }
 
     public async ValueTask UpsertReplayAsync(string replayHash, ReplayDto replay, long size = 0, long lastModified = 0)
