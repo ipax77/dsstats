@@ -204,7 +204,19 @@ public class IndexedDbService
     public async ValueTask<List<DirHandleEntry>> GetAllDirectoryHandleEntries()
     {
         var module = await _moduleTask;
-        return await module.InvokeAsync<List<DirHandleEntry>>("exportAllDirectoryHandleEntries");
+        try
+        {
+            return await module.InvokeAsync<List<DirHandleEntry>>("exportAllDirectoryHandleEntries");
+        }
+        catch (JSException ex) when (IsMissingJsFunction(ex, "exportAllDirectoryHandleEntries"))
+        {
+            var keys = await module.InvokeAsync<List<string>>("exportAllDirectoryHandles");
+            return keys.Select(key => new DirHandleEntry
+            {
+                Key = key,
+                DisplayName = key
+            }).ToList();
+        }
     }
 
     public async ValueTask RenameDirectoryHandle(string key, string newDisplayName)
@@ -231,6 +243,12 @@ public class IndexedDbService
         public string Name { get; set; } = string.Empty;
         public long Size { get; set; }
         public long LastModified { get; set; }
+    }
+
+    private static bool IsMissingJsFunction(JSException ex, string functionName)
+    {
+        return ex.Message.Contains($"'{functionName}' is not a function", StringComparison.Ordinal)
+            || ex.Message.Contains($"{functionName} is not a function", StringComparison.Ordinal);
     }
 
     private sealed class ReplayListRecord
