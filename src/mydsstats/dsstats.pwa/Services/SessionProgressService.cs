@@ -87,6 +87,7 @@ public class SessionProgressService(
             : await dbService.GetRecentReplayHashes(settings.ReplayCount);
 
         List<SessionReplay> replays = [];
+        Dictionary<string, SessionProfileRating> profileRatings = [];
 
         foreach (var replayHash in hashes)
         {
@@ -98,8 +99,8 @@ public class SessionProgressService(
                 continue;
             }
 
-            var trackedProfile = GetTrackedProfile(profiles, replayDetails.Replay);
-            if (trackedProfile is null)
+            var matchingProfiles = GetTrackedProfiles(profiles, replayDetails.Replay).ToList();
+            if (matchingProfiles.Count == 0)
             {
                 continue;
             }
@@ -119,6 +120,22 @@ public class SessionProgressService(
                 }
             }
 
+            foreach (var profile in matchingProfiles)
+            {
+                var key = GetToonKey(profile.ToonId);
+                if (profileRatings.ContainsKey(key))
+                {
+                    continue;
+                }
+
+                var profileRating = GetProfileRating(profile, replayDetails, rating);
+                if (profileRating is not null)
+                {
+                    profileRatings.Add(key, profileRating);
+                }
+            }
+
+            var trackedProfile = matchingProfiles[0];
             replays.Add(new SessionReplay
             {
                 ReplayHash = replayHash,
@@ -131,11 +148,11 @@ public class SessionProgressService(
 
             if (onUpdated is not null)
             {
-                await onUpdated(BuildResult(replays));
+                await onUpdated(BuildResult(replays, profileRatings.Values));
             }
         }
 
-        return BuildResult(replays);
+        return BuildResult(replays, profileRatings.Values);
     }
 
     public static bool CanHaveRating(ReplayDto replay)
@@ -171,18 +188,8 @@ public class SessionProgressService(
     private static bool IsValidProfile(TrackedProfileDto profile)
         => profile.Active && profile.ToonId.Id > 0;
 
-    private static TrackedProfileDto? GetTrackedProfile(IEnumerable<TrackedProfileDto> profiles, ReplayDto replay)
-    {
-        foreach (var profile in profiles)
-        {
-            if (replay.Players.Any(player => MatchesToonId(player.Player.ToonId, profile.ToonId)))
-            {
-                return profile;
-            }
-        }
-
-        return null;
-    }
+    private static IEnumerable<TrackedProfileDto> GetTrackedProfiles(IEnumerable<TrackedProfileDto> profiles, ReplayDto replay)
+        => profiles.Where(profile => replay.Players.Any(player => MatchesToonId(player.Player.ToonId, profile.ToonId)));
 
     private static double GetRatingGain(ToonIdDto toonId, ReplayRatingDto? rating)
     {
@@ -201,16 +208,23 @@ public class SessionProgressService(
         return player is not null && player.TeamId == replay.WinnerTeam;
     }
 
-    private static SessionReplayResult BuildResult(List<SessionReplay> replays)
+    private static SessionReplayResult BuildResult(
+        List<SessionReplay> replays,
+        IEnumerable<SessionProfileRating> profileRatings)
     {
-        if (replays.Count == 0)
-        {
-            return SessionReplayResult.Empty;
-        }
-
         var ordered = replays
             .OrderByDescending(replay => replay.Gametime)
             .ToList();
+
+        var orderedProfileRatings = profileRatings
+            .OrderBy(profile => profile.ProfileName)
+            .ThenBy(profile => profile.ToonId.Region)
+            .ToList();
+
+        if (ordered.Count == 0)
+        {
+            return new SessionReplayResult(ordered, 0, 0, 0, orderedProfileRatings);
+        }
 
         var totalDuration = ordered.Sum(replay => replay.Duration);
         var totalGain = ordered.Sum(replay => replay.RatingGain);
@@ -220,7 +234,8 @@ public class SessionProgressService(
             ordered,
             totalDuration,
             totalGain,
-            wins / (double)ordered.Count);
+            wins / (double)ordered.Count,
+            orderedProfileRatings);
     }
 
     private static bool MatchesToonId(ToonIdDto left, ToonIdDto right)
@@ -235,6 +250,37 @@ public class SessionProgressService(
             Region = toonId.Region,
             Realm = toonId.Realm,
         };
+
+    private static SessionProfileRating? GetProfileRating(
+        TrackedProfileDto profile,
+        ReplayDetails replayDetails,
+        ReplayRatingDto? rating)
+    {
+        if (rating is null)
+        {
+            return null;
+        }
+
+        var playerRating = rating.ReplayPlayerRatings.FirstOrDefault(player => MatchesToonId(player.ToonId, profile.ToonId));
+        if (playerRating is null)
+        {
+            return null;
+        }
+
+        return new SessionProfileRating
+        {
+            ProfileName = profile.Name,
+            ToonId = CloneToonId(profile.ToonId),
+            ReplayHash = replayDetails.ReplayHash,
+            Gametime = replayDetails.Replay.Gametime,
+            GameMode = replayDetails.Replay.GameMode,
+            Rating = playerRating.RatingBefore + playerRating.RatingDelta,
+            RatingDelta = playerRating.RatingDelta,
+        };
+    }
+
+    private static string GetToonKey(ToonIdDto toonId)
+        => $"{toonId.Region}:{toonId.Realm}:{toonId.Id}";
 }
 
 public sealed class SessionReplay
@@ -247,11 +293,23 @@ public sealed class SessionReplay
     public bool IsWin { get; set; }
 }
 
+public sealed class SessionProfileRating
+{
+    public string ProfileName { get; set; } = string.Empty;
+    public ToonIdDto ToonId { get; set; } = new();
+    public string ReplayHash { get; set; } = string.Empty;
+    public DateTime Gametime { get; set; }
+    public GameMode GameMode { get; set; }
+    public double Rating { get; set; }
+    public double RatingDelta { get; set; }
+}
+
 public sealed record SessionReplayResult(
     List<SessionReplay> Replays,
     long TotalDuration,
     double TotalGain,
-    double Winrate)
+    double Winrate,
+    List<SessionProfileRating> ProfileRatings)
 {
-    public static SessionReplayResult Empty { get; } = new([], 0, 0, 0);
+    public static SessionReplayResult Empty { get; } = new([], 0, 0, 0, []);
 }
