@@ -28,4 +28,5 @@ public sealed class SessionWindowSettingsDto
     public SessionWindowModeDto Mode { get; set; } = SessionWindowModeDto.Time;
     public int Hours { get; set; } = 6;
     public int ReplayCount { get; set; } = 10;
+    public GameMode GameMode { get; set; } = GameMode.None;
 }

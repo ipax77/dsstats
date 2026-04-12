@@ -60,6 +60,7 @@ export interface SessionWindowSettingsDto {
     mode: number;
     hours: number;
     replayCount: number;
+    gameMode: number;
 }
 
 export interface ExportedReplays {

@@ -43,7 +43,8 @@ describe('session progress helpers', () => {
         const settings: SessionWindowSettingsDto = {
             mode: 1,
             hours: 12,
-            replayCount: 30
+            replayCount: 30,
+            gameMode: 7
         };
 
         await saveTrackedProfiles(profiles);

@@ -104,6 +104,11 @@ public class SessionProgressService(
                 continue;
             }
 
+            if (settings.GameMode != GameMode.None && replayDetails.Replay.GameMode != settings.GameMode)
+            {
+                continue;
+            }
+
             ReplayRatingDto? rating = replayDetails.ReplayRatings.FirstOrDefault();
             if (rating is null && CanHaveRating(replayDetails.Replay))
             {
@@ -155,6 +160,10 @@ public class SessionProgressService(
             10 or 20 or 30 or 50 => settings.ReplayCount,
             _ => 10,
         };
+
+        settings.GameMode = Enum.IsDefined(settings.GameMode)
+            ? settings.GameMode
+            : GameMode.None;
 
         return settings;
     }

@@ -122,6 +122,14 @@
                                     }
                                 </select>
                             }
+
+                            <select class="form-select form-select-sm w-auto" value="@((int)sessionSettings.GameMode)" @onchange="SetGameMode">
+                                <option value="@((int)GameMode.None)">All GameModes</option>
+                                @foreach (var gameMode in sessionGameModes)
+                                {
+                                    <option value="@((int)gameMode)">@gameMode</option>
+                                }
+                            </select>
                         </div>
 
                         @if (trackedProfiles.Count == 0)
@@ -295,6 +303,9 @@ else
 @code {
     private static readonly int[] timeWindows = [3, 6, 12, 24];
     private static readonly int[] replayWindows = [10, 20, 30, 50];
+    private static readonly GameMode[] sessionGameModes = Enum.GetValues<GameMode>()
+        .Where(mode => mode != GameMode.None)
+        .ToArray();
 
     private ReplayDetails? currentReplayDetails;
     private dsstats.weblib.Replays.ReplayComponent? replayComponent;
@@ -516,6 +527,21 @@ else
         }
 
         sessionSettings.ReplayCount = replayCount;
+        await SessionProgressService.SaveSessionWindowSettingsAsync(sessionSettings);
+        await RefreshSessionProgressAsync();
+    }
+
+    private async Task SetGameMode(ChangeEventArgs args)
+    {
+        if (!int.TryParse(args.Value?.ToString(), out var gameModeValue))
+        {
+            return;
+        }
+
+        sessionSettings.GameMode = Enum.IsDefined(typeof(GameMode), gameModeValue)
+            ? (GameMode)gameModeValue
+            : GameMode.None;
+
         await SessionProgressService.SaveSessionWindowSettingsAsync(sessionSettings);
         await RefreshSessionProgressAsync();
     }
