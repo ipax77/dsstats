@@ -1,0 +1,237 @@
+@page "/my-profiles"
+@using dsstats.indexedDb.Services
+@using dsstats.pwa.Services
+@using dsstats.shared
+@inject SessionProgressService SessionProgressService
+
+<PageTitle>mydsstats - My Profiles</PageTitle>
+
+<div class="container py-4 bgchart rounded">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h2 class="fw-bold mb-1">My Profiles</h2>
+            <p class="text-muted mb-0">
+                Choose the toon IDs that represent you so Home can attribute session winrate and rating changes correctly.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-light" @onclick="AddProfile">
+                <i class="bi bi-plus-lg me-2"></i>Add Profile
+            </button>
+            <button class="btn btn-primary" @onclick="SaveProfiles" disabled="@isSaving">
+                <i class="bi bi-save me-2"></i>Save Profiles
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-warning" role="status"></div>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(statusMessage))
+        {
+            <div class="alert alert-info">@statusMessage</div>
+        }
+
+        <div class="row g-4">
+            <div class="col-xl-8">
+                <div class="card border-light h-100">
+                    <div class="card-header bgchart2">
+                        <h4 class="text-warning mb-0">Tracked Profiles</h4>
+                    </div>
+                    <div class="card-body bgchart">
+                        @if (profiles.Count == 0)
+                        {
+                            <div class="alert alert-secondary mb-0">
+                                No profiles are stored yet. Add one manually or use a detected recent profile from the panel on the right.
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var profile in profiles)
+                            {
+                                <div class="border rounded p-3 mb-3">
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Name</label>
+                                            <input class="form-control" @bind="profile.Name" />
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Region</label>
+                                            <input type="number" class="form-control" @bind="profile.ToonId.Region" />
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">Realm</label>
+                                            <input type="number" class="form-control" @bind="profile.ToonId.Realm" />
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">ToonId</label>
+                                            <input type="number" class="form-control" @bind="profile.ToonId.Id" />
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-check mb-2">
+                                                <input type="checkbox" class="form-check-input" @bind="profile.Active" />
+                                                <label class="form-check-label">Active</label>
+                                            </div>
+                                            @if (profile.AutoDetected)
+                                            {
+                                                <div class="small text-muted">Auto-detected</div>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-end mt-3">
+                                        <button class="btn btn-outline-danger btn-sm" @onclick="() => RemoveProfile(profile)">
+                                            Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="card border-light">
+                    <div class="card-header bgchart2">
+                        <h4 class="text-warning mb-0">Detected Candidates</h4>
+                    </div>
+                    <div class="card-body bgchart">
+                        <p class="small text-muted">
+                            Candidates are inferred from the newest 10 decoded replays. The top candidate is auto-saved if you have no stored profile yet.
+                        </p>
+
+                        @if (candidates.Count == 0)
+                        {
+                            <div class="alert alert-secondary mb-0">
+                                No replay-based candidates found yet.
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var candidate in candidates)
+                            {
+                                var alreadyTracked = profiles.Any(profile => SameToonId(profile.ToonId, candidate.ToonId));
+                                <div class="border rounded p-3 mb-3">
+                                    <div class="fw-semibold">@candidate.Name</div>
+                                    <div class="small text-muted mb-2">
+                                        Toon: @FormatToonId(candidate.ToonId) | Seen @candidate.Count times
+                                    </div>
+
+                                    @if (alreadyTracked)
+                                    {
+                                        <span class="badge text-bg-success">Tracked</span>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-outline-light btn-sm" @onclick="() => UseCandidate(candidate)">
+                                            Use Candidate
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private readonly List<TrackedProfileDto> profiles = [];
+    private List<ProfileCandidateDto> candidates = [];
+    private bool isLoading = true;
+    private bool isSaving;
+    private string? statusMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        statusMessage = null;
+
+        await SessionProgressService.EnsureDefaultTrackedProfileAsync();
+
+        profiles.Clear();
+        profiles.AddRange(await SessionProgressService.GetTrackedProfilesAsync());
+        candidates = await SessionProgressService.GetProfileCandidatesAsync();
+
+        isLoading = false;
+    }
+
+    private void AddProfile()
+    {
+        profiles.Add(new TrackedProfileDto
+        {
+            Active = true,
+            ToonId = new ToonIdDto(),
+        });
+    }
+
+    private void RemoveProfile(TrackedProfileDto profile)
+    {
+        profiles.Remove(profile);
+    }
+
+    private void UseCandidate(ProfileCandidateDto candidate)
+    {
+        if (profiles.Any(profile => SameToonId(profile.ToonId, candidate.ToonId)))
+        {
+            return;
+        }
+
+        profiles.Add(new TrackedProfileDto
+        {
+            Active = true,
+            AutoDetected = true,
+            Name = candidate.Name,
+            ToonId = CloneToonId(candidate.ToonId),
+        });
+    }
+
+    private async Task SaveProfiles()
+    {
+        isSaving = true;
+        statusMessage = null;
+
+        try
+        {
+            await SessionProgressService.SaveTrackedProfilesAsync(
+                profiles
+                    .Where(profile => profile.ToonId.Id > 0)
+                    .ToList());
+
+            await LoadAsync();
+            statusMessage = "Profiles saved.";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private static bool SameToonId(ToonIdDto left, ToonIdDto right)
+        => left.Id == right.Id
+           && left.Region == right.Region
+           && left.Realm == right.Realm;
+
+    private static ToonIdDto CloneToonId(ToonIdDto toonId)
+        => new()
+        {
+            Id = toonId.Id,
+            Region = toonId.Region,
+            Realm = toonId.Realm,
+        };
+
+    private static string FormatToonId(ToonIdDto toonId)
+        => $"{toonId.Region}/{toonId.Realm}/{toonId.Id}";
+}

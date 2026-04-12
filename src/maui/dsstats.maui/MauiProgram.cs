@@ -2,6 +2,7 @@
 using dsstats.db;
 using dsstats.dbServices;
 using dsstats.maui.Services;
+using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -30,6 +31,11 @@ namespace dsstats.maui
 
             builder.Services.AddMauiBlazorWebView();
             builder.Services.AddLocalization();
+
+            builder.Services.Configure<HostOptions>(options =>
+            {
+                options.Kind = HostAppKind.MauiBlazor;
+            });
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

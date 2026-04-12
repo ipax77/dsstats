@@ -1,7 +1,7 @@
 import { Dump, Migration } from "./migration.js";
 
 export const DB_NAME = "ReplayDB";
-export const DB_VERSION = 3;
+export const DB_VERSION = 7;
 
 export const STORES = {
     replays: "Replays",
@@ -9,6 +9,7 @@ export const STORES = {
     meta: "ReplayMeta",
     config: "Config",
     directoryHandles: "DirectoryHandles",
+    ratings: "ReplayRatings",
 };
 
 let db: IDBDatabase | null = null;
@@ -151,8 +152,101 @@ const migration2: Migration = {
 };
 
 
+// migration3: fix boolean 'uploaded' values that migration1 missed in live DBs.
+// migration1 only ran via the dump/restore path; existing live records may still
+// have uploaded: true/false. Convert them to 1/0 so getAllReplayMetas() can be
+// deserialized as number (int) in C#.
+const migration3: Migration = {
+  schema: (_db, tx) => {
+    const metaStore = tx.objectStore(STORES.meta);
+    const cursorReq = metaStore.openCursor();
+    cursorReq.onsuccess = (e) => {
+      const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+      if (!cursor) return;
+      const record = cursor.value;
+      if (typeof record.uploaded === "boolean") {
+        record.uploaded = record.uploaded ? 1 : 0;
+        cursor.update(record);
+      }
+      cursor.continue();
+    };
+  },
+};
+
+// migration4: migrate DirectoryHandles from {key: humanName, value: FileSystemDirectoryHandle}
+// to {key: UUID, value: {handle, displayName, regionId}} for unique, user-editable handle names.
+const migration4: Migration = {
+  schema: (_db, tx) => {
+    const store = tx.objectStore(STORES.directoryHandles);
+    const req = store.openCursor();
+    req.onsuccess = (e) => {
+      const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+      if (!cursor) return;
+      const oldKey = cursor.key as string;
+      const oldValue = cursor.value;
+      // Skip if already migrated (value has a .handle property)
+      if (oldValue && typeof oldValue === "object" && "handle" in oldValue) {
+        cursor.continue();
+        return;
+      }
+      // Extract regionId from key pattern like "Multiplayer_2" or "Multiplayer_2_3"
+      let regionId = 0;
+      const match = (oldKey as string).match(/_(\d)(?:_\d+)?$/);
+      if (match) regionId = parseInt(match[1], 10);
+      const uuid = crypto.randomUUID();
+      store.put({ handle: oldValue, displayName: oldKey, regionId }, uuid);
+      cursor.delete();
+      cursor.continue();
+    };
+  },
+};
+
+// migration5: add ReplayRatings store for persisting server-fetched Elo ratings per replay.
+const migration5: Migration = {
+  schema: (db) => {
+    if (!db.objectStoreNames.contains(STORES.ratings)) {
+      db.createObjectStore(STORES.ratings, { keyPath: "replayHash" });
+    }
+  },
+};
+
+const migration6: Migration = {
+  schema: (_db, tx) => {
+    const store = tx.objectStore(STORES.directoryHandles);
+    const req = store.openCursor();
+
+    req.onsuccess = (e) => {
+      const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+      if (!cursor) return;
+
+      const value = cursor.value;
+
+      // Skip if already migrated
+      if (value && typeof value === "object" && "status" in value) {
+        cursor.continue();
+        return;
+      }
+
+      const migrated = {
+        ...value,
+        handle: value.handle ?? null,   // keep existing handle
+        fingerprint: value.fingerprint ?? null,
+        status: "bound",                // existing entries are valid
+        lastBoundAt: Date.now()
+      };
+
+      cursor.update(migrated);
+      cursor.continue();
+    };
+  },
+};
+
 const upgrades: Record<number, Migration> = {
   0: migration0, // initial schema
-  1: migration1, // uploaded boolean → number, can modify other stores too
+  1: migration1, // uploaded boolean → number (dump/restore path only)
   2: migration2, // new store for directory handles
+  3: migration3, // fix boolean uploaded → number in live DB records
+  4: migration4, // DirectoryHandles: humanName → UUID key, value wraps handle+displayName+regionId
+  5: migration5, // new ReplayRatings store
+  6: migration6, // add directory fingerprints
 };

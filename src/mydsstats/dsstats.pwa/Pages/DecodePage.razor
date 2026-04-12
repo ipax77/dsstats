@@ -1,149 +1,274 @@
-﻿@page "/decode"
+@page "/decode"
 @using dsstats.indexedDb.Services
-@using dsstats.parser
 @using dsstats.pwa.Services
 @using dsstats.shared
-@using pax.BBToast
-@using s2protocol.NET
-@inject ILogger<DecodePage> Logger
 @inject IndexedDbService dbService
 @inject DecodeService DecodeService
-@inject IToastService ToastService
+@inject AppNotificationService NotificationService
 @implements IDisposable
 
-<PageTitle>mydsstats - Decode</PageTitle>
+<PageTitle>mydsstats - decode</PageTitle>
 
 <div class="container py-4 bgchart rounded">
-	<div class="row">
-		<div class="col-lg-8">
-			<h2 class="fw-bold mb-3">Decode Your Replays</h2>
-			<p class="text-muted mb-4">
-				Select one <strong>Direct Strike replay files</strong> to decode.
-				Your decoded matches will be stored locally in your browser’s IndexedDB for quick access.
-			</p>
-
-			<!-- File Upload -->
+	<div class="row g-4">
+		<div class="col-xl-8">
 			<div class="card border-0 shadow-sm mb-4 bgchart2">
-				<div class="card-body text-center py-5">
-					<i class="bi bi-cloud-arrow-up display-4 text-primary mb-3"></i>
-					<h5 class="mb-3">Upload Replay Files</h5>
-					<InputFile OnChange="LoadFiles" multiple class="form-control" />
-					<p class="small text-muted mt-2">Drag & drop supported — or use file picker.</p>
-				</div>
-			</div>
-
-			<!-- Decode Controls -->
-			<div class="row text-center g-3 mb-4">
-				<!-- Decode -->
-				<div class="col-md-4">
-					<div>
-						<button class="btn btn-primary w-100" @onclick="DecodeFilesJob">
-							<i class="bi bi-folder-symlink me-2"></i> Decode Folder
-						</button>
-						<select id="breakpointSelect" class="form-select text-light bgchart" aria-label="Breakpoint" @bind="regionId">
-							<option value="0">Select Region ..</option>
-							<option value="1">NA</option>
-							<option value="2">EU</option>
-							<option value="3">AS</option>
-							<option value="4">CH</option>
-						</select>
-					</div>
-					<p class="small text-muted mt-2">
-						Opens a folder picker and decodes all Direct Strike Replays in batches of 100.
-						Already decoded replays will be skipped automatically, so you can Cancel and Restart at any time.
-					</p>
-				</div>
-
-				<!-- Upload -->
-				<div class="col-md-4">
-					<button class="btn btn-warning w-100" @onclick="() => DecodeService.Upload10(dbService)">
-						<i class="bi bi-cloud-upload me-2"></i> Upload
-					</button>
-					<p class="small text-muted mt-2">
-						Upload decoded replays to <a href="https://dsstats.pax77.org"><strong>dsstats.pax77.org</strong></a>
-						for global stats and player ratings.
-					</p>
-				</div>
-
-				<!-- Cancel -->
-				@if (isLoading || DecodeService.Decoding)
-				{
-					<div class="col-md-4">
-						<button class="btn btn-danger w-100" @onclick="() => DecodeService.Cancel()">
-							<i class="bi bi-x-circle me-2"></i> Cancel
-						</button>
-						<p class="small text-muted mt-2">
-							Stop the current decoding process.
-						</p>
-					</div>
-				}
-			</div>
-
-			<!-- Status -->
-			<div class="mb-4">
-				@if (isLoading || DecodeService.Decoding)
-				{
-					<div class="d-flex align-items-center">
-						<div class="spinner-border text-primary me-3" role="status">
-							<span class="visually-hidden">Loading...</span>
+				<div class="card-body p-4">
+					<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+						<div>
+							<h2 class="fw-bold mb-1">Decode Your Replays</h2>
+							<p class="text-muted mb-0">
+								Grant folder access once, then choose how many of the newest replays to decode.
+								Saved folders appear immediately after access is granted.
+							</p>
 						</div>
-						<span class="fw-semibold">Decoding in progress...</span>
+						<span class="badge text-bg-light">Default: top 100</span>
 					</div>
-				}
 
-				else
-				{
-					<p class="text-muted fst-italic">No replay selected yet.</p>
-				}
-			</div>
-
-			<!-- Stats -->
-			<div class="text-end text-muted small">
-				Decoded: <span class="fw-bold">@replaysDecoded</span>
-			</div>
-		</div>
-		<div class="col-lg-4">
-			<!-- Saved Directories -->
-			@if (dirHandleKeys?.Count > 0)
-			{
-				<div class="card border-0 shadow-sm mb-4 bgchart2">
-					<div class="card-body">
-						<h5 class="fw-bold mb-3">
-							<i class="bi bi-folder2-open me-2"></i>
-							Saved Replay Folders
-						</h5>
-
-						<p class="text-muted small mb-3">
-							These folders were previously authorized. You can decode them again or remove the saved handle.
-						</p>
-
-						<ul class="list-group">
-							@foreach (var key in dirHandleKeys)
-							{
-								<li class="list-group-item d-flex justify-content-between align-items-center bgchart text-light">
-									<span class="text-break">@key</span>
-									<div>
-										<button class="btn btn-sm btn-primary me-2"
-												@onclick="() => DecodeDirHandleJob(key)">
-											<i class="bi bi-play-fill me-1"></i> Decode
-										</button>
-
-										<button class="btn btn-sm btn-danger"
-												@onclick="() => DeleteDirHandle(key)">
-											<i class="bi bi-trash me-1"></i> Delete
+					<div class="row g-3 mb-3">
+						<div class="col-lg-7">
+							<div class="border rounded-3 p-3 h-100">
+								<div class="d-flex align-items-start gap-3">
+									<div class="fs-2 text-primary">
+										<i class="bi bi-folder-plus"></i>
+									</div>
+									<div class="flex-grow-1">
+										<h5 class="mb-2">1. Add a replay folder</h5>
+										<p class="text-muted small mb-3">
+											This is the main workflow. Choose your Direct Strike replay folder, keep it saved in the browser,
+											then decode only the newest replays when you want.
+										</p>
+										<button class="btn btn-primary btn-lg w-100"
+												@onclick="AddFolderJob"
+												disabled="@isBusy">
+											<i class="bi bi-folder-symlink me-2"></i>Add Replay Folder
 										</button>
 									</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="col-lg-5">
+							<div class="border rounded-3 p-3 h-100">
+								<h5 class="mb-2">2. Choose decode size</h5>
+								<p class="text-muted small mb-3">
+									Pick how many new replays to decode per run. Use <strong>All</strong> only for larger catch-up runs.
+								</p>
+								<div class="btn-group w-100" role="group" aria-label="Decode limit">
+									@foreach (var limit in decodeLimits)
+									{
+										<button type="button"
+												class="@GetLimitButtonClass(limit)"
+												@onclick="() => SelectDecodeLimit(limit)"
+												disabled="@isBusy">
+											@GetLimitLabel(limit)
+										</button>
+									}
+								</div>
+								<p class="small text-muted mt-3 mb-0">
+									Selected: decode the newest <strong>@GetLimitSummary()</strong>.
+								</p>
+							</div>
+						</div>
+					</div>
+
+					<div class="row g-3">
+						<div class="col-md-6">
+							<button class="btn btn-success w-100"
+									@onclick="DecodeAllJob"
+									disabled="@(!hasSavedFolders || isBusy)">
+								<i class="bi bi-play-circle me-2"></i>Decode Saved Folders
+							</button>
+							<p class="small text-muted mt-2 mb-0">
+								Uses the saved folders listed on this page and respects the selected decode size.
+								The top bar <strong>Decode All</strong> still keeps its full decode behavior.
+							</p>
+						</div>
+						<div class="col-md-6">
+							<button class="btn btn-outline-warning w-100"
+									@onclick="UploadJob"
+									disabled="@isBusy">
+								<i class="bi bi-cloud-upload me-2"></i>Upload Decoded Replays
+							</button>
+							<p class="small text-muted mt-2 mb-0">
+								Upload locally decoded replays for global stats and player ratings after decoding finishes.
+							</p>
+						</div>
+
+						@if (isBusy)
+						{
+							<div class="col-md-6">
+								<button class="btn btn-danger w-100" @onclick="CancelJob">
+									<i class="bi bi-x-circle me-2"></i>Cancel Current Job
+								</button>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+
+			<div class="alert @GetStatusAlertClass() mb-4" role="status">
+				<div class="d-flex flex-wrap align-items-center gap-3">
+					@if (isBusy)
+					{
+						<div class="spinner-border spinner-border-sm" role="status">
+							<span class="visually-hidden">Working...</span>
+						</div>
+					}
+
+					<div class="flex-grow-1">
+						<div class="fw-semibold">@statusMessage</div>
+						@if (decodeInfoEventArgs is not null && (decodeInfoEventArgs.Total > 0 || decodeInfoEventArgs.UploadStatus != UploadStatus.None))
+						{
+							<div class="small mt-1">
+								@if (decodeInfoEventArgs.Total > 0)
+								{
+									<span class="me-3">Processed: @decodeInfoEventArgs.Done / @decodeInfoEventArgs.Total</span>
+									<span class="me-3">Saved: @decodeInfoEventArgs.Successful</span>
+									<span class="me-3">Errors: @decodeInfoEventArgs.Error</span>
+									<span class="me-3">Elapsed: @decodeInfoEventArgs.Elapsed.ToString(@"hh\:mm\:ss")</span>
+									@if (!decodeInfoEventArgs.Finished && decodeInfoEventArgs.Eta > TimeSpan.Zero)
+									{
+										<span>ETA: @decodeInfoEventArgs.Eta.ToString(@"hh\:mm\:ss")</span>
+									}
+								}
+
+								@if (decodeInfoEventArgs.UploadStatus == UploadStatus.Uploading)
+								{
+									<span>Upload in progress...</span>
+								}
+								else if (decodeInfoEventArgs.UploadStatus == UploadStatus.UploadSuccess)
+								{
+									<span>Upload finished successfully.</span>
+								}
+								else if (decodeInfoEventArgs.UploadStatus == UploadStatus.UploadError)
+								{
+									<span>Upload failed.</span>
+								}
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+
+			<div class="card border-0 shadow-sm mb-4 bgchart2">
+				<div class="card-body p-4">
+					<div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+						<div>
+							<h5 class="mb-1">Decoded Replays</h5>
+							<p class="text-muted small mb-0">Latest completed decode count from this page session.</p>
+						</div>
+						<span class="badge text-bg-secondary">@replaysDecoded</span>
+					</div>
+
+					<div class="border rounded-3 p-3">
+						<h6 class="mb-2">Single Replay Upload</h6>
+						<p class="text-muted small mb-3">
+							For one-off checks only. The normal path is adding a replay folder above.
+						</p>
+						<InputFile OnChange="LoadFiles" class="form-control" />
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-xl-4">
+			<div class="card border-0 shadow-sm mb-4 bgchart2">
+				<div class="card-body p-4">
+					<div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+						<div>
+							<h5 class="fw-bold mb-1">
+								<i class="bi bi-folder2-open me-2"></i>Saved Replay Folders
+							</h5>
+							<p class="text-muted small mb-0">
+								Decode a single saved folder with the selected size, or rename and remove it.
+							</p>
+						</div>
+						@if (isLoadingFolders)
+						{
+							<div class="spinner-border spinner-border-sm" role="status">
+								<span class="visually-hidden">Loading...</span>
+							</div>
+						}
+					</div>
+
+					@if (!isLoadingFolders && dirHandleEntries.Count == 0)
+					{
+						<div class="border rounded-3 p-3">
+							<div class="fw-semibold mb-1">No replay folders saved yet</div>
+							<p class="text-muted small mb-0">
+								Use <strong>Add Replay Folder</strong> to grant access first. The folder will appear here immediately.
+							</p>
+						</div>
+					}
+					else if (dirHandleEntries.Count > 0)
+					{
+						<ul class="list-group">
+							@foreach (var entry in dirHandleEntries)
+							{
+								<li class="list-group-item bgchart text-light mb-2 border rounded">
+									<div class="d-flex justify-content-between align-items-start gap-2">
+										<div class="flex-grow-1">
+											<div class="d-flex flex-wrap align-items-center gap-2">
+												<span class="fw-semibold text-break">@entry.DisplayName</span>
+												@if (lastAddedKey == entry.Key)
+												{
+													<span class="badge text-bg-success">Just Added</span>
+												}
+											</div>
+											<div class="small text-muted">
+												Decode newest @GetLimitSummary() from this folder.
+											</div>
+										</div>
+										<div class="d-flex gap-1">
+											<button class="btn btn-sm btn-primary"
+													title="Decode saved folder"
+													@onclick="() => DecodeDirHandleJob(entry.Key)"
+													disabled="@isBusy">
+												<i class="bi bi-play-fill"></i>
+											</button>
+											<button class="btn btn-sm btn-outline-light"
+													title="Rename saved folder"
+													@onclick="() => StartRename(entry.Key, entry.DisplayName)"
+													disabled="@isBusy">
+												<i class="bi bi-pencil"></i>
+											</button>
+											<button class="btn btn-sm btn-danger"
+													title="Remove saved folder"
+													@onclick="() => DeleteDirHandle(entry.Key)"
+													disabled="@isBusy">
+												<i class="bi bi-trash"></i>
+											</button>
+										</div>
+									</div>
+
+									@if (renamingKey == entry.Key)
+									{
+										<div class="mt-2 d-flex gap-2">
+											<input class="form-control form-control-sm bgchart text-light"
+												   @bind="renameValue"
+												   placeholder="New name"
+												   disabled="@isBusy" />
+											<button class="btn btn-sm btn-success" @onclick="ConfirmRename" disabled="@isBusy">
+												<i class="bi bi-check"></i>
+											</button>
+											<button class="btn btn-sm btn-secondary" @onclick="CancelRename" disabled="@isBusy">
+												<i class="bi bi-x"></i>
+											</button>
+										</div>
+									}
 								</li>
 							}
 						</ul>
-					</div>
+					}
 				</div>
-			}
+			</div>
 		</div>
 	</div>
 </div>
+
 <div class="mb-5">
-	@if (replay != null)
+	@if (replay is not null)
 	{
 		<dsstats.weblib.Replays.ReplayComponent ReplayDetails="new() { Replay = replay }" />
 	}
@@ -151,71 +276,372 @@
 
 @code {
 	private bool isLoading;
-	private long maxFileSize = 2 * 1024 * 1024;
-	private int maxAllowedFiles = 1;
-	private ReplayDto? replay = null;
-	private int replaysDecoded = 0;
-	private int regionId = 0;
-	private List<string> dirHandleKeys = [];
+	private bool isLoadingFolders = true;
+	private readonly long maxFileSize = 2 * 1024 * 1024;
+	private readonly IReadOnlyList<int> decodeLimits = [1, 10, 100, 0];
+	private ReplayDto? replay;
+	private int replaysDecoded;
+	private int selectedDecodeLimit = 100;
+	private string statusMessage = "Add a replay folder to get started.";
+	private string statusTone = "info";
+	private List<IndexedDbService.DirHandleEntry> dirHandleEntries = [];
+	private string? renamingKey;
+	private string renameValue = string.Empty;
+	private string? lastAddedKey;
+	private DecodeInfoEventArgs? decodeInfoEventArgs;
 
-	DecodeInfoEventArgs? decodeInfoEventArgs;
+	private bool hasSavedFolders => dirHandleEntries.Count > 0;
+	private bool isBusy => isLoading || DecodeService.Decoding;
 
 	protected override void OnInitialized()
 	{
 		DecodeService.DecodeStateChanged += DecodeStateChanged;
-		_ = LoadDirHandles();
 		base.OnInitialized();
 	}
 
-	private async Task LoadDirHandles()
+	protected override async Task OnInitializedAsync()
 	{
-		dirHandleKeys = await dbService.GetAllDirectoryHandles();
+		await LoadDirHandles();
+	}
+
+	private async Task LoadDirHandles(bool refreshStatus = true)
+	{
+		isLoadingFolders = true;
 		await InvokeAsync(StateHasChanged);
+
+		dirHandleEntries = await dbService.GetAllDirectoryHandleEntries();
+
+		isLoadingFolders = false;
+		if (refreshStatus && !isBusy)
+		{
+			SetIdleStatus();
+		}
+
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private void SetIdleStatus()
+	{
+		if (dirHandleEntries.Count == 0)
+		{
+			statusMessage = "Add a replay folder first. It will appear in Saved Replay Folders immediately after you grant access.";
+			statusTone = "info";
+			return;
+		}
+
+		statusMessage = $"{dirHandleEntries.Count} saved replay folder{(dirHandleEntries.Count == 1 ? string.Empty : "s")} ready. Choose a decode size and start a run.";
+		statusTone = "success";
+	}
+
+	private async Task AddFolderJob()
+	{
+		isLoading = true;
+		statusMessage = "Waiting for folder access...";
+		statusTone = "info";
+		await InvokeAsync(StateHasChanged);
+
+		try
+		{
+			var addedKey = await DecodeService.AddDirectoryHandle();
+			if (string.IsNullOrWhiteSpace(addedKey))
+			{
+				statusMessage = "Folder selection was cancelled.";
+				statusTone = "secondary";
+				return;
+			}
+
+			lastAddedKey = addedKey;
+			await LoadDirHandles(refreshStatus: false);
+
+			var addedFolderName = dirHandleEntries.FirstOrDefault(entry => entry.Key == addedKey)?.DisplayName ?? "Replay folder";
+			statusMessage = $"{addedFolderName} is ready. Pick a decode size and start when you want.";
+			statusTone = "success";
+			NotificationService.ShowSuccess($"Saved replay folder: {addedFolderName}");
+		}
+		catch (Exception ex)
+		{
+			statusMessage = $"Failed to add replay folder: {ex.Message}";
+			statusTone = "danger";
+			NotificationService.ShowError(ex.Message);
+		}
+		finally
+		{
+			isLoading = false;
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+
+	private void SelectDecodeLimit(int limit)
+	{
+		selectedDecodeLimit = limit;
+		if (!isBusy)
+		{
+			statusMessage = $"Ready to decode the newest {GetLimitSummary()} from the selected folder set.";
+			statusTone = hasSavedFolders ? "success" : "info";
+		}
 	}
 
 	private async Task DeleteDirHandle(string key)
 	{
 		await dbService.DeleteDirectoryHandle(key);
+		if (lastAddedKey == key)
+		{
+			lastAddedKey = null;
+		}
 		await LoadDirHandles();
+	}
+
+	private void StartRename(string key, string currentName)
+	{
+		renamingKey = key;
+		renameValue = currentName;
+	}
+
+	private void CancelRename()
+	{
+		renamingKey = null;
+		renameValue = string.Empty;
+	}
+
+	private async Task ConfirmRename()
+	{
+		if (renamingKey is null)
+		{
+			return;
+		}
+
+		if (string.IsNullOrWhiteSpace(renameValue))
+		{
+			NotificationService.ShowError("Folder name cannot be empty.");
+			return;
+		}
+
+		if (dirHandleEntries.Any(entry => entry.Key != renamingKey && entry.DisplayName == renameValue))
+		{
+			NotificationService.ShowError($"Name \"{renameValue}\" is already in use.");
+			return;
+		}
+
+		try
+		{
+			await dbService.RenameDirectoryHandle(renamingKey, renameValue);
+			renamingKey = null;
+			renameValue = string.Empty;
+			await LoadDirHandles();
+		}
+		catch (Exception ex)
+		{
+			NotificationService.ShowError(ex.Message);
+		}
 	}
 
 	private void DecodeStateChanged(object? sender, DecodeInfoEventArgs e)
 	{
 		decodeInfoEventArgs = e;
+
+		if (e.UploadStatus != UploadStatus.None)
+		{
+			switch (e.UploadStatus)
+			{
+				case UploadStatus.Uploading:
+					statusMessage = "Uploading decoded replays...";
+					statusTone = "info";
+					break;
+				case UploadStatus.UploadSuccess:
+					statusMessage = "Upload finished successfully.";
+					statusTone = "success";
+					break;
+				case UploadStatus.UploadError:
+					statusMessage = e.Info ?? "Upload failed.";
+					statusTone = "danger";
+					break;
+			}
+		}
+		else
+		{
+			replaysDecoded = e.Successful;
+			if (e.Finished && DecodeService.LatestReplay is not null)
+			{
+				replay = DecodeService.LatestReplay;
+			}
+
+			statusMessage = BuildDecodeStatusMessage(e);
+			statusTone = GetDecodeStatusTone(e);
+		}
+
+		if (e.Finished)
+		{
+			_ = LoadDirHandles(refreshStatus: false);
+		}
+
 		InvokeAsync(StateHasChanged);
 	}
 
 	private async Task LoadFiles(InputFileChangeEventArgs e)
 	{
 		isLoading = true;
+		statusMessage = "Decoding uploaded replay file...";
+		statusTone = "info";
 		await InvokeAsync(StateHasChanged);
-		foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
+
+		try
 		{
-			await using MemoryStream memoryStream = new();
-			await file.OpenReadStream(maxFileSize).CopyToAsync(memoryStream);
-			memoryStream.Position = 0;
-			replay = await DecodeService.DecodeFromStream(memoryStream, file.Name);
+			foreach (var file in e.GetMultipleFiles(1))
+			{
+				await using MemoryStream memoryStream = new();
+				await file.OpenReadStream(maxFileSize).CopyToAsync(memoryStream);
+				memoryStream.Position = 0;
+				replay = await DecodeService.DecodeFromStream(memoryStream, file.Name);
+			}
+		}
+		finally
+		{
+			isLoading = false;
 			await InvokeAsync(StateHasChanged);
 		}
-		isLoading = false;
-		await InvokeAsync(StateHasChanged);
 	}
 
-	private async Task DecodeFilesJob()
+	private async Task DecodeAllJob()
 	{
-		if (regionId == 0)
+		if (!hasSavedFolders)
 		{
-			ToastService.ShowError("Please select a Region first!", smallTitle: "The region info is necessary to be able to store replays from different regions with the same file name.");
+			SetIdleStatus();
 			return;
 		}
-		await DecodeService.DecodeFromDirectory(regionId);
-		ToastService.ShowSuccess("Decode job finished.");
+
+		isLoading = true;
+		statusMessage = $"Decoding the newest {GetLimitSummary()} from every saved folder...";
+		statusTone = "info";
+		await InvokeAsync(StateHasChanged);
+
+		try
+		{
+			await DecodeService.DecodeAllHandles(selectedDecodeLimit);
+			NotificationService.ShowSuccess("Saved folders decode finished.");
+		}
+		finally
+		{
+			isLoading = false;
+			await InvokeAsync(StateHasChanged);
+		}
 	}
 
 	private async Task DecodeDirHandleJob(string key)
 	{
-		await DecodeService.DecodeFromDirectory(regionId, key);
-		ToastService.ShowSuccess("Decode job finished.");
+		var folderName = dirHandleEntries.FirstOrDefault(entry => entry.Key == key)?.DisplayName ?? "Saved folder";
+
+		isLoading = true;
+		statusMessage = $"Decoding the newest {GetLimitSummary()} from {folderName}...";
+		statusTone = "info";
+		await InvokeAsync(StateHasChanged);
+
+		try
+		{
+			await DecodeService.DecodeFromDirectory(key, selectedDecodeLimit);
+			NotificationService.ShowSuccess($"Decode finished for {folderName}.");
+		}
+		finally
+		{
+			isLoading = false;
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+
+	private async Task UploadJob()
+	{
+		isLoading = true;
+		statusMessage = "Preparing replay upload...";
+		statusTone = "info";
+		await InvokeAsync(StateHasChanged);
+
+		try
+		{
+			await DecodeService.Upload10(dbService);
+		}
+		finally
+		{
+			isLoading = false;
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+
+	private void CancelJob()
+	{
+		DecodeService.Cancel();
+		statusMessage = "Cancelling current decode job...";
+		statusTone = "warning";
+	}
+
+	private string GetLimitSummary()
+	{
+		return selectedDecodeLimit == 0 ? "all new replays" : $"{selectedDecodeLimit} newest replay{(selectedDecodeLimit == 1 ? string.Empty : "s")}";
+	}
+
+	private static string GetLimitLabel(int limit)
+	{
+		return limit == 0 ? "All" : limit.ToString();
+	}
+
+	private string GetLimitButtonClass(int limit)
+	{
+		return limit == selectedDecodeLimit ? "btn btn-primary" : "btn btn-outline-primary";
+	}
+
+	private string GetStatusAlertClass()
+	{
+		return statusTone switch
+		{
+			"success" => "alert-success",
+			"warning" => "alert-warning",
+			"danger" => "alert-danger",
+			"secondary" => "alert-secondary",
+			_ => "alert-info"
+		};
+	}
+
+	private static string BuildDecodeStatusMessage(DecodeInfoEventArgs decodeInfo)
+	{
+		if (!decodeInfo.Finished)
+		{
+			return decodeInfo.Info ?? "Decoding in progress...";
+		}
+
+		if (decodeInfo.Total == 0 && decodeInfo.Error == 0)
+		{
+			return "No new replays were found for this run.";
+		}
+
+		if (decodeInfo.Successful > 0 && decodeInfo.Error == 0)
+		{
+			return $"Decoded {decodeInfo.Successful} replay{(decodeInfo.Successful == 1 ? string.Empty : "s")}.";
+		}
+
+		if (decodeInfo.Successful > 0)
+		{
+			return $"Decoded {decodeInfo.Successful} replay{(decodeInfo.Successful == 1 ? string.Empty : "s")} with {decodeInfo.Error} error{(decodeInfo.Error == 1 ? string.Empty : "s")}.";
+		}
+
+		if (decodeInfo.Error > 0)
+		{
+			return $"No replays were decoded. {decodeInfo.Error} error{(decodeInfo.Error == 1 ? string.Empty : "s")} occurred.";
+		}
+
+		return decodeInfo.Info ?? "Decode finished.";
+	}
+
+	private static string GetDecodeStatusTone(DecodeInfoEventArgs decodeInfo)
+	{
+		if (!decodeInfo.Finished)
+		{
+			return "info";
+		}
+
+		if (decodeInfo.Total == 0 && decodeInfo.Error == 0)
+		{
+			return "secondary";
+		}
+
+		return decodeInfo.Error > 0 ? "warning" : "success";
 	}
 
 	public void Dispose()

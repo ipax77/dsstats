@@ -1,22 +1,29 @@
 ﻿using dsstats.indexedDb.Services;
 using dsstats.parser;
+using dsstats.pwa.Clients;
 using dsstats.shared;
 using s2protocol.NET;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using static dsstats.indexedDb.Services.IndexedDbService;
 
 namespace dsstats.pwa.Services;
 
-public partial class DecodeService
+public partial class DecodeService : IDisposable
 {
     private readonly IServiceScopeFactory scopeFactory;
     private readonly ILogger<DecodeService> logger;
     private readonly PwaConfigService pwaConfigService;
     private readonly IHttpClientFactory httpClientFactory;
-    private CancellationTokenSource cts = new();
+    private readonly CancellationTokenSource cts = new();
+    private CancellationTokenSource? decodeCts;
     private readonly SemaphoreSlim ss = new(1, 1);
     public bool Decoding { get; private set; }
+    public ReplayDto? LatestReplay { get; private set; }
+    public string? LatestReplayHash { get; private set; }
+    public static readonly Version Version = new(1, 0);
+    private int _currentWorkerCount = -1;
 
     public DecodeService(IServiceScopeFactory scopeFactory, IHttpClientFactory httpClientFactory,
                          ILogger<DecodeService> logger, PwaConfigService pwaConfigService)
@@ -27,6 +34,9 @@ public partial class DecodeService
         this.pwaConfigService = pwaConfigService;
     }
     int replaysDecoded = 0;
+    private DecodeClient? _decodeClient;
+
+    // Used only by DecodeFromStream (single-file upload path, no worker needed).
     private readonly ReplayDecoder decoder = new ReplayDecoder();
     private readonly ReplayDecoderOptions decoderOptions = new()
     {
@@ -39,18 +49,52 @@ public partial class DecodeService
         AttributeEvents = false,
     };
 
+    [SupportedOSPlatform("browser")]
+    private async Task EnsureWorkersAsync(int cpuCores)
+    {
+        if (_decodeClient != null && _currentWorkerCount == cpuCores)
+            return;
+
+        if (_decodeClient != null)
+        {
+            await _decodeClient.DisposeAsync(); // terminate old workers
+            _decodeClient = null;
+        }
+
+        _decodeClient = new DecodeClient();
+        await _decodeClient.InitAsync(cpuCores);
+
+        _currentWorkerCount = cpuCores;
+    }
+    
+    [SupportedOSPlatform("browser")]
+    private async Task TeardownWorkersAsync()
+    {
+        if (_decodeClient is null) return;
+        await _decodeClient.DisposeAsync();
+        _decodeClient = null;
+    }
+
     public event EventHandler<DecodeInfoEventArgs>? DecodeStateChanged;
+    public event EventHandler? PromptForUpload;
+    private int _decodeCompletionsWithoutUpload = 0;
+
     private void OnDecodeStateChanged(DecodeInfoEventArgs e)
     {
         EventHandler<DecodeInfoEventArgs>? handler = DecodeStateChanged;
         handler?.Invoke(this, e);
     }
 
+    private void OnPromptForUpload()
+    {
+        PromptForUpload?.Invoke(this, EventArgs.Empty);
+    }
+
     public async Task<ReplayDto?> DecodeFromStream(Stream stream, string originalFileName)
     {
         await ss.WaitAsync();
         Decoding = true;
-        cts = new();
+        decodeCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
         Stopwatch sw = Stopwatch.StartNew();
         bool success = false;
         string message = string.Empty;
@@ -61,7 +105,7 @@ public partial class DecodeService
 
         try
         {
-            var sc2Replay = await decoder.DecodeAsync(stream, decoderOptions, cts.Token);
+            var sc2Replay = await decoder.DecodeAsync(stream, decoderOptions, decodeCts.Token);
             if (sc2Replay is null)
             {
                 logger.LogWarning("Failed to decode replay from stream.");
@@ -69,10 +113,13 @@ public partial class DecodeService
                 ArgumentNullException.ThrowIfNull(sc2Replay, message);
             }
             var replay = DsstatsParser.ParseReplay(sc2Replay, compat: true);
-            await dbService.UpsertReplayAsync(replay.ComputeHash(), replay);
+            var hash = replay.ComputeHash();
+            await dbService.UpsertReplayAsync(hash, replay);
             logger.LogInformation("Decoded and saved replay from stream: {FileName}", originalFileName);
             success = true;
             replayDto = replay;
+            LatestReplay = replayDto;
+            LatestReplayHash = hash;
         }
         catch (Exception ex)
         {
@@ -87,7 +134,8 @@ public partial class DecodeService
         sw.Stop();
         OnDecodeStateChanged(new DecodeInfoEventArgs
         {
-            Done = success ? 1 : 0,
+            Done = 1,
+            Successful = success ? 1 : 0,
             Total = 1,
             Error = success ? 0 : 1,
             Elapsed = sw.Elapsed,
@@ -102,11 +150,18 @@ public partial class DecodeService
         {
             await Upload10(dbService);
         }
+        else
+        {
+            _decodeCompletionsWithoutUpload++;
+            if (_decodeCompletionsWithoutUpload == 1 || _decodeCompletionsWithoutUpload % 10 == 0)
+                OnPromptForUpload();
+        }
 
         return replayDto;
     }
 
-    public async Task DecodeFromDirectory(int regionId, string? dirKey = null)
+    [SupportedOSPlatform("browser")]
+    public async Task DecodeFromDirectoryObsolete(int regionId, string? dirKey = null, int limit = 100)
     {
         await ss.WaitAsync();
 
@@ -120,10 +175,11 @@ public partial class DecodeService
         }
 
         Decoding = true;
-        cts = new();
+        decodeCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
         Stopwatch sw = Stopwatch.StartNew();
         ConcurrentBag<string> failedReplays = [];
         ConcurrentBag<string> decodedReplays = [];
+        int totalFiles = 0;
         var config = await pwaConfigService.GetConfig();
         using var scope = scopeFactory.CreateAsyncScope();
         var dbService = scope.ServiceProvider.GetRequiredService<IndexedDbService>();
@@ -135,14 +191,30 @@ public partial class DecodeService
             logger.LogInformation("Found {Count} existing replay paths in database.", existingPaths.Count);
 
 
-            var fileInfos = await dbService.PickDirectoryInit(regionId, config.ReplayStartName, dirKey);
+            var fileInfos = await dbService.PickDirectoryInit(config.ReplayStartName, dirKey, limit);
+            totalFiles = fileInfos.Count;
 
             logger.LogInformation("Starting decoding of {FileCount} replays...", fileInfos.Count);
+            OnDecodeStateChanged(new DecodeInfoEventArgs
+            {
+                Done = 0,
+                Total = totalFiles,
+                Error = 0,
+                Elapsed = sw.Elapsed,
+                Eta = TimeSpan.Zero,
+                Saving = false,
+                Finished = false,
+                Info = $"Starting decode of {totalFiles} replays..."
+            });
+            await EnsureWorkersAsync(config.CPUCores);
             var options = new ParallelOptions
             {
                 MaxDegreeOfParallelism = config.CPUCores,
-                CancellationToken = cts.Token
+                CancellationToken = decodeCts.Token
             };
+
+            var lastUpdate = Stopwatch.StartNew();
+            var updateInterval = TimeSpan.FromMilliseconds(500);
 
             await Parallel.ForEachAsync(fileInfos, options, async (fileInfo, ct) =>
             {
@@ -157,19 +229,33 @@ public partial class DecodeService
                     failedReplays.Add(fileInfo.Path);
                     logger.LogWarning("Failed to decode replay: {Path}, Reason: {Reason}", fileInfo.Path, result.Message);
                 }
-                if (replaysDecoded % 5 == 0)
+
+                var current = Interlocked.Increment(ref replaysDecoded);
+
+                if (lastUpdate.Elapsed >= updateInterval)
                 {
-                    OnDecodeStateChanged(new DecodeInfoEventArgs
+                    lock (lastUpdate)
                     {
-                        Done = replaysDecoded,
-                        Total = fileInfos.Count,
-                        Error = failedReplays.Count,
-                        Elapsed = sw.Elapsed,
-                        Eta = TimeSpan.FromTicks(sw.Elapsed.Ticks * (fileInfos.Count - replaysDecoded) / Math.Max(replaysDecoded, 1)),
-                        Saving = false,
-                        Finished = false,
-                        Info = $"Decoded: {replaysDecoded}, Failed: {failedReplays.Count}"
-                    });
+                        if (lastUpdate.Elapsed >= updateInterval)
+                        {
+                            lastUpdate.Restart();
+
+                            OnDecodeStateChanged(new DecodeInfoEventArgs
+                            {
+                                Done = current,
+                                Successful = current - failedReplays.Count,
+                                Total = totalFiles,
+                                Error = failedReplays.Count,
+                                Elapsed = sw.Elapsed,
+                                Eta = TimeSpan.FromTicks(
+                                    sw.Elapsed.Ticks * (totalFiles - current) / Math.Max(current, 1)
+                                ),
+                                Saving = false,
+                                Finished = false,
+                                Info = $"Decoded: {current}, Failed: {failedReplays.Count}"
+                            });
+                        }
+                    }
                 }
             });
         }
@@ -184,6 +270,8 @@ public partial class DecodeService
         finally
         {
             Decoding = false;
+            if (decodeCts.IsCancellationRequested)
+                await TeardownWorkersAsync();
             ss.Release();
         }
         sw.Stop();
@@ -191,8 +279,9 @@ public partial class DecodeService
          replaysDecoded, sw.Elapsed.TotalMinutes.ToString("N2"));
         OnDecodeStateChanged(new DecodeInfoEventArgs
         {
-            Done = replaysDecoded,
-            Total = replaysDecoded,
+            Done = replaysDecoded + failedReplays.Count,
+            Successful = replaysDecoded,
+            Total = totalFiles,
             Error = failedReplays.Count,
             Elapsed = sw.Elapsed,
             Eta = TimeSpan.Zero,
@@ -205,135 +294,91 @@ public partial class DecodeService
         {
             await Upload10(dbService);
         }
+        else
+        {
+            _decodeCompletionsWithoutUpload++;
+            if (_decodeCompletionsWithoutUpload == 1 || _decodeCompletionsWithoutUpload % 10 == 0)
+                OnPromptForUpload();
+        }
     }
 
+    [SupportedOSPlatform("browser")]
+    public async Task TriggerUploadAsync()
+    {
+        using var scope = scopeFactory.CreateAsyncScope();
+        var dbService = scope.ServiceProvider.GetRequiredService<IndexedDbService>();
+        await Upload10(dbService);
+    }
+
+    [SupportedOSPlatform("browser")]
+    public async Task<string?> AddDirectoryHandle()
+    {
+        using var scope = scopeFactory.CreateAsyncScope();
+        var dbService = scope.ServiceProvider.GetRequiredService<IndexedDbService>();
+        var config = await pwaConfigService.GetConfig();
+        return await dbService.PickDirectoryHandle(config.ReplayStartName);
+    }
+
+    [SupportedOSPlatform("browser")]
     private async Task<DecodeResult> TryDecodeReplay(string path, IndexedDbService dbService, CancellationToken token)
     {
         try
         {
+            // File read: JSInterop — must stay on main thread
             var streamRef = await dbService.GetFileContent(path);
-            using var stream = await streamRef.OpenReadStreamAsync(maxAllowedSize: 5_000_000, token); // 5MB
+            using var stream = await streamRef.OpenReadStreamAsync(maxAllowedSize: 5_000_000, token);
             var ms = new MemoryStream();
             await stream.CopyToAsync(ms, token);
-            ms.Position = 0;
 
-            var sc2Replay = await decoder.DecodeAsync(ms, decoderOptions, token);
-            if (sc2Replay is null)
-            {
-                return new DecodeResult
-                {
-                    Success = false,
-                    Message = "Failed to decode replay.",
-                    Path = path
-                };
-            }
-            var replay = DsstatsParser.ParseReplay(sc2Replay, compat: true);
+            token.ThrowIfCancellationRequested();
+
+            // CPU-heavy decode: dispatched to Web Worker
+            var (success, error, hash, replay) = await _decodeClient!.DecodeAsync(ms.ToArray(), token);
+            if (!success || replay is null)
+                return new DecodeResult { Success = false, Message = error ?? "Worker decode error", Path = path };
+
             replay.FileName = path;
-            await dbService.UpsertReplayAsync(replay.ComputeHash(), replay);
+
+            // IndexedDB write: JSInterop — must stay on main thread
+            await dbService.UpsertReplayAsync(hash!, replay);
             Interlocked.Increment(ref replaysDecoded);
-            return new DecodeResult
-            {
-                Success = true,
-                Message = "Replay decoded successfully.",
-                Replay = replay,
-                Path = path
-            };
+            LatestReplay = replay;
+            LatestReplayHash = hash;
+            return new DecodeResult { Success = true, Message = "Replay decoded successfully.", Replay = replay, Path = path };
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
-            return new DecodeResult
-            {
-                Success = false,
-                Message = ex.Message,
-                Path = path
-            };
+            return new DecodeResult { Success = false, Message = ex.Message, Path = path };
         }
     }
 
-    public async Task DecodeAllFromDirectory(int regionId, string? dirKey = null)
+    [SupportedOSPlatform("browser")]
+    public async Task DecodeAllHandles(int limit = 0)
     {
-        await ss.WaitAsync();
-        Decoding = true;
-        cts = new();
-        Stopwatch sw = Stopwatch.StartNew();
-        ConcurrentBag<string> failedReplays = [];
-        var config = await pwaConfigService.GetConfig();
-
         using var scope = scopeFactory.CreateAsyncScope();
         var dbService = scope.ServiceProvider.GetRequiredService<IndexedDbService>();
+        var entries = await dbService.GetAllDirectoryHandleEntries();
+        var aggregateState = new DecodeAggregateState();
 
-        try
+        // Request all folder permissions up-front while the user gesture is still active.
+        // Sequential calls chain off each other's activation (user clicks "Allow" → new activation).
+        // This is best-effort; even if a dialog is skipped, DecodeFromDirectory handles it gracefully (0 files).
+        await dbService.VerifyAllDirectoryPermissions(entries.Select(e => e.Key).ToList());
+
+        foreach (var entry in entries)
         {
-            replaysDecoded = 0;
-            var existingPaths = await dbService.GetExistingPaths();
-
-            int batchIndex = 0;
-            while (true)
-            {
-                // Ask frontend for the next batch of up to 100
-                var fileInfos = await dbService.PickDirectoryInit(regionId, config.ReplayStartName, dirKey);
-
-                if (fileInfos.Count == 0)
-                    break; // no more new replays
-
-                logger.LogInformation("Decoding batch {Batch} with {Count} replays", ++batchIndex, fileInfos.Count);
-
-                await DecodeBatch(fileInfos, dbService, failedReplays, sw, config.CPUCores);
-
-                // Extend the "already decoded" list so we don’t get duplicates
-                foreach (var fi in fileInfos)
-                    existingPaths.Add(fi.Path);
-            }
+            if (cts.IsCancellationRequested) break;
+            await DecodeFromDirectory(entry.Key, limit, aggregateState);
         }
-        finally
-        {
-            Decoding = false;
-            ss.Release();
-        }
-
-        sw.Stop();
-        logger.LogInformation("Finished decoding {Count} replays", replaysDecoded);
     }
-
-    private async Task DecodeBatch(IEnumerable<FileInfoRecord> files,
-                               IndexedDbService dbService,
-                               ConcurrentBag<string> failedReplays,
-                               Stopwatch sw,
-                               int maxParallelism)
-    {
-        var options = new ParallelOptions
-        {
-            MaxDegreeOfParallelism = maxParallelism,
-            CancellationToken = cts.Token
-        };
-
-        await Parallel.ForEachAsync(files, options, async (fileInfo, ct) =>
-        {
-            var result = await TryDecodeReplay(fileInfo.Path, dbService, ct);
-            if (!result.Success)
-                failedReplays.Add(fileInfo.Path);
-
-            if (replaysDecoded % 5 == 0)
-            {
-                OnDecodeStateChanged(new DecodeInfoEventArgs
-                {
-                    Done = replaysDecoded,
-                    Total = -1,
-                    Error = failedReplays.Count,
-                    Elapsed = sw.Elapsed,
-                    Eta = TimeSpan.Zero,
-                    Saving = false,
-                    Finished = false,
-                    Info = $"Decoded: {replaysDecoded}, Failed: {failedReplays.Count}"
-                });
-            }
-        });
-    }
-
 
     public void Cancel()
     {
-        cts.Cancel();
+        decodeCts?.Cancel();
     }
 
     internal sealed class DecodeResult
@@ -343,11 +388,19 @@ public partial class DecodeService
         public ReplayDto? Replay { get; set; }
         public string Path { get; set; } = string.Empty;
     }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+        decodeCts?.Dispose();
+    }
 }
 
 public class DecodeInfoEventArgs : EventArgs
 {
     public int Done { get; set; }
+    public int Successful { get; set; }
     public int Total { get; set; }
     public int Error { get; set; }
     public TimeSpan Eta { get; set; }

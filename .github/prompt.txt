@@ -1,4 +1,13 @@
-We changed the 'replay production' so we need to deploy a new version for mydsstats (PWA app), dsstats.maui (MAUI app) and the dsstats.service (Windows service)
-We have a deploy script for mydsstats on the server, so this should not be a problem
-The deploy script for the service (src\service\deploy.ps1) should also work (we need to make sure we increse the version)
-For maui we manually upload the result of src\maui\build.ps1, but we also have to make sure to encrese the version
+If we have multiple replay folders, the first 'allow floder access' question shows up, but not the following after pressing 'decode all'
+Add a 'decode cancel button' to the TopRow - since can start it from here, we should also be able to stop it there.
+Add header line 'Latest Replay' on top of Laterst Replay on Home page.
+In src\common\dsstats.weblib\Replays\ReplayComponent.razor this is dangerouse, since we also use the component for the server (Blazor server), we need a better way to identify the PWA (and MAUI) app:
+            @if (OperatingSystem.IsWindows() || OperatingSystem.IsBrowser())
+				{
+					<div class="col-auto">
+						<button type="button" class="btn btn-sm btn-outline-light"
+								@onclick="() => _replayHelper.ShowFileName = !_replayHelper.ShowFileName">
+							@(_replayHelper.ShowFileName ? "Hide" : "Show") File Name
+						</button>
+					</div>
+				}

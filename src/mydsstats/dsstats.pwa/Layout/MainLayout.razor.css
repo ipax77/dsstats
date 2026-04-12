@@ -6,14 +6,13 @@
 
     .page::before {
         content: '';
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
         background-image: url('/_content/dsstats.weblib/images/bgbing_soft.jpg');
         background-repeat: repeat;
-        background-attachment: fixed;
         background-position: center;
         z-index: -1;
     }

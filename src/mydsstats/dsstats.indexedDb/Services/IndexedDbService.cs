@@ -13,13 +13,20 @@ public class IndexedDbService
         _moduleTask = js.InvokeAsync<IJSObjectReference>("import", "./_content/dsstats.indexedDb/js/dsstatsDb.js").AsTask();
     }
 
-    public async ValueTask UpsertReplayAsync(string replayHash, ReplayDto replay)
+    public async ValueTask UpsertReplayAsync(string replayHash, ReplayDto replay, long size = 0, long lastModified = 0)
     {
         replay.CompatHash = replayHash;
         var module = await _moduleTask;
         await module.InvokeVoidAsync("saveReplayFull", replayHash, replay,
             new ReplayListPwaDto(replay, replayHash),
-            new ReplayMeta() { ReplayHash = replayHash, FilePath = replay.FileName, RegionId = replay.RegionId }
+            new ReplayMeta()
+            {
+                ReplayHash = replayHash,
+                FilePath = replay.FileName,
+                RegionId = replay.RegionId,
+                Size = size,
+                LastModified = lastModified
+            }
         );
     }
 
@@ -29,10 +36,28 @@ public class IndexedDbService
         return await module.InvokeAsync<ReplayDto?>($"getReplayByHash", replayHash);
     }
 
+    public async Task SaveReplayRatingAsync(string replayHash, ReplayRatingDto rating)
+    {
+        var module = await _moduleTask;
+        await module.InvokeVoidAsync("saveReplayRating", replayHash, rating);
+    }
+
+    public async Task<ReplayRatingDto?> GetReplayRatingAsync(string replayHash)
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<ReplayRatingDto?>("getReplayRating", replayHash);
+    }
+
     public async Task<int> GetFilteredReplayListsCountAsync(ReplayFilter filter)
     {
         var module = await _moduleTask;
         return await module.InvokeAsync<int>("getFilteredReplayListsCount", filter);
+    }
+
+    public async Task<int> GetTotalReplayCountAsync()
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<int>("getFilteredReplayListsCount", new { });
     }
 
     public async Task<List<ReplayListDto>> GetFilteredReplayListsAsync(ReplayFilter filter)
@@ -42,10 +67,16 @@ public class IndexedDbService
         return list;
     }
 
-    public async Task<List<FileInfoRecord>> PickDirectoryInit(int regionId, string startName, string? dirKey, int limit = 100)
+    public async Task<List<FileInfoRecord>> PickDirectoryInit(string startName, string? dirKey, int limit = 100)
     {
         var module = await _moduleTask;
-        return await module.InvokeAsync<List<FileInfoRecord>>("pickDirectoryInit", regionId, startName, dirKey, limit);
+        return await module.InvokeAsync<List<FileInfoRecord>>("pickDirectoryInit", startName, dirKey, limit);
+    }
+
+    public async Task<string?> PickDirectoryHandle(string startName)
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<string?>("pickDirectoryHandle", startName);
     }
 
     public async Task<IJSStreamReference> GetFileContent(string path)
@@ -97,6 +128,48 @@ public class IndexedDbService
         await module.InvokeVoidAsync("saveConfig", config);
     }
 
+    public async Task<List<TrackedProfileDto>> GetTrackedProfiles()
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<List<TrackedProfileDto>>("getTrackedProfiles");
+    }
+
+    public async Task SaveTrackedProfiles(List<TrackedProfileDto> profiles)
+    {
+        var module = await _moduleTask;
+        await module.InvokeVoidAsync("saveTrackedProfiles", profiles);
+    }
+
+    public async Task<SessionWindowSettingsDto?> GetSessionWindowSettings()
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<SessionWindowSettingsDto?>("getSessionWindowSettings");
+    }
+
+    public async Task SaveSessionWindowSettings(SessionWindowSettingsDto settings)
+    {
+        var module = await _moduleTask;
+        await module.InvokeVoidAsync("saveSessionWindowSettings", settings);
+    }
+
+    public async Task<List<ProfileCandidateDto>> DetectTrackedProfileCandidates(int replayLimit = 10)
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<List<ProfileCandidateDto>>("detectTrackedProfileCandidates", replayLimit);
+    }
+
+    public async Task<List<string>> GetRecentReplayHashes(int limit)
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<List<string>>("getRecentReplayHashes", limit);
+    }
+
+    public async Task<List<string>> GetReplayHashesSince(DateTime fromUtc)
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<List<string>>("getReplayHashesSince", fromUtc.ToUniversalTime().ToString("O"));
+    }
+
     public async Task TriggerBackup()
     {
         var module = await _moduleTask;
@@ -122,10 +195,34 @@ public class IndexedDbService
         return await module.InvokeAsync<List<string>>("exportAllDirectoryHandles");
     }
 
+    public async ValueTask<List<string>> VerifyAllDirectoryPermissions(List<string> keys)
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<List<string>>("verifyAllDirectoryPermissions", keys);
+    }
+
+    public async ValueTask<List<DirHandleEntry>> GetAllDirectoryHandleEntries()
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<List<DirHandleEntry>>("exportAllDirectoryHandleEntries");
+    }
+
+    public async ValueTask RenameDirectoryHandle(string key, string newDisplayName)
+    {
+        var module = await _moduleTask;
+        await module.InvokeVoidAsync("renameDirectoryHandle", key, newDisplayName);
+    }
+
     public async ValueTask<bool> DeleteDirectoryHandle(string key)
     {
         var module = await _moduleTask;
         return await module.InvokeAsync<bool>("delDirectoryHandle", key);
+    }
+
+    public sealed class DirHandleEntry
+    {
+        public string Key { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
     }
 
     public sealed class FileInfoRecord
@@ -164,6 +261,8 @@ public class IndexedDbService
         public int RegionId { get; set; }
         public int Uploaded { get; set; }
         public bool Skip { get; set; }
+        public long Size { get; set; }
+        public long LastModified { get; set; }
     }
 }
 

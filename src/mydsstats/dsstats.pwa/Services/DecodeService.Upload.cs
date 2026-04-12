@@ -38,7 +38,7 @@ public partial class DecodeService
                 UploadRequestDto uploadStepDto = new()
                 {
                     AppGuid = config.AppGuid,
-                    AppVersion = config.ConfigVersion,
+                    AppVersion = $"myds{Version}",
                     RequestNames = [],
                 };
                 var content = new ByteArrayContent(exportResult.Payload);

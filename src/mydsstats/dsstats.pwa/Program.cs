@@ -5,7 +5,6 @@ using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using pax.BBToast;
 using pax.BlazorChartJs;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -18,10 +17,13 @@ builder.Services.Configure<HostOptions>(options =>
 });
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+
+// var isProduction = builder.HostEnvironment.IsProduction();
+var isProduction = false; // DEBUG
+
 builder.Services.AddHttpClient("ApiClient", client =>
 {
-    var env = builder.HostEnvironment;
-    client.BaseAddress = env.IsProduction()
+    client.BaseAddress = isProduction
         ? new Uri("https://dsstats.pax77.org")
         : new Uri("http://localhost:5279");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -30,8 +32,7 @@ builder.Services.AddHttpClient("ApiClient", client =>
 
 builder.Services.AddHttpClient("api", client =>
 {
-    var env = builder.HostEnvironment;
-    client.BaseAddress = env.IsProduction()
+    client.BaseAddress = isProduction
         ? new Uri("https://dsstats.pax77.org")
         : new Uri("http://localhost:5279");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -44,13 +45,15 @@ builder.Services.AddChartJs(options =>
     options.ChartJsLocation = $"/_content/dsstats.weblib/js/chart.umd.min.js?v={version}";
     options.ChartJsPluginDatalabelsLocation = "/_content/dsstats.weblib/js/chartjs-plugin-annotation.min.js";
 });
-builder.Services.AddBbToast();
 
 
 builder.Services.AddScoped<IndexedDbService>();
+builder.Services.AddSingleton<AppNotificationService>();
 builder.Services.AddSingleton<PwaConfigService>();
 builder.Services.AddScoped<BackupService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
+builder.Services.AddScoped<RatingService>();
+builder.Services.AddScoped<SessionProgressService>();
 builder.Services.AddScoped<IPlayerService, dsstats.apiServices.PlayerService>();
 builder.Services.AddScoped<IStatsService, dsstats.apiServices.StatsService>();
 

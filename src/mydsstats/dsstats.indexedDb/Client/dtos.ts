@@ -1,5 +1,24 @@
 // dto.ts v1.0
 
+export interface ToonId { region: number; realm: number; id: number; }
+
+export interface ReplayPlayerRatingDto {
+    ratingBefore: number;
+    ratingDelta: number;
+    games: number;
+    toonId: ToonId;
+}
+
+export interface ReplayRatingDto {
+    replayHash?: string;
+    ratingType: number;
+    leaverType: number;
+    expectedWinProbability: number;
+    isPreRating: boolean;
+    avgRating: number;
+    replayPlayerRatings: ReplayPlayerRatingDto[];
+}
+
 export interface TableOrder {
     name: string;
     ascending: boolean;
@@ -22,6 +41,26 @@ export interface PwaConfig {
     ignoreReplays: string[];
     replayStartname: string;
     culture: string;
+}
+
+export interface TrackedProfileDto {
+    name: string;
+    toonId: ToonIdDto;
+    active: boolean;
+    autoDetected: boolean;
+}
+
+export interface ProfileCandidateDto {
+    name: string;
+    toonId: ToonIdDto;
+    count: number;
+}
+
+export interface SessionWindowSettingsDto {
+    mode: number;
+    hours: number;
+    replayCount: number;
+    gameMode: number;
 }
 
 export interface ExportedReplays {
@@ -47,6 +86,8 @@ export interface ReplayMeta {
     regionId: number;
     uploaded: number;
     skip: boolean;
+    size?: number;
+    lastModified?: number;
 }
 
 export interface ReplayDto {
@@ -150,3 +191,14 @@ export interface FileInfo {
 export interface FileContentRecord {
     contentBase64: string;
 }
+
+export type FingerprintFile = {
+  name: string;
+  size: number;
+  lastModified: number;
+};
+
+export type DirectoryFingerprint = {
+  version: 1;
+  files: FingerprintFile[]; // ~10–20 entries
+};
