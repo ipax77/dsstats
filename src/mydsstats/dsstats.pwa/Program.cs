@@ -17,10 +17,13 @@ builder.Services.Configure<HostOptions>(options =>
 });
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+
+// var isProduction = builder.HostEnvironment.IsProduction();
+var isProduction = false; // DEBUG
+
 builder.Services.AddHttpClient("ApiClient", client =>
 {
-    var env = builder.HostEnvironment;
-    client.BaseAddress = env.IsProduction()
+    client.BaseAddress = isProduction
         ? new Uri("https://dsstats.pax77.org")
         : new Uri("http://localhost:5279");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -29,8 +32,7 @@ builder.Services.AddHttpClient("ApiClient", client =>
 
 builder.Services.AddHttpClient("api", client =>
 {
-    var env = builder.HostEnvironment;
-    client.BaseAddress = env.IsProduction()
+    client.BaseAddress = isProduction
         ? new Uri("https://dsstats.pax77.org")
         : new Uri("http://localhost:5279");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
