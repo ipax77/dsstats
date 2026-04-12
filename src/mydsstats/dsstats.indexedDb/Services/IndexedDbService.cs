@@ -13,13 +13,20 @@ public class IndexedDbService
         _moduleTask = js.InvokeAsync<IJSObjectReference>("import", "./_content/dsstats.indexedDb/js/dsstatsDb.js").AsTask();
     }
 
-    public async ValueTask UpsertReplayAsync(string replayHash, ReplayDto replay)
+    public async ValueTask UpsertReplayAsync(string replayHash, ReplayDto replay, long size = 0, long lastModified = 0)
     {
         replay.CompatHash = replayHash;
         var module = await _moduleTask;
         await module.InvokeVoidAsync("saveReplayFull", replayHash, replay,
             new ReplayListPwaDto(replay, replayHash),
-            new ReplayMeta() { ReplayHash = replayHash, FilePath = replay.FileName, RegionId = replay.RegionId }
+            new ReplayMeta()
+            {
+                ReplayHash = replayHash,
+                FilePath = replay.FileName,
+                RegionId = replay.RegionId,
+                Size = size,
+                LastModified = lastModified
+            }
         );
     }
 
@@ -254,6 +261,8 @@ public class IndexedDbService
         public int RegionId { get; set; }
         public int Uploaded { get; set; }
         public bool Skip { get; set; }
+        public long Size { get; set; }
+        public long LastModified { get; set; }
     }
 }
 

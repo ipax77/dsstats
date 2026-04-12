@@ -10,6 +10,7 @@ export interface StoredDirHandle {
   fingerprint: DirectoryFingerprint | null;
   status: "bound" | "unbound";
   lastBoundAt?: number;
+  lastScannedAt?: number;
 }
 
 // ── internal helpers ──────────────────────────────────────────────────────────
@@ -128,6 +129,17 @@ export async function updateDirectoryFingerprint(rootKey: string, fingerprint: D
       );
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
+    });
+}
+
+export async function updateDirectoryScanState(rootKey: string, lastScannedAt: number) {
+    const existing = await getAllStoredEntries();
+    const target = existing.find((e) => e.key === rootKey);
+    if (!target) throw new Error(`Handle key "${rootKey}" not found.`);
+
+    await updateDirectoryHandle(rootKey, {
+      ...target.entry,
+      lastScannedAt
     });
 }
 
@@ -268,4 +280,3 @@ export function matchesFingerprint(
   // threshold tuning
   return matches >= Math.ceil(fingerprint.files.length * 0.5);
 }
-

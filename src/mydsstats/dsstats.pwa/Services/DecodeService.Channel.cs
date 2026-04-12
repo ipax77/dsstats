@@ -70,7 +70,7 @@ public partial class DecodeService
                         await stream.CopyToAsync(ms, decodeCts.Token);
 
                         await readChannel.Writer.WriteAsync(
-                            new ReadItem(file.Path, ms.ToArray()),
+                            new ReadItem(file.Path, file.Size, file.LastModified, ms.ToArray()),
                             decodeCts.Token
                         );
                     }
@@ -93,6 +93,8 @@ public partial class DecodeService
                         await decodeChannel.Writer.WriteAsync(
                             new DecodedItem(
                                 item.Path,
+                                item.Size,
+                                item.LastModified,
                                 success && replay != null,
                                 error,
                                 hash,
@@ -104,7 +106,7 @@ public partial class DecodeService
                     catch (Exception ex)
                     {
                         await decodeChannel.Writer.WriteAsync(
-                            new DecodedItem(item.Path, false, ex.Message, null, null),
+                            new DecodedItem(item.Path, item.Size, item.LastModified, false, ex.Message, null, null),
                             decodeCts.Token
                         );
                     }
@@ -126,7 +128,7 @@ public partial class DecodeService
                     {
                         item.Replay.FileName = item.Path;
 
-                        await dbService.UpsertReplayAsync(item.Hash!, item.Replay);
+                        await dbService.UpsertReplayAsync(item.Hash!, item.Replay, item.Size, item.LastModified);
 
                         Interlocked.Increment(ref replaysDecoded);
 
@@ -274,5 +276,5 @@ public partial class DecodeService
     }
 }
 
-record ReadItem(string Path, byte[] Data);
-record DecodedItem(string Path, bool Success, string? Error, string? Hash, ReplayDto? Replay);
+record ReadItem(string Path, long Size, long LastModified, byte[] Data);
+record DecodedItem(string Path, long Size, long LastModified, bool Success, string? Error, string? Hash, ReplayDto? Replay);

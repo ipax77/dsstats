@@ -48,6 +48,7 @@ describe('getReplaysFromFolder', () => {
         vi.spyOn(fileHandleRepository, 'addDirectoryHandle').mockImplementation(async (handle) => (handle as any).name);
         vi.spyOn(fileHandleRepository, 'verifyDirectoryPermission').mockResolvedValue(true);
         vi.spyOn(fileHandleRepository, 'updateDirectoryFingerprint').mockResolvedValue();
+        vi.spyOn(fileHandleRepository, 'updateDirectoryScanState').mockResolvedValue();
 
         // Mock window.showDirectoryPicker
         Object.defineProperty(window, 'showDirectoryPicker', {
@@ -175,6 +176,43 @@ describe('getReplaysFromFolder', () => {
 
         expect(result).toHaveLength(1);
         expect(result[0].path).toBe('restored-root/replay2.txt');
+    });
+
+    it('should re-include a legacy meta path when the file was modified after the last bound scan time', async () => {
+        const oldModified = Date.now() - 20_000;
+        const newModified = Date.now() - 1_000;
+        const restoredDirHandle = mockDirectoryHandle('restored-folder', {
+            'replay1.txt': mockFileHandle('replay1.txt', mockFile('replay1.txt', 150, newModified)),
+        });
+
+        vi.spyOn(fileHandleRepository, 'getDirectoryHandle').mockResolvedValue({
+            handle: restoredDirHandle,
+            displayName: 'restored-folder',
+            regionId: 0,
+            fingerprint: null,
+            status: 'bound',
+            lastBoundAt: oldModified,
+        });
+
+        const result = await getReplaysFromFolder(
+            'replay',
+            [],
+            10,
+            restoredDirHandle,
+            'restored-root',
+            [
+                {
+                    replayHash: 'hash-1',
+                    filePath: 'restored-root/replay1.txt',
+                    regionId: 1,
+                    uploaded: 0,
+                    skip: false,
+                },
+            ],
+        );
+
+        expect(result).toHaveLength(1);
+        expect(result[0].path).toBe('restored-root/replay1.txt');
     });
 
     it('should limit the number of returned files by count', async () => {

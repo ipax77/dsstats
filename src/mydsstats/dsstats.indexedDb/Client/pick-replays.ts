@@ -1,5 +1,5 @@
 import { DirectoryFingerprint, FileInfo, FileInfoRecord, ReplayMeta } from "./dtos";
-import { addDirectoryHandle, getDirectoryHandleFromUser, selectFingerprintFiles, updateDirectoryFingerprint, verifyDirectoryPermission } from "./file-handle-repository";
+import { addDirectoryHandle, getDirectoryHandle, getDirectoryHandleFromUser, selectFingerprintFiles, updateDirectoryFingerprint, updateDirectoryScanState, verifyDirectoryPermission } from "./file-handle-repository";
 import { getFilesFromFolderRecursive } from "./get-files";
 
 const fileHandleMap = new Map<string, File>();
@@ -22,6 +22,7 @@ export async function getReplaysFromFolder(
 ): Promise<FileInfoRecord[]> {
     fileHandleMap.clear(); // reset
     try {
+        let previousScanTime = 0;
         if (dirHandle === null || dirHandle === undefined) {
             dirHandle = await getDirectoryHandleFromUser();
             if (dirHandle === null || dirHandle === undefined) {
@@ -31,6 +32,11 @@ export async function getReplaysFromFolder(
             rootKey = await addDirectoryHandle(dirHandle, startName, rootKey);
         } else {
             await verifyDirectoryPermission(dirHandle);
+        }
+
+        if (rootKey) {
+            const stored = await getDirectoryHandle(rootKey);
+            previousScanTime = stored?.lastScannedAt ?? stored?.lastBoundAt ?? 0;
         }
 
         // Use the UUID (or dirHandle.name as fallback) as the path root so that
@@ -43,13 +49,12 @@ export async function getReplaysFromFolder(
             pathPrefixes.add(dirHandle.name);
         }
 
-        const metaPaths = metas
+        const relevantMetas = metas
             .filter((meta) =>
                 Array.from(pathPrefixes).some((prefix) => meta.filePath.startsWith(`${prefix}/`))
-            )
-            .map((meta) => meta.filePath);
-
-        const existingSet = new Set([...existingPaths, ...metaPaths]);
+            );
+        const legacyPathSet = new Set([...existingPaths, ...relevantMetas.map((meta) => meta.filePath)]);
+        const metaByPath = new Map(relevantMetas.map((meta) => [meta.filePath, meta]));
         if (rootKey) {
             const fingerprintRecords = selectFingerprintFiles(allRecords);
             const fingerprint: DirectoryFingerprint = {
@@ -61,6 +66,7 @@ export async function getReplaysFromFolder(
                     }))
                 };
             await updateDirectoryFingerprint(rootKey, fingerprint);
+            await updateDirectoryScanState(rootKey, Date.now());
         }
 
         const todoRecords = [];
@@ -71,7 +77,17 @@ export async function getReplaysFromFolder(
                 ? toLegacyPath(currentPath, pathRoot, dirHandle.name)
                 : null;
 
-            if (!existingSet.has(currentPath) && (!legacyPath || !existingSet.has(legacyPath))) {
+            const currentMeta = metaByPath.get(currentPath) ?? (legacyPath ? metaByPath.get(legacyPath) : undefined);
+            const hasExactMetadataMatch = currentMeta !== undefined
+                && currentMeta.size === record.record.size
+                && currentMeta.lastModified === record.record.lastModified;
+            const legacyMetaNeedsRefresh = currentMeta !== undefined
+                && (!currentMeta.size || !currentMeta.lastModified)
+                && previousScanTime > 0
+                && record.record.lastModified > previousScanTime;
+            const pathAlreadyKnown = legacyPathSet.has(currentPath) || (!!legacyPath && legacyPathSet.has(legacyPath));
+
+            if (!pathAlreadyKnown || legacyMetaNeedsRefresh || !hasExactMetadataMatch && currentMeta !== undefined && currentMeta.size !== undefined && currentMeta.lastModified !== undefined) {
                 todoRecords.push(record);
             }
         }

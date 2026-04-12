@@ -86,6 +86,8 @@ export interface ReplayMeta {
     regionId: number;
     uploaded: number;
     skip: boolean;
+    size?: number;
+    lastModified?: number;
 }
 
 export interface ReplayDto {
