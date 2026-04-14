@@ -106,6 +106,8 @@ public partial class RatingService
                     byType.TryGetValue(ratingType, out var existing))
                 {
                     existing.Games = calcDto.Games;
+                    existing.ArcadeGames = calcDto.ArcadeGames;
+                    existing.DsstatsGames = calcDto.DsstatsGames;
                     existing.Wins = calcDto.Wins;
                     existing.Mvps = calcDto.Mvps;
                     existing.Main = mainCmdr;
@@ -123,6 +125,8 @@ public partial class RatingService
                         PlayerId = playerId,
                         RatingType = ratingType,
                         Games = calcDto.Games,
+                        ArcadeGames = calcDto.ArcadeGames,
+                        DsstatsGames = calcDto.DsstatsGames,
                         Wins = calcDto.Wins,
                         Mvps = calcDto.Mvps,
                         Main = mainCmdr,

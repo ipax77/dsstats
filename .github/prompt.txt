@@ -1,13 +1,2 @@
-If we have multiple replay folders, the first 'allow floder access' question shows up, but not the following after pressing 'decode all'
-Add a 'decode cancel button' to the TopRow - since can start it from here, we should also be able to stop it there.
-Add header line 'Latest Replay' on top of Laterst Replay on Home page.
-In src\common\dsstats.weblib\Replays\ReplayComponent.razor this is dangerouse, since we also use the component for the server (Blazor server), we need a better way to identify the PWA (and MAUI) app:
-            @if (OperatingSystem.IsWindows() || OperatingSystem.IsBrowser())
-				{
-					<div class="col-auto">
-						<button type="button" class="btn btn-sm btn-outline-light"
-								@onclick="() => _replayHelper.ShowFileName = !_replayHelper.ShowFileName">
-							@(_replayHelper.ShowFileName ? "Hide" : "Show") File Name
-						</button>
-					</div>
-				}
+We currently have a WinrateStatsProvider here src\server\dsstats.dbServices\Stats\StatsService.cs
+We want to add a SynergyStatsProvider (in a seperate file)

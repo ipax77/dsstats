@@ -26,6 +26,8 @@ public sealed class PlayerCalcDto
 public sealed class PlayerRatingCalcDto
 {
     public int Games { get; set; }
+    public int DsstatsGames { get; set; }
+    public int ArcadeGames { get; set; }
     public int Wins { get; set; }
     public int Mvps { get; set; }
     public double Change { get; set; }

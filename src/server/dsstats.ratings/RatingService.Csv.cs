@@ -77,6 +77,8 @@ public partial class RatingService
                     PlayerId = playerId,
                     RatingType = ratingType,
                     Games = ent.Value.Games,
+                    ArcadeGames = ent.Value.ArcadeGames,
+                    DsstatsGames = ent.Value.DsstatsGames,
                     Wins = ent.Value.Wins,
                     Mvps = ent.Value.Mvps,
                     Main = mainCmdr,
@@ -241,6 +243,8 @@ public class PlayerRatingCsv : ICsvRecord
         PlayerRatingId = rating.PlayerRatingId;
         RatingType = (int)rating.RatingType;
         Games = rating.Games;
+        ArcadeGames = rating.ArcadeGames;
+        DsstatsGames = rating.DsstatsGames;
         Wins = rating.Wins;
         Mvps = rating.Mvps;
         Main = (int)rating.Main;
@@ -259,6 +263,8 @@ public class PlayerRatingCsv : ICsvRecord
     public int PlayerRatingId { get; set; }
     public int RatingType { get; set; }
     public int Games { get; set; }
+    public int ArcadeGames { get; set; }
+    public int DsstatsGames { get; set; }
     public int Wins { get; set; }
     public int Mvps { get; set; }
     public int Main { get; set; }
@@ -270,6 +276,7 @@ public class PlayerRatingCsv : ICsvRecord
     public string LastGame { get; set; }
     public int Position { get; set; }
     public int PlayerId { get; set; }
+
 }
 
 public class ArcadeReplayRatingCsv : ICsvRecord

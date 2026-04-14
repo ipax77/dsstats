@@ -275,6 +275,9 @@ namespace dsstats.migrations.mysql.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("PlayerRatingId"));
 
+                    b.Property<int>("ArcadeGames")
+                        .HasColumnType("int");
+
                     b.Property<int>("Change")
                         .HasColumnType("int");
 
@@ -283,6 +286,9 @@ namespace dsstats.migrations.mysql.Migrations
 
                     b.Property<double>("Consistency")
                         .HasColumnType("double");
+
+                    b.Property<int>("DsstatsGames")
+                        .HasColumnType("int");
 
                     b.Property<int>("Games")
                         .HasColumnType("int");
