@@ -172,3 +172,38 @@ function barIconsPlugin() {
         }
     };
 }
+
+function setSynergyTooltips(chartId, tooltipData) {
+    const chart = Chart.getChart(chartId);
+    if (!chart) {
+        return;
+    }
+
+    chart.options.plugins ??= {};
+    chart.options.plugins.tooltip ??= {};
+    chart.options.plugins.tooltip.callbacks ??= {};
+
+    chart.options.plugins.tooltip.callbacks.label = function (context) {
+        const datasetIndex = context.datasetIndex;
+        const dataIndex = context.dataIndex;
+        const point = tooltipData?.[datasetIndex]?.[dataIndex];
+
+        const normalizedValue = point?.normalized ?? point?.Normalized ?? context.parsed?.r ?? context.raw ?? 0;
+        const normalized = Number(normalizedValue).toFixed(2);
+
+        const games = point?.games ?? point?.Games ?? 0;
+        if (!games) {
+            return `${context.dataset.label}: n=${normalized} (no games)`;
+        }
+
+        const avgGainValue = point?.avgGain ?? point?.AvgGain ?? 0;
+        const winrateValue = point?.winrate ?? point?.Winrate ?? 0;
+        const teammateValue = point?.teammate ?? point?.Teammate ?? "";
+        const avgGain = Number(avgGainValue).toFixed(2);
+        const winratePercent = (Number(winrateValue) * 100).toFixed(1);
+
+        return `${context.dataset.label} + ${teammateValue}: n=${normalized}, AvgGain=${avgGain}, Winrate=${winratePercent}%, Games=${games}`;
+    };
+
+    chart.update();
+}

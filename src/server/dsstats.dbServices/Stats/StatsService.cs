@@ -160,19 +160,26 @@ public class WinrateStatsProvider(DsstatsContext context, IMemoryCache memoryCac
 public static class StatsRequestExtensions
 {
     public static string GetMemKey(this StatsRequest request, StatsType statsType)
+        => GetMemKey(request, statsType, includeInterest: true);
+
+    public static string GetMemKeyWithoutInterest(this StatsRequest request, StatsType statsType)
+        => GetMemKey(request, statsType, includeInterest: false);
+
+    private static string GetMemKey(this StatsRequest request, StatsType statsType, bool includeInterest)
     {
+        var interestPart = includeInterest ? request.Interest.ToString() : "all";
+
         if (request.Filter is null)
         {
-            return $"{statsType}:{request.TimePeriod}|{request.RatingType}|{request.Interest}|{request.WithLeavers}";
+            return $"{statsType}:{request.TimePeriod}|{request.RatingType}|{interestPart}|{request.WithLeavers}";
         }
-        else
-        {
-            return $"{statsType}:{request.RatingType}|{request.Interest}|{request.WithLeavers}"
-                + $"{request.Filter.DateRange.From.ToShortDateString()}|{request.Filter.DateRange.To.ToShortDateString()}"
-                + $"{request.Filter.RatingRange.From}|{request.Filter.RatingRange.To}"
-                + $"{request.Filter.DurationRange.From}|{request.Filter.DurationRange.To}"
-                + $"{request.Filter.Exp2WinRange.From}|{request.Filter.Exp2WinRange.To}";
-        }
+
+        return $"{statsType}:{request.RatingType}|{interestPart}|{request.WithLeavers}"
+            + $"{request.Filter.DateRange.From:yyyy-MM-dd}|{request.Filter.DateRange.To:yyyy-MM-dd}"
+            + $"{request.Filter.RatingRange.From}|{request.Filter.RatingRange.To}"
+            + $"{request.Filter.DurationRange.From}|{request.Filter.DurationRange.To}"
+            + $"{request.Filter.Exp2WinRange.From}|{request.Filter.Exp2WinRange.To}"
+            + $"{request.Filter.TeamRatingRange.From}|{request.Filter.TeamRatingRange.To}";
     }
 }
 

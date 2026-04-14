@@ -95,6 +95,7 @@ builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<TransitionService>();
 
 builder.Services.AddScoped<IStatsProvider, WinrateStatsProvider>();
+builder.Services.AddScoped<IStatsProvider, SynergyStatsProvider>();
 builder.Services.AddScoped<IStatsService, StatsService>();
 builder.Services.AddScoped<IBuildsService, BuildsService>();
 
@@ -119,8 +120,8 @@ dbContext.Database.Migrate();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    var ratingsService = scope.ServiceProvider.GetRequiredService<IRatingService>();
-    ratingsService.CreateRatings().Wait();
+    //var ratingsService = scope.ServiceProvider.GetRequiredService<IRatingService>();
+    //ratingsService.CreateRatings().Wait();
 }
 
 app.UseForwardedHeaders();

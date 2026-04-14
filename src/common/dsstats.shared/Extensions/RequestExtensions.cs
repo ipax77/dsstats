@@ -101,16 +101,19 @@ public static class RequestExtensions
     {
         var queryDic = new Dictionary<string, object?>();
 
-        queryDic[paramMap[nameof(BuildsRequest.RatingType)]] =
+        queryDic[paramMap[nameof(StatsRequest.Type)]] =
+            request.Type != StatsType.Winrate ? (int)request.Type : null;
+
+        queryDic[paramMap[nameof(StatsRequest.RatingType)]] =
             request.RatingType != RatingType.Commanders ? (int)request.RatingType : null;
 
-        queryDic[paramMap[nameof(BuildsRequest.TimePeriod)]] =
+        queryDic[paramMap[nameof(StatsRequest.TimePeriod)]] =
             request.TimePeriod != TimePeriod.Last90Days ? (int)request.TimePeriod : null;
 
-        queryDic[paramMap[nameof(BuildsRequest.Interest)]] =
+        queryDic[paramMap[nameof(StatsRequest.Interest)]] =
             request.Interest != Commander.None ? request.Interest.ToString() : null;
 
-        queryDic[paramMap[nameof(BuildsRequest.WithLeavers)]] =
+        queryDic[paramMap[nameof(StatsRequest.WithLeavers)]] =
             request.WithLeavers != false ? request.WithLeavers : null;
 
         return queryDic;

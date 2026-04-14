@@ -1,0 +1,315 @@
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+
+@inject IStatsService StatsService
+
+<div class="mb-1" style="max-width: 1000px;">
+    <StatsRequestComponent Request="StatsRequest" IsLoading="isLoading" OnRequestChanged="Update" />
+</div>
+
+@if (response != null && response.SynergyEnts.Count == 0)
+{
+    <div class="alert alert-info mt-2" role="alert" style="max-width: 1000px;">
+        No synergy data found for the selected filters.
+    </div>
+}
+
+@if (response != null && response.SynergyEnts.Count > 0)
+{
+    <div class="row">
+        <div class="col-auto">
+            <div class="border rounded border-secondary bgchart p-2 mb-2" style="max-width: 1000px;">
+                <span class="text-muted small me-2">Radar datasets</span>
+                @foreach (var item in CommanderSummaries.OrderBy(o => o.Commander))
+                {
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               id="@($"cmdr-{item.Commander}")"
+                               checked="@selectedCommanders.Contains(item.Commander)"
+                               @onchange="e => ToggleCommander(item.Commander, e)" />
+                        <label class="form-check-label" for="@($"cmdr-{item.Commander}")">
+                            @item.Commander (@Data.GetNumberString(item.Games))
+                        </label>
+                    </div>
+                }
+            </div>
+            <div class="border rounded border-secondary bgchart"
+                 style="min-width: 850px; width: 55vw; height: calc(70vw * 0.5); min-height: 425px;">
+                <SynergyChart @ref="synergyChart" Request="StatsRequest" Response="response" />
+            </div>
+        </div>
+        <div class="col-auto table-responsive" style="max-height: 70vh; max-width: 520px;">
+            <table class="tptable w-auto">
+                <thead class="user-select-none">
+                    <tr>
+                        <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Commander))">
+                            Commander
+                            @GetSortIcon(nameof(SynergyEnt.Commander))
+                        </th>
+                        <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Teammate))">
+                            Teammate
+                            @GetSortIcon(nameof(SynergyEnt.Teammate))
+                        </th>
+                        <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Games))">
+                            Games
+                            @GetSortIcon(nameof(SynergyEnt.Games))
+                        </th>
+                        <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Wins))">
+                            Wins
+                            @GetSortIcon(nameof(SynergyEnt.Wins))
+                        </th>
+                        <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Winrate))">
+                            Winrate
+                            @GetSortIcon(nameof(SynergyEnt.Winrate))
+                        </th>
+                        <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.AvgGain))">
+                            AvgGain
+                            @GetSortIcon(nameof(SynergyEnt.AvgGain))
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="text-nowrap">
+                    @foreach (var ent in SortedStats)
+                    {
+                        <tr class="@(ent.Games < 50 ? "text-danger" : "")">
+                            <td>
+                                <div class="d-flex">
+                                    <div class="preload-@(ent.Commander.ToString().ToLower())" alt="@ent.Commander" style="width: 30px; height: 30px;"></div>
+                                    <span>@ent.Commander</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex">
+                                    <div class="preload-@(ent.Teammate.ToString().ToLower())" alt="@ent.Teammate" style="width: 30px; height: 30px;"></div>
+                                    <span>@ent.Teammate</span>
+                                </div>
+                            </td>
+                            <td>@Data.GetNumberString(ent.Games)</td>
+                            <td>@Data.GetNumberString(ent.Wins)</td>
+                            <td>@ent.Winrate.ToString("P1")</td>
+                            <td>
+                                <span class="@(ent.AvgGain < 0 ? "text-danger" : "text-success")">@ent.AvgGain</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public StatsRequest StatsRequest { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<StatsRequest> OnRequestChanged { get; set; }
+
+    SynergyResponse? response;
+    SynergyChart? synergyChart;
+    bool isLoading = true;
+    bool hasManualSelection;
+    Commander previousInterest = Commander.None;
+    HashSet<Commander> selectedCommanders = [];
+
+    private string? currentSortColumn = nameof(SynergyEnt.AvgGain);
+    private bool isDescending = true;
+
+    private IEnumerable<CommanderSummary> CommanderSummaries => response?.SynergyEnts
+        .GroupBy(e => e.Commander)
+        .Select(g => new CommanderSummary(g.Key, g.Sum(x => x.Games)))
+        .OrderByDescending(g => g.Games)
+        .ThenBy(g => g.Commander)
+        .ToList() ?? [];
+
+    private IEnumerable<SynergyEnt> SortedStats
+    {
+        get
+        {
+            if (response == null)
+            {
+                return Enumerable.Empty<SynergyEnt>();
+            }
+
+            return currentSortColumn switch
+            {
+                nameof(SynergyEnt.Commander) => isDescending
+                    ? response.SynergyEnts.OrderByDescending(e => e.Commander)
+                    : response.SynergyEnts.OrderBy(e => e.Commander),
+                nameof(SynergyEnt.Teammate) => isDescending
+                    ? response.SynergyEnts.OrderByDescending(e => e.Teammate)
+                    : response.SynergyEnts.OrderBy(e => e.Teammate),
+                nameof(SynergyEnt.Games) => isDescending
+                    ? response.SynergyEnts.OrderByDescending(e => e.Games)
+                    : response.SynergyEnts.OrderBy(e => e.Games),
+                nameof(SynergyEnt.Wins) => isDescending
+                    ? response.SynergyEnts.OrderByDescending(e => e.Wins)
+                    : response.SynergyEnts.OrderBy(e => e.Wins),
+                nameof(SynergyEnt.Winrate) => isDescending
+                    ? response.SynergyEnts.OrderByDescending(e => e.Winrate)
+                    : response.SynergyEnts.OrderBy(e => e.Winrate),
+                nameof(SynergyEnt.AvgGain) => isDescending
+                    ? response.SynergyEnts.OrderByDescending(e => e.AvgGain)
+                    : response.SynergyEnts.OrderBy(e => e.AvgGain),
+                _ => response.SynergyEnts.OrderByDescending(e => e.AvgGain)
+            };
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        previousInterest = StatsRequest.Interest;
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            response = await StatsService.GetStatsAsync<SynergyResponse>(StatsType.Synergy, StatsRequest);
+            ApplyDefaultSelection(forceReset: true);
+        }
+        catch
+        {
+        }
+        finally
+        {
+            isLoading = false;
+            await InvokeAsync(StateHasChanged);
+            if (response != null)
+            {
+                synergyChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+            }
+        }
+    }
+
+    private async Task Update()
+    {
+        isLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        var interestChanged = previousInterest != StatsRequest.Interest;
+        if (interestChanged)
+        {
+            hasManualSelection = false;
+        }
+
+        response = await StatsService.GetStatsAsync<SynergyResponse>(StatsType.Synergy, StatsRequest);
+        previousInterest = StatsRequest.Interest;
+        ApplyDefaultSelection(forceReset: interestChanged);
+        synergyChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+        isLoading = false;
+        await InvokeAsync(StateHasChanged);
+        await OnRequestChanged.InvokeAsync(StatsRequest);
+    }
+
+    private void ApplyDefaultSelection(bool forceReset)
+    {
+        if (response == null)
+        {
+            return;
+        }
+
+        var available = response.SynergyEnts
+            .Select(s => s.Commander)
+            .Distinct()
+            .ToHashSet();
+
+        if (forceReset)
+        {
+            selectedCommanders.Clear();
+        }
+
+        if (hasManualSelection)
+        {
+            selectedCommanders.IntersectWith(available);
+        }
+
+        if (selectedCommanders.Count > 0)
+        {
+            return;
+        }
+
+        var defaults = GetDefaultCommanders().Take(2).ToList();
+        selectedCommanders = defaults.ToHashSet();
+    }
+
+    private IEnumerable<Commander> GetDefaultCommanders()
+    {
+        var ordered = CommanderSummaries.ToList();
+        if (ordered.Count == 0)
+        {
+            return [];
+        }
+
+        if ((int)StatsRequest.Interest > 3 && ordered.Any(x => x.Commander == StatsRequest.Interest))
+        {
+            var interest = ordered.First(x => x.Commander == StatsRequest.Interest).Commander;
+            var second = ordered
+                .Where(x => x.Commander != interest)
+                .Select(x => x.Commander)
+                .FirstOrDefault();
+
+            return second == Commander.None
+                ? [interest]
+                : [interest, second];
+        }
+
+        return ordered.Select(x => x.Commander).Take(2);
+    }
+
+    private void ToggleCommander(Commander commander, ChangeEventArgs args)
+    {
+        var isChecked = args.Value switch
+        {
+            bool b => b,
+            string s when bool.TryParse(s, out var parsed) => parsed,
+            string s when string.Equals(s, "on", StringComparison.OrdinalIgnoreCase) => true,
+            _ => false
+        };
+
+        if (isChecked)
+        {
+            selectedCommanders.Add(commander);
+        }
+        else
+        {
+            selectedCommanders.Remove(commander);
+        }
+
+        hasManualSelection = true;
+        if (response != null)
+        {
+            synergyChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+        }
+    }
+
+    private void SortBy(string columnName)
+    {
+        if (currentSortColumn == columnName)
+        {
+            isDescending = !isDescending;
+        }
+        else
+        {
+            currentSortColumn = columnName;
+            isDescending = true;
+        }
+    }
+
+    private MarkupString GetSortIcon(string columnName)
+    {
+        if (currentSortColumn != columnName)
+        {
+            return (MarkupString)"";
+        }
+
+        return isDescending
+            ? (MarkupString)"<span class='bi bi-arrow-down-short ms-1'></span>"
+            : (MarkupString)"<span class='bi bi-arrow-up-short ms-1'></span>";
+    }
+
+    private sealed record CommanderSummary(Commander Commander, int Games);
+}

@@ -7,7 +7,28 @@
 
 <PageTitle>dsstats - stats</PageTitle>
 
-<dsstats.weblib.Stats.WinrateComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+<div class="btn-group bgchart p-1 rounded mb-2">
+    <span class="px-2 text-muted small">Mode</span>
+    <button type="button"
+            class="btn @(Request.Type == StatsType.Winrate ? "btn-info" : "btn-outline-info")"
+            @onclick="() => SetStatsType(StatsType.Winrate)">
+        Winrate
+    </button>
+    <button type="button"
+            class="btn @(Request.Type == StatsType.Synergy ? "btn-info" : "btn-outline-info")"
+            @onclick="() => SetStatsType(StatsType.Synergy)">
+        Synergy
+    </button>
+</div>
+
+@if (Request.Type == StatsType.Synergy)
+{
+    <dsstats.weblib.Stats.SynergyComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+}
+else
+{
+    <dsstats.weblib.Stats.WinrateComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+}
 
 @code {
     [SupplyParameterFromQuery]
@@ -74,13 +95,20 @@
     {
         Request = new StatsRequest
         {
-            Type = EnumExtensions.ParseEnumOrDefault(St, StatsType.Winrate),
+            Type = NormalizeStatsType(EnumExtensions.ParseEnumOrDefault(St, StatsType.Winrate)),
             RatingType = EnumExtensions.ParseEnumOrDefault(Rt, RatingType.Commanders),
             TimePeriod = EnumExtensions.ParseEnumOrDefault(Tp, TimePeriod.Last90Days),
             Interest = EnumExtensions.ParseEnumOrDefault(Int, Commander.None),
             WithLeavers = bool.TryParse(WithL, out var wl) && wl,
             Filter = InitFilter()
         };
+    }
+
+    private static StatsType NormalizeStatsType(StatsType type)
+    {
+        return type is StatsType.Winrate or StatsType.Synergy
+            ? type
+            : StatsType.Winrate;
     }
 
     private StatsFilter? InitFilter()
@@ -281,5 +309,16 @@
         NavigationManager.NavigateTo(
             NavigationManager.GetUriWithQueryParameters(
                 new Dictionary<string, object?>(queryDic)));
+    }
+
+    private void SetStatsType(StatsType type)
+    {
+        if (Request.Type == type)
+        {
+            return;
+        }
+
+        Request.Type = type;
+        RequestChanged(Request);
     }
 }
