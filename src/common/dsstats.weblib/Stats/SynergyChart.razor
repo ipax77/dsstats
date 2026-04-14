@@ -48,10 +48,21 @@
             chartJsConfig.RemoveDatasets(chartJsConfig.Data.Datasets);
         }
 
+        var entsByPair = response.SynergyEnts
+            .SelectMany(e =>
+                e.Commander == e.Teammate
+                    ? new[] { ((e.Commander, e.Teammate), e) } // only once
+                    : new[]
+                    {
+                ((e.Commander, e.Teammate), e),
+                ((e.Teammate, e.Commander), e)
+                    })
+            .ToDictionary(x => x.Item1, x => x.e);
+
         var teammateLabels = response.SynergyEnts
-            .Select(s => s.Teammate)
+            .SelectMany(e => new[] { e.Commander, e.Teammate })
             .Distinct()
-            .OrderBy(s => s)
+            .OrderBy(c => c)
             .ToList();
 
         chartJsConfig.SetLabels(teammateLabels.Select(t => t.ToString()).ToList());
@@ -71,7 +82,6 @@
 
         var minAvgGain = response.SynergyEnts.Min(e => e.AvgGain);
         var maxAvgGain = response.SynergyEnts.Max(e => e.AvgGain);
-        var entsByPair = response.SynergyEnts.ToDictionary(e => (e.Commander, e.Teammate), e => e);
 
         List<ChartJsDataset> datasets = [];
         List<List<SynergyTooltipPoint>> tooltipPoints = [];
@@ -88,7 +98,8 @@
 
             foreach (var teammate in teammateLabels)
             {
-                if (entsByPair.TryGetValue((commander, teammate), out var ent))
+                var ent = GetEnt(commander, teammate, entsByPair);
+                if (ent != null)
                 {
                     var normalized = Normalize(ent.AvgGain, minAvgGain, maxAvgGain);
                     normalizedValues.Add(normalized);
@@ -133,6 +144,12 @@
 
         chartJsConfig.AddDatasets(datasets);
         _ = JSRuntime.InvokeVoidAsync("setSynergyTooltips", chartJsConfig.ChartJsConfigGuid, tooltipPoints);
+    }
+
+    SynergyEnt? GetEnt(Commander a, Commander b, Dictionary<(Commander, Commander), SynergyEnt> entsByPair)
+    {
+        var key = (a < b) ? (a, b) : (b, a);
+        return entsByPair.TryGetValue(key, out var ent) ? ent : null;
     }
 
     private static double Normalize(double value, double min, double max)

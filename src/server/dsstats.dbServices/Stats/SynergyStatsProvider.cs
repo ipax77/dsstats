@@ -50,10 +50,15 @@ public sealed class SynergyStatsProvider(DsstatsContext context, IMemoryCache me
                 (f.TeamRatingTo == null || rr.AvgRating <= f.TeamRatingTo) &&
                 (f.TeamRatingFrom == null || rr.AvgRating >= f.TeamRatingFrom) &&
                 teammate.TeamId == rp.TeamId &&
+                teammate.ReplayPlayerId < rp.ReplayPlayerId &&
                 teammate.ReplayPlayerId != rp.ReplayPlayerId &&
                 (int)rp.Race > 3 &&
                 (int)teammate.Race > 3
-            group new { rp, teammate, rpr } by new { Commander = rp.Race, Teammate = teammate.Race } into g
+            group new { rp, teammate, rpr } by new
+            {
+                Commander = (int)rp.Race < (int)teammate.Race ? rp.Race : teammate.Race,
+                Teammate = (int)rp.Race < (int)teammate.Race ? teammate.Race : rp.Race
+            } into g
             select new SynergyEnt
             {
                 Commander = g.Key.Commander,
