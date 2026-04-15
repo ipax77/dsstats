@@ -198,7 +198,57 @@
                     Legend = new Legend()
                     {
                         Display = true,
-                        Position = "right"
+                        Position = "right",
+                        Labels = new Labels()
+                        {
+                            Color = "#f2f2f2",
+                        }
+                    }
+                },
+                Scales = new ChartJsOptionsScales()
+                {
+                    R = new LinearRadialAxis()
+                    {
+                        AngleLines = new AngleLines()
+                        {
+                            Display = true,
+                            Color = "#f2f2f233",
+                            BorderDash = [ 2, 5 ],
+                            BorderDashOffset = 0
+                        },
+                        Grid = new ChartJsGrid()
+                        {
+                            Display = true,
+                            Color = "#f2f2f233",
+                        },
+                        Border = new()
+                        {
+                            Display = true,
+                            Color = "#f2f2f233",
+                            Dash = [15, 2],
+                            DashOffset = 0
+                        },
+                        PointLabels = new PointLabels()
+                        {
+                            Display = true,
+                            Font = new Font()
+                            {
+                                Size = 12
+                            },
+                            Color = "#f2f2f2"
+                        },
+                        Ticks = new()
+                        {
+                            Display = true,
+                            Color = "#666",
+                            BackdropColor = "transparent",
+                            Font = new()
+                            {
+                                Size = 10
+                            },
+                        },
+                        BeginAtZero = true,
+                        SuggestedMax = 1.0
                     }
                 }
             }
