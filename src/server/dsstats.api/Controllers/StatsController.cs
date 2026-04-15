@@ -20,6 +20,9 @@ public class StatsController(IStatsService statsService, IDashboardStatsService 
             case StatsType.Synergy:
                 response = await statsService.GetStatsAsync<SynergyResponse>(request.Type, request, token);
                 break;
+            case StatsType.Timeline:
+                response = await statsService.GetStatsAsync<TimelineResponse>(request.Type, request, token);
+                break;
             case StatsType.Stats:
                 response = await statsService.GetStatsAsync<StatsResponse>(request.Type, request, token);
                 break;

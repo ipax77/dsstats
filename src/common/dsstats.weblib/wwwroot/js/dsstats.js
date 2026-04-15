@@ -207,3 +207,40 @@ function setSynergyTooltips(chartId, tooltipData) {
 
     chart.update();
 }
+
+function setTimelineTooltips(chartId, tooltipData) {
+    const chart = Chart.getChart(chartId);
+    if (!chart) {
+        return;
+    }
+
+    chart.options.plugins ??= {};
+    chart.options.plugins.tooltip ??= {};
+    chart.options.plugins.tooltip.callbacks ??= {};
+
+    chart.options.plugins.tooltip.callbacks.label = function (context) {
+        const datasetIndex = context.datasetIndex;
+        const dataIndex = context.dataIndex;
+        const point = tooltipData?.[datasetIndex]?.[dataIndex];
+
+        const label = context.dataset.label ?? "Unknown";
+
+        const games = point?.games ?? point?.Games ?? 0;
+        const avgGainValue = point?.avgGain ?? point?.AvgGain ?? 0;
+        const winrateValue = point?.winrate ?? point?.Winrate ?? 0;
+
+        const avgGain = Number(avgGainValue).toFixed(2);
+        const winratePercent = (Number(winrateValue) * 100).toFixed(1);
+
+        // X-axis label already represents duration bucket
+        const bucket = context.label;
+
+        if (!games) {
+            return `${label} (${bucket}): no games`;
+        }
+
+        return `${label} (${bucket}) — AvgGain: ${avgGain}, Winrate: ${winratePercent}%, Games: ${games}`;
+    };
+
+    chart.update();
+}

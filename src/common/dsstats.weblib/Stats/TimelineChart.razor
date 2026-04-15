@@ -1,0 +1,228 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.shared
+@using pax.BlazorChartJs
+@inject IJSRuntime JSRuntime
+
+<ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="EventTriggered" />
+
+@code {
+    [Parameter, EditorRequired]
+    public TimelineResponse Response { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public StatsRequest Request { get; set; } = default!;
+
+    ChartJsConfig chartJsConfig = null!;
+    ChartComponent? chartComponent;
+    bool chartReady;
+    IReadOnlyCollection<Commander> selectedCommanders = [];
+
+    protected override void OnInitialized()
+    {
+        chartJsConfig = GetChartConfig();
+        base.OnInitialized();
+    }
+
+    private void EventTriggered(ChartJsEvent chartJsEvent)
+    {
+        if (chartJsEvent is ChartJsInitEvent)
+        {
+            chartReady = true;
+            PrepareData(Response, Request, selectedCommanders);
+        }
+    }
+
+    public void PrepareData(TimelineResponse response, StatsRequest request, IReadOnlyCollection<Commander> selected)
+    {
+        Response = response;
+        Request = request;
+        selectedCommanders = selected;
+
+        if (!chartReady)
+        {
+            return;
+        }
+
+        if (chartJsConfig.Data.Datasets.Count > 0)
+        {
+            chartJsConfig.RemoveDatasets(chartJsConfig.Data.Datasets);
+        }
+
+        chartJsConfig.SetLabels(["5-8 min", "8-11 min", "11-14 min", "14-17 min", "17-20 min", "20-23 min", "23-26 min", "26-29 min", "29-32 min", "32-35 min", "35+"]);
+
+        if (chartJsConfig.Options?.Plugins?.Title != null)
+        {
+            chartJsConfig.Options.Plugins.Title.Text = new IndexableOption<string>(
+                $"Timeline AvgGain - {GetTimeInfo(request)}");
+            chartJsConfig.UpdateChartOptions();
+        }
+
+        List<ChartJsDataset> datasets = [];
+        List<List<object>> tooltipData = [];
+
+        foreach (var commander in selected.OrderBy(c => c))
+        {
+            var (dataset, tooltipPoints) = GetDataset(commander, response);
+            if (dataset != null)
+            {
+                datasets.Add(dataset);
+                tooltipData.Add(tooltipPoints);
+            }
+        }
+        if (datasets.Count > 0)
+        {
+            chartJsConfig.AddDatasets(datasets);
+            JSRuntime.InvokeVoidAsync("setTimelineTooltips", chartJsConfig.ChartJsConfigGuid, tooltipData);
+        }
+        else
+        {
+            JSRuntime.InvokeVoidAsync("setTimelineTooltips", chartJsConfig.ChartJsConfigGuid, new List<object>());
+        }
+    }
+
+    private (ChartJsDataset?, List<object>) GetDataset(Commander commander, TimelineResponse response)
+    {
+        var timelineEnt = response.TimelineEnts.FirstOrDefault(e => e.Commander == commander);
+        if (timelineEnt == null)
+        {
+            return (null, []);
+        }
+
+        List<object> data = [];
+        List<object> tooltipPoints = [];
+
+        for (int i = 0; i < 11; i++)
+        {
+            var bucketStart = i < 10 ? i * 3 + 5 : 35;
+            var step = timelineEnt.Steps.FirstOrDefault(s => s.BucketStart == bucketStart);
+
+            data.Add(step?.AvgGain ?? 0);
+
+            tooltipPoints.Add(new
+            {
+                avgGain = step?.AvgGain ?? 0,
+                winrate = step == null || step.Count == 0 ? 0 : (step.Wins / (double)step.Count),
+                games = step?.Count ?? 0,
+            });
+        }
+
+        var dataset = new LineDataset()
+        {
+            Label = commander.ToString(),
+            Data = data,
+            BorderColor = Data.CmdrColor[commander],
+            BackgroundColor = $"{Data.CmdrColor[commander]}1A",
+            BorderWidth = 2,
+            PointRadius = 3,
+            Fill = true,
+            Tension = 0.1
+        };
+
+        return (dataset, tooltipPoints);
+    }
+
+    private string GetTimeInfo(StatsRequest request)
+    {
+        if (request.Filter != null)
+        {
+            return $"{request.Filter.DateRange.From:yyyy-MM-dd} - {request.Filter.DateRange.To:yyyy-MM-dd}";
+        }
+
+        var timeInfo = Data.GetTimePeriodInfo(request.TimePeriod);
+        return $"{timeInfo.Start:yyyy-MM-dd} - {timeInfo.End:yyyy-MM-dd}";
+    }
+
+    private static ChartJsConfig GetChartConfig()
+    {
+        return new ChartJsConfig()
+        {
+            Type = ChartType.line,
+            Options = new ChartJsOptions()
+            {
+                Responsive = true,
+                MaintainAspectRatio = true,
+                Plugins = new Plugins()
+                {
+                    Title = new Title()
+                    {
+                        Display = true,
+                        Text = new IndexableOption<string>("Timeline AvgGain"),
+                        Color = "white",
+                        Font = new Font()
+                        {
+                            Size = 16
+                        }
+                    },
+                    Legend = new Legend()
+                    {
+                        Display = true,
+                        Position = "right",
+                        Labels = new Labels()
+                        {
+                            Color = "#f2f2f2",
+                        }
+                    }
+                },
+                Scales = new()
+                {
+                    X = new()
+                    {
+                        Title = new()
+                        {
+                            Display = true,
+                            Text = "Game Duration",
+                            Color = "white",
+                            Font = new()
+                            {
+                                Size = 14
+                            }
+                        },
+                        Grid = new()
+                        {
+                            Color = "#444",
+                        },
+                        Border = new()
+                        {
+                            Display = true,
+                            Color = "#444",
+                            Dash = [2, 5],
+                            DashOffset = 0
+                        },
+                        Ticks = new()
+                        {
+                            Color = "#f2f2f2"
+                        }
+                    },
+                    Y = new()
+                    {
+                        Title = new()
+                        {
+                            Display = true,
+                            Text = "Average Gain",
+                            Color = "white",
+                            Font = new Font()
+                            {
+                                Size = 14
+                            }
+                        },
+                        Grid = new()
+                        {
+                            Color = "#444"
+                        },
+                        Border = new()
+                        {
+                            Display = true,
+                            Color = "#444",
+                            Dash = [2, 5],
+                            DashOffset = 0
+                        },
+                        Ticks = new()
+                        {
+                            Color = "#f2f2f2"
+                        }
+                    }
+                }
+            }
+        };
+    }
+}

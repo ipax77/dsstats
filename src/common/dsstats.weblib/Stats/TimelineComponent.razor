@@ -1,0 +1,320 @@
+﻿@using dsstats.shared
+@using dsstats.shared.Interfaces
+
+@inject IStatsService StatsService
+
+<div class="mb-1" style="max-width: 1000px;">
+    <StatsRequestComponent Request="StatsRequest" IsLoading="isLoading" OnRequestChanged="Update" />
+</div>
+
+@if (response != null && response.TimelineEnts.Count == 0)
+{
+    <div class="alert alert-info mt-2" role="alert" style="max-width: 1000px;">
+        No timeline data found for the selected filters.
+    </div>
+}
+
+@if (response != null && response.TimelineEnts.Count > 0)
+{
+    <div class="row">
+        <div class="col-auto d-none d-md-block">
+            <div class="border rounded border-secondary bgchart p-2 mb-2">
+                <span class="text-muted small me-2">Radar datasets</span>
+                @foreach (var item in response.TimelineEnts.OrderBy(o => o.Commander))
+                {
+                    <div class="form-check form-switch">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               id="@($"cmdr-{item.Commander}")"
+                               checked="@selectedCommanders.Contains(item.Commander)"
+                               @onchange="e => ToggleCommander(item.Commander, e)" />
+                        <label class="form-check-label user-select-none" for="@($"cmdr-{item.Commander}")">
+                            <span class="d-flex">
+                                <span class="preload-@(item.Commander.ToString().ToLower())" alt="@item.Commander" style="width: 25px; height: 25px;"></span>
+                                <span>@item.Commander</span>
+                            </span>
+                        </label>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="border rounded border-secondary bgchart"
+                 style="min-width: 850px; width: 60vw; height: calc(60vw * 0.5); min-height: 425px;">
+                <TimelineChart @ref="timelineChart" Request="StatsRequest" Response="response" />
+            </div>
+        </div>
+        <div class="col-auto" style="max-width: 400px;">
+            <p class="bgchart2 p-2 border rounded text-warning">
+                Highlights how each commander’s rating performance varies across game durations, indicating potential strengths in shorter or longer matches. Values are sensitive to sample size and may show higher variance in less frequent game lengths.
+            </p>
+        </div>
+    </div>
+    <div class="table-responsive" style="max-width: 1700px;">
+        <table class="tptable">
+            <thead>
+                <tr>
+                    <th @onclick="() => SortBy(0)" style="cursor:pointer">
+                        Commander @GetSortIcon(0)
+                    </th>
+                    @foreach (var bucket in GetUniqueBuckets())
+                    {
+                        <th @onclick="() => SortBy(bucket)" style="cursor:pointer">
+                            @(bucket == 35 ? "35+ min" : $"{bucket} min")
+                            @GetSortIcon(bucket)
+                        </th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var ent in GetSortedEnts())
+                {
+                    <tr>
+                        <td>@ent.Commander</td>
+                        @foreach (var bucket in GetUniqueBuckets())
+                        {
+                            var step = ent.Steps.FirstOrDefault(s => s.BucketStart == bucket);
+                            <td class="text-center">
+                                @if (step != null)
+                                {
+                                    <div class="small">
+                                        <h6>
+                                            <span class="badge @GetAvgGainColor(step.AvgGain)">@step.AvgGain.ToString("F1")</span>
+                                        </h6>
+                                        <span class="fw-bold">@(step.Count == 0 ? "0" : (step.Wins / (double)step.Count).ToString("P1"))</span>
+                                        <span class="text-muted">(@step.Wins/@step.Count)</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-light">-</span>
+                                }
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public StatsRequest StatsRequest { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<StatsRequest> OnRequestChanged { get; set; }
+
+    TimelineResponse? response;
+    bool isLoading = true;
+    bool hasManualSelection;
+    Commander previousInterest = Commander.None;
+    HashSet<Commander> selectedCommanders = [];
+    TimelineChart? timelineChart;
+    private int currentSortColumn = 0;
+    private bool isDescending = false;
+
+    protected override void OnInitialized()
+    {
+        StatsRequest.RatingType = RatingType.Commanders;
+        StatsRequest.TimePeriod = TimePeriod.Last12Months;
+        previousInterest = StatsRequest.Interest;
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            response = await StatsService.GetStatsAsync<TimelineResponse>(StatsType.Timeline, StatsRequest);
+            ApplyDefaultSelection(forceReset: true);
+        }
+        catch (Exception ex)
+        {
+
+        }
+        finally
+        {
+            isLoading = false;
+            await InvokeAsync(StateHasChanged);
+            if (response != null)
+            {
+                timelineChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+            }
+        }
+    }
+
+    private async Task Update()
+    {
+        isLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        var interestChanged = previousInterest != StatsRequest.Interest;
+        if (interestChanged)
+        {
+            hasManualSelection = false;
+        }
+
+        response = await StatsService.GetStatsAsync<TimelineResponse>(StatsType.Timeline, StatsRequest);
+        previousInterest = StatsRequest.Interest;
+        ApplyDefaultSelection(forceReset: interestChanged);
+        timelineChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+        isLoading = false;
+        await InvokeAsync(StateHasChanged);
+        await OnRequestChanged.InvokeAsync(StatsRequest);
+    }
+
+    private void ApplyDefaultSelection(bool forceReset)
+    {
+        if (response == null)
+        {
+            return;
+        }
+
+        var available = response.TimelineEnts
+            .Select(s => s.Commander)
+            .Distinct()
+            .ToHashSet();
+
+        if (forceReset)
+        {
+            selectedCommanders.Clear();
+        }
+
+        if (hasManualSelection)
+        {
+            selectedCommanders.IntersectWith(available);
+        }
+
+        if (selectedCommanders.Count > 0)
+        {
+            return;
+        }
+
+        if (StatsRequest.Interest == Commander.None)
+        {
+            var defaults = GetDefaultCommanders().Take(2).ToList();
+            selectedCommanders = defaults.ToHashSet();
+        }
+        else
+        {
+            selectedCommanders.Add(StatsRequest.Interest);
+        }
+    }
+
+    private IEnumerable<Commander> GetDefaultCommanders()
+    {
+        var ordered = response?.TimelineEnts
+            .ToHashSet() ?? [];
+        if (ordered.Count == 0)
+        {
+            return [];
+        }
+
+        if ((int)StatsRequest.Interest > 3 && ordered.Any(x => x.Commander == StatsRequest.Interest))
+        {
+            var interest = ordered.First(x => x.Commander == StatsRequest.Interest).Commander;
+            var second = ordered
+                .Where(x => x.Commander != interest)
+                .Select(x => x.Commander)
+                .FirstOrDefault();
+
+            return second == Commander.None
+                ? [interest]
+                : [interest, second];
+        }
+
+        return ordered.Select(x => x.Commander).Take(2);
+    }
+
+    private List<int> GetUniqueBuckets()
+    {
+        return response?.TimelineEnts
+            .SelectMany(e => e.Steps)
+            .Select(s => s.BucketStart)
+            .Distinct()
+            .OrderBy(b => b)
+            .ToList() ?? [];
+    }
+
+    private string GetAvgGainColor(double gain) => gain switch
+    {
+        > 0 => "bg-success",
+        < 0 => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    private void ToggleCommander(Commander commander, ChangeEventArgs args)
+    {
+        var isChecked = args.Value switch
+        {
+            bool b => b,
+            string s when bool.TryParse(s, out var parsed) => parsed,
+            string s when string.Equals(s, "on", StringComparison.OrdinalIgnoreCase) => true,
+            _ => false
+        };
+
+        if (isChecked)
+        {
+            selectedCommanders.Add(commander);
+        }
+        else
+        {
+            selectedCommanders.Remove(commander);
+        }
+
+        hasManualSelection = true;
+        if (response != null)
+        {
+            timelineChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+        }
+    }
+
+    private void SortBy(int column)
+    {
+        if (currentSortColumn == column)
+        {
+            isDescending = !isDescending;
+        }
+        else
+        {
+            currentSortColumn = column;
+            isDescending = false;
+        }
+    }
+
+    private MarkupString GetSortIcon(int colum)
+    {
+        if (currentSortColumn != colum)
+        {
+            return (MarkupString)"";
+        }
+
+        return isDescending
+            ? (MarkupString)"<span class='bi bi-arrow-down-short ms-1'></span>"
+            : (MarkupString)"<span class='bi bi-arrow-up-short ms-1'></span>";
+    }
+
+    private IEnumerable<TimelineEnt> GetSortedEnts()
+    {
+        if (response?.TimelineEnts == null) return Array.Empty<TimelineEnt>();
+
+        // 1. Define the Key Selector
+        Func<TimelineEnt, object> keySelector = currentSortColumn switch
+        {
+            0 => ent => ent.Commander,
+            _ => ent =>
+            {
+                var step = ent.Steps.FirstOrDefault(s => s.BucketStart == currentSortColumn);
+                // Sort by Win Rate (Wins/Count). Handle division by zero.
+                return step?.AvgGain ?? 0;
+            }
+        };
+
+        // 2. Apply Sorting
+        return isDescending
+            ? response.TimelineEnts.OrderByDescending(keySelector)
+            : response.TimelineEnts.OrderBy(keySelector);
+    }
+}
