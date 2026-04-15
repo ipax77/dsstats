@@ -20,6 +20,20 @@ public sealed record SynergyEnt
     public double AvgGain { get; init; }
 }
 
+public sealed record TimelineEnt
+{
+    public Commander Commander { get; init; }
+    public List<TimelineStep> Steps { get; init; } = [];
+}
+
+public sealed record TimelineStep
+{
+    public int BucketStart { get; init; }
+    public int Count { get; init; }
+    public int Wins { get; init; }
+    public double AvgGain { get; init; }
+}
+
 public sealed class StatsRequest
 {
     public StatsType Type { get; set; }
@@ -76,6 +90,11 @@ public sealed class WinrateResponse : IStatsResponse
 public sealed class SynergyResponse : IStatsResponse
 {
     public List<SynergyEnt> SynergyEnts { get; set; } = [];
+}
+
+public sealed class TimelineResponse : IStatsResponse
+{
+    public List<TimelineEnt> TimelineEnts { get; set; } = [];
 }
 
 public sealed class StatsResponse : IStatsResponse

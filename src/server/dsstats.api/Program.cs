@@ -96,6 +96,7 @@ builder.Services.AddScoped<TransitionService>();
 
 builder.Services.AddScoped<IStatsProvider, WinrateStatsProvider>();
 builder.Services.AddScoped<IStatsProvider, SynergyStatsProvider>();
+builder.Services.AddScoped<IStatsProvider, TimelineStatsProvider>();
 builder.Services.AddScoped<IStatsService, StatsService>();
 builder.Services.AddScoped<IBuildsService, BuildsService>();
 

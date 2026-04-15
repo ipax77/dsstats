@@ -1,0 +1,168 @@
+﻿@using dsstats.shared
+@using dsstats.shared.Interfaces
+
+@inject IStatsService StatsService
+
+<div class="mb-1" style="max-width: 1000px;">
+    <StatsRequestComponent Request="StatsRequest" IsLoading="isLoading" OnRequestChanged="Update" />
+</div>
+
+@if (response != null && response.TimelineEnts.Count == 0)
+{
+    <div class="alert alert-info mt-2" role="alert" style="max-width: 1000px;">
+        No timeline data found for the selected filters.
+    </div>
+}
+
+@if (response != null && response.TimelineEnts.Count > 0)
+{
+    <div class="row">
+        <div class="col-auto d-none d-md-block">
+            <div class="border rounded border-secondary bgchart p-2 mb-2">
+                <span class="text-muted small me-2">Radar datasets</span>
+                @foreach (var item in response.TimelineEnts.OrderBy(o => o.Commander))
+                {
+                    <p>@item.Commander</p>
+                    @foreach (var ent in item.Steps)
+                    {
+                        <p>@ent.BucketStart</p>
+                        <p>@ent.Count</p>
+                        <p>@ent.Wins</p>
+                        <p>@ent.AvgGain</p>
+                    }
+                    <p></p>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public StatsRequest StatsRequest { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<StatsRequest> OnRequestChanged { get; set; }
+
+    TimelineResponse? response;
+    bool isLoading = true;
+    bool hasManualSelection;
+    Commander previousInterest = Commander.None;
+    HashSet<Commander> selectedCommanders = [];
+
+
+    protected override void OnInitialized()
+    {
+        StatsRequest.RatingType = RatingType.Commanders;
+        previousInterest = StatsRequest.Interest;
+        _ = LoadData();
+        base.OnInitialized();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            response = await StatsService.GetStatsAsync<TimelineResponse>(StatsType.Timeline, StatsRequest);
+            ApplyDefaultSelection(forceReset: true);
+        }
+        catch (Exception ex)
+        {
+            
+        }
+        finally
+        {
+            isLoading = false;
+            await InvokeAsync(StateHasChanged);
+            if (response != null)
+            {
+                // synergyChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+            }
+        }
+    }
+
+    private async Task Update()
+    {
+        isLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        var interestChanged = previousInterest != StatsRequest.Interest;
+        if (interestChanged)
+        {
+            hasManualSelection = false;
+        }
+
+        response = await StatsService.GetStatsAsync<TimelineResponse>(StatsType.Timeline, StatsRequest);
+        previousInterest = StatsRequest.Interest;
+        ApplyDefaultSelection(forceReset: interestChanged);
+        // synergyChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+        isLoading = false;
+        await InvokeAsync(StateHasChanged);
+        await OnRequestChanged.InvokeAsync(StatsRequest);
+    }
+
+    private void ApplyDefaultSelection(bool forceReset)
+    {
+        if (response == null)
+        {
+            return;
+        }
+
+        var available = response.TimelineEnts
+            .Select(s => s.Commander)
+            .Distinct()
+            .ToHashSet();
+
+        if (forceReset)
+        {
+            selectedCommanders.Clear();
+        }
+
+        if (hasManualSelection)
+        {
+            selectedCommanders.IntersectWith(available);
+        }
+
+        if (selectedCommanders.Count > 0)
+        {
+            return;
+        }
+
+        if (StatsRequest.Interest == Commander.None)
+        {
+            var defaults = GetDefaultCommanders().Take(2).ToList();
+            selectedCommanders = defaults.ToHashSet();
+        }
+        else
+        {
+            selectedCommanders.Add(StatsRequest.Interest);
+        }
+    }
+
+    private IEnumerable<Commander> GetDefaultCommanders()
+    {
+        var ordered = response?.TimelineEnts
+            .ToHashSet() ?? [];
+        if (ordered.Count == 0)
+        {
+            return [];
+        }
+
+        if ((int)StatsRequest.Interest > 3 && ordered.Any(x => x.Commander == StatsRequest.Interest))
+        {
+            var interest = ordered.First(x => x.Commander == StatsRequest.Interest).Commander;
+            var second = ordered
+                .Where(x => x.Commander != interest)
+                .Select(x => x.Commander)
+                .FirstOrDefault();
+
+            return second == Commander.None
+                ? [interest]
+                : [interest, second];
+        }
+
+        return ordered.Select(x => x.Commander).Take(2);
+    }
+
+
+}

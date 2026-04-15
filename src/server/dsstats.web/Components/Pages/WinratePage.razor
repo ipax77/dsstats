@@ -23,12 +23,23 @@
                 Synergy
             </button>
         </li>
+        <li class="nav-item">
+            <button class="nav-link @(Request.Type == StatsType.Timeline ? "active" : "")"
+                    type="button"
+                    @onclick="() => SetStatsType(StatsType.Timeline)">
+                Timeline
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content">
         @if (Request.Type == StatsType.Synergy)
         {
             <dsstats.weblib.Stats.SynergyComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+        }
+        else if (Request.Type == StatsType.Timeline)
+        {
+            <dsstats.weblib.Stats.TimelineComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
         }
         else
         {
@@ -92,9 +103,19 @@
         WithLeavers = false,
     };
 
+    protected override void OnParametersSet()
+    {
+        var newType = NormalizeStatsType(EnumExtensions.ParseEnumOrDefault(St, StatsType.Winrate));
+
+        if (Request.Type != newType)
+        {
+            InitRequest();
+        }
+    }
+
     protected override void OnInitialized()
     {
-        InitRequest();
+        // InitRequest();
         base.OnInitialized();
     }
 
@@ -113,9 +134,12 @@
 
     private static StatsType NormalizeStatsType(StatsType type)
     {
-        return type is StatsType.Winrate or StatsType.Synergy
-            ? type
-            : StatsType.Winrate;
+        return type switch         {
+            StatsType.Winrate => StatsType.Winrate,
+            StatsType.Synergy => StatsType.Synergy,
+            StatsType.Timeline => StatsType.Timeline,
+            _ => StatsType.Winrate
+        };
     }
 
     private StatsFilter? InitFilter()
@@ -313,19 +337,31 @@
             queryDic["FromExp2Win"] = null;
         }
 
-        NavigationManager.NavigateTo(
-            NavigationManager.GetUriWithQueryParameters(
-                new Dictionary<string, object?>(queryDic)));
+        var baseUri = NavigationManager.Uri.Split('?')[0];
+
+        var uri = NavigationManager.GetUriWithQueryParameters(
+            baseUri,
+            new Dictionary<string, object?>(queryDic)
+        );
+
+        NavigationManager.NavigateTo(uri, replace: true);
     }
 
     private void SetStatsType(StatsType type)
     {
         if (Request.Type == type)
-        {
             return;
-        }
 
         Request.Type = type;
-        RequestChanged(Request);
+        var newRequest = new StatsRequest
+        {
+            Type = type,
+            RatingType = Request.RatingType,
+            TimePeriod = Request.TimePeriod,
+            Interest = Request.Interest,
+            WithLeavers = Request.WithLeavers,
+        };
+
+        RequestChanged(newRequest);
     }
 }
