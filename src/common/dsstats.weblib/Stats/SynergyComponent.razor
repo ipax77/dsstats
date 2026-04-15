@@ -17,29 +17,97 @@
 @if (response != null && response.SynergyEnts.Count > 0)
 {
     <div class="row">
-        <div class="col-auto">
-            <div class="border rounded border-secondary bgchart p-2 mb-2" style="max-width: 1000px;">
+        <div class="col-auto d-none d-md-block">
+            <div class="border rounded border-secondary bgchart p-2 mb-2">
                 <span class="text-muted small me-2">Radar datasets</span>
                 @foreach (var item in CommanderSummaries.OrderBy(o => o.Commander))
                 {
-                    <div class="form-check form-check-inline">
+                    <div class="form-check form-switch">
                         <input class="form-check-input"
                                type="checkbox"
                                id="@($"cmdr-{item.Commander}")"
                                checked="@selectedCommanders.Contains(item.Commander)"
                                @onchange="e => ToggleCommander(item.Commander, e)" />
-                        <label class="form-check-label" for="@($"cmdr-{item.Commander}")">
-                            @item.Commander (@Data.GetNumberString(item.Games))
+                        <label class="form-check-label user-select-none" for="@($"cmdr-{item.Commander}")">
+                            <span class="d-flex">
+                                <span class="preload-@(item.Commander.ToString().ToLower())" alt="@item.Commander" style="width: 25px; height: 25px;"></span>
+                                <span>@item.Commander</span>
+                            </span>
                         </label>
                     </div>
                 }
             </div>
+        </div>
+        <div class="col-auto">
             <div class="border rounded border-secondary bgchart"
-                 style="min-width: 850px; width: 55vw; height: calc(70vw * 0.5); min-height: 425px;">
+                 style="height: calc(70vw * 0.5); min-height: 500px; aspect-ratio: 1 / 1;">
                 <SynergyChart @ref="synergyChart" Request="StatsRequest" Response="response" />
             </div>
         </div>
-        <div class="heatmap bgchart">
+        <div class="col-auto">
+            <p class="text-warning bgchart2 p-2 border rounded" style="max-width: 520px;">
+                Synergy shows the performance of the selected commander when <b>in the same team</b> with other commanders.
+            </p>
+            <div class="table-responsive" style="max-height: 70vh; max-width: 520px;">
+                <table class="tptable w-auto">
+                    <thead class="user-select-none">
+                        <tr>
+                            <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Commander))">
+                                Commander
+                                @GetSortIcon(nameof(SynergyEnt.Commander))
+                            </th>
+                            <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Teammate))">
+                                Teammate
+                                @GetSortIcon(nameof(SynergyEnt.Teammate))
+                            </th>
+                            <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Games))">
+                                Games
+                                @GetSortIcon(nameof(SynergyEnt.Games))
+                            </th>
+                            <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Wins))">
+                                Wins
+                                @GetSortIcon(nameof(SynergyEnt.Wins))
+                            </th>
+                            <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Winrate))">
+                                Winrate
+                                @GetSortIcon(nameof(SynergyEnt.Winrate))
+                            </th>
+                            <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.AvgGain))">
+                                AvgGain
+                                @GetSortIcon(nameof(SynergyEnt.AvgGain))
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-nowrap">
+                        @foreach (var ent in SortedStats)
+                        {
+                            <tr class="@(ent.Games < 50 ? "text-danger" : "")">
+                                <td>
+                                    <div class="d-flex">
+                                        <div class="preload-@(ent.Commander.ToString().ToLower())" alt="@ent.Commander" style="width: 30px; height: 30px;"></div>
+                                        <span>@ent.Commander</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex">
+                                        <div class="preload-@(ent.Teammate.ToString().ToLower())" alt="@ent.Teammate" style="width: 30px; height: 30px;"></div>
+                                        <span>@ent.Teammate</span>
+                                    </div>
+                                </td>
+                                <td>@Data.GetNumberString(ent.Games)</td>
+                                <td>@Data.GetNumberString(ent.Wins)</td>
+                                <td>@ent.Winrate.ToString("P1")</td>
+                                <td>
+                                    <span class="@(ent.AvgGain < 0 ? "text-danger" : "text-success")">@ent.AvgGain</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="heatmap bgchart mt-3 mb-5">
+            <h3 class="text-warning d-inline-block p-2 bgchart rounded">Synergy Heatmap</h3>
             @{
                 var matrix = response.SynergyEnts
                 .SelectMany(e =>
@@ -122,63 +190,6 @@
                 <span class="heatmap-legend-note">Color = normalized Avg Gain &nbsp;·&nbsp; % = Winrate</span>
             </div>
         </div>
-        <div class="col-auto table-responsive" style="max-height: 70vh; max-width: 520px;">
-            <table class="tptable w-auto">
-                <thead class="user-select-none">
-                    <tr>
-                        <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Commander))">
-                            Commander
-                            @GetSortIcon(nameof(SynergyEnt.Commander))
-                        </th>
-                        <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Teammate))">
-                            Teammate
-                            @GetSortIcon(nameof(SynergyEnt.Teammate))
-                        </th>
-                        <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Games))">
-                            Games
-                            @GetSortIcon(nameof(SynergyEnt.Games))
-                        </th>
-                        <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Wins))">
-                            Wins
-                            @GetSortIcon(nameof(SynergyEnt.Wins))
-                        </th>
-                        <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Winrate))">
-                            Winrate
-                            @GetSortIcon(nameof(SynergyEnt.Winrate))
-                        </th>
-                        <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.AvgGain))">
-                            AvgGain
-                            @GetSortIcon(nameof(SynergyEnt.AvgGain))
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="text-nowrap">
-                    @foreach (var ent in SortedStats)
-                    {
-                        <tr class="@(ent.Games < 50 ? "text-danger" : "")">
-                            <td>
-                                <div class="d-flex">
-                                    <div class="preload-@(ent.Commander.ToString().ToLower())" alt="@ent.Commander" style="width: 30px; height: 30px;"></div>
-                                    <span>@ent.Commander</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="d-flex">
-                                    <div class="preload-@(ent.Teammate.ToString().ToLower())" alt="@ent.Teammate" style="width: 30px; height: 30px;"></div>
-                                    <span>@ent.Teammate</span>
-                                </div>
-                            </td>
-                            <td>@Data.GetNumberString(ent.Games)</td>
-                            <td>@Data.GetNumberString(ent.Wins)</td>
-                            <td>@ent.Winrate.ToString("P1")</td>
-                            <td>
-                                <span class="@(ent.AvgGain < 0 ? "text-danger" : "text-success")">@ent.AvgGain</span>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
     </div>
 }
 
@@ -242,6 +253,7 @@
 
     protected override void OnInitialized()
     {
+        StatsRequest.RatingType = RatingType.Commanders;
         previousInterest = StatsRequest.Interest;
         _ = LoadData();
         base.OnInitialized();
@@ -315,8 +327,15 @@
             return;
         }
 
-        var defaults = GetDefaultCommanders().Take(2).ToList();
-        selectedCommanders = defaults.ToHashSet();
+        if (StatsRequest.Interest == Commander.None)
+        {
+            var defaults = GetDefaultCommanders().Take(2).ToList();
+            selectedCommanders = defaults.ToHashSet();
+        }
+        else
+        {
+            selectedCommanders.Add(StatsRequest.Interest);
+        }
     }
 
     private IEnumerable<Commander> GetDefaultCommanders()

@@ -7,28 +7,35 @@
 
 <PageTitle>dsstats - stats</PageTitle>
 
-<div class="btn-group bgchart p-1 rounded mb-2">
-    <span class="px-2 text-muted small">Mode</span>
-    <button type="button"
-            class="btn @(Request.Type == StatsType.Winrate ? "btn-info" : "btn-outline-info")"
-            @onclick="() => SetStatsType(StatsType.Winrate)">
-        Winrate
-    </button>
-    <button type="button"
-            class="btn @(Request.Type == StatsType.Synergy ? "btn-info" : "btn-outline-info")"
-            @onclick="() => SetStatsType(StatsType.Synergy)">
-        Synergy
-    </button>
-</div>
+<div class="container-fluid">
+    <ul class="nav nav-tabs bgchart" style="max-width: 1000px;">
+        <li class="nav-item">
+            <button class="nav-link @(Request.Type == StatsType.Winrate ? "active" : "")"
+                    type="button"
+                    @onclick="() => SetStatsType(StatsType.Winrate)">
+                Winrate
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(Request.Type == StatsType.Synergy ? "active" : "")"
+                    type="button"
+                    @onclick="() => SetStatsType(StatsType.Synergy)">
+                Synergy
+            </button>
+        </li>
+    </ul>
 
-@if (Request.Type == StatsType.Synergy)
-{
-    <dsstats.weblib.Stats.SynergyComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
-}
-else
-{
-    <dsstats.weblib.Stats.WinrateComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
-}
+    <div class="tab-content">
+        @if (Request.Type == StatsType.Synergy)
+        {
+            <dsstats.weblib.Stats.SynergyComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+        }
+        else
+        {
+            <dsstats.weblib.Stats.WinrateComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+        }
+    </div>
+</div>
 
 @code {
     [SupplyParameterFromQuery]
