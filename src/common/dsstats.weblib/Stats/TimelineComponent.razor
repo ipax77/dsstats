@@ -54,21 +54,23 @@
         <table class="tptable">
             <thead>
                 <tr>
-                    <th>Commander</th>
+                    <th @onclick="() => SortBy(0)" style="cursor:pointer">
+                        Commander @GetSortIcon(0)
+                    </th>
                     @foreach (var bucket in GetUniqueBuckets())
                     {
-                        <th>
+                        <th @onclick="() => SortBy(bucket)" style="cursor:pointer">
                             @(bucket == 35 ? "35+ min" : $"{bucket} min")
+                            @GetSortIcon(bucket)
                         </th>
                     }
                 </tr>
             </thead>
             <tbody>
-                @foreach (var ent in response.TimelineEnts.OrderBy(o => o.Commander))
+                @foreach (var ent in GetSortedEnts())
                 {
                     <tr>
                         <td>@ent.Commander</td>
-
                         @foreach (var bucket in GetUniqueBuckets())
                         {
                             var step = ent.Steps.FirstOrDefault(s => s.BucketStart == bucket);
@@ -79,7 +81,8 @@
                                         <h6>
                                             <span class="badge @GetAvgGainColor(step.AvgGain)">@step.AvgGain.ToString("F1")</span>
                                         </h6>
-                                        <span class="fw-bold">@(step.Count == 0 ? "0" : (step.Wins / (double)step.Count).ToString("P1"))</span> <span class="text-muted">(@step.Wins/@step.Count)</span>
+                                        <span class="fw-bold">@(step.Count == 0 ? "0" : (step.Wins / (double)step.Count).ToString("P1"))</span>
+                                        <span class="text-muted">(@step.Wins/@step.Count)</span>
                                     </div>
                                 }
                                 else
@@ -108,10 +111,13 @@
     Commander previousInterest = Commander.None;
     HashSet<Commander> selectedCommanders = [];
     TimelineChart? timelineChart;
+    private int currentSortColumn = 0;
+    private bool isDescending = true;
 
     protected override void OnInitialized()
     {
         StatsRequest.RatingType = RatingType.Commanders;
+        StatsRequest.TimePeriod = TimePeriod.Last12Months;
         previousInterest = StatsRequest.Interest;
         _ = LoadData();
         base.OnInitialized();
@@ -263,5 +269,52 @@
         {
             timelineChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
         }
+    }
+
+    private void SortBy(int column)
+    {
+        if (currentSortColumn == column)
+        {
+            isDescending = !isDescending;
+        }
+        else
+        {
+            currentSortColumn = column;
+            isDescending = false;
+        }
+    }
+
+    private MarkupString GetSortIcon(int colum)
+    {
+        if (currentSortColumn != colum)
+        {
+            return (MarkupString)"";
+        }
+
+        return isDescending
+            ? (MarkupString)"<span class='bi bi-arrow-down-short ms-1'></span>"
+            : (MarkupString)"<span class='bi bi-arrow-up-short ms-1'></span>";
+    }
+
+    private IEnumerable<TimelineEnt> GetSortedEnts()
+    {
+        if (response?.TimelineEnts == null) return Array.Empty<TimelineEnt>();
+
+        // 1. Define the Key Selector
+        Func<TimelineEnt, object> keySelector = currentSortColumn switch
+        {
+            0 => ent => ent.Commander,
+            _ => ent =>
+            {
+                var step = ent.Steps.FirstOrDefault(s => s.BucketStart == currentSortColumn);
+                // Sort by Win Rate (Wins/Count). Handle division by zero.
+                return step?.AvgGain ?? 0;
+            }
+        };
+
+        // 2. Apply Sorting
+        return isDescending
+            ? response.TimelineEnts.OrderByDescending(keySelector)
+            : response.TimelineEnts.OrderBy(keySelector);
     }
 }
