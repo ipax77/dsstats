@@ -10,6 +10,16 @@ public sealed record WinrateEnt
     public int Replays { get; init; }
 }
 
+public sealed record SynergyEnt
+{
+    public Commander Commander { get; init; }
+    public Commander Teammate { get; init; }
+    public int Games { get; init; }
+    public int Wins { get; init; }
+    public double Winrate { get; init; }
+    public double AvgGain { get; init; }
+}
+
 public sealed class StatsRequest
 {
     public StatsType Type { get; set; }
@@ -65,7 +75,7 @@ public sealed class WinrateResponse : IStatsResponse
 
 public sealed class SynergyResponse : IStatsResponse
 {
-    public List<object> SynergyEnts { get; set; } = [];
+    public List<SynergyEnt> SynergyEnts { get; set; } = [];
 }
 
 public sealed class StatsResponse : IStatsResponse

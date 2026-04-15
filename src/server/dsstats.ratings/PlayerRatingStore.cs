@@ -77,6 +77,8 @@ public class PlayerRatingsStore
                 var dto = new PlayerRatingCalcDto
                 {
                     Games = rating.Games,
+                    ArcadeGames = rating.ArcadeGames,
+                    DsstatsGames = rating.DsstatsGames,
                     Wins = rating.Wins,
                     Mvps = rating.Mvps,
                     Change = rating.Change,

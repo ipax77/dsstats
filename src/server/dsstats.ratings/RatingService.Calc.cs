@@ -89,6 +89,15 @@ public partial class RatingService
         player.Rating.Confidence = confidenceAfter;
         player.Rating.Games++;
 
+        if (calcData.IsArcade)
+        {
+            player.Rating.ArcadeGames++;
+        }
+        else
+        {
+            player.Rating.DsstatsGames++;
+        }
+
         if (!player.IsLeaver)
         {
             if (isWinner)
@@ -213,7 +222,8 @@ public partial class RatingService
             WinnerTeamExpecationToWin = expectationToWin,
             WinnerTeamConfidence = winnerTeam.Sum(s => s.Rating.Confidence) / winnerTeam.Count,
             LoserTeamConfidence = loserTeam.Sum(s => s.Rating.Confidence) / loserTeam.Count,
-            CountsForChange = DateTime.Today - calcDto.Gametime < TimeSpan.FromDays(30)
+            CountsForChange = DateTime.Today - calcDto.Gametime < TimeSpan.FromDays(30),
+            IsArcade = calcDto.IsArcade
         };
     }
 
@@ -280,6 +290,7 @@ internal sealed class CalcData
     public double WinnerTeamConfidence { get; init; }
     public double LoserTeamConfidence { get; init; }
     public bool CountsForChange { get; init; }
+    public bool IsArcade { get; init; }
 }
 
 internal static class ClacDtoExtensions

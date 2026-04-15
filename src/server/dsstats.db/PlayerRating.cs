@@ -9,6 +9,8 @@ public class PlayerRating
     public int PlayerRatingId { get; set; }
     public RatingType RatingType { get; set; }
     public int Games { get; set; }
+    public int ArcadeGames { get; set; }
+    public int DsstatsGames { get; set; }
     public int Wins { get; set; }
     public int Mvps { get; set; }
     public Commander Main { get; set; }

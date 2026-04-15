@@ -37,15 +37,17 @@
                     }
                 </InputSelect>
             </div>
+
             <div class="col-12 col-md-2">
                 <label for="ratingselect" class="col-form-label">Rating Type</label>
-                <InputSelect id="ratingselect" class="form-select" @bind-Value="Request.RatingType">
+                <InputSelect id="ratingselect" class="form-select" disabled="@(Request.Type == StatsType.Synergy)" @bind-Value="Request.RatingType">
                     @foreach (RatingType type in Enum.GetValues(typeof(RatingType)))
                     {
                         <option value="@type">@type</option>
                     }
                 </InputSelect>
             </div>
+
             <div class="col-12 col-md-2">
                 <label for="cmdrselect" class="col-form-label">Commander</label>
                 <InputSelect id="cmdrselect" class="form-select" @bind-Value="Request.Interest">

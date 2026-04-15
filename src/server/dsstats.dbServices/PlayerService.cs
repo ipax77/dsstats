@@ -148,6 +148,12 @@ public partial class PlayerService(IServiceScopeFactory scopeFactory, IMemoryCac
                         : (order.Ascending ? orderedQuery.ThenBy(x => x.Games) : orderedQuery.ThenByDescending(x => x.Games));
                     break;
 
+                case nameof(PlayerRatingListItemRaw.DsstatsGames):
+                    orderedQuery = orderedQuery == null
+                        ? (order.Ascending ? query.OrderBy(x => x.DsstatsGames) : query.OrderByDescending(x => x.DsstatsGames))
+                        : (order.Ascending ? orderedQuery.ThenBy(x => x.DsstatsGames) : orderedQuery.ThenByDescending(x => x.DsstatsGames));
+                    break;
+
                 case nameof(PlayerRatingListItemRaw.Wins):
                     orderedQuery = orderedQuery == null
                         ? (order.Ascending ? query.OrderBy(x => x.Wins / x.Games) : query.OrderByDescending(x => x.Wins / x.Games))
@@ -191,6 +197,7 @@ public partial class PlayerService(IServiceScopeFactory scopeFactory, IMemoryCac
                 Name = s.Player!.Name,
                 Pos = s.Position,
                 Games = s.Games,
+                DsstatsGames = s.DsstatsGames,
                 Wins = s.Wins,
                 Mvps = s.Mvps,
                 Main = s.Main,
@@ -227,6 +234,7 @@ public partial class PlayerService(IServiceScopeFactory scopeFactory, IMemoryCac
         public Commander Main { get; set; }
         public int MainCount { get; set; }
         public int Games { get; set; }
+        public int DsstatsGames { get; set; }
         public int Wins { get; set; }
         public int Mvps { get; set; }
         public double Rating { get; set; }
@@ -247,6 +255,7 @@ public partial class PlayerService(IServiceScopeFactory scopeFactory, IMemoryCac
                 Main = this.Main,
                 MainCount = this.MainCount,
                 Games = this.Games,
+                DsstatsGames = this.DsstatsGames,
                 Wins = this.Wins,
                 Mvps = this.Mvps,
                 Rating = this.Rating,

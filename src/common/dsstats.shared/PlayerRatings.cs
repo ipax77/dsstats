@@ -28,6 +28,7 @@ public sealed class PlayerRatingListItem
     public Commander Main { get; set; }
     public int MainCount { get; set; }
     public int Games { get; set; }
+    public int DsstatsGames { get; set; }
     public int Wins { get; set; }
     public int Mvps { get; set; }
     public double Rating { get; set; }

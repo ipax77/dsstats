@@ -7,7 +7,35 @@
 
 <PageTitle>dsstats - stats</PageTitle>
 
-<dsstats.weblib.Stats.WinrateComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+<div class="container-fluid">
+    <ul class="nav nav-tabs bgchart" style="max-width: 1000px;">
+        <li class="nav-item">
+            <button class="nav-link @(Request.Type == StatsType.Winrate ? "active" : "")"
+                    type="button"
+                    @onclick="() => SetStatsType(StatsType.Winrate)">
+                Winrate
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(Request.Type == StatsType.Synergy ? "active" : "")"
+                    type="button"
+                    @onclick="() => SetStatsType(StatsType.Synergy)">
+                Synergy
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        @if (Request.Type == StatsType.Synergy)
+        {
+            <dsstats.weblib.Stats.SynergyComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+        }
+        else
+        {
+            <dsstats.weblib.Stats.WinrateComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+        }
+    </div>
+</div>
 
 @code {
     [SupplyParameterFromQuery]
@@ -74,13 +102,20 @@
     {
         Request = new StatsRequest
         {
-            Type = EnumExtensions.ParseEnumOrDefault(St, StatsType.Winrate),
+            Type = NormalizeStatsType(EnumExtensions.ParseEnumOrDefault(St, StatsType.Winrate)),
             RatingType = EnumExtensions.ParseEnumOrDefault(Rt, RatingType.Commanders),
             TimePeriod = EnumExtensions.ParseEnumOrDefault(Tp, TimePeriod.Last90Days),
             Interest = EnumExtensions.ParseEnumOrDefault(Int, Commander.None),
             WithLeavers = bool.TryParse(WithL, out var wl) && wl,
             Filter = InitFilter()
         };
+    }
+
+    private static StatsType NormalizeStatsType(StatsType type)
+    {
+        return type is StatsType.Winrate or StatsType.Synergy
+            ? type
+            : StatsType.Winrate;
     }
 
     private StatsFilter? InitFilter()
@@ -281,5 +316,16 @@
         NavigationManager.NavigateTo(
             NavigationManager.GetUriWithQueryParameters(
                 new Dictionary<string, object?>(queryDic)));
+    }
+
+    private void SetStatsType(StatsType type)
+    {
+        if (Request.Type == type)
+        {
+            return;
+        }
+
+        Request.Type = type;
+        RequestChanged(Request);
     }
 }

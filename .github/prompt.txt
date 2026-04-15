@@ -1,13 +1,33 @@
-If we have multiple replay folders, the first 'allow floder access' question shows up, but not the following after pressing 'decode all'
-Add a 'decode cancel button' to the TopRow - since can start it from here, we should also be able to stop it there.
-Add header line 'Latest Replay' on top of Laterst Replay on Home page.
-In src\common\dsstats.weblib\Replays\ReplayComponent.razor this is dangerouse, since we also use the component for the server (Blazor server), we need a better way to identify the PWA (and MAUI) app:
-            @if (OperatingSystem.IsWindows() || OperatingSystem.IsBrowser())
-				{
-					<div class="col-auto">
-						<button type="button" class="btn btn-sm btn-outline-light"
-								@onclick="() => _replayHelper.ShowFileName = !_replayHelper.ShowFileName">
-							@(_replayHelper.ShowFileName ? "Hide" : "Show") File Name
-						</button>
-					</div>
-				}
+We currently have a WinrateStatsProvider here src\server\dsstats.dbServices\Stats\StatsService.cs with its representation in src\common\dsstats.weblib\Stats\WinrateComponent.razor
+We want to add a SynergyStatsProvider (in a seperate file) which provides the stats for one specific commander relative to the commanders in the same team
+Sample query (MySQL):
+select 
+	rp.Race,
+    t.Race,
+    count(*) as Games,
+    sum(case when rp.Result = 1 then 1 else 0 end) as Wins,
+    sum(case when rp.Result = 1 then 1 else 0 end) * 1.0 / count(*) as Winrate,
+    round(avg(rpr.RatingDelta), 2) as AvgGain
+from Replays as r
+inner join ReplayPlayers as rp 
+    on rp.ReplayId = r.ReplayId
+inner join ReplayPlayers as t 
+    on t.ReplayId = r.ReplayId
+inner join ReplayPlayerRatings as rpr 
+    on rpr.ReplayPlayerId = rp.ReplayPlayerId
+where 
+    r.Gametime > '2026-01-01' 
+    and r.GameMode = 3
+    and r.PlayerCount = 6
+    and rp.Race > 3 -- commaders commander only (<=3 for standard)
+    and t.Race > 3 
+    and t.TeamId = rp.TeamId 
+    and t.ReplayPlayerId != rp.ReplayPlayerId
+group by 
+    rp.Race, t.Race;
+
+Existing filters in StatsRequest should be applied, the result should be cached
+The representation should be a table and a radar chart where you can freely add and remove specific commander datasets (two overlapping datasets let the user identify good 3rd picks)
+For the radar chart we should normalize the average rating gains (0-1) accross all results to ensure always positive values.
+
+

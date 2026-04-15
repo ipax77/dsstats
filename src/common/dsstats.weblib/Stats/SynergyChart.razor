@@ -1,0 +1,267 @@
+@using Microsoft.JSInterop
+@using dsstats.shared
+@using pax.BlazorChartJs
+@inject IJSRuntime JSRuntime
+
+<ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="EventTriggered" />
+
+@code {
+    [Parameter, EditorRequired]
+    public SynergyResponse Response { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public StatsRequest Request { get; set; } = default!;
+
+    ChartJsConfig chartJsConfig = null!;
+    ChartComponent? chartComponent;
+    bool chartReady;
+    IReadOnlyCollection<Commander> selectedCommanders = [];
+
+    protected override void OnInitialized()
+    {
+        chartJsConfig = GetChartConfig();
+        base.OnInitialized();
+    }
+
+    private void EventTriggered(ChartJsEvent chartJsEvent)
+    {
+        if (chartJsEvent is ChartJsInitEvent)
+        {
+            chartReady = true;
+            PrepareData(Response, Request, selectedCommanders);
+        }
+    }
+
+    public void PrepareData(SynergyResponse response, StatsRequest request, IReadOnlyCollection<Commander> selected)
+    {
+        Response = response;
+        Request = request;
+        selectedCommanders = selected;
+
+        if (!chartReady)
+        {
+            return;
+        }
+
+        if (chartJsConfig.Data.Datasets.Count > 0)
+        {
+            chartJsConfig.RemoveDatasets(chartJsConfig.Data.Datasets);
+        }
+
+        var entsByPair = response.SynergyEnts
+            .SelectMany(e =>
+                e.Commander == e.Teammate
+                    ? new[] { ((e.Commander, e.Teammate), e) } // only once
+                    : new[]
+                    {
+                ((e.Commander, e.Teammate), e),
+                ((e.Teammate, e.Commander), e)
+                    })
+            .ToDictionary(x => x.Item1, x => x.e);
+
+        var teammateLabels = response.SynergyEnts
+            .SelectMany(e => new[] { e.Commander, e.Teammate })
+            .Distinct()
+            .OrderBy(c => c)
+            .ToList();
+
+        chartJsConfig.SetLabels(teammateLabels.Select(t => t.ToString()).ToList());
+
+        if (chartJsConfig.Options?.Plugins?.Title != null)
+        {
+            chartJsConfig.Options.Plugins.Title.Text = new IndexableOption<string>(
+                $"Synergy AvgGain (normalized 0-1) - {GetTimeInfo(request)}");
+            chartJsConfig.UpdateChartOptions();
+        }
+
+        if (response.SynergyEnts.Count == 0 || selected.Count == 0 || teammateLabels.Count == 0)
+        {
+            _ = JSRuntime.InvokeVoidAsync("setSynergyTooltips", chartJsConfig.ChartJsConfigGuid, new List<object>());
+            return;
+        }
+
+        var minAvgGain = response.SynergyEnts.Min(e => e.AvgGain);
+        var maxAvgGain = response.SynergyEnts.Max(e => e.AvgGain);
+
+        List<ChartJsDataset> datasets = [];
+        List<List<SynergyTooltipPoint>> tooltipPoints = [];
+
+        foreach (var commander in selected.OrderBy(c => c))
+        {
+            if (!response.SynergyEnts.Any(e => e.Commander == commander))
+            {
+                continue;
+            }
+
+            List<object> normalizedValues = [];
+            List<SynergyTooltipPoint> commanderTooltip = [];
+
+            foreach (var teammate in teammateLabels)
+            {
+                var ent = GetEnt(commander, teammate, entsByPair);
+                if (ent != null)
+                {
+                    var normalized = Normalize(ent.AvgGain, minAvgGain, maxAvgGain);
+                    normalizedValues.Add(normalized);
+                    commanderTooltip.Add(new()
+                    {
+                        Commander = commander.ToString(),
+                        Teammate = teammate.ToString(),
+                        Normalized = normalized,
+                        AvgGain = ent.AvgGain,
+                        Winrate = ent.Winrate,
+                        Games = ent.Games
+                    });
+                }
+                else
+                {
+                    normalizedValues.Add(0d);
+                    commanderTooltip.Add(new()
+                    {
+                        Commander = commander.ToString(),
+                        Teammate = teammate.ToString(),
+                        Normalized = 0,
+                        AvgGain = 0,
+                        Winrate = 0,
+                        Games = 0
+                    });
+                }
+            }
+
+            datasets.Add(new LineDataset()
+            {
+                Label = commander.ToString(),
+                Data = normalizedValues,
+                BorderColor = Data.CmdrColor[commander],
+                BackgroundColor = $"{Data.CmdrColor[commander]}33",
+                BorderWidth = 2,
+                PointRadius = 3,
+                Fill = true,
+                Tension = 0.1
+            });
+            tooltipPoints.Add(commanderTooltip);
+        }
+
+        chartJsConfig.AddDatasets(datasets);
+        _ = JSRuntime.InvokeVoidAsync("setSynergyTooltips", chartJsConfig.ChartJsConfigGuid, tooltipPoints);
+    }
+
+    SynergyEnt? GetEnt(Commander a, Commander b, Dictionary<(Commander, Commander), SynergyEnt> entsByPair)
+    {
+        var key = (a < b) ? (a, b) : (b, a);
+        return entsByPair.TryGetValue(key, out var ent) ? ent : null;
+    }
+
+    private static double Normalize(double value, double min, double max)
+    {
+        if (max <= min)
+        {
+            return 1;
+        }
+
+        var normalized = (value - min) / (max - min);
+        return Math.Clamp(normalized, 0, 1);
+    }
+
+    private string GetTimeInfo(StatsRequest request)
+    {
+        if (request.Filter != null)
+        {
+            return $"{request.Filter.DateRange.From:yyyy-MM-dd} - {request.Filter.DateRange.To:yyyy-MM-dd}";
+        }
+
+        var timeInfo = Data.GetTimePeriodInfo(request.TimePeriod);
+        return $"{timeInfo.Start:yyyy-MM-dd} - {timeInfo.End:yyyy-MM-dd}";
+    }
+
+    private static ChartJsConfig GetChartConfig()
+    {
+        return new ChartJsConfig()
+        {
+            Type = ChartType.radar,
+            Options = new ChartJsOptions()
+            {
+                Responsive = true,
+                MaintainAspectRatio = true,
+                Plugins = new Plugins()
+                {
+                    Title = new Title()
+                    {
+                        Display = true,
+                        Text = new IndexableOption<string>("Synergy AvgGain"),
+                        Color = "white",
+                        Font = new Font()
+                        {
+                            Size = 16
+                        }
+                    },
+                    Legend = new Legend()
+                    {
+                        Display = true,
+                        Position = "right",
+                        Labels = new Labels()
+                        {
+                            Color = "#f2f2f2",
+                        }
+                    }
+                },
+                Scales = new ChartJsOptionsScales()
+                {
+                    R = new LinearRadialAxis()
+                    {
+                        AngleLines = new AngleLines()
+                        {
+                            Display = true,
+                            Color = "#f2f2f233",
+                            BorderDash = [ 2, 5 ],
+                            BorderDashOffset = 0
+                        },
+                        Grid = new ChartJsGrid()
+                        {
+                            Display = true,
+                            Color = "#f2f2f233",
+                        },
+                        Border = new()
+                        {
+                            Display = true,
+                            Color = "#f2f2f233",
+                            Dash = [15, 2],
+                            DashOffset = 0
+                        },
+                        PointLabels = new PointLabels()
+                        {
+                            Display = true,
+                            Font = new Font()
+                            {
+                                Size = 12
+                            },
+                            Color = "#f2f2f2"
+                        },
+                        Ticks = new()
+                        {
+                            Display = true,
+                            Color = "#666",
+                            BackdropColor = "transparent",
+                            Font = new()
+                            {
+                                Size = 10
+                            },
+                        },
+                        BeginAtZero = true,
+                        SuggestedMax = 1.0
+                    }
+                }
+            }
+        };
+    }
+
+    private sealed class SynergyTooltipPoint
+    {
+        public string Commander { get; set; } = string.Empty;
+        public string Teammate { get; set; } = string.Empty;
+        public double Normalized { get; set; }
+        public double AvgGain { get; set; }
+        public double Winrate { get; set; }
+        public int Games { get; set; }
+    }
+}
