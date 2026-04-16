@@ -22,6 +22,11 @@ public sealed class SynergyStatsProvider(DsstatsContext context, IMemoryCache me
         }) ?? new();
     }
 
+    public override Task<SynergyResponse> GetUserStatsAsync(StatsRequest request, ToonIdDto toonId, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
     private async Task<List<SynergyEnt>> GetSynergyDataAsync(StatsRequest request, CancellationToken token)
     {
         var f = StatsFilterResolver.Resolve(request);

@@ -22,6 +22,11 @@ public sealed class TimelineStatsProvider(DsstatsContext context, IMemoryCache m
         }) ?? new();
     }
 
+    public override Task<TimelineResponse> GetUserStatsAsync(StatsRequest request, ToonIdDto toonId, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
     private async Task<List<TimelineEnt>> GetTimelineDataAsync(StatsRequest request, CancellationToken token)
     {
         var f = StatsFilterResolver.Resolve(request);

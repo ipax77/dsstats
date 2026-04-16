@@ -22,4 +22,24 @@ public class StatsService(IHttpClientFactory httpClientFactory) : IStatsService
             throw;
         }
     }
+
+    public async Task<T> GetUserStatsAsync<T>(StatsType type, StatsRequest request, ToonIdDto toonId, CancellationToken token = default)
+    {
+        try
+        {
+            request.Type = type;
+            var payload = new UserStatsRequest
+            {
+                Request = request,
+                ToonId = toonId
+            };
+            var response = await _httpClient.PostAsJsonAsync("api10/Stats/user", payload, token);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<T>(cancellationToken: token) ?? throw new Exception("Failed to deserialize response"); ;
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
 }

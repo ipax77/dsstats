@@ -44,6 +44,12 @@ public sealed class StatsRequest
     public StatsFilter? Filter { get; set; }
 }
 
+public sealed class UserStatsRequest
+{
+    public StatsRequest Request { get; set; } = default!;
+    public ToonIdDto ToonId { get; set; } = default!;
+}
+
 public sealed class StatsFilter
 {
     public FilterRange<DateTime> DateRange { get; set; } = new() { From = DateTime.Today.AddDays(-90), To = DateTime.Today };
