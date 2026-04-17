@@ -12,6 +12,9 @@
     [Parameter, EditorRequired]
     public StatsRequest Request { get; set; } = default!;
 
+    [Parameter]
+    public List<Commander> Commanders { get; set; } = [];
+
     ChartJsConfig chartJsConfig = null!;
     ChartComponent? chartComponent;
     bool chartReady;
@@ -20,6 +23,7 @@
     protected override void OnInitialized()
     {
         chartJsConfig = GetChartConfig();
+        selectedCommanders = [.. Commanders];
         base.OnInitialized();
     }
 
@@ -32,11 +36,11 @@
         }
     }
 
-    public void PrepareData(TimelineResponse response, StatsRequest request, IReadOnlyCollection<Commander> selected)
+    public void PrepareData(TimelineResponse response, StatsRequest request, IEnumerable<Commander> selected)
     {
         Response = response;
         Request = request;
-        selectedCommanders = selected;
+        selectedCommanders = [.. selected];
 
         if (!chartReady)
         {
@@ -108,7 +112,7 @@
 
         var dataset = new LineDataset()
         {
-            Label = commander.ToString(),
+            Label = commander == Commander.None ? "Player" : commander.ToString(),
             Data = data,
             BorderColor = Data.CmdrColor[commander],
             BackgroundColor = $"{Data.CmdrColor[commander]}1A",

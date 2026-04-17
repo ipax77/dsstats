@@ -186,7 +186,7 @@ public class WinrateStatsProvider(DsstatsContext context, IMemoryCache memoryCac
             && f.ToonId.Region == toonId.Region
             && f.ToonId.Realm == toonId.Realm)
             .Select(s => s.PlayerId)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(token);
 
         if (playerId == 0) return [];
 

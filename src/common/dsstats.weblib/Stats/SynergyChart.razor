@@ -12,6 +12,9 @@
     [Parameter, EditorRequired]
     public StatsRequest Request { get; set; } = default!;
 
+    [Parameter]
+    public List<Commander> Commanders { get; set; } = [];
+
     ChartJsConfig chartJsConfig = null!;
     ChartComponent? chartComponent;
     bool chartReady;
@@ -20,6 +23,7 @@
     protected override void OnInitialized()
     {
         chartJsConfig = GetChartConfig();
+        selectedCommanders = [.. Commanders];
         base.OnInitialized();
     }
 
@@ -130,7 +134,7 @@
 
             datasets.Add(new LineDataset()
             {
-                Label = commander.ToString(),
+                Label = commander == Commander.None ? "Player" : commander.ToString(),
                 Data = normalizedValues,
                 BorderColor = Data.CmdrColor[commander],
                 BackgroundColor = $"{Data.CmdrColor[commander]}33",

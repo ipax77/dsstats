@@ -22,9 +22,109 @@ public sealed class TimelineStatsProvider(DsstatsContext context, IMemoryCache m
         }) ?? new();
     }
 
-    public override Task<TimelineResponse> GetUserStatsAsync(StatsRequest request, ToonIdDto toonId, CancellationToken token = default)
+    public override async Task<TimelineResponse> GetUserStatsAsync(StatsRequest request, ToonIdDto toonId, CancellationToken token = default)
     {
-        throw new NotImplementedException();
+        var memKey = request.GetMemKeyWithoutInterest(StatsType) + $"|{toonId.Id}|{toonId.Realm}|{toonId.Region}";
+
+        return await memoryCache.GetOrCreateAsync(memKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(3);
+
+            var ents = await GetUserTimelineDataAsync(request, toonId, token);
+            return new TimelineResponse { TimelineEnts = ents };
+        }) ?? new();
+    }
+
+    private async Task<List<TimelineEnt>> GetUserTimelineDataAsync(StatsRequest request, ToonIdDto toonId, CancellationToken token)
+    {
+        var f = StatsFilterResolver.Resolve(request);
+        var playerId = await context.Players.Where(f => f.ToonId.Id == toonId.Id
+            && f.ToonId.Region == toonId.Region
+            && f.ToonId.Realm == toonId.Realm)
+            .Select(s => s.PlayerId)
+            .FirstOrDefaultAsync(token);
+
+        GameMode gameMode = request.RatingType switch
+        {
+            RatingType.Standard => GameMode.Standard,
+            RatingType.StandardTE => GameMode.Standard,
+            _ => GameMode.Commanders
+        };
+
+        bool isTE = request.RatingType == RatingType.StandardTE || request.RatingType == RatingType.CommandersTE ? true : false;
+
+        var query =
+            from r in context.Replays
+            from rp in r.Players
+            from rr in r.Ratings
+            join rpr in context.ReplayPlayerRatings
+                on new { rp.ReplayPlayerId, rr.ReplayRatingId }
+                equals new { rpr.ReplayPlayerId, rpr.ReplayRatingId }
+
+            where
+                r.Gametime >= f.FromDate &&
+                (!f.HasToDate || r.Gametime < f.ToDate) &&
+                r.GameMode == gameMode &&
+                r.TE == isTE &&
+                r.PlayerCount == 6 &&
+                rr.RatingType == request.RatingType &&
+                (request.WithLeavers || rr.LeaverType == LeaverType.None) &&
+                (f.RatingFrom == null || rpr.RatingBefore >= f.RatingFrom) &&
+                (f.RatingTo == null || rpr.RatingBefore <= f.RatingTo) &&
+                (f.DurationFrom == null || r.Duration >= f.DurationFrom) &&
+                (f.DurationTo == null || r.Duration <= f.DurationTo) &&
+                (f.Exp2WinFrom == null || rr.ExpectedWinProbability >= f.Exp2WinFrom) &&
+                (f.Exp2WinTo == null || rr.ExpectedWinProbability <= f.Exp2WinTo) &&
+                (f.TeamRatingTo == null || rr.AvgRating <= f.TeamRatingTo) &&
+                (f.TeamRatingFrom == null || rr.AvgRating >= f.TeamRatingFrom) &&
+                (int)rp.Race > 0 &&
+                rp.PlayerId == playerId &&
+                r.Duration >= 5 * 60
+
+            let bucket =
+                r.Duration >= 35 * 60
+                    ? -1
+                    : (int)Math.Floor(((double)r.Duration / 60.0 - 5.0) / 3.0)
+
+            group new { rp, rpr, r } by new
+            {
+                Bucket = bucket
+            }
+            into g
+
+            select new TimelineDbEnt(
+                Commander.None,
+
+                // Bucket label or start (depending on your DTO)
+                g.Key.Bucket == -1
+                    ? 35
+                    : g.Key.Bucket * 3 + 5,
+
+                g.Count(),
+
+                g.Sum(x => x.rp.Result == PlayerResult.Win ? 1 : 0),
+
+                Math.Round(g.Average(x => x.rpr.RatingDelta), 2)
+            );
+
+        var dbEnts = await query.ToListAsync(token);
+
+        var timelineEnts = dbEnts
+            .GroupBy(e => e.Commander)
+            .Select(g => new TimelineEnt
+            {
+                Commander = g.Key,
+                Steps = g.Select(e => new TimelineStep
+                {
+                    BucketStart = e.BucketStart,
+                    Count = e.Count,
+                    Wins = e.Wins,
+                    AvgGain = e.AvgGain
+                }).OrderBy(s => s.BucketStart).ToList()
+            })
+            .ToList();
+
+        return timelineEnts;
     }
 
     private async Task<List<TimelineEnt>> GetTimelineDataAsync(StatsRequest request, CancellationToken token)

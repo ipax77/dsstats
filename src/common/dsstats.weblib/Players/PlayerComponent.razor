@@ -176,14 +176,65 @@
                 </div>
             }
             <div class="col-auto">
-                @if (winrateResponse != null)
+                <ul class="nav nav-tabs bgchart" style="max-width: 1000px;">
+                    <li class="nav-item">
+                        <button class="nav-link @(statsRequest.Type == StatsType.Winrate ? "active" : "")"
+                                type="button"
+                                @onclick="() => SetStatsType(StatsType.Winrate)">
+                            Winrate
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(statsRequest.Type == StatsType.Synergy ? "active" : "")"
+                                type="button"
+                                @onclick="() => SetStatsType(StatsType.Synergy)">
+                            Synergy
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(statsRequest.Type == StatsType.Timeline ? "active" : "")"
+                                type="button"
+                                @onclick="() => SetStatsType(StatsType.Timeline)">
+                            Timeline
+                        </button>
+                    </li>
+                </ul>
+
+                @if (statsResponse != null)
                 {
-                    <div class="border rounded border-secondary bgchart"
-                         style="min-width: 850px; width: 55vw; height: calc(55vw * 0.5); min-height: 425px;">
-                        <WinrateChart @ref="winrateChart" Request="statsRequest" Response="winrateResponse"></WinrateChart>
-                    </div>
+                    @if (statsResponse is WinrateResponse winrateResponse)
+                    {
+                        <div class="border rounded border-secondary bgchart"
+                             style="min-width: 850px; width: 55vw; height: calc(55vw * 0.5); min-height: 425px;">
+                            <WinrateChart @ref="winrateChart" Request="statsRequest" Response="winrateResponse"></WinrateChart>
+                        </div>
+                    }
+                    else if (statsResponse is TimelineResponse timelineResponse)
+                    {
+                        <div class="border rounded border-secondary bgchart"
+                             style="min-width: 850px; width: 55vw; height: calc(55vw * 0.5); min-height: 425px;">
+                            <TimelineChart @ref="timelineChart" Request="statsRequest" Response="timelineResponse" Commanders="[Commander.None]"></TimelineChart>
+                        </div>
+                    }
+                    else if (statsResponse is SynergyResponse synergyResponse)
+                    {
+                        <div class="border rounded border-secondary bgchart"
+                             style="min-width: 850px; width: 55vw; height: calc(55vw * 0.5); min-height: 425px;">
+                            <SynergyChart @ref="synergyChart" Request="statsRequest" Response="synergyResponse" Commanders="[Commander.None]"></SynergyChart>
+                        </div>
+                    }
                 }
+
             </div>
+            @if (details != null)
+            {
+                <div class="col-auto">
+                    <CommandersPerformanceTable Request="Request"
+                                                Details="details"
+                                                ToonId="Response.ToonId"
+                                                RequestChanged="LoadStats" />
+                </div>
+            }
         </div>
         @if (details != null)
         {
@@ -257,11 +308,7 @@
                         </table>
                     </div>
                 </div>
-                <div class="col-auto">
-                    <CommandersPerformanceTable @bind-Request="Request"
-                                                Details="details"
-                                                ToonId="Response.ToonId" />
-                </div>
+
             </div>
             <div class="row mb-2">
                 <div class="col-auto">
@@ -324,13 +371,16 @@
     CommandersChart? commandersChart;
     RatingsChart? ratingsChart;
     CmdrAvgGainResponse? avgGainResponse;
-    WinrateResponse? winrateResponse;
+    IStatsResponse? statsResponse;
     WinrateChart? winrateChart;
+    TimelineChart? timelineChart;
+    SynergyChart? synergyChart;
 
     StatsRequest statsRequest = new StatsRequest()
     {
-        Type = StatsType.Winrate,
+        Type = StatsType.Synergy,
         TimePeriod = TimePeriod.Last90Days,
+        WithLeavers = true,
     };
 
     protected override void OnParametersSet()
@@ -351,15 +401,51 @@
         }
         details = Response.RatingDetails.FirstOrDefault(f => f.RatingType == Request.RatingType);
         avgGainResponse = details?.AvgGainResponses.FirstOrDefault(f => f.TimePeriod == Request.TimePeriod);
+        Request.RatingType = Response.RatingDetails.FirstOrDefault()?.RatingType ?? RatingType.All;
         _ = LoadStats();
     }
 
     private async Task LoadStats()
     {
         statsRequest.RatingType = Request.RatingType;
-        winrateResponse = await StatsService.GetUserStatsAsync<WinrateResponse>(StatsType.Winrate, statsRequest, Response.ToonId, cts.Token);
-        winrateChart?.PrepareData(winrateResponse, statsRequest);
+        statsRequest.TimePeriod = Request.TimePeriod;
+        if (statsRequest.Type == StatsType.Winrate)
+        {
+            statsResponse = await StatsService.GetUserStatsAsync<WinrateResponse>(StatsType.Winrate, statsRequest, Response.ToonId, cts.Token);
+        }
+        else if (statsRequest.Type == StatsType.Timeline)
+        {
+            statsResponse = await StatsService.GetUserStatsAsync<TimelineResponse>(StatsType.Timeline, statsRequest, Response.ToonId, cts.Token);
+        }
+        else if (statsRequest.Type == StatsType.Synergy)
+        {
+            statsResponse = await StatsService.GetUserStatsAsync<SynergyResponse>(StatsType.Synergy, statsRequest, Response.ToonId, cts.Token);
+        }
+
+        if (statsResponse is WinrateResponse winrateResponse)
+        {
+            winrateChart?.PrepareData(winrateResponse, statsRequest);
+        }
+        else if (statsResponse is TimelineResponse timelineResponse)
+        {
+            timelineChart?.PrepareData(timelineResponse, statsRequest, [Commander.None]);
+        }
+        else if (statsResponse is SynergyResponse synergyResponse)
+        {
+            synergyChart?.PrepareData(synergyResponse, statsRequest, [Commander.None]);
+        }
+
         await InvokeAsync(StateHasChanged);
+    }
+
+    private void SetStatsType(StatsType statsType)
+    {
+        if (statsRequest.Type == statsType)
+        {
+            return;
+        }
+        statsRequest.Type = statsType;
+        _ = LoadStats();
     }
 
     private async Task LoadDetails()
