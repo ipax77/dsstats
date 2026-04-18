@@ -1,0 +1,200 @@
+﻿@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using dsstats.weblib.Stats
+@inject IStatsService StatsService
+@implements IDisposable
+
+<div class="bgchart2 p-2 d-inline-block border rounded">
+    <div class="row">
+        <div class="col-auto">
+            <span class="bi bi-x-lg text-danger pointer" @onclick="() => OnClose.InvokeAsync()"></span>
+        </div>
+        <div class="col-auto">
+            <span class="border rounded p-1">@Data.GetRegionString(PlayerRating.RegionId)</span>
+        </div>
+        <div class="col-auto card-title text-warning fw-bold">
+            <h3 class="mt-3">@PlayerRating.Name Details</h3>
+        </div>
+        <div class="col-auto">
+            <label for="typeSelect" class="form-label">Rating Type</label>
+            <select id="typeSelect" class="form-select" @bind="statsRequest.RatingType" @bind:after="LoadStats">
+                @foreach (RatingType ratingType in Enum.GetValues(typeof(RatingType)))
+                {
+                    <option value="@ratingType">@ratingType</option>
+                }
+            </select>
+        </div>
+        <div class="col-auto">
+            <select class="form-select form-select-sm" @bind="statsRequest.TimePeriod" @bind:after="LoadStats">
+                @foreach (var timePeriod in Data.GetBasicTimePeriods())
+                {
+                    <option value="@timePeriod">@Data.GetTimePeriodInfo(timePeriod).Name</option>
+                }
+            </select>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-auto">
+        <div class="col-auto">
+            <ul class="nav nav-tabs bgchart" style="max-width: 1000px;">
+                <li class="nav-item">
+                    <button class="nav-link @(statsRequest.Type == StatsType.Count ? "active" : "")"
+                            type="button"
+                            @onclick="() => SetStatsType(StatsType.Count)">
+                        Count
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link @(statsRequest.Type == StatsType.Winrate ? "active" : "")"
+                            type="button"
+                            @onclick="() => SetStatsType(StatsType.Winrate)">
+                        Winrate
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link @(statsRequest.Type == StatsType.Synergy ? "active" : "")"
+                            type="button"
+                            @onclick="() => SetStatsType(StatsType.Synergy)">
+                        Synergy
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link @(statsRequest.Type == StatsType.Timeline ? "active" : "")"
+                            type="button"
+                            @onclick="() => SetStatsType(StatsType.Timeline)">
+                        Timeline
+                    </button>
+                </li>
+            </ul>
+            @if (statsResponse != null)
+            {
+                @if (statsResponse is WinrateResponse winrateResponse)
+                {
+                    <div class="border rounded border-secondary bgchart"
+                         style="min-width: 850px; width: 55vw; height: calc(55vw * 0.5); min-height: 425px;">
+                        <WinrateChart @ref="winrateChart" Request="statsRequest" Response="winrateResponse"></WinrateChart>
+                    </div>
+                }
+                else if (statsResponse is TimelineResponse timelineResponse)
+                {
+                    <div class="border rounded border-secondary bgchart"
+                         style="min-width: 850px; width: 55vw; height: calc(55vw * 0.5); min-height: 425px;">
+                        <TimelineChart @ref="timelineChart" Request="statsRequest" Response="timelineResponse" Commanders="[Commander.None]"></TimelineChart>
+                    </div>
+                }
+                else if (statsResponse is SynergyResponse synergyResponse)
+                {
+                    <div class="border rounded border-secondary bgchart"
+                         style="min-width: 850px; width: 55vw; height: calc(55vw * 0.5); min-height: 425px;">
+                        <SynergyChart @ref="synergyChart" Request="statsRequest" Response="synergyResponse" Commanders="[Commander.None]"></SynergyChart>
+                    </div>
+                }
+                else if (statsResponse is CountResponse countResponse)
+                {
+                    <div class="border rounded border-secondary bgchart"
+                         style="min-width: 850px; width: 55vw; height: calc(55vw * 0.5); min-height: 425px;">
+                        <CountChart @ref="countChart" Request="statsRequest" Response="countResponse"></CountChart>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter, EditorRequired]
+    public PlayerRatingListItem PlayerRating { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<ReplayDetails> OnReplayRequest { get; set; }
+
+    [Parameter]
+    public EventCallback<ToonIdDto> OnPlayerRequest { get; set; }
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    StatsRequest statsRequest = new StatsRequest()
+    {
+        Type = StatsType.Count,
+        TimePeriod = TimePeriod.Last90Days,
+        WithLeavers = true,
+    };
+
+    IStatsResponse? statsResponse;
+    WinrateChart? winrateChart;
+    TimelineChart? timelineChart;
+    SynergyChart? synergyChart;
+    CountChart? countChart;
+    private Dictionary<StatsType, Func<Task>> _handlers = [];
+    private readonly CancellationTokenSource cts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        var toonId = Data.GetToonId(PlayerRating.ToonIdString) ?? new();
+
+        _handlers = new()
+        {
+            [StatsType.Winrate] = async () =>
+            {
+                var response = await StatsService.GetUserStatsAsync<WinrateResponse>(
+                    StatsType.Winrate, statsRequest, toonId, cts.Token);
+                statsResponse = response;
+                winrateChart?.PrepareData(response, statsRequest);
+            },
+
+            [StatsType.Timeline] = async () =>
+            {
+                var response = await StatsService.GetUserStatsAsync<TimelineResponse>(
+                    StatsType.Timeline, statsRequest, toonId, cts.Token);
+                statsResponse = response;
+                timelineChart?.PrepareData(response, statsRequest, [Commander.None]);
+            },
+
+            [StatsType.Synergy] = async () =>
+            {
+                var response = await StatsService.GetUserStatsAsync<SynergyResponse>(
+                    StatsType.Synergy, statsRequest, toonId, cts.Token);
+                statsResponse = response;
+                synergyChart?.PrepareData(response, statsRequest, [Commander.None]);
+            },
+
+            [StatsType.Count] = async () =>
+            {
+                var response = await StatsService.GetUserStatsAsync<CountResponse>(
+                    StatsType.Count, statsRequest, toonId, cts.Token);
+                statsResponse = response;
+                countChart?.PrepareData(response, statsRequest);
+            }
+        };
+        _ = LoadStats();
+    }
+
+    private void SetStatsType(StatsType statsType)
+    {
+        if (statsRequest.Type == statsType)
+        {
+            return;
+        }
+        statsRequest.Type = statsType;
+        _ = LoadStats();
+    }
+
+    private async Task LoadStats()
+    {
+        if (_handlers.TryGetValue(statsRequest.Type, out var handler))
+        {
+            await handler();
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}
