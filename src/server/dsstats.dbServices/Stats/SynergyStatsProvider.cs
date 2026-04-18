@@ -22,6 +22,87 @@ public sealed class SynergyStatsProvider(DsstatsContext context, IMemoryCache me
         }) ?? new();
     }
 
+    public override async Task<SynergyResponse> GetUserStatsAsync(StatsRequest request, ToonIdDto toonId, CancellationToken token = default)
+    {
+        var memKey = request.GetMemKeyWithoutInterest(StatsType) + $"|{toonId.Id}|{toonId.Realm}|{toonId.Region}";
+
+        return await memoryCache.GetOrCreateAsync(memKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(3);
+
+            var ents = await GetUserSynergyDataAsync(request, toonId, token);
+            return new SynergyResponse { SynergyEnts = ents };
+        }) ?? new();
+    }
+
+    private async Task<List<SynergyEnt>> GetUserSynergyDataAsync(StatsRequest request, ToonIdDto toonId, CancellationToken token)
+    {
+        var f = StatsFilterResolver.Resolve(request);
+        var playerId = await context.Players.Where(f => f.ToonId.Id == toonId.Id
+            && f.ToonId.Region == toonId.Region
+            && f.ToonId.Realm == toonId.Realm)
+            .Select(s => s.PlayerId)
+            .FirstOrDefaultAsync(token);
+
+        GameMode gameMode = request.RatingType switch
+        {
+            RatingType.Standard => GameMode.Standard,
+            RatingType.StandardTE => GameMode.Standard,
+            _ => GameMode.Commanders
+        };
+
+        bool isTE = request.RatingType == RatingType.StandardTE || request.RatingType == RatingType.CommandersTE ? true : false;
+
+        var query =
+            from r in context.Replays
+            from rp in r.Players
+            from teammate in r.Players
+            from rr in r.Ratings
+            join rpr in context.ReplayPlayerRatings
+                on new { rp.ReplayPlayerId, rr.ReplayRatingId }
+                equals new { rpr.ReplayPlayerId, rpr.ReplayRatingId }
+            where
+                r.Gametime >= f.FromDate &&
+                (!f.HasToDate || r.Gametime < f.ToDate) &&
+                r.GameMode == gameMode &&
+                r.TE == isTE &&
+                r.PlayerCount == 6 &&
+                rr.RatingType == request.RatingType &&
+                (request.WithLeavers || rr.LeaverType == LeaverType.None) &&
+                (f.RatingFrom == null || rpr.RatingBefore >= f.RatingFrom) &&
+                (f.RatingTo == null || rpr.RatingBefore <= f.RatingTo) &&
+                (f.DurationFrom == null || r.Duration >= f.DurationFrom) &&
+                (f.DurationTo == null || r.Duration <= f.DurationTo) &&
+                (f.Exp2WinFrom == null || rr.ExpectedWinProbability >= f.Exp2WinFrom) &&
+                (f.Exp2WinTo == null || rr.ExpectedWinProbability <= f.Exp2WinTo) &&
+                (f.TeamRatingTo == null || rr.AvgRating <= f.TeamRatingTo) &&
+                (f.TeamRatingFrom == null || rr.AvgRating >= f.TeamRatingFrom) &&
+                teammate.TeamId == rp.TeamId &&
+                teammate.ReplayPlayerId < rp.ReplayPlayerId &&
+                teammate.ReplayPlayerId != rp.ReplayPlayerId &&
+                (int)rp.Race > 0 &&
+                (int)teammate.Race > 0 &&
+                rp.PlayerId == playerId
+            group new { rp, teammate, rpr } by new
+            {
+                Teammate = teammate.Race
+            } into g
+            select new SynergyEnt
+            {
+                Commander = Commander.None,
+                Teammate = g.Key.Teammate,
+                Games = g.Count(),
+                Wins = g.Sum(x => x.rp.Result == PlayerResult.Win ? 1 : 0),
+                Winrate = g.Sum(x => x.rp.Result == PlayerResult.Win ? 1.0 : 0.0) / g.Count(),
+                AvgGain = Math.Round(g.Average(x => x.rpr.RatingDelta), 2)
+            };
+
+        return await query
+            .OrderBy(x => x.Commander)
+            .ThenBy(x => x.Teammate)
+            .ToListAsync(token);
+    }
+
     private async Task<List<SynergyEnt>> GetSynergyDataAsync(StatsRequest request, CancellationToken token)
     {
         var f = StatsFilterResolver.Resolve(request);

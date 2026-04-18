@@ -1,5 +1,11 @@
 ﻿namespace dsstats.shared;
 
+public sealed record CountEnt
+{
+    public Commander Commander { get; set; }
+    public int Count { get; set; }
+}
+
 public sealed record WinrateEnt
 {
     public Commander Commander { get; init; }
@@ -44,6 +50,12 @@ public sealed class StatsRequest
     public StatsFilter? Filter { get; set; }
 }
 
+public sealed class UserStatsRequest
+{
+    public StatsRequest Request { get; set; } = default!;
+    public ToonIdDto ToonId { get; set; } = default!;
+}
+
 public sealed class StatsFilter
 {
     public FilterRange<DateTime> DateRange { get; set; } = new() { From = DateTime.Today.AddDays(-90), To = DateTime.Today };
@@ -81,6 +93,16 @@ public sealed class FilterRange<T>
 }
 
 public interface IStatsResponse { }
+
+public sealed class CountResponse : IStatsResponse
+{
+    public int Count { get; set; }
+    public int ReplaysWithLeaver { get; set; }
+    public int ReplaysWithoutRating { get; set; }
+    public int NoResult { get; set; }
+    public int Under5Min { get; set; }
+    public List<CountEnt> CountEnts { get; set; } = [];
+}
 
 public sealed class WinrateResponse : IStatsResponse
 {

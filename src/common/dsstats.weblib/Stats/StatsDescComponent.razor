@@ -1,0 +1,333 @@
+﻿@using dsstats.shared
+
+@if (Response is CountResponse countResponse)
+{
+    <div class="row ms-1">
+        <div class="col-auto card bgchart2">
+            <div class="card-header">
+                <div class="card-title fw-bold">Total Replays</div>
+            </div>
+            <div class="card-body bgchart">
+                <div class="d-flex justify-content-center">
+                    <span class="text-warning fw-bold" style="font-size: 1.4rem;">
+                        @Data.GetNumberString(countResponse.Count)
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-auto card bgchart2">
+            <div class="card-header">
+                <div class="card-title fw-bold">Leaver Replays</div>
+            </div>
+            <div class="card-body bgchart">
+                <div class="d-flex justify-content-center">
+                    <span class="text-warning fw-bold" style="font-size: 1.4rem;">
+                        @Data.GetPercentageString(countResponse.Count, countResponse.ReplaysWithLeaver)
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-auto card bgchart2">
+            <div class="card-header">
+                <div class="card-title fw-bold">No Rating</div>
+            </div>
+            <div class="card-body bgchart">
+                <div class="d-flex justify-content-center">
+                    <span class="text-warning fw-bold" style="font-size: 1.4rem;">
+                        @Data.GetPercentageString(countResponse.Count, countResponse.ReplaysWithoutRating)
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-auto card bgchart2">
+            <div class="card-header">
+                <div class="card-title fw-bold">Under 5 min</div>
+            </div>
+            <div class="card-body bgchart">
+                <div class="d-flex justify-content-center">
+                    <span class="text-warning fw-bold" style="font-size: 1.4rem;">
+                        @Data.GetPercentageString(countResponse.Count, countResponse.Under5Min)
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="col-auto card bgchart2">
+            <div class="card-header">
+                <div class="card-title fw-bold">No Result</div>
+            </div>
+            <div class="card-body bgchart">
+                <div class="d-flex justify-content-center">
+                    <span class="text-warning fw-bold" style="font-size: 1.4rem;">
+                        @Data.GetPercentageString(countResponse.Count, countResponse.NoResult)
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="table-responsive" style="max-height: 40vh; max-width: 400px;">
+        <table class="tptable w-auto">
+            <thead class="user-select-none">
+                <tr>
+                    <th class="pointer" @onclick="() => SortBy(nameof(CountEnt.Commander))">
+                        Commander
+                        @GetSortIcon(nameof(WinrateEnt.Commander))
+                    </th>
+                    <th class="pointer" @onclick="() => SortBy(nameof(CountEnt.Count))">
+                        Games
+                        @GetSortIcon(nameof(WinrateEnt.Count))
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="text-nowrap">
+                @foreach (var ent in SortedCountStats)
+                {
+                    <tr>
+                        <td>
+                            <div class="d-flex">
+                                <div class="preload-@(ent.Commander.ToString().ToLower())" alt="@ent.Commander" style="width: 30px; height: 30px;"></div>
+                                <span>@ent.Commander</span>
+                            </div>
+                        </td>
+                        <td>@Data.GetNumberString(ent.Count)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else if (Response is WinrateResponse winrateResponse)
+{
+    <p class="bgchart text-warning p-2 rounded">
+        The players performance with the Commanders
+    </p>
+    <div class="col-auto table-responsive" style="max-height: 40vh; max-width: 400px;">
+        <table class="tptable w-auto">
+            <thead class="user-select-none">
+                <tr>
+                    <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Commander))">
+                        Commander
+                        @GetSortIcon(nameof(WinrateEnt.Commander))
+                    </th>
+                    <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Count))">
+                        Games
+                        @GetSortIcon(nameof(WinrateEnt.Count))
+                    </th>
+                    <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.AvgPerformance))">
+                        AvgPerf
+                        @GetSortIcon(nameof(WinrateEnt.AvgPerformance))
+                    </th>
+                    <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Wins))">
+                        Winrate
+                        @GetSortIcon(nameof(WinrateEnt.Wins))
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="text-nowrap">
+                @foreach (var ent in SortedWinrateStats)
+                {
+                    <tr>
+                        <td>
+                            <div class="d-flex">
+                                <div class="preload-@(ent.Commander.ToString().ToLower())" alt="@ent.Commander" style="width: 30px; height: 30px;"></div>
+                                <span>@ent.Commander</span>
+                            </div>
+                        </td>
+                        <td>@Data.GetNumberString(ent.Count)</td>
+                        <td>
+                            <span class="@(ent.AvgPerformance < 0 ? "text-danger" : "text-success")">@ent.AvgPerformance</span>
+                        </td>
+                        <td>
+                            @((ent.Count == 0 ? 0 : ent.Wins / (double)ent.Count).ToString("P1"))
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else if (Response is SynergyResponse synergyResponse)
+{
+    <p class="bgchart text-warning p-2 rounded">
+        The players performance when in the same team with the Commanders
+    </p>
+    <div class="table-responsive" style="max-height: 40vh; max-width: 520px;">
+        <table class="tptable w-auto">
+            <thead class="user-select-none">
+                <tr>
+                    <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Teammate))">
+                        Teammate
+                        @GetSortIcon(nameof(SynergyEnt.Teammate))
+                    </th>
+                    <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Games))">
+                        Games
+                        @GetSortIcon(nameof(SynergyEnt.Games))
+                    </th>
+                    <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Wins))">
+                        Wins
+                        @GetSortIcon(nameof(SynergyEnt.Wins))
+                    </th>
+                    <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.Winrate))">
+                        Winrate
+                        @GetSortIcon(nameof(SynergyEnt.Winrate))
+                    </th>
+                    <th class="pointer" @onclick="() => SortBy(nameof(SynergyEnt.AvgGain))">
+                        AvgGain
+                        @GetSortIcon(nameof(SynergyEnt.AvgGain))
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="text-nowrap">
+                @foreach (var ent in SortedSynergyStats)
+                {
+                    <tr>
+                        <td>
+                            <div class="d-flex">
+                                <div class="preload-@(ent.Teammate.ToString().ToLower())" alt="@ent.Teammate" style="width: 30px; height: 30px;"></div>
+                                <span>@ent.Teammate</span>
+                            </div>
+                        </td>
+                        <td>@Data.GetNumberString(ent.Games)</td>
+                        <td>@Data.GetNumberString(ent.Wins)</td>
+                        <td>@ent.Winrate.ToString("P1")</td>
+                        <td>
+                            <span class="@(ent.AvgGain < 0 ? "text-danger" : "text-success")">@ent.AvgGain</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else if (Response is TimelineResponse timelineResponse)
+{
+    <p class="bgchart p-2 rounded text-warning">
+        The players average rating gain per game duration
+    </p>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IStatsResponse? Response { get; set; }
+
+    private string? currentSortColumn = null;
+    private bool isDescending = true;
+
+    private IEnumerable<CountEnt> SortedCountStats
+    {
+        get
+        {
+            if (Response is CountResponse countResponse)
+            {
+                return currentSortColumn switch
+                {
+                    nameof(CountEnt.Commander) => isDescending
+                        ? countResponse.CountEnts.OrderByDescending(e => e.Commander)
+                        : countResponse.CountEnts.OrderBy(e => e.Commander),
+                    nameof(CountEnt.Count) => isDescending
+                        ? countResponse.CountEnts.OrderByDescending(e => e.Count)
+                        : countResponse.CountEnts.OrderBy(e => e.Count),
+                    _ => countResponse.CountEnts.OrderByDescending(e => e.Count)
+                };
+            }
+            else
+            {
+                return Enumerable.Empty<CountEnt>();
+            }
+        }
+    }
+
+    private IEnumerable<WinrateEnt> SortedWinrateStats
+    {
+        get
+        {
+            if (Response is WinrateResponse winrateResponse)
+            {
+                return currentSortColumn switch
+                {
+                    nameof(WinrateEnt.Commander) => isDescending
+                        ? winrateResponse.WinrateEnts.OrderByDescending(e => e.Commander)
+                        : winrateResponse.WinrateEnts.OrderBy(e => e.Commander),
+                    nameof(WinrateEnt.Count) => isDescending
+                        ? winrateResponse.WinrateEnts.OrderByDescending(e => e.Count)
+                        : winrateResponse.WinrateEnts.OrderBy(e => e.Count),
+                    nameof(WinrateEnt.AvgPerformance) => isDescending
+                        ? winrateResponse.WinrateEnts.OrderByDescending(e => e.AvgPerformance)
+                        : winrateResponse.WinrateEnts.OrderBy(e => e.AvgPerformance),
+                    nameof(WinrateEnt.Wins) => isDescending
+                        ? winrateResponse.WinrateEnts.OrderByDescending(e => e.Count == 0 ? 0 : e.Wins / (double)e.Count)
+                        : winrateResponse.WinrateEnts.OrderBy(e => e.Count == 0 ? 0 : e.Wins / (double)e.Count),
+                    _ => winrateResponse.WinrateEnts.OrderByDescending(e => e.AvgPerformance)
+                };
+            }
+            else
+            {
+                return Enumerable.Empty<WinrateEnt>();
+            }
+        }
+    }
+
+    private IEnumerable<SynergyEnt> SortedSynergyStats
+    {
+        get
+        {
+            if (Response is SynergyResponse synergyResponse)
+            {
+
+                return currentSortColumn switch
+                {
+                    nameof(SynergyEnt.Commander) => isDescending
+                        ? synergyResponse.SynergyEnts.OrderByDescending(e => e.Commander)
+                        : synergyResponse.SynergyEnts.OrderBy(e => e.Commander),
+                    nameof(SynergyEnt.Teammate) => isDescending
+                        ? synergyResponse.SynergyEnts.OrderByDescending(e => e.Teammate)
+                        : synergyResponse.SynergyEnts.OrderBy(e => e.Teammate),
+                    nameof(SynergyEnt.Games) => isDescending
+                        ? synergyResponse.SynergyEnts.OrderByDescending(e => e.Games)
+                        : synergyResponse.SynergyEnts.OrderBy(e => e.Games),
+                    nameof(SynergyEnt.Wins) => isDescending
+                        ? synergyResponse.SynergyEnts.OrderByDescending(e => e.Wins)
+                        : synergyResponse.SynergyEnts.OrderBy(e => e.Wins),
+                    nameof(SynergyEnt.Winrate) => isDescending
+                        ? synergyResponse.SynergyEnts.OrderByDescending(e => e.Winrate)
+                        : synergyResponse.SynergyEnts.OrderBy(e => e.Winrate),
+                    nameof(SynergyEnt.AvgGain) => isDescending
+                        ? synergyResponse.SynergyEnts.OrderByDescending(e => e.AvgGain)
+                        : synergyResponse.SynergyEnts.OrderBy(e => e.AvgGain),
+                    _ => synergyResponse.SynergyEnts.OrderByDescending(e => e.AvgGain)
+                };
+            }
+            else
+            {
+                return Enumerable.Empty<SynergyEnt>();
+            }
+        }
+    }
+
+    private void SortBy(string columnName)
+    {
+        if (currentSortColumn == columnName)
+        {
+            // Toggle direction if the same column is clicked
+            isDescending = !isDescending;
+        }
+        else
+        {
+            // New column clicked, set new column and default to descending
+            currentSortColumn = columnName;
+            isDescending = true;
+        }
+    }
+
+    private MarkupString GetSortIcon(string columnName)
+    {
+        if (currentSortColumn != columnName)
+        {
+            return (MarkupString)""; // No icon if not the current sort column
+        }
+
+        // Use Bootstrap Icons (bi) for direction indicators
+        return isDescending
+            ? (MarkupString)"<span class='bi bi-arrow-down-short ms-1'></span>"
+            : (MarkupString)"<span class='bi bi-arrow-up-short ms-1'></span>";
+    }
+}

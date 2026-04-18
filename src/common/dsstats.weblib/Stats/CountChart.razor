@@ -1,0 +1,262 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.shared
+@using pax.BlazorChartJs
+@inject IJSRuntime JSRuntime
+
+<ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="EventTriggered" />
+
+@code {
+    [Parameter, EditorRequired]
+    public CountResponse Response { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public StatsRequest Request { get; set; } = default!;
+
+    IconsChartJsConfig chartJsConfig = null!;
+    ChartComponent? chartComponent;
+
+    bool chartReady;
+    bool iconsReady;
+    bool dataReady;
+    private readonly string mainColor = "#3F5FFA";
+    private int iconX = 30;
+    private int iconY = 30;
+
+    protected override void OnInitialized()
+    {
+        chartJsConfig = GetChartConfig();
+        base.OnInitialized();
+    }
+
+    private void EventTriggered(ChartJsEvent chartJsEvent)
+    {
+        if (chartJsEvent is ChartJsInitEvent)
+        {
+            chartReady = true;
+
+            if (!iconsReady)
+            {
+                _ = LoadIcons();
+            }
+            if (!dataReady)
+            {
+                PrepareData(Response, Request);
+            }
+        }
+    }
+
+    private async Task LoadIcons()
+    {
+        await JSRuntime.InvokeVoidAsync("registerImagePlugin", iconX, iconY);
+        await JSRuntime.InvokeVoidAsync("increaseChartHeight", chartJsConfig.ChartJsConfigGuid, iconY);
+        iconsReady = true;
+    }
+
+    public void PrepareData(CountResponse response, StatsRequest request)
+    {
+        if (!chartReady)
+        {
+            return;
+        }
+
+        Response = response;
+        Request = request;
+
+        if (chartJsConfig.Data.Datasets.Count > 0)
+        {
+            chartJsConfig.RemoveDatasets(chartJsConfig.Data.Datasets);
+        }
+
+        if (chartJsConfig.Options?.Plugins?.Title != null
+            && chartJsConfig.Options?.Scales?.Y?.Title != null)
+        {
+            chartJsConfig.Options.Plugins.Title.Text = GetTitle(request);
+            chartJsConfig.Options!.Scales!.Y!.Title!.Text = GetYAxisDesc(request);
+            chartJsConfig.UpdateChartOptions();
+        }
+
+        chartJsConfig.SetLabels(response.CountEnts.Select(s => s.Commander.ToString()).ToList());
+        chartJsConfig.AddDataset(GetCountDataset(response, request));
+
+        dataReady = true;
+        // SetIcons(response);
+        // JSRuntime.InvokeVoidAsync("setDatalabelsFormatter", chartJsConfig.ChartJsConfigGuid);
+    }
+
+
+    private ChartJsDataset GetCountDataset(CountResponse response, StatsRequest request)
+    {
+        var barDataset = new DoughnutDataset()
+        {
+            Data = GetData(response),
+            BackgroundColor = new IndexableOption<string>(response.CountEnts.Select(s => $"{Data.CmdrColor[s.Commander]}33").ToList()),
+            BorderColor = new IndexableOption<string>(response.CountEnts.Select(s => Data.CmdrColor[s.Commander]).ToList()),
+            BorderWidth = new IndexableOption<double>(2),
+            Spacing = 25,
+            BorderRadius = 5,
+            Cutout = "35%"
+        };
+
+        return barDataset;
+    }
+
+    private IndexableOption<string> GetYAxisDesc(StatsRequest request)
+    {
+        var text = "Average Rating Gain";
+        return text;
+    }
+
+    private IndexableOption<string> GetTitle(StatsRequest request)
+    {
+        string title = "Count";
+        title += $" - {GetTimeInfo(request)}";
+
+        if (request.Interest != Commander.None)
+        {
+            title = $"{request.Interest}'s " + title;
+        }
+
+        if (request.Filter != null)
+        {
+            var noFromRating = request.Filter.RatingRange.From <= Data.MinBuildRating;
+            var noToRating = request.Filter.RatingRange.To >= Data.MaxBuildRating;
+            var noFromDuration = request.Filter.DurationRange.From <= Data.MinDuration;
+            var noToDuration = request.Filter.DurationRange.To >= Data.MaxDuration;
+            var noExp2Win = request.Filter.Exp2WinRange.From <= 0;
+
+            List<string> filterParts = new();
+
+            // Rating filter
+            if (!noFromRating || !noToRating)
+            {
+                if (!noFromRating && !noToRating)
+                {
+                    filterParts.Add($"Rating: {request.Filter.RatingRange.From}-{request.Filter.RatingRange.To}");
+                }
+                else if (!noFromRating)
+                {
+                    filterParts.Add($"Rating: ≥{request.Filter.RatingRange.From}");
+                }
+                else
+                {
+                    filterParts.Add($"Rating: ≤{request.Filter.RatingRange.To}");
+                }
+            }
+
+            // Duration filter
+            if (!noFromDuration || !noToDuration)
+            {
+                if (!noFromDuration && !noToDuration)
+                {
+                    filterParts.Add($"Duration: {TimeSpan.FromSeconds(request.Filter.DurationRange.From).ToString(@"mm\:ss")}-{TimeSpan.FromSeconds(request.Filter.DurationRange.To).ToString(@"mm\:ss")}min");
+                }
+                else if (!noFromDuration)
+                {
+                    filterParts.Add($"Duration: ≥{TimeSpan.FromSeconds(request.Filter.DurationRange.From).ToString(@"mm\:ss")}min");
+                }
+                else
+                {
+                    filterParts.Add($"Duration: ≤{TimeSpan.FromSeconds(request.Filter.DurationRange.To).ToString(@"mm\:ss")}min");
+                }
+            }
+
+            if (!noExp2Win)
+            {
+                filterParts.Add($"Exp2Win: {request.Filter.Exp2WinRange.From}% - {request.Filter.Exp2WinRange.To}%");
+            }
+
+            if (filterParts.Count > 0)
+            {
+                var subTitle = string.Join(" | ", filterParts);
+                return [title, subTitle];
+            }
+        }
+
+        return title;
+    }
+
+    private string GetTimeInfo(StatsRequest request)
+    {
+        if (request.Filter != null)
+        {
+            return $"{request.Filter.DateRange.From.ToString("yyyy-MM-dd")} - {request.Filter.DateRange.To.ToString("yyyy-MM-dd")}";
+        }
+        else
+        {
+            var timeInfo = Data.GetTimePeriodInfo(request.TimePeriod);
+            return $"{timeInfo.Start.ToString("yyyy-MM-dd")} - {timeInfo.End.ToString("yyyy-MM-dd")}";
+        }
+    }
+
+    private List<object> GetData(CountResponse response)
+    {
+        return response.CountEnts.Select(s => s.Count).Cast<object>().ToList();
+    }
+
+    private void SetIcons(CountResponse response)
+    {
+        if (chartJsConfig.Options?.Plugins != null
+            && chartJsConfig.Options?.Plugins is IconsPlugins iconPlugins)
+        {
+            var icons = response.CountEnts.Select(s => new ChartIconsConfig()
+            {
+                XWidth = iconX,
+                YWidth = iconY,
+                YOffset = 0,
+                ImageSrc = $"_content/dsstats.weblib/images/{s.Commander.ToString().ToLower()}-min.png",
+                Cmdr = s.Commander.ToString().ToLower()
+            }).ToList();
+
+            // iconPlugins.BarIcons = icons;
+            chartJsConfig.Options.Plugins.BarIcons = icons;
+            chartJsConfig.UpdateChartOptions();
+        }
+    }
+
+    private IconsChartJsConfig GetChartConfig()
+    {
+        return new IconsChartJsConfig()
+        {
+            Type = ChartType.doughnut,
+            Options = new IconsChartJsOptions()
+            {
+                MaintainAspectRatio = true,
+                Responsive = true,
+                Plugins = new IconsPlugins()
+                {
+                    Title = new()
+                    {
+                        Display = true,
+                        Text = new IndexableOption<string>("Count"),
+                        Color = "white",
+                        Font = new()
+                        {
+                            Size = 16,
+                        }
+                    },
+                    Legend = new Legend()
+                    {
+                        Display = true,
+                        Position = "right",
+                        Labels = new Labels()
+                        {
+                            Color = "#f2f2f2",
+                        }
+                    },
+                    Datalabels = new()
+                    {
+                        Display = "auto",
+                        Color = "#0a050c",
+                        BackgroundColor = "#cdc7ce",
+                        BorderColor = "#491756",
+                        BorderRadius = 4,
+                        BorderWidth = 1,
+                        Anchor = "end",
+                        Align = "start",
+                        Clip = true
+                    },
+                },
+            }
+        };
+    }
+}

@@ -115,6 +115,7 @@ public enum StatsType
     Winrate = 0,
     Synergy = 1,
     Timeline = 2,
+    Count = 3,
     Stats = 99,
 }
 

@@ -94,10 +94,7 @@ builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<TransitionService>();
 
-builder.Services.AddScoped<IStatsProvider, WinrateStatsProvider>();
-builder.Services.AddScoped<IStatsProvider, SynergyStatsProvider>();
-builder.Services.AddScoped<IStatsProvider, TimelineStatsProvider>();
-builder.Services.AddScoped<IStatsService, StatsService>();
+builder.Services.AddStats();
 builder.Services.AddScoped<IBuildsService, BuildsService>();
 
 builder.Services.AddScoped<TransitionService>();

@@ -1,0 +1,49 @@
+﻿@using Microsoft.JSInterop
+@using dsstats.shared
+@inject IJSRuntime JSRuntime
+
+<div class="modal" id="@modalId" aria-hidden="true" aria-labelledby="@modalId" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-body" style="background: url('/_content/dsstats.weblib/images/bgbing_soft.jpg') repeat center center fixed;">
+                @if (_playerRating != null)
+                {
+                    <PlayerStatsComponent PlayerRating="_playerRating"
+                                     OnReplayRequest="OnReplayRequest"
+                                     OnPlayerRequest="OnPlayerRequest"
+                                     OnClose="Close" />
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string modalId = "playerStatsModal";
+
+    private PlayerRatingListItem? _playerRating;
+
+    [Parameter]
+    public EventCallback<ReplayDetails> OnReplayRequest { get; set; }
+
+    [Parameter]
+    public EventCallback<ToonIdDto> OnPlayerRequest { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    public void Show(PlayerRatingListItem playerRating)
+    {
+        _playerRating = playerRating;
+        InvokeAsync(StateHasChanged);
+        JSRuntime.InvokeVoidAsync("openModalById", modalId);
+        JSRuntime.InvokeVoidAsync("scrollModalToTop", modalId);
+    }
+
+    public void Close()
+    {
+        JSRuntime.InvokeVoidAsync("closeModalById", modalId);
+        OnClose.InvokeAsync();
+        _playerRating = null;
+    }
+}
