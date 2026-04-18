@@ -84,6 +84,13 @@ public static class Data
         }
     }
 
+    public static string GetPercentageString(double totalCount, double count)
+    {
+        if (totalCount == 0) return "0%";
+        var per = count / totalCount;
+        return per.ToString("P1");
+    }
+
     public static PercentageInfo GetPercentageInfo(double? percent)
     {
         if (!percent.HasValue)

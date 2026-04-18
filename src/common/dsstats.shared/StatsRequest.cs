@@ -96,6 +96,11 @@ public interface IStatsResponse { }
 
 public sealed class CountResponse : IStatsResponse
 {
+    public int Count { get; set; }
+    public int ReplaysWithLeaver { get; set; }
+    public int ReplaysWithoutRating { get; set; }
+    public int NoResult { get; set; }
+    public int Under5Min { get; set; }
     public List<CountEnt> CountEnts { get; set; } = [];
 }
 
