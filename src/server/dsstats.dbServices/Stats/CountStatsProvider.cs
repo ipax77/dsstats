@@ -215,14 +215,14 @@ public class CountStatsProvider(DsstatsContext context, IMemoryCache memoryCache
     }
     private static List<CountEnt> FilterEnts(List<CountEnt> ents, RatingType ratingType)
     {
-        return ratingType switch
+        return (ratingType switch
         {
-            RatingType.Standard => ents.Where(x => (int)x.Commander > 0 && (int)x.Commander <= 3).ToList(),
-            RatingType.StandardTE => ents.Where(x => (int)x.Commander > 0 && (int)x.Commander <= 3).ToList(),
-            RatingType.Commanders => ents.Where(x => (int)x.Commander >= 10).ToList(),
-            RatingType.CommandersTE => ents.Where(x => (int)x.Commander >= 10).ToList(),
+            RatingType.Standard => ents.Where(x => (int)x.Commander > 0 && (int)x.Commander <= 3),
+            RatingType.StandardTE => ents.Where(x => (int)x.Commander > 0 && (int)x.Commander <= 3),
+            RatingType.Commanders => ents.Where(x => (int)x.Commander >= 10),
+            RatingType.CommandersTE => ents.Where(x => (int)x.Commander >= 10),
             _ => ents
-        };
+        }).OrderByDescending(o => o.Count).ToList();
     }
 }
 
