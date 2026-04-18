@@ -2,6 +2,7 @@
 @using System.Collections.Frozen
 @using dsstats.shared
 @using dsstats.shared.Extensions
+@using dsstats.weblib.Stats
 @rendermode InteractiveServer
 @inject NavigationManager NavigationManager
 
@@ -30,20 +31,31 @@
                 Timeline
             </button>
         </li>
+        <li class="nav-item">
+            <button class="nav-link @(Request.Type == StatsType.Count ? "active" : "")"
+                    type="button"
+                    @onclick="() => SetStatsType(StatsType.Count)">
+                Count
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content">
         @if (Request.Type == StatsType.Synergy)
         {
-            <dsstats.weblib.Stats.SynergyComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+            <SynergyComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
         }
         else if (Request.Type == StatsType.Timeline)
         {
-            <dsstats.weblib.Stats.TimelineComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+            <TimelineComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+        }
+        else if (Request.Type == StatsType.Count)
+        {
+            <CountComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
         }
         else
         {
-            <dsstats.weblib.Stats.WinrateComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+            <WinrateComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
         }
     </div>
 </div>
@@ -138,6 +150,7 @@
             StatsType.Winrate => StatsType.Winrate,
             StatsType.Synergy => StatsType.Synergy,
             StatsType.Timeline => StatsType.Timeline,
+            StatsType.Count => StatsType.Count,
             _ => StatsType.Winrate
         };
     }

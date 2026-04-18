@@ -1,5 +1,11 @@
 ﻿namespace dsstats.shared;
 
+public sealed record CountEnt
+{
+    public Commander Commander { get; set; }
+    public int Count { get; set; }
+}
+
 public sealed record WinrateEnt
 {
     public Commander Commander { get; init; }
@@ -87,6 +93,11 @@ public sealed class FilterRange<T>
 }
 
 public interface IStatsResponse { }
+
+public sealed class CountResponse : IStatsResponse
+{
+    public List<CountEnt> CountEnts { get; set; } = [];
+}
 
 public sealed class WinrateResponse : IStatsResponse
 {
