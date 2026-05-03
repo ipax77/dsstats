@@ -7,17 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Remove="C:\Users\pax77\.nuget\packages\pax.blazorchartjs\0.8.5\contentFiles\any\net8.0\tsconfig.json" />
-  </ItemGroup>
-
-
-  <ItemGroup>
     <SupportedPlatform Include="browser" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.*" />
-    <PackageReference Include="pax.BlazorChartJs" Version="0.8.6" />
+    <PackageReference Include="pax.BlazorChartJs" Version="0.8.7" />
   </ItemGroup>
 
   <ItemGroup>
