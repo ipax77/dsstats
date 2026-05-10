@@ -53,7 +53,7 @@ namespace dsstats.maui
             //.EnableSensitiveDataLogging()
             );
 
-            var apiUrl = "http://localhost:5279"; // "https://dsstats.pax77.org";
+            var apiUrl = "https://dsstats.pax77.org"; // "http://localhost:5279";
             builder.Services.AddHttpClient("api", httpClient =>
             {
                 httpClient.BaseAddress = new Uri(apiUrl);
