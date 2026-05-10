@@ -25,7 +25,7 @@ public sealed partial class DsstatsService(IServiceScopeFactory scopeFactory, IH
     }
 
     public async Task StartImportAsync(
-    ImportState importState, DecodeStatus? decodeStatus = null)
+        ImportState importState, DecodeStatus? decodeStatus = null)
     {
         if (importState.IsRunning)
             throw new InvalidOperationException("Import already running.");
@@ -37,11 +37,16 @@ public sealed partial class DsstatsService(IServiceScopeFactory scopeFactory, IH
 
         var progress = new Progress<ImportProgress>(importState.UpdateProgress);
 
+        var importToken = importState.Token;
+
         try
         {
-            decodeStatus ??= await GetDecodeStatus();
-            await DecodeAndImportAsync(decodeStatus, progress, importState.Token);
-            await StartUpload(importState, importState.Token);
+            await Task.Run(async () =>
+            {
+                var status = decodeStatus ?? await GetDecodeStatus(importToken).ConfigureAwait(false);
+                await DecodeAndImportAsync(status, progress, importToken).ConfigureAwait(false);
+                await StartUpload(importState, false, importToken).ConfigureAwait(false);
+            }, importToken).ConfigureAwait(false);
         }
         finally
         {
@@ -57,7 +62,7 @@ public sealed partial class DsstatsService(IServiceScopeFactory scopeFactory, IH
             });
             importState.SetRunning(false);
             importState.Complete();
-            var status = await GetDecodeStatus(default, true);
+            var status = await GetDecodeStatus(default, true).ConfigureAwait(false);
             importState.SetDecodeStatus(status);
         }
     }

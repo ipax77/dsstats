@@ -16,14 +16,14 @@ public sealed partial class DsstatsService
         HashSet<string> replayPaths = [];
         await Task.Run(async () =>
         {
-            var config = await GetConfigDto();
+            var config = await GetConfigDto().ConfigureAwait(false);
 
             if (config.AutoDecode && WatchService is null)
             {
                 StartWatching(config);
             }
 
-            var existingReplays = await GetExistingReplayPathsAsync(token);
+            var existingReplays = await GetExistingReplayPathsAsync(token).ConfigureAwait(false);
             existingReplaysCount = existingReplays.Count;
 
             var folders = config.Sc2Profiles
@@ -50,7 +50,7 @@ public sealed partial class DsstatsService
             replayPaths.ExceptWith(existingReplays);
             replayPaths.ExceptWith(config.IgnoreReplays);
 
-        }, token);
+        }, token).ConfigureAwait(false);
         return new(existingReplaysCount, replayPaths.Count, dry ? [] : replayPaths.ToList());
     }
 
@@ -95,7 +95,8 @@ public sealed partial class DsstatsService
         return await context.Replays
             .Where(x => x.FileName != null)
             .Select(x => x.FileName!)
-            .ToHashSetAsync(ct);
+            .ToHashSetAsync(ct)
+            .ConfigureAwait(false);
     }
 
     #endregion

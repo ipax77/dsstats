@@ -30,7 +30,7 @@ public sealed partial class DsstatsService
 
         try
         {
-            while (await timer.WaitForNextTickAsync(ct))
+            while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
             {
                 progress.Report(new ImportProgress(
                     Volatile.Read(ref _total),

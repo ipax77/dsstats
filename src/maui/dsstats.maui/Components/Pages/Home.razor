@@ -49,7 +49,7 @@
 
 			<button type="button"
 					class="btn btn-outline-light align-self-start"
-					@onclick="e => DsstatsService.Upload(ImportState)">
+					@onclick="e => DsstatsService.Upload(ImportState, true)">
 				@Loc["Upload Replays"]
 			</button>
 
@@ -229,9 +229,9 @@
 		}
 	}
 
-	private async void OnImportStateFinished()
+	private void OnImportStateFinished()
 	{
-		_ = LoadLatestReplay();
+		_ = InvokeAsync(() => LoadLatestReplay());
 	}
 
 	private async Task LoadLatestReplay(bool dry = false)
@@ -397,6 +397,8 @@
 	{
 		if (disposing)
 		{
+			ImportState.OnFinished -= OnImportStateFinished;
+			cts.Cancel();
 			loadSs.Dispose();
 			cts.Dispose();
 		}
