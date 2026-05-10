@@ -6,6 +6,8 @@ using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace dsstats.dbServices;
 
@@ -60,6 +62,7 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
     public async Task ImportReplay(ReplayDto replayDto)
     {
         Init();
+        NormalizeReplayPlayerCompatHashes(replayDto);
 
         try
         {
@@ -225,6 +228,10 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
     public async Task InsertReplays(List<ReplayDto> replays)
     {
         Init();
+        foreach (var replay in replays)
+        {
+            NormalizeReplayPlayerCompatHashes(replay);
+        }
 
         Dictionary<ToonIdRec, string> players = [];
         foreach (var player in replays.SelectMany(s => s.Players))
@@ -374,6 +381,48 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
         {
             playerSs.Release();
         }
+    }
+
+    private static void NormalizeReplayPlayerCompatHashes(ReplayDto replay)
+    {
+        foreach (var player in replay.Players)
+        {
+            player.CompatHash = NormalizeReplayPlayerCompatHash(player.CompatHash);
+        }
+    }
+
+    private static string? NormalizeReplayPlayerCompatHash(string? compatHash)
+    {
+        if (string.IsNullOrEmpty(compatHash) || IsSha256Hex(compatHash))
+        {
+            return compatHash;
+        }
+
+        if (compatHash.StartsWith("ds-player-compat", StringComparison.OrdinalIgnoreCase)
+            || compatHash.Length > 64)
+        {
+            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(compatHash)));
+        }
+
+        return compatHash;
+    }
+
+    private static bool IsSha256Hex(string value)
+    {
+        if (value.Length != 64)
+        {
+            return false;
+        }
+
+        foreach (var c in value)
+        {
+            if (!char.IsAsciiHexDigit(c))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
 
