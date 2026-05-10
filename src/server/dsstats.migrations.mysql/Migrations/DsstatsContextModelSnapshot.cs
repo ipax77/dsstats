@@ -502,6 +502,10 @@ namespace dsstats.migrations.mysql.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("varchar(10)");
 
+                    b.Property<string>("CompatHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
                     b.Property<int>("Duration")
                         .HasColumnType("int");
 

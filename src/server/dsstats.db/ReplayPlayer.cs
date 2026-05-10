@@ -6,6 +6,8 @@ namespace dsstats.db;
 public class ReplayPlayer
 {
     public int ReplayPlayerId { get; set; }
+    [MaxLength(64)]
+    public string? CompatHash { get; set; }
     [MaxLength(20)]
     public string Name { get; set; } = string.Empty;
     [MaxLength(10)]

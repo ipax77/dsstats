@@ -475,6 +475,10 @@ namespace dsstats.migrations.sqlite.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("CompatHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Duration")
                         .HasColumnType("INTEGER");
 

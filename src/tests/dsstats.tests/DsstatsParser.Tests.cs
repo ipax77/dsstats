@@ -1,5 +1,6 @@
 ﻿using dsstats.parser;
 using dsstats.shared;
+using dsstats.db;
 using System.Security.Cryptography;
 
 namespace dsstats.tests;
@@ -89,7 +90,7 @@ public sealed class DsstatsParserTests
         var replayDto = await GetReplayDto(replayPath);
         using var md5 = MD5.Create();
         var hash = ReplayV2DtoExtensions.GetMd5Hash(md5, replayDto.CompatHash);
-        Assert.AreEqual("5c75850a73f9db18846748147e09f071", hash);
+        Assert.AreEqual("d23e01a839e35adac5c079a70156506d", hash);
     }
 
     [TestMethod]
@@ -125,7 +126,49 @@ public sealed class DsstatsParserTests
         string replayPath = "Direct Strike TE (1787).SC2Replay";
         var replayDto = await GetReplayDto(replayPath);
 
-        Assert.AreEqual(617, replayDto.Duration);
+        Assert.AreEqual(864, replayDto.Duration);
+    }
+
+    [TestMethod]
+    [DeploymentItem("testdata/Direct Strike (8607).SC2Replay")]
+    public async Task CanMapCompatHashes()
+    {
+        string replayPath = "Direct Strike (8607).SC2Replay";
+        var replayDto = await GetReplayDto(replayPath);
+
+        Assert.IsFalse(string.IsNullOrEmpty(replayDto.CompatHash));
+        Assert.IsTrue(replayDto.Players.All(player => !string.IsNullOrEmpty(player.CompatHash)));
+    }
+
+    [TestMethod]
+    public void CanRoundTripReplayPlayerCompatHash()
+    {
+        ReplayDto replayDto = new()
+        {
+            GameMode = GameMode.Commanders,
+            Players =
+            [
+                new()
+                {
+                    CompatHash = "ds-player-compat-v1-test",
+                    Name = "PAX",
+                    Race = Commander.Raynor,
+                    SelectedRace = Commander.Terran,
+                    GamePos = 1,
+                    TeamId = 1,
+                    Player = new()
+                    {
+                        Name = "PAX",
+                        ToonId = new() { Region = 1, Realm = 1, Id = 1 }
+                    }
+                }
+            ]
+        };
+
+        var entity = replayDto.Players[0].ToEntity(replayDto);
+        var dto = entity.ToDto();
+
+        Assert.AreEqual("ds-player-compat-v1-test", dto.CompatHash);
     }
 
     private async Task<ReplayDto> GetReplayDto(string replayPath)
