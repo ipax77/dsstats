@@ -12,16 +12,16 @@ namespace dsstats.maui.Services;
 
 public partial class DsstatsService
 {
-    public async Task<UploadResult> Upload(ImportState importState, CancellationToken token = default)
+    public async Task<UploadResult> Upload(ImportState importState, bool force = false, CancellationToken token = default)
     {
-        var result = await StartUpload(importState, token);
+        var result = await StartUpload(importState, force, token).ConfigureAwait(false);
         return result;
     }
 
-    private async Task<UploadResult> StartUpload(ImportState importState, CancellationToken token = default)
+    private async Task<UploadResult> StartUpload(ImportState importState, bool force = false, CancellationToken token = default)
     {
-        var config = await GetConfig();
-        if (!config.UploadCredential)
+        var config = await GetConfig().ConfigureAwait(false);
+        if (!config.UploadCredential && !force)
         {
             _uploadStatus = UploadStatus.Forbidden;
             importState.UpdateProgress(importState.Progress with
@@ -61,7 +61,8 @@ public partial class DsstatsService
                                 .ThenInclude(i => i.Unit)
                     .AsSplitQuery()
                         .Take(take)
-                        .ToListAsync(token);
+                        .ToListAsync(token)
+                        .ConfigureAwait(false);
 
                 if (replays.Count == 0)
                 {
@@ -96,19 +97,20 @@ public partial class DsstatsService
 
                     content.Headers.ContentEncoding.Add("br");
 
-                    var result = await httpClient.PostAsync("api10/Upload", content, token);
+                    var result = await httpClient.PostAsync("api10/Upload", content, token).ConfigureAwait(false);
                     result.EnsureSuccessStatusCode();
                 }
                 else
                 {
-                    var result = await httpClient.PostAsJsonAsync("api10/Upload", upload, token);
+                    var result = await httpClient.PostAsJsonAsync("api10/Upload", upload, token).ConfigureAwait(false);
                     result.EnsureSuccessStatusCode();
                 }
 
                 var replayIds = replays.Select(s => s.ReplayId).ToList();
                 await context.Replays
                     .Where(x => replayIds.Contains(x.ReplayId))
-                    .ExecuteUpdateAsync(e => e.SetProperty(p => p.Uploaded, true));
+                    .ExecuteUpdateAsync(e => e.SetProperty(p => p.Uploaded, true))
+                    .ConfigureAwait(false);
             }
             _uploadStatus = UploadStatus.Success;
             importState.UpdateProgress(importState.Progress with

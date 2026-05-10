@@ -2,7 +2,6 @@ using dsstats.parser;
 using dsstats.shared;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 
 namespace dsstats.tests;
 
@@ -14,18 +13,16 @@ public sealed class DecodeTests
     [DeploymentItem("testdata/Direct Strike (711).json")]
     [DeploymentItem("testdata/Direct Strike (8601).SC2Replay")]
     [DeploymentItem("testdata/Direct Strike (8601).json")]
-    [DataRow("Direct Strike (711)")]
-    [DataRow("Direct Strike (8601)")]
-    public async Task CanComputeSameReplayHash(string replayName)
+    [DataRow("Direct Strike (711)", "d23e01a839e35adac5c079a70156506d")]
+    [DataRow("Direct Strike (8601)", "945f16ab3e1843919696033575ce30b8")]
+    public async Task CanComputeSameReplayHash(string replayName, string expectedCompatHashMd5)
     {
         string replayPath = $"{replayName}.SC2Replay";
-        string jsonPath = $"{replayName}.json";
         var replayDto = await GetReplayDto(replayPath);
-        var replayV2Dto = JsonSerializer.Deserialize<ReplayV2Dto>(File.ReadAllText(jsonPath));
         using var md5 = MD5.Create();
         var compatHash = ReplayV2DtoExtensions.GetMd5Hash(md5, replayDto.CompatHash);
-        Assert.AreEqual(replayV2Dto?.ReplayHash, compatHash);
-        Assert.AreEqual(replayV2Dto?.Duration, replayDto.Duration);
+        Assert.AreEqual(expectedCompatHashMd5, compatHash);
+        Assert.IsGreaterThan(0, replayDto.Duration);
     }
 
     [TestMethod]

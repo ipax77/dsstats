@@ -33,7 +33,13 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v3.0.2</summary>
+<details open="open"><summary>v3.0.4</summary>
+
+>- Improve replay decoding speed (~-50%) and memory usage (~-90%)
+
+</details>
+
+<details><summary>v3.0.2</summary>
 
 >- Fix replay income calculation
 

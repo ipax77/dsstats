@@ -5,6 +5,7 @@ using dsstats.maui.Services;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using pax.BlazorChartJs;
 using System.Globalization;
@@ -52,9 +53,10 @@ namespace dsstats.maui
             //.EnableSensitiveDataLogging()
             );
 
+            var apiUrl = "https://dsstats.pax77.org"; // "http://localhost:5279";
             builder.Services.AddHttpClient("api", httpClient =>
             {
-                httpClient.BaseAddress = new Uri("https://dsstats.pax77.org");
+                httpClient.BaseAddress = new Uri(apiUrl);
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
             }).ConfigurePrimaryHttpMessageHandler(() =>
                 new HttpClientHandler

@@ -23,6 +23,7 @@ public class ReplayDto
 
 public class ReplayPlayerDto
 {
+    public string? CompatHash { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Clan { get; set; }
     public Commander Race { get; set; }

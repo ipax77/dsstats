@@ -108,6 +108,7 @@ export interface ReplayDto {
 }
 
 export interface ReplayPlayerDto {
+    compatHash?: string;
     name: string;
     clan?: string;
     race: number;

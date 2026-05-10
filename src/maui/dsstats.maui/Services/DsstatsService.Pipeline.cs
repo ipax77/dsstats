@@ -10,19 +10,23 @@ namespace dsstats.maui.Services;
 
 public sealed partial class DsstatsService
 {
+    private const int ImportBatchSize = 25;
+    private const int DecodeBacklogCapacity = 4;
+    private const int MaxDecodeParallelism = 4;
+
     private async Task DecodeAndImportAsync(
         DecodeStatus decodeStatus,
     IProgress<ImportProgress> progress,
     CancellationToken cancellationToken)
     {
         // Fast-fail if already running
-        if (!await _runGate.WaitAsync(0, cancellationToken))
+        if (!await _runGate.WaitAsync(0, cancellationToken).ConfigureAwait(false))
             throw new InvalidOperationException("Import already in progress.");
 
         try
         {
-            var config = await GetConfig();
-            await DecodeAndImportCoreAsync(config, decodeStatus, progress, cancellationToken);
+            var config = await GetConfig().ConfigureAwait(false);
+            await DecodeAndImportCoreAsync(config, decodeStatus, progress, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -46,7 +50,7 @@ public sealed partial class DsstatsService
             config,
             decodeStatus.ToDoReplayPaths,
             progress,
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
     }
 
     #region Pipeline Orchestration
@@ -60,7 +64,7 @@ public sealed partial class DsstatsService
         using var progressCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
         var channel = Channel.CreateBounded<ReplayDto>(
-            new BoundedChannelOptions(500)
+            new BoundedChannelOptions(DecodeBacklogCapacity)
             {
                 SingleWriter = false,
                 SingleReader = true,
@@ -82,7 +86,7 @@ public sealed partial class DsstatsService
 
         try
         {
-            await Task.WhenAll(decodeTask, importTask);
+            await Task.WhenAll(decodeTask, importTask).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -94,7 +98,7 @@ public sealed partial class DsstatsService
             channel.Writer.TryComplete();
             try
             {
-                await progressTask;
+                await progressTask.ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -111,7 +115,9 @@ public sealed partial class DsstatsService
                 ImportStatus.Completed,
                 "Import finished"));
 
-            await Toast.Make("Replay decoding finished.").Show(ct);
+            await MainThread
+                .InvokeOnMainThreadAsync(() => Toast.Make("Replay decoding finished.").Show(ct))
+                .ConfigureAwait(false);
         }
     }
 
@@ -127,37 +133,27 @@ public sealed partial class DsstatsService
     {
         try
         {
-            await foreach (var result in _replayDecoder
-                .DecodeParallelWithErrorReport(
-                    replayPaths,
-                    config.CPUCores,
-                    _decoderOptions,
-                    ct))
-            {
-                if (ct.IsCancellationRequested)
-                    break;
-
-                if (result.Sc2Replay is null)
+            var uploaders = config.GetToonIdDtos();
+            await Parallel.ForEachAsync(
+                replayPaths,
+                new ParallelOptions
                 {
-                    Interlocked.Increment(ref _errors);
-                    _replayErrors.Add(new(result.Exception ?? "failed decoding", result.ReplayPath));
-                    continue;
-                }
-
-                var dto = DsstatsParser.ParseReplay(result.Sc2Replay);
-                if (dto is null)
+                    MaxDegreeOfParallelism = GetDecodeDegreeOfParallelism(config),
+                    CancellationToken = ct
+                },
+                async (replayPath, token) =>
                 {
-                    Interlocked.Increment(ref _errors);
-                    _replayErrors.Add(new("failed parsing", result.ReplayPath));
-                    continue;
-                }
+                    var result = await DecodeReplayDtoAsync(replayPath, uploaders, token).ConfigureAwait(false);
+                    if (result.Replay is null)
+                    {
+                        Interlocked.Increment(ref _errors);
+                        _replayErrors.Add(new(result.Error ?? "failed decoding", replayPath));
+                        return;
+                    }
 
-                dto.FileName = result.ReplayPath;
-                dto.SetUploader(config.GetToonIdDtos());
-
-                await writer.WriteAsync(dto, ct);
-                Interlocked.Increment(ref _decoded);
-            }
+                    await writer.WriteAsync(result.Replay, token).ConfigureAwait(false);
+                    Interlocked.Increment(ref _decoded);
+                }).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -175,6 +171,39 @@ public sealed partial class DsstatsService
         }
     }
 
+    private async Task<DecodeReplayResult> DecodeReplayDtoAsync(
+        string replayPath,
+        List<ToonIdDto> uploaders,
+        CancellationToken ct)
+    {
+        try
+        {
+            var sc2Replay = await _replayDecoder.DecodeAsync(replayPath, _decoderOptions, ct).ConfigureAwait(false);
+            if (sc2Replay is null)
+            {
+                return new(null, "failed decoding");
+            }
+
+            var dto = DsstatsParser.ParseReplay(sc2Replay);
+            if (dto is null)
+            {
+                return new(null, "failed parsing");
+            }
+
+            dto.FileName = replayPath;
+            dto.SetUploader(uploaders);
+            return new(dto, null);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return new(null, ex.Message);
+        }
+    }
+
     #endregion
 
     #region Import Stage (Consumer)
@@ -183,17 +212,17 @@ public sealed partial class DsstatsService
         ChannelReader<ReplayDto> reader,
         CancellationToken ct)
     {
-        var batch = new List<ReplayDto>(100);
+        var batch = new List<ReplayDto>(ImportBatchSize);
 
         try
         {
-            await foreach (var replay in reader.ReadAllAsync(ct))
+            await foreach (var replay in reader.ReadAllAsync(ct).ConfigureAwait(false))
             {
                 batch.Add(replay);
 
-                if (batch.Count >= 100)
+                if (batch.Count >= ImportBatchSize)
                 {
-                    await ImportBatchAsync(batch, ct);
+                    await ImportBatchAsync(batch, ct).ConfigureAwait(false);
                     Interlocked.Add(ref _imported, batch.Count);
                     batch.Clear();
                 }
@@ -207,7 +236,7 @@ public sealed partial class DsstatsService
         {
             if (batch.Count > 0)
             {
-                await ImportBatchAsync(batch, CancellationToken.None);
+                await ImportBatchAsync(batch, CancellationToken.None).ConfigureAwait(false);
                 Interlocked.Add(ref _imported, batch.Count);
             }
         }
@@ -217,12 +246,12 @@ public sealed partial class DsstatsService
         List<ReplayDto> batch,
         CancellationToken ct)
     {
-        await _dbSemaphore.WaitAsync(ct);
+        await _dbSemaphore.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             using var scope = scopeFactory.CreateScope();
             var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
-            await importService.InsertReplays(batch);
+            await importService.InsertReplays(batch).ConfigureAwait(false);
         }
         finally
         {
@@ -230,5 +259,17 @@ public sealed partial class DsstatsService
         }
     }
 
+    private static int GetDecodeDegreeOfParallelism(MauiConfig config)
+    {
+        var configuredCores = config.CPUCores <= 0
+            ? Environment.ProcessorCount
+            : config.CPUCores;
+
+        var coreLimit = Math.Max(1, Math.Min(Environment.ProcessorCount - 1, MaxDecodeParallelism));
+        return Math.Max(1, Math.Min(configuredCores, coreLimit));
+    }
+
     #endregion
+
+    private sealed record DecodeReplayResult(ReplayDto? Replay, string? Error);
 }

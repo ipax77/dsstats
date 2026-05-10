@@ -19,6 +19,7 @@ export const getTestReplay = (id: number = 1): ReplayDto => ({
     middleChanges: [],
     players: [
         {
+            compatHash: `43BEE0CF165250AB9CE1B25B641B8C8F9F6146A0D34DB290B63E731B3E2B93B${id}-P1`,
             name: 'PlayerOne',
             race: 1,
             selectedRace: 1,
@@ -46,6 +47,7 @@ export const getTestReplay = (id: number = 1): ReplayDto => ({
             }
         },
         {
+            compatHash: `43BEE0CF165250AB9CE1B25B641B8C8F9F6146A0D34DB290B63E731B3E2B93B${id}-P2`,
             name: 'PlayerTwo_' + id,
             race: id,
             selectedRace: 2,
@@ -125,6 +127,9 @@ describe('dsstats IndexedDb', () => {
         const savedReplay = await getReplayByHash(replay.compatHash);
         expect(savedReplay).toBeDefined();
         expect(savedReplay?.compatHash).toEqual(replay.compatHash);
+        expect(savedReplay?.players.map(player => player.compatHash)).toEqual(
+            replay.players.map(player => player.compatHash)
+        );
     });
 
     describe('getFilteredReplayLists', () => {

@@ -49,6 +49,7 @@ public static class ReplayDtoMapper
 
         return new ReplayPlayer
         {
+            CompatHash = dto.CompatHash,
             Name = dto.Name,
             Clan = dto.Clan,
             Race = race,
@@ -155,6 +156,7 @@ public static class ReplayDtoMapper
     {
         return new ReplayPlayerDto
         {
+            CompatHash = replayPlayer.CompatHash,
             Name = replayPlayer.Name,
             Clan = replayPlayer.Clan,
             Race = replayPlayer.Race,

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { closeDB, openDB } from '../db-core';
-import { exportUnuploadedReplays, markReplaysAsUploaded, saveReplayFull } from '../dsstatsDb';
+import { exportUnuploadedReplays, exportUnuploadedReplays10, markReplaysAsUploaded, saveReplayFull } from '../dsstatsDb';
 import { getTestReplay, getTestReplayList, getTestReplayMeta } from './replays.test';
 
 vi.mock("pako", () => ({
@@ -40,6 +40,41 @@ describe("dsstats IndexedDb Upload Flow", () => {
         expect(exported.hashes.length).toBe(1);
         expect(exported.hashes).toContain(replay1.compatHash);
         expect(exported.payload).toBeDefined();
+    });
+
+    it("should preserve replay-player compat hashes in exported replays", async () => {
+        const replay = getTestReplay();
+        const meta = getTestReplayMeta(replay);
+        meta.uploaded = 0;
+
+        await saveReplayFull(replay.compatHash, replay, getTestReplayList(replay), meta);
+
+        const exported = await exportUnuploadedReplays();
+        const exportedReplays = JSON.parse(atob(exported.payload));
+
+        expect(exportedReplays[0].players.map((player: { compatHash?: string }) => player.compatHash)).toEqual(
+            replay.players.map(player => player.compatHash)
+        );
+    });
+
+    it("should preserve replay-player compat hashes in upload request exports", async () => {
+        const replay = getTestReplay();
+        const meta = getTestReplayMeta(replay);
+        meta.uploaded = 0;
+
+        await saveReplayFull(replay.compatHash, replay, getTestReplayList(replay), meta);
+
+        const exported = await exportUnuploadedReplays10({
+            appGuid: "test-app",
+            appVersion: "1.0.0",
+            requestNames: [],
+            replays: []
+        });
+        const uploadRequest = JSON.parse(new TextDecoder().decode(exported.payload));
+
+        expect(uploadRequest.replays[0].players.map((player: { compatHash?: string }) => player.compatHash)).toEqual(
+            replay.players.map(player => player.compatHash)
+        );
     });
 
     it("should not export uploaded replays", async () => {

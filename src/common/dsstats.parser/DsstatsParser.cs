@@ -1,11 +1,21 @@
-﻿using dsstats.shared;
+using dsstats.shared;
 using s2protocol.NET;
 using s2protocol.NET.Models;
-using System.Text;
+using ExternalBreakpoint = Sc2DirectStrike.Parser.Breakpoint;
+using ExternalCommander = Sc2DirectStrike.Parser.Commander;
+using ExternalGameMode = Sc2DirectStrike.Parser.GameMode;
+using ExternalPlayerResult = Sc2DirectStrike.Parser.PlayerResult;
+using ExternalPlayerDto = Sc2DirectStrike.Parser.PlayerDto;
+using ExternalReplayDto = Sc2DirectStrike.Parser.ReplayDto;
+using ExternalReplayPlayerDto = Sc2DirectStrike.Parser.ReplayPlayerDto;
+using ExternalSpawnDto = Sc2DirectStrike.Parser.SpawnDto;
+using ExternalToonIdDto = Sc2DirectStrike.Parser.ToonIdDto;
+using ExternalUnitDto = Sc2DirectStrike.Parser.UnitDto;
+using ExternalUpgradeDto = Sc2DirectStrike.Parser.UpgradeDto;
 
 namespace dsstats.parser;
 
-public static partial class DsstatsParser
+public static class DsstatsParser
 {
     internal static readonly int min5 = 6_720;
     internal static readonly int min10 = 13_440;
@@ -17,6 +27,7 @@ public static partial class DsstatsParser
         {
             throw new FileNotFoundException("replay not found: {replay}", replayPath);
         }
+
         var decoder = new ReplayDecoder();
         return await decoder.DecodeAsync(replayPath);
     }
@@ -28,288 +39,18 @@ public static partial class DsstatsParser
     }
 
     /// <summary>
-    /// ParseReplay
+    /// Parses a Direct Strike replay through the external Sc2DirectStrike parser and maps it to the dsstats DTO contract.
     /// </summary>
-    /// <param name="replay"></param>
-    /// <param name="compat">if true compute raw v2 hash in CompatHash</param>
-    /// <returns></returns>
+    /// <param name="replay">Decoded SC2 replay.</param>
+    /// <param name="compat">Kept for source compatibility. The external parser always emits compat hashes.</param>
     public static ReplayDto ParseReplay(Sc2Replay replay, bool compat = true)
     {
-        var dsReplay = new DsstatsReplay();
-        ParseHeader(replay.Header, dsReplay);
-        ParseDetails(replay.Details, dsReplay);
-        ParseMetadata(replay.Metadata, dsReplay);
-        ParseMessageEvents(replay.ChatMessages, replay.PingMessages, dsReplay);
-        ParseTrackerEvents(replay.TrackerEvents, dsReplay);
-        SetMiddleIncome(dsReplay);
-        if (compat)
-        {
-            SetCompatStats(dsReplay);
-        }
+        ArgumentNullException.ThrowIfNull(replay);
 
-        foreach (var player in dsReplay.Players)
-        {
-            var victoryUpgrade = player.Upgrades.FirstOrDefault(f => f.Key == "PlayerStateVictory").Value;
-            if (victoryUpgrade > 0)
-            {
-                dsReplay.Duration = Math.Max(dsReplay.Duration, victoryUpgrade);
-                dsReplay.WinnerTeam = player.TeamId;
-                player.Result = PlayerResult.Win;
-            }
-            else if (dsReplay.WinnerTeam == player.TeamId)
-            {
-                player.Result = PlayerResult.Win;
-            }
-            else
-            {
-                player.Result = PlayerResult.Los;
-            }
-        }
-
-        if (dsReplay.WinnerTeam == 0)
-        {
-            dsReplay.Players.ForEach(f => f.Result = PlayerResult.None);
-        }
-
-        if (compat)
-        {
-            var replayDto = DsstatsReplayMapper.ToDto(dsReplay);
-            replayDto.CompatHash = GenCompatHash(dsReplay, replayDto);
-            return replayDto;
-        }
-        else
-        {
-            return DsstatsReplayMapper.ToDto(dsReplay);
-        }
-    }
-
-    private static void ParseHeader(Header? header, DsstatsReplay replay)
-    {
-        if (header is null)
-        {
-            return;
-        }
-        replay.BaseBuild = header.BaseBuild;
-    }
-
-    private static void ParseDetails(Details? details, DsstatsReplay replay)
-    {
-        if (details is null)
-        {
-            return;
-        }
-        replay.Gametime = details.DateTimeUTC;
-
-
-        replay.Players = details.Players
-            .Where(x => x.Observe == 0)
-            .Select((s, index) => new DsPlayer()
-            {
-                PlayerId = index + 1,
-                Name = s.Name,
-                Clan = s.ClanName,
-                Race = ParseRace(s.Race),
-                ToonId = new()
-                {
-                    Region = s.Toon.Region,
-                    Realm = s.Toon.Realm,
-                    Id = s.Toon.Id,
-                },
-                Control = s.Control,
-                TeamId = s.TeamId,
-                WorkingSetSlotId = s.WorkingSetSlotId,
-                Observe = s.Observe,
-                Result = (PlayerResult)s.Result,
-            }).ToList();
-    }
-
-    private static Commander ParseRace(string race)
-    {
-        if (Enum.TryParse(typeof(Commander), race, out var cmdrObj)
-            && cmdrObj is Commander cmdr)
-        {
-            return cmdr;
-        }
-        return Commander.None;
-    }
-
-    private static void ParseMetadata(ReplayMetadata? metadata, DsstatsReplay replay)
-    {
-        if (metadata is null)
-        {
-            return;
-        }
-        replay.Title = metadata.Title;
-        replay.Version = metadata.GameVersion;
-        // replay.Duration = metadata.Duration;
-
-        if (metadata.Players.Count != replay.Players.Count)
-        {
-            return;
-        }
-
-        for (int i = 0; i < metadata.Players.Count; i++)
-        {
-            var player = metadata.Players.ElementAt(i);
-            var dsPlayer = replay.Players[i];
-            dsPlayer.MetadataPlayerId = player.PlayerID;
-            dsPlayer.Apm = (int)player.APM;
-            dsPlayer.SelectedRace = player.SelectedRace switch
-            {
-                "Rand" => Commander.Random,
-                "Prot" => Commander.Protoss,
-                "Terr" => Commander.Terran,
-                "Zerg" => Commander.Zerg,
-                _ => Commander.None,
-            };
-        }
-    }
-
-    private static void ParseMessageEvents(ICollection<ChatMessageEvent>? chatMessages,
-                                          ICollection<PingMessageEvent>? pingMessages,
-                                          DsstatsReplay replay)
-    {
-        if (chatMessages is not null)
-        {
-            foreach (var msg in chatMessages)
-            {
-                var player = replay.Players.FirstOrDefault(f => f.PlayerId == msg.UserId);
-                if (player is null)
-                {
-                    continue;
-                }
-                player.Messages++;
-            }
-        }
-        if (pingMessages is not null)
-        {
-            foreach (var msg in pingMessages)
-            {
-                var player = replay.Players.FirstOrDefault(f => f.PlayerId == msg.UserId);
-                if (player is null)
-                {
-                    continue;
-                }
-                player.Pings++;
-            }
-        }
-    }
-
-    private static void SetMiddleIncome(DsstatsReplay replay)
-    {
-        (int team1, int team2) = GetMiddleIncome(replay, replay.Duration);
-        replay.MiddleIncome[Breakpoint.All] = new() { Team1 = team1, Team2 = team2 };
-
-        if (replay.Duration > min5)
-        {
-            (int team15, int team25) = GetMiddleIncome(replay, min5);
-            replay.MiddleIncome[Breakpoint.Min5] = new() { Team1 = team15, Team2 = team25 };
-        }
-        if (replay.Duration > min10)
-        {
-            (int team110, int team210) = GetMiddleIncome(replay, min10);
-            replay.MiddleIncome[Breakpoint.Min10] = new() { Team1 = team110, Team2 = team210 };
-        }
-        if (replay.Duration > min15)
-        {
-            (int team115, int team215) = GetMiddleIncome(replay, min15);
-            replay.MiddleIncome[Breakpoint.Min15] = new() { Team1 = team115, Team2 = team215 };
-        }
-    }
-
-    internal static (int, int) GetMiddleIncome(DsstatsReplay replay, int targetGameloop)
-    {
-        if (replay.MiddleChanges.Count == 0 || replay.Duration <= 0)
-        {
-            return (0, 0);
-        }
-
-        int team1control = 0;
-        int team2control = 0;
-
-        int currentGameloop = 0;
-        int currentTeam = 0;
-
-        foreach (var middle in replay.MiddleChanges)
-        {
-            if (middle.Gameloop > targetGameloop)
-            {
-                var controlledGameloops = targetGameloop - currentGameloop;
-                if (controlledGameloops > 0)
-                {
-                    if (currentTeam == 1)
-                    {
-                        team1control += controlledGameloops;
-                    }
-                    else if (currentTeam == 2)
-                    {
-                        team2control += controlledGameloops;
-                    }
-                }
-                return (
-                    (int)(team1control / 22.4),
-                    (int)(team2control / 22.4)
-                );
-            }
-
-            if (currentGameloop == 0)
-            {
-                // first team taking middle control
-                currentTeam = middle.ControlTeam;
-                currentGameloop = middle.Gameloop;
-            }
-            else
-            {
-                var controlledGameloops = middle.Gameloop - currentGameloop;
-                if (currentTeam == 1)
-                {
-                    team1control += controlledGameloops;
-                }
-                else
-                {
-                    team2control += controlledGameloops;
-                }
-
-                currentTeam = middle.ControlTeam;
-                currentGameloop = middle.Gameloop;
-            }
-        }
-
-        var finalControlledGameloops = targetGameloop - currentGameloop;
-        if (finalControlledGameloops > 0)
-        {
-            if (currentTeam == 1)
-                team1control += finalControlledGameloops;
-            else if (currentTeam == 2)
-                team2control += finalControlledGameloops;
-        }
-
-        return (
-            (int)(team1control / 22.4),
-            (int)(team2control / 22.4)
-        );
-
-    }
-
-    private static string GenCompatHash(DsstatsReplay replay, ReplayDto replayDto)
-    {
-        if (replay.Players.Count == 0)
-        {
-            return string.Empty;
-        }
-        var minArmy = replay.Players.Min(m => m.SpawnStats.ArmyValue);
-        var minKills = replay.Players.Min(m => m.SpawnStats.KilledValue);
-        var minIncome = replay.Players.Min(m => m.SpawnStats.Income);
-        var maxKills = replay.Players.Max(m => m.SpawnStats.KilledValue);
-
-        StringBuilder sb = new();
-        foreach (var pl in replay.Players.OrderBy(o => o.GamePos))
-        {
-            sb.Append(pl.GamePos + pl.Race + pl.ToonId.Id);
-        }
-        sb.Append(replayDto.GameMode + replayDto.Players.Count);
-        sb.Append(minArmy + minKills + minIncome + maxKills);
-        return sb.ToString();
+        ExternalReplayDto externalReplay = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.ParseDto(replay);
+        ReplayDto dto = externalReplay.ToDsstatsDto();
+        SetMvp(dto);
+        return dto;
     }
 
     public static ReplayTourneyInfoDto? GetMetaData(Sc2Replay replay)
@@ -347,6 +88,7 @@ public static partial class DsstatsParser
             {
                 continue;
             }
+
             player.Observer = slot.Observe == 1;
             player.WorkingSetSlotId = slot.WorkingSetSlotId;
         }
@@ -359,6 +101,7 @@ public static partial class DsstatsParser
             {
                 continue;
             }
+
             player.AssignedRace = GetRace(metaPlayer.AssignedRace);
             player.SelectedRace = GetSelectedRace(metaPlayer.SelectedRace);
         }
@@ -371,6 +114,7 @@ public static partial class DsstatsParser
             {
                 continue;
             }
+
             player.Player.Name = detailPlayer.Name;
             player.Player.ToonId = new()
             {
@@ -393,6 +137,142 @@ public static partial class DsstatsParser
         };
     }
 
+    private static ReplayDto ToDsstatsDto(this ExternalReplayDto replay)
+    {
+        return new()
+        {
+            FileName = replay.FileName,
+            CompatHash = replay.CompatHash,
+            Title = replay.Title,
+            Version = replay.Version,
+            GameMode = ToGameMode(replay.GameMode),
+            RegionId = replay.RegionId,
+            Gametime = replay.Gametime,
+            BaseBuild = replay.BaseBuild,
+            Duration = ToSeconds(replay.Duration),
+            Cannon = ToSeconds(replay.Cannon),
+            Bunker = ToSeconds(replay.Bunker),
+            WinnerTeam = replay.WinnerTeam,
+            MiddleChanges = ToMiddleChanges(replay),
+            Players = replay.Players.Select(ToDsstatsDto).ToList()
+        };
+    }
+
+    private static ReplayPlayerDto ToDsstatsDto(ExternalReplayPlayerDto player)
+    {
+        return new()
+        {
+            CompatHash = player.CompatHash,
+            Name = player.Name,
+            Clan = player.Clan,
+            Race = ToCommander(player.Race),
+            SelectedRace = ToCommander(player.SelectedRace),
+            TeamId = player.TeamId,
+            GamePos = player.GamePos,
+            Result = ToPlayerResult(player.Result),
+            Duration = ToSeconds(player.Duration),
+            Apm = player.Apm,
+            Messages = player.Messages,
+            Pings = player.Pings,
+            IsMvp = player.IsMvp,
+            Spawns = player.Spawns.Select(ToDsstatsDto).ToList(),
+            Upgrades = player.Upgrades.Select(ToDsstatsDto).ToList(),
+            TierUpgrades = player.TierUpgrades.Select(ToSeconds).ToList(),
+            Refineries = player.Refineries.Select(ToSeconds).ToList(),
+            Player = ToDsstatsDto(player.Player)
+        };
+    }
+
+    private static PlayerDto ToDsstatsDto(ExternalPlayerDto player)
+    {
+        return new()
+        {
+            PlayerId = player.PlayerId,
+            Name = player.Name,
+            ToonId = ToDsstatsDto(player.ToonId)
+        };
+    }
+
+    private static ToonIdDto ToDsstatsDto(ExternalToonIdDto toonId)
+    {
+        return new()
+        {
+            Region = toonId.Region,
+            Realm = toonId.Realm,
+            Id = toonId.Id
+        };
+    }
+
+    private static SpawnDto ToDsstatsDto(ExternalSpawnDto spawn)
+    {
+        return new()
+        {
+            Breakpoint = ToBreakpoint(spawn.Breakpoint),
+            Income = spawn.Income,
+            GasCount = spawn.GasCount,
+            ArmyValue = spawn.ArmyValue,
+            KilledValue = spawn.KilledValue,
+            LostValue = spawn.LostValue,
+            UpgradeSpent = spawn.UpgradeSpent,
+            Units = spawn.Units.Select(ToDsstatsDto).ToList()
+        };
+    }
+
+    private static UnitDto ToDsstatsDto(ExternalUnitDto unit)
+    {
+        return new()
+        {
+            Name = unit.Name,
+            Count = unit.Count,
+            Positions = unit.Positions.ToList()
+        };
+    }
+
+    private static UpgradeDto ToDsstatsDto(ExternalUpgradeDto upgrade)
+    {
+        return new()
+        {
+            Name = upgrade.Name,
+            Gameloop = ToSeconds(upgrade.Time)
+        };
+    }
+
+    private static List<int> ToMiddleChanges(ExternalReplayDto replay)
+    {
+        if (replay.FirstTeamCrossedMiddle is not (1 or 2) || replay.MiddleChanges.Count == 0)
+        {
+            return [];
+        }
+
+        List<int> middleChanges = new(replay.MiddleChanges.Count + 1)
+        {
+            replay.FirstTeamCrossedMiddle
+        };
+        middleChanges.AddRange(replay.MiddleChanges.Select(ToSeconds));
+        return middleChanges;
+    }
+
+    private static int ToSeconds(TimeSpan value)
+    {
+        return value <= TimeSpan.Zero ? 0 : (int)value.TotalSeconds;
+    }
+
+    private static GameMode ToGameMode(ExternalGameMode value) => (GameMode)(int)value;
+
+    private static Commander ToCommander(ExternalCommander value) => (Commander)(int)value;
+
+    private static Breakpoint ToBreakpoint(ExternalBreakpoint value) => (Breakpoint)(int)value;
+
+    private static PlayerResult ToPlayerResult(ExternalPlayerResult value)
+    {
+        return value switch
+        {
+            ExternalPlayerResult.Win => PlayerResult.Win,
+            ExternalPlayerResult.Loss => PlayerResult.Los,
+            _ => PlayerResult.None
+        };
+    }
+
     private static Commander GetRace(string race)
     {
         if (Enum.TryParse(typeof(Commander), race, out var cmdrObj)
@@ -400,6 +280,7 @@ public static partial class DsstatsParser
         {
             return cmdr;
         }
+
         return Commander.None;
     }
 
@@ -413,5 +294,94 @@ public static partial class DsstatsParser
             _ => selectedRace
         };
         return GetRace(race);
+    }
+
+    private static void SetMvp(ReplayDto replay)
+    {
+        List<SpawnDto> allSpawns = replay.Players
+            .SelectMany(player => player.Spawns)
+            .Where(spawn => spawn.Breakpoint == Breakpoint.All)
+            .ToList();
+
+        if (allSpawns.Count == 0)
+        {
+            return;
+        }
+
+        int maxKills = allSpawns.Max(spawn => spawn.KilledValue);
+        foreach (ReplayPlayerDto player in replay.Players.Where(player => player.Spawns.Any(spawn => spawn.KilledValue == maxKills)))
+        {
+            player.IsMvp = true;
+        }
+    }
+
+    internal static (int, int) GetMiddleIncome(DsstatsReplay replay, int targetGameloop)
+    {
+        if (replay.MiddleChanges.Count == 0 || replay.Duration <= 0)
+        {
+            return (0, 0);
+        }
+
+        int team1Control = 0;
+        int team2Control = 0;
+        int currentGameloop = 0;
+        int currentTeam = 0;
+
+        foreach (DsMiddle middle in replay.MiddleChanges)
+        {
+            if (middle.Gameloop > targetGameloop)
+            {
+                int controlledGameloops = targetGameloop - currentGameloop;
+                if (controlledGameloops > 0)
+                {
+                    if (currentTeam == 1)
+                    {
+                        team1Control += controlledGameloops;
+                    }
+                    else if (currentTeam == 2)
+                    {
+                        team2Control += controlledGameloops;
+                    }
+                }
+
+                return ((int)(team1Control / 22.4), (int)(team2Control / 22.4));
+            }
+
+            if (currentGameloop == 0)
+            {
+                currentTeam = middle.ControlTeam;
+                currentGameloop = middle.Gameloop;
+            }
+            else
+            {
+                int controlledGameloops = middle.Gameloop - currentGameloop;
+                if (currentTeam == 1)
+                {
+                    team1Control += controlledGameloops;
+                }
+                else
+                {
+                    team2Control += controlledGameloops;
+                }
+
+                currentTeam = middle.ControlTeam;
+                currentGameloop = middle.Gameloop;
+            }
+        }
+
+        int finalControlledGameloops = targetGameloop - currentGameloop;
+        if (finalControlledGameloops > 0)
+        {
+            if (currentTeam == 1)
+            {
+                team1Control += finalControlledGameloops;
+            }
+            else if (currentTeam == 2)
+            {
+                team2Control += finalControlledGameloops;
+            }
+        }
+
+        return ((int)(team1Control / 22.4), (int)(team2Control / 22.4));
     }
 }
