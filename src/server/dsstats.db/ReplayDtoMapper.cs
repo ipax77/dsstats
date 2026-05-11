@@ -28,6 +28,7 @@ public static class ReplayDtoMapper
 
             ReplayHash = dto.ComputeHash(),
             CompatHash = dto.ComputeCandidateHash(),
+            ParserCompatHash = dto.ComputeParserCompatHash(),
         };
 
         // Set Replay reference on each player

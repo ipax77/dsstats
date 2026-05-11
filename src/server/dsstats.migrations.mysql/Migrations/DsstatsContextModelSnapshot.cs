@@ -408,6 +408,10 @@ namespace dsstats.migrations.mysql.Migrations
                     b.Property<int>("PlayerCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("ParserCompatHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
                     b.Property<int>("RegionId")
                         .HasColumnType("int");
 
@@ -440,6 +444,8 @@ namespace dsstats.migrations.mysql.Migrations
                     b.HasIndex("CompatHash");
 
                     b.HasIndex("Gametime");
+
+                    b.HasIndex("ParserCompatHash");
 
                     b.HasIndex("ReplayHash")
                         .IsUnique();

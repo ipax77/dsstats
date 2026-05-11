@@ -385,6 +385,10 @@ namespace dsstats.migrations.sqlite.Migrations
                     b.Property<int>("PlayerCount")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("ParserCompatHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("RegionId")
                         .HasColumnType("INTEGER");
 
@@ -417,6 +421,8 @@ namespace dsstats.migrations.sqlite.Migrations
                     b.HasIndex("CompatHash");
 
                     b.HasIndex("Gametime");
+
+                    b.HasIndex("ParserCompatHash");
 
                     b.HasIndex("ReplayHash")
                         .IsUnique();

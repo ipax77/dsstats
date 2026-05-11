@@ -29,6 +29,8 @@ public class Replay
     public string ReplayHash { get; set; } = string.Empty;
     [MaxLength(64)]
     public string CompatHash { get; set; } = string.Empty;
+    [MaxLength(64)]
+    public string? ParserCompatHash { get; set; }
     [Precision(0)]
     public DateTime Imported { get; set; }
     public bool Uploaded { get; set; }

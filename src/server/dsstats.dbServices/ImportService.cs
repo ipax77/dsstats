@@ -106,11 +106,20 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
                 }
             }
 
-            context.Replays.Add(replayEntity);
-            await context.SaveChangesAsync();
+            var duplicateResult = await HandleDuplicates([replayEntity], context);
+
+            if (duplicateResult.ReplaysToImport.Count > 0)
+            {
+                context.Replays.AddRange(duplicateResult.ReplaysToImport);
+                await context.SaveChangesAsync();
+            }
+            else if (duplicateResult.UploaderUpdates > 0)
+            {
+                await context.SaveChangesAsync();
+            }
 
             var replayCalcDto = replayEntity.ToReplayCalcDto();
-            if (replayCalcDto != null)
+            if (duplicateResult.ReplaysToImport.Contains(replayEntity) && replayCalcDto != null)
             {
                 var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
                 await ratingService.PreRatings([replayCalcDto]);
@@ -312,15 +321,19 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
                 await ratingService.PreRatings(replayCalcDtos);
             }
         }
+        else if (duplicateResult.UploaderUpdates > 0)
+        {
+            await context.SaveChangesAsync();
+        }
         if (!OperatingSystem.IsWindows())
         {
-            logger.LogWarning("Replays imported: {count}, dups: {duplicates}, replaced: {replaced}",
-             duplicateResult.ReplaysToImport.Count, duplicateResult.Duplicates, duplicateResult.Replaced);
+            logger.LogWarning("Replays imported: {count}, dups: {duplicates}, replaced: {replaced}, uploader updates: {uploaderUpdates}",
+             duplicateResult.ReplaysToImport.Count, duplicateResult.Duplicates, duplicateResult.Replaced, duplicateResult.UploaderUpdates);
         }
         else
         {
-            logger.LogInformation("Replays imported: {count}, dups: {duplicates}, replaced: {replaced}",
-             duplicateResult.ReplaysToImport.Count, duplicateResult.Duplicates, duplicateResult.Replaced);
+            logger.LogInformation("Replays imported: {count}, dups: {duplicates}, replaced: {replaced}, uploader updates: {uploaderUpdates}",
+             duplicateResult.ReplaysToImport.Count, duplicateResult.Duplicates, duplicateResult.Replaced, duplicateResult.UploaderUpdates);
         }
     }
 

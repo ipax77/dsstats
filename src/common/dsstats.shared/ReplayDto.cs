@@ -295,6 +295,44 @@ public static class ReplayDtoExtensions
         return Convert.ToHexString(hashBytes);
     }
 
+    public static string? ComputeParserCompatHash(this ReplayDto replay)
+    {
+        if (!string.IsNullOrEmpty(replay.CompatHash))
+        {
+            return ComputeSha256(replay.CompatHash);
+        }
+
+        if (replay.Players.Count == 0 || replay.Players.Any(player => string.IsNullOrEmpty(player.CompatHash)))
+        {
+            return null;
+        }
+
+        var sb = new StringBuilder();
+        sb.Append("ds-parser-player-compat-v1");
+        sb.Append('|');
+        sb.Append(replay.Players.Count);
+
+        foreach (var player in replay.Players
+            .OrderBy(p => p.TeamId)
+            .ThenBy(p => p.GamePos)
+            .ThenBy(p => p.Player?.ToonId.Region)
+            .ThenBy(p => p.Player?.ToonId.Realm)
+            .ThenBy(p => p.Player?.ToonId.Id)
+            .ThenBy(p => p.Player?.PlayerId)
+            .ThenBy(p => p.Name, StringComparer.Ordinal))
+        {
+            sb.Append('|');
+            sb.Append(player.CompatHash);
+        }
+
+        return ComputeSha256(sb.ToString());
+    }
+
+    private static string ComputeSha256(string value)
+    {
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+    }
+
     public static (int, int) GetMiddleIncome2(this ReplayDto replay, int targetGameloop)
     {
         if (replay.MiddleChanges.Count < 2 || replay.Duration <= 0)

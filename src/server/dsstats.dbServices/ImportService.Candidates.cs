@@ -25,6 +25,15 @@ public partial class ImportService
             var replays = await GetMinimalReplays(hash, context);
             await HandleCandidateDuplicates(replays, context);
         }
+
+        var parserDuplicateHashes = await GetDuplicateParserCompatHashes(context, fromTime);
+        logger.LogWarning("Found {count} parser compat duplicate hashes.", parserDuplicateHashes.Count);
+
+        foreach (var hash in parserDuplicateHashes)
+        {
+            var replays = await GetMinimalReplaysByParserCompatHash(hash, context);
+            await HandleCandidateDuplicates(replays, context, 3.0);
+        }
     }
 
     public async Task CheckRealmDuplicateCandidates()
@@ -80,7 +89,7 @@ public partial class ImportService
     }
 
 
-    private async Task<int> HandleCandidateDuplicates(List<Replay> replays, DsstatsContext context)
+    private async Task<int> HandleCandidateDuplicates(List<Replay> replays, DsstatsContext context, double timeWindowMinutes = 1.5)
     {
         // Step 1: Cluster by start time within candidate hash
         var matchGroups = new List<List<Replay>>();
@@ -89,7 +98,7 @@ public partial class ImportService
         foreach (var replay in replays)
         {
             var match = matchGroups.FirstOrDefault(g =>
-                Math.Abs((g[0].Gametime - replay.Gametime).TotalMinutes) <= 1.5);
+                Math.Abs((g[0].Gametime - replay.Gametime).TotalMinutes) <= timeWindowMinutes);
 
             if (match == null)
                 matchGroups.Add([replay]);
@@ -107,17 +116,53 @@ public partial class ImportService
                 .ThenByDescending(r => r.ReplayId) // optional deterministic fallback
                 .First();
 
+            var uploaderUpdated = false;
             foreach (var duplicate in group.Where(r => r != keeper))
             {
-                SetUploaders(keeper, duplicate);
+                uploaderUpdated |= SetUploaders(keeper, duplicate);
                 logger.LogInformation("Duplicate candidate: Keeper {keeperId}, Duplicate {dupId}", keeper.ReplayId, duplicate.ReplayId);
                 await DeleteReplay(duplicate.ReplayHash, context);
                 deletedCount++;
             }
 
+            if (uploaderUpdated)
+            {
+                await PersistUploaderFlags(keeper, context);
+            }
+
             await context.SaveChangesAsync();
         }
         return deletedCount;
+    }
+
+    private static async Task PersistUploaderFlags(Replay replay, DsstatsContext context)
+    {
+        var uploaderPlayerIds = replay.Players
+            .Where(x => x.IsUploader)
+            .Select(x => x.PlayerId)
+            .ToHashSet();
+        var uploaderCompatHashes = replay.Players
+            .Where(x => x.IsUploader && !string.IsNullOrEmpty(x.CompatHash))
+            .Select(x => x.CompatHash!)
+            .ToHashSet();
+
+        var dbReplay = await context.Replays
+            .Include(i => i.Players)
+            .FirstOrDefaultAsync(f => f.ReplayHash == replay.ReplayHash);
+
+        if (dbReplay is null)
+        {
+            return;
+        }
+
+        foreach (var player in dbReplay.Players.Where(x => !x.IsUploader))
+        {
+            if ((!string.IsNullOrEmpty(player.CompatHash) && uploaderCompatHashes.Contains(player.CompatHash))
+                || uploaderPlayerIds.Contains(player.PlayerId))
+            {
+                player.IsUploader = true;
+            }
+        }
     }
 
     private static async Task<List<string>> GetDuplicateCandidateHashes(DsstatsContext context, DateTime fromTime)
@@ -152,6 +197,34 @@ public partial class ImportService
         }
     }
 
+    private static async Task<List<string>> GetDuplicateParserCompatHashes(DsstatsContext context, DateTime fromTime)
+    {
+        if (fromTime == DateTime.MinValue)
+        {
+            return await context.Replays
+                .OrderBy(o => o.Gametime)
+                .Where(x => !string.IsNullOrEmpty(x.ParserCompatHash))
+                .GroupBy(x => x.ParserCompatHash)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key!)
+                .ToListAsync();
+        }
+
+        var parserCompatHashes = await context.Replays
+            .Where(x => x.Imported >= fromTime && !string.IsNullOrEmpty(x.ParserCompatHash))
+            .Select(s => s.ParserCompatHash)
+            .ToListAsync();
+        var parserCompatHashSet = parserCompatHashes.ToHashSet();
+
+        return await context.Replays
+            .OrderBy(o => o.Gametime)
+            .Where(x => parserCompatHashSet.Contains(x.ParserCompatHash))
+            .GroupBy(x => x.ParserCompatHash)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key!)
+            .ToListAsync();
+    }
+
     private async Task<bool> ComputeMissingCandidateHashes(DsstatsContext context)
     {
         var count = await context.Replays
@@ -179,9 +252,12 @@ public partial class ImportService
                 RegionId = s.RegionId,
                 Gametime = s.Gametime,
                 Duration = s.Duration,
+                ParserCompatHash = s.ParserCompatHash,
                 Players = s.Players.Select(t => new ReplayPlayer()
                 {
                     ReplayPlayerId = t.ReplayPlayerId,
+                    CompatHash = t.CompatHash,
+                    PlayerId = t.PlayerId,
                     GamePos = t.GamePos,
                     Name = t.Name,
                     IsUploader = t.IsUploader,
@@ -238,9 +314,52 @@ public partial class ImportService
                 RegionId = s.RegionId,
                 Gametime = s.Gametime,
                 Duration = s.Duration,
+                ParserCompatHash = s.ParserCompatHash,
                 Players = s.Players.Select(t => new ReplayPlayer()
                 {
                     ReplayPlayerId = t.ReplayPlayerId,
+                    CompatHash = t.CompatHash,
+                    PlayerId = t.PlayerId,
+                    GamePos = t.GamePos,
+                    Name = t.Name,
+                    IsUploader = t.IsUploader,
+                    Race = t.Race,
+                    Player = new Player()
+                    {
+                        ToonId = new()
+                        {
+                            Id = t.Player!.ToonId.Id,
+                            Realm = t.Player!.ToonId.Realm,
+                            Region = t.Player!.ToonId.Region
+                        }
+                    }
+                }).ToList()
+            })
+            .ToListAsync();
+    }
+
+    private static async Task<List<Replay>> GetMinimalReplaysByParserCompatHash(string parserCompatHash, DsstatsContext context)
+    {
+        return await context.Replays
+            .Include(i => i.Players)
+                .ThenInclude(i => i.Player)
+            .AsNoTracking()
+            .Where(x => x.ParserCompatHash == parserCompatHash)
+            .Select(s => new Replay()
+            {
+                ReplayId = s.ReplayId,
+                Version = s.Version,
+                ReplayHash = s.ReplayHash,
+                GameMode = s.GameMode,
+                RegionId = s.RegionId,
+                Gametime = s.Gametime,
+                Duration = s.Duration,
+                ParserCompatHash = s.ParserCompatHash,
+                Players = s.Players.Select(t => new ReplayPlayer()
+                {
+                    ReplayPlayerId = t.ReplayPlayerId,
+                    CompatHash = t.CompatHash,
+                    PlayerId = t.PlayerId,
                     GamePos = t.GamePos,
                     Name = t.Name,
                     IsUploader = t.IsUploader,
@@ -274,9 +393,12 @@ public partial class ImportService
                 RegionId = s.RegionId,
                 Gametime = s.Gametime,
                 Duration = s.Duration,
+                ParserCompatHash = s.ParserCompatHash,
                 Players = s.Players.Select(t => new ReplayPlayer()
                 {
                     ReplayPlayerId = t.ReplayPlayerId,
+                    CompatHash = t.CompatHash,
+                    PlayerId = t.PlayerId,
                     GamePos = t.GamePos,
                     Name = t.Name,
                     IsUploader = t.IsUploader,
