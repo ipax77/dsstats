@@ -19,7 +19,7 @@ public sealed class SynergyStatsProviderTests
 
         var response = await provider.GetStatsAsync(CreateRequest());
 
-        Assert.AreEqual(12, response.SynergyEnts.Count);
+        Assert.AreEqual(6, response.SynergyEnts.Count);
 
         var abathurAlarak = response.SynergyEnts.FirstOrDefault(x =>
             x.Commander == Commander.Abathur && x.Teammate == Commander.Alarak);
@@ -27,7 +27,7 @@ public sealed class SynergyStatsProviderTests
         Assert.AreEqual(1, abathurAlarak.Games);
         Assert.AreEqual(1, abathurAlarak.Wins);
         Assert.AreEqual(1.0, abathurAlarak.Winrate, 0.0001);
-        Assert.AreEqual(10.0, abathurAlarak.AvgGain, 0.0001);
+        Assert.AreEqual(20.0, abathurAlarak.AvgGain, 0.0001);
 
         var dehakaFenix = response.SynergyEnts.FirstOrDefault(x =>
             x.Commander == Commander.Dehaka && x.Teammate == Commander.Fenix);
@@ -35,7 +35,7 @@ public sealed class SynergyStatsProviderTests
         Assert.AreEqual(1, dehakaFenix.Games);
         Assert.AreEqual(0, dehakaFenix.Wins);
         Assert.AreEqual(0.0, dehakaFenix.Winrate, 0.0001);
-        Assert.AreEqual(-5.0, dehakaFenix.AvgGain, 0.0001);
+        Assert.AreEqual(-10.0, dehakaFenix.AvgGain, 0.0001);
     }
 
     [TestMethod]
@@ -65,7 +65,7 @@ public sealed class SynergyStatsProviderTests
 
         var response = await provider.GetStatsAsync(request);
 
-        Assert.AreEqual(12, response.SynergyEnts.Sum(x => x.Games));
+        Assert.AreEqual(6, response.SynergyEnts.Sum(x => x.Games));
         Assert.IsTrue(response.SynergyEnts.All(x => x.Games == 1));
     }
 
@@ -87,7 +87,7 @@ public sealed class SynergyStatsProviderTests
 
         var response = await provider.GetStatsAsync(CreateRequest());
 
-        Assert.AreEqual(12, response.SynergyEnts.Sum(x => x.Games));
+        Assert.AreEqual(6, response.SynergyEnts.Sum(x => x.Games));
         Assert.IsTrue(response.SynergyEnts.All(x => (int)x.Commander > 3 && (int)x.Teammate > 3));
         Assert.IsTrue(response.SynergyEnts.All(x => x.Commander != x.Teammate));
     }
@@ -101,12 +101,12 @@ public sealed class SynergyStatsProviderTests
 
         await SeedReplayAsync(fixture.Context, replayId: 1, gametime: new DateTime(2026, 2, 15));
         var first = await provider.GetStatsAsync(request);
-        Assert.AreEqual(12, first.SynergyEnts.Sum(x => x.Games));
+        Assert.AreEqual(6, first.SynergyEnts.Sum(x => x.Games));
 
         await SeedReplayAsync(fixture.Context, replayId: 2, gametime: new DateTime(2026, 2, 20));
 
         var cached = await provider.GetStatsAsync(request);
-        Assert.AreEqual(12, cached.SynergyEnts.Sum(x => x.Games));
+        Assert.AreEqual(6, cached.SynergyEnts.Sum(x => x.Games));
 
         var requestWithDifferentKey = CreateRequest();
         requestWithDifferentKey.Filter = new StatsFilter
@@ -119,7 +119,7 @@ public sealed class SynergyStatsProviderTests
         };
 
         var refreshed = await provider.GetStatsAsync(requestWithDifferentKey);
-        Assert.AreEqual(24, refreshed.SynergyEnts.Sum(x => x.Games));
+        Assert.AreEqual(12, refreshed.SynergyEnts.Sum(x => x.Games));
     }
 
     private static StatsRequest CreateRequest()
