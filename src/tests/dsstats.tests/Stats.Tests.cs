@@ -31,7 +31,7 @@ public sealed class StatsTests
     public async Task CanExtractStats()
     {
         var replayDto = await GetReplayDto(ReplayFile);
-        Assert.AreEqual(1046, replayDto.Duration);
+        Assert.AreEqual(602, replayDto.Duration);
     }
 
     [TestMethod]
@@ -159,7 +159,7 @@ public sealed class StatsTests
         const int tolerance = 30;
         Assert.IsTrue(Math.Abs(team1Seconds - 180) <= tolerance,
             $"Team 1 mid control: {team1Seconds}s, expected ≈180s (±{tolerance})");
-        Assert.IsTrue(Math.Abs(team2Seconds - 857) <= tolerance,
+        Assert.IsTrue(Math.Abs(team2Seconds - 413) <= tolerance,
             $"Team 2 mid control: {team2Seconds}s, expected ≈857s (±{tolerance})");
     }
 

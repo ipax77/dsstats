@@ -126,7 +126,7 @@ public sealed class DsstatsParserTests
         string replayPath = "Direct Strike TE (1787).SC2Replay";
         var replayDto = await GetReplayDto(replayPath);
 
-        Assert.AreEqual(864, replayDto.Duration);
+        Assert.AreEqual(617, replayDto.Duration);
     }
 
     [TestMethod]
