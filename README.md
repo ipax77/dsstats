@@ -33,6 +33,12 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
+<details open="open"><summary>v3.0.5</summary>
+
+>- Fix leaver detection
+
+</details>
+
 <details open="open"><summary>v3.0.4</summary>
 
 >- Improve replay decoding speed (~-50%) and memory usage (~-90%)
