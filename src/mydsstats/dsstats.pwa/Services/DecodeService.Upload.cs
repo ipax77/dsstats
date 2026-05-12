@@ -15,7 +15,7 @@ public partial class DecodeService
             UploadRequestDto uploadDto = new()
             {
                 AppGuid = config.AppGuid,
-                AppVersion = config.ConfigVersion,
+                AppVersion = "myds1.3",
                 RequestNames = [],
             };
 
