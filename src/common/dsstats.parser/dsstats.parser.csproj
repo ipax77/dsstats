@@ -1,10 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="s2protocol.NET" Version="0.9.2" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\dsstats.shared\dsstats.shared.csproj" />
     <ProjectReference Include="..\..\..\..\Sc2DirectStrike\src\Sc2DirectStrike.Parser\Sc2DirectStrike.Parser.csproj" />
   </ItemGroup>
