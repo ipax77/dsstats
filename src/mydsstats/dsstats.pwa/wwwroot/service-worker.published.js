@@ -5,6 +5,12 @@ self.importScripts('./service-worker-assets.js');
 self.addEventListener('install', event => event.waitUntil(onInstall(event)));
 self.addEventListener('activate', event => event.waitUntil(onActivate(event)));
 self.addEventListener('fetch', event => event.respondWith(onFetch(event)));
+self.addEventListener('message', event => {
+    if (event.data?.type === 'SKIP_WAITING') {
+        console.info('Service worker: Skip waiting requested');
+        event.waitUntil(self.skipWaiting());
+    }
+});
 
 const cacheNamePrefix = 'offline-cache-';
 const cacheName = `${cacheNamePrefix}${self.assetsManifest.version}`;
@@ -18,7 +24,6 @@ const manifestUrlList = self.assetsManifest.assets.map(asset => new URL(asset.ur
 
 async function onInstall(event) {
     console.info('Service worker: Install');
-    self.skipWaiting();
 
     // Fetch and cache all matching items from the assets manifest
     const assetsRequests = self.assetsManifest.assets
@@ -30,13 +35,14 @@ async function onInstall(event) {
 
 async function onActivate(event) {
     console.info('Service worker: Activate');
-    await self.clients.claim();
 
     // Delete unused caches
     const cacheKeys = await caches.keys();
     await Promise.all(cacheKeys
         .filter(key => key.startsWith(cacheNamePrefix) && key !== cacheName)
         .map(key => caches.delete(key)));
+
+    await self.clients.claim();
 }
 
 async function onFetch(event) {
@@ -51,7 +57,27 @@ async function onFetch(event) {
         const request = shouldServeIndexHtml ? 'index.html' : event.request;
         const cache = await caches.open(cacheName);
         cachedResponse = await cache.match(request);
+
+        if (!cachedResponse && request instanceof Request) {
+            cachedResponse = await matchVersionedAssetRequest(cache, request);
+        }
     }
 
     return cachedResponse || fetch(event.request);
+}
+
+async function matchVersionedAssetRequest(cache, request) {
+    const url = new URL(request.url);
+    if (!url.search) {
+        return null;
+    }
+
+    url.search = '';
+    url.hash = '';
+
+    if (!manifestUrlList.includes(url.href)) {
+        return null;
+    }
+
+    return await cache.match(url.href);
 }

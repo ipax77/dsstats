@@ -49,6 +49,7 @@ builder.Services.AddChartJs(options =>
 builder.Services.AddScoped<IndexedDbService>();
 builder.Services.AddSingleton<AppNotificationService>();
 builder.Services.AddSingleton<PwaConfigService>();
+builder.Services.AddSingleton<PwaUpdateService>();
 builder.Services.AddScoped<BackupService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<RatingService>();
