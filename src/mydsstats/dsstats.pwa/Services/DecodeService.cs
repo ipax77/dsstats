@@ -22,7 +22,7 @@ public partial class DecodeService : IDisposable
     public bool Decoding { get; private set; }
     public ReplayDto? LatestReplay { get; private set; }
     public string? LatestReplayHash { get; private set; }
-    public static readonly Version Version = new(1, 3);
+    public static readonly Version Version = new(1, 4);
     private int _currentWorkerCount = -1;
 
     public DecodeService(IServiceScopeFactory scopeFactory, IHttpClientFactory httpClientFactory,
@@ -37,7 +37,7 @@ public partial class DecodeService : IDisposable
     private DecodeClient? _decodeClient;
 
     // Used only by DecodeFromStream (single-file upload path, no worker needed).
-    private readonly ReplayDecoder decoder = new ReplayDecoder();
+    private readonly ReplayDecoder decoder = new();
     private readonly ReplayDecoderOptions decoderOptions = new()
     {
         Initdata = true,

@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\dsstats.shared\dsstats.shared.csproj" />
-    <ProjectReference Include="..\..\..\..\Sc2DirectStrike\src\Sc2DirectStrike.Parser\Sc2DirectStrike.Parser.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -13,6 +12,10 @@
     <Compile Remove="DsstatsReplayMapper.Spawn.cs" />
     <Compile Remove="MapLayout.cs" />
     <Compile Remove="PlayerLayout.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Sc2DirectStrike.Parser" Version="0.2.0" />
   </ItemGroup>
 
   <PropertyGroup>
