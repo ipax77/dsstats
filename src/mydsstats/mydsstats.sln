@@ -13,8 +13,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.indexedDb", "dsstat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.pwa", "dsstats.pwa\dsstats.pwa.csproj", "{C19A1DC8-3B04-4BF5-9DF6-8C3DD2E9F6AE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pax.BBToast", "..\..\..\pax.BBToast\src\pax.BBToast\pax.BBToast.csproj", "{4ED7BE78-ED66-4E56-925F-5C76C98ECE20}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.apiServices", "..\server\dsstats.apiServices\dsstats.apiServices.csproj", "{BDC2E79C-DDF5-1067-818F-2F3632CB0FF8}"
 EndProject
 Global
