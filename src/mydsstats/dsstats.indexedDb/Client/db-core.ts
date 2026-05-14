@@ -1,7 +1,7 @@
 import { Dump, Migration } from "./migration.js";
 
 export const DB_NAME = "ReplayDB";
-export const DB_VERSION = 7;
+export const DB_VERSION = 8;
 
 export const STORES = {
     replays: "Replays",
@@ -93,6 +93,15 @@ export const migration0: Migration = {
         }
         if (!listsStore.indexNames.contains("gameMode")) {
             listsStore.createIndex("gameMode", "gameMode", { unique: false });
+        }
+        if (!listsStore.indexNames.contains("duration")) {
+            listsStore.createIndex("duration", "duration", { unique: false });
+        }
+        if (!listsStore.indexNames.contains("playerCount")) {
+            listsStore.createIndex("playerCount", "playerCount", { unique: false });
+        }
+        if (!listsStore.indexNames.contains("tournamentEdition")) {
+            listsStore.createIndex("tournamentEdition", "tournamentEdition", { unique: false });
         }
         if (!listsStore.indexNames.contains("playerNames")) {
             listsStore.createIndex("playerNames", "playerNames", { multiEntry: true });
@@ -241,6 +250,28 @@ const migration6: Migration = {
   },
 };
 
+const migration7: Migration = {
+  schema: (_db, tx) => {
+    const listsStore = tx.objectStore(STORES.lists);
+    if (!listsStore.indexNames.contains("duration")) {
+      listsStore.createIndex("duration", "duration", { unique: false });
+    }
+    if (!listsStore.indexNames.contains("playerCount")) {
+      listsStore.createIndex("playerCount", "playerCount", { unique: false });
+    }
+    if (!listsStore.indexNames.contains("tournamentEdition")) {
+      listsStore.createIndex("tournamentEdition", "tournamentEdition", { unique: false });
+    }
+
+    backfillReplayListProjections(listsStore, tx.objectStore(STORES.replays));
+  },
+  data: (dump) => {
+    backfillReplayListProjectionsInDump(dump);
+    dump.__meta.dbVersion = 8;
+    return dump;
+  },
+};
+
 const upgrades: Record<number, Migration> = {
   0: migration0, // initial schema
   1: migration1, // uploaded boolean → number (dump/restore path only)
@@ -249,4 +280,80 @@ const upgrades: Record<number, Migration> = {
   4: migration4, // DirectoryHandles: humanName → UUID key, value wraps handle+displayName+regionId
   5: migration5, // new ReplayRatings store
   6: migration6, // add directory fingerprints
+  7: migration7, // replay list query indexes and filter projections
 };
+
+function backfillReplayListProjections(listsStore: IDBObjectStore, replaysStore: IDBObjectStore): void {
+  const req = listsStore.openCursor();
+  req.onsuccess = (e) => {
+    const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+    if (!cursor) return;
+
+    const list = cursor.value;
+    if (list.playerCount !== undefined && list.tournamentEdition !== undefined && hasReplayListGameMode(list) && list.duration !== undefined) {
+      cursor.continue();
+      return;
+    }
+
+    const replayReq = replaysStore.get(list.replayHash);
+    replayReq.onsuccess = () => {
+      const replay = replayReq.result;
+      if (replay) {
+        list.playerCount = replay.players?.length ?? list.playerNames?.length ?? 0;
+        list.tournamentEdition = typeof replay.title === "string" && replay.title.endsWith("TE");
+        if (!hasReplayListGameMode(list)) {
+          list.gameMode = replay.gameMode;
+        }
+        list.duration = list.duration ?? replay.duration;
+      } else {
+        list.playerCount = list.playerCount ?? list.playerNames?.length ?? 0;
+        list.tournamentEdition = list.tournamentEdition ?? false;
+      }
+
+      if (list.playerCount !== undefined || list.tournamentEdition !== undefined || hasReplayListGameMode(list) || list.duration !== undefined) {
+        cursor.update(list);
+      }
+      cursor.continue();
+    };
+    replayReq.onerror = () => cursor.continue();
+  };
+}
+
+function backfillReplayListProjectionsInDump(dump: Dump): void {
+  const lists = dump.stores[STORES.lists] as any[] | undefined;
+  const replays = dump.stores[STORES.replays] as any[] | undefined;
+  if (!lists || !replays) {
+    return;
+  }
+
+  const replayByHash = new Map<string, any>();
+  for (const replay of replays) {
+    if (replay?.replayHash) {
+      replayByHash.set(replay.replayHash, replay);
+    }
+  }
+
+  for (const list of lists) {
+    const replay = replayByHash.get(list.replayHash);
+    if (replay) {
+      list.playerCount = replay.players?.length ?? list.playerNames?.length ?? 0;
+      list.tournamentEdition = typeof replay.title === "string" && replay.title.endsWith("TE");
+      list.duration = list.duration ?? replay.duration;
+    } else {
+      list.playerCount = list.playerCount ?? list.playerNames?.length ?? 0;
+      list.tournamentEdition = list.tournamentEdition ?? false;
+    }
+
+    if (hasReplayListGameMode(list)) {
+      continue;
+    }
+
+    if (replay?.gameMode && replay.gameMode !== 0) {
+      list.gameMode = replay.gameMode;
+    }
+  }
+}
+
+function hasReplayListGameMode(list: { gameMode?: number }): boolean {
+  return list.gameMode !== undefined && list.gameMode !== 0;
+}

@@ -1,17 +1,21 @@
 // dsstatsDb.ts v1.4
 import { openDB, STORES } from "./db-core";
-import { ExportedReplays, FileInfoRecord, PlayerDto, ProfileCandidateDto, PwaConfig, ReplayDto, ReplayFilter, ReplayListDto, ReplayMeta, TrackedProfileDto, UploadRequestDto, ExportResult, ReplayRatingDto, SessionWindowSettingsDto } from "./dtos";
+import { ExportedReplays, FileInfoRecord, PlayerDto, ProfileCandidateDto, PwaConfig, ReplayDto, ReplayFilter, ReplayListDto, ReplayMeta, TrackedProfileDto, UploadRequestDto, ExportResult, ReplayRatingDto, SessionWindowSettingsDto, TableOrder } from "./dtos";
 import { getReplaysFromFolder, readFileContentStream } from "./pick-replays";
 import { exportBackup, importBackup } from "./backup";
 import { MyPlayerStats } from "./stats/stats-dto";
 import { StatsService } from "./stats/stats";
 import { addDirectoryHandle, deleteDirectoryHandle, getAllDirectoryHandleEntries, getAllDirectoryHandles, getDirectoryHandle, getDirectoryHandleFromUser, renameDirectoryHandle as renameDirHandle, verifyAllDirectoryPermissions as verifyAllDirPerms } from "./file-handle-repository";
+import { replayListMatchesDetailProjection, replayListNeedsFullDetailCheck, replayMatchesDetailFilter } from "./replay-detail-filter";
 
 const CONFIG_KEYS = {
     app: "app",
     trackedProfiles: "trackedProfiles",
     sessionWindowSettings: "sessionWindowSettings"
 } as const;
+
+const QUERY_CACHE_LIMIT = 8;
+const queryCache = new Map<string, string[]>();
 
 // Save replay and its projection + meta in one transaction
 export async function saveReplayFull(
@@ -33,7 +37,10 @@ export async function saveReplayFull(
         lists.put({ ...list, gametime: list.gametime });
         metas.put(meta);
 
-        tx.oncomplete = () => resolve();
+        tx.oncomplete = () => {
+            clearReplayQueryCache();
+            resolve();
+        };
         tx.onerror = () => reject(tx.error);
     });
 }
@@ -372,125 +379,286 @@ async function saveConfigEntry<T>(key: string, value: T): Promise<void> {
     });
 }
 
+async function getMatchingReplayHashes(filter: ReplayFilter): Promise<string[]> {
+    const cacheKey = getReplayQueryCacheKey(filter);
+    const cached = queryCache.get(cacheKey);
+    if (cached) {
+        queryCache.delete(cacheKey);
+        queryCache.set(cacheKey, cached);
+        return cached;
+    }
 
-
-async function _getFilteredReplayLists(filter: ReplayFilter): Promise<ReplayListDto[]> {
     const database = await openDB();
+    const orders = getReplayListOrders(filter);
+    const hashes = canUseIndexedOrder(orders)
+        ? await getMatchingReplayHashesByCursor(database, filter, orders[0])
+        : await getMatchingReplayHashesBySort(database, filter, orders);
 
-    const hasNameFilter = filter.name && filter.name.length > 0;
-    const hasCommandersFilter = filter.commanders && filter.commanders.length > 0;
+    setReplayQueryCache(cacheKey, hashes);
+    return hashes;
+}
 
-    const tx = database.transaction(STORES.lists, "readonly");
-    const store = tx.objectStore(STORES.lists);
+async function getMatchingReplayHashesByCursor(database: IDBDatabase, filter: ReplayFilter, order: TableOrder): Promise<string[]> {
+    return new Promise((resolve, reject) => {
+        const tx = database.transaction([STORES.lists, STORES.replays], "readonly");
+        const listStore = tx.objectStore(STORES.lists);
+        const replayStore = tx.objectStore(STORES.replays);
+        const source = listStore.index(order.name);
+        const direction: IDBCursorDirection = order.ascending ? "next" : "prev";
+        const request = source.openCursor(null, direction);
+        const hashes: string[] = [];
 
-    let initialReplayLists: ReplayListDto[] = [];
+        request.onsuccess = (event) => {
+            const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+            if (!cursor) {
+                resolve(hashes);
+                return;
+            }
+
+            const replayList = cursor.value as ReplayListDto;
+            if (!replayListMatchesProjectionFilters(replayList, filter)) {
+                cursor.continue();
+                return;
+            }
+
+            if (!replayListNeedsFullDetailCheck(replayList, filter.detailFilter)) {
+                hashes.push(replayList.replayHash);
+                cursor.continue();
+                return;
+            }
+
+            const replayRequest = replayStore.get(replayList.replayHash);
+            replayRequest.onsuccess = () => {
+                const replay = replayRequest.result as ReplayDto | undefined;
+                if (replay && replayMatchesDetailFilter(replay, filter.detailFilter)) {
+                    hashes.push(replayList.replayHash);
+                }
+                cursor.continue();
+            };
+            replayRequest.onerror = () => reject(replayRequest.error);
+        };
+
+        request.onerror = () => reject(request.error);
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+async function getMatchingReplayHashesBySort(database: IDBDatabase, filter: ReplayFilter, orders: TableOrder[]): Promise<string[]> {
+    const replayLists = await getAllReplayListRecords(database);
+    const matches: ReplayListDto[] = [];
+
+    for (const replayList of replayLists) {
+        if (!replayListMatchesProjectionFilters(replayList, filter)) {
+            continue;
+        }
+
+        if (replayListNeedsFullDetailCheck(replayList, filter.detailFilter)) {
+            const replay = await getReplayByHashFromDatabase(database, replayList.replayHash);
+            if (!replay || !replayMatchesDetailFilter(replay, filter.detailFilter)) {
+                continue;
+            }
+        }
+
+        matches.push(replayList);
+    }
+
+    matches.sort((left, right) => compareReplayLists(left, right, orders));
+    return matches.map(replayList => replayList.replayHash);
+}
+
+function replayListMatchesProjectionFilters(replayList: ReplayListDto, filter: ReplayFilter): boolean {
+    if (!replayListMatchesDetailProjection(replayList, filter.detailFilter)) {
+        return false;
+    }
+
+    const searchNames = getSearchNames(filter);
+    const commanders = filter.commanders ?? [];
+    const hasNameFilter = searchNames.length > 0;
+    const hasCommandersFilter = commanders.length > 0;
+
+    if (filter.linkCommanders && hasNameFilter && hasCommandersFilter) {
+        const allCommanders = [...replayList.commandersTeam1, ...replayList.commandersTeam2];
+        const lowerCasePlayerNames = (replayList.playerNames ?? []).map(name => name.toLowerCase());
+
+        return lowerCasePlayerNames.some((playerName, playerIndex) => {
+            const nameMatch = searchNames.every(searchName => playerName.includes(searchName));
+            return nameMatch && commanders.includes(allCommanders[playerIndex]);
+        });
+    }
+
+    if (hasNameFilter) {
+        const lowerCasePlayerNames = (replayList.playerNames ?? []).map(name => name.toLowerCase());
+        if (!searchNames.every(searchName => lowerCasePlayerNames.some(playerName => playerName.includes(searchName)))) {
+            return false;
+        }
+    }
 
     if (hasCommandersFilter) {
-        const team1Index = store.index("commandersTeam1");
-        const team2Index = store.index("commandersTeam2");
-        const addedHashes = new Set<string>();
-
-        const promises = filter.commanders!.map(commander => {
-            return [
-                new Promise<ReplayListDto[]>((res, rej) => {
-                    const req = team1Index.getAll(IDBKeyRange.only(commander));
-                    req.onsuccess = () => res(req.result);
-                    req.onerror = () => rej(req.error);
-                }),
-                new Promise<ReplayListDto[]>((res, rej) => {
-                    const req = team2Index.getAll(IDBKeyRange.only(commander));
-                    req.onsuccess = () => res(req.result);
-                    req.onerror = () => rej(req.error);
-                })
-            ];
-        }).flat();
-
-        const results = await Promise.all(promises);
-        results.flat().forEach(replay => {
-            if (!addedHashes.has(replay.replayHash)) {
-                initialReplayLists.push(replay);
-                addedHashes.add(replay.replayHash);
-            }
-        });
-    } else {
-        initialReplayLists = await new Promise<ReplayListDto[]>((res, rej) => {
-            const req = store.getAll();
-            req.onsuccess = () => res(req.result);
-            req.onerror = () => rej(req.error);
-        });
+        const allCommanders = [...replayList.commandersTeam1, ...replayList.commandersTeam2];
+        if (!commanders.some(commander => allCommanders.includes(commander))) {
+            return false;
+        }
     }
 
-    if (!hasNameFilter) {
-        return initialReplayLists;
-    }
+    return true;
+}
 
-    const searchNames = hasNameFilter ? filter.name!.toLowerCase().split(' ').filter(n => n) : [];
-
-    return initialReplayLists.filter(replayList => {
-        if (filter.linkCommanders && hasNameFilter && hasCommandersFilter) {
-            const lowerCasePlayerNames = replayList.playerNames.map(name => name.toLowerCase());
-            const allCommanders = [...replayList.commandersTeam1, ...replayList.commandersTeam2];
-
-            return lowerCasePlayerNames.some((playerName, playerIndex) => {
-                const nameMatch = searchNames.every(searchName => playerName.includes(searchName));
-                if (nameMatch) {
-                    const commander = allCommanders[playerIndex];
-                    return filter.commanders!.includes(commander);
-                }
-                return false;
-            });
-        }
-
-        if (hasNameFilter) {
-            const lowerCasePlayerNames = replayList.playerNames.map(name => name.toLowerCase());
-            return searchNames.every(searchName => lowerCasePlayerNames.some(playerName => playerName.includes(searchName)));
-        }
-
-        return true;
+async function getAllReplayListRecords(database: IDBDatabase): Promise<ReplayListDto[]> {
+    return new Promise((resolve, reject) => {
+        const tx = database.transaction(STORES.lists, "readonly");
+        const store = tx.objectStore(STORES.lists);
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result as ReplayListDto[]);
+        request.onerror = () => reject(request.error);
     });
+}
+
+async function getReplayListsByHashes(hashes: string[]): Promise<ReplayListDto[]> {
+    if (hashes.length === 0) {
+        return [];
+    }
+
+    const database = await openDB();
+
+    return new Promise((resolve, reject) => {
+        const tx = database.transaction(STORES.lists, "readonly");
+        const store = tx.objectStore(STORES.lists);
+
+        const requests = hashes.map(hash => new Promise<ReplayListDto | undefined>((res, rej) => {
+            const request = store.get(hash);
+            request.onsuccess = () => res(request.result as ReplayListDto | undefined);
+            request.onerror = () => rej(request.error);
+        }));
+
+        Promise.all(requests)
+            .then(replayLists => resolve(replayLists.filter((replayList): replayList is ReplayListDto => !!replayList)))
+            .catch(reject);
+    });
+}
+
+async function getReplayByHashFromDatabase(database: IDBDatabase, hash: string): Promise<ReplayDto | undefined> {
+    return new Promise((resolve, reject) => {
+        const tx = database.transaction(STORES.replays, "readonly");
+        const store = tx.objectStore(STORES.replays);
+        const request = store.get(hash);
+        request.onsuccess = () => resolve(request.result as ReplayDto | undefined);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+function getReplayListOrders(filter: ReplayFilter): TableOrder[] {
+    const orders = (filter.tableOrders?.length ?? 0) > 0
+        ? filter.tableOrders!
+        : [{ name: "gametime", ascending: false }];
+
+    return orders.map(order => ({
+        name: normalizeReplayListOrderName(order.name),
+        ascending: order.ascending,
+    }));
+}
+
+function canUseIndexedOrder(orders: TableOrder[]): boolean {
+    return orders.length === 1 && ["gametime", "gameMode", "duration"].includes(orders[0].name);
+}
+
+function compareReplayLists(left: ReplayListDto, right: ReplayListDto, orders: TableOrder[]): number {
+    for (const order of orders) {
+        const leftValue = left[order.name as keyof ReplayListDto];
+        const rightValue = right[order.name as keyof ReplayListDto];
+
+        if (Array.isArray(leftValue) || Array.isArray(rightValue)) {
+            continue;
+        }
+
+        const result = compareReplayListValues(leftValue, rightValue);
+        if (result !== 0) {
+            return order.ascending ? result : -result;
+        }
+    }
+
+    return compareReplayListValues(right.gametime, left.gametime);
+}
+
+function compareReplayListValues(left: string | number | boolean | undefined, right: string | number | boolean | undefined): number {
+    const leftValue = left ?? 0;
+    const rightValue = right ?? 0;
+
+    if (leftValue < rightValue) {
+        return -1;
+    }
+
+    if (leftValue > rightValue) {
+        return 1;
+    }
+
+    return 0;
+}
+
+function getSearchNames(filter: ReplayFilter): string[] {
+    return filter.name?.toLowerCase().split(" ").map(name => name.trim()).filter(Boolean) ?? [];
+}
+
+function normalizeReplayListOrderName(name: string): string {
+    switch (name) {
+        case "GameTime":
+            return "gametime";
+        case "GameMode":
+            return "gameMode";
+        case "Duration":
+            return "duration";
+        case "WinnerTeam":
+            return "winnerTeam";
+        case "Exp2Win":
+            return "exp2Win";
+        case "AvgRating":
+            return "avgRating";
+        case "LeaverType":
+            return "leaverType";
+        case "PlayerPos":
+            return "playerPos";
+        default:
+            return name;
+    }
+}
+
+function getReplayQueryCacheKey(filter: ReplayFilter): string {
+    return JSON.stringify({
+        name: filter.name ?? "",
+        commanders: filter.commanders ?? [],
+        linkCommanders: filter.linkCommanders ?? false,
+        tableOrders: getReplayListOrders(filter),
+        detailFilter: filter.detailFilter ?? null,
+    });
+}
+
+function setReplayQueryCache(key: string, hashes: string[]): void {
+    queryCache.set(key, hashes);
+    while (queryCache.size > QUERY_CACHE_LIMIT) {
+        const oldestKey = queryCache.keys().next().value;
+        if (oldestKey === undefined) {
+            break;
+        }
+        queryCache.delete(oldestKey);
+    }
+}
+
+function clearReplayQueryCache(): void {
+    queryCache.clear();
 }
 
 export async function getFilteredReplayLists(
     filter: ReplayFilter
 ): Promise<ReplayListDto[]> {
-    const filteredResults = await _getFilteredReplayLists(filter);
-
-    const orders = (filter.tableOrders && filter.tableOrders.length > 0)
-        ? filter.tableOrders
-        : [{ name: 'gametime', ascending: false }];
-
-    filteredResults.sort((a, b) => {
-        for (const order of orders) {
-            const aValue = a[order.name as keyof ReplayListDto];
-            const bValue = b[order.name as keyof ReplayListDto];
-
-            // Assuming array properties are not used for sorting
-            if (Array.isArray(aValue) || Array.isArray(bValue)) {
-                continue;
-            }
-
-            const valA = aValue === undefined ? 0 : aValue;
-            const valB = bValue === undefined ? 0 : bValue;
-
-            if (valA < valB) {
-                return order.ascending ? -1 : 1;
-            }
-            if (valA > valB) {
-                return order.ascending ? 1 : -1;
-            }
-        }
-        return 0;
-    });
-
-    if (filter.skip !== undefined && filter.take !== undefined) {
-        return filteredResults.slice(filter.skip, filter.skip + filter.take);
-    }
-    return filteredResults;
+    const hashes = await getMatchingReplayHashes(filter);
+    const skip = Math.max(filter.skip ?? 0, 0);
+    const take = filter.take ?? hashes.length;
+    const pageHashes = take <= 0 ? [] : hashes.slice(skip, skip + take);
+    return await getReplayListsByHashes(pageHashes);
 }
 
 export async function getFilteredReplayListsCount(filter: ReplayFilter): Promise<number> {
-    const filteredResults = await _getFilteredReplayLists(filter);
-    return filteredResults.length;
+    const hashes = await getMatchingReplayHashes(filter);
+    return hashes.length;
 }
 
 export async function downloadBackup() {
@@ -499,6 +667,7 @@ export async function downloadBackup() {
 
 export async function uploadBackup() {
     await importBackup();
+    clearReplayQueryCache();
 }
 
 export function gzipString(content: string): string {

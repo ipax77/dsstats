@@ -273,11 +273,16 @@ public class IndexedDbService
             Gametime = replay.Gametime;
             Duration = replay.Duration;
             WinnerTeam = replay.WinnerTeam;
+            GameMode = replay.GameMode;
             CommandersTeam1 = replay.Players.OrderBy(o => o.GamePos).Where(x => x.GamePos <= 3).Select(s => s.Race).ToList();
             CommandersTeam2 = replay.Players.OrderBy(o => o.GamePos).Where(x => x.GamePos > 3).Select(s => s.Race).ToList();
             PlayerNames = replay.Players.OrderBy(o => o.GamePos).Select(s => s.Name).ToList();
+            PlayerCount = replay.Players.Count;
+            TournamentEdition = replay.Title.EndsWith("TE", StringComparison.Ordinal);
         }
         public List<string> PlayerNames { get; set; } = [];
+        public int PlayerCount { get; set; }
+        public bool TournamentEdition { get; set; }
     }
 
     private sealed class ReplayMeta
@@ -300,11 +305,12 @@ public sealed class ReplayFilter
         LinkCommanders = request.LinkCommanders;
         TableOrders = request.TableOrders?.Select(s => new TableOrder()
         {
-            Name = s.Column,
+            Name = ToClientOrderName(s.Column),
             Ascending = s.Ascending,
         }).ToList();
-        Skip = request.Skip;
+        Skip = ((request.Page - 1) * request.PageSize) + request.Skip;
         Take = request.Take;
+        DetailFilter = request.Filter is null ? null : new ReplayDetailFilter(request.Filter);
         if (!string.IsNullOrEmpty(request.Commander))
         {
             var commanders = request.Commander.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
@@ -325,6 +331,70 @@ public sealed class ReplayFilter
     public List<TableOrder>? TableOrders { get; set; }
     public int Skip { get; set; }
     public int Take { get; set; }
+    public ReplayDetailFilter? DetailFilter { get; set; }
+
+    private static string ToClientOrderName(string column) => column switch
+    {
+        "GameTime" => "gametime",
+        "GameMode" => "gameMode",
+        "Duration" => "duration",
+        "WinnerTeam" => "winnerTeam",
+        "Exp2Win" => "exp2Win",
+        "AvgRating" => "avgRating",
+        "LeaverType" => "leaverType",
+        "PlayerPos" => "playerPos",
+        _ => column,
+    };
+}
+
+public sealed class ReplayDetailFilter
+{
+    public ReplayDetailFilter(ReplaysFilter filter)
+    {
+        Playercount = filter.Playercount;
+        TournamentEdition = filter.TournamentEdition;
+        GameModes = filter.GameModes;
+        PosFilters = filter.PosFilters.Select(posFilter => new ReplayPosDetailFilter(posFilter)).ToList();
+    }
+
+    public int Playercount { get; set; }
+    public bool TournamentEdition { get; set; }
+    public List<GameMode> GameModes { get; set; } = [];
+    public List<ReplayPosDetailFilter> PosFilters { get; set; } = [];
+}
+
+public sealed class ReplayPosDetailFilter
+{
+    public ReplayPosDetailFilter(ReplaysPosFilter filter)
+    {
+        GamePos = filter.GamePos;
+        Commander = filter.Commander;
+        OppCommander = filter.OppCommander;
+        PlayerNameOrId = filter.PlayerNameOrId;
+        UnitFilters = filter.UnitFilters.Select(unitFilter => new ReplayPosUnitDetailFilter(unitFilter)).ToList();
+    }
+
+    public int GamePos { set; get; }
+    public Commander Commander { get; set; }
+    public Commander OppCommander { get; set; }
+    public string PlayerNameOrId { get; set; } = string.Empty;
+    public List<ReplayPosUnitDetailFilter> UnitFilters { get; set; } = [];
+}
+
+public sealed class ReplayPosUnitDetailFilter
+{
+    public ReplayPosUnitDetailFilter(ReplaysPosUnitFilter filter)
+    {
+        Breakpoint = filter.Breakpoint;
+        Name = filter.Name;
+        Count = filter.Count;
+        Min = filter.Min;
+    }
+
+    public Breakpoint Breakpoint { set; get; } = Breakpoint.All;
+    public string Name { get; set; } = string.Empty;
+    public int Count { get; set; }
+    public bool Min { get; set; } = true;
 }
 
 public sealed class TableOrder

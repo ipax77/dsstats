@@ -6,7 +6,7 @@ import { ReplayDto, ReplayListDto, ReplayMeta } from '../dtos';
 export const getTestReplay = (id: number = 1): ReplayDto => ({
     fileName: 'test/path',
     compatHash: `43BEE0CF165250AB9CE1B25B641B8C8F9F6146A0D34DB290B63E731B3E2B93B${id}`,
-    title: 'Direct Strike',
+    title: id === 2 ? 'Direct Strike TE' : 'Direct Strike',
     version: '5.0.14.94137',
     gameMode: 7,
     regionId: 1,
@@ -32,7 +32,17 @@ export const getTestReplay = (id: number = 1): ReplayDto => ({
             pings: 0,
             isMvp: false,
             isUploader: false,
-            spawns: [],
+            spawns: [
+                {
+                    breakpoint: 4,
+                    income: 0,
+                    gasCount: 0,
+                    armyValue: 0,
+                    killedValue: 0,
+                    upgradeSpent: 0,
+                    units: [{ name: 'Marine', count: id, positions: [] }]
+                }
+            ],
             upgrades: [],
             tierUpgrades: [],
             refineries: [],
@@ -60,7 +70,17 @@ export const getTestReplay = (id: number = 1): ReplayDto => ({
             pings: 0,
             isMvp: true,
             isUploader: false,
-            spawns: [],
+            spawns: [
+                {
+                    breakpoint: 4,
+                    income: 0,
+                    gasCount: 0,
+                    armyValue: 0,
+                    killedValue: 0,
+                    upgradeSpent: 0,
+                    units: [{ name: 'Zergling', count: id + 1, positions: [] }]
+                }
+            ],
             upgrades: [],
             tierUpgrades: [],
             refineries: [],
@@ -86,6 +106,8 @@ export const getTestReplayList = (replay: ReplayDto): ReplayListDto => ({
     commandersTeam1: replay.players.filter(f => f.teamId === 1).map(m => m.race),
     commandersTeam2: replay.players.filter(f => f.teamId === 2).map(m => m.race),
     playerNames: replay.players.sort((a, b) => a.gamePos - b.gamePos).map(m => m.name),
+    playerCount: replay.players.length,
+    tournamentEdition: replay.title.endsWith('TE'),
     leaverType: 0,
     playerPos: 0
 });
@@ -226,6 +248,79 @@ describe('dsstats IndexedDb', () => {
             expect(result.length).toBe(0);
         });
 
+        it('should apply top-level detail filters', async () => {
+            let result = await getFilteredReplayLists({ detailFilter: { playercount: 2 } });
+            expect(result.length).toBe(3);
+
+            result = await getFilteredReplayLists({ detailFilter: { tournamentEdition: true } });
+            expect(result.length).toBe(1);
+            expect(result[0].duration).toBe(791);
+
+            result = await getFilteredReplayLists({ detailFilter: { gameModes: [7] } });
+            expect(result.length).toBe(3);
+
+            result = await getFilteredReplayLists({ detailFilter: { gameModes: [3] } });
+            expect(result.length).toBe(0);
+        });
+
+        it('should apply position detail filters', async () => {
+            let result = await getFilteredReplayLists({
+                detailFilter: {
+                    posFilters: [{ gamePos: 4, commander: 2 }]
+                }
+            });
+            expect(result.length).toBe(1);
+            expect(result[0].playerNames).toContain('PlayerTwo_2');
+
+            result = await getFilteredReplayLists({
+                detailFilter: {
+                    posFilters: [{ gamePos: 1, oppCommander: 2 }]
+                }
+            });
+            expect(result.length).toBe(1);
+            expect(result[0].playerNames).toContain('PlayerTwo_2');
+
+            result = await getFilteredReplayLists({
+                detailFilter: {
+                    posFilters: [{ playerNameOrId: 'PlayerTwo_3' }]
+                }
+            });
+            expect(result.length).toBe(1);
+            expect(result[0].playerNames).toContain('PlayerTwo_3');
+
+            result = await getFilteredReplayLists({
+                detailFilter: {
+                    posFilters: [{ gamePos: 4, commander: 2, playerNameOrId: '2x1x1' }]
+                }
+            });
+            expect(result.length).toBe(1);
+            expect(result[0].playerNames).toContain('PlayerTwo_2');
+        });
+
+        it('should apply unit detail filters', async () => {
+            let result = await getFilteredReplayLists({
+                detailFilter: {
+                    posFilters: [{
+                        gamePos: 4,
+                        unitFilters: [{ breakpoint: 4, name: 'Zergling', count: 4, min: true }]
+                    }]
+                }
+            });
+            expect(result.length).toBe(1);
+            expect(result[0].playerNames).toContain('PlayerTwo_3');
+
+            result = await getFilteredReplayLists({
+                detailFilter: {
+                    posFilters: [{
+                        gamePos: 4,
+                        unitFilters: [{ breakpoint: 4, name: 'Zergling', count: 3, min: false }]
+                    }]
+                }
+            });
+            expect(result.length).toBe(1);
+            expect(result[0].playerNames).toContain('PlayerTwo_1');
+        });
+
         it('should sort by duration ascending', async () => {
             const result = await getFilteredReplayLists({ tableOrders: [{ name: 'duration', ascending: true }] });
             expect(result.length).toBe(3);
@@ -270,6 +365,24 @@ describe('dsstats IndexedDb', () => {
             expect(result.length).toBe(2);
             expect(result[0].duration).toBe(791); // Replay 2
             expect(result[1].duration).toBe(790); // Replay 1
+        });
+
+        it('should reuse cached counts for scroll pages and invalidate after saving', async () => {
+            const filter = { detailFilter: { playercount: 2 } };
+            expect(await getFilteredReplayListsCount(filter)).toBe(3);
+
+            let result = await getFilteredReplayLists({ ...filter, skip: 0, take: 2 });
+            expect(result.map(replay => replay.duration)).toEqual([792, 791]);
+
+            result = await getFilteredReplayLists({ ...filter, skip: 2, take: 1 });
+            expect(result.map(replay => replay.duration)).toEqual([790]);
+
+            const replay = getTestReplay(4);
+            await saveReplayFull(replay.compatHash, replay, getTestReplayList(replay), getTestReplayMeta(replay));
+
+            expect(await getFilteredReplayListsCount(filter)).toBe(4);
+            result = await getFilteredReplayLists({ ...filter, skip: 0, take: 1 });
+            expect(result[0].duration).toBe(793);
         });
     });
 
