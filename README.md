@@ -33,7 +33,13 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v3.0.5</summary>
+<details open="open"><summary>v3.0.6</summary>
+
+>- Update MAUI session progress
+
+</details>
+
+<details><summary>v3.0.5</summary>
 
 >- Fix leaver detection
 
