@@ -88,7 +88,7 @@ builder.Services.AddSC2ArcadeCrawler();
 var inHouseAuthOptions = builder.Configuration.GetSection(InHouseAuthOptions.SectionName).Get<InHouseAuthOptions>() ?? new();
 builder.Services.AddFido2(fidoOptions =>
 {
-    fidoOptions.ServerName = "mydsstats";
+    fidoOptions.ServerName = "mydsstats InHouse";
     fidoOptions.ServerDomain = builder.Environment.IsProduction()
         ? inHouseAuthOptions.ProductionRpId
         : inHouseAuthOptions.LocalRpId;

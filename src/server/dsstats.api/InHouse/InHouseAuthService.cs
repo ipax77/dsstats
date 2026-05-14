@@ -36,8 +36,8 @@ public sealed class InHouseAuthService(
         var userHandle = CreateUserHandle(publicId);
         var fidoUser = new Fido2User
         {
-            DisplayName = displayName,
-            Name = displayName,
+            DisplayName = GetPasskeyDisplayName(displayName),
+            Name = GetPasskeyName(displayName),
             Id = userHandle,
         };
 
@@ -301,8 +301,8 @@ public sealed class InHouseAuthService(
         var userHandle = user.Passkeys.FirstOrDefault()?.UserHandle ?? WebEncoders.Base64UrlEncode(CreateUserHandle(user.PublicId));
         var fidoUser = new Fido2User
         {
-            DisplayName = user.DisplayName,
-            Name = user.DisplayName,
+            DisplayName = GetPasskeyDisplayName(user.DisplayName),
+            Name = GetPasskeyName(user.DisplayName),
             Id = WebEncoders.Base64UrlDecode(userHandle),
         };
 
@@ -478,6 +478,12 @@ public sealed class InHouseAuthService(
 
         return displayName;
     }
+
+    private static string GetPasskeyDisplayName(string displayName)
+        => $"mydsstats InHouse - {displayName}";
+
+    private static string GetPasskeyName(string displayName)
+        => $"{displayName}@mydsstats";
 
     private static void ValidateProfile(InHouseProfileDto profile)
     {
