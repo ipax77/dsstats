@@ -86,4 +86,16 @@
             return publicKeyCredentialToJson(credential);
         }
     };
+
+    window.dsstatsInHouseModal = {
+        hide: function (id) {
+            const element = document.getElementById(id);
+            if (!element || !window.bootstrap) {
+                return;
+            }
+
+            const modal = window.bootstrap.Modal.getOrCreateInstance(element);
+            modal.hide();
+        }
+    };
 })();

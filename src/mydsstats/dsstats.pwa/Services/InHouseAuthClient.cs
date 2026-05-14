@@ -19,6 +19,7 @@ public sealed class InHouseAuthClient(
     public Uri ApiBaseAddress => http.BaseAddress ?? new Uri("https://dsstats.pax77.org");
     public InHouseUserDto? User => session?.User;
     public bool IsAuthenticated => session is not null && session.RefreshExpiresAt > DateTime.UtcNow;
+    public event Action? AuthenticationChanged;
 
     public async Task InitializeAsync()
     {
@@ -45,6 +46,7 @@ public sealed class InHouseAuthClient(
             {
                 session.User = await SendAuthorizedAsync<InHouseUserDto>(HttpMethod.Get, "api10/auth/me");
                 await indexedDb.SaveInHouseSession(session);
+                NotifyAuthenticationChanged();
             }
             catch
             {
@@ -274,6 +276,7 @@ public sealed class InHouseAuthClient(
     {
         session = nextSession;
         await indexedDb.SaveInHouseSession(nextSession);
+        NotifyAuthenticationChanged();
     }
 
     private async Task UpdateUserAsync(InHouseUserDto user)
@@ -285,13 +288,18 @@ public sealed class InHouseAuthClient(
 
         session.User = user;
         await indexedDb.SaveInHouseSession(session);
+        NotifyAuthenticationChanged();
     }
 
     private async Task ClearSessionAsync()
     {
         session = null;
         await indexedDb.ClearInHouseSession();
+        NotifyAuthenticationChanged();
     }
+
+    private void NotifyAuthenticationChanged()
+        => AuthenticationChanged?.Invoke();
 
     private static async Task EnsureSuccessAsync(HttpResponseMessage response)
     {

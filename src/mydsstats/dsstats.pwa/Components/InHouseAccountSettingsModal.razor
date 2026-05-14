@@ -1,0 +1,282 @@
+@using dsstats.indexedDb.Services
+@using dsstats.pwa.Services
+@using dsstats.shared
+@using dsstats.shared.InHouse
+@implements IDisposable
+@inject InHouseAuthClient Auth
+@inject SessionProgressService SessionProgressService
+@inject IJSRuntime JS
+
+<div class="modal fade" id="@ModalId" tabindex="-1" aria-labelledby="inHouseAccountSettingsTitle" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+        <div class="modal-content bgchart">
+            <div class="modal-header bgchart2">
+                <div>
+                    <h4 class="modal-title text-warning mb-0" id="inHouseAccountSettingsTitle">InHouse Settings</h4>
+                    <div class="small text-muted">@Auth.User?.DisplayName</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="container-fluid">
+                    <div class="row g-4">
+                        <div class="col-xl-6">
+                            <section class="border rounded p-3 h-100">
+                                <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                                    <h5 class="text-warning mb-0">Linked Profiles</h5>
+                                    <span class="badge bg-secondary">@((Auth.User?.Profiles.Count ?? 0).ToString("N0"))</span>
+                                </div>
+
+                                @if (Auth.User?.Profiles.Count > 0)
+                                {
+                                    <div class="list-group">
+                                        @foreach (var profile in Auth.User.Profiles)
+                                        {
+                                            <div class="list-group-item bgchart2 text-light d-flex justify-content-between align-items-center gap-3">
+                                                <div>
+                                                    <div class="fw-semibold">@profile.Name</div>
+                                                    <div class="small text-muted">@FormatToonId(profile.ToonId)</div>
+                                                </div>
+                                                <button class="btn btn-outline-danger btn-sm" @onclick="() => RemoveProfileAsync(profile)" disabled="@(busy || !CanRemoveProfiles)">
+                                                    <i class="bi bi-person-dash me-1"></i>Remove
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-secondary mb-0">No linked profiles.</div>
+                                }
+                            </section>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <section class="border rounded p-3 h-100">
+                                <h5 class="text-warning mb-3">Add Player Profile</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Tracked profile</label>
+                                        <select class="form-select" @bind="selectedProfileKey">
+                                            <option value="">Manual entry</option>
+                                            @foreach (var profile in AvailableTrackedProfiles)
+                                            {
+                                                <option value="@GetProfileKey(profile)">@profile.Name (@FormatToonId(profile.ToonId))</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Profile name</label>
+                                        <input class="form-control" @bind="manualProfile.Name" disabled="@HasSelectedProfile" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Region</label>
+                                        <input type="number" class="form-control" @bind="manualProfile.ToonId.Region" disabled="@HasSelectedProfile" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Realm</label>
+                                        <input type="number" class="form-control" @bind="manualProfile.ToonId.Realm" disabled="@HasSelectedProfile" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">ToonId</label>
+                                        <input type="number" class="form-control" @bind="manualProfile.ToonId.Id" disabled="@HasSelectedProfile" />
+                                    </div>
+                                </div>
+                                <button class="btn btn-outline-light mt-3" @onclick="AddProfileAsync" disabled="@busy">
+                                    <i class="bi bi-person-plus me-2"></i>Add Profile
+                                </button>
+                            </section>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <section class="border rounded p-3 h-100">
+                                <h5 class="text-warning mb-3">Link Another Device</h5>
+                                <p class="text-muted">
+                                    Create a short-lived link code on this signed-in device, then enter it on another browser or phone to add a new passkey to the same InHouse account.
+                                </p>
+                                <div class="d-flex flex-wrap gap-3 align-items-end">
+                                    <button class="btn btn-outline-light" @onclick="CreateDeviceCodeAsync" disabled="@busy">
+                                        <i class="bi bi-phone me-2"></i>Create Link Code
+                                    </button>
+                                    @if (deviceCode is not null)
+                                    {
+                                        <div>
+                                            <div class="small text-muted">Valid until @deviceCode.ExpiresAt.ToLocalTime().ToShortTimeString()</div>
+                                            <div class="fs-4 fw-bold text-warning">@deviceCode.Code</div>
+                                        </div>
+                                    }
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <section class="border rounded p-3 h-100">
+                                <h5 class="text-warning mb-3">Account</h5>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button class="btn btn-outline-light" @onclick="LogoutAsync" disabled="@busy">
+                                        <i class="bi bi-box-arrow-right me-2"></i>Logout
+                                    </button>
+                                    <button class="btn btn-outline-danger" @onclick="DeleteAccountAsync" disabled="@busy">
+                                        <i class="bi bi-trash me-2"></i>Delete Account
+                                    </button>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(statusMessage))
+                    {
+                        <div class="alert alert-info mt-4 mb-0">@statusMessage</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private const string ModalId = "inHouseAccountSettingsModal";
+
+    private readonly InHouseProfileDto manualProfile = new()
+    {
+        Name = "Player",
+        ToonId = new ToonIdDto { Region = 1, Realm = 1 }
+    };
+    private readonly List<TrackedProfileDto> trackedProfiles = [];
+    private InHouseDeviceLinkOptionsResponse? deviceCode;
+    private string selectedProfileKey = string.Empty;
+    private string? statusMessage;
+    private bool busy;
+
+    private bool HasSelectedProfile => !string.IsNullOrWhiteSpace(selectedProfileKey);
+    private bool CanRemoveProfiles => (Auth.User?.Profiles.Count ?? 0) > 1;
+    private IEnumerable<TrackedProfileDto> AvailableTrackedProfiles
+        => trackedProfiles.Where(profile => !(Auth.User?.Profiles.Any(linked => SameToonId(linked.ToonId, profile.ToonId)) ?? false));
+
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.AuthenticationChanged += OnAuthenticationChanged;
+        trackedProfiles.AddRange(await SessionProgressService.GetTrackedProfilesAsync());
+    }
+
+    private void OnAuthenticationChanged()
+        => _ = InvokeAsync(StateHasChanged);
+
+    private async Task CreateDeviceCodeAsync()
+    {
+        await RunAsync(async () =>
+        {
+            deviceCode = await Auth.CreateDeviceLinkCodeAsync();
+            statusMessage = "Use this code on another device to add a passkey.";
+        });
+    }
+
+    private async Task AddProfileAsync()
+    {
+        await RunAsync(async () =>
+        {
+            await Auth.AddProfileAsync(GetSelectedProfile());
+            selectedProfileKey = string.Empty;
+            statusMessage = "Player profile linked.";
+        });
+    }
+
+    private async Task RemoveProfileAsync(InHouseProfileDto profile)
+    {
+        await RunAsync(async () =>
+        {
+            await Auth.RemoveProfileAsync(profile);
+            statusMessage = "Player profile removed.";
+        });
+    }
+
+    private async Task DeleteAccountAsync()
+    {
+        var confirmed = await JS.InvokeAsync<bool>(
+            "confirm",
+            "Delete this InHouse account, passkeys, sessions, and linked player profiles?");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            await HideModalAsync();
+            await Auth.DeleteAccountAsync();
+        });
+    }
+
+    private async Task LogoutAsync()
+    {
+        await RunAsync(async () =>
+        {
+            await HideModalAsync();
+            await Auth.LogoutAsync();
+        });
+    }
+
+    private async Task HideModalAsync()
+        => await JS.InvokeVoidAsync("dsstatsInHouseModal.hide", ModalId);
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        busy = true;
+        statusMessage = null;
+        try
+        {
+            await action();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private InHouseProfileDto GetSelectedProfile()
+    {
+        var selectedProfile = trackedProfiles.FirstOrDefault(profile => GetProfileKey(profile) == selectedProfileKey);
+        if (selectedProfile is null)
+        {
+            return new InHouseProfileDto
+            {
+                Name = manualProfile.Name,
+                Active = true,
+                ToonId = CloneToonId(manualProfile.ToonId),
+            };
+        }
+
+        return new InHouseProfileDto
+        {
+            Name = selectedProfile.Name,
+            Active = true,
+            ToonId = CloneToonId(selectedProfile.ToonId),
+        };
+    }
+
+    private static string GetProfileKey(TrackedProfileDto profile)
+        => $"{profile.ToonId.Region}:{profile.ToonId.Realm}:{profile.ToonId.Id}";
+
+    private static bool SameToonId(ToonIdDto left, ToonIdDto right)
+        => left.Id == right.Id
+           && left.Region == right.Region
+           && left.Realm == right.Realm;
+
+    private static ToonIdDto CloneToonId(ToonIdDto toonId)
+        => new()
+        {
+            Region = toonId.Region,
+            Realm = toonId.Realm,
+            Id = toonId.Id,
+        };
+
+    private static string FormatToonId(ToonIdDto toonId)
+        => $"{toonId.Region}/{toonId.Realm}/{toonId.Id}";
+
+    public void Dispose()
+        => Auth.AuthenticationChanged -= OnAuthenticationChanged;
+}
