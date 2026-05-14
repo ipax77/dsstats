@@ -99,8 +99,15 @@ export interface ExportResult {
 export interface UploadRequestDto {
     appGuid: string;
     appVersion: string;
-    requestNames: string[];
+    requestNames: RequestNames[];
     replays: ReplayDto[];
+}
+
+export interface RequestNames {
+    name: string;
+    toonId: number;
+    regionId: number;
+    realmId: number;
 }
 
 export interface ReplayMeta {

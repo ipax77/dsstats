@@ -1,6 +1,6 @@
 // dsstatsDb.ts v1.4
 import { openDB, STORES } from "./db-core";
-import { ExportedReplays, FileInfoRecord, PlayerDto, ProfileCandidateDto, PwaConfig, ReplayDto, ReplayFilter, ReplayListDto, ReplayMeta, TrackedProfileDto, UploadRequestDto, ExportResult, ReplayRatingDto, SessionWindowSettingsDto, TableOrder } from "./dtos";
+import { ExportedReplays, FileInfoRecord, PlayerDto, ProfileCandidateDto, PwaConfig, ReplayDto, ReplayFilter, ReplayListDto, ReplayMeta, TrackedProfileDto, UploadRequestDto, ExportResult, ReplayRatingDto, SessionWindowSettingsDto, TableOrder, RequestNames } from "./dtos";
 import { getReplaysFromFolder, readFileContentStream } from "./pick-replays";
 import { exportBackup, importBackup } from "./backup";
 import { MyPlayerStats } from "./stats/stats-dto";
@@ -229,14 +229,20 @@ export async function exportUnuploadedReplays10(uploadRequest: UploadRequestDto,
 
                 // Collect
                 const hashes = selected.map((x) => x.hash);
-                const replays = selected.map((x) => x.replay);
-
                 // Create a plain JS object from the .NET proxy object to avoid stack overflow issues
                 // when stringifying an object that contains a .NET proxy.
                 const plainUploadRequest = JSON.parse(JSON.stringify(uploadRequest));
+                const requestNames = (plainUploadRequest.requestNames ?? []) as RequestNames[];
+                const uploaderToonKeys = new Set(
+                    requestNames
+                        .filter(requestName => requestName.toonId > 0)
+                        .map(requestName => requestToonKey(requestName))
+                );
+                const replays = selected.map((x) => createUploadReplay(x.replay, uploaderToonKeys));
 
                 const request: UploadRequestDto = {
                     ...plainUploadRequest,
+                    requestNames,
                     replays
                 };
 
@@ -839,4 +845,21 @@ export async function delDirectoryHandle(key: string): Promise<boolean> {
 
 function toonKey(toonId: { region: number; realm: number; id: number }): string {
     return `${toonId.region}:${toonId.realm}:${toonId.id}`;
+}
+
+function requestToonKey(requestName: RequestNames): string {
+    return `${requestName.regionId}:${requestName.realmId}:${requestName.toonId}`;
+}
+
+function createUploadReplay(replay: ReplayDto, uploaderToonKeys: Set<string>): ReplayDto {
+    const uploadReplay = JSON.parse(JSON.stringify(replay)) as ReplayDto;
+
+    for (const replayPlayer of uploadReplay.players) {
+        const playerToonId = replayPlayer.player?.toonId;
+        if (playerToonId && uploaderToonKeys.has(toonKey(playerToonId))) {
+            replayPlayer.isUploader = true;
+        }
+    }
+
+    return uploadReplay;
 }
