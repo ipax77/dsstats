@@ -237,7 +237,31 @@
             InvokeAsync(StateHasChanged);
         });
 
+        hubConnection.On<string>("account_changed", reason =>
+        {
+            _ = InvokeAsync(() => RefreshAccountAsync(reason));
+        });
+
         await hubConnection.StartAsync();
+    }
+
+    private async Task RefreshAccountAsync(string reason)
+    {
+        if (reason is not InHouseAccountChangeReasons.Passkeys
+            and not InHouseAccountChangeReasons.Profiles)
+        {
+            return;
+        }
+
+        try
+        {
+            await Auth.RefreshUserAsync();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+            StateHasChanged();
+        }
     }
 
     private async Task DisposeHubAsync()

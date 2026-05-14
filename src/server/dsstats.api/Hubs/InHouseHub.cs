@@ -9,12 +9,19 @@ namespace dsstats.api.Hubs;
 [Authorize(AuthenticationSchemes = InHouseBearerAuthenticationHandler.SchemeName)]
 public sealed class InHouseHub(InHouseConnectionTracker tracker) : Hub
 {
+    public const string AccountChangedEvent = "account_changed";
+    public const string ConnectedPlayersCountEvent = "connected_players_count";
+
+    public static string GetAccountGroupName(Guid publicUserId)
+        => $"inhouse:account:{publicUserId:N}";
+
     public override async Task OnConnectedAsync()
     {
         if (Guid.TryParse(Context.User?.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
         {
+            await Groups.AddToGroupAsync(Context.ConnectionId, GetAccountGroupName(userId));
             var count = tracker.Connect(userId, Context.ConnectionId);
-            await Clients.All.SendAsync("connected_players_count", count, Context.ConnectionAborted);
+            await BroadcastConnectedPlayersCountAsync(count);
         }
 
         await base.OnConnectedAsync();
@@ -23,7 +30,20 @@ public sealed class InHouseHub(InHouseConnectionTracker tracker) : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var count = tracker.Disconnect(Context.ConnectionId);
-        await Clients.All.SendAsync("connected_players_count", count, Context.ConnectionAborted);
+        try
+        {
+            await BroadcastConnectedPlayersCountAsync(count);
+        }
+        catch (OperationCanceledException)
+        {
+            // Disconnects and shutdowns can cancel the outgoing hub write after the
+            // tracker state has already been updated. The next connection event will
+            // publish the latest count.
+        }
+
         await base.OnDisconnectedAsync(exception);
     }
+
+    private Task BroadcastConnectedPlayersCountAsync(int count)
+        => Clients.All.SendAsync(ConnectedPlayersCountEvent, count);
 }

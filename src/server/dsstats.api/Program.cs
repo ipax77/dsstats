@@ -110,6 +110,7 @@ builder.Services.AddSingleton<IImportService, ImportService>();
 builder.Services.AddSingleton<IRatingService, RatingService>();
 builder.Services.AddSingleton<IPickBanService, PickBanService>();
 builder.Services.AddSingleton<InHouseConnectionTracker>();
+builder.Services.AddSingleton<IInHouseAccountNotifier, InHouseAccountNotifier>();
 
 builder.Services.AddScoped<IDashboardStatsService, DashboardStatsService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();

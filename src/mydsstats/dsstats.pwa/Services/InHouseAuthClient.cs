@@ -102,6 +102,12 @@ public sealed class InHouseAuthClient(
             "api10/auth/device-link/options",
             new InHouseDeviceLinkOptionsRequest());
 
+    public async Task RefreshUserAsync()
+    {
+        var user = await SendAuthorizedAsync<InHouseUserDto>(HttpMethod.Get, "api10/auth/me");
+        await UpdateUserAsync(user);
+    }
+
     public async Task<InHouseUserDto> AddProfileAsync(InHouseProfileDto profile)
     {
         var user = await PostAuthorizedAsync<InHouseProfileDto, InHouseUserDto>("api10/auth/profiles", profile);

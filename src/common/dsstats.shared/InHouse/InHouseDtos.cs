@@ -2,6 +2,12 @@ using System.Text.Json;
 
 namespace dsstats.shared.InHouse;
 
+public static class InHouseAccountChangeReasons
+{
+    public const string Passkeys = "passkeys";
+    public const string Profiles = "profiles";
+}
+
 public sealed class InHouseProfileDto
 {
     public string Name { get; set; } = string.Empty;

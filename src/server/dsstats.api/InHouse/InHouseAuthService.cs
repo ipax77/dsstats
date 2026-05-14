@@ -17,6 +17,7 @@ public sealed class InHouseAuthService(
     DsstatsContext context,
     IFido2 fido2,
     IMemoryCache memoryCache,
+    IInHouseAccountNotifier accountNotifier,
     IOptions<InHouseAuthOptions> options) : IInHouseAuthService
 {
     private readonly InHouseAuthOptions authOptions = options.Value;
@@ -233,6 +234,7 @@ public sealed class InHouseAuthService(
 
         user.Profiles.Add(ToEntity(profile));
         await context.SaveChangesAsync(token);
+        await accountNotifier.NotifyAccountChangedAsync(user.PublicId, InHouseAccountChangeReasons.Profiles);
         return user.ToDto();
     }
 
@@ -255,6 +257,7 @@ public sealed class InHouseAuthService(
         user.Profiles.Remove(linkedProfile);
         context.InHouseProfiles.Remove(linkedProfile);
         await context.SaveChangesAsync(token);
+        await accountNotifier.NotifyAccountChangedAsync(user.PublicId, InHouseAccountChangeReasons.Profiles);
         return user.ToDto();
     }
 
@@ -404,6 +407,7 @@ public sealed class InHouseAuthService(
         await context.SaveChangesAsync(token);
         await tx.CommitAsync(token);
         memoryCache.Remove(ChallengeKey(request.ChallengeId));
+        await accountNotifier.NotifyAccountChangedAsync(link.User.PublicId, InHouseAccountChangeReasons.Passkeys);
         return session;
     }
 

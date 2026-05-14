@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using dsstats.api.Controllers;
+using dsstats.api.Hubs;
 using dsstats.api.InHouse;
 using dsstats.db;
 using dsstats.shared;
@@ -11,6 +12,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.SignalR;
 using Moq;
 
 namespace dsstats.tests;
@@ -114,6 +116,93 @@ public sealed class InHouseAuthServiceTests
     }
 
     [TestMethod]
+    public async Task RemovePasskeyAsync_DoesNotNotifyBecauseAllSessionsAreRevoked()
+    {
+        await using var fixture = await InHouseAuthFixture.CreateAsync();
+        var user = CreateUser(1, passkeyCount: 2, sessionCount: 1);
+        fixture.Context.InHouseUsers.Add(user);
+        await fixture.Context.SaveChangesAsync();
+        var removedPasskeyId = user.Passkeys.First().InHousePasskeyCredentialId;
+
+        await fixture.Service.RemovePasskeyAsync(user.InHouseUserId, removedPasskeyId, CancellationToken.None);
+
+        fixture.AccountNotifier.Verify(
+            n => n.NotifyAccountChangedAsync(It.IsAny<Guid>(), It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [TestMethod]
+    public async Task AddProfileAsync_NotifiesAccountProfileChange()
+    {
+        await using var fixture = await InHouseAuthFixture.CreateAsync();
+        var user = CreateUser(1, passkeyCount: 1);
+        fixture.Context.InHouseUsers.Add(user);
+        await fixture.Context.SaveChangesAsync();
+
+        await fixture.Service.AddProfileAsync(user.InHouseUserId, new InHouseProfileDto
+        {
+            Name = "Second profile",
+            ToonId = new ToonIdDto { Region = 1, Realm = 1, Id = 101 },
+        }, CancellationToken.None);
+
+        fixture.AccountNotifier.Verify(
+            n => n.NotifyAccountChangedAsync(user.PublicId, InHouseAccountChangeReasons.Profiles),
+            Times.Once);
+    }
+
+    [TestMethod]
+    public async Task RemoveProfileAsync_NotifiesAccountProfileChange()
+    {
+        await using var fixture = await InHouseAuthFixture.CreateAsync();
+        var user = CreateUser(1, passkeyCount: 1);
+        user.Profiles.Add(new InHouseProfile
+        {
+            Name = "Second profile",
+            Active = true,
+            ToonId = new ToonId { Region = 1, Realm = 1, Id = 101 },
+            CreatedAt = DateTime.UtcNow,
+        });
+        fixture.Context.InHouseUsers.Add(user);
+        await fixture.Context.SaveChangesAsync();
+
+        await fixture.Service.RemoveProfileAsync(user.InHouseUserId, new InHouseProfileDto
+        {
+            Name = "Second profile",
+            ToonId = new ToonIdDto { Region = 1, Realm = 1, Id = 101 },
+        }, CancellationToken.None);
+
+        fixture.AccountNotifier.Verify(
+            n => n.NotifyAccountChangedAsync(user.PublicId, InHouseAccountChangeReasons.Profiles),
+            Times.Once);
+    }
+
+    [TestMethod]
+    public async Task InHouseAccountNotifier_SendsAccountChangedToAccountGroup()
+    {
+        var publicUserId = Guid.NewGuid();
+        var clientProxy = new Mock<IClientProxy>();
+        var clients = new Mock<IHubClients>();
+        var hubContext = new Mock<IHubContext<InHouseHub>>();
+        clients
+            .Setup(c => c.Group(InHouseHub.GetAccountGroupName(publicUserId)))
+            .Returns(clientProxy.Object);
+        hubContext
+            .SetupGet(c => c.Clients)
+            .Returns(clients.Object);
+        var notifier = new InHouseAccountNotifier(hubContext.Object);
+
+        await notifier.NotifyAccountChangedAsync(publicUserId, InHouseAccountChangeReasons.Passkeys);
+
+        clientProxy.Verify(
+            p => p.SendCoreAsync(
+                InHouseHub.AccountChangedEvent,
+                It.Is<object?[]>(args => args.Length == 1
+                    && (string)args[0]! == InHouseAccountChangeReasons.Passkeys),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [TestMethod]
     public async Task RemovePasskey_CallsServiceForCurrentUser()
     {
         var authService = new Mock<IInHouseAuthService>();
@@ -197,18 +286,21 @@ public sealed class InHouseAuthServiceTests
         private readonly SqliteConnection connection;
         private readonly MemoryCache memoryCache = new(new MemoryCacheOptions());
 
-        private InHouseAuthFixture(SqliteConnection connection, DsstatsContext context)
+        private InHouseAuthFixture(SqliteConnection connection, DsstatsContext context, Mock<IInHouseAccountNotifier> accountNotifier)
         {
             this.connection = connection;
             Context = context;
+            AccountNotifier = accountNotifier;
             Service = new InHouseAuthService(
                 context,
                 Mock.Of<IFido2>(),
                 memoryCache,
+                accountNotifier.Object,
                 Options.Create(new InHouseAuthOptions()));
         }
 
         public DsstatsContext Context { get; }
+        public Mock<IInHouseAccountNotifier> AccountNotifier { get; }
         public InHouseAuthService Service { get; }
 
         public static async Task<InHouseAuthFixture> CreateAsync()
@@ -220,7 +312,7 @@ public sealed class InHouseAuthServiceTests
                 .Options;
             var context = new DsstatsContext(options);
             await context.Database.EnsureCreatedAsync();
-            return new InHouseAuthFixture(connection, context);
+            return new InHouseAuthFixture(connection, context, new Mock<IInHouseAccountNotifier>());
         }
 
         public async ValueTask DisposeAsync()
