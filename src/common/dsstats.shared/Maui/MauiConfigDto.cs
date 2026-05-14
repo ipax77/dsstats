@@ -1,4 +1,12 @@
-﻿namespace dsstats.shared.Maui;
+using dsstats.shared;
+
+namespace dsstats.shared.Maui;
+
+public enum MauiSessionWindowMode
+{
+    Time = 0,
+    Count = 1,
+}
 
 public sealed class MauiConfigDto
 {
@@ -11,6 +19,11 @@ public sealed class MauiConfigDto
     public string Culture { get; set; } = string.Empty;
     public DateTime UploadAskTime { get; set; }
     public string[] IgnoreReplays { get; set; } = [];
+    public MauiSessionWindowMode SessionWindowMode { get; set; } = MauiSessionWindowMode.Time;
+    public int SessionWindowHours { get; set; } = 6;
+    public int SessionWindowReplayCount { get; set; } = 10;
+    public GameMode SessionWindowGameMode { get; set; } = GameMode.None;
+    public bool SessionWindowInitialized { get; set; }
     public List<Sc2ProfileDto> Sc2Profiles { get; set; } = new();
 }
 

@@ -58,6 +58,7 @@ public sealed partial class DsstatsService(IServiceScopeFactory scopeFactory, IH
 
             importState.UpdateProgress(final with
             {
+                ImportStatus = ImportStatus.Completed,
                 Message = summary
             });
             importState.SetRunning(false);
