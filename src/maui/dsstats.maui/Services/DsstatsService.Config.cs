@@ -125,6 +125,23 @@ public partial class DsstatsService
         entity.Culture = dto.Culture;
         entity.UploadAskTime = dto.UploadAskTime;
         entity.IgnoreReplays = dto.IgnoreReplays;
+        entity.SessionWindowMode = dto.SessionWindowMode is MauiSessionWindowMode.Time or MauiSessionWindowMode.Count
+            ? dto.SessionWindowMode
+            : MauiSessionWindowMode.Time;
+        entity.SessionWindowHours = dto.SessionWindowHours switch
+        {
+            3 or 6 or 12 or 24 => dto.SessionWindowHours,
+            _ => 6,
+        };
+        entity.SessionWindowReplayCount = dto.SessionWindowReplayCount switch
+        {
+            10 or 20 or 30 or 50 => dto.SessionWindowReplayCount,
+            _ => 10,
+        };
+        entity.SessionWindowGameMode = Enum.IsDefined(dto.SessionWindowGameMode)
+            ? dto.SessionWindowGameMode
+            : dsstats.shared.GameMode.None;
+        entity.SessionWindowInitialized = dto.SessionWindowInitialized;
 
         // Update profiles: remove missing
         foreach (var existing in entity.Sc2Profiles.ToList())

@@ -20,6 +20,11 @@ public sealed class MauiConfig
     [Precision(0)]
     public DateTime UploadAskTime { get; set; }
     public string[] IgnoreReplays { get; set; } = [];
+    public MauiSessionWindowMode SessionWindowMode { get; set; } = MauiSessionWindowMode.Time;
+    public int SessionWindowHours { get; set; } = 6;
+    public int SessionWindowReplayCount { get; set; } = 10;
+    public GameMode SessionWindowGameMode { get; set; } = GameMode.None;
+    public bool SessionWindowInitialized { get; set; }
     public ICollection<Sc2Profile> Sc2Profiles { get; set; } = [];
 }
 
@@ -61,6 +66,11 @@ public static class MauiConfigExtensions
         Culture = entity.Culture,
         UploadAskTime = entity.UploadAskTime,
         IgnoreReplays = entity.IgnoreReplays,
+        SessionWindowMode = entity.SessionWindowMode,
+        SessionWindowHours = entity.SessionWindowHours,
+        SessionWindowReplayCount = entity.SessionWindowReplayCount,
+        SessionWindowGameMode = entity.SessionWindowGameMode,
+        SessionWindowInitialized = entity.SessionWindowInitialized,
         Sc2Profiles = entity.Sc2Profiles
         .Select(p => p.ToDto()).ToList()
     };
