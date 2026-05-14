@@ -14,6 +14,16 @@ public sealed class InHouseUserDto
     public Guid UserId { get; set; }
     public string DisplayName { get; set; } = string.Empty;
     public List<InHouseProfileDto> Profiles { get; set; } = [];
+    public List<InHousePasskeyDto> Passkeys { get; set; } = [];
+}
+
+public sealed class InHousePasskeyDto
+{
+    public int PasskeyId { get; set; }
+    public string DeviceName { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime LastUsedAt { get; set; }
+    public bool IsBackedUp { get; set; }
 }
 
 public sealed class InHouseSessionDto
@@ -70,6 +80,11 @@ public sealed class InHouseDeviceLinkCompleteRequest
 {
     public Guid ChallengeId { get; set; }
     public JsonElement Credential { get; set; }
+}
+
+public sealed class InHouseRemovePasskeyRequest
+{
+    public int PasskeyId { get; set; }
 }
 
 public sealed class InHouseAuthOptionsResponse

@@ -56,7 +56,7 @@ public sealed class InHouseAuthService(
         var challengeId = Guid.NewGuid();
         memoryCache.Set(
             ChallengeKey(challengeId),
-            new PendingRegistration(credentialOptions, displayName, CloneProfile(request.Profile), publicId, WebEncoders.Base64UrlEncode(userHandle), null),
+            new PendingRegistration(credentialOptions, displayName, CloneProfile(request.Profile), publicId, WebEncoders.Base64UrlEncode(userHandle), string.Empty, null),
             authOptions.ChallengeLifetime);
 
         return ToOptionsResponse(challengeId, credentialOptions);
@@ -122,6 +122,8 @@ public sealed class InHouseAuthService(
         var credential = await context.InHousePasskeyCredentials
             .Include(c => c.User)
             .ThenInclude(u => u!.Profiles)
+            .Include(c => c.User)
+            .ThenInclude(u => u!.Passkeys)
             .FirstOrDefaultAsync(c => c.CredentialId == credentialId, token)
             ?? throw new InvalidOperationException("Unknown passkey credential.");
 
@@ -153,6 +155,8 @@ public sealed class InHouseAuthService(
         var session = await context.InHouseSessions
             .Include(s => s.User)
             .ThenInclude(u => u!.Profiles)
+            .Include(s => s.User)
+            .ThenInclude(u => u!.Passkeys)
             .FirstOrDefaultAsync(s => s.RefreshTokenHash == refreshHash, token)
             ?? throw new InvalidOperationException("Invalid refresh token.");
 
@@ -201,6 +205,7 @@ public sealed class InHouseAuthService(
     {
         var user = await context.InHouseUsers
             .Include(u => u.Profiles)
+            .Include(u => u.Passkeys)
             .FirstOrDefaultAsync(u => u.InHouseUserId == userId, token);
 
         return user?.ToDto();
@@ -212,6 +217,7 @@ public sealed class InHouseAuthService(
 
         var user = await context.InHouseUsers
             .Include(u => u.Profiles)
+            .Include(u => u.Passkeys)
             .FirstOrDefaultAsync(u => u.InHouseUserId == userId, token)
             ?? throw new InvalidOperationException("Unknown InHouse user.");
 
@@ -234,6 +240,7 @@ public sealed class InHouseAuthService(
     {
         var user = await context.InHouseUsers
             .Include(u => u.Profiles)
+            .Include(u => u.Passkeys)
             .FirstOrDefaultAsync(u => u.InHouseUserId == userId, token)
             ?? throw new InvalidOperationException("Unknown InHouse user.");
 
@@ -248,6 +255,37 @@ public sealed class InHouseAuthService(
         user.Profiles.Remove(linkedProfile);
         context.InHouseProfiles.Remove(linkedProfile);
         await context.SaveChangesAsync(token);
+        return user.ToDto();
+    }
+
+    public async Task<InHouseUserDto> RemovePasskeyAsync(int userId, int passkeyId, CancellationToken token)
+    {
+        await using var tx = await context.Database.BeginTransactionAsync(token);
+
+        var user = await context.InHouseUsers
+            .Include(u => u.Profiles)
+            .Include(u => u.Passkeys)
+            .Include(u => u.Sessions)
+            .FirstOrDefaultAsync(u => u.InHouseUserId == userId, token)
+            ?? throw new InvalidOperationException("Unknown InHouse user.");
+
+        if (user.Passkeys.Count <= 1)
+        {
+            throw new InvalidOperationException("Add another passkey before removing your only sign-in method.");
+        }
+
+        var passkey = user.Passkeys.FirstOrDefault(p => p.InHousePasskeyCredentialId == passkeyId)
+            ?? throw new InvalidOperationException("This passkey is not linked to your account.");
+
+        context.InHousePasskeyCredentials.Remove(passkey);
+        user.Passkeys.Remove(passkey);
+        foreach (var session in user.Sessions)
+        {
+            session.RevokedAt ??= DateTime.UtcNow;
+        }
+
+        await context.SaveChangesAsync(token);
+        await tx.CommitAsync(token);
         return user.ToDto();
     }
 
@@ -321,7 +359,7 @@ public sealed class InHouseAuthService(
         var challengeId = Guid.NewGuid();
         memoryCache.Set(
             ChallengeKey(challengeId),
-            new PendingRegistration(credentialOptions, user.DisplayName, new InHouseProfileDto(), user.PublicId, userHandle, link.InHouseDeviceLinkCodeId),
+            new PendingRegistration(credentialOptions, user.DisplayName, new InHouseProfileDto(), user.PublicId, userHandle, request.DeviceName, link.InHouseDeviceLinkCodeId),
             authOptions.ChallengeLifetime);
 
         return ToOptionsResponse(challengeId, credentialOptions);
@@ -339,6 +377,8 @@ public sealed class InHouseAuthService(
         var link = await context.InHouseDeviceLinkCodes
             .Include(l => l.User)
             .ThenInclude(u => u!.Profiles)
+            .Include(l => l.User)
+            .ThenInclude(u => u!.Passkeys)
             .FirstOrDefaultAsync(l => l.InHouseDeviceLinkCodeId == pending.DeviceLinkCodeId, token)
             ?? throw new InvalidOperationException("Invalid link code.");
 
@@ -356,7 +396,7 @@ public sealed class InHouseAuthService(
                 !await context.InHousePasskeyCredentials.AnyAsync(c => c.CredentialId == WebEncoders.Base64UrlEncode(args.CredentialId), token),
         }, token);
 
-        link.User!.Passkeys.Add(ToCredential(credentialResult, pending.UserHandle, string.Empty));
+        link.User!.Passkeys.Add(ToCredential(credentialResult, pending.UserHandle, pending.DeviceName));
         link.UsedAt = DateTime.UtcNow;
         link.User.LastLoginAt = DateTime.UtcNow;
 
@@ -541,6 +581,7 @@ public sealed class InHouseAuthService(
         InHouseProfileDto Profile,
         Guid PublicId,
         string UserHandle,
+        string DeviceName,
         int? DeviceLinkCodeId);
 
     private sealed record PendingAssertion(AssertionOptions Options);
@@ -564,5 +605,15 @@ internal static class InHouseEntityMapping
                     Id = profile.ToonId.Id,
                 },
             }).ToList(),
+            Passkeys = user.Passkeys
+                .OrderByDescending(passkey => passkey.LastUsedAt)
+                .Select(passkey => new InHousePasskeyDto
+                {
+                    PasskeyId = passkey.InHousePasskeyCredentialId,
+                    DeviceName = passkey.DeviceName,
+                    CreatedAt = passkey.CreatedAt,
+                    LastUsedAt = passkey.LastUsedAt,
+                    IsBackedUp = passkey.IsBackedUp,
+                }).ToList(),
         };
 }

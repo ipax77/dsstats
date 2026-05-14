@@ -91,6 +91,12 @@
                         <div class="col-xl-6">
                             <section class="border rounded p-3 h-100">
                                 <h5 class="text-warning mb-3">Link Another Device</h5>
+                                @if (HasOnlyOnePasskey)
+                                {
+                                    <div class="alert alert-warning">
+                                        You currently have only one sign-in method. Add another passkey so you don't lose access if this device is lost.
+                                    </div>
+                                }
                                 <p class="text-muted">
                                     Create a short-lived link code on this signed-in device, then enter it on another browser or phone to add a new passkey to the same InHouse account.
                                 </p>
@@ -106,6 +112,40 @@
                                         </div>
                                     }
                                 </div>
+                            </section>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <section class="border rounded p-3 h-100">
+                                <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                                    <h5 class="text-warning mb-0">Sign-in Methods</h5>
+                                    <span class="badge bg-secondary">@((Auth.User?.Passkeys.Count ?? 0).ToString("N0"))</span>
+                                </div>
+
+                                @if (Auth.User?.Passkeys.Count > 0)
+                                {
+                                    <div class="list-group">
+                                        @foreach (var passkey in Auth.User.Passkeys)
+                                        {
+                                            <div class="list-group-item bgchart2 text-light d-flex justify-content-between align-items-center gap-3">
+                                                <div>
+                                                    <div class="fw-semibold">@GetPasskeyName(passkey)</div>
+                                                    <div class="small text-muted">Last used @FormatDate(passkey.LastUsedAt)</div>
+                                                    <div class="small @(passkey.IsBackedUp ? "text-success" : "text-muted")">
+                                                        @(passkey.IsBackedUp ? "Backed up" : "Not reported as backed up")
+                                                    </div>
+                                                </div>
+                                                <button class="btn btn-outline-danger btn-sm" @onclick="() => RemovePasskeyAsync(passkey)" disabled="@(busy || !CanRemovePasskeys)">
+                                                    <i class="bi bi-trash me-1"></i>Remove
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-secondary mb-0">No passkeys linked.</div>
+                                }
                             </section>
                         </div>
 
@@ -150,6 +190,8 @@
 
     private bool HasSelectedProfile => !string.IsNullOrWhiteSpace(selectedProfileKey);
     private bool CanRemoveProfiles => (Auth.User?.Profiles.Count ?? 0) > 1;
+    private bool HasOnlyOnePasskey => (Auth.User?.Passkeys.Count ?? 0) == 1;
+    private bool CanRemovePasskeys => (Auth.User?.Passkeys.Count ?? 0) > 1;
     private IEnumerable<TrackedProfileDto> AvailableTrackedProfiles
         => trackedProfiles.Where(profile => !(Auth.User?.Profiles.Any(linked => SameToonId(linked.ToonId, profile.ToonId)) ?? false));
 
@@ -187,6 +229,23 @@
         {
             await Auth.RemoveProfileAsync(profile);
             statusMessage = "Player profile removed.";
+        });
+    }
+
+    private async Task RemovePasskeyAsync(InHousePasskeyDto passkey)
+    {
+        var confirmed = await JS.InvokeAsync<bool>(
+            "confirm",
+            "Remove this passkey and sign out all active sessions?");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            await HideModalAsync();
+            await Auth.RemovePasskeyAsync(passkey.PasskeyId);
         });
     }
 
@@ -276,6 +335,12 @@
 
     private static string FormatToonId(ToonIdDto toonId)
         => $"{toonId.Region}/{toonId.Realm}/{toonId.Id}";
+
+    private static string GetPasskeyName(InHousePasskeyDto passkey)
+        => string.IsNullOrWhiteSpace(passkey.DeviceName) ? "Passkey" : passkey.DeviceName;
+
+    private static string FormatDate(DateTime date)
+        => date.ToLocalTime().ToString("g");
 
     public void Dispose()
         => Auth.AuthenticationChanged -= OnAuthenticationChanged;

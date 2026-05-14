@@ -13,6 +13,7 @@ public interface IInHouseAuthService
     Task<InHouseUserDto?> GetCurrentUserAsync(int userId, CancellationToken token);
     Task<InHouseUserDto> AddProfileAsync(int userId, InHouseProfileDto profile, CancellationToken token);
     Task<InHouseUserDto> RemoveProfileAsync(int userId, InHouseProfileDto profile, CancellationToken token);
+    Task<InHouseUserDto> RemovePasskeyAsync(int userId, int passkeyId, CancellationToken token);
     Task DeleteAccountAsync(int userId, CancellationToken token);
     Task<InHouseDeviceLinkOptionsResponse> CreateDeviceLinkCodeAsync(int userId, CancellationToken token);
     Task<InHouseAuthOptionsResponse> BeginDeviceLinkAsync(InHouseDeviceLinkOptionsRequest request, CancellationToken token);

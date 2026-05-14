@@ -116,6 +116,14 @@ public sealed class InHouseAuthClient(
         return user;
     }
 
+    public async Task RemovePasskeyAsync(int passkeyId)
+    {
+        await PostAuthorizedAsync<InHouseRemovePasskeyRequest, InHouseUserDto>(
+            "api10/auth/passkeys/remove",
+            new InHouseRemovePasskeyRequest { PasskeyId = passkeyId });
+        await ClearSessionAsync();
+    }
+
     public async Task DeleteAccountAsync()
     {
         await SendAuthorizedNoContentAsync(HttpMethod.Delete, "api10/auth/me");

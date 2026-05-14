@@ -89,6 +89,18 @@ public sealed class AuthController(IInHouseAuthService authService) : Controller
     }
 
     [Authorize(AuthenticationSchemes = Authentication.InHouseBearerAuthenticationHandler.SchemeName)]
+    [HttpPost("passkeys/remove")]
+    public async Task<ActionResult<InHouseUserDto>> RemovePasskey(InHouseRemovePasskeyRequest request, CancellationToken token)
+    {
+        if (!int.TryParse(User.FindFirstValue(InHouseClaims.UserId), out var userId))
+        {
+            return Unauthorized();
+        }
+
+        return await ExecuteAsync(() => authService.RemovePasskeyAsync(userId, request.PasskeyId, token));
+    }
+
+    [Authorize(AuthenticationSchemes = Authentication.InHouseBearerAuthenticationHandler.SchemeName)]
     [HttpPost("device-link/code")]
     public async Task<ActionResult<InHouseDeviceLinkOptionsResponse>> DeviceLinkCode(CancellationToken token)
     {
