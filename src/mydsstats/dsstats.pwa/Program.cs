@@ -38,6 +38,14 @@ builder.Services.AddHttpClient("api", client =>
     client.DefaultRequestHeaders.Authorization = new("DS8upload77");
 });
 
+builder.Services.AddHttpClient("InHouseApi", client =>
+{
+    client.BaseAddress = isProduction
+        ? new Uri("https://dsstats.pax77.org")
+        : new Uri("http://localhost:5279");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
 builder.Services.AddChartJs(options =>
 {
     var version = "4.5.1";
@@ -54,6 +62,7 @@ builder.Services.AddScoped<BackupService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<RatingService>();
 builder.Services.AddScoped<SessionProgressService>();
+builder.Services.AddScoped<InHouseAuthClient>();
 builder.Services.AddScoped<IPlayerService, dsstats.apiServices.PlayerService>();
 builder.Services.AddScoped<IStatsService, dsstats.apiServices.StatsService>();
 

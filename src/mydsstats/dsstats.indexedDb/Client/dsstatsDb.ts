@@ -11,7 +11,8 @@ import { replayListMatchesDetailProjection, replayListNeedsFullDetailCheck, repl
 const CONFIG_KEYS = {
     app: "app",
     trackedProfiles: "trackedProfiles",
-    sessionWindowSettings: "sessionWindowSettings"
+    sessionWindowSettings: "sessionWindowSettings",
+    inHouseSession: "inHouseSession"
 } as const;
 
 const QUERY_CACHE_LIMIT = 8;
@@ -353,6 +354,29 @@ export async function saveSessionWindowSettings(
     settings: SessionWindowSettingsDto,
 ): Promise<void> {
     await saveConfigEntry(CONFIG_KEYS.sessionWindowSettings, settings);
+}
+
+export async function getInHouseSession<T>(): Promise<T | undefined> {
+    return await getConfigEntry<T>(CONFIG_KEYS.inHouseSession);
+}
+
+export async function saveInHouseSession<T>(
+    session: T,
+): Promise<void> {
+    await saveConfigEntry(CONFIG_KEYS.inHouseSession, session);
+}
+
+export async function clearInHouseSession(): Promise<void> {
+    const database = await openDB();
+
+    return new Promise((resolve, reject) => {
+        const tx = database.transaction(STORES.config, "readwrite");
+        const store = tx.objectStore(STORES.config);
+        store.delete(CONFIG_KEYS.inHouseSession);
+
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
 }
 
 async function getConfigEntry<T>(key: string): Promise<T | undefined> {

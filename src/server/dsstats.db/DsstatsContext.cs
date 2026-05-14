@@ -48,6 +48,11 @@ public class DsstatsContext : DbContext
 
     public DbSet<MauiConfig> MauiConfig { get; set; }
     public DbSet<Sc2Profile> Sc2Profiles { get; set; }
+    public DbSet<InHouseUser> InHouseUsers { get; set; }
+    public DbSet<InHousePasskeyCredential> InHousePasskeyCredentials { get; set; }
+    public DbSet<InHouseProfile> InHouseProfiles { get; set; }
+    public DbSet<InHouseSession> InHouseSessions { get; set; }
+    public DbSet<InHouseDeviceLinkCode> InHouseDeviceLinkCodes { get; set; }
 
     public int Week(DateTime date) => throw new InvalidOperationException($"{nameof(Week)} cannot be called client side.");
 
@@ -92,6 +97,60 @@ public class DsstatsContext : DbContext
             });
 
             entity.HasIndex(i => i.Name);
+        });
+
+        modelBuilder.Entity<InHouseUser>(entity =>
+        {
+            entity.HasIndex(i => i.PublicId).IsUnique();
+            entity.HasIndex(i => i.DisplayName);
+        });
+
+        modelBuilder.Entity<InHousePasskeyCredential>(entity =>
+        {
+            entity.HasIndex(i => i.CredentialId).IsUnique();
+            entity.HasIndex(i => i.UserHandle);
+            entity.HasOne(i => i.User)
+                .WithMany(i => i.Passkeys)
+                .HasForeignKey(i => i.InHouseUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<InHouseProfile>(entity =>
+        {
+            entity.OwnsOne(p => p.ToonId, toon =>
+            {
+                toon.Property(t => t.Region).IsRequired();
+                toon.Property(t => t.Realm).IsRequired();
+                toon.Property(t => t.Id).IsRequired();
+
+                toon.HasIndex(t => new { t.Region, t.Realm, t.Id }).IsUnique();
+            });
+
+            entity.HasOne(i => i.User)
+                .WithMany(i => i.Profiles)
+                .HasForeignKey(i => i.InHouseUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<InHouseSession>(entity =>
+        {
+            entity.HasIndex(i => i.AccessTokenHash).IsUnique();
+            entity.HasIndex(i => i.RefreshTokenHash).IsUnique();
+            entity.HasIndex(i => i.ExpiresAt);
+            entity.HasOne(i => i.User)
+                .WithMany(i => i.Sessions)
+                .HasForeignKey(i => i.InHouseUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<InHouseDeviceLinkCode>(entity =>
+        {
+            entity.HasIndex(i => i.CodeHash).IsUnique();
+            entity.HasIndex(i => i.ExpiresAt);
+            entity.HasOne(i => i.User)
+                .WithMany(i => i.DeviceLinkCodes)
+                .HasForeignKey(i => i.InHouseUserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<ReplayPlayer>(entity =>
