@@ -370,7 +370,6 @@
     RatingDetails? details;
 
     CancellationTokenSource cts = new();
-    CommandersChart? commandersChart;
     RatingsChart? ratingsChart;
     CmdrAvgGainResponse? avgGainResponse;
     IStatsResponse? statsResponse;
@@ -479,7 +478,6 @@
         }
         if (details != null)
         {
-            commandersChart?.Update(details);
             ratingsChart?.Update(details);
         }
         await InvokeAsync(StateHasChanged);

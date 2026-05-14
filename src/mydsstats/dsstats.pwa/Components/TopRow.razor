@@ -39,13 +39,13 @@
 			<span class="badge bg-secondary">Processed: @decodeInfo.Done / @decodeInfo.Total</span>
 			<span class="badge bg-success">Saved: @decodeInfo.Successful</span>
 			<span class="badge bg-danger">Errors: @decodeInfo.Error</span>
-			<span class="badge bg-light text-dark">Elapsed: @decodeInfo.Elapsed.ToString(@"hh\:mm\:ss")</span>
+			<span class="badge bg-light text-dark">Elapsed: @DecodeDisplayFormatter.FormatElapsed(decodeInfo)</span>
 			<span class="badge bg-light text-dark">ETA: @decodeInfo.Eta.ToString(@"hh\:mm\:ss")</span>
 		} else
 		{
 			<span class="badge bg-secondary">@decodeInfo.Done</span>
 			<span class="badge bg-danger">Errors: @decodeInfo.Error</span>
-			<span class="badge bg-light text-dark">Elapsed: @decodeInfo.Elapsed.ToString(@"hh\:mm\:ss")</span>
+			<span class="badge bg-light text-dark">Elapsed: @DecodeDisplayFormatter.FormatElapsed(decodeInfo)</span>
 		}
 
 		@if (decodeInfo.UploadStatus == UploadStatus.Uploading)

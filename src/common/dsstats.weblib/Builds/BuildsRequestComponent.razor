@@ -98,10 +98,13 @@
 						@onclick="SetRating">
 					Set Rating
 				</button>
-				<button type="button" class="btn btn-sm btn-outline-light"
-						@onclick="() => playerSelectModal?.Show(Request)">
-					Player Builds
-				</button>
+				@if (playerSelectModal != null)
+				{
+					<button type="button" class="btn btn-sm btn-outline-light"
+							@onclick="() => playerSelectModal.Show(Request)">
+						Player Builds
+					</button>
+				}
 				<div class="form-check mt-4">
 					<InputCheckbox id="withLeavers" @bind-Value="Request.WithLeavers" class="form-check-input" />
 					<label for="withLeavers" class="form-check-label">

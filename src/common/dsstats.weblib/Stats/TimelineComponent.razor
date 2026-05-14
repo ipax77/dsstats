@@ -1,5 +1,7 @@
-﻿@using dsstats.shared
+﻿@using Microsoft.Extensions.Logging
+@using dsstats.shared
 @using dsstats.shared.Interfaces
+@inject ILogger<TimelineComponent> logger
 
 @inject IStatsService StatsService
 
@@ -132,7 +134,7 @@
         }
         catch (Exception ex)
         {
-
+            logger.LogError("Failed getting data: {error}", ex.Message);
         }
         finally
         {
