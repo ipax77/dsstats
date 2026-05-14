@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using sc2arcade.crawler;
+using System.Security.Claims;
 using System.Threading.RateLimiting;
 
 var MyAllowSpecificOrigins = "dsstatsOrigin";
@@ -55,6 +56,8 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddRateLimiter(options =>
 {
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
     options.AddFixedWindowLimiter(policyName: "fixed", options =>
     {
         options.PermitLimit = 4;
@@ -70,6 +73,24 @@ builder.Services.AddRateLimiter(options =>
         options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         options.QueueLimit = 0;
     });
+
+    options.AddPolicy("inhouse-device-link-attempt", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(GetClientPartitionKey(httpContext), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 2,
+            Window = TimeSpan.FromMinutes(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0,
+        }));
+
+    options.AddPolicy("inhouse-device-link-create", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(GetInHouseUserOrClientPartitionKey(httpContext), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 2,
+            Window = TimeSpan.FromMinutes(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0,
+        }));
 });
 
 builder.Services.AddDbConfig(builder.Configuration);
@@ -149,11 +170,12 @@ if (app.Environment.IsDevelopment())
 app.UseForwardedHeaders();
 // app.UseHttpsRedirection();
 
-app.UseRateLimiter();
 app.UseCors(MyAllowSpecificOrigins);
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseRateLimiter();
 
 app.UseRequestDecompression();
 app.UseResponseCompression();
@@ -164,3 +186,15 @@ app.MapHub<PickBanHub>("/hubs/pickban");
 app.MapHub<InHouseHub>("/hubs/inhouse");
 
 app.Run();
+
+static string GetClientPartitionKey(HttpContext httpContext)
+{
+    var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString();
+    return string.IsNullOrWhiteSpace(ipAddress) ? "unknown-client" : $"ip:{ipAddress}";
+}
+
+static string GetInHouseUserOrClientPartitionKey(HttpContext httpContext)
+{
+    var userId = httpContext.User.FindFirstValue(InHouseClaims.UserId);
+    return string.IsNullOrWhiteSpace(userId) ? GetClientPartitionKey(httpContext) : $"inhouse-user:{userId}";
+}

@@ -99,7 +99,7 @@ public sealed class InHouseAuthClient(
 
     public async Task<InHouseDeviceLinkOptionsResponse> CreateDeviceLinkCodeAsync()
         => await PostAuthorizedAsync<InHouseDeviceLinkOptionsRequest, InHouseDeviceLinkOptionsResponse>(
-            "api10/auth/device-link/options",
+            "api10/auth/device-link/code",
             new InHouseDeviceLinkOptionsRequest());
 
     public async Task RefreshUserAsync()

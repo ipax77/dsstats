@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Reflection;
 using dsstats.api.Controllers;
 using dsstats.api.Hubs;
 using dsstats.api.InHouse;
@@ -13,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.RateLimiting;
 using Moq;
 
 namespace dsstats.tests;
@@ -229,6 +231,18 @@ public sealed class InHouseAuthServiceTests
         authService.Verify(s => s.RemovePasskeyAsync(42, 7, It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [TestMethod]
+    public void DeviceLinkOptions_UsesAttemptRateLimitPolicy()
+        => AssertRateLimitPolicy(nameof(AuthController.DeviceLinkOptions), "inhouse-device-link-attempt");
+
+    [TestMethod]
+    public void DeviceLinkComplete_UsesAttemptRateLimitPolicy()
+        => AssertRateLimitPolicy(nameof(AuthController.DeviceLinkComplete), "inhouse-device-link-attempt");
+
+    [TestMethod]
+    public void DeviceLinkCode_UsesCreateRateLimitPolicy()
+        => AssertRateLimitPolicy(nameof(AuthController.DeviceLinkCode), "inhouse-device-link-create");
+
     private static InHouseUser CreateUser(int seed, int passkeyCount, int sessionCount = 0)
     {
         var user = new InHouseUser
@@ -279,6 +293,16 @@ public sealed class InHouseAuthServiceTests
         }
 
         return user;
+    }
+
+    private static void AssertRateLimitPolicy(string actionName, string policyName)
+    {
+        var method = typeof(AuthController).GetMethod(actionName)
+            ?? throw new InvalidOperationException($"Missing action {actionName}.");
+        var attribute = method.GetCustomAttribute<EnableRateLimitingAttribute>();
+
+        Assert.IsNotNull(attribute);
+        Assert.AreEqual(policyName, attribute.PolicyName);
     }
 
     private sealed class InHouseAuthFixture : IAsyncDisposable

@@ -3,6 +3,7 @@ using dsstats.api.InHouse;
 using dsstats.shared.InHouse;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace dsstats.api.Controllers;
 
@@ -101,6 +102,7 @@ public sealed class AuthController(IInHouseAuthService authService) : Controller
     }
 
     [Authorize(AuthenticationSchemes = Authentication.InHouseBearerAuthenticationHandler.SchemeName)]
+    [EnableRateLimiting("inhouse-device-link-create")]
     [HttpPost("device-link/code")]
     public async Task<ActionResult<InHouseDeviceLinkOptionsResponse>> DeviceLinkCode(CancellationToken token)
     {
@@ -112,6 +114,7 @@ public sealed class AuthController(IInHouseAuthService authService) : Controller
         return await ExecuteAsync(() => authService.CreateDeviceLinkCodeAsync(userId, token));
     }
 
+    [EnableRateLimiting("inhouse-device-link-attempt")]
     [HttpPost("device-link/options")]
     public async Task<ActionResult<object>> DeviceLinkOptions(InHouseDeviceLinkOptionsRequest request, CancellationToken token)
     {
@@ -124,6 +127,7 @@ public sealed class AuthController(IInHouseAuthService authService) : Controller
         return await ExecuteObjectAsync(() => authService.BeginDeviceLinkAsync(request, token));
     }
 
+    [EnableRateLimiting("inhouse-device-link-attempt")]
     [HttpPost("device-link/complete")]
     public async Task<ActionResult<InHouseSessionDto>> DeviceLinkComplete(InHouseDeviceLinkCompleteRequest request, CancellationToken token)
         => await ExecuteAsync(() => authService.CompleteDeviceLinkAsync(request, token));
