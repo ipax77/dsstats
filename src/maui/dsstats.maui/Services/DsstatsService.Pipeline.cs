@@ -112,7 +112,7 @@ public sealed partial class DsstatsService
                 _errors,
                 _uploadStatus,
                 DateTime.UtcNow - _start,
-                ImportStatus.Completed,
+                ImportStatus.Running,
                 "Import finished"));
 
             await MainThread

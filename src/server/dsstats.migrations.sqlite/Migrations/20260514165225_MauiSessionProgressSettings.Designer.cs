@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using dsstats.db;
 
@@ -10,9 +11,11 @@ using dsstats.db;
 namespace dsstats.migrations.sqlite.Migrations
 {
     [DbContext(typeof(DsstatsContext))]
-    partial class DsstatsContextModelSnapshot : ModelSnapshot
+    [Migration("20260514165225_MauiSessionProgressSettings")]
+    partial class MauiSessionProgressSettings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.16");
@@ -219,9 +222,6 @@ namespace dsstats.migrations.sqlite.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("SessionWindowHours")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("SessionWindowInitialized")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("SessionWindowMode")
