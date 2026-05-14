@@ -22,7 +22,7 @@ public partial class DecodeService : IDisposable
     public bool Decoding { get; private set; }
     public ReplayDto? LatestReplay { get; private set; }
     public string? LatestReplayHash { get; private set; }
-    public static readonly Version Version = new(1, 4);
+    public static readonly Version Version = new(1, 5);
     private int _currentWorkerCount = -1;
 
     public DecodeService(IServiceScopeFactory scopeFactory, IHttpClientFactory httpClientFactory,
@@ -52,6 +52,8 @@ public partial class DecodeService : IDisposable
     [SupportedOSPlatform("browser")]
     private async Task EnsureWorkersAsync(int cpuCores)
     {
+        cpuCores = PwaConfig.NormalizeCpuCores(cpuCores);
+
         if (_decodeClient != null && _currentWorkerCount == cpuCores)
             return;
 
@@ -73,6 +75,7 @@ public partial class DecodeService : IDisposable
         if (_decodeClient is null) return;
         await _decodeClient.DisposeAsync();
         _decodeClient = null;
+        _currentWorkerCount = -1;
     }
 
     public event EventHandler<DecodeInfoEventArgs>? DecodeStateChanged;
@@ -206,10 +209,11 @@ public partial class DecodeService : IDisposable
                 Finished = false,
                 Info = $"Starting decode of {totalFiles} replays..."
             });
-            await EnsureWorkersAsync(config.CPUCores);
+            var workerCount = PwaConfig.NormalizeCpuCores(config.CPUCores);
+            await EnsureWorkersAsync(workerCount);
             var options = new ParallelOptions
             {
-                MaxDegreeOfParallelism = config.CPUCores,
+                MaxDegreeOfParallelism = workerCount,
                 CancellationToken = decodeCts.Token
             };
 

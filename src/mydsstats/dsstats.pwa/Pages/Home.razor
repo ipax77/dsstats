@@ -3,6 +3,7 @@
 @using dsstats.pwa.Services
 @using dsstats.shared
 @using dsstats.shared.Interfaces
+@using dsstats.weblib.Players
 @inject DecodeService DecodeService
 @inject IReplayRepository ReplayRepository
 @inject RatingService RatingService
@@ -60,6 +61,7 @@
                                                     ReplayDetails="currentReplayDetails"
                                                     IsScrollable="true"
                                                     IsCloseable="false"
+                                                    OnPlayerRequest="e => playerModal?.Show(e)"
                                                     OnScrollRequest="ScrollReplay"
                                                     OnRatingUpdateRequest="UpdateRatings" />
         </div>
@@ -324,6 +326,8 @@ else
     </div>
 }
 
+<PlayerModal @ref="playerModal" />
+
 @code {
     private static readonly int[] timeWindows = [3, 6, 12, 24];
     private static readonly int[] replayWindows = [10, 20, 30, 50];
@@ -333,6 +337,7 @@ else
 
     private ReplayDetails? currentReplayDetails;
     private dsstats.weblib.Replays.ReplayComponent? replayComponent;
+    private PlayerModal? playerModal;
     private SessionReplayResult sessionReplayResult = SessionReplayResult.Empty;
     private SessionWindowSettingsDto sessionSettings = new();
     private List<TrackedProfileDto> trackedProfiles = [];

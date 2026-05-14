@@ -18,18 +18,20 @@ public class PwaConfigService(IServiceScopeFactory scopeFactory)
             var result = await dbService.GetConfig();
             if (result is not null)
             {
-                config = result;
+                config = PwaConfig.Normalize(result);
             }
             else
             {
-                config = new();
+                config = PwaConfig.Normalize(new());
             }
         }
-        return config ?? new PwaConfig();
+        return config ?? PwaConfig.Normalize(new PwaConfig());
     }
 
     public async Task SaveConfig(PwaConfig config)
     {
+        config = PwaConfig.Normalize(config);
+
         using var scope = scopeFactory.CreateScope();
         var dbService = scope.ServiceProvider.GetRequiredService<IndexedDbService>();
         await dbService.SaveConfig(config);

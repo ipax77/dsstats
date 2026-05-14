@@ -31,6 +31,29 @@ export interface ReplayFilter {
     tableOrders?: TableOrder[];
     skip?: number;
     take?: number;
+    detailFilter?: ReplayDetailFilter;
+}
+
+export interface ReplayDetailFilter {
+    playercount?: number;
+    tournamentEdition?: boolean;
+    gameModes?: number[];
+    posFilters?: ReplayPosDetailFilter[];
+}
+
+export interface ReplayPosDetailFilter {
+    gamePos?: number;
+    commander?: number;
+    oppCommander?: number;
+    playerNameOrId?: string;
+    unitFilters?: ReplayPosUnitDetailFilter[];
+}
+
+export interface ReplayPosUnitDetailFilter {
+    breakpoint?: number;
+    name?: string;
+    count?: number;
+    min?: boolean;
 }
 
 export interface PwaConfig {
@@ -76,8 +99,15 @@ export interface ExportResult {
 export interface UploadRequestDto {
     appGuid: string;
     appVersion: string;
-    requestNames: string[];
+    requestNames: RequestNames[];
     replays: ReplayDto[];
+}
+
+export interface RequestNames {
+    name: string;
+    toonId: number;
+    regionId: number;
+    realmId: number;
 }
 
 export interface ReplayMeta {
@@ -170,6 +200,8 @@ export interface ReplayListDto {
     winnerTeam: number;
     commandersTeam1: number[];
     commandersTeam2: number[];
+    playerCount?: number;
+    tournamentEdition?: boolean;
     playerNames: string[];
     exp2Win?: number;
     avgRating?: number;

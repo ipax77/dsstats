@@ -106,4 +106,49 @@ describe('backup import/export', () => {
             tx.onerror = () => reject(tx.error);
         });
     });
+
+    it('backfills ReplayList gameMode from full replay data when restoring v7 dumps', async () => {
+        const replayHash = 'legacy-game-mode';
+        const dump: Dump = {
+            __meta: { dbVersion: 7, date: new Date().toISOString() },
+            stores: {
+                [STORES.replays]: [
+                    {
+                        replayHash,
+                        compatHash: replayHash,
+                        title: 'Direct Strike',
+                        gameMode: 7,
+                        gametime: '2025-08-19T21:30:44.536566Z',
+                        players: [],
+                    },
+                ],
+                [STORES.lists]: [
+                    {
+                        replayHash,
+                        gametime: '2025-08-19T21:30:44.536566Z',
+                        gameMode: 0,
+                        duration: 789,
+                        winnerTeam: 1,
+                        commandersTeam1: [],
+                        commandersTeam2: [],
+                        playerNames: [],
+                    },
+                ],
+            },
+        };
+
+        await expect(importDb(JSON.stringify(dump), true)).resolves.toBeUndefined();
+
+        const db = await openDB();
+        await new Promise<void>((resolve, reject) => {
+            const tx = db.transaction(STORES.lists, 'readonly');
+            const listReq = tx.objectStore(STORES.lists).get(replayHash);
+
+            tx.oncomplete = () => {
+                expect(listReq.result.gameMode).toBe(7);
+                resolve();
+            };
+            tx.onerror = () => reject(tx.error);
+        });
+    });
 });

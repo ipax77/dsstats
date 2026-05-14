@@ -126,7 +126,7 @@
 									<span class="me-3">Processed: @decodeInfoEventArgs.Done / @decodeInfoEventArgs.Total</span>
 									<span class="me-3">Saved: @decodeInfoEventArgs.Successful</span>
 									<span class="me-3">Errors: @decodeInfoEventArgs.Error</span>
-									<span class="me-3">Elapsed: @decodeInfoEventArgs.Elapsed.ToString(@"hh\:mm\:ss")</span>
+									<span class="me-3">Elapsed: @DecodeDisplayFormatter.FormatElapsed(decodeInfoEventArgs)</span>
 									@if (!decodeInfoEventArgs.Finished && decodeInfoEventArgs.Eta > TimeSpan.Zero)
 									{
 										<span>ETA: @decodeInfoEventArgs.Eta.ToString(@"hh\:mm\:ss")</span>
@@ -437,7 +437,7 @@
 
 	private void DecodeStateChanged(object? sender, DecodeInfoEventArgs e)
 	{
-		decodeInfoEventArgs = e;
+		decodeInfoEventArgs = MergeDecodeInfo(e);
 
 		if (e.UploadStatus != UploadStatus.None)
 		{
@@ -475,6 +475,29 @@
 		}
 
 		InvokeAsync(StateHasChanged);
+	}
+
+	private DecodeInfoEventArgs MergeDecodeInfo(DecodeInfoEventArgs e)
+	{
+		var hasDecodePayload = e.Total > 0 || e.Done > 0 || e.Successful > 0 || e.Error > 0 || e.Finished;
+		if (hasDecodePayload || decodeInfoEventArgs is null)
+		{
+			return e;
+		}
+
+		return new DecodeInfoEventArgs
+		{
+			Done = decodeInfoEventArgs.Done,
+			Successful = decodeInfoEventArgs.Successful,
+			Total = decodeInfoEventArgs.Total,
+			Error = decodeInfoEventArgs.Error,
+			Eta = decodeInfoEventArgs.Eta,
+			Elapsed = decodeInfoEventArgs.Elapsed,
+			Saving = decodeInfoEventArgs.Saving,
+			Finished = decodeInfoEventArgs.Finished,
+			Info = e.Info ?? decodeInfoEventArgs.Info,
+			UploadStatus = e.UploadStatus
+		};
 	}
 
 	private async Task LoadFiles(InputFileChangeEventArgs e)

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { closeDB, openDB } from '../db-core';
-import { exportUnuploadedReplays, exportUnuploadedReplays10, markReplaysAsUploaded, saveReplayFull } from '../dsstatsDb';
+import { exportUnuploadedReplays, exportUnuploadedReplays10, getReplayByHash, markReplaysAsUploaded, saveReplayFull } from '../dsstatsDb';
 import { getTestReplay, getTestReplayList, getTestReplayMeta } from './replays.test';
 
 vi.mock("pako", () => ({
@@ -75,6 +75,38 @@ describe("dsstats IndexedDb Upload Flow", () => {
         expect(uploadRequest.replays[0].players.map((player: { compatHash?: string }) => player.compatHash)).toEqual(
             replay.players.map(player => player.compatHash)
         );
+    });
+
+    it("should mark matching request name players as uploaders only in upload request exports", async () => {
+        const replay = getTestReplay();
+        const meta = getTestReplayMeta(replay);
+        meta.uploaded = 0;
+
+        await saveReplayFull(replay.compatHash, replay, getTestReplayList(replay), meta);
+
+        const requestNames = [
+            {
+                name: "PlayerOne",
+                toonId: replay.players[0].player.toonId.id,
+                regionId: replay.players[0].player.toonId.region,
+                realmId: replay.players[0].player.toonId.realm
+            }
+        ];
+        const exported = await exportUnuploadedReplays10({
+            appGuid: "test-app",
+            appVersion: "1.0.0",
+            requestNames,
+            replays: []
+        });
+        const uploadRequest = JSON.parse(new TextDecoder().decode(exported.payload));
+        const exportedReplay = uploadRequest.replays[0];
+
+        expect(uploadRequest.requestNames).toEqual(requestNames);
+        expect(exportedReplay.players[0].isUploader).toBe(true);
+        expect(exportedReplay.players[1].isUploader).toBe(false);
+
+        const storedReplay = await getReplayByHash(replay.compatHash);
+        expect(storedReplay?.players.map(player => player.isUploader)).toEqual([false, false]);
     });
 
     it("should not export uploaded replays", async () => {

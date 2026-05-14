@@ -1,7 +1,6 @@
 ﻿using dsstats.indexedDb.Services;
 using dsstats.shared.Upload;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 
 namespace dsstats.pwa.Services;
 
@@ -12,11 +11,12 @@ public partial class DecodeService
         var config = await pwaConfigService.GetConfig();
         try
         {
+            var requestNames = await GetUploadRequestNames(dbService);
             UploadRequestDto uploadDto = new()
             {
                 AppGuid = config.AppGuid,
-                AppVersion = "myds1.4",
-                RequestNames = [],
+                AppVersion = "myds1.5",
+                RequestNames = requestNames,
             };
 
             var httpClient = httpClientFactory.CreateClient("api");
@@ -39,7 +39,7 @@ public partial class DecodeService
                 {
                     AppGuid = config.AppGuid,
                     AppVersion = $"myds{Version}",
-                    RequestNames = [],
+                    RequestNames = requestNames,
                 };
                 var content = new ByteArrayContent(exportResult.Payload);
                 content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
@@ -68,30 +68,20 @@ public partial class DecodeService
             UploadStatus = UploadStatus.UploadSuccess
         });
     }
-}
 
-public record UploadDto
-{
-    public Guid AppGuid { get; init; }
-    public string AppVersion { get; init; } = string.Empty;
-    public List<RequestNames> RequestNames { get; init; } = new();
-    public string Base64ReplayBlob { get; init; } = "";
-}
 
-public record RequestNames
-{
-    public RequestNames(string name, int toonId, int regionId, int realmId)
+    private static async Task<List<RequestNames>> GetUploadRequestNames(IndexedDbService dbService)
     {
-        Name = name;
-        ToonId = toonId;
-        RegionId = regionId;
-        RealmId = realmId;
+        var trackedProfiles = await dbService.GetTrackedProfiles();
+        return trackedProfiles
+            .Where(profile => profile.ToonId.Id > 0)
+            .Select(profile => new RequestNames
+            {
+                Name = profile.Name,
+                ToonId = profile.ToonId.Id,
+                RegionId = profile.ToonId.Region,
+                RealmId = profile.ToonId.Realm,
+            })
+            .ToList();
     }
-
-    public RequestNames() { }
-
-    public string Name { get; set; } = "";
-    public int ToonId { get; init; }
-    public int RegionId { get; set; }
-    public int RealmId { get; set; } = 1;
 }
