@@ -11,7 +11,7 @@ using dsstats.db;
 namespace dsstats.migrations.sqlite.Migrations
 {
     [DbContext(typeof(DsstatsContext))]
-    [Migration("20260514100600_InHouseAuth")]
+    [Migration("20260514180018_InHouseAuth")]
     partial class InHouseAuth
     {
         /// <inheritdoc />
@@ -412,6 +412,21 @@ namespace dsstats.migrations.sqlite.Migrations
                     b.Property<string>("ReplayStartName")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("SessionWindowGameMode")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SessionWindowHours")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("SessionWindowInitialized")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SessionWindowMode")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SessionWindowReplayCount")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("UploadAskTime")
                         .HasPrecision(0)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -128,30 +128,100 @@ namespace dsstats.migrations.sqlite.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateIndex("IX_InHouseDeviceLinkCodes_CodeHash", "InHouseDeviceLinkCodes", "CodeHash", unique: true);
-            migrationBuilder.CreateIndex("IX_InHouseDeviceLinkCodes_ExpiresAt", "InHouseDeviceLinkCodes", "ExpiresAt");
-            migrationBuilder.CreateIndex("IX_InHouseDeviceLinkCodes_InHouseUserId", "InHouseDeviceLinkCodes", "InHouseUserId");
-            migrationBuilder.CreateIndex("IX_InHousePasskeyCredentials_CredentialId", "InHousePasskeyCredentials", "CredentialId", unique: true);
-            migrationBuilder.CreateIndex("IX_InHousePasskeyCredentials_InHouseUserId", "InHousePasskeyCredentials", "InHouseUserId");
-            migrationBuilder.CreateIndex("IX_InHousePasskeyCredentials_UserHandle", "InHousePasskeyCredentials", "UserHandle");
-            migrationBuilder.CreateIndex("IX_InHouseProfiles_InHouseUserId", "InHouseProfiles", "InHouseUserId");
-            migrationBuilder.CreateIndex("IX_InHouseProfiles_ToonId_Region_ToonId_Realm_ToonId_Id", "InHouseProfiles", new[] { "ToonId_Region", "ToonId_Realm", "ToonId_Id" }, unique: true);
-            migrationBuilder.CreateIndex("IX_InHouseSessions_AccessTokenHash", "InHouseSessions", "AccessTokenHash", unique: true);
-            migrationBuilder.CreateIndex("IX_InHouseSessions_ExpiresAt", "InHouseSessions", "ExpiresAt");
-            migrationBuilder.CreateIndex("IX_InHouseSessions_InHouseUserId", "InHouseSessions", "InHouseUserId");
-            migrationBuilder.CreateIndex("IX_InHouseSessions_RefreshTokenHash", "InHouseSessions", "RefreshTokenHash", unique: true);
-            migrationBuilder.CreateIndex("IX_InHouseUsers_DisplayName", "InHouseUsers", "DisplayName");
-            migrationBuilder.CreateIndex("IX_InHouseUsers_PublicId", "InHouseUsers", "PublicId", unique: true);
+            migrationBuilder.CreateIndex(
+                name: "IX_InHouseDeviceLinkCodes_CodeHash",
+                table: "InHouseDeviceLinkCodes",
+                column: "CodeHash",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InHouseDeviceLinkCodes_ExpiresAt",
+                table: "InHouseDeviceLinkCodes",
+                column: "ExpiresAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InHouseDeviceLinkCodes_InHouseUserId",
+                table: "InHouseDeviceLinkCodes",
+                column: "InHouseUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InHousePasskeyCredentials_CredentialId",
+                table: "InHousePasskeyCredentials",
+                column: "CredentialId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InHousePasskeyCredentials_InHouseUserId",
+                table: "InHousePasskeyCredentials",
+                column: "InHouseUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InHousePasskeyCredentials_UserHandle",
+                table: "InHousePasskeyCredentials",
+                column: "UserHandle");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InHouseProfiles_InHouseUserId",
+                table: "InHouseProfiles",
+                column: "InHouseUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InHouseProfiles_ToonId_Region_ToonId_Realm_ToonId_Id",
+                table: "InHouseProfiles",
+                columns: new[] { "ToonId_Region", "ToonId_Realm", "ToonId_Id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InHouseSessions_AccessTokenHash",
+                table: "InHouseSessions",
+                column: "AccessTokenHash",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InHouseSessions_ExpiresAt",
+                table: "InHouseSessions",
+                column: "ExpiresAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InHouseSessions_InHouseUserId",
+                table: "InHouseSessions",
+                column: "InHouseUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InHouseSessions_RefreshTokenHash",
+                table: "InHouseSessions",
+                column: "RefreshTokenHash",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InHouseUsers_DisplayName",
+                table: "InHouseUsers",
+                column: "DisplayName");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InHouseUsers_PublicId",
+                table: "InHouseUsers",
+                column: "PublicId",
+                unique: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable("InHouseDeviceLinkCodes");
-            migrationBuilder.DropTable("InHousePasskeyCredentials");
-            migrationBuilder.DropTable("InHouseProfiles");
-            migrationBuilder.DropTable("InHouseSessions");
-            migrationBuilder.DropTable("InHouseUsers");
+            migrationBuilder.DropTable(
+                name: "InHouseDeviceLinkCodes");
+
+            migrationBuilder.DropTable(
+                name: "InHousePasskeyCredentials");
+
+            migrationBuilder.DropTable(
+                name: "InHouseProfiles");
+
+            migrationBuilder.DropTable(
+                name: "InHouseSessions");
+
+            migrationBuilder.DropTable(
+                name: "InHouseUsers");
         }
     }
 }

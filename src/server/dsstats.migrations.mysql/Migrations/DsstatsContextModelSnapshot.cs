@@ -435,6 +435,21 @@ namespace dsstats.migrations.mysql.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<int>("SessionWindowGameMode")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SessionWindowHours")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("SessionWindowInitialized")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("SessionWindowMode")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SessionWindowReplayCount")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("UploadAskTime")
                         .HasPrecision(0)
                         .HasColumnType("datetime(0)");
