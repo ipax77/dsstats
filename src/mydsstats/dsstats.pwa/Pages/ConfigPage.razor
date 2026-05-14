@@ -20,8 +20,12 @@
 					<!-- CPU Cores -->
 					<div class="mb-3">
 						<label for="cpuCores" class="form-label fw-semibold">CPU Cores</label>
-						<input id="cpuCores" type="number" class="form-control" @bind="config.CPUCores" />
-						<small class="text-muted">Number of cores used during replay decoding (default: 1).</small>
+						<input id="cpuCores" type="number" class="form-control"
+							   min="@PwaConfig.MinCpuCores"
+							   max="@PwaConfig.MaxCpuCores"
+							   step="1"
+							   @bind="config.CPUCores" />
+						<small class="text-muted">Number of cores used during replay decoding (default: @PwaConfig.DefaultCpuCores, max: @PwaConfig.MaxCpuCores).</small>
 					</div>
 
 					<!-- Upload Anonymously -->

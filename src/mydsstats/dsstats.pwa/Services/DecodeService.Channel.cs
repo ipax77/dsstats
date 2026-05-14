@@ -24,7 +24,7 @@ public partial class DecodeService
         decodeCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
 
         var config = await pwaConfigService.GetConfig();
-        _currentWorkerCount = config.CPUCores;
+        var workerCount = PwaConfig.NormalizeCpuCores(config.CPUCores);
         Stopwatch sw = Stopwatch.StartNew();
 
         using var scope = scopeFactory.CreateAsyncScope();
@@ -36,14 +36,14 @@ public partial class DecodeService
 
         try
         {
-            await EnsureWorkersAsync(config.CPUCores);
+            await EnsureWorkersAsync(workerCount);
 
-            var readChannel = Channel.CreateBounded<ReadItem>(new BoundedChannelOptions(8)
+            var readChannel = Channel.CreateBounded<ReadItem>(new BoundedChannelOptions(workerCount)
             {
                 FullMode = BoundedChannelFullMode.Wait
             });
 
-            var decodeChannel = Channel.CreateBounded<DecodedItem>(new BoundedChannelOptions(config.CPUCores * 4)
+            var decodeChannel = Channel.CreateBounded<DecodedItem>(new BoundedChannelOptions(workerCount)
             {
                 FullMode = BoundedChannelFullMode.Wait
             });
@@ -81,7 +81,7 @@ public partial class DecodeService
                 }
             });
 
-            var decodeWorkers = Enumerable.Range(0, config.CPUCores).Select(_ => Task.Run(async () =>
+            var decodeWorkers = Enumerable.Range(0, workerCount).Select(_ => Task.Run(async () =>
             {
                 await foreach (var item in readChannel.Reader.ReadAllAsync(decodeCts.Token))
                 {
