@@ -11,6 +11,9 @@ public interface IInHouseAuthService
     Task<InHouseSessionDto> RefreshAsync(InHouseRefreshRequest request, CancellationToken token);
     Task LogoutAsync(string? accessToken, InHouseRefreshRequest? request, CancellationToken token);
     Task<InHouseUserDto?> GetCurrentUserAsync(int userId, CancellationToken token);
+    Task<InHouseUserDto> AddProfileAsync(int userId, InHouseProfileDto profile, CancellationToken token);
+    Task<InHouseUserDto> RemoveProfileAsync(int userId, InHouseProfileDto profile, CancellationToken token);
+    Task DeleteAccountAsync(int userId, CancellationToken token);
     Task<InHouseDeviceLinkOptionsResponse> CreateDeviceLinkCodeAsync(int userId, CancellationToken token);
     Task<InHouseAuthOptionsResponse> BeginDeviceLinkAsync(InHouseDeviceLinkOptionsRequest request, CancellationToken token);
     Task<InHouseSessionDto> CompleteDeviceLinkAsync(InHouseDeviceLinkCompleteRequest request, CancellationToken token);

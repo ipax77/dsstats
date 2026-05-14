@@ -206,6 +206,60 @@ public sealed class InHouseAuthService(
         return user?.ToDto();
     }
 
+    public async Task<InHouseUserDto> AddProfileAsync(int userId, InHouseProfileDto profile, CancellationToken token)
+    {
+        ValidateProfile(profile);
+
+        var user = await context.InHouseUsers
+            .Include(u => u.Profiles)
+            .FirstOrDefaultAsync(u => u.InHouseUserId == userId, token)
+            ?? throw new InvalidOperationException("Unknown InHouse user.");
+
+        if (user.Profiles.Any(p => SameToonId(p.ToonId, profile.ToonId)))
+        {
+            throw new InvalidOperationException("This player profile is already linked to your account.");
+        }
+
+        if (await ProfileExistsAsync(profile.ToonId, token))
+        {
+            throw new InvalidOperationException("This player profile is already linked to another InHouse user.");
+        }
+
+        user.Profiles.Add(ToEntity(profile));
+        await context.SaveChangesAsync(token);
+        return user.ToDto();
+    }
+
+    public async Task<InHouseUserDto> RemoveProfileAsync(int userId, InHouseProfileDto profile, CancellationToken token)
+    {
+        var user = await context.InHouseUsers
+            .Include(u => u.Profiles)
+            .FirstOrDefaultAsync(u => u.InHouseUserId == userId, token)
+            ?? throw new InvalidOperationException("Unknown InHouse user.");
+
+        if (user.Profiles.Count <= 1)
+        {
+            throw new InvalidOperationException("An InHouse account must keep at least one linked player profile.");
+        }
+
+        var linkedProfile = user.Profiles.FirstOrDefault(p => SameToonId(p.ToonId, profile.ToonId))
+            ?? throw new InvalidOperationException("This player profile is not linked to your account.");
+
+        user.Profiles.Remove(linkedProfile);
+        context.InHouseProfiles.Remove(linkedProfile);
+        await context.SaveChangesAsync(token);
+        return user.ToDto();
+    }
+
+    public async Task DeleteAccountAsync(int userId, CancellationToken token)
+    {
+        var user = await context.InHouseUsers.FirstOrDefaultAsync(u => u.InHouseUserId == userId, token)
+            ?? throw new InvalidOperationException("Unknown InHouse user.");
+
+        context.InHouseUsers.Remove(user);
+        await context.SaveChangesAsync(token);
+    }
+
     public async Task<InHouseDeviceLinkOptionsResponse> CreateDeviceLinkCodeAsync(int userId, CancellationToken token)
     {
         var userExists = await context.InHouseUsers.AnyAsync(u => u.InHouseUserId == userId, token);
@@ -387,6 +441,11 @@ public sealed class InHouseAuthService(
             p.ToonId.Region == toonId.Region
             && p.ToonId.Realm == toonId.Realm
             && p.ToonId.Id == toonId.Id, token);
+
+    private static bool SameToonId(ToonId left, ToonIdDto right)
+        => left.Region == right.Region
+           && left.Realm == right.Realm
+           && left.Id == right.Id;
 
     private static T DeserializeCredential<T>(JsonElement credential)
         => JsonSerializer.Deserialize<T>(credential.GetRawText(), JsonOptions)

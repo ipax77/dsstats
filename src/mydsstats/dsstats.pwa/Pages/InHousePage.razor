@@ -7,6 +7,7 @@
 @implements IAsyncDisposable
 @inject InHouseAuthClient Auth
 @inject SessionProgressService SessionProgressService
+@inject IJSRuntime JS
 
 <PageTitle>mydsstats - InHouse</PageTitle>
 
@@ -49,25 +50,57 @@
                         <div class="fs-5 fw-semibold">@Auth.User?.DisplayName</div>
                         @foreach (var profile in Auth.User?.Profiles ?? [])
                         {
-                            <div class="small text-muted">
-                                @profile.Name - @FormatToonId(profile.ToonId)
+                            <div class="d-flex justify-content-between align-items-center gap-2 border rounded p-2 mt-2">
+                                <div>
+                                    <div class="fw-semibold">@profile.Name</div>
+                                    <div class="small text-muted">@FormatToonId(profile.ToonId)</div>
+                                </div>
+                                <button class="btn btn-outline-danger btn-sm" @onclick="() => RemoveProfileAsync(profile)" disabled="@(busy || !CanRemoveProfiles)">
+                                    Remove
+                                </button>
                             </div>
                         }
 
                         <hr />
 
-                        <div class="d-flex flex-wrap gap-2 align-items-end">
-                            <button class="btn btn-outline-light" @onclick="CreateDeviceCodeAsync" disabled="@busy">
-                                <i class="bi bi-phone me-2"></i>Create Link Code
-                            </button>
-                            @if (deviceCode is not null)
-                            {
-                                <div>
-                                    <div class="small text-muted">Valid until @deviceCode.ExpiresAt.ToLocalTime().ToShortTimeString()</div>
-                                    <div class="fs-4 fw-bold text-warning">@deviceCode.Code</div>
-                                </div>
-                            }
+                        <h5 class="text-warning">Add Player Profile</h5>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tracked profile</label>
+                                <select class="form-select" @bind="selectedProfileKey">
+                                    <option value="">Manual entry</option>
+                                    @foreach (var profile in AvailableTrackedProfiles)
+                                    {
+                                        <option value="@GetProfileKey(profile)">@profile.Name (@FormatToonId(profile.ToonId))</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Profile name</label>
+                                <input class="form-control" @bind="manualProfile.Name" disabled="@HasSelectedProfile" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Region</label>
+                                <input type="number" class="form-control" @bind="manualProfile.ToonId.Region" disabled="@HasSelectedProfile" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Realm</label>
+                                <input type="number" class="form-control" @bind="manualProfile.ToonId.Realm" disabled="@HasSelectedProfile" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">ToonId</label>
+                                <input type="number" class="form-control" @bind="manualProfile.ToonId.Id" disabled="@HasSelectedProfile" />
+                            </div>
                         </div>
+                        <button class="btn btn-outline-light" @onclick="AddProfileAsync" disabled="@busy">
+                            <i class="bi bi-person-plus me-2"></i>Add Profile
+                        </button>
+
+                        <hr />
+
+                        <button class="btn btn-outline-danger" @onclick="DeleteAccountAsync" disabled="@busy">
+                            <i class="bi bi-trash me-2"></i>Delete Account
+                        </button>
                     </div>
                 </div>
             </div>
@@ -81,6 +114,29 @@
                         <div class="text-center">
                             <div class="display-2 fw-bold">@connectedPlayersCount</div>
                             <div class="text-muted">distinct linked users online</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-light mt-4">
+                    <div class="card-header bgchart2">
+                        <h4 class="text-warning mb-0">Link Another Device</h4>
+                    </div>
+                    <div class="card-body bgchart">
+                        <p class="text-muted">
+                            Create a short-lived link code on this signed-in device, then enter it on another browser or phone to add a new passkey to the same InHouse account.
+                        </p>
+                        <div class="d-flex flex-wrap gap-2 align-items-end">
+                            <button class="btn btn-outline-light" @onclick="CreateDeviceCodeAsync" disabled="@busy">
+                                <i class="bi bi-phone me-2"></i>Create Link Code
+                            </button>
+                            @if (deviceCode is not null)
+                            {
+                                <div>
+                                    <div class="small text-muted">Valid until @deviceCode.ExpiresAt.ToLocalTime().ToShortTimeString()</div>
+                                    <div class="fs-4 fw-bold text-warning">@deviceCode.Code</div>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
@@ -147,6 +203,9 @@
                         <h4 class="text-warning mb-0">Link This Device</h4>
                     </div>
                     <div class="card-body bgchart">
+                        <p class="text-muted">
+                            If your account already exists on another device, create a link code there and enter it here. This adds a passkey for this browser without creating a second account.
+                        </p>
                         <label class="form-label">Link code</label>
                         <input class="form-control mb-3" @bind="linkCode" />
                         <button class="btn btn-outline-light" @onclick="LinkDeviceAsync" disabled="@busy">
@@ -183,6 +242,9 @@
     private bool passkeysSupported;
 
     private bool HasSelectedProfile => !string.IsNullOrWhiteSpace(selectedProfileKey);
+    private bool CanRemoveProfiles => (Auth.User?.Profiles.Count ?? 0) > 1;
+    private IEnumerable<TrackedProfileDto> AvailableTrackedProfiles
+        => trackedProfiles.Where(profile => !(Auth.User?.Profiles.Any(linked => SameToonId(linked.ToonId, profile.ToonId)) ?? false));
 
     protected override async Task OnInitializedAsync()
     {
@@ -235,6 +297,50 @@
         {
             deviceCode = await Auth.CreateDeviceLinkCodeAsync();
             statusMessage = "Use this code on another device to add a passkey.";
+        });
+    }
+
+    private async Task AddProfileAsync()
+    {
+        await RunAsync(async () =>
+        {
+            await Auth.AddProfileAsync(GetSelectedProfile());
+            selectedProfileKey = string.Empty;
+            statusMessage = "Player profile linked.";
+        });
+    }
+
+    private async Task RemoveProfileAsync(InHouseProfileDto profile)
+    {
+        await RunAsync(async () =>
+        {
+            await Auth.RemoveProfileAsync(profile);
+            statusMessage = "Player profile removed.";
+        });
+    }
+
+    private async Task DeleteAccountAsync()
+    {
+        var confirmed = await JS.InvokeAsync<bool>(
+            "confirm",
+            "Delete this InHouse account, passkeys, sessions, and linked player profiles?");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            if (hubConnection is not null)
+            {
+                await hubConnection.DisposeAsync();
+                hubConnection = null;
+            }
+
+            await Auth.DeleteAccountAsync();
+            connectedPlayersCount = 0;
+            deviceCode = null;
+            statusMessage = "Account deleted.";
         });
     }
 
@@ -319,6 +425,11 @@
 
     private static string GetProfileKey(TrackedProfileDto profile)
         => $"{profile.ToonId.Region}:{profile.ToonId.Realm}:{profile.ToonId.Id}";
+
+    private static bool SameToonId(ToonIdDto left, ToonIdDto right)
+        => left.Id == right.Id
+           && left.Region == right.Region
+           && left.Realm == right.Realm;
 
     private static ToonIdDto CloneToonId(ToonIdDto toonId)
         => new()

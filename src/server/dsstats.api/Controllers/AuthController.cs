@@ -52,6 +52,43 @@ public sealed class AuthController(IInHouseAuthService authService) : Controller
     }
 
     [Authorize(AuthenticationSchemes = Authentication.InHouseBearerAuthenticationHandler.SchemeName)]
+    [HttpDelete("me")]
+    public async Task<IActionResult> DeleteMe(CancellationToken token)
+    {
+        if (!int.TryParse(User.FindFirstValue(InHouseClaims.UserId), out var userId))
+        {
+            return Unauthorized();
+        }
+
+        await authService.DeleteAccountAsync(userId, token);
+        return NoContent();
+    }
+
+    [Authorize(AuthenticationSchemes = Authentication.InHouseBearerAuthenticationHandler.SchemeName)]
+    [HttpPost("profiles")]
+    public async Task<ActionResult<InHouseUserDto>> AddProfile(InHouseProfileDto profile, CancellationToken token)
+    {
+        if (!int.TryParse(User.FindFirstValue(InHouseClaims.UserId), out var userId))
+        {
+            return Unauthorized();
+        }
+
+        return await ExecuteAsync(() => authService.AddProfileAsync(userId, profile, token));
+    }
+
+    [Authorize(AuthenticationSchemes = Authentication.InHouseBearerAuthenticationHandler.SchemeName)]
+    [HttpPost("profiles/remove")]
+    public async Task<ActionResult<InHouseUserDto>> RemoveProfile(InHouseProfileDto profile, CancellationToken token)
+    {
+        if (!int.TryParse(User.FindFirstValue(InHouseClaims.UserId), out var userId))
+        {
+            return Unauthorized();
+        }
+
+        return await ExecuteAsync(() => authService.RemoveProfileAsync(userId, profile, token));
+    }
+
+    [Authorize(AuthenticationSchemes = Authentication.InHouseBearerAuthenticationHandler.SchemeName)]
     [HttpPost("device-link/code")]
     public async Task<ActionResult<InHouseDeviceLinkOptionsResponse>> DeviceLinkCode(CancellationToken token)
     {

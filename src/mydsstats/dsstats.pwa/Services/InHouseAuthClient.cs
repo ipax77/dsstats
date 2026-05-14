@@ -100,6 +100,26 @@ public sealed class InHouseAuthClient(
             "api10/auth/device-link/options",
             new InHouseDeviceLinkOptionsRequest());
 
+    public async Task<InHouseUserDto> AddProfileAsync(InHouseProfileDto profile)
+    {
+        var user = await PostAuthorizedAsync<InHouseProfileDto, InHouseUserDto>("api10/auth/profiles", profile);
+        await UpdateUserAsync(user);
+        return user;
+    }
+
+    public async Task<InHouseUserDto> RemoveProfileAsync(InHouseProfileDto profile)
+    {
+        var user = await PostAuthorizedAsync<InHouseProfileDto, InHouseUserDto>("api10/auth/profiles/remove", profile);
+        await UpdateUserAsync(user);
+        return user;
+    }
+
+    public async Task DeleteAccountAsync()
+    {
+        await SendAuthorizedNoContentAsync(HttpMethod.Delete, "api10/auth/me");
+        await ClearSessionAsync();
+    }
+
     public async Task<InHouseSessionDto> LinkDeviceAsync(string code)
     {
         var options = await PostAsync<InHouseDeviceLinkOptionsRequest, InHouseAuthOptionsResponse>(
@@ -178,6 +198,25 @@ public sealed class InHouseAuthClient(
             ?? throw new InvalidOperationException("The server returned an empty response.");
     }
 
+    private async Task SendAuthorizedNoContentAsync(HttpMethod method, string url)
+    {
+        await InitializeAsync();
+        if (session is null)
+        {
+            throw new InvalidOperationException("You are not signed in.");
+        }
+
+        if (session.ExpiresAt <= DateTime.UtcNow.AddMinutes(1))
+        {
+            await TryRefreshAsync();
+        }
+
+        using var request = new HttpRequestMessage(method, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", session!.AccessToken);
+        using var response = await http.SendAsync(request);
+        await EnsureSuccessAsync(response);
+    }
+
     private async Task<TResponse> PostAuthorizedAsync<TRequest, TResponse>(string url, TRequest content)
     {
         await InitializeAsync();
@@ -235,6 +274,17 @@ public sealed class InHouseAuthClient(
     {
         session = nextSession;
         await indexedDb.SaveInHouseSession(nextSession);
+    }
+
+    private async Task UpdateUserAsync(InHouseUserDto user)
+    {
+        if (session is null)
+        {
+            return;
+        }
+
+        session.User = user;
+        await indexedDb.SaveInHouseSession(session);
     }
 
     private async Task ClearSessionAsync()
