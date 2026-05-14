@@ -6,6 +6,7 @@ using dsstats.api.Services;
 using dsstats.db;
 using dsstats.dbServices;
 using dsstats.dbServices.Builds;
+using dsstats.dbServices.InHouse;
 using dsstats.dbServices.Stats;
 using dsstats.ratings;
 using dsstats.shared.Interfaces;
@@ -138,6 +139,7 @@ builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<TransitionService>();
 builder.Services.AddScoped<IInHouseAuthService, InHouseAuthService>();
+builder.Services.AddScoped<IInHouseGameSessionService, InHouseGameSessionService>();
 
 builder.Services.AddStats();
 builder.Services.AddScoped<IBuildsService, BuildsService>();

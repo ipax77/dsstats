@@ -104,6 +104,23 @@ public sealed class DsstatsParserTests
     }
 
     [TestMethod]
+    [DeploymentItem("testdata/Direct Strike TE (1022).SC2Replay")]
+    public async Task CanParseInHouseReplayObservers()
+    {
+        string replayPath = "Direct Strike TE (1022).SC2Replay";
+        var sc2Replay = await DsstatsParser.GetSc2Replay(replayPath);
+        Assert.IsNotNull(sc2Replay);
+
+        var replayDto = DsstatsParser.ParseReplay(sc2Replay);
+        var parsedReplay = DsstatsParser.ParseInHouseReplay(sc2Replay);
+
+        Assert.AreEqual(replayDto.Players.Count, parsedReplay.Replay.Players.Count);
+        Assert.AreEqual(replayDto.ComputeHash(), parsedReplay.Replay.ComputeHash());
+        Assert.IsGreaterThan(0, parsedReplay.Observers.Count);
+        Assert.IsTrue(parsedReplay.Observers.All(observer => observer.ToonId.Id > 0));
+    }
+
+    [TestMethod]
     [DeploymentItem("testdata/Direct Strike (9181).SC2Replay")]
     public async Task CanParseLastSpawnReplay()
     {

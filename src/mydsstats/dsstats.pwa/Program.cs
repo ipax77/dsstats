@@ -64,6 +64,7 @@ builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<RatingService>();
 builder.Services.AddScoped<SessionProgressService>();
 builder.Services.AddScoped<InHouseAuthClient>();
+builder.Services.AddScoped<InHouseGameSessionsClient>();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, InHouseAuthenticationStateProvider>();

@@ -11,9 +11,20 @@ public sealed class InHouseHub(InHouseConnectionTracker tracker) : Hub
 {
     public const string AccountChangedEvent = "account_changed";
     public const string ConnectedPlayersCountEvent = "connected_players_count";
+    public const string SessionChangedEvent = "session_changed";
+    public const string ReplayAddedEvent = "replay_added";
 
     public static string GetAccountGroupName(Guid publicUserId)
         => $"inhouse:account:{publicUserId:N}";
+
+    public static string GetSessionGroupName(Guid sessionId)
+        => $"inhouse:session:{sessionId:N}";
+
+    public async Task JoinSession(Guid sessionId)
+        => await Groups.AddToGroupAsync(Context.ConnectionId, GetSessionGroupName(sessionId));
+
+    public async Task LeaveSession(Guid sessionId)
+        => await Groups.RemoveFromGroupAsync(Context.ConnectionId, GetSessionGroupName(sessionId));
 
     public override async Task OnConnectedAsync()
     {

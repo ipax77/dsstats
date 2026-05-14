@@ -3,17 +3,32 @@
 @using dsstats.pwa.Services
 @using dsstats.shared
 @using dsstats.shared.InHouse
+@using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.SignalR.Client
 @implements IAsyncDisposable
 @inject InHouseAuthClient Auth
+@inject InHouseGameSessionsClient SessionsClient
+@inject DecodeService DecodeService
 @inject SessionProgressService SessionProgressService
 
 <PageTitle>mydsstats - InHouse</PageTitle>
 
-<div class="container py-4 bgchart rounded">
-    <div class="mb-3">
-        <h2 class="fw-bold mb-1">InHouse</h2>
-        <p class="text-muted mb-0">Passkey sign-in for private Direct Strike sessions.</p>
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+        <div>
+            <h2 class="fw-bold mb-1">InHouse Sessions</h2>
+            <div class="text-muted">Private Direct Strike runs, shared by signed-in players.</div>
+        </div>
+        <AuthorizeView>
+            <Authorized>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <input class="form-control" style="max-width: 18rem;" placeholder="Session name" @bind="newSessionName" />
+                    <button class="btn btn-primary" @onclick="CreateSessionAsync" disabled="@busy">
+                        <i class="bi bi-plus-lg me-1"></i>Create
+                    </button>
+                </div>
+            </Authorized>
+        </AuthorizeView>
     </div>
 
     @if (loading)
@@ -32,15 +47,179 @@
     {
         <AuthorizeView>
             <Authorized>
-                <div class="card border-light">
-                    <div class="card-header bgchart2">
-                        <h4 class="text-warning mb-0">Connected Players</h4>
-                    </div>
-                    <div class="card-body bgchart d-flex align-items-center justify-content-center" style="min-height: 18rem;">
-                        <div class="text-center">
-                            <div class="display-2 fw-bold">@connectedPlayersCount</div>
-                            <div class="text-muted">distinct linked users online</div>
+                <div class="row g-3 align-items-start">
+                    <div class="col-xl-3 col-lg-4">
+                        <div class="card border-light">
+                            <div class="card-header bgchart2">
+                                <h5 class="text-warning mb-0">Active Sessions</h5>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                @if (sessions.Count == 0)
+                                {
+                                    <div class="list-group-item bgchart text-muted">No active sessions yet.</div>
+                                }
+                                @foreach (var session in sessions)
+                                {
+                                    <button type="button"
+                                            class="list-group-item list-group-item-action bgchart @(selectedSession?.SessionId == session.SessionId ? "active" : "")"
+                                            @onclick="() => SelectSessionAsync(session.SessionId)">
+                                        <div class="d-flex justify-content-between gap-2">
+                                            <span class="fw-semibold">@session.Name</span>
+                                            <span class="badge text-bg-secondary">@session.Games</span>
+                                        </div>
+                                        <div class="small text-muted">@session.CreatedByDisplayName · @session.CreatedAt.ToLocalTime().ToString("g")</div>
+                                    </button>
+                                }
+                            </div>
                         </div>
+                    </div>
+
+                    <div class="col-xl-9 col-lg-8">
+                        @if (selectedSession is null)
+                        {
+                            <div class="alert alert-secondary mb-0">Select or create a session.</div>
+                        }
+                        else
+                        {
+                            <div class="card border-light mb-3">
+                                <div class="card-header bgchart2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                    <div>
+                                        <h4 class="text-warning mb-0">@selectedSession.Name</h4>
+                                        <div class="small text-muted">
+                                            Created by @selectedSession.CreatedByDisplayName · @selectedSession.CreatedAt.ToLocalTime().ToString("g")
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button class="btn btn-outline-light btn-sm" @onclick="RefreshAsync" disabled="@busy">
+                                            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                                        </button>
+                                        @if (selectedSession.CanClose)
+                                        {
+                                            <button class="btn btn-outline-danger btn-sm" @onclick="CloseSessionAsync" disabled="@busy">
+                                                <i class="bi bi-lock me-1"></i>Close
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="card-body bgchart">
+                                    @if (selectedSession.ClosedAt is not null)
+                                    {
+                                        <div class="alert alert-secondary mb-3">This session is closed.</div>
+                                    }
+                                    else
+                                    {
+                                        <label class="form-label">Upload replay</label>
+                                        <InputFile class="form-control" OnChange="UploadReplayAsync" accept=".SC2Replay" disabled="@busy" />
+                                        <div class="small text-muted mt-2">Decoded locally, then attached to this session with observer metadata.</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="card border-light mb-3">
+                                <div class="card-header bgchart2">
+                                    <h5 class="text-warning mb-0">Player Summary</h5>
+                                </div>
+                                <div class="card-body bgchart">
+                                    @if (selectedSession.Players.Count == 0)
+                                    {
+                                        <div class="text-muted">No players yet.</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="table-responsive">
+                                            <table class="tptable table w-auto">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Name</th>
+                                                        <th>Games</th>
+                                                        <th>Obs</th>
+                                                        <th>Winrate</th>
+                                                        <th>Start</th>
+                                                        <th>End</th>
+                                                        <th>Gain</th>
+                                                        <th>Avg</th>
+                                                        <th>Latest</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var player in selectedSession.Players)
+                                                    {
+                                                        <tr>
+                                                            <td>@player.Name</td>
+                                                            <td>@player.Games</td>
+                                                            <td>@player.Observes</td>
+                                                            <td>@player.Winrate.ToString("P0")</td>
+                                                            <td>@FormatRating(player.RatingStart)</td>
+                                                            <td>@FormatRating(player.RatingEnd)</td>
+                                                            <td class="@GetGainClass(player.RatingDelta)">@FormatGain(player.RatingDelta)</td>
+                                                            <td class="@GetGainClass(player.AverageGain)">@FormatGain(player.AverageGain)</td>
+                                                            <td>
+                                                                @if (player.PlayedLatestGame)
+                                                                {
+                                                                    <span class="badge text-bg-success">Played</span>
+                                                                }
+                                                                else if (player.ObservedLatestGame)
+                                                                {
+                                                                    <span class="badge text-bg-warning">Observed</span>
+                                                                }
+                                                                else if (player.RatingsPending)
+                                                                {
+                                                                    <span class="badge text-bg-secondary">Rating pending</span>
+                                                                }
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="card border-light">
+                                <div class="card-header bgchart2">
+                                    <h5 class="text-warning mb-0">Games</h5>
+                                </div>
+                                <div class="card-body bgchart">
+                                    @if (selectedSession.Replays.Count == 0)
+                                    {
+                                        <div class="text-muted">No games uploaded yet.</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="table-responsive">
+                                            <table class="tptable table w-auto">
+                                                <thead>
+                                                    <tr>
+                                                        <th>GameTime</th>
+                                                        <th>Mode</th>
+                                                        <th>Duration</th>
+                                                        <th>Team 1</th>
+                                                        <th>Team 2</th>
+                                                        <th>Exp2Win</th>
+                                                        <th>Rating</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var replay in selectedSession.Replays)
+                                                    {
+                                                        <tr>
+                                                            <td>@replay.Gametime.ToLocalTime().ToString("g")</td>
+                                                            <td>@replay.GameMode</td>
+                                                            <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+                                                            <td>@FormatCommanders(replay.CommandersTeam1)</td>
+                                                            <td>@FormatCommanders(replay.CommandersTeam2)</td>
+                                                            <td>@(replay.ExpectedWinProbability?.ToString("P0") ?? "-")</td>
+                                                            <td>@(replay.RatingsPending ? "pending" : replay.AvgRating?.ToString("N0"))</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
                     </div>
                 </div>
             </Authorized>
@@ -104,7 +283,7 @@
                             </div>
                             <div class="card-body bgchart">
                                 <p class="text-muted">
-                                    If your account already exists on another device, create a link code there and enter it here. This adds a passkey for this browser without creating a second account.
+                                    If your account already exists on another device, create a link code there and enter it here.
                                 </p>
                                 <label class="form-label">Link code</label>
                                 <input class="form-control mb-3" @bind="linkCode" />
@@ -132,12 +311,14 @@
         ToonId = new ToonIdDto { Region = 1, Realm = 1 }
     };
     private readonly List<TrackedProfileDto> trackedProfiles = [];
+    private readonly List<InHouseGameSessionListDto> sessions = [];
     private HubConnection? hubConnection;
+    private InHouseGameSessionDetailDto? selectedSession;
     private string displayName = string.Empty;
     private string selectedProfileKey = string.Empty;
     private string linkCode = string.Empty;
+    private string newSessionName = string.Empty;
     private string? statusMessage;
-    private int connectedPlayersCount;
     private bool loading = true;
     private bool busy;
     private bool passkeysSupported;
@@ -156,6 +337,7 @@
         if (Auth.IsAuthenticated)
         {
             await EnsureHubConnectedAsync();
+            await LoadSessionsAsync();
         }
 
         loading = false;
@@ -171,11 +353,13 @@
             if (Auth.IsAuthenticated)
             {
                 await EnsureHubConnectedAsync();
+                await LoadSessionsAsync();
             }
             else
             {
+                sessions.Clear();
+                selectedSession = null;
                 await DisposeHubAsync();
-                connectedPlayersCount = 0;
             }
         }
         catch (Exception ex)
@@ -186,13 +370,94 @@
         StateHasChanged();
     }
 
+    private async Task LoadSessionsAsync()
+    {
+        var activeSessions = await SessionsClient.GetActiveSessionsAsync();
+        sessions.Clear();
+        sessions.AddRange(activeSessions.DistinctBy(session => session.SessionId));
+        if (selectedSession is null && sessions.Count > 0)
+        {
+            await SelectSessionAsync(sessions[0].SessionId);
+        }
+    }
+
+    private async Task CreateSessionAsync()
+    {
+        await RunAsync(async () =>
+        {
+            selectedSession = await SessionsClient.CreateSessionAsync(newSessionName);
+            newSessionName = string.Empty;
+            await LoadSessionsAsync();
+            await JoinSelectedSessionAsync();
+        });
+    }
+
+    private async Task SelectSessionAsync(Guid sessionId)
+    {
+        await RunAsync(async () =>
+        {
+            if (selectedSession is not null)
+            {
+                await LeaveSessionGroupAsync(selectedSession.SessionId);
+            }
+
+            selectedSession = await SessionsClient.GetSessionAsync(sessionId);
+            await JoinSelectedSessionAsync();
+        });
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (selectedSession is null)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            selectedSession = await SessionsClient.GetSessionAsync(selectedSession.SessionId);
+            await LoadSessionsAsync();
+        });
+    }
+
+    private async Task CloseSessionAsync()
+    {
+        if (selectedSession is null)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            selectedSession = await SessionsClient.CloseSessionAsync(selectedSession.SessionId);
+            await LoadSessionsAsync();
+        });
+    }
+
+    private async Task UploadReplayAsync(InputFileChangeEventArgs args)
+    {
+        if (selectedSession is null)
+        {
+            return;
+        }
+
+        var file = args.File;
+        await RunAsync(async () =>
+        {
+            await using var stream = file.OpenReadStream(5 * 1024 * 1024);
+            var parsedReplay = await DecodeService.DecodeInHouseReplayFromStream(stream, file.Name);
+            selectedSession = await SessionsClient.UploadReplayAsync(selectedSession.SessionId, parsedReplay);
+            await LoadSessionsAsync();
+            statusMessage = "Replay attached to the session.";
+        });
+    }
+
     private async Task RegisterAsync()
     {
         await RunAsync(async () =>
         {
             await Auth.RegisterAsync(displayName, GetSelectedProfile());
             statusMessage = "Passkey registered.";
-            await EnsureHubConnectedAsync();
         });
     }
 
@@ -202,7 +467,6 @@
         {
             await Auth.LoginAsync();
             statusMessage = "Signed in.";
-            await EnsureHubConnectedAsync();
         });
     }
 
@@ -212,7 +476,6 @@
         {
             await Auth.LinkDeviceAsync(linkCode);
             statusMessage = "This device now has a passkey for the existing account.";
-            await EnsureHubConnectedAsync();
         });
     }
 
@@ -231,36 +494,48 @@
             .WithAutomaticReconnect()
             .Build();
 
-        hubConnection.On<int>("connected_players_count", count =>
+        hubConnection.On<Guid>("session_changed", sessionId =>
         {
-            connectedPlayersCount = count;
-            InvokeAsync(StateHasChanged);
+            _ = InvokeAsync(async () =>
+            {
+                await LoadSessionsAsync();
+                if (selectedSession?.SessionId == sessionId)
+                {
+                    selectedSession = await SessionsClient.GetSessionAsync(sessionId);
+                }
+                StateHasChanged();
+            });
         });
 
-        hubConnection.On<string>("account_changed", reason =>
+        hubConnection.On<InHouseGameSessionDetailDto>("replay_added", detail =>
         {
-            _ = InvokeAsync(() => RefreshAccountAsync(reason));
+            _ = InvokeAsync(async () =>
+            {
+                if (selectedSession?.SessionId == detail.SessionId)
+                {
+                    selectedSession = detail;
+                }
+                await LoadSessionsAsync();
+                StateHasChanged();
+            });
         });
 
         await hubConnection.StartAsync();
     }
 
-    private async Task RefreshAccountAsync(string reason)
+    private async Task JoinSelectedSessionAsync()
     {
-        if (reason is not InHouseAccountChangeReasons.Passkeys
-            and not InHouseAccountChangeReasons.Profiles)
+        if (hubConnection is not null && selectedSession is not null)
         {
-            return;
+            await hubConnection.SendAsync("JoinSession", selectedSession.SessionId);
         }
+    }
 
-        try
+    private async Task LeaveSessionGroupAsync(Guid sessionId)
+    {
+        if (hubConnection is not null)
         {
-            await Auth.RefreshUserAsync();
-        }
-        catch (Exception ex)
-        {
-            statusMessage = ex.Message;
-            StateHasChanged();
+            await hubConnection.SendAsync("LeaveSession", sessionId);
         }
     }
 
@@ -313,6 +588,18 @@
             ToonId = CloneToonId(selectedProfile.ToonId),
         };
     }
+
+    private static string FormatRating(double? rating)
+        => rating?.ToString("N0") ?? "-";
+
+    private static string FormatGain(double? gain)
+        => gain?.ToString("+#0.##;-#0.##;0") ?? "-";
+
+    private static string GetGainClass(double? gain)
+        => gain is null ? string.Empty : gain < 0 ? "text-danger" : "text-success";
+
+    private static string FormatCommanders(IEnumerable<Commander> commanders)
+        => string.Join(", ", commanders);
 
     private static string GetProfileKey(TrackedProfileDto profile)
         => $"{profile.ToonId.Region}:{profile.ToonId.Realm}:{profile.ToonId.Id}";
