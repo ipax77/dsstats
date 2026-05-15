@@ -361,6 +361,10 @@
                                                         <th>Team 2</th>
                                                         <th>Exp2Win</th>
                                                         <th>Rating</th>
+                                                        @if (selectedSession.CanClose)
+                                                        {
+                                                            <th></th>
+                                                        }
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -374,6 +378,18 @@
                                                             <td><ReplayTeamComponent Replay="replay.ToReplayListDto()" TeamNumber="2" /></td>
                                                             <td>@(replay.ExpectedWinProbability?.ToString("P0") ?? "-")</td>
                                                             <td>@(replay.RatingsPending ? "pending" : replay.AvgRating?.ToString("N0"))</td>
+                                                            @if (selectedSession.CanClose)
+                                                            {
+                                                                <td>
+                                                                    <button class="btn btn-outline-danger btn-sm"
+                                                                            title="Remove replay from session"
+                                                                            @onclick:stopPropagation="true"
+                                                                            @onclick="() => RemoveReplayAsync(replay)"
+                                                                            disabled="@busy">
+                                                                        <i class="bi bi-trash"></i>
+                                                                    </button>
+                                                                </td>
+                                                            }
                                                         </tr>
                                                     }
                                                 </tbody>
@@ -713,6 +729,34 @@
             await LoadSessionsAsync();
             await LoadClosedSessionsAsync();
             statusMessage = "Replay attached to the session.";
+        });
+    }
+
+    private async Task RemoveReplayAsync(InHouseGameSessionReplayDto replay)
+    {
+        if (selectedSession is null)
+        {
+            return;
+        }
+
+        var confirmed = await JS.InvokeAsync<bool>(
+            "confirm",
+            "Remove this replay from the InHouse session? The imported replay record will be kept.");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            await EnsureHubConnectedAsync();
+            ApplySessionState(await hubConnection!.InvokeAsync<InHouseGameSessionDetailDto>(
+                "RemoveReplay",
+                selectedSession.SessionId,
+                replay.ReplayHash));
+            await LoadSessionsAsync();
+            await LoadClosedSessionsAsync();
+            statusMessage = "Replay removed from the session.";
         });
     }
 

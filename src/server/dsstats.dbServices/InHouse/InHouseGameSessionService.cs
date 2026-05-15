@@ -181,6 +181,43 @@ public sealed class InHouseGameSessionService(
         }
     }
 
+    public async Task<InHouseGameSessionDetailDto> RemoveReplayAsync(
+        Guid sessionId,
+        string replayHash,
+        int userId,
+        bool isAdmin,
+        CancellationToken token)
+    {
+        if (string.IsNullOrWhiteSpace(replayHash))
+        {
+            throw new InvalidOperationException("Replay hash is required.");
+        }
+
+        var session = await LoadSessionAsync(sessionId, token)
+            ?? throw new InvalidOperationException("Unknown InHouse session.");
+        await session.Gate.WaitAsync(token);
+        try
+        {
+            session.State.ThrowIfClosed();
+            if (session.State.CreatedByInHouseUserId != userId && !isAdmin)
+            {
+                throw new InvalidOperationException("Only the session creator or an InHouse admin can delete replays from this session.");
+            }
+
+            var remainingReplayIds = session.State.GetReplayIdsAfterRemoving(replayHash);
+            var remainingReplays = remainingReplayIds.Count == 0
+                ? []
+                : await LoadReplaysAsync(remainingReplayIds, token);
+            session.State.RemoveReplay(replayHash, remainingReplayIds, remainingReplays);
+            await PersistStateAsync(session.State, replayId: null, observerPlayerIds: null, token);
+            return session.State.ToDetailDto(userId, isAdmin);
+        }
+        finally
+        {
+            session.Gate.Release();
+        }
+    }
+
     public async Task<InHouseGameSessionDetailDto> AddRosterPlayerAsync(
         Guid sessionId,
         int userId,
@@ -827,6 +864,53 @@ public sealed class InHouseGameSessionService(
             return true;
         }
 
+        public IReadOnlyList<int> GetReplayIdsAfterRemoving(string replayHash)
+        {
+            var replayIndex = Replays.FindIndex(replay => replay.ReplayHash == replayHash);
+            if (replayIndex < 0)
+            {
+                throw new InvalidOperationException("This replay is not attached to the InHouse session.");
+            }
+
+            List<int> remainingReplayIds = new(Math.Max(0, ReplayIds.Count - 1));
+            for (var i = 0; i < ReplayIds.Count; i++)
+            {
+                if (i != replayIndex)
+                {
+                    remainingReplayIds.Add(ReplayIds[i]);
+                }
+            }
+
+            return remainingReplayIds;
+        }
+
+        public void RemoveReplay(
+            string replayHash,
+            IReadOnlyList<int> remainingReplayIds,
+            IReadOnlyCollection<ReplayRuntimeState> remainingRuntimeReplays)
+        {
+            var replayIndex = Replays.FindIndex(replay => replay.ReplayHash == replayHash);
+            if (replayIndex < 0)
+            {
+                throw new InvalidOperationException("This replay is not attached to the InHouse session.");
+            }
+
+            Replays.RemoveAt(replayIndex);
+            ReplayIds = remainingReplayIds.ToList();
+            ReplayHashes = Replays.Select(replay => replay.ReplayHash).ToList();
+            CompatHashes = remainingRuntimeReplays
+                .Select(replay => replay.CompatHash)
+                .Where(hash => !string.IsNullOrWhiteSpace(hash))
+                .ToList();
+            if (replayIndex < ReplayFingerprints.Count)
+            {
+                ReplayFingerprints.RemoveAt(replayIndex);
+            }
+
+            RebuildDerivedState(remainingRuntimeReplays);
+            Touch();
+        }
+
         public void AddOrUpdateRosterPlayer(InHouseRosterPlayerUpsertRequest request)
         {
             var toonId = ValidateToonId(request.ToonId);
@@ -991,6 +1075,140 @@ public sealed class InHouseGameSessionService(
                 UpdatedAt = DateTime.UtcNow,
             });
         }
+
+        private void EnsureRebuiltRosterPlayer(
+            ParticipantState participant,
+            ReplayRatingRuntimeState? rating,
+            int replayCountBefore,
+            IReadOnlyDictionary<ToonKey, RosterPlayerState> previousRosterByToon)
+        {
+            var key = new ToonKey(participant.ToonId);
+            var existing = RosterPlayers.FirstOrDefault(player => new ToonKey(player.ToonId) == key);
+            if (existing is null
+                && previousRosterByToon.TryGetValue(key, out var previousRoster)
+                && !previousRoster.IsManual)
+            {
+                existing = CloneRosterPlayer(previousRoster);
+                RosterPlayers.Add(existing);
+            }
+
+            if (existing is not null)
+            {
+                var existingPlayerRating = participant.Observer ? null : GetParticipantRating(participant, rating);
+                if (!existing.IsManual
+                    && existingPlayerRating is not null
+                    && Math.Abs(existing.InitialRating - existingPlayerRating.RatingBefore) > 0.001)
+                {
+                    existing.InitialRating = existingPlayerRating.RatingBefore;
+                }
+
+                existing.Name = participant.Name;
+                existing.PlayerId ??= participant.PlayerId;
+                existing.UpdatedAt = DateTime.UtcNow;
+                return;
+            }
+
+            var playerRating = participant.Observer ? null : GetParticipantRating(participant, rating);
+            RosterPlayers.Add(new()
+            {
+                RosterPlayerId = Guid.NewGuid(),
+                Name = participant.Name,
+                ToonId = CloneToonId(participant.ToonId),
+                PlayerId = participant.PlayerId,
+                InitialRating = playerRating?.RatingBefore ?? 1000,
+                JoinedReplayCount = replayCountBefore,
+                AddSource = participant.Observer ? "observer" : "replay",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            });
+        }
+
+        private void RebuildDerivedState(IReadOnlyCollection<ReplayRuntimeState> runtimeReplays)
+        {
+            var previousRosterByToon = new Dictionary<ToonKey, RosterPlayerState>(RosterPlayers.Count);
+            foreach (var rosterPlayer in RosterPlayers)
+            {
+                previousRosterByToon.TryAdd(new ToonKey(rosterPlayer.ToonId), CloneRosterPlayer(rosterPlayer));
+            }
+
+            var manualRosterPlayers = RosterPlayers
+                .Where(player => player.IsManual)
+                .Select(CloneRosterPlayer)
+                .ToList();
+            RosterPlayers.Clear();
+            RosterPlayers.AddRange(manualRosterPlayers);
+            Players.Clear();
+
+            var runtimeByHash = runtimeReplays.ToDictionary(replay => replay.ReplayHash);
+            for (var replayIndex = 0; replayIndex < Replays.Count; replayIndex++)
+            {
+                var replay = Replays[replayIndex];
+                runtimeByHash.TryGetValue(replay.ReplayHash, out var runtimeReplay);
+                var rating = runtimeReplay is null ? null : GetBestRating(runtimeReplay);
+
+                replay.ExpectedWinProbability = rating?.ExpectedWinProbability;
+                replay.AvgRating = rating?.AvgRating;
+                replay.RatingsPending = rating is null;
+
+                foreach (var participant in replay.Players)
+                {
+                    EnsureRebuiltRosterPlayer(participant, rating, replayIndex, previousRosterByToon);
+                }
+
+                foreach (var summary in Players)
+                {
+                    summary.PlayedLatestGame = false;
+                    summary.ObservedLatestGame = false;
+                }
+
+                foreach (var participant in replay.Players)
+                {
+                    var summary = GetOrCreateSummary(participant);
+                    summary.Name = participant.Name;
+                    summary.PlayerId ??= participant.PlayerId;
+                    if (participant.Observer)
+                    {
+                        summary.Observes++;
+                        summary.ObservedLatestGame = true;
+                        continue;
+                    }
+
+                    summary.Games++;
+                    summary.Wins += participant.Result == PlayerResult.Win ? 1 : 0;
+                    summary.PlayedLatestGame = true;
+                    var playerRating = GetParticipantRating(participant, rating);
+                    if (playerRating is null)
+                    {
+                        summary.RatingsPending = true;
+                        continue;
+                    }
+
+                    summary.RatingGames++;
+                    summary.RatingStart ??= playerRating.RatingBefore;
+                    summary.RatingEnd = playerRating.RatingBefore + playerRating.RatingDelta;
+                    summary.RatingDelta = (summary.RatingDelta ?? 0) + playerRating.RatingDelta;
+                    summary.AverageGain = summary.RatingDelta / summary.RatingGames;
+                }
+            }
+
+            SyncRosterInitialRatingsFromSummaries();
+        }
+
+        private static RosterPlayerState CloneRosterPlayer(RosterPlayerState rosterPlayer)
+            => new()
+            {
+                RosterPlayerId = rosterPlayer.RosterPlayerId,
+                Name = rosterPlayer.Name,
+                ToonId = CloneToonId(rosterPlayer.ToonId),
+                PlayerId = rosterPlayer.PlayerId,
+                InitialRating = rosterPlayer.InitialRating,
+                JoinedReplayCount = rosterPlayer.JoinedReplayCount,
+                IsSitter = rosterPlayer.IsSitter,
+                IsManual = rosterPlayer.IsManual,
+                AddSource = rosterPlayer.AddSource,
+                CreatedAt = rosterPlayer.CreatedAt,
+                UpdatedAt = rosterPlayer.UpdatedAt,
+            };
 
         private PlayerSummaryState GetOrCreateSummary(ParticipantState participant)
         {

@@ -109,6 +109,179 @@ public sealed class InHouseGameSessionServiceTests
     }
 
     [TestMethod]
+    public async Task RemoveReplayAsync_RejectsNonCreatorNonAdmin()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var creator = await fixture.AddUserAsync(1);
+        var other = await fixture.AddUserAsync(2);
+        var session = await fixture.Service.CreateSessionAsync(creator.InHouseUserId, new(), CancellationToken.None);
+        var upload = await fixture.Service.UploadReplayAsync(
+            session.SessionId,
+            creator.InHouseUserId,
+            new InHouseReplayUploadRequest { Replay = CreateReplay() },
+            CancellationToken.None);
+
+        var ex = await Assert.ThrowsExactlyAsync<InvalidOperationException>(
+            () => fixture.Service.RemoveReplayAsync(
+                session.SessionId,
+                upload.State.Replays[0].ReplayHash,
+                other.InHouseUserId,
+                false,
+                CancellationToken.None));
+
+        Assert.AreEqual("Only the session creator or an InHouse admin can delete replays from this session.", ex.Message);
+        Assert.AreEqual(1, fixture.Context.InHouseGameSessions.Single().ReplayIds.Length);
+    }
+
+    [TestMethod]
+    public async Task RemoveReplayAsync_CreatorRemovesReplayAndCanUploadItAgain()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var creator = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(creator.InHouseUserId, new(), CancellationToken.None);
+        var manual = await fixture.Service.AddRosterPlayerAsync(
+            session.SessionId,
+            creator.InHouseUserId,
+            new InHouseRosterPlayerUpsertRequest
+            {
+                Name = "Manual",
+                ToonId = new ToonIdDto { Region = 1, Realm = 1, Id = 900 },
+                InitialRating = 1234,
+            },
+            CancellationToken.None);
+        var request = new InHouseReplayUploadRequest
+        {
+            Replay = CreateReplay(),
+            Observers =
+            [
+                new()
+                {
+                    Name = "Observer",
+                    ToonId = new ToonIdDto { Region = 1, Realm = 1, Id = 99 },
+                    SlotId = 7,
+                },
+            ],
+        };
+        var upload = await fixture.Service.UploadReplayAsync(session.SessionId, creator.InHouseUserId, request, CancellationToken.None);
+        await fixture.AddReplayRatingAsync(upload.State.Replays[0].ReplayHash);
+        var refreshed = await fixture.Service.GetSessionAsync(session.SessionId, creator.InHouseUserId, CancellationToken.None);
+        Assert.IsNotNull(refreshed);
+
+        var removed = await fixture.Service.RemoveReplayAsync(
+            session.SessionId,
+            refreshed.Replays[0].ReplayHash,
+            creator.InHouseUserId,
+            false,
+            CancellationToken.None);
+        var active = await fixture.Service.GetActiveSessionsAsync(CancellationToken.None);
+
+        Assert.HasCount(0, removed.Replays);
+        Assert.HasCount(0, removed.Players);
+        Assert.HasCount(1, removed.RosterPlayers);
+        Assert.AreEqual(manual.RosterPlayers[0].RosterPlayerId, removed.RosterPlayers[0].RosterPlayerId);
+        Assert.AreEqual(0, active[0].Games);
+        Assert.AreEqual(0, fixture.Context.InHouseGameSessions.Single().ReplayIds.Length);
+        Assert.AreEqual(1, await fixture.Context.Replays.CountAsync());
+        Assert.AreEqual(1, await fixture.Context.ReplayObservers.CountAsync());
+
+        var uploadedAgain = await fixture.Service.UploadReplayAsync(session.SessionId, creator.InHouseUserId, request, CancellationToken.None);
+        Assert.IsTrue(uploadedAgain.Changed);
+        Assert.HasCount(1, uploadedAgain.State.Replays);
+        Assert.AreEqual(1, await fixture.Context.InHouseGameSessions
+            .AsNoTracking()
+            .Select(dbSession => dbSession.ReplayIds.Length)
+            .SingleAsync());
+    }
+
+    [TestMethod]
+    public async Task RemoveReplayAsync_AdminRemovesReplayFromOtherCreatorsSession()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var creator = await fixture.AddUserAsync(1);
+        var admin = await fixture.AddUserAsync(2);
+        var session = await fixture.Service.CreateSessionAsync(creator.InHouseUserId, new(), CancellationToken.None);
+        var upload = await fixture.Service.UploadReplayAsync(
+            session.SessionId,
+            creator.InHouseUserId,
+            new InHouseReplayUploadRequest { Replay = CreateReplay() },
+            CancellationToken.None);
+
+        var removed = await fixture.Service.RemoveReplayAsync(
+            session.SessionId,
+            upload.State.Replays[0].ReplayHash,
+            admin.InHouseUserId,
+            true,
+            CancellationToken.None);
+
+        Assert.HasCount(0, removed.Replays);
+        Assert.AreEqual(0, fixture.Context.InHouseGameSessions.Single().ReplayIds.Length);
+    }
+
+    [TestMethod]
+    public async Task RemoveReplayAsync_RejectsClosedSession()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var creator = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(creator.InHouseUserId, new(), CancellationToken.None);
+        var upload = await fixture.Service.UploadReplayAsync(
+            session.SessionId,
+            creator.InHouseUserId,
+            new InHouseReplayUploadRequest { Replay = CreateReplay() },
+            CancellationToken.None);
+        await fixture.Service.CloseSessionAsync(session.SessionId, creator.InHouseUserId, false, CancellationToken.None);
+
+        var ex = await Assert.ThrowsExactlyAsync<InvalidOperationException>(
+            () => fixture.Service.RemoveReplayAsync(
+                session.SessionId,
+                upload.State.Replays[0].ReplayHash,
+                creator.InHouseUserId,
+                false,
+                CancellationToken.None));
+
+        Assert.AreEqual("This InHouse session is closed.", ex.Message);
+    }
+
+    [TestMethod]
+    public async Task RemoveReplayAsync_RebuildsSummariesFromRemainingReplays()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var creator = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(creator.InHouseUserId, new(), CancellationToken.None);
+        var first = await fixture.Service.UploadReplayAsync(
+            session.SessionId,
+            creator.InHouseUserId,
+            new InHouseReplayUploadRequest { Replay = CreateReplay() },
+            CancellationToken.None);
+        var secondReplay = CreateReplay(new DateTime(2024, 1, 2, 20, 0, 0, DateTimeKind.Utc));
+        secondReplay.Players[0].Name = "Replacement";
+        secondReplay.Players[0].Player.Name = "Replacement";
+        secondReplay.Players[0].Player.ToonId = new ToonIdDto { Region = 1, Realm = 1, Id = 101 };
+        var second = await fixture.Service.UploadReplayAsync(
+            session.SessionId,
+            creator.InHouseUserId,
+            new InHouseReplayUploadRequest { Replay = secondReplay },
+            CancellationToken.None);
+        await fixture.AddReplayRatingAsync(second.State.Replays[0].ReplayHash);
+        var refreshed = await fixture.Service.GetSessionAsync(session.SessionId, creator.InHouseUserId, CancellationToken.None);
+        Assert.IsNotNull(refreshed);
+        Assert.AreEqual(2, refreshed.Players[0].Games);
+
+        var removed = await fixture.Service.RemoveReplayAsync(
+            session.SessionId,
+            first.State.Replays[0].ReplayHash,
+            creator.InHouseUserId,
+            false,
+            CancellationToken.None);
+
+        Assert.HasCount(1, removed.Replays);
+        Assert.IsTrue(removed.Players.All(player => player.Games == 1));
+        Assert.IsTrue(removed.Players.All(player => !player.RatingsPending));
+        Assert.IsFalse(removed.Replays[0].RatingsPending);
+        Assert.AreEqual(1025, removed.Replays[0].AvgRating);
+        Assert.AreEqual(1, fixture.Context.InHouseGameSessions.Single().ReplayIds.Length);
+    }
+
+    [TestMethod]
     public async Task ManualRosterChanges_AreMemoryOnlyUntilCloseOrReplayUpload()
     {
         await using var fixture = await InHouseGameSessionFixture.CreateAsync();

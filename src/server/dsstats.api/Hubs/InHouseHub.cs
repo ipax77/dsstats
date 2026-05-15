@@ -54,6 +54,19 @@ public sealed class InHouseHub(
         return detail;
     }
 
+    public async Task<InHouseGameSessionDetailDto> RemoveReplay(Guid sessionId, string replayHash)
+    {
+        var detail = await sessionService.RemoveReplayAsync(
+            sessionId,
+            replayHash,
+            GetUserId(),
+            Context.User?.IsInRole(InHouseRoles.Admin) == true,
+            Context.ConnectionAborted);
+        await BroadcastSessionStateAsync(detail);
+        await Clients.All.SendAsync(ActiveSessionsChangedEvent, Context.ConnectionAborted);
+        return detail;
+    }
+
     public async Task<InHouseSitterChangedDto> SetRosterPlayerSitter(Guid sessionId, Guid rosterPlayerId, bool isSitter)
     {
         var detail = await sessionService.SetRosterPlayerSitterAsync(sessionId, rosterPlayerId, GetUserId(), isSitter, Context.ConnectionAborted);
