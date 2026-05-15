@@ -242,22 +242,22 @@ public sealed class InHouseGameSessionService(
         }
     }
 
-    public async Task<InHouseGameSessionDetailDto> CloseSessionAsync(Guid sessionId, int userId, CancellationToken token)
+    public async Task<InHouseGameSessionDetailDto> CloseSessionAsync(Guid sessionId, int userId, bool isAdmin, CancellationToken token)
     {
         var session = await LoadSessionAsync(sessionId, token)
             ?? throw new InvalidOperationException("Unknown InHouse session.");
         await session.Gate.WaitAsync(token);
         try
         {
-            if (session.State.CreatedByInHouseUserId != userId)
+            if (session.State.CreatedByInHouseUserId != userId && !isAdmin)
             {
-                throw new InvalidOperationException("Only the session creator can close this InHouse session.");
+                throw new InvalidOperationException("Only the session creator or an InHouse admin can close this session.");
             }
 
             session.State.Close();
             await PersistStateAsync(session.State, replayId: null, observerPlayerIds: null, token);
             sessions.TryRemove(session.State.SessionId, out _);
-            return session.State.ToDetailDto(userId);
+            return session.State.ToDetailDto(userId, isAdmin);
         }
         finally
         {
@@ -925,7 +925,7 @@ public sealed class InHouseGameSessionService(
                 Players = Players.Count,
             };
 
-        public InHouseGameSessionDetailDto ToDetailDto(int userId)
+        public InHouseGameSessionDetailDto ToDetailDto(int userId, bool isAdmin = false)
             => new()
             {
                 SessionId = SessionId,
@@ -936,7 +936,7 @@ public sealed class InHouseGameSessionService(
                 CreatedAt = CreatedAt,
                 ClosedAt = ClosedAt,
                 LastActivityAt = LastActivityAt,
-                CanClose = CreatedByInHouseUserId == userId && ClosedAt is null,
+                CanClose = ClosedAt is null && (CreatedByInHouseUserId == userId || isAdmin),
                 RosterPlayers = RosterPlayers
                     .OrderBy(player => player.IsSitter)
                     .ThenBy(player => player.Name)

@@ -70,7 +70,11 @@ public sealed class InHouseHub(
 
     public async Task<InHouseGameSessionDetailDto> CloseSession(Guid sessionId)
     {
-        var detail = await sessionService.CloseSessionAsync(sessionId, GetUserId(), Context.ConnectionAborted);
+        var detail = await sessionService.CloseSessionAsync(
+            sessionId,
+            GetUserId(),
+            Context.User?.IsInRole(InHouseRoles.Admin) == true,
+            Context.ConnectionAborted);
         await BroadcastSessionStateAsync(detail);
         await Clients.All.SendAsync(ActiveSessionsChangedEvent, Context.ConnectionAborted);
         return detail;

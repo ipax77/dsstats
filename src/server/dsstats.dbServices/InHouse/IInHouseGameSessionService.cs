@@ -12,7 +12,7 @@ public interface IInHouseGameSessionService
     Task<InHouseGameSessionDetailDto> AddRosterPlayerAsync(Guid sessionId, int userId, InHouseRosterPlayerUpsertRequest request, CancellationToken token);
     Task<InHouseGameSessionDetailDto> SetRosterPlayerSitterAsync(Guid sessionId, Guid rosterPlayerId, int userId, bool isSitter, CancellationToken token);
     Task<InHouseGameSessionDetailDto> RemoveRosterPlayerAsync(Guid sessionId, Guid rosterPlayerId, int userId, CancellationToken token);
-    Task<InHouseGameSessionDetailDto> CloseSessionAsync(Guid sessionId, int userId, CancellationToken token);
+    Task<InHouseGameSessionDetailDto> CloseSessionAsync(Guid sessionId, int userId, bool isAdmin, CancellationToken token);
     Task DeleteSessionAsync(Guid sessionId, int userId, bool isAdmin, CancellationToken token);
     Task<List<InHouseGameSessionDetailDto>> CloseInactiveSessionsAsync(TimeSpan inactiveFor, CancellationToken token);
 }
