@@ -29,12 +29,16 @@ public sealed class InHouseBearerAuthenticationHandler(
             return AuthenticateResult.Fail("Invalid bearer token.");
         }
 
-        var claims = new[]
+        List<Claim> claims = new()
         {
             new Claim(ClaimTypes.NameIdentifier, result.PublicId.ToString()),
             new Claim(ClaimTypes.Name, result.DisplayName),
             new Claim(InHouseClaims.UserId, result.UserId.ToString()),
         };
+        if (result.IsAdmin)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, InHouseRoles.Admin));
+        }
 
         var identity = new ClaimsIdentity(claims, SchemeName);
         var principal = new ClaimsPrincipal(identity);

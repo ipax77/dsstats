@@ -1,6 +1,10 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Reflection;
+using System.Text;
+using System.Text.Encodings.Web;
 using dsstats.api.Controllers;
+using dsstats.api.Authentication;
 using dsstats.api.Hubs;
 using dsstats.api.InHouse;
 using dsstats.db;
@@ -9,9 +13,11 @@ using dsstats.shared.InHouse;
 using Fido2NetLib;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.RateLimiting;
@@ -45,6 +51,80 @@ public sealed class InHouseAuthServiceTests
         Assert.AreEqual(passkey.CreatedAt, dto.Passkeys[0].CreatedAt);
         Assert.AreEqual(passkey.LastUsedAt, dto.Passkeys[0].LastUsedAt);
         Assert.IsTrue(dto.Passkeys[0].IsBackedUp);
+        Assert.IsFalse(dto.IsAdmin);
+    }
+
+    [TestMethod]
+    public async Task GetCurrentUserAsync_IncludesAdminFlag()
+    {
+        await using var fixture = await InHouseAuthFixture.CreateAsync();
+        var user = CreateUser(1, passkeyCount: 1);
+        user.IsAdmin = true;
+        fixture.Context.InHouseUsers.Add(user);
+        await fixture.Context.SaveChangesAsync();
+
+        var dto = await fixture.Service.GetCurrentUserAsync(user.InHouseUserId, CancellationToken.None);
+
+        Assert.IsNotNull(dto);
+        Assert.IsTrue(dto.IsAdmin);
+    }
+
+    [TestMethod]
+    public async Task ValidateAccessTokenAsync_ReturnsAdminFlag()
+    {
+        await using var fixture = await InHouseAuthFixture.CreateAsync();
+        var user = CreateUser(1, passkeyCount: 1);
+        user.IsAdmin = true;
+        user.Sessions.Add(new InHouseSession
+        {
+            AccessTokenHash = HashToken("access-token"),
+            RefreshTokenHash = HashToken("refresh-token"),
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(20),
+            RefreshExpiresAt = DateTime.UtcNow.AddDays(30),
+        });
+        fixture.Context.InHouseUsers.Add(user);
+        await fixture.Context.SaveChangesAsync();
+
+        var result = await fixture.Service.ValidateAccessTokenAsync("access-token", CancellationToken.None);
+
+        Assert.IsNotNull(result);
+        Assert.IsTrue(result.IsAdmin);
+    }
+
+    [TestMethod]
+    public async Task InHouseBearerAuthenticationHandler_EmitsAdminRoleClaim()
+    {
+        var authService = new Mock<IInHouseAuthService>();
+        authService
+            .Setup(service => service.ValidateAccessTokenAsync("access-token", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new InHouseTokenValidationResult(
+                42,
+                Guid.NewGuid(),
+                "Admin",
+                IsAdmin: true,
+                DateTime.UtcNow.AddMinutes(20)));
+        var options = new Mock<IOptionsMonitor<AuthenticationSchemeOptions>>();
+        options
+            .Setup(monitor => monitor.Get(InHouseBearerAuthenticationHandler.SchemeName))
+            .Returns(new AuthenticationSchemeOptions());
+        var handler = new InHouseBearerAuthenticationHandler(
+            options.Object,
+            NullLoggerFactory.Instance,
+            UrlEncoder.Default,
+            authService.Object);
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Headers.Authorization = "Bearer access-token";
+        var scheme = new AuthenticationScheme(
+            InHouseBearerAuthenticationHandler.SchemeName,
+            InHouseBearerAuthenticationHandler.SchemeName,
+            typeof(InHouseBearerAuthenticationHandler));
+
+        await handler.InitializeAsync(scheme, httpContext);
+        var result = await handler.AuthenticateAsync();
+
+        Assert.IsTrue(result.Succeeded);
+        Assert.IsTrue(result.Principal!.IsInRole(InHouseRoles.Admin));
     }
 
     [TestMethod]
@@ -304,6 +384,9 @@ public sealed class InHouseAuthServiceTests
         Assert.IsNotNull(attribute);
         Assert.AreEqual(policyName, attribute.PolicyName);
     }
+
+    private static string HashToken(string token)
+        => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 
     private sealed class InHouseAuthFixture : IAsyncDisposable
     {

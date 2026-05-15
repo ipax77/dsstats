@@ -8,6 +8,7 @@ public sealed class InHouseUser
     public Guid PublicId { get; set; } = Guid.NewGuid();
     [MaxLength(40)]
     public string DisplayName { get; set; } = string.Empty;
+    public bool IsAdmin { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime LastLoginAt { get; set; } = DateTime.UtcNow;
     public ICollection<InHousePasskeyCredential> Passkeys { get; set; } = [];

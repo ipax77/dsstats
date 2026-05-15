@@ -18,6 +18,7 @@ public sealed class InHouseHub(
     public const string ActiveSessionsChangedEvent = "active_sessions_changed";
     public const string SessionStateEvent = "session_state";
     public const string SitterChangedEvent = "sitter_changed";
+    public const string SessionDeletedEvent = "session_deleted";
 
     public static string GetAccountGroupName(Guid publicUserId)
         => $"inhouse:account:{publicUserId:N}";

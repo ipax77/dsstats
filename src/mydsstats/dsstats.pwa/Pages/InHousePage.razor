@@ -6,6 +6,7 @@
 @using dsstats.shared.Interfaces
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.JSInterop
 @using dsstats.weblib.Players
 @using dsstats.weblib.Replays
 @implements IAsyncDisposable
@@ -14,6 +15,7 @@
 @inject DecodeService DecodeService
 @inject SessionProgressService SessionProgressService
 @inject IPlayerService PlayerService
+@inject IJSRuntime JS
 
 <PageTitle>mydsstats - InHouse</PageTitle>
 
@@ -135,6 +137,12 @@
                                         {
                                             <button class="btn btn-outline-danger btn-sm" @onclick="CloseSessionAsync" disabled="@busy">
                                                 <i class="bi bi-lock me-1"></i>Close
+                                            </button>
+                                        }
+                                        @if (Auth.User?.IsAdmin == true)
+                                        {
+                                            <button class="btn btn-danger btn-sm" @onclick="DeleteSessionAsync" disabled="@busy">
+                                                <i class="bi bi-trash me-1"></i>Delete
                                             </button>
                                         }
                                     </div>
@@ -359,7 +367,7 @@
                                                     @foreach (var replay in selectedSession.Replays)
                                                     {
                                                         <tr class="pointer" @onclick="() => ShowReplay(replay.ReplayHash)">
-                                                            <td>@replay.Gametime.ToString("yyyy-MM-dd hh:mm")</td>
+                                                            <td>@replay.Gametime.ToString("yyyy-MM-dd HH:mm")</td>
                                                             <td>@replay.GameMode</td>
                                                             <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
                                                             <td><ReplayTeamComponent Replay="replay.ToReplayListDto()" TeamNumber="1" /></td>
@@ -659,6 +667,36 @@
         });
     }
 
+    private async Task DeleteSessionAsync()
+    {
+        if (selectedSession is null)
+        {
+            return;
+        }
+
+        var sessionId = selectedSession.SessionId;
+        var confirmed = await JS.InvokeAsync<bool>(
+            "confirm",
+            "Delete this InHouse session? Imported replay records will be kept.");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            await SessionsClient.DeleteSessionAsync(sessionId);
+            if (selectedSession?.SessionId == sessionId)
+            {
+                selectedSession = null;
+                ResetMatchmakingDraft();
+            }
+
+            await LoadSessionsAsync();
+            await LoadClosedSessionsAsync();
+        });
+    }
+
     private async Task UploadReplayAsync(InputFileChangeEventArgs args)
     {
         if (selectedSession is null)
@@ -776,6 +814,15 @@
             });
         });
 
+        hubConnection.On<Guid>("session_deleted", deletedSessionId =>
+        {
+            _ = InvokeAsync(() =>
+            {
+                ApplySessionDeleted(deletedSessionId);
+                StateHasChanged();
+            });
+        });
+
         await hubConnection.StartAsync();
     }
 
@@ -877,6 +924,17 @@
         rosterPlayer.IsSitter = changed.IsSitter;
         selectedSession.Revision = changed.Revision;
         ResetMatchmakingDraft();
+    }
+
+    private void ApplySessionDeleted(Guid deletedSessionId)
+    {
+        sessions.RemoveAll(session => session.SessionId == deletedSessionId);
+        closedSessions.RemoveAll(session => session.SessionId == deletedSessionId);
+        if (selectedSession?.SessionId == deletedSessionId)
+        {
+            selectedSession = null;
+            ResetMatchmakingDraft();
+        }
     }
 
     private InHouseProfileDto GetSelectedProfile()

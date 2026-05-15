@@ -265,6 +265,38 @@ public sealed class InHouseGameSessionService(
         }
     }
 
+    public async Task DeleteSessionAsync(Guid sessionId, int userId, bool isAdmin, CancellationToken token)
+    {
+        if (!isAdmin)
+        {
+            throw new InvalidOperationException("Only InHouse admins can delete game sessions.");
+        }
+
+        if (sessions.TryGetValue(sessionId, out var runtimeSession))
+        {
+            await runtimeSession.Gate.WaitAsync(token);
+            try
+            {
+                if (!await DeleteSessionRowAsync(sessionId, token))
+                {
+                    throw new KeyNotFoundException("Unknown InHouse session.");
+                }
+
+                sessions.TryRemove(sessionId, out _);
+                return;
+            }
+            finally
+            {
+                runtimeSession.Gate.Release();
+            }
+        }
+
+        if (!await DeleteSessionRowAsync(sessionId, token))
+        {
+            throw new KeyNotFoundException("Unknown InHouse session.");
+        }
+    }
+
     public async Task<List<InHouseGameSessionDetailDto>> CloseInactiveSessionsAsync(TimeSpan inactiveFor, CancellationToken token)
     {
         await LoadActiveSessionsAsync(token);
@@ -293,6 +325,16 @@ public sealed class InHouseGameSessionService(
         }
 
         return closed;
+    }
+
+    private async Task<bool> DeleteSessionRowAsync(Guid sessionId, CancellationToken token)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        var deleted = await context.InHouseGameSessions
+            .Where(session => session.PublicId == sessionId)
+            .ExecuteDeleteAsync(token);
+        return deleted > 0;
     }
 
     private async Task<InHouseRuntimeSession> GetMutableRuntimeSessionAsync(Guid sessionId, CancellationToken token)

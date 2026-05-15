@@ -414,16 +414,34 @@ public sealed class InHouseAuthService(
     public async Task<InHouseTokenValidationResult?> ValidateAccessTokenAsync(string accessToken, CancellationToken token)
     {
         var tokenHash = HashToken(accessToken);
+        var now = DateTime.UtcNow;
         var session = await context.InHouseSessions
-            .Include(s => s.User)
-            .FirstOrDefaultAsync(s => s.AccessTokenHash == tokenHash, token);
+            .AsNoTracking()
+            .Where(s => s.AccessTokenHash == tokenHash
+                && s.RevokedAt == null
+                && s.ExpiresAt > now
+                && s.User != null)
+            .Select(s => new
+            {
+                s.User!.InHouseUserId,
+                s.User.PublicId,
+                s.User.DisplayName,
+                s.User.IsAdmin,
+                s.ExpiresAt,
+            })
+            .FirstOrDefaultAsync(token);
 
-        if (session is null || session.RevokedAt is not null || session.ExpiresAt <= DateTime.UtcNow || session.User is null)
+        if (session is null)
         {
             return null;
         }
 
-        return new InHouseTokenValidationResult(session.User.InHouseUserId, session.User.PublicId, session.User.DisplayName, session.ExpiresAt);
+        return new InHouseTokenValidationResult(
+            session.InHouseUserId,
+            session.PublicId,
+            session.DisplayName,
+            session.IsAdmin,
+            session.ExpiresAt);
     }
 
     private async Task<InHouseSessionDto> CreateSessionAsync(InHouseUser user, CancellationToken token)
@@ -598,6 +616,7 @@ internal static class InHouseEntityMapping
         {
             UserId = user.PublicId,
             DisplayName = user.DisplayName,
+            IsAdmin = user.IsAdmin,
             Profiles = user.Profiles.Select(profile => new InHouseProfileDto
             {
                 Name = profile.Name,

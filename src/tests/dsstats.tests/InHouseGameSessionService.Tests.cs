@@ -209,6 +209,84 @@ public sealed class InHouseGameSessionServiceTests
     }
 
     [TestMethod]
+    public async Task DeleteSessionAsync_RejectsNonAdmin()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
+
+        var ex = await Assert.ThrowsExactlyAsync<InvalidOperationException>(
+            () => fixture.Service.DeleteSessionAsync(session.SessionId, user.InHouseUserId, false, CancellationToken.None));
+
+        Assert.AreEqual("Only InHouse admins can delete game sessions.", ex.Message);
+        Assert.AreEqual(1, await fixture.Context.InHouseGameSessions.CountAsync());
+    }
+
+    [TestMethod]
+    public async Task DeleteSessionAsync_AdminDeletesActiveSession()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var admin = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(admin.InHouseUserId, new(), CancellationToken.None);
+
+        await fixture.Service.DeleteSessionAsync(session.SessionId, admin.InHouseUserId, true, CancellationToken.None);
+        var active = await fixture.Service.GetActiveSessionsAsync(CancellationToken.None);
+        var restored = await fixture.Service.GetSessionAsync(session.SessionId, admin.InHouseUserId, CancellationToken.None);
+
+        Assert.HasCount(0, active);
+        Assert.IsNull(restored);
+        Assert.AreEqual(0, await fixture.Context.InHouseGameSessions.CountAsync());
+        Assert.AreEqual(0, await fixture.Context.InHouseGameSessionStateSnapshots.CountAsync());
+    }
+
+    [TestMethod]
+    public async Task DeleteSessionAsync_AdminDeletesClosedSession()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var admin = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(admin.InHouseUserId, new(), CancellationToken.None);
+        await fixture.Service.CloseSessionAsync(session.SessionId, admin.InHouseUserId, CancellationToken.None);
+
+        await fixture.Service.DeleteSessionAsync(session.SessionId, admin.InHouseUserId, true, CancellationToken.None);
+        var closed = await fixture.Service.GetClosedSessionsAsync(new InHouseClosedGameSessionsRequest(), CancellationToken.None);
+
+        Assert.AreEqual(0, closed.Total);
+        Assert.HasCount(0, closed.Items);
+        Assert.AreEqual(0, await fixture.Context.InHouseGameSessions.CountAsync());
+    }
+
+    [TestMethod]
+    public async Task DeleteSessionAsync_KeepsImportedReplaysAndObservers()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var admin = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(admin.InHouseUserId, new(), CancellationToken.None);
+        await fixture.Service.UploadReplayAsync(
+            session.SessionId,
+            admin.InHouseUserId,
+            new InHouseReplayUploadRequest
+            {
+                Replay = CreateReplay(),
+                Observers =
+                [
+                    new()
+                    {
+                        Name = "Observer",
+                        ToonId = new ToonIdDto { Region = 1, Realm = 1, Id = 99 },
+                        SlotId = 7,
+                    },
+                ],
+            },
+            CancellationToken.None);
+
+        await fixture.Service.DeleteSessionAsync(session.SessionId, admin.InHouseUserId, true, CancellationToken.None);
+
+        Assert.AreEqual(0, await fixture.Context.InHouseGameSessions.CountAsync());
+        Assert.AreEqual(1, await fixture.Context.Replays.CountAsync());
+        Assert.AreEqual(1, await fixture.Context.ReplayObservers.CountAsync());
+    }
+
+    [TestMethod]
     public async Task GetClosedSessionsAsync_ReturnsPagedClosedSessionsNewestFirst()
     {
         await using var fixture = await InHouseGameSessionFixture.CreateAsync();

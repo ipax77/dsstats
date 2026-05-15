@@ -29,11 +29,15 @@ public sealed class InHouseAuthenticationStateProvider : AuthenticationStateProv
 
     private static ClaimsPrincipal CreatePrincipal(InHouseUserDto user)
     {
-        var claims = new[]
+        List<Claim> claims = new()
         {
             new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
             new Claim(ClaimTypes.Name, user.DisplayName),
         };
+        if (user.IsAdmin)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "admin"));
+        }
 
         return new ClaimsPrincipal(new ClaimsIdentity(claims, "InHouse"));
     }

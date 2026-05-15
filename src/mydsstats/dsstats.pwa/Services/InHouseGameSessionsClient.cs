@@ -37,6 +37,11 @@ public sealed class InHouseGameSessionsClient(
             HttpMethod.Get,
             $"api10/inhouse/sessions/{sessionId}");
 
+    public async Task DeleteSessionAsync(Guid sessionId)
+        => await SendAuthorizedNoContentAsync(
+            HttpMethod.Delete,
+            $"api10/inhouse/sessions/{sessionId}");
+
     private async Task<TResponse?> SendAuthorizedAsync<TResponse>(HttpMethod method, string url)
     {
         using var request = new HttpRequestMessage(method, url);
@@ -49,6 +54,14 @@ public sealed class InHouseGameSessionsClient(
 
         await EnsureSuccessAsync(response);
         return await response.Content.ReadFromJsonAsync<TResponse>();
+    }
+
+    private async Task SendAuthorizedNoContentAsync(HttpMethod method, string url)
+    {
+        using var request = new HttpRequestMessage(method, url);
+        await AddAuthorizationAsync(request);
+        using var response = await http.SendAsync(request);
+        await EnsureSuccessAsync(response);
     }
 
     public async Task<ReplayDetails?> GetReplayDetails(string replayHash)

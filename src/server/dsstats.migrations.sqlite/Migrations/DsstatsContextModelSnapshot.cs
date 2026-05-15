@@ -429,6 +429,9 @@ namespace dsstats.migrations.sqlite.Migrations
                         .HasMaxLength(40)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsAdmin")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("LastLoginAt")
                         .HasColumnType("TEXT");
 

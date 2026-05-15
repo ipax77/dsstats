@@ -46,6 +46,29 @@ public sealed class InHouseSessionsController(
             return detail;
         });
 
+    [HttpDelete("{sessionId:guid}")]
+    public async Task<IActionResult> DeleteSession(
+        Guid sessionId,
+        CancellationToken token)
+    {
+        try
+        {
+            await sessionService.DeleteSessionAsync(sessionId, GetUserId(), User.IsInRole(InHouseRoles.Admin), token);
+            await hubContext.Clients.Group(InHouseHub.GetSessionGroupName(sessionId))
+                .SendAsync(InHouseHub.SessionDeletedEvent, sessionId, token);
+            await hubContext.Clients.All.SendAsync(InHouseHub.ActiveSessionsChangedEvent, token);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
     [HttpPost("{sessionId:guid}/replays")]
     public async Task<ActionResult<InHouseGameSessionDetailDto>> UploadReplay(
         Guid sessionId,
