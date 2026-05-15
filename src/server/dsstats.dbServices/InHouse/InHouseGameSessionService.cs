@@ -638,9 +638,7 @@ public sealed class InHouseGameSessionService(
                 summary.Games++;
                 summary.Wins += participant.Result == PlayerResult.Win ? 1 : 0;
                 summary.PlayedLatestGame = true;
-                var playerRating = rating?.PlayerRatings
-                    .FirstOrDefault(playerRating => playerRating.ReplayPlayerId == participant.ReplayPlayerId
-                        || playerRating.PlayerId == participant.PlayerId);
+                var playerRating = GetParticipantRating(participant, rating);
                 if (playerRating is null)
                 {
                     summary.RatingsPending = true;
@@ -834,15 +832,21 @@ public sealed class InHouseGameSessionService(
             var existing = RosterPlayers.FirstOrDefault(player => new ToonKey(player.ToonId) == key);
             if (existing is not null)
             {
+                var existingPlayerRating = participant.Observer ? null : GetParticipantRating(participant, rating);
+                if (!existing.IsManual
+                    && existingPlayerRating is not null
+                    && Math.Abs(existing.InitialRating - existingPlayerRating.RatingBefore) > 0.001)
+                {
+                    existing.InitialRating = existingPlayerRating.RatingBefore;
+                }
+
                 existing.Name = participant.Name;
                 existing.PlayerId ??= participant.PlayerId;
                 existing.UpdatedAt = DateTime.UtcNow;
                 return;
             }
 
-            var playerRating = rating?.PlayerRatings
-                .FirstOrDefault(playerRating => playerRating.ReplayPlayerId == participant.ReplayPlayerId
-                    || playerRating.PlayerId == participant.PlayerId);
+            var playerRating = participant.Observer ? null : GetParticipantRating(participant, rating);
             RosterPlayers.Add(new()
             {
                 RosterPlayerId = Guid.NewGuid(),
@@ -932,8 +936,7 @@ public sealed class InHouseGameSessionService(
                         continue;
                     }
 
-                    var playerRating = rating?.PlayerRatings
-                        .FirstOrDefault(playerRating => playerRating.PlayerId == participant.PlayerId);
+                    var playerRating = GetParticipantRating(participant, rating);
                     if (playerRating is null)
                     {
                         summary.RatingsPending = true;
@@ -947,6 +950,55 @@ public sealed class InHouseGameSessionService(
                     summary.AverageGain = summary.RatingDelta / summary.RatingGames;
                 }
             }
+
+            SyncRosterInitialRatingsFromSummaries();
+        }
+
+        private void SyncRosterInitialRatingsFromSummaries()
+        {
+            var summariesByToon = new Dictionary<ToonKey, PlayerSummaryState>(Players.Count);
+            foreach (var player in Players)
+            {
+                if (player.RatingStart is not null)
+                {
+                    summariesByToon[new ToonKey(player.ToonId)] = player;
+                }
+            }
+
+            foreach (var rosterPlayer in RosterPlayers)
+            {
+                if (rosterPlayer.IsManual
+                    || !summariesByToon.TryGetValue(new ToonKey(rosterPlayer.ToonId), out var summary)
+                    || summary.RatingStart is not double ratingStart
+                    || Math.Abs(rosterPlayer.InitialRating - ratingStart) <= 0.001)
+                {
+                    continue;
+                }
+
+                rosterPlayer.InitialRating = ratingStart;
+                rosterPlayer.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        private static ReplayPlayerRatingRuntimeState? GetParticipantRating(
+            ParticipantState participant,
+            ReplayRatingRuntimeState? rating)
+        {
+            if (rating is null)
+            {
+                return null;
+            }
+
+            foreach (var playerRating in rating.PlayerRatings)
+            {
+                if ((participant.ReplayPlayerId is int replayPlayerId && playerRating.ReplayPlayerId == replayPlayerId)
+                    || (participant.PlayerId is int playerId && playerRating.PlayerId == playerId))
+                {
+                    return playerRating;
+                }
+            }
+
+            return null;
         }
     }
 

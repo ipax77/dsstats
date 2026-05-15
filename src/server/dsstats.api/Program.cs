@@ -134,7 +134,6 @@ builder.Services.AddSingleton<IPickBanService, PickBanService>();
 builder.Services.AddSingleton<InHouseConnectionTracker>();
 builder.Services.AddSingleton<IInHouseAccountNotifier, InHouseAccountNotifier>();
 builder.Services.AddSingleton<IInHouseGameSessionService, InHouseGameSessionService>();
-builder.Services.AddHostedService<InHouseSessionCleanupService>();
 
 builder.Services.AddScoped<IDashboardStatsService, DashboardStatsService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();

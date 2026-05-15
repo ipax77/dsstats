@@ -1,10 +1,15 @@
 ﻿
+using dsstats.api.Hubs;
+using dsstats.dbServices.InHouse;
 using dsstats.shared.Interfaces;
+using Microsoft.AspNetCore.SignalR;
 
 namespace dsstats.api.Services;
 
 public class TimedHostedService(IServiceScopeFactory scopeFactory, ILogger<TimedHostedService> logger) : BackgroundService
 {
+    private static readonly TimeSpan InHouseInactivityLimit = TimeSpan.FromHours(12);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         DateTime nowTime = DateTime.UtcNow;
@@ -43,6 +48,7 @@ public class TimedHostedService(IServiceScopeFactory scopeFactory, ILogger<Timed
             {
                 var arcadeJobService = scope.ServiceProvider.GetRequiredService<ArcadeJobService>();
                 await arcadeJobService.RunAsync(token);
+                await CloseInactiveInHouseSessionsAsync(scope.ServiceProvider, token);
             }
             else
             {
@@ -56,7 +62,26 @@ public class TimedHostedService(IServiceScopeFactory scopeFactory, ILogger<Timed
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "An error occurred while importing replays.");
+            logger.LogError(ex, "An error occurred while running timed hosted service work.");
         }
+    }
+
+    private static async Task CloseInactiveInHouseSessionsAsync(IServiceProvider serviceProvider, CancellationToken token)
+    {
+        var sessionService = serviceProvider.GetRequiredService<IInHouseGameSessionService>();
+        var hubContext = serviceProvider.GetRequiredService<IHubContext<InHouseHub>>();
+        var closed = await sessionService.CloseInactiveSessionsAsync(InHouseInactivityLimit, token);
+        if (closed.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var detail in closed)
+        {
+            await hubContext.Clients.Group(InHouseHub.GetSessionGroupName(detail.SessionId))
+                .SendAsync(InHouseHub.SessionStateEvent, detail, token);
+        }
+
+        await hubContext.Clients.All.SendAsync(InHouseHub.ActiveSessionsChangedEvent, token);
     }
 }

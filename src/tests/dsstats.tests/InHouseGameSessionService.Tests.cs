@@ -220,6 +220,7 @@ public sealed class InHouseGameSessionServiceTests
             CancellationToken.None);
 
         Assert.IsTrue(upload.State.Players.Where(player => player.Games > 0).All(player => player.RatingsPending));
+        Assert.AreEqual(1000, upload.State.RosterPlayers.Single(player => player.ToonId.Id == 2).InitialRating);
 
         await fixture.AddReplayRatingAsync(upload.State.Replays[0].ReplayHash);
         var refreshed = await fixture.Service.GetSessionAsync(session.SessionId, user.InHouseUserId, CancellationToken.None);
@@ -231,6 +232,52 @@ public sealed class InHouseGameSessionServiceTests
         Assert.AreEqual(1010, winner.RatingEnd);
         Assert.AreEqual(10, winner.RatingDelta);
         Assert.AreEqual(10, winner.AverageGain);
+        Assert.AreEqual(1010, refreshed.RosterPlayers.Single(player => player.ToonId.Id == 2).InitialRating);
+    }
+
+    [TestMethod]
+    public async Task GetSessionAsync_UpdatesObserverRosterRatingWhenPlayerLaterPlays()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
+        var first = await fixture.Service.UploadReplayAsync(
+            session.SessionId,
+            user.InHouseUserId,
+            new InHouseReplayUploadRequest
+            {
+                Replay = CreateReplay(),
+                Observers =
+                [
+                    new()
+                    {
+                        Name = "Observer",
+                        ToonId = new ToonIdDto { Region = 1, Realm = 1, Id = 99 },
+                        SlotId = 7,
+                    },
+                ],
+            },
+            CancellationToken.None);
+
+        Assert.AreEqual(1000, first.State.RosterPlayers.Single(player => player.ToonId.Id == 99).InitialRating);
+
+        var secondReplay = CreateReplay(new DateTime(2024, 1, 2, 20, 0, 0, DateTimeKind.Utc));
+        var promotedPlayer = secondReplay.Players[2];
+        promotedPlayer.Name = "Observer";
+        promotedPlayer.Player.Name = "Observer";
+        promotedPlayer.Player.ToonId = new ToonIdDto { Region = 1, Realm = 1, Id = 99 };
+        var second = await fixture.Service.UploadReplayAsync(
+            session.SessionId,
+            user.InHouseUserId,
+            new InHouseReplayUploadRequest { Replay = secondReplay },
+            CancellationToken.None);
+
+        await fixture.AddReplayRatingAsync(second.State.Replays[0].ReplayHash);
+        var refreshed = await fixture.Service.GetSessionAsync(session.SessionId, user.InHouseUserId, CancellationToken.None);
+
+        Assert.IsNotNull(refreshed);
+        Assert.AreEqual(1020, refreshed.Players.Single(player => player.ToonId.Id == 99).RatingStart);
+        Assert.AreEqual(1020, refreshed.RosterPlayers.Single(player => player.ToonId.Id == 99).InitialRating);
     }
 
     [TestMethod]
@@ -321,14 +368,14 @@ public sealed class InHouseGameSessionServiceTests
         Assert.IsGreaterThan(mixed.BalanceScore, stacked.BalanceScore);
     }
 
-    private static ReplayDto CreateReplay()
+    private static ReplayDto CreateReplay(DateTime? gametime = null)
         => new()
         {
             Title = "Direct Strike TE",
             Version = "5.0.0",
             GameMode = GameMode.Standard,
             RegionId = 1,
-            Gametime = new DateTime(2024, 1, 1, 20, 0, 0, DateTimeKind.Utc),
+            Gametime = gametime ?? new DateTime(2024, 1, 1, 20, 0, 0, DateTimeKind.Utc),
             BaseBuild = 1,
             Duration = 1200,
             WinnerTeam = 1,
