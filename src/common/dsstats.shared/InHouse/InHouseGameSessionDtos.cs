@@ -81,3 +81,22 @@ public sealed class InHouseParsedReplayDto
     public ReplayDto Replay { get; set; } = new();
     public List<InHouseReplayObserverDto> Observers { get; set; } = [];
 }
+
+public static class InHouseGameSessionReplayDtoExtensions
+{
+    public static ReplayListDto ToReplayListDto(this InHouseGameSessionReplayDto ihReplay)
+    {
+        return new()
+        {
+            ReplayHash = ihReplay.ReplayHash,
+            Gametime = ihReplay.Gametime,
+            GameMode = ihReplay.GameMode,
+            Duration = ihReplay.Duration,
+            WinnerTeam = ihReplay.WinnerTeam,
+            CommandersTeam1 = ihReplay.CommandersTeam1,
+            CommandersTeam2 = ihReplay.CommandersTeam2,
+            Exp2Win = ihReplay.ExpectedWinProbability,
+            AvgRating = ihReplay.AvgRating,
+        };
+    }
+}

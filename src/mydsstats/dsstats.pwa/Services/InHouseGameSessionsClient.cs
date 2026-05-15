@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using dsstats.shared;
 using dsstats.shared.InHouse;
 
 namespace dsstats.pwa.Services;
@@ -49,6 +50,21 @@ public sealed class InHouseGameSessionsClient(
 
         await EnsureSuccessAsync(response);
         return await response.Content.ReadFromJsonAsync<TResponse>();
+    }
+
+    public async Task<ReplayDetails?> GetReplayDetails(string replayHash)
+    {
+        try
+        {
+            var _httpClient = httpClientFactory.CreateClient("api");
+            var response = await _httpClient.GetAsync($"api10/Replays/{replayHash}");
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<ReplayDetails>();
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     private async Task<TResponse> PostAuthorizedAsync<TRequest, TResponse>(string url, TRequest content)

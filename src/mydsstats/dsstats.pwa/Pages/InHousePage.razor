@@ -3,8 +3,11 @@
 @using dsstats.pwa.Services
 @using dsstats.shared
 @using dsstats.shared.InHouse
+@using dsstats.shared.Interfaces
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.SignalR.Client
+@using dsstats.weblib.Players
+@using dsstats.weblib.Replays
 @implements IAsyncDisposable
 @inject InHouseAuthClient Auth
 @inject InHouseGameSessionsClient SessionsClient
@@ -127,7 +130,7 @@
                                     else
                                     {
                                         <div class="table-responsive">
-                                            <table class="tptable table w-auto">
+                                            <table class="tptable w-auto">
                                                 <thead>
                                                     <tr>
                                                         <th>Name</th>
@@ -188,7 +191,7 @@
                                     else
                                     {
                                         <div class="table-responsive">
-                                            <table class="tptable table w-auto">
+                                            <table class="tptable w-auto">
                                                 <thead>
                                                     <tr>
                                                         <th>GameTime</th>
@@ -203,12 +206,12 @@
                                                 <tbody>
                                                     @foreach (var replay in selectedSession.Replays)
                                                     {
-                                                        <tr>
-                                                            <td>@replay.Gametime.ToLocalTime().ToString("g")</td>
+                                                        <tr class="pointer" @onclick="() => ShowReplay(replay.ReplayHash)">
+                                                            <td>@replay.Gametime.ToString("yyyy-MM-dd hh:mm")</td>
                                                             <td>@replay.GameMode</td>
                                                             <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
-                                                            <td>@FormatCommanders(replay.CommandersTeam1)</td>
-                                                            <td>@FormatCommanders(replay.CommandersTeam2)</td>
+                                                            <td><ReplayTeamComponent Replay="replay.ToReplayListDto()" TeamNumber="1" /></td>
+                                                            <td><ReplayTeamComponent Replay="replay.ToReplayListDto()" TeamNumber="2" /></td>
                                                             <td>@(replay.ExpectedWinProbability?.ToString("P0") ?? "-")</td>
                                                             <td>@(replay.RatingsPending ? "pending" : replay.AvgRating?.ToString("N0"))</td>
                                                         </tr>
@@ -304,6 +307,9 @@
     }
 </div>
 
+<ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" />
+<PlayerModal @ref="playerModal" />
+
 @code {
     private readonly InHouseProfileDto manualProfile = new()
     {
@@ -322,6 +328,8 @@
     private bool loading = true;
     private bool busy;
     private bool passkeysSupported;
+    ReplayModal? replayModal;
+    PlayerModal? playerModal;
 
     private bool HasSelectedProfile => !string.IsNullOrWhiteSpace(selectedProfileKey);
 
@@ -598,9 +606,6 @@
     private static string GetGainClass(double? gain)
         => gain is null ? string.Empty : gain < 0 ? "text-danger" : "text-success";
 
-    private static string FormatCommanders(IEnumerable<Commander> commanders)
-        => string.Join(", ", commanders);
-
     private static string GetProfileKey(TrackedProfileDto profile)
         => $"{profile.ToonId.Region}:{profile.ToonId.Realm}:{profile.ToonId.Id}";
 
@@ -619,5 +624,15 @@
     {
         Auth.AuthenticationChanged -= OnAuthenticationChanged;
         await DisposeHubAsync();
+    }
+
+    private async Task ShowReplay(string replayHash)
+    {
+        var replayDetails = await SessionsClient.GetReplayDetails(replayHash);
+        if (replayDetails == null)
+        {
+            return;
+        }
+        replayModal?.Show(replayDetails);
     }
 }
