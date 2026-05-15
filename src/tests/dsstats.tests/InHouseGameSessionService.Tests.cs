@@ -149,6 +149,62 @@ public sealed class InHouseGameSessionServiceTests
     }
 
     [TestMethod]
+    public async Task GetSessionAsync_DoesNotRefreshStableSummaries()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
+        await fixture.Service.UploadReplayAsync(
+            session.SessionId,
+            user.InHouseUserId,
+            new InHouseReplayUploadRequest { Replay = CreateReplay() },
+            CancellationToken.None);
+        var originalSummaryIds = fixture.Context.InHouseGameSessionPlayerSummaries
+            .Select(summary => summary.InHouseGameSessionPlayerSummaryId)
+            .Order()
+            .ToList();
+
+        await fixture.Service.GetSessionAsync(session.SessionId, user.InHouseUserId, CancellationToken.None);
+
+        var reloadedSummaryIds = fixture.Context.InHouseGameSessionPlayerSummaries
+            .Select(summary => summary.InHouseGameSessionPlayerSummaryId)
+            .Order()
+            .ToList();
+        CollectionAssert.AreEqual(originalSummaryIds, reloadedSummaryIds);
+    }
+
+    [TestMethod]
+    public async Task SetRosterPlayerSitterAsync_DoesNotRefreshSummaries()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
+        var upload = await fixture.Service.UploadReplayAsync(
+            session.SessionId,
+            user.InHouseUserId,
+            new InHouseReplayUploadRequest { Replay = CreateReplay() },
+            CancellationToken.None);
+        var rosterPlayer = upload.RosterPlayers[0];
+        var originalSummaryIds = fixture.Context.InHouseGameSessionPlayerSummaries
+            .Select(summary => summary.InHouseGameSessionPlayerSummaryId)
+            .Order()
+            .ToList();
+
+        await fixture.Service.SetRosterPlayerSitterAsync(
+            session.SessionId,
+            rosterPlayer.RosterPlayerId,
+            user.InHouseUserId,
+            true,
+            CancellationToken.None);
+
+        var reloadedSummaryIds = fixture.Context.InHouseGameSessionPlayerSummaries
+            .Select(summary => summary.InHouseGameSessionPlayerSummaryId)
+            .Order()
+            .ToList();
+        CollectionAssert.AreEqual(originalSummaryIds, reloadedSummaryIds);
+    }
+
+    [TestMethod]
     public void Matchmaker_NewManualPlayersAreSelectedFirst()
     {
         var session = CreateMatchmakingSession(2, Enumerable.Range(1, 7)

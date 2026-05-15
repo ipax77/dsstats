@@ -67,7 +67,7 @@ public sealed class InHouseGameSessionService(
             return null;
         }
 
-        await RefreshSummariesAsync(session.InHouseGameSessionId, token);
+        await EnsureSessionDerivedStateAsync(session.InHouseGameSessionId, token);
         return await LoadDetailAsync(sessionId, userId, token);
     }
 
@@ -176,7 +176,6 @@ public sealed class InHouseGameSessionService(
         }
 
         await context.SaveChangesAsync(token);
-        await RefreshSummariesAsync(session.InHouseGameSessionId, token);
         return await LoadDetailAsync(sessionId, userId, token)
             ?? throw new InvalidOperationException("InHouse session could not be loaded.");
     }
@@ -205,7 +204,6 @@ public sealed class InHouseGameSessionService(
         rosterPlayer.UpdatedAt = DateTime.UtcNow;
 
         await context.SaveChangesAsync(token);
-        await RefreshSummariesAsync(session.InHouseGameSessionId, token);
         return await LoadDetailAsync(sessionId, userId, token)
             ?? throw new InvalidOperationException("InHouse session could not be loaded.");
     }
@@ -223,7 +221,6 @@ public sealed class InHouseGameSessionService(
         rosterPlayer.UpdatedAt = DateTime.UtcNow;
 
         await context.SaveChangesAsync(token);
-        await RefreshSummariesAsync(session.InHouseGameSessionId, token);
         return await LoadDetailAsync(sessionId, userId, token)
             ?? throw new InvalidOperationException("InHouse session could not be loaded.");
     }
@@ -239,7 +236,6 @@ public sealed class InHouseGameSessionService(
         context.InHouseGameSessionRosterPlayers.Remove(rosterPlayer);
 
         await context.SaveChangesAsync(token);
-        await RefreshSummariesAsync(session.InHouseGameSessionId, token);
         return await LoadDetailAsync(sessionId, userId, token)
             ?? throw new InvalidOperationException("InHouse session could not be loaded.");
     }
@@ -257,7 +253,6 @@ public sealed class InHouseGameSessionService(
 
         session.ClosedAt ??= DateTime.UtcNow;
         await context.SaveChangesAsync(token);
-        await RefreshSummariesAsync(session.InHouseGameSessionId, token);
 
         return await LoadDetailAsync(sessionId, userId, token)
             ?? throw new InvalidOperationException("InHouse session could not be loaded.");
@@ -391,6 +386,61 @@ public sealed class InHouseGameSessionService(
                 && player.ToonId.Realm == toonId.Realm
                 && player.ToonId.Id == toonId.Id, token);
 
+    private async Task EnsureSessionDerivedStateAsync(int sessionId, CancellationToken token)
+    {
+        if (await NeedsSummaryRefreshAsync(sessionId, token))
+        {
+            await RefreshSummariesAsync(sessionId, token);
+            return;
+        }
+
+        await EnsureRosterPlayersFromExistingSummariesAsync(sessionId, token);
+    }
+
+    private async Task<bool> NeedsSummaryRefreshAsync(int sessionId, CancellationToken token)
+    {
+        var replayCount = await context.InHouseGameSessionReplays
+            .CountAsync(replay => replay.InHouseGameSessionId == sessionId, token);
+        var summaryCount = await context.InHouseGameSessionPlayerSummaries
+            .CountAsync(summary => summary.InHouseGameSessionId == sessionId, token);
+
+        if (replayCount == 0)
+        {
+            return summaryCount > 0;
+        }
+
+        if (summaryCount == 0)
+        {
+            return true;
+        }
+
+        var distinctParticipantCount = await context.InHouseGameSessionReplayPlayers
+            .Where(player => player.SessionReplay!.InHouseGameSessionId == sessionId)
+            .Select(player => new
+            {
+                player.ToonId.Region,
+                player.ToonId.Realm,
+                player.ToonId.Id,
+            })
+            .Distinct()
+            .CountAsync(token);
+        if (distinctParticipantCount != summaryCount)
+        {
+            return true;
+        }
+
+        var hasPendingRatings = await context.InHouseGameSessionPlayerSummaries
+            .AnyAsync(summary => summary.InHouseGameSessionId == sessionId && summary.RatingsPending, token);
+        if (!hasPendingRatings)
+        {
+            return false;
+        }
+
+        return await context.InHouseGameSessionReplays
+            .Where(sessionReplay => sessionReplay.InHouseGameSessionId == sessionId)
+            .AnyAsync(sessionReplay => sessionReplay.Replay!.Ratings.Any(), token);
+    }
+
     private async Task RefreshSummariesAsync(int sessionId, CancellationToken token)
     {
         var sessionReplays = await context.InHouseGameSessionReplays
@@ -495,11 +545,29 @@ public sealed class InHouseGameSessionService(
             var key = new ToonKey(summary.ToonId.Region, summary.ToonId.Realm, summary.ToonId.Id);
             if (existingByToon.TryGetValue(key, out var rosterPlayer))
             {
-                rosterPlayer.Name = summary.Name;
-                rosterPlayer.PlayerId ??= summary.PlayerId;
-                rosterPlayer.InitialRating = summary.RatingStart ?? rosterPlayer.InitialRating;
-                rosterPlayer.UpdatedAt = now;
-                changed = true;
+                var rowChanged = false;
+                if (rosterPlayer.Name != summary.Name)
+                {
+                    rosterPlayer.Name = summary.Name;
+                    rowChanged = true;
+                }
+                if (rosterPlayer.PlayerId is null && summary.PlayerId is not null)
+                {
+                    rosterPlayer.PlayerId = summary.PlayerId;
+                    rowChanged = true;
+                }
+                if (summary.RatingStart is not null
+                    && Math.Abs(rosterPlayer.InitialRating - summary.RatingStart.Value) > 0.001
+                    && !rosterPlayer.IsManual)
+                {
+                    rosterPlayer.InitialRating = summary.RatingStart.Value;
+                    rowChanged = true;
+                }
+                if (rowChanged)
+                {
+                    rosterPlayer.UpdatedAt = now;
+                    changed = true;
+                }
                 continue;
             }
 
@@ -525,6 +593,38 @@ public sealed class InHouseGameSessionService(
         {
             await context.SaveChangesAsync(token);
         }
+    }
+
+    private async Task EnsureRosterPlayersFromExistingSummariesAsync(int sessionId, CancellationToken token)
+    {
+        var summaries = await context.InHouseGameSessionPlayerSummaries
+            .Where(summary => summary.InHouseGameSessionId == sessionId)
+            .ToListAsync(token);
+        if (summaries.Count == 0)
+        {
+            return;
+        }
+
+        var rosterToons = await context.InHouseGameSessionRosterPlayers
+            .Where(player => player.InHouseGameSessionId == sessionId)
+            .Select(player => new
+            {
+                player.ToonId.Region,
+                player.ToonId.Realm,
+                player.ToonId.Id,
+            })
+            .ToListAsync(token);
+        var rosterKeys = rosterToons.Select(toon => new ToonKey(toon.Region, toon.Realm, toon.Id)).ToHashSet();
+        var hasMissingSummaryPlayer = summaries
+            .Any(summary => !rosterKeys.Contains(new ToonKey(summary.ToonId.Region, summary.ToonId.Realm, summary.ToonId.Id)));
+        if (!hasMissingSummaryPlayer)
+        {
+            return;
+        }
+
+        var replayCount = await context.InHouseGameSessionReplays
+            .CountAsync(replay => replay.InHouseGameSessionId == sessionId, token);
+        await EnsureRosterPlayersFromSummariesAsync(sessionId, summaries, replayCount, token);
     }
 
     private async Task<InHouseGameSessionDetailDto?> LoadDetailAsync(Guid sessionId, int userId, CancellationToken token)
