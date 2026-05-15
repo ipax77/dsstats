@@ -38,6 +38,36 @@ public sealed class InHouseGameSessionsClient(
             $"api10/inhouse/sessions/{sessionId}/close",
             new { });
 
+    public async Task<InHouseGameSessionDetailDto> AddRosterPlayerAsync(
+        Guid sessionId,
+        InHouseRosterPlayerUpsertRequest request)
+        => await PostAuthorizedAsync<InHouseRosterPlayerUpsertRequest, InHouseGameSessionDetailDto>(
+            $"api10/inhouse/sessions/{sessionId}/roster",
+            request);
+
+    public async Task<InHouseGameSessionDetailDto> UpdateRosterPlayerAsync(
+        Guid sessionId,
+        Guid rosterPlayerId,
+        InHouseRosterPlayerUpsertRequest request)
+        => await SendAuthorizedAsync<InHouseRosterPlayerUpsertRequest, InHouseGameSessionDetailDto>(
+            HttpMethod.Put,
+            $"api10/inhouse/sessions/{sessionId}/roster/{rosterPlayerId}",
+            request);
+
+    public async Task<InHouseGameSessionDetailDto> SetRosterPlayerSitterAsync(
+        Guid sessionId,
+        Guid rosterPlayerId,
+        bool isSitter)
+        => await PostAuthorizedAsync<InHouseRosterPlayerSitterRequest, InHouseGameSessionDetailDto>(
+            $"api10/inhouse/sessions/{sessionId}/roster/{rosterPlayerId}/sitter",
+            new InHouseRosterPlayerSitterRequest { IsSitter = isSitter });
+
+    public async Task<InHouseGameSessionDetailDto> RemoveRosterPlayerAsync(Guid sessionId, Guid rosterPlayerId)
+        => await SendAuthorizedAsync<InHouseGameSessionDetailDto>(
+            HttpMethod.Delete,
+            $"api10/inhouse/sessions/{sessionId}/roster/{rosterPlayerId}")
+            ?? throw new InvalidOperationException("The server returned an empty response.");
+
     private async Task<TResponse?> SendAuthorizedAsync<TResponse>(HttpMethod method, string url)
     {
         using var request = new HttpRequestMessage(method, url);
@@ -118,5 +148,18 @@ public sealed class InHouseGameSessionsClient(
         throw new InvalidOperationException(string.IsNullOrWhiteSpace(message)
             ? $"Request failed with status {(int)response.StatusCode}."
             : message);
+    }
+
+    private async Task<TResponse> SendAuthorizedAsync<TRequest, TResponse>(HttpMethod method, string url, TRequest content)
+    {
+        using var request = new HttpRequestMessage(method, url)
+        {
+            Content = JsonContent.Create(content),
+        };
+        await AddAuthorizationAsync(request);
+        using var response = await http.SendAsync(request);
+        await EnsureSuccessAsync(response);
+        return await response.Content.ReadFromJsonAsync<TResponse>()
+            ?? throw new InvalidOperationException("The server returned an empty response.");
     }
 }

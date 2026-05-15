@@ -52,6 +52,56 @@ public sealed class InHouseSessionsController(
             return detail;
         });
 
+    [HttpPost("{sessionId:guid}/roster")]
+    public async Task<ActionResult<InHouseGameSessionDetailDto>> AddRosterPlayer(
+        Guid sessionId,
+        InHouseRosterPlayerUpsertRequest request,
+        CancellationToken token)
+        => await ExecuteAsync(async () =>
+        {
+            var detail = await sessionService.AddRosterPlayerAsync(sessionId, GetUserId(), request, token);
+            await BroadcastSessionChangedAsync(sessionId);
+            return detail;
+        });
+
+    [HttpPut("{sessionId:guid}/roster/{rosterPlayerId:guid}")]
+    public async Task<ActionResult<InHouseGameSessionDetailDto>> UpdateRosterPlayer(
+        Guid sessionId,
+        Guid rosterPlayerId,
+        InHouseRosterPlayerUpsertRequest request,
+        CancellationToken token)
+        => await ExecuteAsync(async () =>
+        {
+            var detail = await sessionService.UpdateRosterPlayerAsync(sessionId, rosterPlayerId, GetUserId(), request, token);
+            await BroadcastSessionChangedAsync(sessionId);
+            return detail;
+        });
+
+    [HttpPost("{sessionId:guid}/roster/{rosterPlayerId:guid}/sitter")]
+    public async Task<ActionResult<InHouseGameSessionDetailDto>> SetRosterPlayerSitter(
+        Guid sessionId,
+        Guid rosterPlayerId,
+        InHouseRosterPlayerSitterRequest request,
+        CancellationToken token)
+        => await ExecuteAsync(async () =>
+        {
+            var detail = await sessionService.SetRosterPlayerSitterAsync(sessionId, rosterPlayerId, GetUserId(), request.IsSitter, token);
+            await BroadcastSessionChangedAsync(sessionId);
+            return detail;
+        });
+
+    [HttpDelete("{sessionId:guid}/roster/{rosterPlayerId:guid}")]
+    public async Task<ActionResult<InHouseGameSessionDetailDto>> RemoveRosterPlayer(
+        Guid sessionId,
+        Guid rosterPlayerId,
+        CancellationToken token)
+        => await ExecuteAsync(async () =>
+        {
+            var detail = await sessionService.RemoveRosterPlayerAsync(sessionId, rosterPlayerId, GetUserId(), token);
+            await BroadcastSessionChangedAsync(sessionId);
+            return detail;
+        });
+
     [HttpPost("{sessionId:guid}/close")]
     public async Task<ActionResult<InHouseGameSessionDetailDto>> CloseSession(Guid sessionId, CancellationToken token)
         => await ExecuteAsync(async () =>

@@ -13,6 +13,7 @@
 @inject InHouseGameSessionsClient SessionsClient
 @inject DecodeService DecodeService
 @inject SessionProgressService SessionProgressService
+@inject IPlayerService PlayerService
 
 <PageTitle>mydsstats - InHouse</PageTitle>
 
@@ -119,6 +120,105 @@
                             </div>
 
                             <div class="card border-light mb-3">
+                                <div class="card-header bgchart2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                    <h5 class="text-warning mb-0">Next Match</h5>
+                                    <button class="btn btn-outline-light btn-sm" @onclick="ResetMatchmakingDraft" disabled="@(selectedSession.RosterPlayers.Count == 0)">
+                                        <i class="bi bi-shuffle me-1"></i>Suggest
+                                    </button>
+                                </div>
+                                <div class="card-body bgchart">
+                                    <div class="row g-3">
+                                        <div class="col-xl-4">
+                                            <div class="border border-secondary rounded p-2 h-100">
+                                                <div class="fw-semibold text-warning mb-2">Add player</div>
+                                                <div class="input-group input-group-sm mb-2">
+                                                    <input class="form-control" placeholder="Search ratings" @bind="playerSearchName" @bind:event="oninput" />
+                                                    <button class="btn btn-outline-light" @onclick="SearchRosterPlayersAsync" disabled="@busy">
+                                                        <i class="bi bi-search"></i>
+                                                    </button>
+                                                </div>
+                                                @if (playerSearchResults.Count > 0)
+                                                {
+                                                    <div class="list-group mb-2" style="max-height: 12rem; overflow: auto;">
+                                                        @foreach (var rating in playerSearchResults)
+                                                        {
+                                                            <button type="button" class="list-group-item list-group-item-action bgchart py-1"
+                                                                    @onclick="() => SelectRosterSearchResult(rating)">
+                                                                <span class="fw-semibold">@rating.Name</span>
+                                                                <span class="small text-muted ms-2">@rating.Rating.ToString("N0") · @rating.ToonIdString</span>
+                                                            </button>
+                                                        }
+                                                    </div>
+                                                }
+                                                <div class="row g-2">
+                                                    <div class="col-12">
+                                                        <input class="form-control form-control-sm" placeholder="Name" @bind="manualRosterName" />
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <input type="number" class="form-control form-control-sm" placeholder="Region" @bind="manualRosterRegion" />
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <input type="number" class="form-control form-control-sm" placeholder="Realm" @bind="manualRosterRealm" />
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <input type="number" class="form-control form-control-sm" placeholder="Toon" @bind="manualRosterToonId" />
+                                                    </div>
+                                                    <div class="col-8">
+                                                        <input type="number" class="form-control form-control-sm" placeholder="Rating" @bind="manualRosterRating" />
+                                                    </div>
+                                                    <div class="col-4 d-flex align-items-center">
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input" type="checkbox" id="newPlayerSitter" @bind="manualRosterSitter" />
+                                                            <label class="form-check-label small" for="newPlayerSitter">Sitter</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button class="btn btn-primary btn-sm mt-2 w-100" @onclick="AddRosterPlayerAsync" disabled="@busy">
+                                                    <i class="bi bi-person-plus me-1"></i>Add / update roster
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-xl-8">
+                                            @if (matchmakingSuggestion is null || selectedSession.RosterPlayers.Count == 0)
+                                            {
+                                                <div class="text-muted">Add players or upload a replay to get a next-game suggestion.</div>
+                                            }
+                                            else
+                                            {
+                                                var scores = GetDraftScores();
+                                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                                    <span class="badge text-bg-secondary">Balance @scores.BalanceScore.ToString("N0")</span>
+                                                    <span class="badge text-bg-secondary">Least played @scores.LeastPlayedScore</span>
+                                                    <span class="badge text-bg-secondary">Same roster @scores.SameRosterScore</span>
+                                                    <span class="badge text-bg-secondary">Team 1 @scores.Team1Rating.ToString("N0")</span>
+                                                    <span class="badge text-bg-secondary">Team 2 @scores.Team2Rating.ToString("N0")</span>
+                                                </div>
+                                                @foreach (var warning in matchmakingSuggestion.Warnings)
+                                                {
+                                                    <div class="alert alert-warning py-2 mb-2">@warning</div>
+                                                }
+                                                <div class="row g-3">
+                                                    <div class="col-lg-6">
+                                                        @RenderTeam("Team 1", draftTeam1, "team1")
+                                                    </div>
+                                                    <div class="col-lg-6">
+                                                        @RenderTeam("Team 2", draftTeam2, "team2")
+                                                    </div>
+                                                    <div class="col-lg-6">
+                                                        @RenderTeam("Bench", draftBench, "bench")
+                                                    </div>
+                                                    <div class="col-lg-6">
+                                                        @RenderTeam("Sitters", matchmakingSuggestion.Sitters, "sitters")
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card border-light mb-3">
                                 <div class="card-header bgchart2">
                                     <h5 class="text-warning mb-0">Player Summary</h5>
                                 </div>
@@ -142,6 +242,7 @@
                                                         <th>Gain</th>
                                                         <th>Avg</th>
                                                         <th>Latest</th>
+                                                        <th>Sitter</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -168,6 +269,14 @@
                                                                 else if (player.RatingsPending)
                                                                 {
                                                                     <span class="badge text-bg-secondary">Rating pending</span>
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                @if (TryGetRosterPlayer(player.ToonId, out var rosterPlayer))
+                                                                {
+                                                                    <button class="btn btn-outline-light btn-sm" @onclick="() => ToggleSitterAsync(rosterPlayer)" disabled="@busy">
+                                                                        @(rosterPlayer.IsSitter ? "Unmark" : "Sit")
+                                                                    </button>
                                                                 }
                                                             </td>
                                                         </tr>
@@ -318,12 +427,27 @@
     };
     private readonly List<TrackedProfileDto> trackedProfiles = [];
     private readonly List<InHouseGameSessionListDto> sessions = [];
+    private readonly List<PlayerRatingListItem> playerSearchResults = [];
+    private readonly List<InHouseMatchmakingPlayer> draftTeam1 = [];
+    private readonly List<InHouseMatchmakingPlayer> draftTeam2 = [];
+    private readonly List<InHouseMatchmakingPlayer> draftBench = [];
     private HubConnection? hubConnection;
+    private InHouseMatchmakingSuggestion? matchmakingSuggestion;
     private InHouseGameSessionDetailDto? selectedSession;
     private string displayName = string.Empty;
     private string selectedProfileKey = string.Empty;
     private string linkCode = string.Empty;
     private string newSessionName = string.Empty;
+    private string playerSearchName = string.Empty;
+    private string manualRosterName = string.Empty;
+    private int manualRosterRegion = 1;
+    private int manualRosterRealm = 1;
+    private int manualRosterToonId;
+    private double manualRosterRating = 1000;
+    private int? manualRosterPlayerId;
+    private bool manualRosterSitter;
+    private Guid? draggedRosterPlayerId;
+    private string? draggedGroup;
     private string? statusMessage;
     private bool loading = true;
     private bool busy;
@@ -367,6 +491,7 @@
             {
                 sessions.Clear();
                 selectedSession = null;
+                ResetMatchmakingDraft();
                 await DisposeHubAsync();
             }
         }
@@ -394,6 +519,7 @@
         await RunAsync(async () =>
         {
             selectedSession = await SessionsClient.CreateSessionAsync(newSessionName);
+            ResetMatchmakingDraft();
             newSessionName = string.Empty;
             await LoadSessionsAsync();
             await JoinSelectedSessionAsync();
@@ -410,6 +536,7 @@
             }
 
             selectedSession = await SessionsClient.GetSessionAsync(sessionId);
+            ResetMatchmakingDraft();
             await JoinSelectedSessionAsync();
         });
     }
@@ -424,6 +551,7 @@
         await RunAsync(async () =>
         {
             selectedSession = await SessionsClient.GetSessionAsync(selectedSession.SessionId);
+            ResetMatchmakingDraft();
             await LoadSessionsAsync();
         });
     }
@@ -438,6 +566,7 @@
         await RunAsync(async () =>
         {
             selectedSession = await SessionsClient.CloseSessionAsync(selectedSession.SessionId);
+            ResetMatchmakingDraft();
             await LoadSessionsAsync();
         });
     }
@@ -455,6 +584,7 @@
             await using var stream = file.OpenReadStream(5 * 1024 * 1024);
             var parsedReplay = await DecodeService.DecodeInHouseReplayFromStream(stream, file.Name);
             selectedSession = await SessionsClient.UploadReplayAsync(selectedSession.SessionId, parsedReplay);
+            ResetMatchmakingDraft();
             await LoadSessionsAsync();
             statusMessage = "Replay attached to the session.";
         });
@@ -510,6 +640,7 @@
                 if (selectedSession?.SessionId == sessionId)
                 {
                     selectedSession = await SessionsClient.GetSessionAsync(sessionId);
+                    ResetMatchmakingDraft();
                 }
                 StateHasChanged();
             });
@@ -522,6 +653,7 @@
                 if (selectedSession?.SessionId == detail.SessionId)
                 {
                     selectedSession = detail;
+                    ResetMatchmakingDraft();
                 }
                 await LoadSessionsAsync();
                 StateHasChanged();
@@ -619,6 +751,397 @@
 
     private static string FormatToonId(ToonIdDto toonId)
         => $"{toonId.Region}/{toonId.Realm}/{toonId.Id}";
+
+    private void ResetMatchmakingDraft()
+    {
+        draftTeam1.Clear();
+        draftTeam2.Clear();
+        draftBench.Clear();
+
+        if (selectedSession is null)
+        {
+            matchmakingSuggestion = null;
+            return;
+        }
+
+        matchmakingSuggestion = InHouseMatchmaker.CreateSuggestion(selectedSession);
+        draftTeam1.AddRange(matchmakingSuggestion.Team1);
+        draftTeam2.AddRange(matchmakingSuggestion.Team2);
+        draftBench.AddRange(matchmakingSuggestion.Bench);
+    }
+
+    private InHouseMatchmakingScores GetDraftScores()
+        => selectedSession is null
+            ? new()
+            : InHouseMatchmaker.ScoreDraft(
+                selectedSession,
+                draftTeam1.Select(player => player.RosterPlayerId).ToList(),
+                draftTeam2.Select(player => player.RosterPlayerId).ToList());
+
+    private async Task SearchRosterPlayersAsync()
+    {
+        playerSearchResults.Clear();
+        if (string.IsNullOrWhiteSpace(playerSearchName))
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            var ratings = await PlayerService.GetRatings(new PlayerRatingsRequest
+            {
+                Name = playerSearchName.Trim(),
+                RatingType = RatingType.All,
+                Page = 1,
+                PageSize = 20,
+                Take = 8,
+            });
+            playerSearchResults.AddRange(ratings);
+        });
+    }
+
+    private void SelectRosterSearchResult(PlayerRatingListItem rating)
+    {
+        var toonId = Data.GetToonId(rating.ToonIdString);
+        if (toonId is null)
+        {
+            return;
+        }
+
+        manualRosterName = rating.Name;
+        manualRosterRegion = toonId.Region;
+        manualRosterRealm = toonId.Realm;
+        manualRosterToonId = toonId.Id;
+        manualRosterRating = rating.Rating;
+        manualRosterPlayerId = rating.PlayerId;
+    }
+
+    private async Task AddRosterPlayerAsync()
+    {
+        if (selectedSession is null)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            selectedSession = await SessionsClient.AddRosterPlayerAsync(
+                selectedSession.SessionId,
+                new InHouseRosterPlayerUpsertRequest
+                {
+                    Name = manualRosterName,
+                    ToonId = new ToonIdDto
+                    {
+                        Region = manualRosterRegion,
+                        Realm = manualRosterRealm,
+                        Id = manualRosterToonId,
+                    },
+                    PlayerId = manualRosterPlayerId,
+                    InitialRating = manualRosterRating <= 0 ? 1000 : manualRosterRating,
+                    IsSitter = manualRosterSitter,
+                });
+            ResetMatchmakingDraft();
+            playerSearchResults.Clear();
+            statusMessage = "Roster player saved.";
+        });
+    }
+
+    private async Task ToggleSitterAsync(InHouseRosterPlayerDto rosterPlayer)
+    {
+        if (selectedSession is null)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            selectedSession = await SessionsClient.SetRosterPlayerSitterAsync(
+                selectedSession.SessionId,
+                rosterPlayer.RosterPlayerId,
+                !rosterPlayer.IsSitter);
+            ResetMatchmakingDraft();
+        });
+    }
+
+    private async Task RemoveRosterPlayerAsync(InHouseRosterPlayerDto rosterPlayer)
+    {
+        if (selectedSession is null)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            selectedSession = await SessionsClient.RemoveRosterPlayerAsync(
+                selectedSession.SessionId,
+                rosterPlayer.RosterPlayerId);
+            ResetMatchmakingDraft();
+            statusMessage = "Roster player removed.";
+        });
+    }
+
+    private void MoveDraftPlayer(InHouseMatchmakingPlayer player, string target)
+    {
+        var source = RemoveDraftPlayer(player.RosterPlayerId);
+        if (source is null)
+        {
+            return;
+        }
+
+        AddDraftPlayer(player, target, source);
+    }
+
+    private void StartDraftDrag(InHouseMatchmakingPlayer player, string group)
+    {
+        if (group == "sitters")
+        {
+            draggedRosterPlayerId = null;
+            draggedGroup = null;
+            return;
+        }
+
+        draggedRosterPlayerId = player.RosterPlayerId;
+        draggedGroup = group;
+    }
+
+    private void DropDraftOnGroup(string target)
+    {
+        if (draggedRosterPlayerId is null || draggedGroup is null || target == "sitters")
+        {
+            ClearDraftDrag();
+            return;
+        }
+
+        var player = FindDraftPlayer(draggedRosterPlayerId.Value);
+        if (player is null)
+        {
+            ClearDraftDrag();
+            return;
+        }
+
+        if (target == "bench" || GetDraftGroup(target).Count < 3)
+        {
+            MoveDraftPlayer(player, target);
+        }
+
+        ClearDraftDrag();
+    }
+
+    private void DropDraftOnPlayer(InHouseMatchmakingPlayer targetPlayer, string targetGroup)
+    {
+        if (draggedRosterPlayerId is null
+            || draggedGroup is null
+            || draggedRosterPlayerId == targetPlayer.RosterPlayerId
+            || targetGroup == "sitters")
+        {
+            ClearDraftDrag();
+            return;
+        }
+
+        var draggedPlayer = FindDraftPlayer(draggedRosterPlayerId.Value);
+        if (draggedPlayer is null)
+        {
+            ClearDraftDrag();
+            return;
+        }
+
+        if (IsTeamGroup(draggedGroup) && IsTeamGroup(targetGroup))
+        {
+            SwapDraftPlayers(draggedPlayer.RosterPlayerId, targetPlayer.RosterPlayerId);
+        }
+        else
+        {
+            MoveDraftPlayer(draggedPlayer, targetGroup);
+        }
+
+        ClearDraftDrag();
+    }
+
+    private void ClearDraftDrag()
+    {
+        draggedRosterPlayerId = null;
+        draggedGroup = null;
+    }
+
+    private string? RemoveDraftPlayer(Guid rosterPlayerId)
+    {
+        if (RemoveFrom(draftTeam1, rosterPlayerId)) return "team1";
+        if (RemoveFrom(draftTeam2, rosterPlayerId)) return "team2";
+        if (RemoveFrom(draftBench, rosterPlayerId)) return "bench";
+        return null;
+    }
+
+    private void AddDraftPlayer(InHouseMatchmakingPlayer player, string target, string source)
+    {
+        var targetList = target switch
+        {
+            "team1" => draftTeam1,
+            "team2" => draftTeam2,
+            _ => draftBench,
+        };
+
+        if (target is "team1" or "team2" && targetList.Count >= 3)
+        {
+            var displaced = targetList[^1];
+            targetList.RemoveAt(targetList.Count - 1);
+            if (source == "team1")
+            {
+                draftTeam1.Add(displaced);
+            }
+            else if (source == "team2")
+            {
+                draftTeam2.Add(displaced);
+            }
+            else
+            {
+                draftBench.Add(displaced);
+            }
+        }
+
+        targetList.Add(player);
+    }
+
+    private InHouseMatchmakingPlayer? FindDraftPlayer(Guid rosterPlayerId)
+        => draftTeam1.Concat(draftTeam2).Concat(draftBench)
+            .FirstOrDefault(player => player.RosterPlayerId == rosterPlayerId);
+
+    private List<InHouseMatchmakingPlayer> GetDraftGroup(string group)
+        => group switch
+        {
+            "team1" => draftTeam1,
+            "team2" => draftTeam2,
+            _ => draftBench,
+        };
+
+    private static bool IsTeamGroup(string group)
+        => group is "team1" or "team2";
+
+    private void SwapDraftPlayers(Guid firstId, Guid secondId)
+    {
+        var firstLocation = FindDraftLocation(firstId);
+        var secondLocation = FindDraftLocation(secondId);
+        if (firstLocation is null || secondLocation is null)
+        {
+            return;
+        }
+
+        (firstLocation.Value.List[firstLocation.Value.Index], secondLocation.Value.List[secondLocation.Value.Index]) =
+            (secondLocation.Value.List[secondLocation.Value.Index], firstLocation.Value.List[firstLocation.Value.Index]);
+    }
+
+    private (List<InHouseMatchmakingPlayer> List, int Index)? FindDraftLocation(Guid rosterPlayerId)
+    {
+        var team1Index = draftTeam1.FindIndex(player => player.RosterPlayerId == rosterPlayerId);
+        if (team1Index >= 0) return (draftTeam1, team1Index);
+
+        var team2Index = draftTeam2.FindIndex(player => player.RosterPlayerId == rosterPlayerId);
+        if (team2Index >= 0) return (draftTeam2, team2Index);
+
+        var benchIndex = draftBench.FindIndex(player => player.RosterPlayerId == rosterPlayerId);
+        if (benchIndex >= 0) return (draftBench, benchIndex);
+
+        return null;
+    }
+
+    private static bool RemoveFrom(List<InHouseMatchmakingPlayer> players, Guid rosterPlayerId)
+    {
+        var index = players.FindIndex(player => player.RosterPlayerId == rosterPlayerId);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        players.RemoveAt(index);
+        return true;
+    }
+
+    private bool TryGetRosterPlayer(ToonIdDto toonId, out InHouseRosterPlayerDto rosterPlayer)
+    {
+        var match = selectedSession?.RosterPlayers.FirstOrDefault(player =>
+            player.ToonId.Region == toonId.Region
+            && player.ToonId.Realm == toonId.Realm
+            && player.ToonId.Id == toonId.Id);
+        rosterPlayer = match ?? new();
+        return match is not null;
+    }
+
+    private RenderFragment RenderTeam(string title, IReadOnlyList<InHouseMatchmakingPlayer> players, string group) => @<div class="border border-secondary rounded p-2 h-100"
+        @ondrop="() => DropDraftOnGroup(group)"
+        @ondragover:preventDefault="true">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-semibold text-warning">@title</span>
+            <span class="badge text-bg-dark">@players.Count</span>
+        </div>
+        @if (players.Count == 0)
+        {
+            <div class="small text-muted">Empty</div>
+        }
+        @foreach (var player in players)
+        {
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 border-top border-secondary py-2"
+                 draggable="@(group != "sitters")"
+                 @ondragstart="() => StartDraftDrag(player, group)"
+                 @ondragend="ClearDraftDrag"
+                 @ondrop:stopPropagation="true"
+                 @ondrop="() => DropDraftOnPlayer(player, group)"
+                 @ondragover:preventDefault="true">
+                <div>
+                    <div class="fw-semibold">@player.Name</div>
+                    <div class="small text-muted">
+                        @player.InitialRating.ToString("N0") · G @player.Games · Obs @player.Observes · Debt @player.PlayDebt
+                    </div>
+                    <div class="d-flex gap-1 mt-1">
+                        @if (player.IsNewManual)
+                        {
+                            <span class="badge text-bg-info">New</span>
+                        }
+                        @if (player.ObservedLatestGame)
+                        {
+                            <span class="badge text-bg-warning">Observed</span>
+                        }
+                        @if (player.PlayedLatestGame)
+                        {
+                            <span class="badge text-bg-success">Played</span>
+                        }
+                    </div>
+                </div>
+                <div class="btn-group btn-group-sm">
+                    @if (group != "team1" && group != "sitters")
+                    {
+                        <button class="btn btn-outline-light" title="Move to Team 1" @onclick='() => MoveDraftPlayer(player, "team1")'>T1</button>
+                    }
+                    @if (group != "team2" && group != "sitters")
+                    {
+                        <button class="btn btn-outline-light" title="Move to Team 2" @onclick='() => MoveDraftPlayer(player, "team2")'>T2</button>
+                    }
+                    @if (group != "bench" && group != "sitters")
+                    {
+                        <button class="btn btn-outline-light" title="Move to Bench" @onclick='() => MoveDraftPlayer(player, "bench")'>Bench</button>
+                    }
+                    @if (TryGetRosterPlayer(player.ToonId, out var rosterPlayer))
+                    {
+                        <button class="btn btn-outline-warning" title="Toggle sitter" @onclick="() => ToggleSitterAsync(rosterPlayer)" disabled="@busy">
+                            @(rosterPlayer.IsSitter ? "Play" : "Sit")
+                        </button>
+                        <button class="btn btn-outline-danger" title="Remove from roster" @onclick="() => RemoveRosterPlayerAsync(rosterPlayer)" disabled="@busy">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+        @if (IsTeamGroup(group) && players.Count < 3)
+        {
+            @for (var i = players.Count; i < 3; i++)
+            {
+                <div class="border border-secondary rounded text-muted small text-center py-2 mt-2"
+                     @ondrop="() => DropDraftOnGroup(group)"
+                     @ondragover:preventDefault="true">
+                    Empty seat
+                </div>
+            }
+        }
+    </div>;
 
     public async ValueTask DisposeAsync()
     {

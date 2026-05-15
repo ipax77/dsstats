@@ -64,10 +64,176 @@ public sealed class InHouseGameSessionServiceTests
 
         Assert.HasCount(1, detail.Replays);
         Assert.HasCount(7, detail.Players);
+        Assert.HasCount(7, detail.RosterPlayers);
         Assert.AreEqual(6, detail.Players.Count(player => player.Games == 1));
         var observer = detail.Players.Single(player => player.Name == "Observer");
         Assert.AreEqual(1, observer.Observes);
         Assert.AreEqual(0, observer.Games);
+        Assert.IsTrue(detail.RosterPlayers.Any(player => player.Name == "Observer" && player.AddSource == "observer"));
+    }
+
+    [TestMethod]
+    public async Task RosterPlayerOperations_AddUpdateToggleRemoveSharedRosterState()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
+
+        var added = await fixture.Service.AddRosterPlayerAsync(
+            session.SessionId,
+            user.InHouseUserId,
+            new InHouseRosterPlayerUpsertRequest
+            {
+                Name = "Manual",
+                ToonId = new ToonIdDto { Region = 1, Realm = 1, Id = 900 },
+                InitialRating = 1234,
+            },
+            CancellationToken.None);
+
+        var rosterPlayer = added.RosterPlayers.Single();
+        Assert.AreEqual("Manual", rosterPlayer.Name);
+        Assert.AreEqual(1234, rosterPlayer.InitialRating);
+        Assert.IsTrue(rosterPlayer.IsManual);
+
+        var toggled = await fixture.Service.SetRosterPlayerSitterAsync(
+            session.SessionId,
+            rosterPlayer.RosterPlayerId,
+            user.InHouseUserId,
+            true,
+            CancellationToken.None);
+        Assert.IsTrue(toggled.RosterPlayers.Single().IsSitter);
+
+        var updated = await fixture.Service.UpdateRosterPlayerAsync(
+            session.SessionId,
+            rosterPlayer.RosterPlayerId,
+            user.InHouseUserId,
+            new InHouseRosterPlayerUpsertRequest
+            {
+                Name = "Manual 2",
+                ToonId = new ToonIdDto { Region = 1, Realm = 1, Id = 901 },
+                InitialRating = 1300,
+            },
+            CancellationToken.None);
+        Assert.AreEqual("Manual 2", updated.RosterPlayers.Single().Name);
+        Assert.AreEqual(1300, updated.RosterPlayers.Single().InitialRating);
+
+        var removed = await fixture.Service.RemoveRosterPlayerAsync(
+            session.SessionId,
+            rosterPlayer.RosterPlayerId,
+            user.InHouseUserId,
+            CancellationToken.None);
+        Assert.HasCount(0, removed.RosterPlayers);
+    }
+
+    [TestMethod]
+    public async Task GetSessionAsync_AddsMissingSummaryPlayersToRoster()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
+        var upload = await fixture.Service.UploadReplayAsync(
+            session.SessionId,
+            user.InHouseUserId,
+            new InHouseReplayUploadRequest { Replay = CreateReplay() },
+            CancellationToken.None);
+
+        fixture.Context.InHouseGameSessionRosterPlayers.RemoveRange(fixture.Context.InHouseGameSessionRosterPlayers);
+        await fixture.Context.SaveChangesAsync();
+
+        var detail = await fixture.Service.GetSessionAsync(upload.SessionId, user.InHouseUserId, CancellationToken.None);
+
+        Assert.IsNotNull(detail);
+        Assert.HasCount(6, detail.RosterPlayers);
+        Assert.IsTrue(detail.RosterPlayers.All(player => player.AddSource == "summary"));
+        Assert.IsTrue(detail.RosterPlayers.All(player => player.JoinedReplayCount == 0));
+    }
+
+    [TestMethod]
+    public void Matchmaker_NewManualPlayersAreSelectedFirst()
+    {
+        var session = CreateMatchmakingSession(2, Enumerable.Range(1, 7)
+            .Select(i => CreateRosterPlayer(i, games: i == 7 ? 0 : 1, joinedReplayCount: i == 7 ? 2 : 0, isManual: i == 7))
+            .ToList());
+
+        var suggestion = InHouseMatchmaker.CreateSuggestion(session);
+
+        Assert.IsTrue(suggestion.Team1.Concat(suggestion.Team2).Any(player => player.Name == "Player 7"));
+    }
+
+    [TestMethod]
+    public void Matchmaker_LatestObserversAreSelectedBeforeEqualPlayers()
+    {
+        var roster = Enumerable.Range(1, 7)
+            .Select(i => CreateRosterPlayer(i, games: 1, joinedReplayCount: 0, observedLatestGame: i == 7))
+            .ToList();
+        var session = CreateMatchmakingSession(2, roster);
+
+        var suggestion = InHouseMatchmaker.CreateSuggestion(session);
+
+        Assert.IsTrue(suggestion.Team1.Concat(suggestion.Team2).Any(player => player.Name == "Player 7"));
+    }
+
+    [TestMethod]
+    public void Matchmaker_PlayDebtUsesJoinedReplayCount()
+    {
+        var roster = Enumerable.Range(1, 7)
+            .Select(i => CreateRosterPlayer(i, games: i == 7 ? 0 : 2, joinedReplayCount: i == 7 ? 0 : 0))
+            .ToList();
+        var session = CreateMatchmakingSession(2, roster);
+
+        var suggestion = InHouseMatchmaker.CreateSuggestion(session);
+
+        Assert.IsTrue(suggestion.Team1.Concat(suggestion.Team2).Any(player => player.Name == "Player 7"));
+    }
+
+    [TestMethod]
+    public void Matchmaker_BalancesTeamsByInitialRating()
+    {
+        var ratings = new[] { 1200, 1100, 1000, 1000, 900, 800 };
+        var session = CreateMatchmakingSession(1, ratings
+            .Select((rating, index) => CreateRosterPlayer(index + 1, rating: rating))
+            .ToList());
+
+        var suggestion = InHouseMatchmaker.CreateSuggestion(session);
+
+        Assert.AreEqual(0, suggestion.Scores.BalanceScore);
+    }
+
+    [TestMethod]
+    public void Matchmaker_PenalizesRepeatedSameTeamPairs()
+    {
+        var roster = Enumerable.Range(1, 6)
+            .Select(i => CreateRosterPlayer(i))
+            .ToList();
+        var session = CreateMatchmakingSession(1, roster);
+        session.Replays[0].Players =
+        [
+            .. roster.Take(3).Select((player, index) => CreateReplayPlayer(player, 1, index + 1)),
+            .. roster.Skip(3).Select((player, index) => CreateReplayPlayer(player, 2, index + 4)),
+        ];
+
+        var suggestion = InHouseMatchmaker.CreateSuggestion(session);
+
+        Assert.IsLessThan(6, suggestion.Scores.SameRosterScore);
+    }
+
+    [TestMethod]
+    public void Matchmaker_ScoreDraftRecomputesManualMoves()
+    {
+        var ratings = new[] { 1500, 1500, 1500, 500, 500, 500 };
+        var roster = ratings.Select((rating, index) => CreateRosterPlayer(index + 1, rating: rating)).ToList();
+        var session = CreateMatchmakingSession(1, roster);
+
+        var stacked = InHouseMatchmaker.ScoreDraft(
+            session,
+            roster.Take(3).Select(player => player.RosterPlayerId).ToList(),
+            roster.Skip(3).Select(player => player.RosterPlayerId).ToList());
+        var mixed = InHouseMatchmaker.ScoreDraft(
+            session,
+            [roster[0].RosterPlayerId, roster[3].RosterPlayerId, roster[4].RosterPlayerId],
+            [roster[1].RosterPlayerId, roster[2].RosterPlayerId, roster[5].RosterPlayerId]);
+
+        Assert.IsGreaterThan(mixed.BalanceScore, stacked.BalanceScore);
     }
 
     [TestMethod]
@@ -205,6 +371,57 @@ public sealed class InHouseGameSessionServiceTests
                 .ToList(),
         };
     }
+
+    private static InHouseGameSessionDetailDto CreateMatchmakingSession(
+        int replayCount,
+        List<InHouseRosterPlayerDto> roster)
+    {
+        return new()
+        {
+            SessionId = Guid.NewGuid(),
+            RosterPlayers = roster,
+            Replays = Enumerable.Range(1, replayCount)
+                .Select(i => new InHouseGameSessionReplayDto
+                {
+                    ReplayHash = $"replay-{i}",
+                    Gametime = new DateTime(2024, 1, i, 20, 0, 0, DateTimeKind.Utc),
+                })
+                .ToList(),
+        };
+    }
+
+    private static InHouseRosterPlayerDto CreateRosterPlayer(
+        int seed,
+        double rating = 1000,
+        int games = 0,
+        int observes = 0,
+        int joinedReplayCount = 0,
+        bool isManual = false,
+        bool observedLatestGame = false)
+        => new()
+        {
+            RosterPlayerId = Guid.Parse($"00000000-0000-0000-0000-{seed:000000000000}"),
+            Name = $"Player {seed}",
+            ToonId = new ToonIdDto { Region = 1, Realm = 1, Id = seed },
+            InitialRating = rating,
+            Games = games,
+            Observes = observes,
+            JoinedReplayCount = joinedReplayCount,
+            IsManual = isManual,
+            ObservedLatestGame = observedLatestGame,
+        };
+
+    private static InHouseGameSessionReplayPlayerDto CreateReplayPlayer(
+        InHouseRosterPlayerDto rosterPlayer,
+        int teamId,
+        int gamePos)
+        => new()
+        {
+            Name = rosterPlayer.Name,
+            ToonId = rosterPlayer.ToonId,
+            TeamId = teamId,
+            GamePos = gamePos,
+        };
 
     private sealed class InHouseGameSessionFixture : IAsyncDisposable
     {

@@ -54,6 +54,7 @@ public class DsstatsContext : DbContext
     public DbSet<InHouseSession> InHouseSessions { get; set; }
     public DbSet<InHouseDeviceLinkCode> InHouseDeviceLinkCodes { get; set; }
     public DbSet<InHouseGameSession> InHouseGameSessions { get; set; }
+    public DbSet<InHouseGameSessionRosterPlayer> InHouseGameSessionRosterPlayers { get; set; }
     public DbSet<InHouseGameSessionReplay> InHouseGameSessionReplays { get; set; }
     public DbSet<InHouseGameSessionReplayPlayer> InHouseGameSessionReplayPlayers { get; set; }
     public DbSet<InHouseGameSessionPlayerSummary> InHouseGameSessionPlayerSummaries { get; set; }
@@ -184,6 +185,32 @@ public class DsstatsContext : DbContext
                 .WithMany()
                 .HasForeignKey(i => i.UploadedByInHouseUserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<InHouseGameSessionRosterPlayer>(entity =>
+        {
+            entity.OwnsOne(p => p.ToonId, toon =>
+            {
+                toon.Property(t => t.Region).IsRequired();
+                toon.Property(t => t.Realm).IsRequired();
+                toon.Property(t => t.Id).IsRequired();
+                toon.HasIndex(t => new { t.Region, t.Realm, t.Id });
+            });
+
+            entity.HasIndex(i => i.PublicId).IsUnique();
+            entity.HasIndex(i => new { i.InHouseGameSessionId, i.PlayerId });
+            entity.HasOne(i => i.Session)
+                .WithMany(i => i.RosterPlayers)
+                .HasForeignKey(i => i.InHouseGameSessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(i => i.Player)
+                .WithMany()
+                .HasForeignKey(i => i.PlayerId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(i => i.AddedBy)
+                .WithMany()
+                .HasForeignKey(i => i.AddedByInHouseUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<InHouseGameSessionReplayPlayer>(entity =>

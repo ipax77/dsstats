@@ -97,28 +97,148 @@ public sealed class InHouseGameSessionService(
         var replay = await context.Replays
             .Include(replay => replay.Players)
                 .ThenInclude(player => player.Player)
+            .Include(replay => replay.Ratings)
+                .ThenInclude(rating => rating.ReplayPlayerRatings)
             .FirstOrDefaultAsync(replay => replay.ReplayHash == replayHash, token)
             ?? throw new InvalidOperationException("The uploaded replay could not be imported.");
 
+        var replayCountBeforeUpload = await context.InHouseGameSessionReplays
+            .CountAsync(sessionReplay => sessionReplay.InHouseGameSessionId == session.InHouseGameSessionId, token);
         var existing = await context.InHouseGameSessionReplays
             .AnyAsync(sessionReplay => sessionReplay.InHouseGameSessionId == session.InHouseGameSessionId
                 && sessionReplay.ReplayId == replay.ReplayId, token);
 
         if (!existing)
         {
+            var players = CreateReplayPlayers(replay, request.Observers);
             var sessionReplay = new InHouseGameSessionReplay
             {
                 InHouseGameSessionId = session.InHouseGameSessionId,
                 ReplayId = replay.ReplayId,
                 UploadedByInHouseUserId = userId,
                 UploadedAt = DateTime.UtcNow,
-                Players = CreateReplayPlayers(replay, request.Observers),
+                Players = players,
             };
 
             context.InHouseGameSessionReplays.Add(sessionReplay);
+            await UpsertRosterPlayersFromReplayAsync(session.InHouseGameSessionId, userId, replay, players, replayCountBeforeUpload, token);
             await context.SaveChangesAsync(token);
         }
 
+        await RefreshSummariesAsync(session.InHouseGameSessionId, token);
+        return await LoadDetailAsync(sessionId, userId, token)
+            ?? throw new InvalidOperationException("InHouse session could not be loaded.");
+    }
+
+    public async Task<InHouseGameSessionDetailDto> AddRosterPlayerAsync(
+        Guid sessionId,
+        int userId,
+        InHouseRosterPlayerUpsertRequest request,
+        CancellationToken token)
+    {
+        var session = await GetMutableSessionAsync(sessionId, token);
+        var toonId = ValidateToonId(request.ToonId);
+        var name = NormalizeRosterPlayerName(request.Name);
+        var existing = await GetRosterPlayerByToonIdAsync(session.InHouseGameSessionId, toonId, token);
+        var now = DateTime.UtcNow;
+        var replayCount = await context.InHouseGameSessionReplays
+            .CountAsync(replay => replay.InHouseGameSessionId == session.InHouseGameSessionId, token);
+
+        if (existing is null)
+        {
+            context.InHouseGameSessionRosterPlayers.Add(new()
+            {
+                PublicId = Guid.NewGuid(),
+                InHouseGameSessionId = session.InHouseGameSessionId,
+                PlayerId = request.PlayerId,
+                Name = name,
+                ToonId = ToEntity(toonId),
+                InitialRating = request.InitialRating ?? 1000,
+                JoinedReplayCount = replayCount,
+                IsSitter = request.IsSitter,
+                IsManual = true,
+                AddSource = "manual",
+                AddedByInHouseUserId = userId,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+        }
+        else
+        {
+            existing.PlayerId ??= request.PlayerId;
+            existing.Name = name;
+            existing.InitialRating = request.InitialRating ?? existing.InitialRating;
+            existing.IsSitter = request.IsSitter;
+            existing.IsManual = true;
+            existing.AddSource = "manual";
+            existing.AddedByInHouseUserId ??= userId;
+            existing.UpdatedAt = now;
+        }
+
+        await context.SaveChangesAsync(token);
+        await RefreshSummariesAsync(session.InHouseGameSessionId, token);
+        return await LoadDetailAsync(sessionId, userId, token)
+            ?? throw new InvalidOperationException("InHouse session could not be loaded.");
+    }
+
+    public async Task<InHouseGameSessionDetailDto> UpdateRosterPlayerAsync(
+        Guid sessionId,
+        Guid rosterPlayerId,
+        int userId,
+        InHouseRosterPlayerUpsertRequest request,
+        CancellationToken token)
+    {
+        var session = await GetMutableSessionAsync(sessionId, token);
+        var rosterPlayer = await GetRosterPlayerAsync(session.InHouseGameSessionId, rosterPlayerId, token);
+        var toonId = ValidateToonId(request.ToonId);
+        var conflict = await GetRosterPlayerByToonIdAsync(session.InHouseGameSessionId, toonId, token);
+        if (conflict is not null && conflict.InHouseGameSessionRosterPlayerId != rosterPlayer.InHouseGameSessionRosterPlayerId)
+        {
+            throw new InvalidOperationException("That player is already on the session roster.");
+        }
+
+        rosterPlayer.Name = NormalizeRosterPlayerName(request.Name);
+        rosterPlayer.ToonId = ToEntity(toonId);
+        rosterPlayer.PlayerId = request.PlayerId;
+        rosterPlayer.InitialRating = request.InitialRating ?? 1000;
+        rosterPlayer.IsSitter = request.IsSitter;
+        rosterPlayer.UpdatedAt = DateTime.UtcNow;
+
+        await context.SaveChangesAsync(token);
+        await RefreshSummariesAsync(session.InHouseGameSessionId, token);
+        return await LoadDetailAsync(sessionId, userId, token)
+            ?? throw new InvalidOperationException("InHouse session could not be loaded.");
+    }
+
+    public async Task<InHouseGameSessionDetailDto> SetRosterPlayerSitterAsync(
+        Guid sessionId,
+        Guid rosterPlayerId,
+        int userId,
+        bool isSitter,
+        CancellationToken token)
+    {
+        var session = await GetMutableSessionAsync(sessionId, token);
+        var rosterPlayer = await GetRosterPlayerAsync(session.InHouseGameSessionId, rosterPlayerId, token);
+        rosterPlayer.IsSitter = isSitter;
+        rosterPlayer.UpdatedAt = DateTime.UtcNow;
+
+        await context.SaveChangesAsync(token);
+        await RefreshSummariesAsync(session.InHouseGameSessionId, token);
+        return await LoadDetailAsync(sessionId, userId, token)
+            ?? throw new InvalidOperationException("InHouse session could not be loaded.");
+    }
+
+    public async Task<InHouseGameSessionDetailDto> RemoveRosterPlayerAsync(
+        Guid sessionId,
+        Guid rosterPlayerId,
+        int userId,
+        CancellationToken token)
+    {
+        var session = await GetMutableSessionAsync(sessionId, token);
+        var rosterPlayer = await GetRosterPlayerAsync(session.InHouseGameSessionId, rosterPlayerId, token);
+        context.InHouseGameSessionRosterPlayers.Remove(rosterPlayer);
+
+        await context.SaveChangesAsync(token);
         await RefreshSummariesAsync(session.InHouseGameSessionId, token);
         return await LoadDetailAsync(sessionId, userId, token)
             ?? throw new InvalidOperationException("InHouse session could not be loaded.");
@@ -189,6 +309,87 @@ public sealed class InHouseGameSessionService(
 
         return players;
     }
+
+    private async Task UpsertRosterPlayersFromReplayAsync(
+        int sessionId,
+        int userId,
+        Replay replay,
+        IReadOnlyCollection<InHouseGameSessionReplayPlayer> participants,
+        int joinedReplayCount,
+        CancellationToken token)
+    {
+        var existing = await context.InHouseGameSessionRosterPlayers
+            .Where(player => player.InHouseGameSessionId == sessionId)
+            .ToListAsync(token);
+        var existingByToon = existing.ToDictionary(player => new ToonKey(player.ToonId.Region, player.ToonId.Realm, player.ToonId.Id));
+        var rating = GetBestRating(replay);
+        var now = DateTime.UtcNow;
+
+        foreach (var participant in participants)
+        {
+            var key = new ToonKey(participant.ToonId.Region, participant.ToonId.Realm, participant.ToonId.Id);
+            if (existingByToon.TryGetValue(key, out var rosterPlayer))
+            {
+                rosterPlayer.Name = participant.Name;
+                rosterPlayer.PlayerId ??= participant.PlayerId;
+                rosterPlayer.UpdatedAt = now;
+                continue;
+            }
+
+            var playerRating = rating?.ReplayPlayerRatings
+                .FirstOrDefault(playerRating => playerRating.ReplayPlayerId == participant.ReplayPlayerId
+                    || playerRating.PlayerId == participant.PlayerId);
+            context.InHouseGameSessionRosterPlayers.Add(new()
+            {
+                PublicId = Guid.NewGuid(),
+                InHouseGameSessionId = sessionId,
+                PlayerId = participant.PlayerId,
+                Name = participant.Name,
+                ToonId = CloneToonId(participant.ToonId),
+                InitialRating = playerRating?.RatingBefore ?? 1000,
+                JoinedReplayCount = joinedReplayCount,
+                IsSitter = false,
+                IsManual = false,
+                AddSource = participant.Observer ? "observer" : "replay",
+                AddedByInHouseUserId = userId,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+        }
+    }
+
+    private async Task<InHouseGameSession> GetMutableSessionAsync(Guid sessionId, CancellationToken token)
+    {
+        var session = await context.InHouseGameSessions
+            .FirstOrDefaultAsync(session => session.PublicId == sessionId, token)
+            ?? throw new InvalidOperationException("Unknown InHouse session.");
+
+        if (session.ClosedAt is not null)
+        {
+            throw new InvalidOperationException("This InHouse session is closed.");
+        }
+
+        return session;
+    }
+
+    private async Task<InHouseGameSessionRosterPlayer> GetRosterPlayerAsync(
+        int sessionId,
+        Guid rosterPlayerId,
+        CancellationToken token)
+        => await context.InHouseGameSessionRosterPlayers
+            .FirstOrDefaultAsync(player => player.InHouseGameSessionId == sessionId
+                && player.PublicId == rosterPlayerId, token)
+            ?? throw new InvalidOperationException("Unknown roster player.");
+
+    private async Task<InHouseGameSessionRosterPlayer?> GetRosterPlayerByToonIdAsync(
+        int sessionId,
+        ToonIdDto toonId,
+        CancellationToken token)
+        => await context.InHouseGameSessionRosterPlayers
+            .FirstOrDefaultAsync(player => player.InHouseGameSessionId == sessionId
+                && player.ToonId.Region == toonId.Region
+                && player.ToonId.Realm == toonId.Realm
+                && player.ToonId.Id == toonId.Id, token);
 
     private async Task RefreshSummariesAsync(int sessionId, CancellationToken token)
     {
@@ -265,8 +466,65 @@ public sealed class InHouseGameSessionService(
             }
         }
 
-        context.InHouseGameSessionPlayerSummaries.AddRange(summaries.Values.Select(summary => summary.ToEntity(sessionId)));
+        var summaryEntities = summaries.Values.Select(summary => summary.ToEntity(sessionId)).ToList();
+        context.InHouseGameSessionPlayerSummaries.AddRange(summaryEntities);
         await context.SaveChangesAsync(token);
+        await EnsureRosterPlayersFromSummariesAsync(sessionId, summaryEntities, sessionReplays.Count, token);
+    }
+
+    private async Task EnsureRosterPlayersFromSummariesAsync(
+        int sessionId,
+        IReadOnlyCollection<InHouseGameSessionPlayerSummary> summaries,
+        int replayCount,
+        CancellationToken token)
+    {
+        if (summaries.Count == 0)
+        {
+            return;
+        }
+
+        var existing = await context.InHouseGameSessionRosterPlayers
+            .Where(player => player.InHouseGameSessionId == sessionId)
+            .ToListAsync(token);
+        var existingByToon = existing.ToDictionary(player => new ToonKey(player.ToonId.Region, player.ToonId.Realm, player.ToonId.Id));
+        var now = DateTime.UtcNow;
+        var changed = false;
+
+        foreach (var summary in summaries)
+        {
+            var key = new ToonKey(summary.ToonId.Region, summary.ToonId.Realm, summary.ToonId.Id);
+            if (existingByToon.TryGetValue(key, out var rosterPlayer))
+            {
+                rosterPlayer.Name = summary.Name;
+                rosterPlayer.PlayerId ??= summary.PlayerId;
+                rosterPlayer.InitialRating = summary.RatingStart ?? rosterPlayer.InitialRating;
+                rosterPlayer.UpdatedAt = now;
+                changed = true;
+                continue;
+            }
+
+            context.InHouseGameSessionRosterPlayers.Add(new()
+            {
+                PublicId = Guid.NewGuid(),
+                InHouseGameSessionId = sessionId,
+                PlayerId = summary.PlayerId,
+                Name = summary.Name,
+                ToonId = CloneToonId(summary.ToonId),
+                InitialRating = summary.RatingStart ?? 1000,
+                JoinedReplayCount = Math.Max(0, replayCount - summary.Games - summary.Observes),
+                IsSitter = false,
+                IsManual = false,
+                AddSource = "summary",
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+            changed = true;
+        }
+
+        if (changed)
+        {
+            await context.SaveChangesAsync(token);
+        }
     }
 
     private async Task<InHouseGameSessionDetailDto?> LoadDetailAsync(Guid sessionId, int userId, CancellationToken token)
@@ -274,7 +532,10 @@ public sealed class InHouseGameSessionService(
         var session = await context.InHouseGameSessions
             .AsNoTracking()
             .Include(session => session.CreatedBy)
+            .Include(session => session.RosterPlayers)
             .Include(session => session.PlayerSummaries)
+            .Include(session => session.Replays)
+                .ThenInclude(sessionReplay => sessionReplay.Players)
             .Include(session => session.Replays)
                 .ThenInclude(sessionReplay => sessionReplay.Replay)
                     .ThenInclude(replay => replay!.Players)
@@ -299,6 +560,11 @@ public sealed class InHouseGameSessionService(
             CreatedAt = session.CreatedAt,
             ClosedAt = session.ClosedAt,
             CanClose = session.CreatedByInHouseUserId == userId && session.ClosedAt == null,
+            RosterPlayers = session.RosterPlayers
+                .OrderBy(player => player.IsSitter)
+                .ThenBy(player => player.Name)
+                .Select(player => ToDto(player, session.PlayerSummaries))
+                .ToList(),
             Players = session.PlayerSummaries
                 .OrderByDescending(summary => summary.Games)
                 .ThenByDescending(summary => summary.RatingDelta ?? 0)
@@ -338,6 +604,43 @@ public sealed class InHouseGameSessionService(
         };
     }
 
+    private static InHouseRosterPlayerDto ToDto(
+        InHouseGameSessionRosterPlayer rosterPlayer,
+        IEnumerable<InHouseGameSessionPlayerSummary> summaries)
+    {
+        var summary = summaries.FirstOrDefault(summary =>
+            summary.ToonId.Region == rosterPlayer.ToonId.Region
+            && summary.ToonId.Realm == rosterPlayer.ToonId.Realm
+            && summary.ToonId.Id == rosterPlayer.ToonId.Id);
+
+        return new()
+        {
+            RosterPlayerId = rosterPlayer.PublicId,
+            Name = rosterPlayer.Name,
+            ToonId = new ToonIdDto
+            {
+                Region = rosterPlayer.ToonId.Region,
+                Realm = rosterPlayer.ToonId.Realm,
+                Id = rosterPlayer.ToonId.Id,
+            },
+            PlayerId = rosterPlayer.PlayerId,
+            InitialRating = rosterPlayer.InitialRating,
+            JoinedReplayCount = rosterPlayer.JoinedReplayCount,
+            IsSitter = rosterPlayer.IsSitter,
+            IsManual = rosterPlayer.IsManual,
+            AddSource = rosterPlayer.AddSource,
+            CreatedAt = rosterPlayer.CreatedAt,
+            UpdatedAt = rosterPlayer.UpdatedAt,
+            Games = summary?.Games ?? 0,
+            Wins = summary?.Wins ?? 0,
+            Observes = summary?.Observes ?? 0,
+            Winrate = summary?.Games > 0 ? (double)summary.Wins / summary.Games : 0,
+            PlayedLatestGame = summary?.PlayedLatestGame ?? false,
+            ObservedLatestGame = summary?.ObservedLatestGame ?? false,
+            RatingsPending = summary?.RatingsPending ?? false,
+        };
+    }
+
     private static InHouseGameSessionReplayDto ToDto(InHouseGameSessionReplay sessionReplay)
     {
         var replay = sessionReplay.Replay
@@ -364,6 +667,22 @@ public sealed class InHouseGameSessionService(
             ExpectedWinProbability = rating?.ExpectedWinProbability,
             AvgRating = rating?.AvgRating,
             RatingsPending = rating is null,
+            Players = sessionReplay.Players
+                .OrderBy(player => player.GamePos)
+                .Select(player => new InHouseGameSessionReplayPlayerDto
+                {
+                    Name = player.Name,
+                    ToonId = new ToonIdDto
+                    {
+                        Region = player.ToonId.Region,
+                        Realm = player.ToonId.Realm,
+                        Id = player.ToonId.Id,
+                    },
+                    Observer = player.Observer,
+                    TeamId = player.TeamId,
+                    GamePos = player.GamePos,
+                })
+                .ToList(),
         };
     }
 
@@ -403,6 +722,29 @@ public sealed class InHouseGameSessionService(
             ? $"{displayName}'s InHouse"
             : requestedName.Trim();
         return name.Length <= 80 ? name : name[..80];
+    }
+
+    private static string NormalizeRosterPlayerName(string requestedName)
+    {
+        var name = string.IsNullOrWhiteSpace(requestedName)
+            ? throw new InvalidOperationException("Roster player name is required.")
+            : requestedName.Trim();
+        return name.Length <= 80 ? name : name[..80];
+    }
+
+    private static ToonIdDto ValidateToonId(ToonIdDto toonId)
+    {
+        if (toonId is not { Region: > 0, Realm: > 0, Id: > 0 })
+        {
+            throw new InvalidOperationException("Roster player ToonId is required.");
+        }
+
+        return new()
+        {
+            Region = toonId.Region,
+            Realm = toonId.Realm,
+            Id = toonId.Id,
+        };
     }
 
     private static bool HasValidToonId(InHouseReplayObserverDto observer)

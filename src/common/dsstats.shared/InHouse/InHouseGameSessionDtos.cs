@@ -22,6 +22,7 @@ public sealed class InHouseGameSessionDetailDto
     public DateTime CreatedAt { get; set; }
     public DateTime? ClosedAt { get; set; }
     public bool CanClose { get; set; }
+    public List<InHouseRosterPlayerDto> RosterPlayers { get; set; } = [];
     public List<InHouseGameSessionPlayerSummaryDto> Players { get; set; } = [];
     public List<InHouseGameSessionReplayDto> Replays { get; set; } = [];
 }
@@ -43,6 +44,42 @@ public sealed class InHouseReplayObserverDto
     public string? Clan { get; set; }
     public ToonIdDto ToonId { get; set; } = new();
     public int SlotId { get; set; }
+}
+
+public sealed class InHouseRosterPlayerDto
+{
+    public Guid RosterPlayerId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public ToonIdDto ToonId { get; set; } = new();
+    public int? PlayerId { get; set; }
+    public double InitialRating { get; set; } = 1000;
+    public int JoinedReplayCount { get; set; }
+    public bool IsSitter { get; set; }
+    public bool IsManual { get; set; }
+    public string AddSource { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public int Games { get; set; }
+    public int Wins { get; set; }
+    public int Observes { get; set; }
+    public double Winrate { get; set; }
+    public bool PlayedLatestGame { get; set; }
+    public bool ObservedLatestGame { get; set; }
+    public bool RatingsPending { get; set; }
+}
+
+public sealed class InHouseRosterPlayerUpsertRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public ToonIdDto ToonId { get; set; } = new();
+    public int? PlayerId { get; set; }
+    public double? InitialRating { get; set; }
+    public bool IsSitter { get; set; }
+}
+
+public sealed class InHouseRosterPlayerSitterRequest
+{
+    public bool IsSitter { get; set; }
 }
 
 public sealed class InHouseGameSessionPlayerSummaryDto
@@ -74,6 +111,16 @@ public sealed class InHouseGameSessionReplayDto
     public double? ExpectedWinProbability { get; set; }
     public int? AvgRating { get; set; }
     public bool RatingsPending { get; set; }
+    public List<InHouseGameSessionReplayPlayerDto> Players { get; set; } = [];
+}
+
+public sealed class InHouseGameSessionReplayPlayerDto
+{
+    public string Name { get; set; } = string.Empty;
+    public ToonIdDto ToonId { get; set; } = new();
+    public bool Observer { get; set; }
+    public int TeamId { get; set; }
+    public int GamePos { get; set; }
 }
 
 public sealed class InHouseParsedReplayDto
