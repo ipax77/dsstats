@@ -1079,7 +1079,8 @@
         @foreach (var player in players)
         {
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 border-top border-secondary py-2"
-                 draggable="@(group != "sitters")"
+                 draggable="@(group != "sitters" ? "true" : "false")"
+                 style="@(group != "sitters" ? "cursor: grab;" : null)"
                  @ondragstart="() => StartDraftDrag(player, group)"
                  @ondragend="ClearDraftDrag"
                  @ondrop:stopPropagation="true"
