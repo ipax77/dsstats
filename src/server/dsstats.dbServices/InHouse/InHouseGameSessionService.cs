@@ -1,32 +1,29 @@
+using System.Collections.Concurrent;
+using System.Text.Json;
 using dsstats.db;
 using dsstats.shared;
 using dsstats.shared.InHouse;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace dsstats.dbServices.InHouse;
 
 public sealed class InHouseGameSessionService(
-    DsstatsContext context,
+    IServiceScopeFactory scopeFactory,
     IImportService importService) : IInHouseGameSessionService
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private readonly ConcurrentDictionary<Guid, InHouseRuntimeSession> sessions = [];
+
     public async Task<List<InHouseGameSessionListDto>> GetActiveSessionsAsync(CancellationToken token)
     {
-        return await context.InHouseGameSessions
-            .AsNoTracking()
-            .Where(session => session.ClosedAt == null)
-            .OrderByDescending(session => session.CreatedAt)
-            .Select(session => new InHouseGameSessionListDto
-            {
-                SessionId = session.PublicId,
-                Name = session.Name,
-                CreatedByUserId = session.CreatedBy!.PublicId,
-                CreatedByDisplayName = session.CreatedBy.DisplayName,
-                CreatedAt = session.CreatedAt,
-                ClosedAt = session.ClosedAt,
-                Games = session.Replays.Count,
-                Players = session.PlayerSummaries.Count,
-            })
-            .ToListAsync(token);
+        await LoadActiveSessionsAsync(token);
+        return sessions.Values
+            .Select(session => session.State)
+            .Where(state => state.ClosedAt is null)
+            .OrderByDescending(state => state.CreatedAt)
+            .Select(state => state.ToListDto())
+            .ToList();
     }
 
     public async Task<InHouseGameSessionDetailDto> CreateSessionAsync(
@@ -34,100 +31,105 @@ public sealed class InHouseGameSessionService(
         InHouseCreateGameSessionRequest request,
         CancellationToken token)
     {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
         var user = await context.InHouseUsers
+            .AsNoTracking()
             .FirstOrDefaultAsync(user => user.InHouseUserId == userId, token)
             ?? throw new InvalidOperationException("Unknown InHouse user.");
 
-        var name = NormalizeSessionName(request.Name, user.DisplayName);
-        var session = new InHouseGameSession
+        var now = DateTime.UtcNow;
+        var session = new InHouseGameSessionSimplified
         {
             PublicId = Guid.NewGuid(),
-            Name = name,
+            Name = NormalizeSessionName(request.Name, user.DisplayName),
             CreatedByInHouseUserId = userId,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = now,
         };
 
         context.InHouseGameSessions.Add(session);
         await context.SaveChangesAsync(token);
 
-        return await GetSessionAsync(session.PublicId, userId, token)
-            ?? throw new InvalidOperationException("Created session could not be loaded.");
+        var state = InHouseSessionState.Create(session, user.PublicId, user.DisplayName, now);
+        context.InHouseGameSessionStateSnapshots.Add(new()
+        {
+            InHouseGameSessionId = session.InHouseGameSessionId,
+            Json = state.ToJson(),
+            CreatedAt = now,
+            UpdatedAt = now,
+        });
+        await context.SaveChangesAsync(token);
+
+        sessions[state.SessionId] = new InHouseRuntimeSession(state);
+        return state.ToDetailDto(userId);
     }
 
     public async Task<InHouseGameSessionDetailDto?> GetSessionAsync(Guid sessionId, int userId, CancellationToken token)
     {
-        var session = await context.InHouseGameSessions
-            .AsNoTracking()
-            .Where(session => session.PublicId == sessionId)
-            .Select(session => new { session.InHouseGameSessionId })
-            .FirstOrDefaultAsync(token);
-
+        var session = await LoadSessionAsync(sessionId, token);
         if (session is null)
         {
             return null;
         }
 
-        await EnsureSessionDerivedStateAsync(session.InHouseGameSessionId, token);
-        return await LoadDetailAsync(sessionId, userId, token);
+        await RefreshPendingRatingsAsync(session, token);
+        return session.State.ToDetailDto(userId);
     }
 
-    public async Task<InHouseGameSessionDetailDto> UploadReplayAsync(
+    public async Task<InHouseGameSessionMutationResult> UploadReplayAsync(
         Guid sessionId,
         int userId,
         InHouseReplayUploadRequest request,
         CancellationToken token)
     {
-        var session = await context.InHouseGameSessions
-            .FirstOrDefaultAsync(session => session.PublicId == sessionId, token)
-            ?? throw new InvalidOperationException("Unknown InHouse session.");
-
-        if (session.ClosedAt is not null)
-        {
-            throw new InvalidOperationException("This InHouse session is closed.");
-        }
-
         if (request.Replay.Players.Count == 0)
         {
             throw new InvalidOperationException("The uploaded replay has no players.");
         }
 
+        var session = await LoadSessionAsync(sessionId, token)
+            ?? throw new InvalidOperationException("Unknown InHouse session.");
         var replayHash = request.Replay.ComputeHash();
-        await importService.InsertReplays([request.Replay]);
+        var compatHash = request.Replay.ComputeCandidateHash();
+        var fingerprint = InHouseReplayFingerprint.FromReplay(request.Replay);
 
-        var replay = await context.Replays
-            .Include(replay => replay.Players)
-                .ThenInclude(player => player.Player)
-            .Include(replay => replay.Ratings)
-                .ThenInclude(rating => rating.ReplayPlayerRatings)
-            .FirstOrDefaultAsync(replay => replay.ReplayHash == replayHash, token)
-            ?? throw new InvalidOperationException("The uploaded replay could not be imported.");
-
-        var replayCountBeforeUpload = await context.InHouseGameSessionReplays
-            .CountAsync(sessionReplay => sessionReplay.InHouseGameSessionId == session.InHouseGameSessionId, token);
-        var existing = await context.InHouseGameSessionReplays
-            .AnyAsync(sessionReplay => sessionReplay.InHouseGameSessionId == session.InHouseGameSessionId
-                && sessionReplay.ReplayId == replay.ReplayId, token);
-
-        if (!existing)
+        await session.Gate.WaitAsync(token);
+        try
         {
-            var players = CreateReplayPlayers(replay, request.Observers);
-            var sessionReplay = new InHouseGameSessionReplay
+            session.State.ThrowIfClosed();
+            if (session.State.IsDuplicate(replayHash, compatHash, fingerprint))
             {
-                InHouseGameSessionId = session.InHouseGameSessionId,
-                ReplayId = replay.ReplayId,
-                UploadedByInHouseUserId = userId,
-                UploadedAt = DateTime.UtcNow,
-                Players = players,
-            };
-
-            context.InHouseGameSessionReplays.Add(sessionReplay);
-            await UpsertRosterPlayersFromReplayAsync(session.InHouseGameSessionId, userId, replay, players, replayCountBeforeUpload, token);
-            await context.SaveChangesAsync(token);
+                return new(session.State.ToDetailDto(userId), false);
+            }
+        }
+        finally
+        {
+            session.Gate.Release();
         }
 
-        await RefreshSummariesAsync(session.InHouseGameSessionId, token);
-        return await LoadDetailAsync(sessionId, userId, token)
-            ?? throw new InvalidOperationException("InHouse session could not be loaded.");
+        await importService.InsertReplays([request.Replay]);
+        var replay = await LoadReplayAsync(replayHash, token)
+            ?? throw new InvalidOperationException("The uploaded replay could not be imported.");
+
+        await session.Gate.WaitAsync(token);
+        try
+        {
+            session.State.ThrowIfClosed();
+            if (session.State.IsDuplicate(replay.ReplayHash, replay.CompatHash, fingerprint))
+            {
+                return new(session.State.ToDetailDto(userId), false);
+            }
+
+            var observerPlayers = await GetObserverPlayersAsync(request.Observers, token);
+            session.State.AddReplay(replay, request.Observers, observerPlayers, fingerprint);
+            await RefreshPendingRatingsCoreAsync(session.State, token);
+            await PersistStateAsync(session.State, replay.ReplayId, observerPlayers.Select(player => player.PlayerId).ToArray(), token);
+            return new(session.State.ToDetailDto(userId), true);
+        }
+        finally
+        {
+            session.Gate.Release();
+        }
     }
 
     public async Task<InHouseGameSessionDetailDto> AddRosterPlayerAsync(
@@ -136,76 +138,18 @@ public sealed class InHouseGameSessionService(
         InHouseRosterPlayerUpsertRequest request,
         CancellationToken token)
     {
-        var session = await GetMutableSessionAsync(sessionId, token);
-        var toonId = ValidateToonId(request.ToonId);
-        var name = NormalizeRosterPlayerName(request.Name);
-        var existing = await GetRosterPlayerByToonIdAsync(session.InHouseGameSessionId, toonId, token);
-        var now = DateTime.UtcNow;
-        var replayCount = await context.InHouseGameSessionReplays
-            .CountAsync(replay => replay.InHouseGameSessionId == session.InHouseGameSessionId, token);
-
-        if (existing is null)
+        var session = await GetMutableRuntimeSessionAsync(sessionId, token);
+        await session.Gate.WaitAsync(token);
+        try
         {
-            context.InHouseGameSessionRosterPlayers.Add(new()
-            {
-                PublicId = Guid.NewGuid(),
-                InHouseGameSessionId = session.InHouseGameSessionId,
-                PlayerId = request.PlayerId,
-                Name = name,
-                ToonId = ToEntity(toonId),
-                InitialRating = request.InitialRating ?? 1000,
-                JoinedReplayCount = replayCount,
-                IsSitter = request.IsSitter,
-                IsManual = true,
-                AddSource = "manual",
-                AddedByInHouseUserId = userId,
-                CreatedAt = now,
-                UpdatedAt = now,
-            });
+            session.State.ThrowIfClosed();
+            session.State.AddOrUpdateRosterPlayer(request);
+            return session.State.ToDetailDto(userId);
         }
-        else
+        finally
         {
-            existing.PlayerId ??= request.PlayerId;
-            existing.Name = name;
-            existing.InitialRating = request.InitialRating ?? existing.InitialRating;
-            existing.IsSitter = request.IsSitter;
-            existing.IsManual = true;
-            existing.AddSource = "manual";
-            existing.AddedByInHouseUserId ??= userId;
-            existing.UpdatedAt = now;
+            session.Gate.Release();
         }
-
-        await context.SaveChangesAsync(token);
-        return await LoadDetailAsync(sessionId, userId, token)
-            ?? throw new InvalidOperationException("InHouse session could not be loaded.");
-    }
-
-    public async Task<InHouseGameSessionDetailDto> UpdateRosterPlayerAsync(
-        Guid sessionId,
-        Guid rosterPlayerId,
-        int userId,
-        InHouseRosterPlayerUpsertRequest request,
-        CancellationToken token)
-    {
-        var session = await GetMutableSessionAsync(sessionId, token);
-        var rosterPlayer = await GetRosterPlayerAsync(session.InHouseGameSessionId, rosterPlayerId, token);
-        var toonId = ValidateToonId(request.ToonId);
-        var conflict = await GetRosterPlayerByToonIdAsync(session.InHouseGameSessionId, toonId, token);
-        if (conflict is not null && conflict.InHouseGameSessionRosterPlayerId != rosterPlayer.InHouseGameSessionRosterPlayerId)
-        {
-            throw new InvalidOperationException("That player is already on the session roster.");
-        }
-
-        rosterPlayer.Name = NormalizeRosterPlayerName(request.Name);
-        rosterPlayer.ToonId = ToEntity(toonId);
-        rosterPlayer.PlayerId = request.PlayerId;
-        rosterPlayer.InitialRating = request.InitialRating ?? 1000;
-        rosterPlayer.IsSitter = request.IsSitter;
-        rosterPlayer.UpdatedAt = DateTime.UtcNow;
-
-        await context.SaveChangesAsync(token);
-        return await LoadDetailAsync(sessionId, userId, token)
-            ?? throw new InvalidOperationException("InHouse session could not be loaded.");
     }
 
     public async Task<InHouseGameSessionDetailDto> SetRosterPlayerSitterAsync(
@@ -215,14 +159,18 @@ public sealed class InHouseGameSessionService(
         bool isSitter,
         CancellationToken token)
     {
-        var session = await GetMutableSessionAsync(sessionId, token);
-        var rosterPlayer = await GetRosterPlayerAsync(session.InHouseGameSessionId, rosterPlayerId, token);
-        rosterPlayer.IsSitter = isSitter;
-        rosterPlayer.UpdatedAt = DateTime.UtcNow;
-
-        await context.SaveChangesAsync(token);
-        return await LoadDetailAsync(sessionId, userId, token)
-            ?? throw new InvalidOperationException("InHouse session could not be loaded.");
+        var session = await GetMutableRuntimeSessionAsync(sessionId, token);
+        await session.Gate.WaitAsync(token);
+        try
+        {
+            session.State.ThrowIfClosed();
+            session.State.SetSitter(rosterPlayerId, isSitter);
+            return session.State.ToDetailDto(userId);
+        }
+        finally
+        {
+            session.Gate.Release();
+        }
     }
 
     public async Task<InHouseGameSessionDetailDto> RemoveRosterPlayerAsync(
@@ -231,527 +179,257 @@ public sealed class InHouseGameSessionService(
         int userId,
         CancellationToken token)
     {
-        var session = await GetMutableSessionAsync(sessionId, token);
-        var rosterPlayer = await GetRosterPlayerAsync(session.InHouseGameSessionId, rosterPlayerId, token);
-        context.InHouseGameSessionRosterPlayers.Remove(rosterPlayer);
-
-        await context.SaveChangesAsync(token);
-        return await LoadDetailAsync(sessionId, userId, token)
-            ?? throw new InvalidOperationException("InHouse session could not be loaded.");
+        var session = await GetMutableRuntimeSessionAsync(sessionId, token);
+        await session.Gate.WaitAsync(token);
+        try
+        {
+            session.State.ThrowIfClosed();
+            session.State.RemoveRosterPlayer(rosterPlayerId);
+            return session.State.ToDetailDto(userId);
+        }
+        finally
+        {
+            session.Gate.Release();
+        }
     }
 
     public async Task<InHouseGameSessionDetailDto> CloseSessionAsync(Guid sessionId, int userId, CancellationToken token)
     {
-        var session = await context.InHouseGameSessions
-            .FirstOrDefaultAsync(session => session.PublicId == sessionId, token)
+        var session = await LoadSessionAsync(sessionId, token)
             ?? throw new InvalidOperationException("Unknown InHouse session.");
-
-        if (session.CreatedByInHouseUserId != userId)
+        await session.Gate.WaitAsync(token);
+        try
         {
-            throw new InvalidOperationException("Only the session creator can close this InHouse session.");
+            if (session.State.CreatedByInHouseUserId != userId)
+            {
+                throw new InvalidOperationException("Only the session creator can close this InHouse session.");
+            }
+
+            session.State.Close();
+            await PersistStateAsync(session.State, replayId: null, observerPlayerIds: null, token);
+            return session.State.ToDetailDto(userId);
         }
-
-        session.ClosedAt ??= DateTime.UtcNow;
-        await context.SaveChangesAsync(token);
-
-        return await LoadDetailAsync(sessionId, userId, token)
-            ?? throw new InvalidOperationException("InHouse session could not be loaded.");
+        finally
+        {
+            session.Gate.Release();
+        }
     }
 
-    private List<InHouseGameSessionReplayPlayer> CreateReplayPlayers(
-        Replay replay,
-        IReadOnlyCollection<InHouseReplayObserverDto> observers)
+    public async Task<List<InHouseGameSessionDetailDto>> CloseInactiveSessionsAsync(TimeSpan inactiveFor, CancellationToken token)
     {
-        List<InHouseGameSessionReplayPlayer> players = new(replay.Players.Count + observers.Count);
-        foreach (var replayPlayer in replay.Players)
-        {
-            var player = replayPlayer.Player
-                ?? throw new InvalidOperationException("Replay player is missing player data.");
+        await LoadActiveSessionsAsync(token);
+        var cutoff = DateTime.UtcNow - inactiveFor;
+        List<InHouseGameSessionDetailDto> closed = [];
 
-            players.Add(new()
+        foreach (var session in sessions.Values.Where(session => session.State is { ClosedAt: null } && session.State.LastActivityAt < cutoff))
+        {
+            await session.Gate.WaitAsync(token);
+            try
             {
-                ReplayPlayerId = replayPlayer.ReplayPlayerId,
-                PlayerId = replayPlayer.PlayerId,
-                Name = replayPlayer.Name,
-                ToonId = CloneToonId(player.ToonId),
-                Observer = false,
-                TeamId = replayPlayer.TeamId,
-                GamePos = replayPlayer.GamePos,
-                Result = replayPlayer.Result,
-            });
+                if (session.State.ClosedAt is not null || session.State.LastActivityAt >= cutoff)
+                {
+                    continue;
+                }
+
+                session.State.Close();
+                await PersistStateAsync(session.State, replayId: null, observerPlayerIds: null, token);
+                closed.Add(session.State.ToDetailDto(session.State.CreatedByInHouseUserId));
+                sessions.TryRemove(session.State.SessionId, out _);
+            }
+            finally
+            {
+                session.Gate.Release();
+            }
         }
 
-        foreach (var observer in observers.Where(HasValidToonId))
+        return closed;
+    }
+
+    private async Task<InHouseRuntimeSession> GetMutableRuntimeSessionAsync(Guid sessionId, CancellationToken token)
+    {
+        var session = await LoadSessionAsync(sessionId, token)
+            ?? throw new InvalidOperationException("Unknown InHouse session.");
+        session.State.ThrowIfClosed();
+        return session;
+    }
+
+    private async Task LoadActiveSessionsAsync(CancellationToken token)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        var active = await context.InHouseGameSessions
+            .AsNoTracking()
+            .Include(session => session.CreatedBy)
+            .Include(session => session.StateSnapshot)
+            .Where(session => session.ClosedAt == null)
+            .ToListAsync(token);
+
+        foreach (var session in active)
         {
+            sessions.GetOrAdd(session.PublicId, _ => new InHouseRuntimeSession(RestoreState(session)));
+        }
+    }
+
+    private async Task<InHouseRuntimeSession?> LoadSessionAsync(Guid sessionId, CancellationToken token)
+    {
+        if (sessions.TryGetValue(sessionId, out var runtimeSession))
+        {
+            return runtimeSession;
+        }
+
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        var session = await context.InHouseGameSessions
+            .AsNoTracking()
+            .Include(session => session.CreatedBy)
+            .Include(session => session.StateSnapshot)
+            .FirstOrDefaultAsync(session => session.PublicId == sessionId, token);
+        if (session is null)
+        {
+            return null;
+        }
+
+        var restored = new InHouseRuntimeSession(RestoreState(session));
+        return sessions.GetOrAdd(sessionId, restored);
+    }
+
+    private async Task PersistStateAsync(
+        InHouseSessionState state,
+        int? replayId,
+        int[]? observerPlayerIds,
+        CancellationToken token)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        var session = await context.InHouseGameSessions
+            .Include(session => session.StateSnapshot)
+            .FirstAsync(session => session.InHouseGameSessionId == state.InHouseGameSessionId, token);
+        var now = DateTime.UtcNow;
+
+        session.ReplayIds = state.ReplayIds.ToArray();
+        session.ClosedAt = state.ClosedAt;
+        if (session.StateSnapshot is null)
+        {
+            session.StateSnapshot = new()
+            {
+                InHouseGameSessionId = session.InHouseGameSessionId,
+                CreatedAt = now,
+            };
+        }
+
+        session.StateSnapshot.Json = state.ToJson();
+        session.StateSnapshot.UpdatedAt = now;
+
+        if (replayId is not null && observerPlayerIds is { Length: > 0 })
+        {
+            var existing = await context.ReplayObservers
+                .FirstOrDefaultAsync(observer => observer.ReplayId == replayId.Value, token);
+            if (existing is null)
+            {
+                context.ReplayObservers.Add(new()
+                {
+                    ReplayId = replayId.Value,
+                    PlayerIds = observerPlayerIds,
+                });
+            }
+            else
+            {
+                existing.PlayerIds = observerPlayerIds;
+            }
+        }
+
+        await context.SaveChangesAsync(token);
+    }
+
+    private async Task<List<ObserverPlayerState>> GetObserverPlayersAsync(
+        IReadOnlyCollection<InHouseReplayObserverDto> observers,
+        CancellationToken token)
+    {
+        var validObservers = observers.Where(HasValidToonId).ToList();
+        if (validObservers.Count == 0)
+        {
+            return [];
+        }
+
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        List<ObserverPlayerState> players = new(validObservers.Count);
+        foreach (var observer in validObservers)
+        {
+            token.ThrowIfCancellationRequested();
             var playerId = importService.GetOrCreatePlayerId(
                 observer.Name,
                 observer.ToonId.Region,
                 observer.ToonId.Realm,
                 observer.ToonId.Id,
                 context);
-
-            players.Add(new()
-            {
-                PlayerId = playerId,
-                Name = observer.Name,
-                ToonId = ToEntity(observer.ToonId),
-                Observer = true,
-                TeamId = 0,
-                GamePos = observer.SlotId,
-                Result = PlayerResult.None,
-            });
+            players.Add(new(playerId, observer.ToonId.Region, observer.ToonId.Realm, observer.ToonId.Id));
         }
 
         return players;
     }
 
-    private async Task UpsertRosterPlayersFromReplayAsync(
-        int sessionId,
-        int userId,
-        Replay replay,
-        IReadOnlyCollection<InHouseGameSessionReplayPlayer> participants,
-        int joinedReplayCount,
-        CancellationToken token)
+    private async Task RefreshPendingRatingsAsync(InHouseRuntimeSession session, CancellationToken token)
     {
-        var existing = await context.InHouseGameSessionRosterPlayers
-            .Where(player => player.InHouseGameSessionId == sessionId)
-            .ToListAsync(token);
-        var existingByToon = existing.ToDictionary(player => new ToonKey(player.ToonId.Region, player.ToonId.Realm, player.ToonId.Id));
-        var rating = GetBestRating(replay);
-        var now = DateTime.UtcNow;
-
-        foreach (var participant in participants)
+        if (!session.State.HasPendingRatings)
         {
-            var key = new ToonKey(participant.ToonId.Region, participant.ToonId.Realm, participant.ToonId.Id);
-            if (existingByToon.TryGetValue(key, out var rosterPlayer))
-            {
-                rosterPlayer.Name = participant.Name;
-                rosterPlayer.PlayerId ??= participant.PlayerId;
-                rosterPlayer.UpdatedAt = now;
-                continue;
-            }
-
-            var playerRating = rating?.ReplayPlayerRatings
-                .FirstOrDefault(playerRating => playerRating.ReplayPlayerId == participant.ReplayPlayerId
-                    || playerRating.PlayerId == participant.PlayerId);
-            context.InHouseGameSessionRosterPlayers.Add(new()
-            {
-                PublicId = Guid.NewGuid(),
-                InHouseGameSessionId = sessionId,
-                PlayerId = participant.PlayerId,
-                Name = participant.Name,
-                ToonId = CloneToonId(participant.ToonId),
-                InitialRating = playerRating?.RatingBefore ?? 1000,
-                JoinedReplayCount = joinedReplayCount,
-                IsSitter = false,
-                IsManual = false,
-                AddSource = participant.Observer ? "observer" : "replay",
-                AddedByInHouseUserId = userId,
-                CreatedAt = now,
-                UpdatedAt = now,
-            });
-        }
-    }
-
-    private async Task<InHouseGameSession> GetMutableSessionAsync(Guid sessionId, CancellationToken token)
-    {
-        var session = await context.InHouseGameSessions
-            .FirstOrDefaultAsync(session => session.PublicId == sessionId, token)
-            ?? throw new InvalidOperationException("Unknown InHouse session.");
-
-        if (session.ClosedAt is not null)
-        {
-            throw new InvalidOperationException("This InHouse session is closed.");
-        }
-
-        return session;
-    }
-
-    private async Task<InHouseGameSessionRosterPlayer> GetRosterPlayerAsync(
-        int sessionId,
-        Guid rosterPlayerId,
-        CancellationToken token)
-        => await context.InHouseGameSessionRosterPlayers
-            .FirstOrDefaultAsync(player => player.InHouseGameSessionId == sessionId
-                && player.PublicId == rosterPlayerId, token)
-            ?? throw new InvalidOperationException("Unknown roster player.");
-
-    private async Task<InHouseGameSessionRosterPlayer?> GetRosterPlayerByToonIdAsync(
-        int sessionId,
-        ToonIdDto toonId,
-        CancellationToken token)
-        => await context.InHouseGameSessionRosterPlayers
-            .FirstOrDefaultAsync(player => player.InHouseGameSessionId == sessionId
-                && player.ToonId.Region == toonId.Region
-                && player.ToonId.Realm == toonId.Realm
-                && player.ToonId.Id == toonId.Id, token);
-
-    private async Task EnsureSessionDerivedStateAsync(int sessionId, CancellationToken token)
-    {
-        if (await NeedsSummaryRefreshAsync(sessionId, token))
-        {
-            await RefreshSummariesAsync(sessionId, token);
             return;
         }
 
-        await EnsureRosterPlayersFromExistingSummariesAsync(sessionId, token);
+        await session.Gate.WaitAsync(token);
+        try
+        {
+            if (session.State.HasPendingRatings && await RefreshPendingRatingsCoreAsync(session.State, token))
+            {
+                session.State.Touch();
+            }
+        }
+        finally
+        {
+            session.Gate.Release();
+        }
     }
 
-    private async Task<bool> NeedsSummaryRefreshAsync(int sessionId, CancellationToken token)
+    private async Task<bool> RefreshPendingRatingsCoreAsync(InHouseSessionState state, CancellationToken token)
     {
-        var replayCount = await context.InHouseGameSessionReplays
-            .CountAsync(replay => replay.InHouseGameSessionId == sessionId, token);
-        var summaryCount = await context.InHouseGameSessionPlayerSummaries
-            .CountAsync(summary => summary.InHouseGameSessionId == sessionId, token);
-
-        if (replayCount == 0)
-        {
-            return summaryCount > 0;
-        }
-
-        if (summaryCount == 0)
-        {
-            return true;
-        }
-
-        var distinctParticipantCount = await context.InHouseGameSessionReplayPlayers
-            .Where(player => player.SessionReplay!.InHouseGameSessionId == sessionId)
-            .Select(player => new
-            {
-                player.ToonId.Region,
-                player.ToonId.Realm,
-                player.ToonId.Id,
-            })
-            .Distinct()
-            .CountAsync(token);
-        if (distinctParticipantCount != summaryCount)
-        {
-            return true;
-        }
-
-        var hasPendingRatings = await context.InHouseGameSessionPlayerSummaries
-            .AnyAsync(summary => summary.InHouseGameSessionId == sessionId && summary.RatingsPending, token);
-        if (!hasPendingRatings)
+        if (!state.HasPendingRatings || state.ReplayIds.Count == 0)
         {
             return false;
         }
 
-        return await context.InHouseGameSessionReplays
-            .Where(sessionReplay => sessionReplay.InHouseGameSessionId == sessionId)
-            .AnyAsync(sessionReplay => sessionReplay.Replay!.Ratings.Any(), token);
+        var replays = await LoadReplaysAsync(state.ReplayIds, token);
+        return state.RefreshRatings(replays);
     }
 
-    private async Task RefreshSummariesAsync(int sessionId, CancellationToken token)
+    private async Task<ReplayRuntimeState?> LoadReplayAsync(string replayHash, CancellationToken token)
     {
-        var sessionReplays = await context.InHouseGameSessionReplays
-            .Include(sessionReplay => sessionReplay.Replay)
-                .ThenInclude(replay => replay!.Ratings)
-                    .ThenInclude(rating => rating.ReplayPlayerRatings)
-            .Include(sessionReplay => sessionReplay.Players)
-            .Where(sessionReplay => sessionReplay.InHouseGameSessionId == sessionId)
-            .OrderBy(sessionReplay => sessionReplay.Replay!.Gametime)
-            .ThenBy(sessionReplay => sessionReplay.InHouseGameSessionReplayId)
-            .ToListAsync(token);
-
-        var existing = await context.InHouseGameSessionPlayerSummaries
-            .Where(summary => summary.InHouseGameSessionId == sessionId)
-            .ToListAsync(token);
-        context.InHouseGameSessionPlayerSummaries.RemoveRange(existing);
-
-        if (sessionReplays.Count == 0)
-        {
-            await context.SaveChangesAsync(token);
-            return;
-        }
-
-        var latestReplayId = sessionReplays[^1].InHouseGameSessionReplayId;
-        Dictionary<ToonKey, SummaryBuilder> summaries = [];
-
-        foreach (var sessionReplay in sessionReplays)
-        {
-            var replay = sessionReplay.Replay
-                ?? throw new InvalidOperationException("Session replay is missing replay data.");
-            var rating = GetBestRating(replay);
-
-            foreach (var participant in sessionReplay.Players)
-            {
-                var key = new ToonKey(participant.ToonId.Region, participant.ToonId.Realm, participant.ToonId.Id);
-                if (!summaries.TryGetValue(key, out var summary))
-                {
-                    summary = new SummaryBuilder(participant);
-                    summaries.Add(key, summary);
-                }
-
-                summary.Name = participant.Name;
-                summary.PlayerId ??= participant.PlayerId;
-                var isLatestReplay = sessionReplay.InHouseGameSessionReplayId == latestReplayId;
-                if (participant.Observer)
-                {
-                    summary.Observes++;
-                    summary.ObservedLatestGame |= isLatestReplay;
-                    continue;
-                }
-
-                summary.Games++;
-                if (participant.Result == PlayerResult.Win)
-                {
-                    summary.Wins++;
-                }
-
-                summary.PlayedLatestGame |= isLatestReplay;
-
-                var playerRating = rating?.ReplayPlayerRatings
-                    .FirstOrDefault(playerRating => playerRating.ReplayPlayerId == participant.ReplayPlayerId
-                        || playerRating.PlayerId == participant.PlayerId);
-                if (playerRating is null)
-                {
-                    summary.RatingsPending = true;
-                    continue;
-                }
-
-                summary.RatingGames++;
-                summary.RatingDelta += playerRating.RatingDelta;
-                summary.RatingStart ??= playerRating.RatingBefore;
-                summary.RatingEnd = playerRating.RatingBefore + playerRating.RatingDelta;
-            }
-        }
-
-        var summaryEntities = summaries.Values.Select(summary => summary.ToEntity(sessionId)).ToList();
-        context.InHouseGameSessionPlayerSummaries.AddRange(summaryEntities);
-        await context.SaveChangesAsync(token);
-        await EnsureRosterPlayersFromSummariesAsync(sessionId, summaryEntities, sessionReplays.Count, token);
-    }
-
-    private async Task EnsureRosterPlayersFromSummariesAsync(
-        int sessionId,
-        IReadOnlyCollection<InHouseGameSessionPlayerSummary> summaries,
-        int replayCount,
-        CancellationToken token)
-    {
-        if (summaries.Count == 0)
-        {
-            return;
-        }
-
-        var existing = await context.InHouseGameSessionRosterPlayers
-            .Where(player => player.InHouseGameSessionId == sessionId)
-            .ToListAsync(token);
-        var existingByToon = existing.ToDictionary(player => new ToonKey(player.ToonId.Region, player.ToonId.Realm, player.ToonId.Id));
-        var now = DateTime.UtcNow;
-        var changed = false;
-
-        foreach (var summary in summaries)
-        {
-            var key = new ToonKey(summary.ToonId.Region, summary.ToonId.Realm, summary.ToonId.Id);
-            if (existingByToon.TryGetValue(key, out var rosterPlayer))
-            {
-                var rowChanged = false;
-                if (rosterPlayer.Name != summary.Name)
-                {
-                    rosterPlayer.Name = summary.Name;
-                    rowChanged = true;
-                }
-                if (rosterPlayer.PlayerId is null && summary.PlayerId is not null)
-                {
-                    rosterPlayer.PlayerId = summary.PlayerId;
-                    rowChanged = true;
-                }
-                if (summary.RatingStart is not null
-                    && Math.Abs(rosterPlayer.InitialRating - summary.RatingStart.Value) > 0.001
-                    && !rosterPlayer.IsManual)
-                {
-                    rosterPlayer.InitialRating = summary.RatingStart.Value;
-                    rowChanged = true;
-                }
-                if (rowChanged)
-                {
-                    rosterPlayer.UpdatedAt = now;
-                    changed = true;
-                }
-                continue;
-            }
-
-            context.InHouseGameSessionRosterPlayers.Add(new()
-            {
-                PublicId = Guid.NewGuid(),
-                InHouseGameSessionId = sessionId,
-                PlayerId = summary.PlayerId,
-                Name = summary.Name,
-                ToonId = CloneToonId(summary.ToonId),
-                InitialRating = summary.RatingStart ?? 1000,
-                JoinedReplayCount = Math.Max(0, replayCount - summary.Games - summary.Observes),
-                IsSitter = false,
-                IsManual = false,
-                AddSource = "summary",
-                CreatedAt = now,
-                UpdatedAt = now,
-            });
-            changed = true;
-        }
-
-        if (changed)
-        {
-            await context.SaveChangesAsync(token);
-        }
-    }
-
-    private async Task EnsureRosterPlayersFromExistingSummariesAsync(int sessionId, CancellationToken token)
-    {
-        var summaries = await context.InHouseGameSessionPlayerSummaries
-            .Where(summary => summary.InHouseGameSessionId == sessionId)
-            .ToListAsync(token);
-        if (summaries.Count == 0)
-        {
-            return;
-        }
-
-        var rosterToons = await context.InHouseGameSessionRosterPlayers
-            .Where(player => player.InHouseGameSessionId == sessionId)
-            .Select(player => new
-            {
-                player.ToonId.Region,
-                player.ToonId.Realm,
-                player.ToonId.Id,
-            })
-            .ToListAsync(token);
-        var rosterKeys = rosterToons.Select(toon => new ToonKey(toon.Region, toon.Realm, toon.Id)).ToHashSet();
-        var hasMissingSummaryPlayer = summaries
-            .Any(summary => !rosterKeys.Contains(new ToonKey(summary.ToonId.Region, summary.ToonId.Realm, summary.ToonId.Id)));
-        if (!hasMissingSummaryPlayer)
-        {
-            return;
-        }
-
-        var replayCount = await context.InHouseGameSessionReplays
-            .CountAsync(replay => replay.InHouseGameSessionId == sessionId, token);
-        await EnsureRosterPlayersFromSummariesAsync(sessionId, summaries, replayCount, token);
-    }
-
-    private async Task<InHouseGameSessionDetailDto?> LoadDetailAsync(Guid sessionId, int userId, CancellationToken token)
-    {
-        var session = await context.InHouseGameSessions
-            .AsNoTracking()
-            .Include(session => session.CreatedBy)
-            .Include(session => session.RosterPlayers)
-            .Include(session => session.PlayerSummaries)
-            .Include(session => session.Replays)
-                .ThenInclude(sessionReplay => sessionReplay.Players)
-            .Include(session => session.Replays)
-                .ThenInclude(sessionReplay => sessionReplay.Replay)
-                    .ThenInclude(replay => replay!.Players)
-            .Include(session => session.Replays)
-                .ThenInclude(sessionReplay => sessionReplay.Replay)
-                    .ThenInclude(replay => replay!.Ratings)
-                        .ThenInclude(rating => rating.ReplayPlayerRatings)
-            .Where(session => session.PublicId == sessionId)
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        return await ProjectReplayQuery(context.Replays
+                .AsNoTracking()
+                .Where(replay => replay.ReplayHash == replayHash))
             .FirstOrDefaultAsync(token);
-
-        if (session is null)
-        {
-            return null;
-        }
-
-        return new()
-        {
-            SessionId = session.PublicId,
-            Name = session.Name,
-            CreatedByUserId = session.CreatedBy!.PublicId,
-            CreatedByDisplayName = session.CreatedBy.DisplayName,
-            CreatedAt = session.CreatedAt,
-            ClosedAt = session.ClosedAt,
-            CanClose = session.CreatedByInHouseUserId == userId && session.ClosedAt == null,
-            RosterPlayers = session.RosterPlayers
-                .OrderBy(player => player.IsSitter)
-                .ThenBy(player => player.Name)
-                .Select(player => ToDto(player, session.PlayerSummaries))
-                .ToList(),
-            Players = session.PlayerSummaries
-                .OrderByDescending(summary => summary.Games)
-                .ThenByDescending(summary => summary.RatingDelta ?? 0)
-                .ThenBy(summary => summary.Name)
-                .Select(ToDto)
-                .ToList(),
-            Replays = session.Replays
-                .Where(sessionReplay => sessionReplay.Replay is not null)
-                .OrderByDescending(sessionReplay => sessionReplay.Replay!.Gametime)
-                .Select(ToDto)
-                .ToList(),
-        };
     }
 
-    private static InHouseGameSessionPlayerSummaryDto ToDto(InHouseGameSessionPlayerSummary summary)
+    private async Task<List<ReplayRuntimeState>> LoadReplaysAsync(IReadOnlyCollection<int> replayIds, CancellationToken token)
     {
-        return new()
-        {
-            Name = summary.Name,
-            ToonId = new ToonIdDto
-            {
-                Region = summary.ToonId.Region,
-                Realm = summary.ToonId.Realm,
-                Id = summary.ToonId.Id,
-            },
-            Games = summary.Games,
-            Wins = summary.Wins,
-            Observes = summary.Observes,
-            Winrate = summary.Games == 0 ? 0 : (double)summary.Wins / summary.Games,
-            RatingStart = summary.RatingStart,
-            RatingEnd = summary.RatingEnd,
-            RatingDelta = summary.RatingDelta,
-            AverageGain = summary.AverageGain,
-            PlayedLatestGame = summary.PlayedLatestGame,
-            ObservedLatestGame = summary.ObservedLatestGame,
-            RatingsPending = summary.RatingsPending,
-        };
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        return await ProjectReplayQuery(context.Replays
+                .AsNoTracking()
+                .Where(replay => replayIds.Contains(replay.ReplayId)))
+            .ToListAsync(token);
     }
 
-    private static InHouseRosterPlayerDto ToDto(
-        InHouseGameSessionRosterPlayer rosterPlayer,
-        IEnumerable<InHouseGameSessionPlayerSummary> summaries)
-    {
-        var summary = summaries.FirstOrDefault(summary =>
-            summary.ToonId.Region == rosterPlayer.ToonId.Region
-            && summary.ToonId.Realm == rosterPlayer.ToonId.Realm
-            && summary.ToonId.Id == rosterPlayer.ToonId.Id);
-
-        return new()
+    private static IQueryable<ReplayRuntimeState> ProjectReplayQuery(IQueryable<Replay> query)
+        => query.Select(replay => new ReplayRuntimeState
         {
-            RosterPlayerId = rosterPlayer.PublicId,
-            Name = rosterPlayer.Name,
-            ToonId = new ToonIdDto
-            {
-                Region = rosterPlayer.ToonId.Region,
-                Realm = rosterPlayer.ToonId.Realm,
-                Id = rosterPlayer.ToonId.Id,
-            },
-            PlayerId = rosterPlayer.PlayerId,
-            InitialRating = rosterPlayer.InitialRating,
-            JoinedReplayCount = rosterPlayer.JoinedReplayCount,
-            IsSitter = rosterPlayer.IsSitter,
-            IsManual = rosterPlayer.IsManual,
-            AddSource = rosterPlayer.AddSource,
-            CreatedAt = rosterPlayer.CreatedAt,
-            UpdatedAt = rosterPlayer.UpdatedAt,
-            Games = summary?.Games ?? 0,
-            Wins = summary?.Wins ?? 0,
-            Observes = summary?.Observes ?? 0,
-            Winrate = summary?.Games > 0 ? (double)summary.Wins / summary.Games : 0,
-            PlayedLatestGame = summary?.PlayedLatestGame ?? false,
-            ObservedLatestGame = summary?.ObservedLatestGame ?? false,
-            RatingsPending = summary?.RatingsPending ?? false,
-        };
-    }
-
-    private static InHouseGameSessionReplayDto ToDto(InHouseGameSessionReplay sessionReplay)
-    {
-        var replay = sessionReplay.Replay
-            ?? throw new InvalidOperationException("Session replay is missing replay data.");
-        var rating = GetBestRating(replay);
-
-        return new()
-        {
+            ReplayId = replay.ReplayId,
             ReplayHash = replay.ReplayHash,
+            CompatHash = replay.CompatHash,
             Gametime = replay.Gametime,
             GameMode = replay.GameMode,
+            TE = replay.TE,
             Duration = replay.Duration,
             WinnerTeam = replay.WinnerTeam,
             CommandersTeam1 = replay.Players
@@ -764,56 +442,57 @@ public sealed class InHouseGameSessionService(
                 .OrderBy(player => player.GamePos)
                 .Select(player => player.Race)
                 .ToList(),
-            ExpectedWinProbability = rating?.ExpectedWinProbability,
-            AvgRating = rating?.AvgRating,
-            RatingsPending = rating is null,
-            Players = sessionReplay.Players
+            Players = replay.Players
                 .OrderBy(player => player.GamePos)
-                .Select(player => new InHouseGameSessionReplayPlayerDto
+                .Select(player => new ReplayPlayerRuntimeState
                 {
+                    ReplayPlayerId = player.ReplayPlayerId,
+                    PlayerId = player.PlayerId,
                     Name = player.Name,
                     ToonId = new ToonIdDto
                     {
-                        Region = player.ToonId.Region,
-                        Realm = player.ToonId.Realm,
-                        Id = player.ToonId.Id,
+                        Region = player.Player!.ToonId.Region,
+                        Realm = player.Player.ToonId.Realm,
+                        Id = player.Player.ToonId.Id,
                     },
-                    Observer = player.Observer,
+                    Race = player.Race,
                     TeamId = player.TeamId,
                     GamePos = player.GamePos,
+                    Result = player.Result,
                 })
                 .ToList(),
-        };
-    }
+            Ratings = replay.Ratings.Select(rating => new ReplayRatingRuntimeState
+            {
+                RatingType = rating.RatingType,
+                ExpectedWinProbability = rating.ExpectedWinProbability,
+                AvgRating = rating.AvgRating,
+                PlayerRatings = rating.ReplayPlayerRatings.Select(playerRating => new ReplayPlayerRatingRuntimeState
+                {
+                    ReplayPlayerId = playerRating.ReplayPlayerId,
+                    PlayerId = playerRating.PlayerId,
+                    RatingBefore = playerRating.RatingBefore,
+                    RatingDelta = playerRating.RatingDelta,
+                }).ToList(),
+            }).ToList(),
+        });
 
-    private static ReplayRating? GetBestRating(Replay replay)
+    private static InHouseSessionState RestoreState(InHouseGameSessionSimplified session)
     {
-        var preferred = GetPreferredRatingType(replay);
-        var fallback = GetFallbackRatingType(preferred);
-
-        return replay.Ratings.FirstOrDefault(rating => rating.RatingType == preferred)
-            ?? replay.Ratings.FirstOrDefault(rating => rating.RatingType == fallback)
-            ?? replay.Ratings.FirstOrDefault();
-    }
-
-    private static RatingType GetPreferredRatingType(Replay replay)
-    {
-        var isCommander = Data.IsCommanderGameMode(replay.GameMode);
-        return isCommander
-            ? replay.TE ? RatingType.CommandersTE : RatingType.Commanders
-            : replay.TE ? RatingType.StandardTE : RatingType.Standard;
-    }
-
-    private static RatingType GetFallbackRatingType(RatingType ratingType)
-    {
-        return ratingType switch
+        if (!string.IsNullOrWhiteSpace(session.StateSnapshot?.Json))
         {
-            RatingType.CommandersTE => RatingType.Commanders,
-            RatingType.StandardTE => RatingType.Standard,
-            RatingType.Commanders => RatingType.CommandersTE,
-            RatingType.Standard => RatingType.StandardTE,
-            _ => RatingType.All,
-        };
+            var state = JsonSerializer.Deserialize<InHouseSessionState>(session.StateSnapshot.Json, JsonOptions);
+            if (state is not null)
+            {
+                state.SyncFromDb(session);
+                return state;
+            }
+        }
+
+        return InHouseSessionState.Create(
+            session,
+            session.CreatedBy?.PublicId ?? Guid.Empty,
+            session.CreatedBy?.DisplayName ?? string.Empty,
+            DateTime.UtcNow);
     }
 
     private static string NormalizeSessionName(string requestedName, string displayName)
@@ -839,18 +518,13 @@ public sealed class InHouseGameSessionService(
             throw new InvalidOperationException("Roster player ToonId is required.");
         }
 
-        return new()
-        {
-            Region = toonId.Region,
-            Realm = toonId.Realm,
-            Id = toonId.Id,
-        };
+        return CloneToonId(toonId);
     }
 
     private static bool HasValidToonId(InHouseReplayObserverDto observer)
         => observer.ToonId is { Region: > 0, Realm: > 0, Id: > 0 };
 
-    private static ToonId CloneToonId(ToonId toonId)
+    private static ToonIdDto CloneToonId(ToonIdDto toonId)
         => new()
         {
             Region = toonId.Region,
@@ -858,51 +532,676 @@ public sealed class InHouseGameSessionService(
             Id = toonId.Id,
         };
 
-    private static ToonId ToEntity(ToonIdDto toonId)
-        => new()
-        {
-            Region = toonId.Region,
-            Realm = toonId.Realm,
-            Id = toonId.Id,
-        };
-
-    private sealed class SummaryBuilder(InHouseGameSessionReplayPlayer participant)
+    private sealed class InHouseRuntimeSession(InHouseSessionState state)
     {
-        public int? PlayerId { get; set; } = participant.PlayerId;
-        public string Name { get; set; } = participant.Name;
-        public ToonId ToonId { get; } = CloneToonId(participant.ToonId);
+        public SemaphoreSlim Gate { get; } = new(1, 1);
+        public InHouseSessionState State { get; } = state;
+    }
+
+    private sealed class InHouseSessionState
+    {
+        public int InHouseGameSessionId { get; set; }
+        public Guid SessionId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public int CreatedByInHouseUserId { get; set; }
+        public Guid CreatedByUserId { get; set; }
+        public string CreatedByDisplayName { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public DateTime? ClosedAt { get; set; }
+        public DateTime LastActivityAt { get; set; }
+        public long Revision { get; set; } = 1;
+        public List<int> ReplayIds { get; set; } = [];
+        public List<string> ReplayHashes { get; set; } = [];
+        public List<string> CompatHashes { get; set; } = [];
+        public List<InHouseReplayFingerprint> ReplayFingerprints { get; set; } = [];
+        public List<RosterPlayerState> RosterPlayers { get; set; } = [];
+        public List<PlayerSummaryState> Players { get; set; } = [];
+        public List<ReplayState> Replays { get; set; } = [];
+
+        public bool HasPendingRatings => Replays.Any(replay => replay.RatingsPending) || Players.Any(player => player.RatingsPending);
+
+        public static InHouseSessionState Create(
+            InHouseGameSessionSimplified session,
+            Guid createdByUserId,
+            string createdByDisplayName,
+            DateTime now)
+            => new()
+            {
+                InHouseGameSessionId = session.InHouseGameSessionId,
+                SessionId = session.PublicId,
+                Name = session.Name,
+                CreatedByInHouseUserId = session.CreatedByInHouseUserId,
+                CreatedByUserId = createdByUserId,
+                CreatedByDisplayName = createdByDisplayName,
+                CreatedAt = session.CreatedAt,
+                ClosedAt = session.ClosedAt,
+                LastActivityAt = now,
+                ReplayIds = session.ReplayIds.ToList(),
+            };
+
+        public void SyncFromDb(InHouseGameSessionSimplified session)
+        {
+            InHouseGameSessionId = session.InHouseGameSessionId;
+            SessionId = session.PublicId;
+            Name = session.Name;
+            CreatedByInHouseUserId = session.CreatedByInHouseUserId;
+            CreatedByUserId = session.CreatedBy?.PublicId ?? CreatedByUserId;
+            CreatedByDisplayName = session.CreatedBy?.DisplayName ?? CreatedByDisplayName;
+            CreatedAt = session.CreatedAt;
+            ClosedAt = session.ClosedAt;
+            ReplayIds = session.ReplayIds.ToList();
+        }
+
+        public void AddReplay(
+            ReplayRuntimeState replay,
+            IReadOnlyCollection<InHouseReplayObserverDto> observers,
+            IReadOnlyCollection<ObserverPlayerState> observerPlayers,
+            InHouseReplayFingerprint fingerprint)
+        {
+            var replayCountBefore = Replays.Count;
+            var observerPlayerIds = observerPlayers.ToDictionary(player => new ToonKey(player.Region, player.Realm, player.Id), player => player.PlayerId);
+            var participants = replay.Players
+                .Select(player => ParticipantState.FromReplayPlayer(player, observer: false))
+                .Concat(observers
+                    .Where(HasValidToonId)
+                    .Select(observer =>
+                    {
+                        var key = new ToonKey(observer.ToonId.Region, observer.ToonId.Realm, observer.ToonId.Id);
+                        return ParticipantState.FromObserver(observer, observerPlayerIds.GetValueOrDefault(key));
+                    }))
+                .ToList();
+            var rating = GetBestRating(replay);
+
+            foreach (var participant in participants)
+            {
+                EnsureRosterPlayer(participant, rating, replayCountBefore);
+            }
+
+            foreach (var summary in Players)
+            {
+                summary.PlayedLatestGame = false;
+                summary.ObservedLatestGame = false;
+            }
+
+            foreach (var participant in participants)
+            {
+                var summary = GetOrCreateSummary(participant);
+                summary.Name = participant.Name;
+                summary.PlayerId ??= participant.PlayerId;
+                if (participant.Observer)
+                {
+                    summary.Observes++;
+                    summary.ObservedLatestGame = true;
+                    continue;
+                }
+
+                summary.Games++;
+                summary.Wins += participant.Result == PlayerResult.Win ? 1 : 0;
+                summary.PlayedLatestGame = true;
+                var playerRating = rating?.PlayerRatings
+                    .FirstOrDefault(playerRating => playerRating.ReplayPlayerId == participant.ReplayPlayerId
+                        || playerRating.PlayerId == participant.PlayerId);
+                if (playerRating is null)
+                {
+                    summary.RatingsPending = true;
+                    continue;
+                }
+
+                summary.RatingGames++;
+                summary.RatingStart ??= playerRating.RatingBefore;
+                summary.RatingEnd = playerRating.RatingBefore + playerRating.RatingDelta;
+                summary.RatingDelta = (summary.RatingDelta ?? 0) + playerRating.RatingDelta;
+                summary.AverageGain = summary.RatingDelta / summary.RatingGames;
+            }
+
+            ReplayIds.Add(replay.ReplayId);
+            ReplayHashes.Add(replay.ReplayHash);
+            if (!string.IsNullOrWhiteSpace(replay.CompatHash))
+            {
+                CompatHashes.Add(replay.CompatHash);
+            }
+            ReplayFingerprints.Add(fingerprint);
+            Replays.Add(ReplayState.FromReplay(replay, participants, rating));
+            Touch();
+        }
+
+        public bool RefreshRatings(List<ReplayRuntimeState> replays)
+        {
+            var replayById = replays.ToDictionary(replay => replay.ReplayId);
+            var changed = false;
+            foreach (var replayState in Replays.Where(replay => replay.RatingsPending))
+            {
+                var replayId = ReplayIds.ElementAtOrDefault(Replays.IndexOf(replayState));
+                if (!replayById.TryGetValue(replayId, out var replay))
+                {
+                    continue;
+                }
+
+                var rating = GetBestRating(replay);
+                if (rating is null)
+                {
+                    continue;
+                }
+
+                replayState.ExpectedWinProbability = rating.ExpectedWinProbability;
+                replayState.AvgRating = rating.AvgRating;
+                replayState.RatingsPending = false;
+                changed = true;
+            }
+
+            if (!changed)
+            {
+                return false;
+            }
+
+            RecalculateSummariesFromReplays(replays);
+            return true;
+        }
+
+        public void AddOrUpdateRosterPlayer(InHouseRosterPlayerUpsertRequest request)
+        {
+            var toonId = ValidateToonId(request.ToonId);
+            var name = NormalizeRosterPlayerName(request.Name);
+            var key = new ToonKey(toonId);
+            var existing = RosterPlayers.FirstOrDefault(player => new ToonKey(player.ToonId) == key);
+            if (existing is null)
+            {
+                RosterPlayers.Add(new()
+                {
+                    RosterPlayerId = Guid.NewGuid(),
+                    Name = name,
+                    ToonId = toonId,
+                    PlayerId = request.PlayerId,
+                    InitialRating = request.InitialRating ?? 1000,
+                    JoinedReplayCount = Replays.Count,
+                    IsSitter = request.IsSitter,
+                    IsManual = true,
+                    AddSource = "manual",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                });
+            }
+            else
+            {
+                existing.Name = name;
+                existing.ToonId = toonId;
+                existing.PlayerId ??= request.PlayerId;
+                existing.InitialRating = request.InitialRating ?? existing.InitialRating;
+                existing.IsSitter = request.IsSitter;
+                existing.IsManual = true;
+                existing.AddSource = "manual";
+                existing.UpdatedAt = DateTime.UtcNow;
+            }
+
+            Touch();
+        }
+
+        public void SetSitter(Guid rosterPlayerId, bool isSitter)
+        {
+            var rosterPlayer = RosterPlayers.FirstOrDefault(player => player.RosterPlayerId == rosterPlayerId)
+                ?? throw new InvalidOperationException("Unknown roster player.");
+            rosterPlayer.IsSitter = isSitter;
+            rosterPlayer.UpdatedAt = DateTime.UtcNow;
+            Touch();
+        }
+
+        public void RemoveRosterPlayer(Guid rosterPlayerId)
+        {
+            var removed = RosterPlayers.RemoveAll(player => player.RosterPlayerId == rosterPlayerId);
+            if (removed == 0)
+            {
+                throw new InvalidOperationException("Unknown roster player.");
+            }
+
+            Touch();
+        }
+
+        public void Close()
+        {
+            ClosedAt ??= DateTime.UtcNow;
+            Touch();
+        }
+
+        public void Touch()
+        {
+            LastActivityAt = DateTime.UtcNow;
+            Revision++;
+        }
+
+        public void ThrowIfClosed()
+        {
+            if (ClosedAt is not null)
+            {
+                throw new InvalidOperationException("This InHouse session is closed.");
+            }
+        }
+
+        public bool IsDuplicate(string replayHash, string compatHash, InHouseReplayFingerprint fingerprint)
+            => ReplayHashes.Contains(replayHash)
+                || (!string.IsNullOrWhiteSpace(compatHash) && CompatHashes.Contains(compatHash))
+                || ReplayFingerprints.Contains(fingerprint);
+
+        public InHouseGameSessionListDto ToListDto()
+            => new()
+            {
+                SessionId = SessionId,
+                Revision = Revision,
+                Name = Name,
+                CreatedByUserId = CreatedByUserId,
+                CreatedByDisplayName = CreatedByDisplayName,
+                CreatedAt = CreatedAt,
+                ClosedAt = ClosedAt,
+                LastActivityAt = LastActivityAt,
+                Games = Replays.Count,
+                Players = Players.Count,
+            };
+
+        public InHouseGameSessionDetailDto ToDetailDto(int userId)
+            => new()
+            {
+                SessionId = SessionId,
+                Revision = Revision,
+                Name = Name,
+                CreatedByUserId = CreatedByUserId,
+                CreatedByDisplayName = CreatedByDisplayName,
+                CreatedAt = CreatedAt,
+                ClosedAt = ClosedAt,
+                LastActivityAt = LastActivityAt,
+                CanClose = CreatedByInHouseUserId == userId && ClosedAt is null,
+                RosterPlayers = RosterPlayers
+                    .OrderBy(player => player.IsSitter)
+                    .ThenBy(player => player.Name)
+                    .Select(ToDto)
+                    .ToList(),
+                Players = Players
+                    .OrderByDescending(player => player.Games)
+                    .ThenByDescending(player => player.RatingDelta ?? 0)
+                    .ThenBy(player => player.Name)
+                    .Select(player => player.ToDto())
+                    .ToList(),
+                Replays = Replays
+                    .OrderByDescending(replay => replay.Gametime)
+                    .Select(replay => replay.ToDto())
+                    .ToList(),
+            };
+
+        public string ToJson()
+            => JsonSerializer.Serialize(this, JsonOptions);
+
+        private void EnsureRosterPlayer(ParticipantState participant, ReplayRatingRuntimeState? rating, int replayCountBefore)
+        {
+            var key = new ToonKey(participant.ToonId);
+            var existing = RosterPlayers.FirstOrDefault(player => new ToonKey(player.ToonId) == key);
+            if (existing is not null)
+            {
+                existing.Name = participant.Name;
+                existing.PlayerId ??= participant.PlayerId;
+                existing.UpdatedAt = DateTime.UtcNow;
+                return;
+            }
+
+            var playerRating = rating?.PlayerRatings
+                .FirstOrDefault(playerRating => playerRating.ReplayPlayerId == participant.ReplayPlayerId
+                    || playerRating.PlayerId == participant.PlayerId);
+            RosterPlayers.Add(new()
+            {
+                RosterPlayerId = Guid.NewGuid(),
+                Name = participant.Name,
+                ToonId = CloneToonId(participant.ToonId),
+                PlayerId = participant.PlayerId,
+                InitialRating = playerRating?.RatingBefore ?? 1000,
+                JoinedReplayCount = replayCountBefore,
+                AddSource = participant.Observer ? "observer" : "replay",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            });
+        }
+
+        private PlayerSummaryState GetOrCreateSummary(ParticipantState participant)
+        {
+            var key = new ToonKey(participant.ToonId);
+            var existing = Players.FirstOrDefault(player => new ToonKey(player.ToonId) == key);
+            if (existing is not null)
+            {
+                return existing;
+            }
+
+            var created = new PlayerSummaryState
+            {
+                Name = participant.Name,
+                ToonId = CloneToonId(participant.ToonId),
+                PlayerId = participant.PlayerId,
+            };
+            Players.Add(created);
+            return created;
+        }
+
+        private InHouseRosterPlayerDto ToDto(RosterPlayerState rosterPlayer)
+        {
+            var summary = Players.FirstOrDefault(player => new ToonKey(player.ToonId) == new ToonKey(rosterPlayer.ToonId));
+            return new()
+            {
+                RosterPlayerId = rosterPlayer.RosterPlayerId,
+                Name = rosterPlayer.Name,
+                ToonId = CloneToonId(rosterPlayer.ToonId),
+                PlayerId = rosterPlayer.PlayerId,
+                InitialRating = rosterPlayer.InitialRating,
+                JoinedReplayCount = rosterPlayer.JoinedReplayCount,
+                IsSitter = rosterPlayer.IsSitter,
+                IsManual = rosterPlayer.IsManual,
+                AddSource = rosterPlayer.AddSource,
+                CreatedAt = rosterPlayer.CreatedAt,
+                UpdatedAt = rosterPlayer.UpdatedAt,
+                Games = summary?.Games ?? 0,
+                Wins = summary?.Wins ?? 0,
+                Observes = summary?.Observes ?? 0,
+                Winrate = summary?.Games > 0 ? (double)summary.Wins / summary.Games : 0,
+                PlayedLatestGame = summary?.PlayedLatestGame ?? false,
+                ObservedLatestGame = summary?.ObservedLatestGame ?? false,
+                RatingsPending = summary?.RatingsPending ?? false,
+            };
+        }
+
+        private void RecalculateSummariesFromReplays(List<ReplayRuntimeState> runtimeReplays)
+        {
+            // Replay DTO state is already compact, so refresh only rating fields here.
+            foreach (var summary in Players)
+            {
+                summary.RatingStart = null;
+                summary.RatingEnd = null;
+                summary.RatingDelta = null;
+                summary.AverageGain = null;
+                summary.RatingGames = 0;
+                summary.RatingsPending = false;
+            }
+
+            var runtimeByHash = runtimeReplays.ToDictionary(replay => replay.ReplayHash);
+            foreach (var replay in Replays.OrderBy(replay => replay.Gametime))
+            {
+                if (!runtimeByHash.TryGetValue(replay.ReplayHash, out var runtimeReplay))
+                {
+                    continue;
+                }
+
+                var rating = GetBestRating(runtimeReplay);
+                foreach (var participant in replay.Players.Where(player => !player.Observer))
+                {
+                    var summary = Players.FirstOrDefault(player => new ToonKey(player.ToonId) == new ToonKey(participant.ToonId));
+                    if (summary is null)
+                    {
+                        continue;
+                    }
+
+                    var playerRating = rating?.PlayerRatings
+                        .FirstOrDefault(playerRating => playerRating.PlayerId == participant.PlayerId);
+                    if (playerRating is null)
+                    {
+                        summary.RatingsPending = true;
+                        continue;
+                    }
+
+                    summary.RatingGames++;
+                    summary.RatingStart ??= playerRating.RatingBefore;
+                    summary.RatingEnd = playerRating.RatingBefore + playerRating.RatingDelta;
+                    summary.RatingDelta = (summary.RatingDelta ?? 0) + playerRating.RatingDelta;
+                    summary.AverageGain = summary.RatingDelta / summary.RatingGames;
+                }
+            }
+        }
+    }
+
+    private sealed class RosterPlayerState
+    {
+        public Guid RosterPlayerId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public ToonIdDto ToonId { get; set; } = new();
+        public int? PlayerId { get; set; }
+        public double InitialRating { get; set; } = 1000;
+        public int JoinedReplayCount { get; set; }
+        public bool IsSitter { get; set; }
+        public bool IsManual { get; set; }
+        public string AddSource { get; set; } = "replay";
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+
+    private sealed class PlayerSummaryState
+    {
+        public int? PlayerId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public ToonIdDto ToonId { get; set; } = new();
         public int Games { get; set; }
         public int Wins { get; set; }
         public int Observes { get; set; }
         public double? RatingStart { get; set; }
         public double? RatingEnd { get; set; }
-        public double RatingDelta { get; set; }
+        public double? RatingDelta { get; set; }
+        public double? AverageGain { get; set; }
         public int RatingGames { get; set; }
         public bool PlayedLatestGame { get; set; }
         public bool ObservedLatestGame { get; set; }
         public bool RatingsPending { get; set; }
 
-        public InHouseGameSessionPlayerSummary ToEntity(int sessionId)
-        {
-            return new()
+        public InHouseGameSessionPlayerSummaryDto ToDto()
+            => new()
             {
-                InHouseGameSessionId = sessionId,
-                PlayerId = PlayerId,
                 Name = Name,
                 ToonId = CloneToonId(ToonId),
                 Games = Games,
                 Wins = Wins,
                 Observes = Observes,
+                Winrate = Games == 0 ? 0 : (double)Wins / Games,
                 RatingStart = RatingStart,
                 RatingEnd = RatingEnd,
-                RatingDelta = RatingGames == 0 ? null : RatingDelta,
-                AverageGain = RatingGames == 0 ? null : RatingDelta / RatingGames,
+                RatingDelta = RatingDelta,
+                AverageGain = AverageGain,
                 PlayedLatestGame = PlayedLatestGame,
                 ObservedLatestGame = ObservedLatestGame,
                 RatingsPending = RatingsPending,
             };
+    }
+
+    private sealed class ReplayState
+    {
+        public string ReplayHash { get; set; } = string.Empty;
+        public DateTime Gametime { get; set; }
+        public GameMode GameMode { get; set; }
+        public bool TE { get; set; }
+        public int Duration { get; set; }
+        public int WinnerTeam { get; set; }
+        public List<Commander> CommandersTeam1 { get; set; } = [];
+        public List<Commander> CommandersTeam2 { get; set; } = [];
+        public double? ExpectedWinProbability { get; set; }
+        public int? AvgRating { get; set; }
+        public bool RatingsPending { get; set; }
+        public List<ParticipantState> Players { get; set; } = [];
+
+        public static ReplayState FromReplay(
+            ReplayRuntimeState replay,
+            List<ParticipantState> participants,
+            ReplayRatingRuntimeState? rating)
+            => new()
+            {
+                ReplayHash = replay.ReplayHash,
+                Gametime = replay.Gametime,
+                GameMode = replay.GameMode,
+                TE = replay.TE,
+                Duration = replay.Duration,
+                WinnerTeam = replay.WinnerTeam,
+                CommandersTeam1 = replay.CommandersTeam1,
+                CommandersTeam2 = replay.CommandersTeam2,
+                ExpectedWinProbability = rating?.ExpectedWinProbability,
+                AvgRating = rating?.AvgRating,
+                RatingsPending = rating is null,
+                Players = participants,
+            };
+
+        public InHouseGameSessionReplayDto ToDto()
+            => new()
+            {
+                ReplayHash = ReplayHash,
+                Gametime = Gametime,
+                GameMode = GameMode,
+                Duration = Duration,
+                WinnerTeam = WinnerTeam,
+                CommandersTeam1 = CommandersTeam1,
+                CommandersTeam2 = CommandersTeam2,
+                ExpectedWinProbability = ExpectedWinProbability,
+                AvgRating = AvgRating,
+                RatingsPending = RatingsPending,
+                Players = Players
+                    .OrderBy(player => player.GamePos)
+                    .Select(player => new InHouseGameSessionReplayPlayerDto
+                    {
+                        Name = player.Name,
+                        ToonId = CloneToonId(player.ToonId),
+                        Observer = player.Observer,
+                        TeamId = player.TeamId,
+                        GamePos = player.GamePos,
+                    })
+                    .ToList(),
+            };
+    }
+
+    private sealed class ParticipantState
+    {
+        public int? ReplayPlayerId { get; set; }
+        public int? PlayerId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public ToonIdDto ToonId { get; set; } = new();
+        public bool Observer { get; set; }
+        public int TeamId { get; set; }
+        public int GamePos { get; set; }
+        public PlayerResult Result { get; set; }
+
+        public static ParticipantState FromReplayPlayer(ReplayPlayerRuntimeState player, bool observer)
+            => new()
+            {
+                ReplayPlayerId = player.ReplayPlayerId,
+                PlayerId = player.PlayerId,
+                Name = player.Name,
+                ToonId = CloneToonId(player.ToonId),
+                Observer = observer,
+                TeamId = player.TeamId,
+                GamePos = player.GamePos,
+                Result = player.Result,
+            };
+
+        public static ParticipantState FromObserver(InHouseReplayObserverDto observer, int playerId)
+            => new()
+            {
+                PlayerId = playerId == 0 ? null : playerId,
+                Name = observer.Name,
+                ToonId = CloneToonId(observer.ToonId),
+                Observer = true,
+                TeamId = 0,
+                GamePos = observer.SlotId,
+                Result = PlayerResult.None,
+            };
+    }
+
+    private sealed class ReplayRuntimeState
+    {
+        public int ReplayId { get; set; }
+        public string ReplayHash { get; set; } = string.Empty;
+        public string CompatHash { get; set; } = string.Empty;
+        public DateTime Gametime { get; set; }
+        public GameMode GameMode { get; set; }
+        public bool TE { get; set; }
+        public int Duration { get; set; }
+        public int WinnerTeam { get; set; }
+        public List<Commander> CommandersTeam1 { get; set; } = [];
+        public List<Commander> CommandersTeam2 { get; set; } = [];
+        public List<ReplayPlayerRuntimeState> Players { get; set; } = [];
+        public List<ReplayRatingRuntimeState> Ratings { get; set; } = [];
+    }
+
+    private sealed class ReplayPlayerRuntimeState
+    {
+        public int ReplayPlayerId { get; set; }
+        public int PlayerId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public ToonIdDto ToonId { get; set; } = new();
+        public Commander Race { get; set; }
+        public int TeamId { get; set; }
+        public int GamePos { get; set; }
+        public PlayerResult Result { get; set; }
+    }
+
+    private sealed class ReplayRatingRuntimeState
+    {
+        public RatingType RatingType { get; set; }
+        public double ExpectedWinProbability { get; set; }
+        public int AvgRating { get; set; }
+        public List<ReplayPlayerRatingRuntimeState> PlayerRatings { get; set; } = [];
+    }
+
+    private sealed class ReplayPlayerRatingRuntimeState
+    {
+        public int ReplayPlayerId { get; set; }
+        public int PlayerId { get; set; }
+        public double RatingBefore { get; set; }
+        public double RatingDelta { get; set; }
+    }
+
+    private sealed record ObserverPlayerState(int PlayerId, int Region, int Realm, int Id);
+
+    private sealed record InHouseReplayFingerprint(
+        DateTime GametimeBucket,
+        GameMode GameMode,
+        int Duration,
+        int WinnerTeam,
+        string Players)
+    {
+        public static InHouseReplayFingerprint FromReplay(ReplayDto replay)
+        {
+            var players = string.Join('|', replay.Players
+                .OrderBy(player => player.GamePos)
+                .Select(player =>
+                {
+                    var toonId = player.Player?.ToonId ?? new();
+                    return $"{player.GamePos}:{player.TeamId}:{(int)player.Race}:{(int)player.Result}:{toonId.Region}:{toonId.Realm}:{toonId.Id}";
+                }));
+            return new(
+                ReplayDtoExtensions.FloorToBucketMinutes(replay.Gametime, 3),
+                replay.GameMode,
+                replay.Duration,
+                replay.WinnerTeam,
+                players);
         }
     }
 
-    private readonly record struct ToonKey(int Region, int Realm, int Id);
+    private readonly record struct ToonKey(int Region, int Realm, int Id)
+    {
+        public ToonKey(ToonIdDto toonId) : this(toonId.Region, toonId.Realm, toonId.Id)
+        {
+        }
+    }
+
+    private static ReplayRatingRuntimeState? GetBestRating(ReplayRuntimeState replay)
+    {
+        var preferred = GetPreferredRatingType(replay);
+        var fallback = GetFallbackRatingType(preferred);
+        return replay.Ratings.FirstOrDefault(rating => rating.RatingType == preferred)
+            ?? replay.Ratings.FirstOrDefault(rating => rating.RatingType == fallback)
+            ?? replay.Ratings.FirstOrDefault();
+    }
+
+    private static RatingType GetPreferredRatingType(ReplayRuntimeState replay)
+    {
+        var isCommander = Data.IsCommanderGameMode(replay.GameMode);
+        return isCommander
+            ? replay.TE ? RatingType.CommandersTE : RatingType.Commanders
+            : replay.TE ? RatingType.StandardTE : RatingType.Standard;
+    }
+
+    private static RatingType GetFallbackRatingType(RatingType ratingType)
+        => ratingType switch
+        {
+            RatingType.CommandersTE => RatingType.Commanders,
+            RatingType.StandardTE => RatingType.Standard,
+            RatingType.Commanders => RatingType.CommandersTE,
+            RatingType.Standard => RatingType.StandardTE,
+            _ => RatingType.All,
+        };
 }

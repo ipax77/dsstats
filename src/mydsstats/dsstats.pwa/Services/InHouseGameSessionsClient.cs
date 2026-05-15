@@ -12,17 +12,10 @@ public sealed class InHouseGameSessionsClient(
 {
     private readonly HttpClient http = httpClientFactory.CreateClient("InHouseApi");
 
-    public async Task<List<InHouseGameSessionListDto>> GetActiveSessionsAsync()
-        => await SendAuthorizedAsync<List<InHouseGameSessionListDto>>(HttpMethod.Get, "api10/inhouse/sessions")
-            ?? [];
-
     public async Task<InHouseGameSessionDetailDto> CreateSessionAsync(string name)
         => await PostAuthorizedAsync<InHouseCreateGameSessionRequest, InHouseGameSessionDetailDto>(
             "api10/inhouse/sessions",
             new InHouseCreateGameSessionRequest { Name = name });
-
-    public async Task<InHouseGameSessionDetailDto?> GetSessionAsync(Guid sessionId)
-        => await SendAuthorizedAsync<InHouseGameSessionDetailDto>(HttpMethod.Get, $"api10/inhouse/sessions/{sessionId}");
 
     public async Task<InHouseGameSessionDetailDto> UploadReplayAsync(Guid sessionId, InHouseParsedReplayDto replay)
         => await PostAuthorizedAsync<InHouseReplayUploadRequest, InHouseGameSessionDetailDto>(
@@ -32,41 +25,6 @@ public sealed class InHouseGameSessionsClient(
                 Replay = replay.Replay,
                 Observers = replay.Observers,
             });
-
-    public async Task<InHouseGameSessionDetailDto> CloseSessionAsync(Guid sessionId)
-        => await PostAuthorizedAsync<object, InHouseGameSessionDetailDto>(
-            $"api10/inhouse/sessions/{sessionId}/close",
-            new { });
-
-    public async Task<InHouseGameSessionDetailDto> AddRosterPlayerAsync(
-        Guid sessionId,
-        InHouseRosterPlayerUpsertRequest request)
-        => await PostAuthorizedAsync<InHouseRosterPlayerUpsertRequest, InHouseGameSessionDetailDto>(
-            $"api10/inhouse/sessions/{sessionId}/roster",
-            request);
-
-    public async Task<InHouseGameSessionDetailDto> UpdateRosterPlayerAsync(
-        Guid sessionId,
-        Guid rosterPlayerId,
-        InHouseRosterPlayerUpsertRequest request)
-        => await SendAuthorizedAsync<InHouseRosterPlayerUpsertRequest, InHouseGameSessionDetailDto>(
-            HttpMethod.Put,
-            $"api10/inhouse/sessions/{sessionId}/roster/{rosterPlayerId}",
-            request);
-
-    public async Task<InHouseGameSessionDetailDto> SetRosterPlayerSitterAsync(
-        Guid sessionId,
-        Guid rosterPlayerId,
-        bool isSitter)
-        => await PostAuthorizedAsync<InHouseRosterPlayerSitterRequest, InHouseGameSessionDetailDto>(
-            $"api10/inhouse/sessions/{sessionId}/roster/{rosterPlayerId}/sitter",
-            new InHouseRosterPlayerSitterRequest { IsSitter = isSitter });
-
-    public async Task<InHouseGameSessionDetailDto> RemoveRosterPlayerAsync(Guid sessionId, Guid rosterPlayerId)
-        => await SendAuthorizedAsync<InHouseGameSessionDetailDto>(
-            HttpMethod.Delete,
-            $"api10/inhouse/sessions/{sessionId}/roster/{rosterPlayerId}")
-            ?? throw new InvalidOperationException("The server returned an empty response.");
 
     private async Task<TResponse?> SendAuthorizedAsync<TResponse>(HttpMethod method, string url)
     {

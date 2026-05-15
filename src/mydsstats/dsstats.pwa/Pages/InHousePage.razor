@@ -505,7 +505,8 @@
 
     private async Task LoadSessionsAsync()
     {
-        var activeSessions = await SessionsClient.GetActiveSessionsAsync();
+        await EnsureHubConnectedAsync();
+        var activeSessions = await hubConnection!.InvokeAsync<List<InHouseGameSessionListDto>>("GetActiveSessions");
         sessions.Clear();
         sessions.AddRange(activeSessions.DistinctBy(session => session.SessionId));
         if (selectedSession is null && sessions.Count > 0)
@@ -535,9 +536,8 @@
                 await LeaveSessionGroupAsync(selectedSession.SessionId);
             }
 
-            selectedSession = await SessionsClient.GetSessionAsync(sessionId);
+            selectedSession = await JoinSessionAsync(sessionId);
             ResetMatchmakingDraft();
-            await JoinSelectedSessionAsync();
         });
     }
 
@@ -550,7 +550,7 @@
 
         await RunAsync(async () =>
         {
-            selectedSession = await SessionsClient.GetSessionAsync(selectedSession.SessionId);
+            selectedSession = await JoinSessionAsync(selectedSession.SessionId);
             ResetMatchmakingDraft();
             await LoadSessionsAsync();
         });
@@ -565,8 +565,9 @@
 
         await RunAsync(async () =>
         {
-            selectedSession = await SessionsClient.CloseSessionAsync(selectedSession.SessionId);
-            ResetMatchmakingDraft();
+            await EnsureHubConnectedAsync();
+            selectedSession = await hubConnection!.InvokeAsync<InHouseGameSessionDetailDto>("CloseSession", selectedSession.SessionId);
+            ApplySessionState(selectedSession);
             await LoadSessionsAsync();
         });
     }
@@ -583,8 +584,7 @@
         {
             await using var stream = file.OpenReadStream(5 * 1024 * 1024);
             var parsedReplay = await DecodeService.DecodeInHouseReplayFromStream(stream, file.Name);
-            selectedSession = await SessionsClient.UploadReplayAsync(selectedSession.SessionId, parsedReplay);
-            ResetMatchmakingDraft();
+            ApplySessionState(await SessionsClient.UploadReplayAsync(selectedSession.SessionId, parsedReplay));
             await LoadSessionsAsync();
             statusMessage = "Replay attached to the session.";
         });
@@ -632,30 +632,29 @@
             .WithAutomaticReconnect()
             .Build();
 
-        hubConnection.On<Guid>("session_changed", sessionId =>
+        hubConnection.On("active_sessions_changed", () =>
         {
             _ = InvokeAsync(async () =>
             {
                 await LoadSessionsAsync();
-                if (selectedSession?.SessionId == sessionId)
-                {
-                    selectedSession = await SessionsClient.GetSessionAsync(sessionId);
-                    ResetMatchmakingDraft();
-                }
                 StateHasChanged();
             });
         });
 
-        hubConnection.On<InHouseGameSessionDetailDto>("replay_added", detail =>
+        hubConnection.On<InHouseGameSessionDetailDto>("session_state", detail =>
         {
-            _ = InvokeAsync(async () =>
+            _ = InvokeAsync(() =>
             {
-                if (selectedSession?.SessionId == detail.SessionId)
-                {
-                    selectedSession = detail;
-                    ResetMatchmakingDraft();
-                }
-                await LoadSessionsAsync();
+                ApplySessionState(detail);
+                StateHasChanged();
+            });
+        });
+
+        hubConnection.On<InHouseSitterChangedDto>("sitter_changed", changed =>
+        {
+            _ = InvokeAsync(() =>
+            {
+                ApplySitterChanged(changed);
                 StateHasChanged();
             });
         });
@@ -667,8 +666,19 @@
     {
         if (hubConnection is not null && selectedSession is not null)
         {
-            await hubConnection.SendAsync("JoinSession", selectedSession.SessionId);
+            selectedSession = await JoinSessionAsync(selectedSession.SessionId);
+            ResetMatchmakingDraft();
         }
+    }
+
+    private async Task<InHouseGameSessionDetailDto?> JoinSessionAsync(Guid sessionId)
+    {
+        if (hubConnection is null)
+        {
+            return null;
+        }
+
+        return await hubConnection.InvokeAsync<InHouseGameSessionDetailDto?>("JoinSession", sessionId);
     }
 
     private async Task LeaveSessionGroupAsync(Guid sessionId)
@@ -706,6 +716,50 @@
         {
             busy = false;
         }
+    }
+
+    private void ApplySessionState(InHouseGameSessionDetailDto? detail)
+    {
+        if (detail is null)
+        {
+            return;
+        }
+
+        if (selectedSession is not null
+            && selectedSession.SessionId != detail.SessionId)
+        {
+            return;
+        }
+
+        if (selectedSession is not null
+            && detail.Revision < selectedSession.Revision)
+        {
+            return;
+        }
+
+        selectedSession = detail;
+        ResetMatchmakingDraft();
+    }
+
+    private void ApplySitterChanged(InHouseSitterChangedDto changed)
+    {
+        if (selectedSession is null
+            || selectedSession.SessionId != changed.SessionId
+            || changed.Revision < selectedSession.Revision)
+        {
+            return;
+        }
+
+        var rosterPlayer = selectedSession.RosterPlayers
+            .FirstOrDefault(player => player.RosterPlayerId == changed.RosterPlayerId);
+        if (rosterPlayer is null)
+        {
+            return;
+        }
+
+        rosterPlayer.IsSitter = changed.IsSitter;
+        selectedSession.Revision = changed.Revision;
+        ResetMatchmakingDraft();
     }
 
     private InHouseProfileDto GetSelectedProfile()
@@ -825,7 +879,9 @@
 
         await RunAsync(async () =>
         {
-            selectedSession = await SessionsClient.AddRosterPlayerAsync(
+            await EnsureHubConnectedAsync();
+            ApplySessionState(await hubConnection!.InvokeAsync<InHouseGameSessionDetailDto>(
+                "AddOrUpdateRosterPlayer",
                 selectedSession.SessionId,
                 new InHouseRosterPlayerUpsertRequest
                 {
@@ -839,8 +895,7 @@
                     PlayerId = manualRosterPlayerId,
                     InitialRating = manualRosterRating <= 0 ? 1000 : manualRosterRating,
                     IsSitter = manualRosterSitter,
-                });
-            ResetMatchmakingDraft();
+                }));
             playerSearchResults.Clear();
             statusMessage = "Roster player saved.";
         });
@@ -855,11 +910,13 @@
 
         await RunAsync(async () =>
         {
-            selectedSession = await SessionsClient.SetRosterPlayerSitterAsync(
+            await EnsureHubConnectedAsync();
+            var changed = await hubConnection!.InvokeAsync<InHouseSitterChangedDto>(
+                "SetRosterPlayerSitter",
                 selectedSession.SessionId,
                 rosterPlayer.RosterPlayerId,
                 !rosterPlayer.IsSitter);
-            ResetMatchmakingDraft();
+            ApplySitterChanged(changed);
         });
     }
 
@@ -872,10 +929,11 @@
 
         await RunAsync(async () =>
         {
-            selectedSession = await SessionsClient.RemoveRosterPlayerAsync(
+            await EnsureHubConnectedAsync();
+            ApplySessionState(await hubConnection!.InvokeAsync<InHouseGameSessionDetailDto>(
+                "RemoveRosterPlayer",
                 selectedSession.SessionId,
-                rosterPlayer.RosterPlayerId);
-            ResetMatchmakingDraft();
+                rosterPlayer.RosterPlayerId));
             statusMessage = "Roster player removed.";
         });
     }

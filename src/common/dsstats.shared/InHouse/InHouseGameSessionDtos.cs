@@ -3,11 +3,13 @@ namespace dsstats.shared.InHouse;
 public sealed class InHouseGameSessionListDto
 {
     public Guid SessionId { get; set; }
+    public long Revision { get; set; }
     public string Name { get; set; } = string.Empty;
     public Guid CreatedByUserId { get; set; }
     public string CreatedByDisplayName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime? ClosedAt { get; set; }
+    public DateTime LastActivityAt { get; set; }
     public int Games { get; set; }
     public int Players { get; set; }
     public bool IsClosed => ClosedAt is not null;
@@ -16,11 +18,13 @@ public sealed class InHouseGameSessionListDto
 public sealed class InHouseGameSessionDetailDto
 {
     public Guid SessionId { get; set; }
+    public long Revision { get; set; }
     public string Name { get; set; } = string.Empty;
     public Guid CreatedByUserId { get; set; }
     public string CreatedByDisplayName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime? ClosedAt { get; set; }
+    public DateTime LastActivityAt { get; set; }
     public bool CanClose { get; set; }
     public List<InHouseRosterPlayerDto> RosterPlayers { get; set; } = [];
     public List<InHouseGameSessionPlayerSummaryDto> Players { get; set; } = [];
@@ -79,6 +83,14 @@ public sealed class InHouseRosterPlayerUpsertRequest
 
 public sealed class InHouseRosterPlayerSitterRequest
 {
+    public bool IsSitter { get; set; }
+}
+
+public sealed class InHouseSitterChangedDto
+{
+    public Guid SessionId { get; set; }
+    public long Revision { get; set; }
+    public Guid RosterPlayerId { get; set; }
     public bool IsSitter { get; set; }
 }
 

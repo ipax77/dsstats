@@ -1,20 +1,12 @@
-using System.Security.Claims;
-using dsstats.api.Controllers;
-using dsstats.api.Hubs;
-using dsstats.api.InHouse;
 using dsstats.db;
 using dsstats.dbServices;
 using dsstats.dbServices.InHouse;
 using dsstats.shared;
 using dsstats.shared.InHouse;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
 
 namespace dsstats.tests;
 
@@ -22,7 +14,7 @@ namespace dsstats.tests;
 public sealed class InHouseGameSessionServiceTests
 {
     [TestMethod]
-    public async Task CreateSessionAsync_AddsPublicActiveSession()
+    public async Task CreateSessionAsync_PersistsSimplifiedSessionAndSnapshot()
     {
         await using var fixture = await InHouseGameSessionFixture.CreateAsync();
         var user = await fixture.AddUserAsync(1);
@@ -37,10 +29,33 @@ public sealed class InHouseGameSessionServiceTests
         Assert.AreEqual(user.PublicId, detail.CreatedByUserId);
         Assert.HasCount(1, active);
         Assert.AreEqual(detail.SessionId, active[0].SessionId);
+        Assert.AreEqual(1, await fixture.Context.InHouseGameSessions.CountAsync());
+        Assert.AreEqual(1, await fixture.Context.InHouseGameSessionStateSnapshots.CountAsync());
     }
 
     [TestMethod]
-    public async Task UploadReplayAsync_AttachesReplayOnceAndCountsPlayersAndObservers()
+    public async Task GetSessionAsync_RestoresActiveSessionFromSnapshot()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var created = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
+        await fixture.Service.UploadReplayAsync(
+            created.SessionId,
+            user.InHouseUserId,
+            new InHouseReplayUploadRequest { Replay = CreateReplay() },
+            CancellationToken.None);
+
+        var restoredService = fixture.CreateService();
+        var restored = await restoredService.GetSessionAsync(created.SessionId, user.InHouseUserId, CancellationToken.None);
+
+        Assert.IsNotNull(restored);
+        Assert.AreEqual(created.SessionId, restored.SessionId);
+        Assert.HasCount(1, restored.Replays);
+        Assert.HasCount(6, restored.RosterPlayers);
+    }
+
+    [TestMethod]
+    public async Task UploadReplayAsync_AttachesReplayOnceAndPersistsObservers()
     {
         await using var fixture = await InHouseGameSessionFixture.CreateAsync();
         var user = await fixture.AddUserAsync(1);
@@ -59,25 +74,49 @@ public sealed class InHouseGameSessionServiceTests
             ],
         };
 
-        await fixture.Service.UploadReplayAsync(session.SessionId, user.InHouseUserId, request, CancellationToken.None);
-        var detail = await fixture.Service.UploadReplayAsync(session.SessionId, user.InHouseUserId, request, CancellationToken.None);
+        var first = await fixture.Service.UploadReplayAsync(session.SessionId, user.InHouseUserId, request, CancellationToken.None);
+        var second = await fixture.Service.UploadReplayAsync(session.SessionId, user.InHouseUserId, request, CancellationToken.None);
 
-        Assert.HasCount(1, detail.Replays);
-        Assert.HasCount(7, detail.Players);
-        Assert.HasCount(7, detail.RosterPlayers);
-        Assert.AreEqual(6, detail.Players.Count(player => player.Games == 1));
-        var observer = detail.Players.Single(player => player.Name == "Observer");
+        Assert.IsTrue(first.Changed);
+        Assert.IsFalse(second.Changed);
+        Assert.HasCount(1, second.State.Replays);
+        Assert.HasCount(7, second.State.Players);
+        Assert.HasCount(7, second.State.RosterPlayers);
+        Assert.AreEqual(6, second.State.Players.Count(player => player.Games == 1));
+        var observer = second.State.Players.Single(player => player.Name == "Observer");
         Assert.AreEqual(1, observer.Observes);
         Assert.AreEqual(0, observer.Games);
-        Assert.IsTrue(detail.RosterPlayers.Any(player => player.Name == "Observer" && player.AddSource == "observer"));
+        Assert.AreEqual(1, await fixture.Context.ReplayObservers.CountAsync());
+        Assert.AreEqual(1, fixture.Context.InHouseGameSessions.Single().ReplayIds.Length);
     }
 
     [TestMethod]
-    public async Task RosterPlayerOperations_AddUpdateToggleRemoveSharedRosterState()
+    public async Task UploadReplayAsync_DoesNotPersistReplayObserversWhenObserverListIsEmpty()
     {
         await using var fixture = await InHouseGameSessionFixture.CreateAsync();
         var user = await fixture.AddUserAsync(1);
         var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
+
+        var upload = await fixture.Service.UploadReplayAsync(
+            session.SessionId,
+            user.InHouseUserId,
+            new InHouseReplayUploadRequest { Replay = CreateReplay() },
+            CancellationToken.None);
+
+        Assert.IsTrue(upload.Changed);
+        Assert.HasCount(1, upload.State.Replays);
+        Assert.AreEqual(0, await fixture.Context.ReplayObservers.CountAsync());
+    }
+
+    [TestMethod]
+    public async Task ManualRosterChanges_AreMemoryOnlyUntilCloseOrReplayUpload()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
+        var snapshotBefore = await fixture.Context.InHouseGameSessionStateSnapshots
+            .Select(snapshot => snapshot.Json)
+            .SingleAsync();
 
         var added = await fixture.Service.AddRosterPlayerAsync(
             session.SessionId,
@@ -89,119 +128,109 @@ public sealed class InHouseGameSessionServiceTests
                 InitialRating = 1234,
             },
             CancellationToken.None);
+        var snapshotAfter = await fixture.Context.InHouseGameSessionStateSnapshots
+            .Select(snapshot => snapshot.Json)
+            .SingleAsync();
+        var restored = await fixture.CreateService().GetSessionAsync(session.SessionId, user.InHouseUserId, CancellationToken.None);
 
-        var rosterPlayer = added.RosterPlayers.Single();
-        Assert.AreEqual("Manual", rosterPlayer.Name);
-        Assert.AreEqual(1234, rosterPlayer.InitialRating);
-        Assert.IsTrue(rosterPlayer.IsManual);
+        Assert.HasCount(1, added.RosterPlayers);
+        Assert.AreEqual(snapshotBefore, snapshotAfter);
+        Assert.IsNotNull(restored);
+        Assert.HasCount(0, restored.RosterPlayers);
+    }
 
-        var toggled = await fixture.Service.SetRosterPlayerSitterAsync(
+    [TestMethod]
+    public async Task SitterToggle_UpdatesMemoryAndDoesNotPersistSnapshot()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
+        var added = await fixture.Service.AddRosterPlayerAsync(
             session.SessionId,
-            rosterPlayer.RosterPlayerId,
-            user.InHouseUserId,
-            true,
-            CancellationToken.None);
-        Assert.IsTrue(toggled.RosterPlayers.Single().IsSitter);
-
-        var updated = await fixture.Service.UpdateRosterPlayerAsync(
-            session.SessionId,
-            rosterPlayer.RosterPlayerId,
             user.InHouseUserId,
             new InHouseRosterPlayerUpsertRequest
             {
-                Name = "Manual 2",
-                ToonId = new ToonIdDto { Region = 1, Realm = 1, Id = 901 },
-                InitialRating = 1300,
+                Name = "Manual",
+                ToonId = new ToonIdDto { Region = 1, Realm = 1, Id = 900 },
             },
             CancellationToken.None);
-        Assert.AreEqual("Manual 2", updated.RosterPlayers.Single().Name);
-        Assert.AreEqual(1300, updated.RosterPlayers.Single().InitialRating);
+        var snapshotBefore = await fixture.Context.InHouseGameSessionStateSnapshots
+            .Select(snapshot => snapshot.Json)
+            .SingleAsync();
 
-        var removed = await fixture.Service.RemoveRosterPlayerAsync(
+        var toggled = await fixture.Service.SetRosterPlayerSitterAsync(
             session.SessionId,
-            rosterPlayer.RosterPlayerId,
-            user.InHouseUserId,
-            CancellationToken.None);
-        Assert.HasCount(0, removed.RosterPlayers);
-    }
-
-    [TestMethod]
-    public async Task GetSessionAsync_AddsMissingSummaryPlayersToRoster()
-    {
-        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
-        var user = await fixture.AddUserAsync(1);
-        var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
-        var upload = await fixture.Service.UploadReplayAsync(
-            session.SessionId,
-            user.InHouseUserId,
-            new InHouseReplayUploadRequest { Replay = CreateReplay() },
-            CancellationToken.None);
-
-        fixture.Context.InHouseGameSessionRosterPlayers.RemoveRange(fixture.Context.InHouseGameSessionRosterPlayers);
-        await fixture.Context.SaveChangesAsync();
-
-        var detail = await fixture.Service.GetSessionAsync(upload.SessionId, user.InHouseUserId, CancellationToken.None);
-
-        Assert.IsNotNull(detail);
-        Assert.HasCount(6, detail.RosterPlayers);
-        Assert.IsTrue(detail.RosterPlayers.All(player => player.AddSource == "summary"));
-        Assert.IsTrue(detail.RosterPlayers.All(player => player.JoinedReplayCount == 0));
-    }
-
-    [TestMethod]
-    public async Task GetSessionAsync_DoesNotRefreshStableSummaries()
-    {
-        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
-        var user = await fixture.AddUserAsync(1);
-        var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
-        await fixture.Service.UploadReplayAsync(
-            session.SessionId,
-            user.InHouseUserId,
-            new InHouseReplayUploadRequest { Replay = CreateReplay() },
-            CancellationToken.None);
-        var originalSummaryIds = fixture.Context.InHouseGameSessionPlayerSummaries
-            .Select(summary => summary.InHouseGameSessionPlayerSummaryId)
-            .Order()
-            .ToList();
-
-        await fixture.Service.GetSessionAsync(session.SessionId, user.InHouseUserId, CancellationToken.None);
-
-        var reloadedSummaryIds = fixture.Context.InHouseGameSessionPlayerSummaries
-            .Select(summary => summary.InHouseGameSessionPlayerSummaryId)
-            .Order()
-            .ToList();
-        CollectionAssert.AreEqual(originalSummaryIds, reloadedSummaryIds);
-    }
-
-    [TestMethod]
-    public async Task SetRosterPlayerSitterAsync_DoesNotRefreshSummaries()
-    {
-        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
-        var user = await fixture.AddUserAsync(1);
-        var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
-        var upload = await fixture.Service.UploadReplayAsync(
-            session.SessionId,
-            user.InHouseUserId,
-            new InHouseReplayUploadRequest { Replay = CreateReplay() },
-            CancellationToken.None);
-        var rosterPlayer = upload.RosterPlayers[0];
-        var originalSummaryIds = fixture.Context.InHouseGameSessionPlayerSummaries
-            .Select(summary => summary.InHouseGameSessionPlayerSummaryId)
-            .Order()
-            .ToList();
-
-        await fixture.Service.SetRosterPlayerSitterAsync(
-            session.SessionId,
-            rosterPlayer.RosterPlayerId,
+            added.RosterPlayers[0].RosterPlayerId,
             user.InHouseUserId,
             true,
             CancellationToken.None);
+        var snapshotAfter = await fixture.Context.InHouseGameSessionStateSnapshots
+            .Select(snapshot => snapshot.Json)
+            .SingleAsync();
 
-        var reloadedSummaryIds = fixture.Context.InHouseGameSessionPlayerSummaries
-            .Select(summary => summary.InHouseGameSessionPlayerSummaryId)
-            .Order()
-            .ToList();
-        CollectionAssert.AreEqual(originalSummaryIds, reloadedSummaryIds);
+        Assert.IsTrue(toggled.RosterPlayers.Single().IsSitter);
+        Assert.AreEqual(snapshotBefore, snapshotAfter);
+    }
+
+    [TestMethod]
+    public async Task CloseSessionAsync_OnlyAllowsCreatorAndPersistsClosedAt()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var creator = await fixture.AddUserAsync(1);
+        var other = await fixture.AddUserAsync(2);
+        var session = await fixture.Service.CreateSessionAsync(creator.InHouseUserId, new(), CancellationToken.None);
+
+        var ex = await Assert.ThrowsExactlyAsync<InvalidOperationException>(
+            () => fixture.Service.CloseSessionAsync(session.SessionId, other.InHouseUserId, CancellationToken.None));
+        var closed = await fixture.Service.CloseSessionAsync(session.SessionId, creator.InHouseUserId, CancellationToken.None);
+
+        Assert.AreEqual("Only the session creator can close this InHouse session.", ex.Message);
+        Assert.IsNotNull(closed.ClosedAt);
+        Assert.IsNotNull(await fixture.Context.InHouseGameSessions
+            .Where(dbSession => dbSession.PublicId == session.SessionId)
+            .Select(dbSession => dbSession.ClosedAt)
+            .SingleAsync());
+    }
+
+    [TestMethod]
+    public async Task CloseInactiveSessionsAsync_ClosesAndRemovesFromActiveList()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
+
+        var closed = await fixture.Service.CloseInactiveSessionsAsync(TimeSpan.Zero, CancellationToken.None);
+        var active = await fixture.Service.GetActiveSessionsAsync(CancellationToken.None);
+
+        Assert.HasCount(1, closed);
+        Assert.AreEqual(session.SessionId, closed[0].SessionId);
+        Assert.HasCount(0, active);
+    }
+
+    [TestMethod]
+    public async Task GetSessionAsync_RefreshesPendingRatingsWhenRatingsArriveLater()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
+        var upload = await fixture.Service.UploadReplayAsync(
+            session.SessionId,
+            user.InHouseUserId,
+            new InHouseReplayUploadRequest { Replay = CreateReplay() },
+            CancellationToken.None);
+
+        Assert.IsTrue(upload.State.Players.Where(player => player.Games > 0).All(player => player.RatingsPending));
+
+        await fixture.AddReplayRatingAsync(upload.State.Replays[0].ReplayHash);
+        var refreshed = await fixture.Service.GetSessionAsync(session.SessionId, user.InHouseUserId, CancellationToken.None);
+
+        Assert.IsNotNull(refreshed);
+        var winner = refreshed.Players.Single(player => player.ToonId.Id == 1);
+        Assert.IsFalse(winner.RatingsPending);
+        Assert.AreEqual(1000, winner.RatingStart);
+        Assert.AreEqual(1010, winner.RatingEnd);
+        Assert.AreEqual(10, winner.RatingDelta);
+        Assert.AreEqual(10, winner.AverageGain);
     }
 
     [TestMethod]
@@ -233,7 +262,7 @@ public sealed class InHouseGameSessionServiceTests
     public void Matchmaker_PlayDebtUsesJoinedReplayCount()
     {
         var roster = Enumerable.Range(1, 7)
-            .Select(i => CreateRosterPlayer(i, games: i == 7 ? 0 : 2, joinedReplayCount: i == 7 ? 0 : 0))
+            .Select(i => CreateRosterPlayer(i, games: i == 7 ? 0 : 2, joinedReplayCount: 0))
             .ToList();
         var session = CreateMatchmakingSession(2, roster);
 
@@ -292,113 +321,8 @@ public sealed class InHouseGameSessionServiceTests
         Assert.IsGreaterThan(mixed.BalanceScore, stacked.BalanceScore);
     }
 
-    [TestMethod]
-    public async Task GetSessionAsync_RefreshesSummaryWhenRatingsArriveLater()
-    {
-        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
-        var user = await fixture.AddUserAsync(1);
-        var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
-        var upload = await fixture.Service.UploadReplayAsync(
-            session.SessionId,
-            user.InHouseUserId,
-            new InHouseReplayUploadRequest { Replay = CreateReplay() },
-            CancellationToken.None);
-
-        Assert.IsTrue(upload.Players.Where(player => player.Games > 0).All(player => player.RatingsPending));
-
-        await fixture.AddReplayRatingAsync(upload.Replays[0].ReplayHash);
-        var refreshed = await fixture.Service.GetSessionAsync(session.SessionId, user.InHouseUserId, CancellationToken.None);
-
-        Assert.IsNotNull(refreshed);
-        var winner = refreshed.Players.Single(player => player.ToonId.Id == 1);
-        Assert.IsFalse(winner.RatingsPending);
-        Assert.AreEqual(1000, winner.RatingStart);
-        Assert.AreEqual(1010, winner.RatingEnd);
-        Assert.AreEqual(10, winner.RatingDelta);
-        Assert.AreEqual(10, winner.AverageGain);
-    }
-
-    [TestMethod]
-    public async Task CloseSessionAsync_OnlyAllowsCreator()
-    {
-        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
-        var creator = await fixture.AddUserAsync(1);
-        var other = await fixture.AddUserAsync(2);
-        var session = await fixture.Service.CreateSessionAsync(creator.InHouseUserId, new(), CancellationToken.None);
-
-        var ex = await Assert.ThrowsExactlyAsync<InvalidOperationException>(
-            () => fixture.Service.CloseSessionAsync(session.SessionId, other.InHouseUserId, CancellationToken.None));
-        var closed = await fixture.Service.CloseSessionAsync(session.SessionId, creator.InHouseUserId, CancellationToken.None);
-
-        Assert.AreEqual("Only the session creator can close this InHouse session.", ex.Message);
-        Assert.IsNotNull(closed.ClosedAt);
-    }
-
-    [TestMethod]
-    public async Task GetSession_UnauthenticatedUserIsRejected()
-    {
-        var controller = new InHouseSessionsController(
-            Mock.Of<IInHouseGameSessionService>(),
-            Mock.Of<IHubContext<InHouseHub>>())
-        {
-            ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext(),
-            },
-        };
-
-        var ex = await Assert.ThrowsExactlyAsync<InvalidOperationException>(
-            () => controller.GetSession(Guid.NewGuid(), CancellationToken.None));
-
-        Assert.AreEqual("You are not signed in.", ex.Message);
-    }
-
-    [TestMethod]
-    public async Task CloseSession_ControllerCallsServiceForCurrentUser()
-    {
-        var sessionId = Guid.NewGuid();
-        var service = new Mock<IInHouseGameSessionService>();
-        service
-            .Setup(s => s.CloseSessionAsync(sessionId, 42, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new InHouseGameSessionDetailDto { SessionId = sessionId });
-        var hubContext = CreateHubContextMock();
-        var controller = new InHouseSessionsController(service.Object, hubContext.Object)
-        {
-            ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = new ClaimsPrincipal(new ClaimsIdentity(
-                    [
-                        new Claim(InHouseClaims.UserId, "42"),
-                    ])),
-                },
-            },
-        };
-
-        var result = await controller.CloseSession(sessionId, CancellationToken.None);
-
-        Assert.IsInstanceOfType<ActionResult<InHouseGameSessionDetailDto>>(result);
-        service.Verify(s => s.CloseSessionAsync(sessionId, 42, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    private static Mock<IHubContext<InHouseHub>> CreateHubContextMock()
-    {
-        var clientProxy = new Mock<IClientProxy>();
-        var clients = new Mock<IHubClients>();
-        clients
-            .Setup(c => c.Group(It.IsAny<string>()))
-            .Returns(clientProxy.Object);
-        var hubContext = new Mock<IHubContext<InHouseHub>>();
-        hubContext
-            .SetupGet(c => c.Clients)
-            .Returns(clients.Object);
-        return hubContext;
-    }
-
     private static ReplayDto CreateReplay()
-    {
-        return new()
+        => new()
         {
             Title = "Direct Strike TE",
             Version = "5.0.0",
@@ -426,13 +350,11 @@ public sealed class InHouseGameSessionServiceTests
                 })
                 .ToList(),
         };
-    }
 
     private static InHouseGameSessionDetailDto CreateMatchmakingSession(
         int replayCount,
         List<InHouseRosterPlayerDto> roster)
-    {
-        return new()
+        => new()
         {
             SessionId = Guid.NewGuid(),
             RosterPlayers = roster,
@@ -444,7 +366,6 @@ public sealed class InHouseGameSessionServiceTests
                 })
                 .ToList(),
         };
-    }
 
     private static InHouseRosterPlayerDto CreateRosterPlayer(
         int seed,
@@ -489,14 +410,21 @@ public sealed class InHouseGameSessionServiceTests
             this.connection = connection;
             this.serviceProvider = serviceProvider;
             Context = serviceProvider.GetRequiredService<DsstatsContext>();
-            var importService = new ImportService(
-                serviceProvider.GetRequiredService<IServiceScopeFactory>(),
-                NullLogger<ImportService>.Instance);
-            Service = new InHouseGameSessionService(Context, importService);
+            Service = CreateService();
         }
 
         public DsstatsContext Context { get; }
         public InHouseGameSessionService Service { get; }
+
+        public InHouseGameSessionService CreateService()
+        {
+            var importService = new ImportService(
+                serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+                NullLogger<ImportService>.Instance);
+            return new InHouseGameSessionService(
+                serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+                importService);
+        }
 
         public static async Task<InHouseGameSessionFixture> CreateAsync()
         {

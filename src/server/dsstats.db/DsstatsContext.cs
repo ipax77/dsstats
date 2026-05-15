@@ -53,11 +53,9 @@ public class DsstatsContext : DbContext
     public DbSet<InHouseProfile> InHouseProfiles { get; set; }
     public DbSet<InHouseSession> InHouseSessions { get; set; }
     public DbSet<InHouseDeviceLinkCode> InHouseDeviceLinkCodes { get; set; }
-    public DbSet<InHouseGameSession> InHouseGameSessions { get; set; }
-    public DbSet<InHouseGameSessionRosterPlayer> InHouseGameSessionRosterPlayers { get; set; }
-    public DbSet<InHouseGameSessionReplay> InHouseGameSessionReplays { get; set; }
-    public DbSet<InHouseGameSessionReplayPlayer> InHouseGameSessionReplayPlayers { get; set; }
-    public DbSet<InHouseGameSessionPlayerSummary> InHouseGameSessionPlayerSummaries { get; set; }
+    public DbSet<InHouseGameSessionSimplified> InHouseGameSessions { get; set; }
+    public DbSet<InHouseGameSessionStateSnapshot> InHouseGameSessionStateSnapshots { get; set; }
+    public DbSet<ReplayObservers> ReplayObservers { get; set; }
 
     public int Week(DateTime date) => throw new InvalidOperationException($"{nameof(Week)} cannot be called client side.");
 
@@ -158,8 +156,10 @@ public class DsstatsContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<InHouseGameSession>(entity =>
+        modelBuilder.Entity<InHouseGameSessionSimplified>(entity =>
         {
+            entity.ToTable("InHouseGameSessions");
+            entity.HasKey(i => i.InHouseGameSessionId);
             entity.HasIndex(i => i.PublicId).IsUnique();
             entity.HasIndex(i => i.ClosedAt);
             entity.HasIndex(i => i.CreatedAt);
@@ -169,94 +169,22 @@ public class DsstatsContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<InHouseGameSessionReplay>(entity =>
+        modelBuilder.Entity<InHouseGameSessionStateSnapshot>(entity =>
         {
-            entity.HasIndex(i => new { i.InHouseGameSessionId, i.ReplayId }).IsUnique();
-            entity.HasIndex(i => i.UploadedAt);
+            entity.HasKey(i => i.InHouseGameSessionId);
             entity.HasOne(i => i.Session)
-                .WithMany(i => i.Replays)
-                .HasForeignKey(i => i.InHouseGameSessionId)
+                .WithOne(i => i.StateSnapshot)
+                .HasForeignKey<InHouseGameSessionStateSnapshot>(i => i.InHouseGameSessionId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ReplayObservers>(entity =>
+        {
+            entity.HasIndex(i => i.ReplayId).IsUnique();
             entity.HasOne(i => i.Replay)
                 .WithMany()
                 .HasForeignKey(i => i.ReplayId)
                 .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(i => i.UploadedBy)
-                .WithMany()
-                .HasForeignKey(i => i.UploadedByInHouseUserId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<InHouseGameSessionRosterPlayer>(entity =>
-        {
-            entity.OwnsOne(p => p.ToonId, toon =>
-            {
-                toon.Property(t => t.Region).IsRequired();
-                toon.Property(t => t.Realm).IsRequired();
-                toon.Property(t => t.Id).IsRequired();
-                toon.HasIndex(t => new { t.Region, t.Realm, t.Id });
-            });
-
-            entity.HasIndex(i => i.PublicId).IsUnique();
-            entity.HasIndex(i => new { i.InHouseGameSessionId, i.PlayerId });
-            entity.HasOne(i => i.Session)
-                .WithMany(i => i.RosterPlayers)
-                .HasForeignKey(i => i.InHouseGameSessionId)
-                .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(i => i.Player)
-                .WithMany()
-                .HasForeignKey(i => i.PlayerId)
-                .OnDelete(DeleteBehavior.SetNull);
-            entity.HasOne(i => i.AddedBy)
-                .WithMany()
-                .HasForeignKey(i => i.AddedByInHouseUserId)
-                .OnDelete(DeleteBehavior.SetNull);
-        });
-
-        modelBuilder.Entity<InHouseGameSessionReplayPlayer>(entity =>
-        {
-            entity.OwnsOne(p => p.ToonId, toon =>
-            {
-                toon.Property(t => t.Region).IsRequired();
-                toon.Property(t => t.Realm).IsRequired();
-                toon.Property(t => t.Id).IsRequired();
-                toon.HasIndex(t => new { t.Region, t.Realm, t.Id });
-            });
-
-            entity.HasIndex(i => new { i.InHouseGameSessionReplayId, i.Observer });
-            entity.HasOne(i => i.SessionReplay)
-                .WithMany(i => i.Players)
-                .HasForeignKey(i => i.InHouseGameSessionReplayId)
-                .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(i => i.ReplayPlayer)
-                .WithMany()
-                .HasForeignKey(i => i.ReplayPlayerId)
-                .OnDelete(DeleteBehavior.SetNull);
-            entity.HasOne(i => i.Player)
-                .WithMany()
-                .HasForeignKey(i => i.PlayerId)
-                .OnDelete(DeleteBehavior.SetNull);
-        });
-
-        modelBuilder.Entity<InHouseGameSessionPlayerSummary>(entity =>
-        {
-            entity.OwnsOne(p => p.ToonId, toon =>
-            {
-                toon.Property(t => t.Region).IsRequired();
-                toon.Property(t => t.Realm).IsRequired();
-                toon.Property(t => t.Id).IsRequired();
-                toon.HasIndex(t => new { t.Region, t.Realm, t.Id });
-            });
-
-            entity.HasIndex(i => new { i.InHouseGameSessionId, i.PlayerId });
-            entity.HasOne(i => i.Session)
-                .WithMany(i => i.PlayerSummaries)
-                .HasForeignKey(i => i.InHouseGameSessionId)
-                .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(i => i.Player)
-                .WithMany()
-                .HasForeignKey(i => i.PlayerId)
-                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<ReplayPlayer>(entity =>

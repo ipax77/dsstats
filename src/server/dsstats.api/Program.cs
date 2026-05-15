@@ -133,13 +133,14 @@ builder.Services.AddSingleton<IRatingService, RatingService>();
 builder.Services.AddSingleton<IPickBanService, PickBanService>();
 builder.Services.AddSingleton<InHouseConnectionTracker>();
 builder.Services.AddSingleton<IInHouseAccountNotifier, InHouseAccountNotifier>();
+builder.Services.AddSingleton<IInHouseGameSessionService, InHouseGameSessionService>();
+builder.Services.AddHostedService<InHouseSessionCleanupService>();
 
 builder.Services.AddScoped<IDashboardStatsService, DashboardStatsService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<TransitionService>();
 builder.Services.AddScoped<IInHouseAuthService, InHouseAuthService>();
-builder.Services.AddScoped<IInHouseGameSessionService, InHouseGameSessionService>();
 
 builder.Services.AddStats();
 builder.Services.AddScoped<IBuildsService, BuildsService>();
