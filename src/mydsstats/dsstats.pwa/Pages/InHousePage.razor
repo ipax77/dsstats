@@ -76,6 +76,40 @@
                                 }
                             </div>
                         </div>
+
+                        <div class="card border-light mt-3">
+                            <div class="card-header bgchart2 d-flex align-items-center justify-content-between gap-2">
+                                <h5 class="text-warning mb-0">Closed Sessions</h5>
+                                <span class="badge text-bg-secondary">@closedSessionsTotal</span>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                @if (closedSessions.Count == 0)
+                                {
+                                    <div class="list-group-item bgchart text-muted">No closed sessions yet.</div>
+                                }
+                                @foreach (var session in closedSessions)
+                                {
+                                    <button type="button"
+                                            class="list-group-item list-group-item-action bgchart @(selectedSession?.SessionId == session.SessionId ? "active" : "")"
+                                            @onclick="() => SelectClosedSessionAsync(session.SessionId)">
+                                        <div class="d-flex justify-content-between gap-2">
+                                            <span class="fw-semibold">@session.Name</span>
+                                            <span class="badge text-bg-secondary">@session.Games</span>
+                                        </div>
+                                        <div class="small text-muted">@session.CreatedByDisplayName · @session.ClosedAt.ToLocalTime().ToString("g")</div>
+                                    </button>
+                                }
+                            </div>
+                            <div class="card-footer bgchart2 d-flex justify-content-between align-items-center gap-2">
+                                <button class="btn btn-outline-light btn-sm" @onclick="PreviousClosedSessionsPageAsync" disabled="@(busy || closedSessionsPage <= 1)">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <span class="small text-muted">Page @closedSessionsPage of @ClosedSessionsPageCount</span>
+                                <button class="btn btn-outline-light btn-sm" @onclick="NextClosedSessionsPageAsync" disabled="@(busy || closedSessionsPage >= ClosedSessionsPageCount)">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="col-xl-9 col-lg-8">
@@ -119,104 +153,107 @@
                                 </div>
                             </div>
 
-                            <div class="card border-light mb-3">
-                                <div class="card-header bgchart2 d-flex flex-wrap align-items-center justify-content-between gap-2">
-                                    <h5 class="text-warning mb-0">Next Match</h5>
-                                    <button class="btn btn-outline-light btn-sm" @onclick="ResetMatchmakingDraft" disabled="@(selectedSession.RosterPlayers.Count == 0)">
-                                        <i class="bi bi-shuffle me-1"></i>Suggest
-                                    </button>
-                                </div>
-                                <div class="card-body bgchart">
-                                    <div class="row g-3">
-                                        <div class="col-xl-4">
-                                            <div class="border border-secondary rounded p-2 h-100">
-                                                <div class="fw-semibold text-warning mb-2">Add player</div>
-                                                <div class="input-group input-group-sm mb-2">
-                                                    <input class="form-control" placeholder="Search ratings" @bind="playerSearchName" @bind:event="oninput" />
-                                                    <button class="btn btn-outline-light" @onclick="SearchRosterPlayersAsync" disabled="@busy">
-                                                        <i class="bi bi-search"></i>
-                                                    </button>
-                                                </div>
-                                                @if (playerSearchResults.Count > 0)
-                                                {
-                                                    <div class="list-group mb-2" style="max-height: 12rem; overflow: auto;">
-                                                        @foreach (var rating in playerSearchResults)
-                                                        {
-                                                            <button type="button" class="list-group-item list-group-item-action bgchart py-1"
-                                                                    @onclick="() => SelectRosterSearchResult(rating)">
-                                                                <span class="fw-semibold">@rating.Name</span>
-                                                                <span class="small text-muted ms-2">@rating.Rating.ToString("N0") · @rating.ToonIdString</span>
-                                                            </button>
-                                                        }
+                            @if (!IsSelectedSessionClosed)
+                            {
+                                <div class="card border-light mb-3">
+                                    <div class="card-header bgchart2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                        <h5 class="text-warning mb-0">Next Match</h5>
+                                        <button class="btn btn-outline-light btn-sm" @onclick="ResetMatchmakingDraft" disabled="@(selectedSession.RosterPlayers.Count == 0)">
+                                            <i class="bi bi-shuffle me-1"></i>Suggest
+                                        </button>
+                                    </div>
+                                    <div class="card-body bgchart">
+                                        <div class="row g-3">
+                                            <div class="col-xl-4">
+                                                <div class="border border-secondary rounded p-2 h-100">
+                                                    <div class="fw-semibold text-warning mb-2">Add player</div>
+                                                    <div class="input-group input-group-sm mb-2">
+                                                        <input class="form-control" placeholder="Search ratings" @bind="playerSearchName" @bind:event="oninput" />
+                                                        <button class="btn btn-outline-light" @onclick="SearchRosterPlayersAsync" disabled="@busy">
+                                                            <i class="bi bi-search"></i>
+                                                        </button>
                                                     </div>
-                                                }
-                                                <div class="row g-2">
-                                                    <div class="col-12">
-                                                        <input class="form-control form-control-sm" placeholder="Name" @bind="manualRosterName" />
-                                                    </div>
-                                                    <div class="col-4">
-                                                        <input type="number" class="form-control form-control-sm" placeholder="Region" @bind="manualRosterRegion" />
-                                                    </div>
-                                                    <div class="col-4">
-                                                        <input type="number" class="form-control form-control-sm" placeholder="Realm" @bind="manualRosterRealm" />
-                                                    </div>
-                                                    <div class="col-4">
-                                                        <input type="number" class="form-control form-control-sm" placeholder="Toon" @bind="manualRosterToonId" />
-                                                    </div>
-                                                    <div class="col-8">
-                                                        <input type="number" class="form-control form-control-sm" placeholder="Rating" @bind="manualRosterRating" />
-                                                    </div>
-                                                    <div class="col-4 d-flex align-items-center">
-                                                        <div class="form-check form-switch">
-                                                            <input class="form-check-input" type="checkbox" id="newPlayerSitter" @bind="manualRosterSitter" />
-                                                            <label class="form-check-label small" for="newPlayerSitter">Sitter</label>
+                                                    @if (playerSearchResults.Count > 0)
+                                                    {
+                                                        <div class="list-group mb-2" style="max-height: 12rem; overflow: auto;">
+                                                            @foreach (var rating in playerSearchResults)
+                                                            {
+                                                                <button type="button" class="list-group-item list-group-item-action bgchart py-1"
+                                                                        @onclick="() => SelectRosterSearchResult(rating)">
+                                                                    <span class="fw-semibold">@rating.Name</span>
+                                                                    <span class="small text-muted ms-2">@rating.Rating.ToString("N0") · @rating.ToonIdString</span>
+                                                                </button>
+                                                            }
+                                                        </div>
+                                                    }
+                                                    <div class="row g-2">
+                                                        <div class="col-12">
+                                                            <input class="form-control form-control-sm" placeholder="Name" @bind="manualRosterName" />
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <input type="number" class="form-control form-control-sm" placeholder="Region" @bind="manualRosterRegion" />
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <input type="number" class="form-control form-control-sm" placeholder="Realm" @bind="manualRosterRealm" />
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <input type="number" class="form-control form-control-sm" placeholder="Toon" @bind="manualRosterToonId" />
+                                                        </div>
+                                                        <div class="col-8">
+                                                            <input type="number" class="form-control form-control-sm" placeholder="Rating" @bind="manualRosterRating" />
+                                                        </div>
+                                                        <div class="col-4 d-flex align-items-center">
+                                                            <div class="form-check form-switch">
+                                                                <input class="form-check-input" type="checkbox" id="newPlayerSitter" @bind="manualRosterSitter" />
+                                                                <label class="form-check-label small" for="newPlayerSitter">Sitter</label>
+                                                            </div>
                                                         </div>
                                                     </div>
+                                                    <button class="btn btn-primary btn-sm mt-2 w-100" @onclick="AddRosterPlayerAsync" disabled="@busy">
+                                                        <i class="bi bi-person-plus me-1"></i>Add / update roster
+                                                    </button>
                                                 </div>
-                                                <button class="btn btn-primary btn-sm mt-2 w-100" @onclick="AddRosterPlayerAsync" disabled="@busy">
-                                                    <i class="bi bi-person-plus me-1"></i>Add / update roster
-                                                </button>
                                             </div>
-                                        </div>
 
-                                        <div class="col-xl-8">
-                                            @if (matchmakingSuggestion is null || selectedSession.RosterPlayers.Count == 0)
-                                            {
-                                                <div class="text-muted">Add players or upload a replay to get a next-game suggestion.</div>
-                                            }
-                                            else
-                                            {
-                                                var scores = GetDraftScores();
-                                                <div class="d-flex flex-wrap gap-2 mb-3">
-                                                    <span class="badge text-bg-secondary">Balance @scores.BalanceScore.ToString("N0")</span>
-                                                    <span class="badge text-bg-secondary">Least played @scores.LeastPlayedScore</span>
-                                                    <span class="badge text-bg-secondary">Same roster @scores.SameRosterScore</span>
-                                                    <span class="badge text-bg-secondary">Team 1 @scores.Team1Rating.ToString("N0")</span>
-                                                    <span class="badge text-bg-secondary">Team 2 @scores.Team2Rating.ToString("N0")</span>
-                                                </div>
-                                                @foreach (var warning in matchmakingSuggestion.Warnings)
+                                            <div class="col-xl-8">
+                                                @if (matchmakingSuggestion is null || selectedSession.RosterPlayers.Count == 0)
                                                 {
-                                                    <div class="alert alert-warning py-2 mb-2">@warning</div>
+                                                    <div class="text-muted">Add players or upload a replay to get a next-game suggestion.</div>
                                                 }
-                                                <div class="row g-3">
-                                                    <div class="col-lg-6">
-                                                        @RenderTeam("Team 1", draftTeam1, "team1")
+                                                else
+                                                {
+                                                    var scores = GetDraftScores();
+                                                    <div class="d-flex flex-wrap gap-2 mb-3">
+                                                        <span class="badge text-bg-secondary">Balance @scores.BalanceScore.ToString("N0")</span>
+                                                        <span class="badge text-bg-secondary">Least played @scores.LeastPlayedScore</span>
+                                                        <span class="badge text-bg-secondary">Same roster @scores.SameRosterScore</span>
+                                                        <span class="badge text-bg-secondary">Team 1 @scores.Team1Rating.ToString("N0")</span>
+                                                        <span class="badge text-bg-secondary">Team 2 @scores.Team2Rating.ToString("N0")</span>
                                                     </div>
-                                                    <div class="col-lg-6">
-                                                        @RenderTeam("Team 2", draftTeam2, "team2")
+                                                    @foreach (var warning in matchmakingSuggestion.Warnings)
+                                                    {
+                                                        <div class="alert alert-warning py-2 mb-2">@warning</div>
+                                                    }
+                                                    <div class="row g-3">
+                                                        <div class="col-lg-6">
+                                                            @RenderTeam("Team 1", draftTeam1, "team1")
+                                                        </div>
+                                                        <div class="col-lg-6">
+                                                            @RenderTeam("Team 2", draftTeam2, "team2")
+                                                        </div>
+                                                        <div class="col-lg-6">
+                                                            @RenderTeam("Bench", draftBench, "bench")
+                                                        </div>
+                                                        <div class="col-lg-6">
+                                                            @RenderTeam("Sitters", matchmakingSuggestion.Sitters, "sitters")
+                                                        </div>
                                                     </div>
-                                                    <div class="col-lg-6">
-                                                        @RenderTeam("Bench", draftBench, "bench")
-                                                    </div>
-                                                    <div class="col-lg-6">
-                                                        @RenderTeam("Sitters", matchmakingSuggestion.Sitters, "sitters")
-                                                    </div>
-                                                </div>
-                                            }
+                                                }
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            }
 
                             <div class="card border-light mb-3">
                                 <div class="card-header bgchart2">
@@ -242,7 +279,10 @@
                                                         <th>Gain</th>
                                                         <th>Avg</th>
                                                         <th>Latest</th>
-                                                        <th>Sitter</th>
+                                                        @if (!IsSelectedSessionClosed)
+                                                        {
+                                                            <th>Sitter</th>
+                                                        }
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -271,14 +311,17 @@
                                                                     <span class="badge text-bg-secondary">Rating pending</span>
                                                                 }
                                                             </td>
-                                                            <td>
-                                                                @if (TryGetRosterPlayer(player.ToonId, out var rosterPlayer))
-                                                                {
-                                                                    <button class="btn btn-outline-light btn-sm" @onclick="() => ToggleSitterAsync(rosterPlayer)" disabled="@busy">
-                                                                        @(rosterPlayer.IsSitter ? "Unmark" : "Sit")
-                                                                    </button>
-                                                                }
-                                                            </td>
+                                                            @if (!IsSelectedSessionClosed)
+                                                            {
+                                                                <td>
+                                                                    @if (TryGetRosterPlayer(player.ToonId, out var rosterPlayer))
+                                                                    {
+                                                                        <button class="btn btn-outline-light btn-sm" @onclick="() => ToggleSitterAsync(rosterPlayer)" disabled="@busy">
+                                                                            @(rosterPlayer.IsSitter ? "Unmark" : "Sit")
+                                                                        </button>
+                                                                    }
+                                                                </td>
+                                                            }
                                                         </tr>
                                                     }
                                                 </tbody>
@@ -425,8 +468,10 @@
         Name = "Player",
         ToonId = new ToonIdDto { Region = 1, Realm = 1 }
     };
+    private const int ClosedSessionsPageSize = 10;
     private readonly List<TrackedProfileDto> trackedProfiles = [];
     private readonly List<InHouseGameSessionListDto> sessions = [];
+    private readonly List<InHouseClosedGameSessionListDto> closedSessions = [];
     private readonly List<PlayerRatingListItem> playerSearchResults = [];
     private readonly List<InHouseMatchmakingPlayer> draftTeam1 = [];
     private readonly List<InHouseMatchmakingPlayer> draftTeam2 = [];
@@ -452,10 +497,14 @@
     private bool loading = true;
     private bool busy;
     private bool passkeysSupported;
+    private int closedSessionsPage = 1;
+    private int closedSessionsTotal;
     ReplayModal? replayModal;
     PlayerModal? playerModal;
 
     private bool HasSelectedProfile => !string.IsNullOrWhiteSpace(selectedProfileKey);
+    private bool IsSelectedSessionClosed => selectedSession?.ClosedAt is not null;
+    private int ClosedSessionsPageCount => Math.Max(1, (int)Math.Ceiling((double)closedSessionsTotal / ClosedSessionsPageSize));
 
     protected override async Task OnInitializedAsync()
     {
@@ -470,6 +519,7 @@
         {
             await EnsureHubConnectedAsync();
             await LoadSessionsAsync();
+            await LoadClosedSessionsAsync();
         }
 
         loading = false;
@@ -486,10 +536,14 @@
             {
                 await EnsureHubConnectedAsync();
                 await LoadSessionsAsync();
+                await LoadClosedSessionsAsync();
             }
             else
             {
                 sessions.Clear();
+                closedSessions.Clear();
+                closedSessionsPage = 1;
+                closedSessionsTotal = 0;
                 selectedSession = null;
                 ResetMatchmakingDraft();
                 await DisposeHubAsync();
@@ -515,6 +569,20 @@
         }
     }
 
+    private async Task LoadClosedSessionsAsync()
+    {
+        var page = await SessionsClient.GetClosedSessionsAsync(closedSessionsPage, ClosedSessionsPageSize);
+        closedSessions.Clear();
+        closedSessions.AddRange(page.Items.DistinctBy(session => session.SessionId));
+        closedSessionsPage = page.Page;
+        closedSessionsTotal = page.Total;
+        if (closedSessions.Count == 0 && closedSessionsPage > 1)
+        {
+            closedSessionsPage--;
+            await LoadClosedSessionsAsync();
+        }
+    }
+
     private async Task CreateSessionAsync()
     {
         await RunAsync(async () =>
@@ -523,6 +591,7 @@
             ResetMatchmakingDraft();
             newSessionName = string.Empty;
             await LoadSessionsAsync();
+            await LoadClosedSessionsAsync();
             await JoinSelectedSessionAsync();
         });
     }
@@ -541,6 +610,20 @@
         });
     }
 
+    private async Task SelectClosedSessionAsync(Guid sessionId)
+    {
+        await RunAsync(async () =>
+        {
+            if (selectedSession is not null)
+            {
+                await LeaveSessionGroupAsync(selectedSession.SessionId);
+            }
+
+            selectedSession = await SessionsClient.GetSessionAsync(sessionId);
+            ResetMatchmakingDraft();
+        });
+    }
+
     private async Task RefreshAsync()
     {
         if (selectedSession is null)
@@ -550,9 +633,12 @@
 
         await RunAsync(async () =>
         {
-            selectedSession = await JoinSessionAsync(selectedSession.SessionId);
+            selectedSession = IsSelectedSessionClosed
+                ? await SessionsClient.GetSessionAsync(selectedSession.SessionId)
+                : await JoinSessionAsync(selectedSession.SessionId);
             ResetMatchmakingDraft();
             await LoadSessionsAsync();
+            await LoadClosedSessionsAsync();
         });
     }
 
@@ -569,6 +655,7 @@
             selectedSession = await hubConnection!.InvokeAsync<InHouseGameSessionDetailDto>("CloseSession", selectedSession.SessionId);
             ApplySessionState(selectedSession);
             await LoadSessionsAsync();
+            await LoadClosedSessionsAsync();
         });
     }
 
@@ -586,7 +673,36 @@
             var parsedReplay = await DecodeService.DecodeInHouseReplayFromStream(stream, file.Name);
             ApplySessionState(await SessionsClient.UploadReplayAsync(selectedSession.SessionId, parsedReplay));
             await LoadSessionsAsync();
+            await LoadClosedSessionsAsync();
             statusMessage = "Replay attached to the session.";
+        });
+    }
+
+    private async Task PreviousClosedSessionsPageAsync()
+    {
+        if (closedSessionsPage <= 1)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            closedSessionsPage--;
+            await LoadClosedSessionsAsync();
+        });
+    }
+
+    private async Task NextClosedSessionsPageAsync()
+    {
+        if (closedSessionsPage >= ClosedSessionsPageCount)
+        {
+            return;
+        }
+
+        await RunAsync(async () =>
+        {
+            closedSessionsPage++;
+            await LoadClosedSessionsAsync();
         });
     }
 
@@ -637,6 +753,7 @@
             _ = InvokeAsync(async () =>
             {
                 await LoadSessionsAsync();
+                await LoadClosedSessionsAsync();
                 StateHasChanged();
             });
         });
@@ -813,6 +930,12 @@
         draftBench.Clear();
 
         if (selectedSession is null)
+        {
+            matchmakingSuggestion = null;
+            return;
+        }
+
+        if (selectedSession.ClosedAt is not null)
         {
             matchmakingSuggestion = null;
             return;

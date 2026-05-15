@@ -190,6 +190,7 @@ public sealed class InHouseGameSessionServiceTests
             .Where(dbSession => dbSession.PublicId == session.SessionId)
             .Select(dbSession => dbSession.ClosedAt)
             .SingleAsync());
+        Assert.HasCount(0, await fixture.Service.GetActiveSessionsAsync(CancellationToken.None));
     }
 
     [TestMethod]
@@ -205,6 +206,85 @@ public sealed class InHouseGameSessionServiceTests
         Assert.HasCount(1, closed);
         Assert.AreEqual(session.SessionId, closed[0].SessionId);
         Assert.HasCount(0, active);
+    }
+
+    [TestMethod]
+    public async Task GetClosedSessionsAsync_ReturnsPagedClosedSessionsNewestFirst()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var first = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new InHouseCreateGameSessionRequest { Name = "First" }, CancellationToken.None);
+        await fixture.Service.CloseSessionAsync(first.SessionId, user.InHouseUserId, CancellationToken.None);
+        var second = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new InHouseCreateGameSessionRequest { Name = "Second" }, CancellationToken.None);
+        await fixture.Service.CloseSessionAsync(second.SessionId, user.InHouseUserId, CancellationToken.None);
+        var third = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new InHouseCreateGameSessionRequest { Name = "Third" }, CancellationToken.None);
+        await fixture.Service.CloseSessionAsync(third.SessionId, user.InHouseUserId, CancellationToken.None);
+
+        var closedAt = new Dictionary<Guid, DateTime>
+        {
+            [first.SessionId] = new(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            [second.SessionId] = new(2024, 1, 3, 12, 0, 0, DateTimeKind.Utc),
+            [third.SessionId] = new(2024, 1, 2, 12, 0, 0, DateTimeKind.Utc),
+        };
+        foreach (var dbSession in fixture.Context.InHouseGameSessions)
+        {
+            dbSession.ClosedAt = closedAt[dbSession.PublicId];
+        }
+        await fixture.Context.SaveChangesAsync();
+
+        var page = await fixture.Service.GetClosedSessionsAsync(
+            new InHouseClosedGameSessionsRequest { Page = 1, PageSize = 2 },
+            CancellationToken.None);
+
+        Assert.AreEqual(3, page.Total);
+        Assert.AreEqual(1, page.Page);
+        Assert.AreEqual(2, page.PageSize);
+        Assert.HasCount(2, page.Items);
+        Assert.AreEqual(second.SessionId, page.Items[0].SessionId);
+        Assert.AreEqual(third.SessionId, page.Items[1].SessionId);
+    }
+
+    [TestMethod]
+    public async Task GetSessionAsync_RestoresClosedSessionDetailWithoutActiveListCaching()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
+        await fixture.Service.UploadReplayAsync(
+            session.SessionId,
+            user.InHouseUserId,
+            new InHouseReplayUploadRequest { Replay = CreateReplay() },
+            CancellationToken.None);
+        await fixture.Service.CloseSessionAsync(session.SessionId, user.InHouseUserId, CancellationToken.None);
+
+        var restored = await fixture.CreateService().GetSessionAsync(session.SessionId, user.InHouseUserId, CancellationToken.None);
+        var active = await fixture.CreateService().GetActiveSessionsAsync(CancellationToken.None);
+
+        Assert.IsNotNull(restored);
+        Assert.IsNotNull(restored.ClosedAt);
+        Assert.HasCount(1, restored.Replays);
+        Assert.HasCount(6, restored.Players);
+        Assert.HasCount(0, active);
+    }
+
+    [TestMethod]
+    public async Task CreateSessionAsync_ReusesExistingEmptyActiveSessionForCreator()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+
+        var first = await fixture.Service.CreateSessionAsync(
+            user.InHouseUserId,
+            new InHouseCreateGameSessionRequest { Name = "Original" },
+            CancellationToken.None);
+        var second = await fixture.Service.CreateSessionAsync(
+            user.InHouseUserId,
+            new InHouseCreateGameSessionRequest { Name = "Duplicate" },
+            CancellationToken.None);
+
+        Assert.AreEqual(first.SessionId, second.SessionId);
+        Assert.AreEqual("Original", second.Name);
+        Assert.AreEqual(1, await fixture.Context.InHouseGameSessions.CountAsync());
     }
 
     [TestMethod]

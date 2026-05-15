@@ -15,6 +15,34 @@ public sealed class InHouseGameSessionListDto
     public bool IsClosed => ClosedAt is not null;
 }
 
+public sealed class InHouseClosedGameSessionListDto
+{
+    public Guid SessionId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public Guid CreatedByUserId { get; set; }
+    public string CreatedByDisplayName { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime ClosedAt { get; set; }
+    public int Games { get; set; }
+}
+
+public sealed class InHouseClosedGameSessionsRequest
+{
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+
+    public int NormalizedPage => Math.Max(1, Page);
+    public int NormalizedPageSize => Math.Clamp(PageSize, 1, 50);
+}
+
+public sealed class InHouseClosedGameSessionsPageDto
+{
+    public List<InHouseClosedGameSessionListDto> Items { get; set; } = [];
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int Total { get; set; }
+}
+
 public sealed class InHouseGameSessionDetailDto
 {
     public Guid SessionId { get; set; }

@@ -26,6 +26,17 @@ public sealed class InHouseGameSessionsClient(
                 Observers = replay.Observers,
             });
 
+    public async Task<InHouseClosedGameSessionsPageDto> GetClosedSessionsAsync(int page, int pageSize)
+        => await SendAuthorizedAsync<InHouseClosedGameSessionsPageDto>(
+            HttpMethod.Get,
+            $"api10/inhouse/sessions/closed?page={page}&pageSize={pageSize}")
+            ?? new InHouseClosedGameSessionsPageDto { Page = page, PageSize = pageSize };
+
+    public async Task<InHouseGameSessionDetailDto?> GetSessionAsync(Guid sessionId)
+        => await SendAuthorizedAsync<InHouseGameSessionDetailDto>(
+            HttpMethod.Get,
+            $"api10/inhouse/sessions/{sessionId}");
+
     private async Task<TResponse?> SendAuthorizedAsync<TResponse>(HttpMethod method, string url)
     {
         using var request = new HttpRequestMessage(method, url);

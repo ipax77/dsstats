@@ -17,6 +17,24 @@ public sealed class InHouseSessionsController(
     IInHouseGameSessionService sessionService,
     IHubContext<InHouseHub> hubContext) : ControllerBase
 {
+    [HttpGet("closed")]
+    public async Task<ActionResult<InHouseClosedGameSessionsPageDto>> GetClosedSessions(
+        [FromQuery] InHouseClosedGameSessionsRequest request,
+        CancellationToken token)
+        => await ExecuteAsync(() => sessionService.GetClosedSessionsAsync(request, token));
+
+    [HttpGet("{sessionId:guid}")]
+    public async Task<ActionResult<InHouseGameSessionDetailDto>> GetSession(
+        Guid sessionId,
+        CancellationToken token)
+        => await ExecuteAsync(async () =>
+        {
+            var detail = await sessionService.GetSessionAsync(sessionId, GetUserId(), token);
+            return detail is null
+                ? throw new KeyNotFoundException("Unknown InHouse session.")
+                : detail;
+        });
+
     [HttpPost]
     public async Task<ActionResult<InHouseGameSessionDetailDto>> CreateSession(
         InHouseCreateGameSessionRequest request,
@@ -59,6 +77,10 @@ public sealed class InHouseSessionsController(
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
         }
     }
 }

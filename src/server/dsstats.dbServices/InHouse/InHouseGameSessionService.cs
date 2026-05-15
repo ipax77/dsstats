@@ -14,6 +14,7 @@ public sealed class InHouseGameSessionService(
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly ConcurrentDictionary<Guid, InHouseRuntimeSession> sessions = [];
+    private readonly SemaphoreSlim createSessionGate = new(1, 1);
 
     public async Task<List<InHouseGameSessionListDto>> GetActiveSessionsAsync(CancellationToken token)
     {
@@ -24,6 +25,38 @@ public sealed class InHouseGameSessionService(
             .OrderByDescending(state => state.CreatedAt)
             .Select(state => state.ToListDto())
             .ToList();
+    }
+
+    public async Task<InHouseClosedGameSessionsPageDto> GetClosedSessionsAsync(
+        InHouseClosedGameSessionsRequest request,
+        CancellationToken token)
+    {
+        var page = request.NormalizedPage;
+        var pageSize = request.NormalizedPageSize;
+        var skip = (page - 1) * pageSize;
+
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        var query = context.InHouseGameSessions
+            .AsNoTracking()
+            .Include(session => session.CreatedBy)
+            .Where(session => session.ClosedAt != null);
+
+        var total = await query.CountAsync(token);
+        var items = await query
+            .OrderByDescending(session => session.ClosedAt)
+            .ThenByDescending(session => session.CreatedAt)
+            .Skip(skip)
+            .Take(pageSize)
+            .ToListAsync(token);
+
+        return new()
+        {
+            Items = items.Select(ToClosedListDto).ToList(),
+            Page = page,
+            PageSize = pageSize,
+            Total = total,
+        };
     }
 
     public async Task<InHouseGameSessionDetailDto> CreateSessionAsync(
@@ -38,30 +71,46 @@ public sealed class InHouseGameSessionService(
             .FirstOrDefaultAsync(user => user.InHouseUserId == userId, token)
             ?? throw new InvalidOperationException("Unknown InHouse user.");
 
-        var now = DateTime.UtcNow;
-        var session = new InHouseGameSessionSimplified
+        await createSessionGate.WaitAsync(token);
+        try
         {
-            PublicId = Guid.NewGuid(),
-            Name = NormalizeSessionName(request.Name, user.DisplayName),
-            CreatedByInHouseUserId = userId,
-            CreatedAt = now,
-        };
+            var existingEmptySession = await GetExistingEmptyActiveSessionAsync(context, userId, token);
+            if (existingEmptySession is not null)
+            {
+                var existingState = RestoreState(existingEmptySession);
+                var runtimeSession = sessions.GetOrAdd(existingState.SessionId, _ => new InHouseRuntimeSession(existingState));
+                return runtimeSession.State.ToDetailDto(userId);
+            }
 
-        context.InHouseGameSessions.Add(session);
-        await context.SaveChangesAsync(token);
+            var now = DateTime.UtcNow;
+            var session = new InHouseGameSessionSimplified
+            {
+                PublicId = Guid.NewGuid(),
+                Name = NormalizeSessionName(request.Name, user.DisplayName),
+                CreatedByInHouseUserId = userId,
+                CreatedAt = now,
+            };
 
-        var state = InHouseSessionState.Create(session, user.PublicId, user.DisplayName, now);
-        context.InHouseGameSessionStateSnapshots.Add(new()
+            context.InHouseGameSessions.Add(session);
+            await context.SaveChangesAsync(token);
+
+            var state = InHouseSessionState.Create(session, user.PublicId, user.DisplayName, now);
+            context.InHouseGameSessionStateSnapshots.Add(new()
+            {
+                InHouseGameSessionId = session.InHouseGameSessionId,
+                Json = state.ToJson(),
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+            await context.SaveChangesAsync(token);
+
+            sessions[state.SessionId] = new InHouseRuntimeSession(state);
+            return state.ToDetailDto(userId);
+        }
+        finally
         {
-            InHouseGameSessionId = session.InHouseGameSessionId,
-            Json = state.ToJson(),
-            CreatedAt = now,
-            UpdatedAt = now,
-        });
-        await context.SaveChangesAsync(token);
-
-        sessions[state.SessionId] = new InHouseRuntimeSession(state);
-        return state.ToDetailDto(userId);
+            createSessionGate.Release();
+        }
     }
 
     public async Task<InHouseGameSessionDetailDto?> GetSessionAsync(Guid sessionId, int userId, CancellationToken token)
@@ -207,6 +256,7 @@ public sealed class InHouseGameSessionService(
 
             session.State.Close();
             await PersistStateAsync(session.State, replayId: null, observerPlayerIds: null, token);
+            sessions.TryRemove(session.State.SessionId, out _);
             return session.State.ToDetailDto(userId);
         }
         finally
@@ -290,7 +340,34 @@ public sealed class InHouseGameSessionService(
         }
 
         var restored = new InHouseRuntimeSession(RestoreState(session));
+        if (restored.State.ClosedAt is not null)
+        {
+            return restored;
+        }
+
         return sessions.GetOrAdd(sessionId, restored);
+    }
+
+    private static async Task<InHouseGameSessionSimplified?> GetExistingEmptyActiveSessionAsync(
+        DsstatsContext context,
+        int userId,
+        CancellationToken token)
+    {
+        var activeSessions = await context.InHouseGameSessions
+            .AsNoTracking()
+            .Include(session => session.CreatedBy)
+            .Include(session => session.StateSnapshot)
+            .Where(session => session.CreatedByInHouseUserId == userId && session.ClosedAt == null)
+            .OrderByDescending(session => session.CreatedAt)
+            .ToListAsync(token);
+
+        return activeSessions.FirstOrDefault(session =>
+        {
+            var state = RestoreState(session);
+            return state is { ClosedAt: null }
+                && state.ReplayIds.Count == 0
+                && state.Replays.Count == 0;
+        });
     }
 
     private async Task PersistStateAsync(
@@ -494,6 +571,18 @@ public sealed class InHouseGameSessionService(
             session.CreatedBy?.DisplayName ?? string.Empty,
             DateTime.UtcNow);
     }
+
+    private static InHouseClosedGameSessionListDto ToClosedListDto(InHouseGameSessionSimplified session)
+        => new()
+        {
+            SessionId = session.PublicId,
+            Name = session.Name,
+            CreatedByUserId = session.CreatedBy?.PublicId ?? Guid.Empty,
+            CreatedByDisplayName = session.CreatedBy?.DisplayName ?? string.Empty,
+            CreatedAt = session.CreatedAt,
+            ClosedAt = session.ClosedAt ?? session.CreatedAt,
+            Games = session.ReplayIds.Length,
+        };
 
     private static string NormalizeSessionName(string requestedName, string displayName)
     {
