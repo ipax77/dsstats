@@ -58,12 +58,9 @@ public partial class BuildsService
                               Team = s.TeamId,
                               GamePos = s.GamePos,
                           }).ToList(),
-                          RatingList = new()
-                          {
-                              Exp2Win = rr.ExpectedWinProbability,
-                              AvgRating = rr.AvgRating,
-                              LeaverType = rr.LeaverType,
-                          },
+                          Exp2Win = rr.ExpectedWinProbability,
+                          AvgRating = rr.AvgRating,
+                          LeaverType = rr.LeaverType,
                       };
 
         var list = await replays

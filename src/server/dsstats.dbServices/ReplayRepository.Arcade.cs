@@ -111,11 +111,8 @@ public partial class ReplayRepository
                 var replayId = int.Parse(replay.ReplayHash);
                 if (ratings.TryGetValue(replayId, out var rating))
                 {
-                    replay.RatingList = new()
-                    {
-                        Exp2Win = rating.ExpectedWinProbability / 100.0,
-                        AvgRating = rating.AvgRating,
-                    };
+                    replay.Exp2Win = rating.ExpectedWinProbability / 100.0;
+                    replay.AvgRating = rating.AvgRating;
                 }
             }
 
@@ -164,7 +161,6 @@ public partial class ReplayRepository
                             Name = s.Player!.Name,
                             Team = s.Team,
                         }).ToList(),
-                        RatingList = null, // Will be populated after pagination
                     };
 
         if (!string.IsNullOrEmpty(request.Name))

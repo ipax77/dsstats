@@ -135,12 +135,22 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
                 return [];
             }
 
-            IQueryable<ReplayList> query = GetReplaysQueriable(request, context, false);
+            var filteredReplays = GetFilteredReplays(request, context);
+            bool requiresRatingJoin = RequiresRatingJoin(request);
+            IQueryable<ReplayList> query = requiresRatingJoin
+                ? GetReplaysQueriableWithRatings(filteredReplays, context, request.RatingType)
+                : GetReplaysQueriable(filteredReplays);
+
             IOrderedQueryable<ReplayList> ordered = GetOrderedReplays(query, request);
             List<ReplayList> list = await ordered
                 .Skip(skip)
                 .Take(take)
                 .ToListAsync(token);
+
+            if (!requiresRatingJoin)
+            {
+                await LoadReplayRatings(list, context, request.RatingType, token);
+            }
 
             return list.Select(s => s.GetDto()).ToList();
         }
@@ -158,7 +168,7 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
         using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
         try
         {
-            var query = GetReplaysQueriable(request, context, true);
+            var query = GetFilteredReplays(request, context);
             return await query.CountAsync(token);
         }
         catch (OperationCanceledException) { }
@@ -196,69 +206,114 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
                         ? (order.Ascending ? query.OrderBy(x => x.GameMode) : query.OrderByDescending(x => x.GameMode))
                         : (order.Ascending ? orderedQuery.ThenBy(x => x.GameMode) : orderedQuery.ThenByDescending(x => x.GameMode));
                     break;
-                case nameof(ReplayRatingList.LeaverType):
+                case nameof(ReplayList.LeaverType):
                     orderedQuery = orderedQuery == null
-                        ? (order.Ascending ? query.OrderBy(x => x.RatingList == null ? LeaverType.None : x.RatingList.LeaverType) : query.OrderByDescending(x => x.RatingList == null ? LeaverType.None : x.RatingList.LeaverType))
-                        : (order.Ascending ? orderedQuery.ThenBy(x => x.RatingList == null ? LeaverType.None : x.RatingList.LeaverType) : orderedQuery.ThenByDescending(x => x.RatingList == null ? LeaverType.None : x.RatingList.LeaverType));
+                        ? (order.Ascending ? query.OrderBy(x => x.LeaverType) : query.OrderByDescending(x => x.LeaverType))
+                        : (order.Ascending ? orderedQuery.ThenBy(x => x.LeaverType) : orderedQuery.ThenByDescending(x => x.LeaverType));
                     break;
-                case nameof(ReplayRatingList.AvgRating):
+                case nameof(ReplayList.AvgRating):
                     orderedQuery = orderedQuery == null
-                        ? (order.Ascending ? query.OrderBy(x => x.RatingList == null ? 0 : x.RatingList.AvgRating) : query.OrderByDescending(x => x.RatingList == null ? 0 : x.RatingList.AvgRating))
-                        : (order.Ascending ? orderedQuery.ThenBy(x => x.RatingList == null ? 0 : x.RatingList.AvgRating) : orderedQuery.ThenByDescending(x => x.RatingList == null ? 0 : x.RatingList.AvgRating));
+                        ? (order.Ascending ? query.OrderBy(x => x.AvgRating ?? 0) : query.OrderByDescending(x => x.AvgRating ?? 0))
+                        : (order.Ascending ? orderedQuery.ThenBy(x => x.AvgRating ?? 0) : orderedQuery.ThenByDescending(x => x.AvgRating ?? 0));
                     break;
-                case nameof(ReplayRatingList.Exp2Win):
+                case nameof(ReplayList.Exp2Win):
                     orderedQuery = orderedQuery == null
-                        ? (order.Ascending ? query.OrderBy(x => x.RatingList == null ? 0 : x.RatingList.Exp2Win) : query.OrderByDescending(x => x.RatingList == null ? 0 : x.RatingList.Exp2Win))
-                        : (order.Ascending ? orderedQuery.ThenBy(x => x.RatingList == null ? 0 : x.RatingList.Exp2Win) : orderedQuery.ThenByDescending(x => x.RatingList == null ? 0 : x.RatingList.Exp2Win));
+                        ? (order.Ascending ? query.OrderBy(x => x.Exp2Win ?? 0) : query.OrderByDescending(x => x.Exp2Win ?? 0))
+                        : (order.Ascending ? orderedQuery.ThenBy(x => x.Exp2Win ?? 0) : orderedQuery.ThenByDescending(x => x.Exp2Win ?? 0));
                     break;
             }
         }
         return orderedQuery ?? query.OrderByDescending(x => x.GameTime);
     }
 
-    private static IQueryable<ReplayList> GetReplaysQueriable(ReplaysRequest request, DsstatsContext context, bool count)
+    private static bool RequiresRatingJoin(ReplaysRequest request)
     {
-        var replays = GetFilteredReplays(request, context);
-        var query = count ? from r in replays
-                            select new ReplayList()
-                            {
-                                ReplayHash = r.ReplayHash,
-                                GameTime = r.Gametime,
-                                GameMode = r.GameMode,
-                                Duration = r.Duration,
-                                WinnerTeam = r.WinnerTeam,
-                                Players = r.Players.Select(s => new ReplayPlayerList()
-                                {
-                                    Name = s.Name,
-                                    Race = s.Race,
-                                    Team = s.TeamId,
-                                }).ToList(),
-                            }
-                    : from r in replays
-                      from rr in context.ReplayRatings
-                          .Where(x => x.ReplayId == r.ReplayId && x.RatingType == request.RatingType)
-                          .DefaultIfEmpty()
-                      select new ReplayList()
-                      {
-                          ReplayHash = r.ReplayHash,
-                          GameTime = r.Gametime,
-                          GameMode = r.GameMode,
-                          Duration = r.Duration,
-                          WinnerTeam = r.WinnerTeam,
-                          Players = r.Players.Select(s => new ReplayPlayerList()
-                          {
-                              Name = s.Name,
-                              Race = s.Race,
-                              Team = s.TeamId,
-                          }).ToList(),
-                          RatingList = rr == null ? null : new()
-                          {
-                              Exp2Win = rr.ExpectedWinProbability,
-                              AvgRating = rr.AvgRating,
-                              LeaverType = rr.LeaverType,
-                          },
-                      };
+        return request.TableOrders?.Any(order => order.Column is
+            nameof(ReplayList.LeaverType) or
+            nameof(ReplayList.AvgRating) or
+            nameof(ReplayList.Exp2Win)) == true;
+    }
 
+    private static IQueryable<ReplayList> GetReplaysQueriable(IQueryable<Replay> replays)
+    {
+        return from r in replays
+               select new ReplayList()
+               {
+                   ReplayId = r.ReplayId,
+                   ReplayHash = r.ReplayHash,
+                   GameTime = r.Gametime,
+                   GameMode = r.GameMode,
+                   Duration = r.Duration,
+                   WinnerTeam = r.WinnerTeam,
+                   Players = r.Players.Select(s => new ReplayPlayerList()
+                   {
+                       Name = s.Name,
+                       Race = s.Race,
+                       Team = s.TeamId,
+                   }).ToList(),
+               };
+    }
+
+    private static IQueryable<ReplayList> GetReplaysQueriableWithRatings(IQueryable<Replay> replays, DsstatsContext context, RatingType ratingType)
+    {
+        return from r in replays
+               from rr in context.ReplayRatings
+                   .AsNoTracking()
+                   .Where(x => x.ReplayId == r.ReplayId && x.RatingType == ratingType)
+                   .DefaultIfEmpty()
+               select new ReplayList()
+               {
+                   ReplayId = r.ReplayId,
+                   ReplayHash = r.ReplayHash,
+                   GameTime = r.Gametime,
+                   GameMode = r.GameMode,
+                   Duration = r.Duration,
+                   WinnerTeam = r.WinnerTeam,
+                   Players = r.Players.Select(s => new ReplayPlayerList()
+                   {
+                       Name = s.Name,
+                       Race = s.Race,
+                       Team = s.TeamId,
+                   }).ToList(),
+                   Exp2Win = rr == null ? null : rr.ExpectedWinProbability,
+                   AvgRating = rr == null ? null : rr.AvgRating,
+                   LeaverType = rr == null ? LeaverType.None : rr.LeaverType,
+               };
+    }
+
+    private static async Task LoadReplayRatings(List<ReplayList> replays, DsstatsContext context, RatingType ratingType, CancellationToken token)
+    {
+        if (replays.Count == 0)
+        {
+            return;
+        }
+
+        var replayIds = replays.Select(s => s.ReplayId).ToList();
+        var ratings = await context.ReplayRatings
+            .AsNoTracking()
+            .Where(x => replayIds.Contains(x.ReplayId) && x.RatingType == ratingType)
+            .Select(s => new
+            {
+                s.ReplayId,
+                Exp2Win = (double?)s.ExpectedWinProbability,
+                AvgRating = (int?)s.AvgRating,
+                s.LeaverType,
+            })
+            .ToDictionaryAsync(x => x.ReplayId, token);
+
+        foreach (var replay in replays)
+        {
+            if (ratings.TryGetValue(replay.ReplayId, out var rating))
+            {
+                replay.Exp2Win = rating.Exp2Win;
+                replay.AvgRating = rating.AvgRating;
+                replay.LeaverType = rating.LeaverType;
+            }
+        }
+    }
+
+    private static IQueryable<Replay> ApplyPlayerSearchFilters(IQueryable<Replay> query, ReplaysRequest request)
+    {
         if (request.LinkCommanders)
         {
             var names = request.Name?.Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? [];
@@ -271,25 +326,15 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
 
                 if (name is not null && commander is not null)
                 {
-                    query = from r in query
-                            from rp in r.Players
-                            where rp.Name.Contains(name) && rp.Race == commander
-                            select r;
+                    query = query.Where(r => r.Players.Any(rp => rp.Name.Contains(name) && rp.Race == commander));
                 }
                 else if (name is not null)
                 {
-                    query = from r in query
-                            from rp in r.Players
-                            where rp.Name.Contains(name)
-                            select r;
-
+                    query = query.Where(r => r.Players.Any(rp => rp.Name.Contains(name)));
                 }
                 else if (commander is not null)
                 {
-                    query = from r in query
-                            from rp in r.Players
-                            where rp.Race == commander
-                            select r;
+                    query = query.Where(r => r.Players.Any(rp => rp.Race == commander));
                 }
             }
         }
@@ -300,10 +345,7 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
                 var names = request.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 foreach (var name in names)
                 {
-                    query = from r in query
-                            from rp in r.Players
-                            where rp.Name.Contains(name)
-                            select r;
+                    query = query.Where(r => r.Players.Any(rp => rp.Name.Contains(name)));
                 }
             }
 
@@ -314,10 +356,7 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
                 {
                     if (Enum.TryParse<Commander>(cmdr, true, out var commander))
                     {
-                        query = from r in query
-                                from rp in r.Players
-                                where rp.Race == commander
-                                select r;
+                        query = query.Where(r => r.Players.Any(rp => rp.Race == commander));
                     }
                 }
             }
@@ -329,11 +368,12 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
     private static IQueryable<Replay> GetFilteredReplays(ReplaysRequest request, DsstatsContext context)
     {
         var query = context.Replays
+            .AsNoTracking()
             .Where(x => x.Gametime > new DateTime(2018, 1, 1))
             .AsQueryable();
         if (request.Filter is null)
         {
-            return query;
+            return ApplyPlayerSearchFilters(query, request);
         }
 
         if (request.Filter.Playercount != 0)
@@ -416,7 +456,7 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
             }
             query = query.Distinct();
         }
-        return query;
+        return ApplyPlayerSearchFilters(query, request);
     }
 
     public static List<ToonIdDto> GetPlayerIds(string? playerIdString)
@@ -456,6 +496,7 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
 
 internal sealed class ReplayList
 {
+    public int ReplayId { get; init; }
     public string ReplayHash { get; init; } = string.Empty;
     public DateTime GameTime { get; init; }
     public GameMode GameMode { get; init; }
@@ -463,7 +504,9 @@ internal sealed class ReplayList
     public int WinnerTeam { get; init; }
     public int PlayerPos { get; set; }
     public List<ReplayPlayerList> Players { get; init; } = [];
-    public ReplayRatingList? RatingList { get; set; }
+    public double? Exp2Win { get; set; }
+    public int? AvgRating { get; set; }
+    public LeaverType LeaverType { get; set; }
 
     public ReplayListDto GetDto()
     {
@@ -476,9 +519,9 @@ internal sealed class ReplayList
             WinnerTeam = WinnerTeam,
             CommandersTeam1 = Players.Where(x => x.Team == 1).Select(s => s.Race).ToList(),
             CommandersTeam2 = Players.Where(x => x.Team == 2).Select(s => s.Race).ToList(),
-            Exp2Win = RatingList?.Exp2Win,
-            AvgRating = RatingList?.AvgRating,
-            LeaverType = RatingList?.LeaverType ?? LeaverType.None,
+            Exp2Win = Exp2Win,
+            AvgRating = AvgRating,
+            LeaverType = LeaverType,
             PlayerPos = PlayerPos,
         };
     }
@@ -493,9 +536,3 @@ internal sealed class ReplayPlayerList
     public int GamePos { get; set; }
 }
 
-internal sealed class ReplayRatingList
-{
-    public double? Exp2Win { get; init; }
-    public int? AvgRating { get; init; }
-    public LeaverType LeaverType { get; init; }
-}
