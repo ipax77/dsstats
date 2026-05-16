@@ -32,38 +32,6 @@ namespace dsstats.migrations.mysql.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "MauiConfig",
-                columns: table => new
-                {
-                    MauiConfigId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    AppGuid = table.Column<Guid>(type: "char(36)", nullable: false, collation: "ascii_general_ci"),
-                    Version = table.Column<string>(type: "varchar(10)", maxLength: 10, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    CPUCores = table.Column<int>(type: "int", nullable: false),
-                    AutoDecode = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    CheckForUpdates = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    UploadCredential = table.Column<bool>(type: "tinyint(1)", nullable: false),
-                    ReplayStartName = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    Culture = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    UploadAskTime = table.Column<DateTime>(type: "datetime(0)", precision: 0, nullable: false),
-                    IgnoreReplays = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    SessionWindowMode = table.Column<int>(type: "int", nullable: false),
-                    SessionWindowHours = table.Column<int>(type: "int", nullable: false),
-                    SessionWindowReplayCount = table.Column<int>(type: "int", nullable: false),
-                    SessionWindowGameMode = table.Column<int>(type: "int", nullable: false),
-                    SessionWindowInitialized = table.Column<bool>(type: "tinyint(1)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_MauiConfig", x => x.MauiConfigId);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
-
-            migrationBuilder.CreateTable(
                 name: "InHouseDeviceLinkCodes",
                 columns: table => new
                 {
