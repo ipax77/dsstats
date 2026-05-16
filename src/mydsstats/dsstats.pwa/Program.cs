@@ -20,6 +20,8 @@ builder.Services.Configure<HostOptions>(options =>
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
+builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
+
 var isProduction = false; // builder.HostEnvironment.IsProduction();
 
 builder.Services.AddHttpClient("ApiClient", client =>

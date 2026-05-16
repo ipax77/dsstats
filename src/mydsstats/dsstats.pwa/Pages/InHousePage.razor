@@ -21,7 +21,7 @@
 
 <div class="container-fluid py-4">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-        <div>
+        <div class="d-inline-block p-2 bgchart rounded">
             <h2 class="fw-bold mb-1">InHouse Sessions</h2>
             <div class="text-muted">Private Direct Strike runs, shared by signed-in players.</div>
         </div>
@@ -34,11 +34,6 @@
                     </button>
                 </div>
             </Authorized>
-        </AuthorizeView>
-    </div>
-    <div>
-        <AuthorizeView Roles="Admin">
-            <p>You are Admin</p>
         </AuthorizeView>
     </div>
     @if (loading)
@@ -102,7 +97,7 @@
                                             <span class="fw-semibold">@session.Name</span>
                                             <span class="badge text-bg-secondary">@session.Games</span>
                                         </div>
-                                        <div class="small text-muted">@session.CreatedByDisplayName · @session.ClosedAt.ToLocalTime().ToString("g")</div>
+                                        <div class="small text-muted">@session.CreatedByDisplayName · @session.CreatedAt.ToString("yyyy-MM-dd HH:mm")</div>
                                     </button>
                                 }
                             </div>
