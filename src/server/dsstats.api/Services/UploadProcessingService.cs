@@ -11,17 +11,14 @@ namespace dsstats.api.Services;
 
 public class UploadProcessingService(
     ILogger<UploadProcessingService> logger,
-    IServiceScopeFactory scopeFactory
+    IDbContextFactory<DsstatsContext> contextFactory,
+    Channel<UploadJob> uploadChannel,
+    IImportService importService
 ) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("UploadProcessingService started");
-
-        var uploadChannel =
-            scopeFactory.CreateScope()
-                        .ServiceProvider
-                        .GetRequiredService<Channel<UploadJob>>();
 
         await EnqueueUnfinishedJobs(uploadChannel, stoppingToken);
 
@@ -53,9 +50,7 @@ public class UploadProcessingService(
     {
         logger.LogInformation("Processing upload job {JobId}", job.UploadJobId);
 
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
-        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
 
         try
         {
@@ -112,8 +107,7 @@ public class UploadProcessingService(
     {
         logger.LogInformation("Checking for unfinished upload jobs...");
 
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
 
         //  Load jobs where FinishedAt IS NULL
         var unfinishedJobs = await context.UploadJobs

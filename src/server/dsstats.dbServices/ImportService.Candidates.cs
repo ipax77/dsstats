@@ -11,8 +11,7 @@ public partial class ImportService
 {
     public async Task CheckDuplicateCandidates()
     {
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
 
         var computed = await ComputeMissingCandidateHashes(context);
         DateTime fromTime = computed ? DateTime.MinValue : DateTime.UtcNow.AddHours(-25);
@@ -39,8 +38,7 @@ public partial class ImportService
             var from = new DateTime(i, 1, 1);
             var to = new DateTime(i, 12, 31);
 
-            using var scope = scopeFactory.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+            await using var context = await contextFactory.CreateDbContextAsync();
             context.Database.SetCommandTimeout(180);
 
 

@@ -1,7 +1,6 @@
 ﻿using dsstats.db;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace dsstats.dbServices;
 
@@ -9,8 +8,7 @@ public partial class ReplayRepository
 {
     public async Task<ReplayRatingDto?> GetReplayRating(string replayHash)
     {
-        using var scope = scopeFactory.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
         return await context.ReplayRatings
             .Where(x => x.Replay!.ReplayHash == replayHash && x.RatingType == RatingType.All)
             .Select(s => new ReplayRatingDto()
@@ -41,8 +39,7 @@ public partial class ReplayRepository
         string replayHash,
         ReplayRatingDto ratingDto)
     {
-        using var scope = scopeFactory.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
 
         var replay = await context.Replays
             .Include(r => r.Ratings)

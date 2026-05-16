@@ -1,7 +1,6 @@
 ﻿using dsstats.db;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace dsstats.dbServices;
 
@@ -9,9 +8,7 @@ public partial class PlayerService
 {
     public async Task<PlayerStatsResponse> GetPlayerStats(PlayerStatsRequest request, CancellationToken token = default)
     {
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
-        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
 
         int playerId = importService.GetPlayerId(request.ToonId);
 
@@ -32,9 +29,7 @@ public partial class PlayerService
     //public async Task<RatingDetails> GetRatingDetails(PlayerStatsRequest request, CancellationToken token = default)
     //{
     //    Stopwatch sw = Stopwatch.StartNew();
-    //    using var scope = scopeFactory.CreateScope();
-    //    var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
-    //    var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
+    //    await using var context = await contextFactory.CreateDbContextAsync(token);
 
     //    int playerId = importService.GetPlayerId(request.ToonId);
     //    RatingDetails ratingDetails = new() { RatingType = request.RatingType };
@@ -164,9 +159,7 @@ public partial class PlayerService
 
     public async Task<CmdrAvgGainResponse> GetCommandersPerformance(PlayerStatsRequest request, CancellationToken token)
     {
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
-        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
 
         int playerId = importService.GetPlayerId(request.ToonId);
         var timeInfo = Data.GetTimePeriodInfo(request.TimePeriod);

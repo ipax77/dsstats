@@ -4,7 +4,11 @@ using sc2arcade.crawler;
 
 namespace dsstats.api.Services;
 
-public class ArcadeJobService(IServiceScopeFactory scopeFactory, ILogger<ArcadeJobService> logger)
+public class ArcadeJobService(
+    IServiceScopeFactory scopeFactory,
+    IImportService importService,
+    IRatingService ratingService,
+    ILogger<ArcadeJobService> logger)
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
 
@@ -30,12 +34,10 @@ public class ArcadeJobService(IServiceScopeFactory scopeFactory, ILogger<ArcadeJ
             var crawlerService = scope.ServiceProvider.GetRequiredService<ICrawlerService>();
             await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-5), token);
 
-            var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
             await importService.CheckDuplicateCandidates();
             await importService.CheckRealmDuplicateCandidates();
             await importService.FixPlayerNames();
 
-            var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
             await ratingService.CreateRatings();
 
             logger.LogInformation("Arcade job completed.");
@@ -68,14 +70,10 @@ public class ArcadeJobService(IServiceScopeFactory scopeFactory, ILogger<ArcadeJ
         try
         {
             logger.LogInformation("Arcade job started.");
-            using var scope = scopeFactory.CreateAsyncScope();
-
-            var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
             await importService.CheckDuplicateCandidates();
             await importService.CheckRealmDuplicateCandidates();
             await importService.FixPlayerNames();
 
-            var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
             await ratingService.CreateRatings();
 
             logger.LogInformation("Arcade job completed.");

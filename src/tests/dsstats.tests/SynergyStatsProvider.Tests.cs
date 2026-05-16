@@ -15,7 +15,7 @@ public sealed class SynergyStatsProviderTests
     {
         await using var fixture = await TestFixture.CreateAsync();
         await SeedReplayAsync(fixture.Context, replayId: 1, gametime: new DateTime(2026, 2, 15));
-        var provider = new SynergyStatsProvider(fixture.Context, fixture.MemoryCache);
+        var provider = new SynergyStatsProvider(fixture.ContextFactory, fixture.MemoryCache);
 
         var response = await provider.GetStatsAsync(CreateRequest());
 
@@ -42,7 +42,7 @@ public sealed class SynergyStatsProviderTests
     public async Task GetStatsAsync_ShouldApplyAllRequestFilters()
     {
         await using var fixture = await TestFixture.CreateAsync();
-        var provider = new SynergyStatsProvider(fixture.Context, fixture.MemoryCache);
+        var provider = new SynergyStatsProvider(fixture.ContextFactory, fixture.MemoryCache);
 
         await SeedReplayAsync(fixture.Context, replayId: 1, gametime: new DateTime(2026, 2, 15));
         await SeedReplayAsync(fixture.Context, replayId: 2, gametime: new DateTime(2025, 1, 15)); // date
@@ -73,7 +73,7 @@ public sealed class SynergyStatsProviderTests
     public async Task GetStatsAsync_ShouldExcludeInvalidRows()
     {
         await using var fixture = await TestFixture.CreateAsync();
-        var provider = new SynergyStatsProvider(fixture.Context, fixture.MemoryCache);
+        var provider = new SynergyStatsProvider(fixture.ContextFactory, fixture.MemoryCache);
 
         await SeedReplayAsync(fixture.Context, replayId: 1, gametime: new DateTime(2026, 2, 15)); // valid
         await SeedReplayAsync(fixture.Context, replayId: 2, gametime: new DateTime(2026, 2, 16), gameMode: GameMode.Standard); // invalid mode
@@ -96,7 +96,7 @@ public sealed class SynergyStatsProviderTests
     public async Task GetStatsAsync_ShouldReuseCacheForSameRequest_AndRefreshOnDifferentKey()
     {
         await using var fixture = await TestFixture.CreateAsync();
-        var provider = new SynergyStatsProvider(fixture.Context, fixture.MemoryCache);
+        var provider = new SynergyStatsProvider(fixture.ContextFactory, fixture.MemoryCache);
         var request = CreateRequest();
 
         await SeedReplayAsync(fixture.Context, replayId: 1, gametime: new DateTime(2026, 2, 15));
@@ -262,15 +262,17 @@ public sealed class SynergyStatsProviderTests
 
     private sealed class TestFixture : IAsyncDisposable
     {
-        private TestFixture(SqliteConnection connection, DsstatsContext context, IMemoryCache memoryCache)
+        private TestFixture(SqliteConnection connection, DsstatsContext context, IDbContextFactory<DsstatsContext> contextFactory, IMemoryCache memoryCache)
         {
             Connection = connection;
             Context = context;
+            ContextFactory = contextFactory;
             MemoryCache = memoryCache;
         }
 
         public SqliteConnection Connection { get; }
         public DsstatsContext Context { get; }
+        public IDbContextFactory<DsstatsContext> ContextFactory { get; }
         public IMemoryCache MemoryCache { get; }
 
         public static async Task<TestFixture> CreateAsync()
@@ -283,11 +285,12 @@ public sealed class SynergyStatsProviderTests
                 .Options;
 
             var context = new DsstatsContext(options);
+            var contextFactory = new TestDbContextFactory<DsstatsContext>(options);
             await context.Database.EnsureDeletedAsync();
             await context.Database.MigrateAsync();
 
             var cache = new MemoryCache(new MemoryCacheOptions());
-            return new TestFixture(connection, context, cache);
+            return new TestFixture(connection, context, contextFactory, cache);
         }
 
         public async ValueTask DisposeAsync()

@@ -3,17 +3,15 @@ using dsstats.shared;
 using dsstats.shared.Interfaces;
 using LinqKit;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace dsstats.dbServices;
 
-public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger<ReplayRepository> logger) : IReplayRepository
+public partial class ReplayRepository(IDbContextFactory<DsstatsContext> contextFactory, ILogger<ReplayRepository> logger) : IReplayRepository
 {
     public async Task<ReplayDetails?> GetReplayDetails(string replayHash)
     {
-        using var scope = scopeFactory.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
         var replay = await context.Replays
             .Include(i => i.Players)
                 .ThenInclude(i => i.Player)
@@ -68,8 +66,7 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
 
     public async Task<ReplayDetails?> GetNextReplay(bool after, string replayHash)
     {
-        using var scope = scopeFactory.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
         var replayTime = await context.Replays
             .Where(w => w.ReplayHash == replayHash)
             .Select(s => s.Gametime)
@@ -106,8 +103,7 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
 
     public async Task<ReplayDetails?> GetLatestReplay()
     {
-        using var scope = scopeFactory.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
 
         var replayHash = await context.Replays
             .OrderByDescending(o => o.Gametime)
@@ -124,8 +120,7 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
 
     public async Task<List<ReplayListDto>> GetReplays(ReplaysRequest request, CancellationToken token = default)
     {
-        using var scope = scopeFactory.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         try
         {
             int skip = ((request.Page - 1) * request.PageSize) + request.Skip;
@@ -164,8 +159,7 @@ public partial class ReplayRepository(IServiceScopeFactory scopeFactory, ILogger
 
     public async Task<int> GetReplaysCount(ReplaysRequest request, CancellationToken token = default)
     {
-        using var scope = scopeFactory.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         try
         {
             var query = GetFilteredReplays(request, context);

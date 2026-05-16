@@ -23,7 +23,11 @@ public class RatingsServiceTests
         localConnection.Open();
         connection = localConnection;
 
-        services.AddDbContext<DsstatsContext>(o => o.UseSqlite(localConnection, options =>
+        services.AddDbContextFactory<DsstatsContext>(o => o.UseSqlite(localConnection, options =>
+        {
+            options.MigrationsAssembly("dsstats.migrations.sqlite");
+        }));
+        services.AddDbContextFactory<StagingDsstatsContext>(o => o.UseSqlite(localConnection, options =>
         {
             options.MigrationsAssembly("dsstats.migrations.sqlite");
         }));
@@ -38,10 +42,7 @@ public class RatingsServiceTests
         using var serviceProvider = BuildServiceProvider(out var connection);
         try
         {
-            var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-            var logger = serviceProvider.GetRequiredService<ILogger<RatingService>>();
-            var importOptions = Options.Create(new ImportOptions());
-            var ratingService = new RatingService(scopeFactory, importOptions, logger);
+            var ratingService = CreateRatingService(serviceProvider);
 
             var playerRatingsStore = new PlayerRatingsStore();
             var testReplay = GetTestReplay();
@@ -68,10 +69,7 @@ public class RatingsServiceTests
         using var serviceProvider = BuildServiceProvider(out var connection);
         try
         {
-            var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-            var logger = serviceProvider.GetRequiredService<ILogger<RatingService>>();
-            var importOptions = Options.Create(new ImportOptions());
-            var ratingService = new RatingService(scopeFactory, importOptions, logger);
+            var ratingService = CreateRatingService(serviceProvider);
 
             static PlayerRatingsStore GetInitialRatings()
             {
@@ -141,10 +139,7 @@ public class RatingsServiceTests
         using var serviceProvider = BuildServiceProvider(out var connection);
         try
         {
-            var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-            var logger = serviceProvider.GetRequiredService<ILogger<RatingService>>();
-            var importOptions = Options.Create(new ImportOptions());
-            var ratingService = new RatingService(scopeFactory, importOptions, logger);
+            var ratingService = CreateRatingService(serviceProvider);
 
             var playerRatingsStore = new PlayerRatingsStore();
             var testReplays = JsonSerializer.Deserialize<List<ReplayCalcDto>>(File.ReadAllText(testData));
@@ -190,6 +185,13 @@ public class RatingsServiceTests
             Console.WriteLine($"No ratings found for player {playerId}");
         }
     }
+
+    private static RatingService CreateRatingService(ServiceProvider serviceProvider)
+        => new(
+            serviceProvider.GetRequiredService<IDbContextFactory<DsstatsContext>>(),
+            serviceProvider.GetRequiredService<IDbContextFactory<StagingDsstatsContext>>(),
+            Options.Create(new ImportOptions()),
+            serviceProvider.GetRequiredService<ILogger<RatingService>>());
 
     private static void GetStats(List<ReplayCalcDto> replays)
     {

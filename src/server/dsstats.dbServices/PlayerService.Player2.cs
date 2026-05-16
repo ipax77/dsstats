@@ -2,7 +2,6 @@
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace dsstats.dbServices;
 
@@ -12,9 +11,7 @@ public partial class PlayerService
         PlayerStatsRequest request,
         CancellationToken token = default)
     {
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
-        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
 
         int playerId = importService.GetPlayerId(request.ToonId);
         RatingType ratingType = request.RatingType;
@@ -500,12 +497,10 @@ public partial class PlayerService
 
     private async Task<int> GetPercentileMaxRank(RatingType ratingType)
     {
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
-        var memoryCache = scope.ServiceProvider.GetRequiredService<IMemoryCache>();
         string cacheKey = $"PercentileRank_{ratingType}";
         if (!memoryCache.TryGetValue(cacheKey, out int maxRank))
         {
+            await using var context = await contextFactory.CreateDbContextAsync();
             maxRank = await context.PlayerRatings
                 .Where(pr => pr.RatingType == ratingType)
                 .OrderByDescending(pr => pr.Position)

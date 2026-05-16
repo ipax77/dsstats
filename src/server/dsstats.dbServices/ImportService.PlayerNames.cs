@@ -9,8 +9,7 @@ public partial class ImportService
 {
     public async Task FixPlayerNames()
     {
-        using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
 
         var sql = @"
                 UPDATE Players p

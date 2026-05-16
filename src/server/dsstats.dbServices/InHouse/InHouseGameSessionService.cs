@@ -5,12 +5,11 @@ using dsstats.db;
 using dsstats.shared;
 using dsstats.shared.InHouse;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace dsstats.dbServices.InHouse;
 
 public sealed class InHouseGameSessionService(
-    IServiceScopeFactory scopeFactory,
+    IDbContextFactory<DsstatsContext> contextFactory,
     IImportService importService) : IInHouseGameSessionService
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
@@ -36,8 +35,7 @@ public sealed class InHouseGameSessionService(
         var pageSize = request.NormalizedPageSize;
         var skip = (page - 1) * pageSize;
 
-        await using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var query = context.InHouseGameSessions
             .AsNoTracking()
             .Include(session => session.CreatedBy)
@@ -64,8 +62,7 @@ public sealed class InHouseGameSessionService(
         Guid sessionId,
         CancellationToken token)
     {
-        await using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var session = await context.InHouseGameSessions
             .AsNoTracking()
             .Include(session => session.CreatedBy)
@@ -86,8 +83,7 @@ public sealed class InHouseGameSessionService(
         InHouseCreateGameSessionRequest request,
         CancellationToken token)
     {
-        await using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var user = await context.InHouseUsers
             .AsNoTracking()
             .FirstOrDefaultAsync(user => user.InHouseUserId == userId, token)
@@ -394,8 +390,7 @@ public sealed class InHouseGameSessionService(
 
     private async Task<bool> DeleteSessionRowAsync(Guid sessionId, CancellationToken token)
     {
-        await using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var deleted = await context.InHouseGameSessions
             .Where(session => session.PublicId == sessionId)
             .ExecuteDeleteAsync(token);
@@ -412,8 +407,7 @@ public sealed class InHouseGameSessionService(
 
     private async Task LoadActiveSessionsAsync(CancellationToken token)
     {
-        await using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var active = await context.InHouseGameSessions
             .AsNoTracking()
             .Include(session => session.CreatedBy)
@@ -434,8 +428,7 @@ public sealed class InHouseGameSessionService(
             return runtimeSession;
         }
 
-        await using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var session = await context.InHouseGameSessions
             .AsNoTracking()
             .Include(session => session.CreatedBy)
@@ -483,8 +476,7 @@ public sealed class InHouseGameSessionService(
         int[]? observerPlayerIds,
         CancellationToken token)
     {
-        await using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var session = await context.InHouseGameSessions
             .Include(session => session.StateSnapshot)
             .FirstAsync(session => session.InHouseGameSessionId == state.InHouseGameSessionId, token);
@@ -535,8 +527,6 @@ public sealed class InHouseGameSessionService(
             return [];
         }
 
-        await using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
         List<ObserverPlayerState> players = new(validObservers.Count);
         foreach (var observer in validObservers)
         {
@@ -545,8 +535,7 @@ public sealed class InHouseGameSessionService(
                 observer.Name,
                 observer.ToonId.Region,
                 observer.ToonId.Realm,
-                observer.ToonId.Id,
-                context);
+                observer.ToonId.Id);
             players.Add(new(playerId, observer.ToonId.Region, observer.ToonId.Realm, observer.ToonId.Id));
         }
 
@@ -587,8 +576,7 @@ public sealed class InHouseGameSessionService(
 
     private async Task<ReplayRuntimeState?> LoadReplayAsync(string replayHash, CancellationToken token)
     {
-        await using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         return await ProjectReplayQuery(context.Replays
                 .AsNoTracking()
                 .Where(replay => replay.ReplayHash == replayHash))
@@ -597,8 +585,7 @@ public sealed class InHouseGameSessionService(
 
     private async Task<List<ReplayRuntimeState>> LoadReplaysAsync(IReadOnlyCollection<int> replayIds, CancellationToken token)
     {
-        await using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         return await ProjectReplayQuery(context.Replays
                 .AsNoTracking()
                 .Where(replay => replayIds.Contains(replay.ReplayId)))

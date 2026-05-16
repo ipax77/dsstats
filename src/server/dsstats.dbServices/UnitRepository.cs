@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace dsstats.dbServices;
 
-public class UnitRepository(DsstatsContext context)
+public class UnitRepository(IDbContextFactory<DsstatsContext> contextFactory)
 {
     private Dictionary<UnitMapKey, UnitBuildInfo> _unitBuildInfoMap = [];
 
@@ -15,6 +15,7 @@ public class UnitRepository(DsstatsContext context)
         {
             return;
         }
+        await using var context = await contextFactory.CreateDbContextAsync();
         _unitBuildInfoMap = await context.DsUnits
             .AsNoTracking()
             .ToDictionaryAsync(

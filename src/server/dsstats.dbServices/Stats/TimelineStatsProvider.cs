@@ -5,7 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace dsstats.dbServices.Stats;
 
-public sealed class TimelineStatsProvider(DsstatsContext context, IMemoryCache memoryCache) : StatsProviderBase<TimelineResponse>
+public sealed class TimelineStatsProvider(IDbContextFactory<DsstatsContext> contextFactory, IMemoryCache memoryCache) : StatsProviderBase<TimelineResponse>
 {
     public override StatsType StatsType => StatsType.Timeline;
 
@@ -37,6 +37,7 @@ public sealed class TimelineStatsProvider(DsstatsContext context, IMemoryCache m
 
     private async Task<List<TimelineEnt>> GetUserTimelineDataAsync(StatsRequest request, ToonIdDto toonId, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var f = StatsFilterResolver.Resolve(request);
         var playerId = await context.Players.Where(f => f.ToonId.Id == toonId.Id
             && f.ToonId.Region == toonId.Region
@@ -129,6 +130,7 @@ public sealed class TimelineStatsProvider(DsstatsContext context, IMemoryCache m
 
     private async Task<List<TimelineEnt>> GetTimelineDataAsync(StatsRequest request, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var f = StatsFilterResolver.Resolve(request);
 
         var query =

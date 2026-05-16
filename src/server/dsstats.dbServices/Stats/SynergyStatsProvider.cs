@@ -5,7 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace dsstats.dbServices.Stats;
 
-public sealed class SynergyStatsProvider(DsstatsContext context, IMemoryCache memoryCache) : StatsProviderBase<SynergyResponse>
+public sealed class SynergyStatsProvider(IDbContextFactory<DsstatsContext> contextFactory, IMemoryCache memoryCache) : StatsProviderBase<SynergyResponse>
 {
     public override StatsType StatsType => StatsType.Synergy;
 
@@ -37,6 +37,7 @@ public sealed class SynergyStatsProvider(DsstatsContext context, IMemoryCache me
 
     private async Task<List<SynergyEnt>> GetUserSynergyDataAsync(StatsRequest request, ToonIdDto toonId, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var f = StatsFilterResolver.Resolve(request);
         var playerId = await context.Players.Where(f => f.ToonId.Id == toonId.Id
             && f.ToonId.Region == toonId.Region
@@ -105,6 +106,7 @@ public sealed class SynergyStatsProvider(DsstatsContext context, IMemoryCache me
 
     private async Task<List<SynergyEnt>> GetSynergyDataAsync(StatsRequest request, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var f = StatsFilterResolver.Resolve(request);
 
         var query =

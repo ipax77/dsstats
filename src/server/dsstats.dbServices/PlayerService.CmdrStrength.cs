@@ -2,7 +2,6 @@
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace dsstats.dbServices;
@@ -27,9 +26,7 @@ public partial class PlayerService
                 limit = 2 * 2;
             }
 
-            using var scope = scopeFactory.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
-            var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
+            await using var context = await contextFactory.CreateDbContextAsync(token);
 
             var group = from pr in context.PlayerRatings
                         from rp in pr.Player!.ReplayPlayers

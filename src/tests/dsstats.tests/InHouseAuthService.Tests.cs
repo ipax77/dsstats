@@ -190,9 +190,11 @@ public sealed class InHouseAuthServiceTests
         await fixture.Service.RemovePasskeyAsync(user.InHouseUserId, removedPasskeyId, CancellationToken.None);
 
         var userSessions = await fixture.Context.InHouseSessions
+            .AsNoTracking()
             .Where(s => s.InHouseUserId == user.InHouseUserId)
             .ToListAsync();
         var otherSession = await fixture.Context.InHouseSessions
+            .AsNoTracking()
             .SingleAsync(s => s.InHouseUserId == otherUser.InHouseUserId);
         Assert.IsTrue(userSessions.All(s => s.RevokedAt is not null));
         Assert.IsNull(otherSession.RevokedAt);
@@ -394,13 +396,13 @@ public sealed class InHouseAuthServiceTests
         private readonly SqliteConnection connection;
         private readonly MemoryCache memoryCache = new(new MemoryCacheOptions());
 
-        private InHouseAuthFixture(SqliteConnection connection, DsstatsContext context, Mock<IInHouseAccountNotifier> accountNotifier)
+        private InHouseAuthFixture(SqliteConnection connection, DsstatsContext context, IDbContextFactory<DsstatsContext> contextFactory, Mock<IInHouseAccountNotifier> accountNotifier)
         {
             this.connection = connection;
             Context = context;
             AccountNotifier = accountNotifier;
             Service = new InHouseAuthService(
-                context,
+                contextFactory,
                 Mock.Of<IFido2>(),
                 memoryCache,
                 accountNotifier.Object,
@@ -419,8 +421,9 @@ public sealed class InHouseAuthServiceTests
                 .UseSqlite(connection)
                 .Options;
             var context = new DsstatsContext(options);
+            var contextFactory = new TestDbContextFactory<DsstatsContext>(options);
             await context.Database.EnsureCreatedAsync();
-            return new InHouseAuthFixture(connection, context, new Mock<IInHouseAccountNotifier>());
+            return new InHouseAuthFixture(connection, context, contextFactory, new Mock<IInHouseAccountNotifier>());
         }
 
         public async ValueTask DisposeAsync()

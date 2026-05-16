@@ -168,8 +168,8 @@ public partial class ImportService
 
     public async Task RealWorldAdjustTest()
     {
+        await using var context = await contextFactory.CreateDbContextAsync();
         using var scope = scopeFactory.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
         var replayRepository = scope.ServiceProvider.GetRequiredService<IReplayRepository>();
 
         var replayHashes = await context.Replays

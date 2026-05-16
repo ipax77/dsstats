@@ -2,7 +2,6 @@
 using dsstats.db;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
@@ -17,8 +16,7 @@ public partial class RatingService
         int count = 0;
         try
         {
-            using var scope = scopeFactory.CreateAsyncScope();
-            using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+            await using var context = await contextFactory.CreateDbContextAsync();
 
             await ClearPreRatings(context);
             var fromTime = DateTime.UtcNow.AddHours(-3);

@@ -245,7 +245,7 @@ public sealed class ReplayRepositoryTests
             ServiceProvider = serviceProvider;
             Context = context;
             Repository = new ReplayRepository(
-                serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+                serviceProvider.GetRequiredService<IDbContextFactory<DsstatsContext>>(),
                 NullLogger<ReplayRepository>.Instance);
         }
 
@@ -260,11 +260,11 @@ public sealed class ReplayRepositoryTests
             await connection.OpenAsync();
 
             var services = new ServiceCollection();
-            services.AddDbContext<DsstatsContext>(options => options.UseSqlite(connection, sqlite =>
+            services.AddDbContextFactory<DsstatsContext>(options => options.UseSqlite(connection, sqlite =>
                 sqlite.MigrationsAssembly("dsstats.migrations.sqlite")));
 
             var serviceProvider = services.BuildServiceProvider();
-            var context = serviceProvider.GetRequiredService<DsstatsContext>();
+            var context = serviceProvider.GetRequiredService<IDbContextFactory<DsstatsContext>>().CreateDbContext();
             await context.Database.EnsureDeletedAsync();
             await context.Database.MigrateAsync();
 

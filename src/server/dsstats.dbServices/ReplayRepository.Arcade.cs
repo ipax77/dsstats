@@ -1,7 +1,6 @@
 ﻿using dsstats.db;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace dsstats.dbServices;
@@ -15,8 +14,7 @@ public partial class ReplayRepository
             return null;
         }
         ;
-        using var scope = scopeFactory.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
         var replay = await context.ArcadeReplays
             .Include(i => i.Players)
                 .ThenInclude(i => i.Player)
@@ -76,8 +74,7 @@ public partial class ReplayRepository
 
     public async Task<List<ReplayListDto>> GetArcadeReplays(ArcadeReplaysRequest request, CancellationToken token = default)
     {
-        using var scope = scopeFactory.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         try
         {
             // First, get the base replays without ratings
@@ -128,8 +125,7 @@ public partial class ReplayRepository
 
     public async Task<int> GetArcadeReplaysCount(ArcadeReplaysRequest request, CancellationToken token = default)
     {
-        using var scope = scopeFactory.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         try
         {
             // Count query - no need for ratings at all

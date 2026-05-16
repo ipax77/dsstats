@@ -8,6 +8,7 @@ public partial class BuildsService
 {
     public async Task<List<ReplayListDto>> GetBuildReplays(BuildsRequest request)
     {
+        await using var context = await contextFactory.CreateDbContextAsync();
         bool noOpp = request.Versus == Commander.None;
         var timeInfo = Data.GetTimePeriodInfo(request.TimePeriod);
         var minDuration = request.Breakpoint switch

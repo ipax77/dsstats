@@ -169,7 +169,9 @@ builder.Services.AddResponseCompression(options =>
 var app = builder.Build();
 
 using var scope = app.Services.CreateScope();
-using var dbContext = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+await using var dbContext = await scope.ServiceProvider
+    .GetRequiredService<IDbContextFactory<DsstatsContext>>()
+    .CreateDbContextAsync();
 dbContext.Database.Migrate();
 
 // Configure the HTTP request pipeline.
@@ -178,6 +180,21 @@ if (app.Environment.IsDevelopment())
     //var ratingsService = scope.ServiceProvider.GetRequiredService<IRatingService>();
     //ratingsService.CreateRatings().Wait();
 }
+
+app.Use(async (httpContext, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (OperationCanceledException) when (httpContext.RequestAborted.IsCancellationRequested)
+    {
+        if (!httpContext.Response.HasStarted)
+        {
+            httpContext.Response.StatusCode = 499;
+        }
+    }
+});
 
 app.UseForwardedHeaders();
 // app.UseHttpsRedirection();

@@ -2,7 +2,6 @@
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace dsstats.dbServices;
 
@@ -20,8 +19,7 @@ public partial class PlayerService
 
     private async Task<DistributionResponse> CreateDistributionResponse(DistributionRequest request)
     {
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
 
         var group = from r in context.PlayerRatings
                     where r.RatingType == request.RatingType

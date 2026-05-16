@@ -19,8 +19,7 @@ public partial class ImportService
     {
         Init();
 
-        using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
 
         if (existingArcadeReplayKeys.Count == 0)
         {
@@ -58,8 +57,7 @@ public partial class ImportService
     {
         Init();
 
-        using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
 
         Dictionary<ToonIdRec, string> players = [];
         foreach (var player in replays.SelectMany(s => s.Players))

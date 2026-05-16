@@ -1,12 +1,11 @@
 ﻿using dsstats.db;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace dsstats.dbServices.Stats;
 
-public class CountStatsProvider(DsstatsContext context, IMemoryCache memoryCache) : StatsProviderBase<CountResponse>
+public class CountStatsProvider(IDbContextFactory<DsstatsContext> contextFactory, IMemoryCache memoryCache) : StatsProviderBase<CountResponse>
 {
     public override StatsType StatsType => StatsType.Count;
 
@@ -36,6 +35,7 @@ public class CountStatsProvider(DsstatsContext context, IMemoryCache memoryCache
 
     private async Task<List<CountEnt>> GetCountBaseData(StatsRequest request, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var f = StatsFilterResolver.Resolve(request);
 
         var query =
@@ -74,6 +74,7 @@ public class CountStatsProvider(DsstatsContext context, IMemoryCache memoryCache
 
     private async Task<CountStats> GetCountStats(StatsRequest request, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var f = StatsFilterResolver.Resolve(request);
 
         var baseQuery =
@@ -126,6 +127,7 @@ public class CountStatsProvider(DsstatsContext context, IMemoryCache memoryCache
 
     private async Task<CountResponse> GetUserCountResponse(StatsRequest request, ToonIdDto toonId, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var f = StatsFilterResolver.Resolve(request);
 
         var playerId = await context.Players.Where(f => f.ToonId.Id == toonId.Id

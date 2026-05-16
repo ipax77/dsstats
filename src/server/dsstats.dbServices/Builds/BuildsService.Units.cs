@@ -8,6 +8,7 @@ public partial class BuildsService
 {
     public async Task<List<DsUnitListDto>> GetUnits(DsUnitsRequest request)
     {
+        await using var context = await contextFactory.CreateDbContextAsync();
         var units = context.DsUnits.AsQueryable();
 
         if (request.Commander != Commander.None)
@@ -35,6 +36,7 @@ public partial class BuildsService
 
     public async Task<DsUnitDto> GetUnit(int dsUnitId)
     {
+        await using var context = await contextFactory.CreateDbContextAsync();
         var unit = await context.DsUnits
             .Where(x => x.DsUnitId == dsUnitId)
             .Select(s => new DsUnitDto()
