@@ -104,12 +104,9 @@ public partial class PlayerService
                             Race = s.Race,
                             Team = s.TeamId,
                         }).ToList(),
-                        RatingList = rr == null ? null : new()
-                        {
-                            Exp2Win = rr.ExpectedWinProbability,
-                            AvgRating = rr.AvgRating,
-                            LeaverType = rr.LeaverType,
-                        },
+                        Exp2Win = rr == null ? null : rr.ExpectedWinProbability,
+                        AvgRating = rr == null ? null : rr.AvgRating,
+                        LeaverType = rr == null ? LeaverType.None : rr.LeaverType,
                         PlayerPos = rp.GamePos,
                     };
         var replays = await query.Take(10).ToListAsync(token);
