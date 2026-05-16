@@ -12,7 +12,7 @@ using dsstats.db;
 namespace dsstats.migrations.mysql.Migrations
 {
     [DbContext(typeof(DsstatsContext))]
-    [Migration("20260515201507_InHouse")]
+    [Migration("20260516091225_InHouse")]
     partial class InHouse
     {
         /// <inheritdoc />
