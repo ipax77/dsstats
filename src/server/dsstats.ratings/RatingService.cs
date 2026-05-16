@@ -206,13 +206,36 @@ public partial class RatingService(
         }
         await using var context = await stagingContextFactory.CreateDbContextAsync();
 
-        await context.Database.OpenConnectionAsync();
-        await context.Database.ExecuteSqlRawAsync("SET unique_checks=0;");
+        var connectionOpened = false;
+        var uniqueChecksDisabled = false;
 
-        await context.AddRangeAsync(replayRatings);
-        await context.SaveChangesAsync();
-        await context.Database.ExecuteSqlRawAsync("SET unique_checks=1;");
-        await context.Database.CloseConnectionAsync();
+        try
+        {
+            await context.Database.OpenConnectionAsync();
+            connectionOpened = true;
+            await context.Database.ExecuteSqlRawAsync("SET unique_checks=0;");
+            uniqueChecksDisabled = true;
+
+            await context.AddRangeAsync(replayRatings);
+            await context.SaveChangesAsync();
+        }
+        finally
+        {
+            try
+            {
+                if (uniqueChecksDisabled)
+                {
+                    await context.Database.ExecuteSqlRawAsync("SET unique_checks=1;");
+                }
+            }
+            finally
+            {
+                if (connectionOpened)
+                {
+                    await context.Database.CloseConnectionAsync();
+                }
+            }
+        }
     }
 
     public static HashSet<RatingType> GetRatingTypes(ReplayCalcDto replay)
@@ -332,8 +355,10 @@ public partial class RatingService(
     private async Task BatchImportCombinedReplays()
     {
         await using var context = await contextFactory.CreateDbContextAsync();
-        context.Database.SetCommandTimeout(TimeSpan.FromMinutes(20));
-        await context.Database.ExecuteSqlRawAsync("CALL BatchImportCombinedReplays();");
+        await context.Database.ExecuteWithCommandTimeoutAsync(TimeSpan.FromMinutes(20), async () =>
+        {
+            await context.Database.ExecuteSqlRawAsync("CALL BatchImportCombinedReplays();");
+        });
     }
 }
 

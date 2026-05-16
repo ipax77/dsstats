@@ -12,8 +12,10 @@ public static class DatabaseServiceExtensions
         var connectionString = configuration["dsstats:ConnectionString"] ?? string.Empty;
         var importConnectionString = configuration["dsstats:ImportConnectionString"] ?? string.Empty;
 
-        var serverVersion = new MySqlServerVersion(new Version(8, 4, 7));
+        var serverVersion = new MySqlServerVersion(new Version(9, 7, 0));
 
+        // Keep only the hot context pooled. Do not store request/user/tenant state on DsstatsContext;
+        // pass those values into service methods and LINQ queries instead.
         services.AddPooledDbContextFactory<DsstatsContext>(options =>
         {
             SuppressClientCancellationNoise(options);
@@ -26,7 +28,8 @@ public static class DatabaseServiceExtensions
             //options.EnableSensitiveDataLogging();
         });
 
-        services.AddPooledDbContextFactory<StagingDsstatsContext>(options =>
+        // Staging contexts run rare, long rating/table-swap jobs, so pooling adds little value.
+        services.AddDbContextFactory<StagingDsstatsContext>(options =>
         {
             SuppressClientCancellationNoise(options);
             options.UseMySql(connectionString, serverVersion, o =>

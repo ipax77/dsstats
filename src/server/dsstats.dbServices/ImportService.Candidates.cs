@@ -39,39 +39,39 @@ public partial class ImportService
             var to = new DateTime(i, 12, 31);
 
             await using var context = await contextFactory.CreateDbContextAsync();
-            context.Database.SetCommandTimeout(180);
-
-
-            var results = await context.Set<ReplayIdResult>()
-                .FromSqlRaw("CALL FindDuplicateReplayClustersInRange({0}, {1});", from, to)
-                .ToListAsync();
-
-            countTotal += results.Count;
-
-            // optional: preload all replays in one shot
-            var allIds = results
-                .SelectMany(r => r.ReplayIdsCsv.Split(','))
-                .Select(int.Parse)
-                .Distinct()
-                .ToList();
-
-            var allReplays = await GetMinimalReplays(allIds, context);
-
-            foreach (var result in results)
+            await context.Database.ExecuteWithCommandTimeoutAsync(TimeSpan.FromSeconds(180), async () =>
             {
-                var replayIds = result.ReplayIdsCsv.Split(',')
+                var results = await context.Set<ReplayIdResult>()
+                    .FromSqlRaw("CALL FindDuplicateReplayClustersInRange({0}, {1});", from, to)
+                    .ToListAsync();
+
+                countTotal += results.Count;
+
+                // optional: preload all replays in one shot
+                var allIds = results
+                    .SelectMany(r => r.ReplayIdsCsv.Split(','))
                     .Select(int.Parse)
+                    .Distinct()
                     .ToList();
 
-                if (replayIds.Count <= 1)
-                    continue;
+                var allReplays = await GetMinimalReplays(allIds, context);
 
-                var replays = allReplays
-                    .Where(r => replayIds.Contains(r.ReplayId))
-                    .ToList();
+                foreach (var result in results)
+                {
+                    var replayIds = result.ReplayIdsCsv.Split(',')
+                        .Select(int.Parse)
+                        .ToList();
 
-                deletedTotal += await HandleCandidateDuplicates(replays, context);
-            }
+                    if (replayIds.Count <= 1)
+                        continue;
+
+                    var replays = allReplays
+                        .Where(r => replayIds.Contains(r.ReplayId))
+                        .ToList();
+
+                    deletedTotal += await HandleCandidateDuplicates(replays, context);
+                }
+            });
         }
         logger.LogWarning("Found {count} realm-based candidate duplicate clusters.", countTotal);
         logger.LogWarning("Deleted {count} realm-based candidate duplicate replays.", deletedTotal);
