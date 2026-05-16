@@ -125,6 +125,7 @@ public sealed class InHouseAuthServiceTests
 
         Assert.IsTrue(result.Succeeded);
         Assert.IsTrue(result.Principal!.IsInRole(InHouseRoles.Admin));
+        Assert.AreEqual(InHouseRoles.Admin, result.Principal.FindFirstValue(ClaimTypes.Role));
     }
 
     [TestMethod]

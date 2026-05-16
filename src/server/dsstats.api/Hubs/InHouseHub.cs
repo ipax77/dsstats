@@ -59,8 +59,7 @@ public sealed class InHouseHub(
         var detail = await sessionService.RemoveReplayAsync(
             sessionId,
             replayHash,
-            GetUserId(),
-            Context.User?.IsInRole(InHouseRoles.Admin) == true,
+            Context.User ?? new ClaimsPrincipal(),
             Context.ConnectionAborted);
         await BroadcastSessionStateAsync(detail);
         await Clients.All.SendAsync(ActiveSessionsChangedEvent, Context.ConnectionAborted);
@@ -85,8 +84,7 @@ public sealed class InHouseHub(
     {
         var detail = await sessionService.CloseSessionAsync(
             sessionId,
-            GetUserId(),
-            Context.User?.IsInRole(InHouseRoles.Admin) == true,
+            Context.User ?? new ClaimsPrincipal(),
             Context.ConnectionAborted);
         await BroadcastSessionStateAsync(detail);
         await Clients.All.SendAsync(ActiveSessionsChangedEvent, Context.ConnectionAborted);

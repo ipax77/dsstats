@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using dsstats.db;
 using dsstats.dbServices;
 using dsstats.dbServices.InHouse;
@@ -121,12 +122,11 @@ public sealed class InHouseGameSessionServiceTests
             new InHouseReplayUploadRequest { Replay = CreateReplay() },
             CancellationToken.None);
 
-        var ex = await Assert.ThrowsExactlyAsync<InvalidOperationException>(
+        var ex = await Assert.ThrowsExactlyAsync<UnauthorizedAccessException>(
             () => fixture.Service.RemoveReplayAsync(
                 session.SessionId,
                 upload.State.Replays[0].ReplayHash,
-                other.InHouseUserId,
-                false,
+                CreatePrincipal(other),
                 CancellationToken.None));
 
         Assert.AreEqual("Only the session creator or an InHouse admin can delete replays from this session.", ex.Message);
@@ -170,8 +170,7 @@ public sealed class InHouseGameSessionServiceTests
         var removed = await fixture.Service.RemoveReplayAsync(
             session.SessionId,
             refreshed.Replays[0].ReplayHash,
-            creator.InHouseUserId,
-            false,
+            CreatePrincipal(creator),
             CancellationToken.None);
         var active = await fixture.Service.GetActiveSessionsAsync(CancellationToken.None);
 
@@ -209,8 +208,7 @@ public sealed class InHouseGameSessionServiceTests
         var removed = await fixture.Service.RemoveReplayAsync(
             session.SessionId,
             upload.State.Replays[0].ReplayHash,
-            admin.InHouseUserId,
-            true,
+            CreatePrincipal(admin, isAdmin: true),
             CancellationToken.None);
 
         Assert.HasCount(0, removed.Replays);
@@ -228,14 +226,13 @@ public sealed class InHouseGameSessionServiceTests
             creator.InHouseUserId,
             new InHouseReplayUploadRequest { Replay = CreateReplay() },
             CancellationToken.None);
-        await fixture.Service.CloseSessionAsync(session.SessionId, creator.InHouseUserId, false, CancellationToken.None);
+        await fixture.Service.CloseSessionAsync(session.SessionId, CreatePrincipal(creator), CancellationToken.None);
 
         var ex = await Assert.ThrowsExactlyAsync<InvalidOperationException>(
             () => fixture.Service.RemoveReplayAsync(
                 session.SessionId,
                 upload.State.Replays[0].ReplayHash,
-                creator.InHouseUserId,
-                false,
+                CreatePrincipal(creator),
                 CancellationToken.None));
 
         Assert.AreEqual("This InHouse session is closed.", ex.Message);
@@ -269,8 +266,7 @@ public sealed class InHouseGameSessionServiceTests
         var removed = await fixture.Service.RemoveReplayAsync(
             session.SessionId,
             first.State.Replays[0].ReplayHash,
-            creator.InHouseUserId,
-            false,
+            CreatePrincipal(creator),
             CancellationToken.None);
 
         Assert.HasCount(1, removed.Replays);
@@ -353,9 +349,9 @@ public sealed class InHouseGameSessionServiceTests
         var other = await fixture.AddUserAsync(2);
         var session = await fixture.Service.CreateSessionAsync(creator.InHouseUserId, new(), CancellationToken.None);
 
-        var ex = await Assert.ThrowsExactlyAsync<InvalidOperationException>(
-            () => fixture.Service.CloseSessionAsync(session.SessionId, other.InHouseUserId, false, CancellationToken.None));
-        var closed = await fixture.Service.CloseSessionAsync(session.SessionId, creator.InHouseUserId, false, CancellationToken.None);
+        var ex = await Assert.ThrowsExactlyAsync<UnauthorizedAccessException>(
+            () => fixture.Service.CloseSessionAsync(session.SessionId, CreatePrincipal(other), CancellationToken.None));
+        var closed = await fixture.Service.CloseSessionAsync(session.SessionId, CreatePrincipal(creator), CancellationToken.None);
 
         Assert.AreEqual("Only the session creator or an InHouse admin can close this session.", ex.Message);
         Assert.IsNotNull(closed.ClosedAt);
@@ -374,13 +370,27 @@ public sealed class InHouseGameSessionServiceTests
         var admin = await fixture.AddUserAsync(2);
         var session = await fixture.Service.CreateSessionAsync(creator.InHouseUserId, new(), CancellationToken.None);
 
-        var closed = await fixture.Service.CloseSessionAsync(session.SessionId, admin.InHouseUserId, true, CancellationToken.None);
+        var closed = await fixture.Service.CloseSessionAsync(session.SessionId, CreatePrincipal(admin, isAdmin: true), CancellationToken.None);
 
         Assert.IsNotNull(closed.ClosedAt);
         Assert.IsNotNull(await fixture.Context.InHouseGameSessions
             .Where(dbSession => dbSession.PublicId == session.SessionId)
             .Select(dbSession => dbSession.ClosedAt)
             .SingleAsync());
+    }
+
+    [TestMethod]
+    public async Task CloseSessionAsync_RejectsAlreadyClosedSession()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var creator = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(creator.InHouseUserId, new(), CancellationToken.None);
+        await fixture.Service.CloseSessionAsync(session.SessionId, CreatePrincipal(creator), CancellationToken.None);
+
+        var ex = await Assert.ThrowsExactlyAsync<InvalidOperationException>(
+            () => fixture.Service.CloseSessionAsync(session.SessionId, CreatePrincipal(creator), CancellationToken.None));
+
+        Assert.AreEqual("This InHouse session is closed.", ex.Message);
     }
 
     [TestMethod]
@@ -405,8 +415,8 @@ public sealed class InHouseGameSessionServiceTests
         var user = await fixture.AddUserAsync(1);
         var session = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
 
-        var ex = await Assert.ThrowsExactlyAsync<InvalidOperationException>(
-            () => fixture.Service.DeleteSessionAsync(session.SessionId, user.InHouseUserId, false, CancellationToken.None));
+        var ex = await Assert.ThrowsExactlyAsync<UnauthorizedAccessException>(
+            () => fixture.Service.DeleteSessionAsync(session.SessionId, CreatePrincipal(user), CancellationToken.None));
 
         Assert.AreEqual("Only InHouse admins can delete game sessions.", ex.Message);
         Assert.AreEqual(1, await fixture.Context.InHouseGameSessions.CountAsync());
@@ -419,7 +429,7 @@ public sealed class InHouseGameSessionServiceTests
         var admin = await fixture.AddUserAsync(1);
         var session = await fixture.Service.CreateSessionAsync(admin.InHouseUserId, new(), CancellationToken.None);
 
-        await fixture.Service.DeleteSessionAsync(session.SessionId, admin.InHouseUserId, true, CancellationToken.None);
+        await fixture.Service.DeleteSessionAsync(session.SessionId, CreatePrincipal(admin, isAdmin: true), CancellationToken.None);
         var active = await fixture.Service.GetActiveSessionsAsync(CancellationToken.None);
         var restored = await fixture.Service.GetSessionAsync(session.SessionId, admin.InHouseUserId, CancellationToken.None);
 
@@ -435,9 +445,9 @@ public sealed class InHouseGameSessionServiceTests
         await using var fixture = await InHouseGameSessionFixture.CreateAsync();
         var admin = await fixture.AddUserAsync(1);
         var session = await fixture.Service.CreateSessionAsync(admin.InHouseUserId, new(), CancellationToken.None);
-        await fixture.Service.CloseSessionAsync(session.SessionId, admin.InHouseUserId, false, CancellationToken.None);
+        await fixture.Service.CloseSessionAsync(session.SessionId, CreatePrincipal(admin), CancellationToken.None);
 
-        await fixture.Service.DeleteSessionAsync(session.SessionId, admin.InHouseUserId, true, CancellationToken.None);
+        await fixture.Service.DeleteSessionAsync(session.SessionId, CreatePrincipal(admin, isAdmin: true), CancellationToken.None);
         var closed = await fixture.Service.GetClosedSessionsAsync(new InHouseClosedGameSessionsRequest(), CancellationToken.None);
 
         Assert.AreEqual(0, closed.Total);
@@ -469,7 +479,7 @@ public sealed class InHouseGameSessionServiceTests
             },
             CancellationToken.None);
 
-        await fixture.Service.DeleteSessionAsync(session.SessionId, admin.InHouseUserId, true, CancellationToken.None);
+        await fixture.Service.DeleteSessionAsync(session.SessionId, CreatePrincipal(admin, isAdmin: true), CancellationToken.None);
 
         Assert.AreEqual(0, await fixture.Context.InHouseGameSessions.CountAsync());
         Assert.AreEqual(1, await fixture.Context.Replays.CountAsync());
@@ -482,11 +492,11 @@ public sealed class InHouseGameSessionServiceTests
         await using var fixture = await InHouseGameSessionFixture.CreateAsync();
         var user = await fixture.AddUserAsync(1);
         var first = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new InHouseCreateGameSessionRequest { Name = "First" }, CancellationToken.None);
-        await fixture.Service.CloseSessionAsync(first.SessionId, user.InHouseUserId, false, CancellationToken.None);
+        await fixture.Service.CloseSessionAsync(first.SessionId, CreatePrincipal(user), CancellationToken.None);
         var second = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new InHouseCreateGameSessionRequest { Name = "Second" }, CancellationToken.None);
-        await fixture.Service.CloseSessionAsync(second.SessionId, user.InHouseUserId, false, CancellationToken.None);
+        await fixture.Service.CloseSessionAsync(second.SessionId, CreatePrincipal(user), CancellationToken.None);
         var third = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new InHouseCreateGameSessionRequest { Name = "Third" }, CancellationToken.None);
-        await fixture.Service.CloseSessionAsync(third.SessionId, user.InHouseUserId, false, CancellationToken.None);
+        await fixture.Service.CloseSessionAsync(third.SessionId, CreatePrincipal(user), CancellationToken.None);
 
         var closedAt = new Dictionary<Guid, DateTime>
         {
@@ -523,7 +533,7 @@ public sealed class InHouseGameSessionServiceTests
             user.InHouseUserId,
             new InHouseReplayUploadRequest { Replay = CreateReplay() },
             CancellationToken.None);
-        await fixture.Service.CloseSessionAsync(session.SessionId, user.InHouseUserId, false, CancellationToken.None);
+        await fixture.Service.CloseSessionAsync(session.SessionId, CreatePrincipal(user), CancellationToken.None);
 
         var restored = await fixture.CreateService().GetSessionAsync(session.SessionId, user.InHouseUserId, CancellationToken.None);
         var active = await fixture.CreateService().GetActiveSessionsAsync(CancellationToken.None);
@@ -794,6 +804,23 @@ public sealed class InHouseGameSessionServiceTests
             TeamId = teamId,
             GamePos = gamePos,
         };
+
+    private static ClaimsPrincipal CreatePrincipal(InHouseUser user, bool isAdmin = false)
+    {
+        List<Claim> claims =
+        [
+            new(ClaimTypes.NameIdentifier, user.PublicId.ToString()),
+            new(ClaimTypes.Name, user.DisplayName),
+            new(InHouseClaims.UserId, user.InHouseUserId.ToString()),
+        ];
+
+        if (isAdmin)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, InHouseRoles.Admin));
+        }
+
+        return new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+    }
 
     private sealed class InHouseGameSessionFixture : IAsyncDisposable
     {

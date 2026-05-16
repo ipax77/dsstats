@@ -36,7 +36,11 @@
             </Authorized>
         </AuthorizeView>
     </div>
-
+    <div>
+        <AuthorizeView Roles="Admin">
+            <p>You are Admin</p>
+        </AuthorizeView>
+    </div>
     @if (loading)
     {
         <div class="text-center py-5">
@@ -133,18 +137,16 @@
                                         <button class="btn btn-outline-light btn-sm" @onclick="RefreshAsync" disabled="@busy">
                                             <i class="bi bi-arrow-clockwise me-1"></i>Refresh
                                         </button>
-                                        @if (selectedSession.CanClose || (Auth.User?.IsAdmin ?? false))
-                                        {
+                                        <AuthorizeView Policy="CloseSession" Resource="@selectedSession" Context="closeSessionAuth">
                                             <button class="btn btn-outline-danger btn-sm" @onclick="CloseSessionAsync" disabled="@busy">
                                                 <i class="bi bi-lock me-1"></i>Close
                                             </button>
-                                        }
-                                        @if (Auth.User?.IsAdmin == true)
-                                        {
+                                        </AuthorizeView>
+                                        <AuthorizeView Roles="Admin" Context="deleteSessionAuth">
                                             <button class="btn btn-danger btn-sm" @onclick="DeleteSessionAsync" disabled="@busy">
                                                 <i class="bi bi-trash me-1"></i>Delete
                                             </button>
-                                        }
+                                        </AuthorizeView>
                                     </div>
                                 </div>
                                 <div class="card-body bgchart">
@@ -361,10 +363,9 @@
                                                         <th>Team 2</th>
                                                         <th>Exp2Win</th>
                                                         <th>Rating</th>
-                                                        @if (selectedSession.CanClose)
-                                                        {
+                                                        <AuthorizeView Policy="CloseSession" Resource="@selectedSession" Context="removeReplayHeaderAuth">
                                                             <th></th>
-                                                        }
+                                                        </AuthorizeView>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -378,8 +379,7 @@
                                                             <td><ReplayTeamComponent Replay="replay.ToReplayListDto()" TeamNumber="2" /></td>
                                                             <td>@(replay.ExpectedWinProbability?.ToString("P0") ?? "-")</td>
                                                             <td>@(replay.RatingsPending ? "pending" : replay.AvgRating?.ToString("N0"))</td>
-                                                            @if (selectedSession.CanClose)
-                                                            {
+                                                            <AuthorizeView Policy="CloseSession" Resource="@selectedSession" Context="removeReplayAuth">
                                                                 <td>
                                                                     <button class="btn btn-outline-danger btn-sm"
                                                                             title="Remove replay from session"
@@ -389,7 +389,7 @@
                                                                         <i class="bi bi-trash"></i>
                                                                     </button>
                                                                 </td>
-                                                            }
+                                                            </AuthorizeView>
                                                         </tr>
                                                     }
                                                 </tbody>
@@ -1349,8 +1349,8 @@
     }
 
     private RenderFragment RenderTeam(string title, IReadOnlyList<InHouseMatchmakingPlayer> players, string group) => @<div class="border border-secondary rounded p-2 h-100"
-        @ondrop="() => DropDraftOnGroup(group)"
-        @ondragover:preventDefault="true">
+                                                                                                                            @ondrop="() => DropDraftOnGroup(group)"
+                                                                                                                            @ondragover:preventDefault="true">
         <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="fw-semibold text-warning">@title</span>
             <span class="badge text-bg-dark">@players.Count</span>

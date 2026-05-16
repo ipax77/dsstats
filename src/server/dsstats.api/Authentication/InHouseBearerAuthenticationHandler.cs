@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using dsstats.api.InHouse;
+using dsstats.shared.InHouse;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 

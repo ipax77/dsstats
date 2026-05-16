@@ -9,6 +9,7 @@ using dsstats.dbServices.Builds;
 using dsstats.dbServices.InHouse;
 using dsstats.dbServices.Stats;
 using dsstats.ratings;
+using dsstats.shared.InHouse;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.RateLimiting;
@@ -124,6 +125,15 @@ builder.Services
     .AddScheme<AuthenticationSchemeOptions, InHouseBearerAuthenticationHandler>(
         InHouseBearerAuthenticationHandler.SchemeName,
         _ => { });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(InHousePolicies.CloseSession, policy => policy
+        .RequireAuthenticatedUser()
+        .RequireAssertion(context => InHouseAuthorization.CanCloseSession(
+            context.User,
+            context.Resource as IInHouseSessionAuthorizationResource)));
+});
 
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddSingleton<UploadService>();

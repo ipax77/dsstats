@@ -43,7 +43,7 @@ public sealed class InHouseClosedGameSessionsPageDto
     public int Total { get; set; }
 }
 
-public sealed class InHouseGameSessionDetailDto
+public sealed class InHouseGameSessionDetailDto : IInHouseSessionAuthorizationResource
 {
     public Guid SessionId { get; set; }
     public long Revision { get; set; }
@@ -53,7 +53,6 @@ public sealed class InHouseGameSessionDetailDto
     public DateTime CreatedAt { get; set; }
     public DateTime? ClosedAt { get; set; }
     public DateTime LastActivityAt { get; set; }
-    public bool CanClose { get; set; }
     public List<InHouseRosterPlayerDto> RosterPlayers { get; set; } = [];
     public List<InHouseGameSessionPlayerSummaryDto> Players { get; set; } = [];
     public List<InHouseGameSessionReplayDto> Replays { get; set; } = [];

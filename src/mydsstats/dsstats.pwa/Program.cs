@@ -2,6 +2,7 @@ using dsstats.indexedDb.Services;
 using dsstats.pwa;
 using dsstats.pwa.Services;
 using dsstats.shared;
+using dsstats.shared.InHouse;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
@@ -65,7 +66,14 @@ builder.Services.AddScoped<RatingService>();
 builder.Services.AddScoped<SessionProgressService>();
 builder.Services.AddScoped<InHouseAuthClient>();
 builder.Services.AddScoped<InHouseGameSessionsClient>();
-builder.Services.AddAuthorizationCore();
+builder.Services.AddAuthorizationCore(options =>
+{
+    options.AddPolicy(InHousePolicies.CloseSession, policy => policy
+        .RequireAuthenticatedUser()
+        .RequireAssertion(context => InHouseAuthorization.CanCloseSession(
+            context.User,
+            context.Resource as IInHouseSessionAuthorizationResource)));
+});
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, InHouseAuthenticationStateProvider>();
 builder.Services.AddScoped<IPlayerService, dsstats.apiServices.PlayerService>();

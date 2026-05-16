@@ -47,13 +47,14 @@ public sealed class InHouseSessionsController(
         });
 
     [HttpDelete("{sessionId:guid}")]
+    [Authorize(Roles = InHouseRoles.Admin)]
     public async Task<IActionResult> DeleteSession(
         Guid sessionId,
         CancellationToken token)
     {
         try
         {
-            await sessionService.DeleteSessionAsync(sessionId, GetUserId(), User.IsInRole(InHouseRoles.Admin), token);
+            await sessionService.DeleteSessionAsync(sessionId, User, token);
             await hubContext.Clients.Group(InHouseHub.GetSessionGroupName(sessionId))
                 .SendAsync(InHouseHub.SessionDeletedEvent, sessionId, token);
             await hubContext.Clients.All.SendAsync(InHouseHub.ActiveSessionsChangedEvent, token);
@@ -66,6 +67,10 @@ public sealed class InHouseSessionsController(
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
     }
 
@@ -104,6 +109,10 @@ public sealed class InHouseSessionsController(
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
     }
 }

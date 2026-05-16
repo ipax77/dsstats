@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Security.Claims;
 using System.Text.Json;
 using dsstats.db;
 using dsstats.shared;
@@ -184,8 +185,7 @@ public sealed class InHouseGameSessionService(
     public async Task<InHouseGameSessionDetailDto> RemoveReplayAsync(
         Guid sessionId,
         string replayHash,
-        int userId,
-        bool isAdmin,
+        ClaimsPrincipal user,
         CancellationToken token)
     {
         if (string.IsNullOrWhiteSpace(replayHash))
@@ -195,13 +195,14 @@ public sealed class InHouseGameSessionService(
 
         var session = await LoadSessionAsync(sessionId, token)
             ?? throw new InvalidOperationException("Unknown InHouse session.");
+        var userId = InHouseAuthorization.GetRequiredInternalUserId(user);
         await session.Gate.WaitAsync(token);
         try
         {
             session.State.ThrowIfClosed();
-            if (session.State.CreatedByInHouseUserId != userId && !isAdmin)
+            if (!InHouseAuthorization.CanCloseSession(user, session.State))
             {
-                throw new InvalidOperationException("Only the session creator or an InHouse admin can delete replays from this session.");
+                throw new UnauthorizedAccessException("Only the session creator or an InHouse admin can delete replays from this session.");
             }
 
             var remainingReplayIds = session.State.GetReplayIdsAfterRemoving(replayHash);
@@ -210,7 +211,7 @@ public sealed class InHouseGameSessionService(
                 : await LoadReplaysAsync(remainingReplayIds, token);
             session.State.RemoveReplay(replayHash, remainingReplayIds, remainingReplays);
             await PersistStateAsync(session.State, replayId: null, observerPlayerIds: null, token);
-            return session.State.ToDetailDto(userId, isAdmin);
+            return session.State.ToDetailDto(userId);
         }
         finally
         {
@@ -279,22 +280,28 @@ public sealed class InHouseGameSessionService(
         }
     }
 
-    public async Task<InHouseGameSessionDetailDto> CloseSessionAsync(Guid sessionId, int userId, bool isAdmin, CancellationToken token)
+    public async Task<InHouseGameSessionDetailDto> CloseSessionAsync(Guid sessionId, ClaimsPrincipal user, CancellationToken token)
     {
         var session = await LoadSessionAsync(sessionId, token)
             ?? throw new InvalidOperationException("Unknown InHouse session.");
+        var userId = InHouseAuthorization.GetRequiredInternalUserId(user);
         await session.Gate.WaitAsync(token);
         try
         {
-            if (session.State.CreatedByInHouseUserId != userId && !isAdmin)
+            if (session.State.ClosedAt is not null)
             {
-                throw new InvalidOperationException("Only the session creator or an InHouse admin can close this session.");
+                throw new InvalidOperationException("This InHouse session is closed.");
+            }
+
+            if (!InHouseAuthorization.CanCloseSession(user, session.State))
+            {
+                throw new UnauthorizedAccessException("Only the session creator or an InHouse admin can close this session.");
             }
 
             session.State.Close();
             await PersistStateAsync(session.State, replayId: null, observerPlayerIds: null, token);
             sessions.TryRemove(session.State.SessionId, out _);
-            return session.State.ToDetailDto(userId, isAdmin);
+            return session.State.ToDetailDto(userId);
         }
         finally
         {
@@ -302,11 +309,11 @@ public sealed class InHouseGameSessionService(
         }
     }
 
-    public async Task DeleteSessionAsync(Guid sessionId, int userId, bool isAdmin, CancellationToken token)
+    public async Task DeleteSessionAsync(Guid sessionId, ClaimsPrincipal user, CancellationToken token)
     {
-        if (!isAdmin)
+        if (!InHouseAuthorization.IsAdmin(user))
         {
-            throw new InvalidOperationException("Only InHouse admins can delete game sessions.");
+            throw new UnauthorizedAccessException("Only InHouse admins can delete game sessions.");
         }
 
         if (sessions.TryGetValue(sessionId, out var runtimeSession))
@@ -706,7 +713,7 @@ public sealed class InHouseGameSessionService(
         public InHouseSessionState State { get; } = state;
     }
 
-    private sealed class InHouseSessionState
+    private sealed class InHouseSessionState : IInHouseSessionAuthorizationResource
     {
         public int InHouseGameSessionId { get; set; }
         public Guid SessionId { get; set; }
@@ -1009,7 +1016,7 @@ public sealed class InHouseGameSessionService(
                 Players = Players.Count,
             };
 
-        public InHouseGameSessionDetailDto ToDetailDto(int userId, bool isAdmin = false)
+        public InHouseGameSessionDetailDto ToDetailDto(int userId)
             => new()
             {
                 SessionId = SessionId,
@@ -1020,7 +1027,6 @@ public sealed class InHouseGameSessionService(
                 CreatedAt = CreatedAt,
                 ClosedAt = ClosedAt,
                 LastActivityAt = LastActivityAt,
-                CanClose = ClosedAt is null && (CreatedByInHouseUserId == userId || isAdmin),
                 RosterPlayers = RosterPlayers
                     .OrderBy(player => player.IsSitter)
                     .ThenBy(player => player.Name)

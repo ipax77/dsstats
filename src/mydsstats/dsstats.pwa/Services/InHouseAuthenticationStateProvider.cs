@@ -36,7 +36,7 @@ public sealed class InHouseAuthenticationStateProvider : AuthenticationStateProv
         };
         if (user.IsAdmin)
         {
-            claims.Add(new Claim(ClaimTypes.Role, "admin"));
+            claims.Add(new Claim(ClaimTypes.Role, InHouseRoles.Admin));
         }
 
         return new ClaimsPrincipal(new ClaimsIdentity(claims, "InHouse"));
